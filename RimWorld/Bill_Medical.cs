@@ -10,9 +10,15 @@ namespace RimWorld
 	{
 		private BodyPartRecord part;
 
-		public ThingDef consumedInitialMedicineDef;
+		public Dictionary<ThingDef, int> consumedMedicine = new Dictionary<ThingDef, int>();
+
+		public List<Thing> uniqueRequiredIngredients;
 
 		public int temp_partIndexToSetLater;
+
+		public bool iterationCompleted;
+
+		private const float MetalhorrorInfectionChance = 0.5f;
 
 		public override bool CheckIngredientsIfSociallyProper => false;
 
@@ -25,6 +31,20 @@ namespace RimWorld
 				if (recipe.targetsBodyPart && !recipe.Worker.GetPartsToApplyOn(GiverPawn, recipe).Contains(part))
 				{
 					return false;
+				}
+				if (recipe.Worker is Recipe_Surgery recipe_Surgery && !recipe_Surgery.CompletableEver(GiverPawn))
+				{
+					return false;
+				}
+				if (!uniqueRequiredIngredients.NullOrEmpty() && !iterationCompleted)
+				{
+					foreach (Thing uniqueRequiredIngredient in uniqueRequiredIngredients)
+					{
+						if (uniqueRequiredIngredient.DestroyedOrNull())
+						{
+							return false;
+						}
+					}
 				}
 				return true;
 			}
@@ -54,8 +74,7 @@ namespace RimWorld
 			get
 			{
 				Pawn pawn = billStack.billGiver as Pawn;
-				Corpse corpse = billStack.billGiver as Corpse;
-				if (corpse != null)
+				if (billStack.billGiver is Corpse corpse)
 				{
 					pawn = corpse.InnerPawn;
 				}
@@ -71,6 +90,11 @@ namespace RimWorld
 		{
 			get
 			{
+				string text = recipe.Worker.LabelFromUniqueIngredients(this);
+				if (!text.NullOrEmpty())
+				{
+					return text;
+				}
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.Append(recipe.Worker.GetLabelWhenUsedOn(GiverPawn, part));
 				if (Part != null && !recipe.hideBodyPartNames)
@@ -85,9 +109,10 @@ namespace RimWorld
 		{
 		}
 
-		public Bill_Medical(RecipeDef recipe)
+		public Bill_Medical(RecipeDef recipe, List<Thing> uniqueIngredients)
 			: base(recipe)
 		{
+			uniqueRequiredIngredients = uniqueIngredients;
 		}
 
 		public override bool ShouldDoNow()
@@ -102,6 +127,7 @@ namespace RimWorld
 		public override void Notify_IterationCompleted(Pawn billDoer, List<Thing> ingredients)
 		{
 			base.Notify_IterationCompleted(billDoer, ingredients);
+			iterationCompleted = true;
 			if (CompletableEver)
 			{
 				Pawn giverPawn = GiverPawn;
@@ -110,27 +136,35 @@ namespace RimWorld
 				{
 					giverPawn.records.Increment(RecordDefOf.OperationsReceived);
 					billDoer.records.Increment(RecordDefOf.OperationsPerformed);
+					if (ModsConfig.AnomalyActive && Rand.Chance(0.5f) && MetalhorrorUtility.IsInfected(billDoer))
+					{
+						MetalhorrorUtility.Infect(giverPawn, billDoer, "SurgeryImplant");
+					}
 				}
 			}
 			billStack.Delete(this);
 		}
 
-		public override void Notify_DoBillStarted(Pawn billDoer)
+		public override void Notify_BillWorkStarted(Pawn billDoer)
 		{
-			base.Notify_DoBillStarted(billDoer);
-			consumedInitialMedicineDef = null;
+			base.Notify_BillWorkStarted(billDoer);
+			consumedMedicine.Clear();
 			if (GiverPawn.Dead || !recipe.anesthetize || !HealthUtility.TryAnesthetize(GiverPawn))
 			{
 				return;
 			}
 			List<ThingCountClass> placedThings = billDoer.CurJob.placedThings;
+			if (placedThings == null)
+			{
+				return;
+			}
 			for (int i = 0; i < placedThings.Count; i++)
 			{
 				if (placedThings[i].thing is Medicine)
 				{
 					recipe.Worker.ConsumeIngredient(placedThings[i].thing.SplitOff(1), recipe, billDoer.MapHeld);
 					placedThings[i].Count--;
-					consumedInitialMedicineDef = placedThings[i].thing.def;
+					consumedMedicine.Add(placedThings[i].thing.def, 1);
 					if (placedThings[i].thing.Destroyed || placedThings[i].Count <= 0)
 					{
 						placedThings.RemoveAt(i);
@@ -140,11 +174,55 @@ namespace RimWorld
 			}
 		}
 
+		public override bool PawnAllowedToStartAnew(Pawn pawn)
+		{
+			if (!base.PawnAllowedToStartAnew(pawn))
+			{
+				return false;
+			}
+			if (recipe.Worker is Recipe_AdministerIngestible)
+			{
+				ThingDef singleDef = recipe.ingredients[0].filter.BestThingRequest.singleDef;
+				if (singleDef.IsDrug && !new HistoryEvent(HistoryEventDefOf.AdministeredDrug, pawn.Named(HistoryEventArgsNames.Doer)).Notify_PawnAboutToDo_Job())
+				{
+					return false;
+				}
+				if (singleDef.IsDrug && singleDef.ingestible.drugCategory == DrugCategory.Hard && !new HistoryEvent(HistoryEventDefOf.AdministeredHardDrug, pawn.Named(HistoryEventArgsNames.Doer)).Notify_PawnAboutToDo_Job())
+				{
+					return false;
+				}
+				if (singleDef.IsNonMedicalDrug && !new HistoryEvent(HistoryEventDefOf.AdministeredRecreationalDrug, pawn.Named(HistoryEventArgsNames.Doer)).Notify_PawnAboutToDo_Job())
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
 		public override void ExposeData()
 		{
 			base.ExposeData();
 			Scribe_BodyParts.Look(ref part, "part");
-			Scribe_Defs.Look(ref consumedInitialMedicineDef, "consumedInitialMedicineDef");
+			Scribe_Collections.Look(ref consumedMedicine, "consumedMedicine");
+			Scribe_Collections.Look(ref uniqueRequiredIngredients, "uniqueRequiredIngredients", LookMode.Reference);
+			Scribe_Values.Look(ref iterationCompleted, "iterationCompleted", defaultValue: false);
+			if (Scribe.mode == LoadSaveMode.LoadingVars)
+			{
+				ThingDef value = null;
+				Scribe_Defs.Look(ref value, "consumedInitialMedicineDef");
+				if (value != null)
+				{
+					if (consumedMedicine == null)
+					{
+						consumedMedicine = new Dictionary<ThingDef, int>();
+					}
+					consumedMedicine.Add(value, 1);
+				}
+			}
+			else if (Scribe.mode == LoadSaveMode.PostLoadInit && consumedMedicine == null)
+			{
+				consumedMedicine = new Dictionary<ThingDef, int>();
+			}
 			BackCompatibility.PostExposeData(this);
 		}
 
@@ -152,7 +230,7 @@ namespace RimWorld
 		{
 			Bill_Medical obj = (Bill_Medical)base.Clone();
 			obj.part = part;
-			obj.consumedInitialMedicineDef = consumedInitialMedicineDef;
+			obj.consumedMedicine = new Dictionary<ThingDef, int>(consumedMedicine);
 			return obj;
 		}
 	}

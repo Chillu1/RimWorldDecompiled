@@ -10,7 +10,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (me.GetSpouse() == null)
+			if (me.GetSpouseCount(includeDead: true) == 0)
 			{
 				return false;
 			}
@@ -19,7 +19,14 @@ namespace RimWorld
 			{
 				return false;
 			}
-			return worker.InRelation(me.GetSpouse(), other);
+			foreach (Pawn spouse in me.GetSpouses(includeDead: true))
+			{
+				if (worker.InRelation(spouse, other))
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 }

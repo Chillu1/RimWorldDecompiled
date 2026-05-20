@@ -1,4 +1,5 @@
 using RimWorld;
+using RimWorld.Utility;
 using UnityEngine;
 using Verse.AI;
 
@@ -10,7 +11,7 @@ namespace Verse
 
 		public override Texture2D UIIcon => TexCommand.Attack;
 
-		public override bool ValidateTarget(LocalTargetInfo target)
+		public override bool ValidateTarget(LocalTargetInfo target, bool showMessages = true)
 		{
 			if (!base.ValidateTarget(target))
 			{
@@ -27,7 +28,7 @@ namespace Verse
 		{
 			Job job = JobMaker.MakeJob(JobDefOf.UseVerbOnThingStatic, target);
 			job.verbToUse = this;
-			CasterPawn.jobs.TryTakeOrderedJob(job);
+			CasterPawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
 		}
 	}
 }

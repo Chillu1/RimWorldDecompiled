@@ -14,6 +14,8 @@ namespace RimWorld.QuestGen
 
 		public const string WalkInSpot = "walkInSpot";
 
+		public const string DropSpot = "dropSpot";
+
 		public const string RaidPawnKinds = "raidPawnKinds";
 
 		public const string AllThreats = "allThreats";
@@ -21,6 +23,8 @@ namespace RimWorld.QuestGen
 		public const string RaidArrivalModeInfo = "raidArrivalModeInfo";
 
 		public const string Asker = "asker";
+
+		public const string Sender = "sender";
 
 		public const string TitleHolder = "titleHolder";
 
@@ -58,11 +62,17 @@ namespace RimWorld.QuestGen
 
 		public const string AllowViolentQuests = "allowViolentQuests";
 
+		public const string AllowChildren = "allowChildren";
+
 		public const string Refugee = "refugee";
 
 		public const string Prisoner = "prisoner";
 
 		public const string GeneratedItemStashThings = "generatedItemStashThings";
+
+		public const string RefugeeKind = "refugeeKind";
+
+		public const string RefugeeFactionChance = "refugeeFactionChance";
 
 		public const string DebugDontGenerateRewardThings = "debugDontGenerateRewardThings";
 
@@ -79,5 +89,23 @@ namespace RimWorld.QuestGen
 		public const string ConditionCauser = "conditionCauser";
 
 		public const string Population = "population";
+
+		public const string HivesCount = "hivesCount";
+
+		public const string InfestationLocation = "infestationLocation";
+
+		public const string InfestationInSignalTag = "infestationInSignalTag";
+
+		public const string OverridePawnGenParams = "overridePawnGenParams";
+
+		public const string ChildCount = "childCount";
+
+		public const string DiscoveryMethod = "discoveryMethod";
+
+		public const string Tile = "tile";
+
+		public const string Site = "site";
+
+		public const string SiteTile = "siteTile";
 	}
 }

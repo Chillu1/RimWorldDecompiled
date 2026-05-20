@@ -21,7 +21,7 @@ namespace RimWorld
 			{
 				if (canSpawnHives && HiveUtility.TotalSpawnedHivesCount(parent.Map) < 30)
 				{
-					return Find.Storyteller.difficultyValues.enemyReproductionRateFactor > 0f;
+					return Find.Storyteller.difficulty.enemyReproductionRateFactor > 0f;
 				}
 				return false;
 			}
@@ -39,7 +39,7 @@ namespace RimWorld
 		{
 			base.CompTick();
 			CompCanBeDormant comp = parent.GetComp<CompCanBeDormant>();
-			if ((comp?.Awake ?? true) && !wasActivated)
+			if ((comp == null || comp.Awake) && !wasActivated)
 			{
 				CalculateNextHiveSpawnTick();
 				wasActivated = true;
@@ -59,7 +59,7 @@ namespace RimWorld
 
 		public override string CompInspectStringExtra()
 		{
-			if (!canSpawnHives || Find.Storyteller.difficultyValues.enemyReproductionRateFactor <= 0f)
+			if (!canSpawnHives || Find.Storyteller.difficulty.enemyReproductionRateFactor <= 0f)
 			{
 				return "DormantHiveNotReproducing".Translate();
 			}
@@ -84,9 +84,9 @@ namespace RimWorld
 				}
 			}
 			float num3 = Props.ReproduceRateFactorFromNearbyHiveCountCurve.Evaluate(num);
-			if (Find.Storyteller.difficultyValues.enemyReproductionRateFactor > 0f)
+			if (Find.Storyteller.difficulty.enemyReproductionRateFactor > 0f)
 			{
-				nextHiveSpawnTick = Find.TickManager.TicksGame + (int)(Props.HiveSpawnIntervalDays.RandomInRange * 60000f / (num3 * Find.Storyteller.difficultyValues.enemyReproductionRateFactor));
+				nextHiveSpawnTick = Find.TickManager.TicksGame + (int)(Props.HiveSpawnIntervalDays.RandomInRange * 60000f / (num3 * Find.Storyteller.difficulty.enemyReproductionRateFactor));
 			}
 			else
 			{
@@ -96,12 +96,17 @@ namespace RimWorld
 
 		public bool TrySpawnChildHive(bool ignoreRoofedRequirement, out Hive newHive)
 		{
+			IntVec3 loc = FindChildHiveLocation(parent.Position, parent.Map, parent.def, Props, ignoreRoofedRequirement, allowUnreachable: false);
+			return TrySpawnChildHive(loc, out newHive);
+		}
+
+		public bool TrySpawnChildHive(IntVec3 loc, out Hive newHive)
+		{
 			if (!CanSpawnChildHive)
 			{
 				newHive = null;
 				return false;
 			}
-			IntVec3 loc = FindChildHiveLocation(parent.Position, parent.Map, parent.def, Props, ignoreRoofedRequirement, allowUnreachable: false);
 			if (!loc.IsValid)
 			{
 				newHive = null;
@@ -112,8 +117,7 @@ namespace RimWorld
 			{
 				newHive.SetFaction(parent.Faction);
 			}
-			Hive hive = parent as Hive;
-			if (hive != null)
+			if (parent is Hive hive)
 			{
 				if (hive.CompDormant.Awake)
 				{
@@ -143,7 +147,7 @@ namespace RimWorld
 					{
 						minDist = 0f;
 					}
-					flag = CellFinder.TryFindRandomReachableCellNear(pos, map, props.HiveSpawnRadius, TraverseParms.For(TraverseMode.NoPassClosedDoors), (IntVec3 c) => CanSpawnHiveAt(c, map, pos, parentDef, minDist, ignoreRoofedRequirement), null, out result);
+					flag = CellFinder.TryFindRandomReachableNearbyCell(pos, map, props.HiveSpawnRadius, TraverseParms.For(TraverseMode.NoPassClosedDoors), (IntVec3 c) => CanSpawnHiveAt(c, map, pos, parentDef, minDist, ignoreRoofedRequirement), null, out result);
 				}
 				if (flag)
 				{
@@ -190,10 +194,10 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (Prefs.DevMode)
+			if (DebugSettings.ShowDevGizmos)
 			{
 				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "Dev: Reproduce";
+				command_Action.defaultLabel = "DEV: Reproduce";
 				command_Action.icon = TexCommand.GatherSpotActive;
 				command_Action.action = delegate
 				{

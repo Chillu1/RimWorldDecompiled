@@ -19,11 +19,16 @@ namespace RimWorld.Planet
 		{
 		}
 
-		public virtual void ExposeData()
+		public virtual void WorldComponentOnGUI()
 		{
 		}
 
-		public virtual void FinalizeInit()
+		public virtual void ExposeData()
+		{
+			BackCompatibility.PostExposeData(this);
+		}
+
+		public virtual void FinalizeInit(bool fromLoad)
 		{
 		}
 	}

@@ -56,7 +56,9 @@ namespace Verse
 				Find.Tutor.TutorOnGUI();
 			}
 			ReorderableWidget.ReorderableWidgetOnGUI_BeforeWindowStack();
+			DragAndDropWidget.DragAndDropWidgetOnGUI_BeforeWindowStack();
 			windows.WindowStackOnGUI();
+			DragAndDropWidget.DragAndDropWidgetOnGUI_AfterWindowStack();
 			ReorderableWidget.ReorderableWidgetOnGUI_AfterWindowStack();
 			Widgets.WidgetsOnGUI();
 			if (Find.World != null)
@@ -81,7 +83,7 @@ namespace Verse
 
 		private void DoMainMenu()
 		{
-			if (!WorldRendererUtility.WorldRenderedNow)
+			if (!WorldRendererUtility.WorldSelected)
 			{
 				UIMenuBackgroundManager.background.BackgroundOnGUI();
 				if (ShouldDoMainMenu)

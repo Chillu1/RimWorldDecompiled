@@ -9,13 +9,10 @@ namespace RimWorld
 
 		public override IEnumerable<FiringIncident> MakeIntervalIncidents(IIncidentTarget target)
 		{
-			if (Props.minDanger != 0)
+			Map map = target as Map;
+			if ((Props.minDanger != StoryDanger.None && (map == null || (int)map.dangerWatcher.DangerRating < (int)Props.minDanger)) || (Props.minWealth > 0f && (map == null || map.wealthWatcher.WealthTotal < Props.minWealth)))
 			{
-				Map map = target as Map;
-				if (map == null || (int)map.dangerWatcher.DangerRating < (int)Props.minDanger)
-				{
-					yield break;
-				}
+				yield break;
 			}
 			float num = StorytellerUtility.AllyIncidentFraction(Props.fullAlliesOnly);
 			if (num <= 0f)

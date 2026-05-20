@@ -14,33 +14,35 @@ namespace RimWorld.Planet
 
 		public static readonly Material UngeneratedPlanetParts;
 
+		public static readonly Material Clouds;
+
 		public static readonly Material Rivers;
 
 		public static readonly Material RiversBorder;
 
 		public static readonly Material Roads;
 
-		public static int DebugTileRenderQueue;
+		public const int DebugTileRenderQueue = 3510;
 
-		public static int WorldObjectRenderQueue;
+		public const int WorldObjectRenderQueue = 3550;
 
-		public static int WorldLineRenderQueue;
+		public const int WorldLineRenderQueue = 3590;
 
-		public static int DynamicObjectRenderQueue;
+		public const int DynamicObjectRenderQueue = 3600;
 
-		public static int FeatureNameRenderQueue;
+		public const int FeatureNameRenderQueue = 3610;
 
 		public static readonly Material MouseTile;
 
 		public static readonly Material SelectedTile;
+
+		public static readonly Material ClosestTile;
 
 		public static readonly Material CurrentMapTile;
 
 		public static readonly Material Stars;
 
 		public static readonly Material Sun;
-
-		public static readonly Material PlanetGlow;
 
 		public static readonly Material SmallHills;
 
@@ -51,6 +53,8 @@ namespace RimWorld.Planet
 		public static readonly Material ImpassableMountains;
 
 		public static readonly Material VertexColor;
+
+		public static readonly Material VertexColorTransparent;
 
 		private static readonly Material TargetSquareMatSingle;
 
@@ -95,25 +99,22 @@ namespace RimWorld.Planet
 			WorldIce = MatLoader.LoadMat("World/WorldIce", 3500);
 			WorldOcean = MatLoader.LoadMat("World/WorldOcean", 3500);
 			UngeneratedPlanetParts = MatLoader.LoadMat("World/UngeneratedPlanetParts", 3500);
+			Clouds = MatLoader.LoadMat("World/Clouds", 3700);
 			Rivers = MatLoader.LoadMat("World/Rivers", 3530);
 			RiversBorder = MatLoader.LoadMat("World/RiversBorder", 3520);
 			Roads = MatLoader.LoadMat("World/Roads", 3540);
-			DebugTileRenderQueue = 3510;
-			WorldObjectRenderQueue = 3550;
-			WorldLineRenderQueue = 3590;
-			DynamicObjectRenderQueue = 3600;
-			FeatureNameRenderQueue = 3610;
 			MouseTile = MaterialPool.MatFrom("World/MouseTile", ShaderDatabase.WorldOverlayAdditive, 3560);
 			SelectedTile = MaterialPool.MatFrom("World/SelectedTile", ShaderDatabase.WorldOverlayAdditive, 3560);
+			ClosestTile = MaterialPool.MatFrom("World/CurrentMapTile", ShaderDatabase.WorldOverlayAdditive, 3560);
 			CurrentMapTile = MaterialPool.MatFrom("World/CurrentMapTile", ShaderDatabase.WorldOverlayTransparent, 3560);
 			Stars = MatLoader.LoadMat("World/Stars");
 			Sun = MatLoader.LoadMat("World/Sun");
-			PlanetGlow = MatLoader.LoadMat("World/PlanetGlow");
 			SmallHills = MaterialPool.MatFrom("World/Hills/SmallHills", ShaderDatabase.WorldOverlayTransparentLit, 3510);
 			LargeHills = MaterialPool.MatFrom("World/Hills/LargeHills", ShaderDatabase.WorldOverlayTransparentLit, 3510);
 			Mountains = MaterialPool.MatFrom("World/Hills/Mountains", ShaderDatabase.WorldOverlayTransparentLit, 3510);
 			ImpassableMountains = MaterialPool.MatFrom("World/Hills/Impassable", ShaderDatabase.WorldOverlayTransparentLit, 3510);
 			VertexColor = MatLoader.LoadMat("World/WorldVertexColor");
+			VertexColorTransparent = MatLoader.LoadMat("World/WorldVertexColorTransparent", 3545);
 			TargetSquareMatSingle = MaterialPool.MatFrom("UI/Overlays/TargetHighlight_Square", ShaderDatabase.Transparent, 3560);
 			NumMatsPerMode = 50;
 			OverlayModeMatOcean = SolidColorMaterials.NewSolidColorMaterial(new Color(0.09f, 0.18f, 0.2f), ShaderDatabase.Transparent);

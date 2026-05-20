@@ -11,9 +11,9 @@ namespace RimWorld.Planet
 
 		private float progress;
 
-		private const int UpdateProgressIntervalTicks = 10;
+		private const int UpdateProgressIntervalTicks = 15;
 
-		public Pair<ThingDef, float> ForagedFoodPerDay => ForagedFoodPerDayCalculator.ForagedFoodPerDay(caravan);
+		public (ThingDef food, float perDay) ForagedFoodPerDay => ForagedFoodPerDayCalculator.ForagedFoodPerDay(caravan);
 
 		public string ForagedFoodPerDayExplanation
 		{
@@ -35,9 +35,9 @@ namespace RimWorld.Planet
 			Scribe_Values.Look(ref progress, "progress", 0f);
 		}
 
-		public void ForageTrackerTick()
+		public void ForageTrackerTickInterval(int delta)
 		{
-			if (caravan.IsHashIntervalTick(10))
+			if (caravan.IsHashIntervalTick(15, delta))
 			{
 				UpdateProgressInterval();
 			}
@@ -45,10 +45,10 @@ namespace RimWorld.Planet
 
 		public IEnumerable<Gizmo> GetGizmos()
 		{
-			if (Prefs.DevMode)
+			if (DebugSettings.ShowDevGizmos)
 			{
 				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "Dev: Forage";
+				command_Action.defaultLabel = "DEV: Forage";
 				command_Action.action = Forage;
 				yield return command_Action;
 			}
@@ -56,7 +56,7 @@ namespace RimWorld.Planet
 
 		private void UpdateProgressInterval()
 		{
-			float num = 10f * ForagedFoodPerDayCalculator.GetProgressPerTick(caravan);
+			float num = 15f * ForagedFoodPerDayCalculator.GetProgressPerTick(caravan);
 			progress += num;
 			if (progress >= 1f)
 			{

@@ -26,7 +26,12 @@ namespace RimWorld
 
 		public override void FireEvent()
 		{
-			base.FireEvent();
+			DoStrike(strikeLoc, map, ref boltMesh);
+		}
+
+		public static void DoStrike(IntVec3 strikeLoc, Map map, ref Mesh boltMesh)
+		{
+			SoundDefOf.Thunder_OffMap.PlayOneShotOnCamera(map);
 			if (!strikeLoc.IsValid)
 			{
 				strikeLoc = CellFinderLoose.RandomCellWith((IntVec3 sq) => sq.Standable(map) && !map.roofGrid.Roofed(sq), map);
@@ -36,11 +41,11 @@ namespace RimWorld
 			{
 				GenExplosion.DoExplosion(strikeLoc, map, 1.9f, DamageDefOf.Flame, null);
 				Vector3 loc = strikeLoc.ToVector3Shifted();
-				for (int i = 0; i < 4; i++)
+				for (int num = 0; num < 4; num++)
 				{
-					MoteMaker.ThrowSmoke(loc, map, 1.5f);
-					MoteMaker.ThrowMicroSparks(loc, map);
-					MoteMaker.ThrowLightningGlow(loc, map, 1.5f);
+					FleckMaker.ThrowSmoke(loc, map, 1.5f);
+					FleckMaker.ThrowMicroSparks(loc, map);
+					FleckMaker.ThrowLightningGlow(loc, map, 1.5f);
 				}
 			}
 			SoundInfo info = SoundInfo.InMap(new TargetInfo(strikeLoc, map));
@@ -49,7 +54,7 @@ namespace RimWorld
 
 		public override void WeatherEventDraw()
 		{
-			Graphics.DrawMesh(boltMesh, strikeLoc.ToVector3ShiftedWithAltitude(AltitudeLayer.Weather), Quaternion.identity, FadedMaterialPool.FadedVersionOf(LightningMat, base.LightningBrightness), 0);
+			Graphics.DrawMesh(boltMesh, strikeLoc.ToVector3ShiftedWithAltitude(AltitudeLayer.Weather), Quaternion.identity, FadedMaterialPool.FadedVersionOf(LightningMat, LightningBrightness), 0);
 		}
 	}
 }

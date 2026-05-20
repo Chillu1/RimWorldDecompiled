@@ -15,6 +15,9 @@ namespace RimWorld
 
 		public static ClamorDef Ability;
 
+		[MayRequireBiotech]
+		public static ClamorDef BabyCry;
+
 		static ClamorDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(ClamorDefOf));

@@ -26,11 +26,9 @@ namespace Verse
 				{
 					options.Add(new DiaOption(option));
 				}
+				return;
 			}
-			else
-			{
-				options.Add(new DiaOption("OK".Translate()));
-			}
+			options.Add(new DiaOption("OK".Translate()));
 		}
 
 		public void PreClose()

@@ -118,7 +118,7 @@ namespace Verse.Noise
 			{
 				DebugViewSettings.drawRecordedNoise = false;
 			}
-			if (WorldRendererUtility.WorldRenderedNow)
+			if (WorldRendererUtility.WorldSelected)
 			{
 				if (planetNoises.Any() && Widgets.ButtonText(new Rect(400f, 40f, 200f, 30f), "Next planet noise"))
 				{

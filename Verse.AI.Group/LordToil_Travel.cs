@@ -8,7 +8,7 @@ namespace Verse.AI.Group
 
 		public override IntVec3 FlagLoc => Data.dest;
 
-		private LordToilData_Travel Data => (LordToilData_Travel)data;
+		protected LordToilData_Travel Data => (LordToilData_Travel)data;
 
 		public override bool AllowSatisfyLongNeeds => false;
 
@@ -22,10 +22,10 @@ namespace Verse.AI.Group
 
 		public override void UpdateAllDuties()
 		{
-			LordToilData_Travel data = Data;
+			LordToilData_Travel lordToilData_Travel = Data;
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
-				PawnDuty pawnDuty = new PawnDuty(DutyDefOf.TravelOrLeave, data.dest);
+				PawnDuty pawnDuty = new PawnDuty(DutyDefOf.TravelOrLeave, lordToilData_Travel.dest);
 				pawnDuty.maxDanger = maxDanger;
 				lord.ownedPawns[i].mindState.duty = pawnDuty;
 			}
@@ -37,12 +37,12 @@ namespace Verse.AI.Group
 			{
 				return;
 			}
-			LordToilData_Travel data = Data;
+			LordToilData_Travel lordToilData_Travel = Data;
 			bool flag = true;
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
 				Pawn pawn = lord.ownedPawns[i];
-				if (!pawn.Position.InHorDistOf(data.dest, AllArrivedCheckRadius) || !pawn.CanReach(data.dest, PathEndMode.ClosestTouch, Danger.Deadly))
+				if (!pawn.Position.InHorDistOf(lordToilData_Travel.dest, AllArrivedCheckRadius) || !pawn.CanReach(lordToilData_Travel.dest, PathEndMode.ClosestTouch, Danger.Deadly))
 				{
 					flag = false;
 					break;

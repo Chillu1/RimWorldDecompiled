@@ -52,26 +52,26 @@ namespace Verse.AI
 
 		public static string GetResolvedJobReport(string baseText, LocalTargetInfo a, LocalTargetInfo b, LocalTargetInfo c)
 		{
-			GetText(a, out var backCompatibleText2, out var obj2);
-			GetText(b, out var backCompatibleText3, out var obj3);
-			GetText(c, out var backCompatibleText4, out var obj4);
-			return GetResolvedJobReportRaw(baseText, backCompatibleText2, obj2, backCompatibleText3, obj3, backCompatibleText4, obj4);
-			static void GetText(LocalTargetInfo x, out string backCompatibleText, out object obj)
+			GetText(a, out var backCompatibleText, out var obj);
+			GetText(b, out var backCompatibleText2, out var obj2);
+			GetText(c, out var backCompatibleText3, out var obj3);
+			return GetResolvedJobReportRaw(baseText, backCompatibleText, obj, backCompatibleText2, obj2, backCompatibleText3, obj3);
+			static void GetText(LocalTargetInfo x, out string reference, out object reference2)
 			{
 				if (!x.IsValid)
 				{
-					backCompatibleText = "UnknownLower".Translate();
-					obj = backCompatibleText;
+					reference = "UnknownLower".Translate();
+					reference2 = reference;
 				}
-				else if (x.HasThing)
+				else if (x.HasThing && !x.ThingDiscarded)
 				{
-					backCompatibleText = x.Thing.LabelShort;
-					obj = x.Thing;
+					reference = x.Thing.LabelShort;
+					reference2 = x.Thing;
 				}
 				else
 				{
-					backCompatibleText = "AreaLower".Translate();
-					obj = backCompatibleText;
+					reference = "AreaLower".Translate();
+					reference2 = reference;
 				}
 			}
 		}

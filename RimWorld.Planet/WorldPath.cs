@@ -7,11 +7,13 @@ namespace RimWorld.Planet
 {
 	public class WorldPath : IDisposable
 	{
-		private List<int> nodes = new List<int>(128);
+		private readonly List<PlanetTile> nodes = new List<PlanetTile>(128);
 
 		private float totalCostInt;
 
 		private int curNodeIndex;
+
+		private PlanetLayer layer;
 
 		public bool inUse;
 
@@ -21,26 +23,38 @@ namespace RimWorld.Planet
 
 		public int NodesLeftCount => curNodeIndex + 1;
 
-		public List<int> NodesReversed => nodes;
+		public List<PlanetTile> NodesReversed => nodes;
 
-		public int FirstNode => nodes[nodes.Count - 1];
+		public PlanetTile FirstNode
+		{
+			get
+			{
+				List<PlanetTile> list = nodes;
+				return list[list.Count - 1];
+			}
+		}
 
-		public int LastNode => nodes[0];
+		public PlanetTile LastNode => nodes[0];
+
+		public PlanetLayer Layer => layer;
+
+		public int NodeCount => nodes.Count;
 
 		public static WorldPath NotFound => WorldPathPool.NotFoundPath;
 
-		public void AddNodeAtStart(int tile)
+		public void AddNodeAtStart(PlanetTile tile)
 		{
 			nodes.Add(tile);
 		}
 
-		public void SetupFound(float totalCost)
+		public void SetupFound(float totalCost, PlanetLayer planetLayer)
 		{
 			if (this == NotFound)
 			{
-				Log.Warning("Calling SetupFound with totalCost=" + totalCost + " on WorldPath.NotFound");
+				Log.Warning($"Calling SetupFound with totalCost={totalCost} on WorldPath.NotFound");
 				return;
 			}
+			layer = planetLayer;
 			totalCostInt = totalCost;
 			curNodeIndex = nodes.Count - 1;
 		}
@@ -57,6 +71,7 @@ namespace RimWorld.Planet
 				totalCostInt = 0f;
 				nodes.Clear();
 				inUse = false;
+				layer = null;
 			}
 		}
 
@@ -68,14 +83,14 @@ namespace RimWorld.Planet
 			};
 		}
 
-		public int ConsumeNextNode()
+		public PlanetTile ConsumeNextNode()
 		{
-			int result = Peek(1);
+			PlanetTile result = Peek(1);
 			curNodeIndex--;
 			return result;
 		}
 
-		public int Peek(int nodesAhead)
+		public PlanetTile Peek(int nodesAhead)
 		{
 			return nodes[curNodeIndex - nodesAhead];
 		}
@@ -90,7 +105,7 @@ namespace RimWorld.Planet
 			{
 				return "WorldPath(not in use)";
 			}
-			return "WorldPath(nodeCount= " + nodes.Count + ((nodes.Count > 0) ? (" first=" + FirstNode + " last=" + LastNode) : "") + " cost=" + totalCostInt + " )";
+			return "WorldPath(nodeCount= " + nodes.Count + ((nodes.Count > 0) ? (" first=" + FirstNode.ToString() + " last=" + LastNode) : "") + " cost=" + totalCostInt + " )";
 		}
 
 		public void DrawPath(Caravan pathingCaravan)
@@ -100,21 +115,21 @@ namespace RimWorld.Planet
 				return;
 			}
 			WorldGrid worldGrid = Find.WorldGrid;
-			float d = 0.05f;
+			float num = 0.08f;
 			for (int i = 0; i < NodesLeftCount - 1; i++)
 			{
 				Vector3 tileCenter = worldGrid.GetTileCenter(Peek(i));
 				Vector3 tileCenter2 = worldGrid.GetTileCenter(Peek(i + 1));
-				tileCenter += tileCenter.normalized * d;
-				tileCenter2 += tileCenter2.normalized * d;
+				tileCenter += tileCenter.normalized * num;
+				tileCenter2 += tileCenter2.normalized * num;
 				GenDraw.DrawWorldLineBetween(tileCenter, tileCenter2);
 			}
 			if (pathingCaravan != null)
 			{
 				Vector3 drawPos = pathingCaravan.DrawPos;
 				Vector3 tileCenter3 = worldGrid.GetTileCenter(Peek(0));
-				drawPos += drawPos.normalized * d;
-				tileCenter3 += tileCenter3.normalized * d;
+				drawPos += drawPos.normalized * num;
+				tileCenter3 += tileCenter3.normalized * num;
 				if ((drawPos - tileCenter3).sqrMagnitude > 0.005f)
 				{
 					GenDraw.DrawWorldLineBetween(drawPos, tileCenter3);

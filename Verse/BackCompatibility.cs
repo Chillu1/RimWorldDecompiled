@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Xml;
 using RimWorld;
+using UnityEngine;
 using Verse.AI.Group;
 
 namespace Verse
@@ -19,13 +21,34 @@ namespace Verse
 			new BackCompatibilityConverter_0_18(),
 			new BackCompatibilityConverter_0_19(),
 			new BackCompatibilityConverter_1_0(),
+			new BackCompatibilityConverter_1_2(),
+			new BackCompatibilityConverter_1_3(),
+			new BackCompatibilityConverter_1_4(),
+			new BackCompatibilityConverter_1_5(),
 			new BackCompatibilityConverter_Universal()
 		};
 
 		private static readonly List<Tuple<string, Type>> RemovedDefs = new List<Tuple<string, Type>>
 		{
+			new Tuple<string, Type>("PsychicSilencer", typeof(HediffDef)),
 			new Tuple<string, Type>("PsychicSilencer", typeof(ThingDef)),
-			new Tuple<string, Type>("PsychicSilencer", typeof(HediffDef))
+			new Tuple<string, Type>("Gun_Slugthrower", typeof(ThingDef)),
+			new Tuple<string, Type>("LazyWorker78", typeof(BackstoryDef)),
+			new Tuple<string, Type>("ExMilitary9", typeof(BackstoryDef)),
+			new Tuple<string, Type>("InsuranceBroker9", typeof(BackstoryDef)),
+			new Tuple<string, Type>("StreetUrchin22", typeof(BackstoryDef)),
+			new Tuple<string, Type>("CardCounter25", typeof(BackstoryDef)),
+			new Tuple<string, Type>("CaesicMarshal72", typeof(BackstoryDef)),
+			new Tuple<string, Type>("GrownMate56", typeof(BackstoryDef)),
+			new Tuple<string, Type>("DepartmentHead61", typeof(BackstoryDef)),
+			new Tuple<string, Type>("ArmyCommander14", typeof(BackstoryDef)),
+			new Tuple<string, Type>("DivorceKid95", typeof(BackstoryDef)),
+			new Tuple<string, Type>("PetTorturer60", typeof(BackstoryDef)),
+			new Tuple<string, Type>("PoliticalClimber28", typeof(BackstoryDef)),
+			new Tuple<string, Type>("NoInteraction", typeof(PrisonerInteractionModeDef)),
+			new Tuple<string, Type>("Study", typeof(DesignationDef)),
+			new Tuple<string, Type>("Mote_HateChant", typeof(ThingDef)),
+			new Tuple<string, Type>("GeneticChemicalDependency", typeof(ThoughtDef))
 		};
 
 		private static List<Thing> tmpThingsToSpawnLater = new List<Thing>();
@@ -67,7 +90,7 @@ namespace Verse
 					}
 					catch (Exception ex)
 					{
-						Log.Error(string.Concat("Error in PreLoadSavegame of ", conversionChain[i].GetType(), "\n", ex));
+						Log.Error("Error in PreLoadSavegame of " + conversionChain[i].GetType()?.ToString() + "\n" + ex);
 					}
 				}
 			}
@@ -85,7 +108,7 @@ namespace Verse
 					}
 					catch (Exception ex)
 					{
-						Log.Error(string.Concat("Error in PostLoadSavegame of ", conversionChain[i].GetType(), "\n", ex));
+						Log.Error("Error in PostLoadSavegame of " + conversionChain[i].GetType()?.ToString() + "\n" + ex);
 					}
 				}
 			}
@@ -93,6 +116,10 @@ namespace Verse
 
 		public static string BackCompatibleDefName(Type defType, string defName, bool forDefInjections = false, XmlNode node = null)
 		{
+			if (CheckSaveIdenticalToCurrentEnvironment())
+			{
+				return defName;
+			}
 			if (GenDefDatabase.GetDefSilentFail(defType, defName, specialCaseForSoundDefs: false) != null)
 			{
 				return defName;
@@ -100,7 +127,7 @@ namespace Verse
 			string text = defName;
 			for (int i = 0; i < conversionChain.Count; i++)
 			{
-				if (Scribe.mode != 0 && !conversionChain[i].AppliesToLoadedGameVersion())
+				if (Scribe.mode != LoadSaveMode.Inactive && !conversionChain[i].AppliesToLoadedGameVersion())
 				{
 					continue;
 				}
@@ -114,7 +141,7 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					Log.Error(string.Concat("Error in BackCompatibleDefName of ", conversionChain[i].GetType(), "\n", ex));
+					Log.Error("Error in BackCompatibleDefName of " + conversionChain[i].GetType()?.ToString() + "\n" + ex);
 				}
 			}
 			return text;
@@ -138,6 +165,10 @@ namespace Verse
 
 		public static Type GetBackCompatibleType(Type baseType, string providedClassName, XmlNode node)
 		{
+			if (CheckSaveIdenticalToCurrentEnvironment())
+			{
+				return GenTypes.GetTypeInAnyAssembly(providedClassName);
+			}
 			for (int i = 0; i < conversionChain.Count; i++)
 			{
 				if (!conversionChain[i].AppliesToLoadedGameVersion())
@@ -154,7 +185,31 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					Log.Error(string.Concat("Error in GetBackCompatibleType of ", conversionChain[i].GetType(), "\n", ex));
+					Log.Error("Error in GetBackCompatibleType of " + conversionChain[i].GetType()?.ToString() + "\n" + ex);
+				}
+			}
+			return GenTypes.GetTypeInAnyAssembly(providedClassName);
+		}
+
+		public static Type GetBackCompatibleTypeDirect(Type baseType, string providedClassName)
+		{
+			for (int i = 0; i < conversionChain.Count; i++)
+			{
+				if (!conversionChain[i].AppliesToVersion(VersionControl.CurrentMajor, VersionControl.CurrentMinor))
+				{
+					continue;
+				}
+				try
+				{
+					Type backCompatibleType = conversionChain[i].GetBackCompatibleType(baseType, providedClassName, null);
+					if (backCompatibleType != null)
+					{
+						return backCompatibleType;
+					}
+				}
+				catch (Exception ex)
+				{
+					Log.Error("Error in GetBackCompatibleType of " + conversionChain[i].GetType()?.ToString() + "\n" + ex);
 				}
 			}
 			return GenTypes.GetTypeInAnyAssembly(providedClassName);
@@ -162,6 +217,10 @@ namespace Verse
 
 		public static int GetBackCompatibleBodyPartIndex(BodyDef body, int index)
 		{
+			if (CheckSaveIdenticalToCurrentEnvironment())
+			{
+				return index;
+			}
 			for (int i = 0; i < conversionChain.Count; i++)
 			{
 				if (conversionChain[i].AppliesToLoadedGameVersion())
@@ -172,7 +231,7 @@ namespace Verse
 					}
 					catch (Exception ex)
 					{
-						Log.Error(string.Concat("Error in GetBackCompatibleBodyPartIndex of ", body, "\n", ex));
+						Log.Error("Error in GetBackCompatibleBodyPartIndex of " + body?.ToString() + "\n" + ex);
 					}
 				}
 			}
@@ -193,7 +252,7 @@ namespace Verse
 
 		public static void PostExposeData(object obj)
 		{
-			if (Scribe.mode == LoadSaveMode.Saving)
+			if (Scribe.mode == LoadSaveMode.Saving || CheckSaveIdenticalToCurrentEnvironment())
 			{
 				return;
 			}
@@ -207,7 +266,7 @@ namespace Verse
 					}
 					catch (Exception ex)
 					{
-						Log.Error(string.Concat("Error in PostExposeData of ", conversionChain[i].GetType(), "\n", ex));
+						Log.Error("Error in PostExposeData of " + conversionChain[i].GetType()?.ToString() + "\n" + ex);
 					}
 				}
 			}
@@ -215,6 +274,10 @@ namespace Verse
 
 		public static void PostCouldntLoadDef(string defName)
 		{
+			if (CheckSaveIdenticalToCurrentEnvironment())
+			{
+				return;
+			}
 			for (int i = 0; i < conversionChain.Count; i++)
 			{
 				if (conversionChain[i].AppliesToLoadedGameVersion())
@@ -225,7 +288,7 @@ namespace Verse
 					}
 					catch (Exception ex)
 					{
-						Log.Error(string.Concat("Error in PostCouldntLoadDef of ", conversionChain[i].GetType(), "\n", ex));
+						Log.Error("Error in PostCouldntLoadDef of " + conversionChain[i].GetType()?.ToString() + "\n" + ex);
 					}
 				}
 			}
@@ -251,6 +314,18 @@ namespace Verse
 			}
 			foreach (TrainableDef item in DefDatabase<TrainableDef>.AllDefsListForReading)
 			{
+				if (!tracker.CanAssignToTrain(item).Accepted)
+				{
+					wantedTrainables[item] = false;
+					learned[item] = false;
+					steps[item] = 0;
+					if (item == TrainableDefOf.Obedience && tracker.pawn.playerSettings != null)
+					{
+						tracker.pawn.playerSettings.Master = null;
+						tracker.pawn.playerSettings.followDrafted = false;
+						tracker.pawn.playerSettings.followFieldwork = false;
+					}
+				}
 				if (tracker.GetSteps(item) == item.steps)
 				{
 					tracker.Train(item, null, complete: true);
@@ -303,7 +378,7 @@ namespace Verse
 
 		public static bool CheckSpawnBackCompatibleThingAfterLoading(Thing thing, Map map)
 		{
-			if (VersionControl.MajorFromVersionString(ScribeMetaHeaderUtility.loadedGameVersion) == 0 && VersionControl.MinorFromVersionString(ScribeMetaHeaderUtility.loadedGameVersion) <= 18 && thing.stackCount > thing.def.stackLimit && thing.stackCount != 1 && thing.def.stackLimit != 1)
+			if (ScribeMetaHeaderUtility.loadedGameVersionMajor == 0 && ScribeMetaHeaderUtility.loadedGameVersionMinor <= 18 && thing.stackCount > thing.def.stackLimit && thing.stackCount != 1 && thing.def.stackLimit != 1)
 			{
 				tmpThingsToSpawnLater.Add(thing);
 				return true;
@@ -327,10 +402,46 @@ namespace Verse
 
 		public static void FactionManagerPostLoadInit()
 		{
-			if (ModsConfig.RoyaltyActive && Find.FactionManager.FirstFactionOfDef(FactionDefOf.Empire) == null)
+			if (ModsConfig.RoyaltyActive && Find.FactionManager.FirstFactionOfDef(FactionDefOf.Empire) == null && Find.World.info.factions == null)
 			{
-				Faction faction = FactionGenerator.NewGeneratedFaction(FactionDefOf.Empire);
-				Find.FactionManager.Add(faction);
+				FactionGenerator.CreateFactionAndAddToManager(FactionDefOf.Empire);
+			}
+			if (ModsConfig.AnomalyActive)
+			{
+				if (Find.FactionManager.FirstFactionOfDef(FactionDefOf.HoraxCult) == null)
+				{
+					FactionGenerator.CreateFactionAndAddToManager(FactionDefOf.HoraxCult);
+				}
+				if (Find.FactionManager.FirstFactionOfDef(FactionDefOf.Entities) == null)
+				{
+					FactionGenerator.CreateFactionAndAddToManager(FactionDefOf.Entities);
+				}
+			}
+			if (ModsConfig.OdysseyActive)
+			{
+				if (Find.FactionManager.FirstFactionOfDef(FactionDefOf.TradersGuild) == null)
+				{
+					FactionGenerator.CreateFactionAndAddToManager(Find.WorldGrid.Orbit, FactionDefOf.TradersGuild);
+				}
+				if (Find.FactionManager.FirstFactionOfDef(FactionDefOf.Salvagers) == null)
+				{
+					FactionGenerator.CreateFactionAndAddToManager(Find.WorldGrid.Orbit, FactionDefOf.Salvagers);
+				}
+			}
+		}
+
+		public static void IdeoManagerPostloadInit()
+		{
+			if (ModsConfig.AnomalyActive && ModsConfig.IdeologyActive && !Find.IdeoManager.classicMode)
+			{
+				Faction cult = Find.FactionManager.OfHoraxCult;
+				if (cult?.ideos != null && cult.def.fixedIdeo && !cult.def.forcedMemes.NullOrEmpty() && !cult.def.forcedMemes.All((MemeDef x) => cult.ideos.PrimaryIdeo.memes.Contains(x)))
+				{
+					Ideo ideo = IdeoGenerator.MakeFixedIdeo(new IdeoGenerationParms(cult.def, forceNoExpansionIdeo: false, null, null, name: cult.def.ideoName, styles: cult.def.styles, deities: cult.def.deityPresets, hidden: cult.def.hiddenIdeo, description: cult.def.ideoDescription, forcedMemes: cult.def.forcedMemes, classicExtra: false, forceNoWeaponPreference: false, forNewFluidIdeo: false, fixedIdeo: true, requiredPreceptsOnly: cult.def.requiredPreceptsOnly));
+					ideo.primaryFactionColor = cult.Color;
+					cult.ideos.SetPrimary(ideo);
+					Find.IdeoManager.Add(ideo);
+				}
 			}
 		}
 
@@ -359,6 +470,31 @@ namespace Verse
 					prefsData.automaticPauseMode = AutomaticPauseMode.Never;
 				}
 			}
+			if (prefsData.debugActionPalette == null)
+			{
+				prefsData.debugActionPalette = new List<string>();
+			}
+		}
+
+		private static bool CheckSaveIdenticalToCurrentEnvironment()
+		{
+			if (Scribe.mode == LoadSaveMode.Inactive)
+			{
+				return false;
+			}
+			if (ScribeMetaHeaderUtility.modListChanged)
+			{
+				return false;
+			}
+			if (VersionControl.CurrentBuild != ScribeMetaHeaderUtility.loadedGameVersionBuild)
+			{
+				return false;
+			}
+			if (Application.isEditor)
+			{
+				return false;
+			}
+			return true;
 		}
 	}
 }

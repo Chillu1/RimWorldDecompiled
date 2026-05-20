@@ -1,4 +1,5 @@
-using RimWorld.Planet;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Verse;
 
@@ -12,11 +13,7 @@ namespace RimWorld
 
 		protected override float ExtraTopSpace => 40f;
 
-		public override void PostOpen()
-		{
-			base.PostOpen();
-			Find.World.renderer.wantedMode = WorldRenderMode.None;
-		}
+		protected override IEnumerable<Pawn> Pawns => base.Pawns.Where((Pawn pawn) => !pawn.DevelopmentalStage.Baby());
 
 		public override void DoWindowContents(Rect rect)
 		{
@@ -55,11 +52,10 @@ namespace RimWorld
 			}
 			if (Current.Game.playSettings.useWorkPriorities)
 			{
-				GUI.color = new Color(1f, 1f, 1f, 0.5f);
-				Text.Font = GameFont.Tiny;
-				Widgets.Label(new Rect(rect.x, rect.y + rect.height + 4f, rect.width, 60f), "PriorityOneDoneFirst".Translate());
-				Text.Font = GameFont.Small;
-				GUI.color = Color.white;
+				using (new TextBlock(new Color(1f, 1f, 1f, 0.5f)))
+				{
+					Widgets.Label(new Rect(rect.x, rect.yMax - 6f, rect.width, 60f), "PriorityOneDoneFirst".Translate());
+				}
 			}
 			if (!Current.Game.playSettings.useWorkPriorities)
 			{

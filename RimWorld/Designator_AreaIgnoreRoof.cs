@@ -3,11 +3,11 @@ using Verse;
 
 namespace RimWorld
 {
-	public class Designator_AreaIgnoreRoof : Designator_Area
+	public class Designator_AreaIgnoreRoof : Designator_Cells
 	{
-		public override int DraggableDimensions => 2;
-
 		public override bool DragDrawMeasurements => true;
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Areas;
 
 		public Designator_AreaIgnoreRoof()
 		{

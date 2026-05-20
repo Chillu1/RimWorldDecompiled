@@ -23,11 +23,17 @@ namespace RimWorld
 			if (def.thingDefs.Count == 1)
 			{
 				outCandidates.AddRange(pawn.Map.listerThings.ThingsOfDef(def.thingDefs[0]));
-				return;
 			}
-			for (int i = 0; i < def.thingDefs.Count; i++)
+			else
 			{
-				outCandidates.AddRange(pawn.Map.listerThings.ThingsOfDef(def.thingDefs[i]));
+				for (int i = 0; i < def.thingDefs.Count; i++)
+				{
+					outCandidates.AddRange(pawn.Map.listerThings.ThingsOfDef(def.thingDefs[i]));
+				}
+			}
+			if (pawn.ConcernedByVacuum)
+			{
+				outCandidates.RemoveWhere((Thing thing) => thing.Position.VacuumConcernTo(pawn));
 			}
 		}
 
@@ -38,7 +44,7 @@ namespace RimWorld
 			return null;
 		}
 
-		public virtual Job TryGiveJobInGatheringArea(Pawn pawn, IntVec3 gatherSpot)
+		public virtual Job TryGiveJobInGatheringArea(Pawn pawn, IntVec3 gatherSpot, float maxRadius = -1f)
 		{
 			return null;
 		}
@@ -46,6 +52,10 @@ namespace RimWorld
 		public virtual bool CanBeGivenTo(Pawn pawn)
 		{
 			if (MissingRequiredCapacity(pawn) != null)
+			{
+				return false;
+			}
+			if (def.requiresEnjoyOutdoors && (!pawn.needs.PrefersOutdoors || (pawn.genes != null && !pawn.genes.EnjoysSunlight)))
 			{
 				return false;
 			}

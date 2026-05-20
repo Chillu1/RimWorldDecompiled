@@ -60,11 +60,11 @@ namespace RimWorld
 		{
 			get
 			{
-				if (Fermented)
+				if (!Fermented)
 				{
-					return 0;
+					return 25 - wortCount;
 				}
-				return 25 - wortCount;
+				return 0;
 			}
 		}
 
@@ -100,7 +100,7 @@ namespace RimWorld
 			}
 		}
 
-		private float ProgressPerTickAtCurrentTemp => 2.77777781E-06f * CurrentTempProgressSpeedFactor;
+		private float ProgressPerTickAtCurrentTemp => 2.7777778E-06f * CurrentTempProgressSpeedFactor;
 
 		private int EstimatedTicksLeft => Mathf.Max(Mathf.RoundToInt((1f - Progress) / ProgressPerTickAtCurrentTemp), 0);
 
@@ -213,23 +213,24 @@ namespace RimWorld
 			return thing;
 		}
 
-		public override void Draw()
+		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
 		{
-			base.Draw();
+			base.DrawAt(drawLoc, flip);
 			if (!Empty)
 			{
-				Vector3 drawPos = DrawPos;
-				drawPos.y += 3f / 70f;
-				drawPos.z += 0.25f;
-				GenDraw.FillableBarRequest r = default(GenDraw.FillableBarRequest);
-				r.center = drawPos;
-				r.size = BarSize;
-				r.fillPercent = (float)wortCount / 25f;
-				r.filledMat = BarFilledMat;
-				r.unfilledMat = BarUnfilledMat;
-				r.margin = 0.1f;
-				r.rotation = Rot4.North;
-				GenDraw.DrawFillableBar(r);
+				Vector3 center = drawLoc;
+				center.y += 0.03658537f;
+				center.z += 0.25f;
+				GenDraw.DrawFillableBar(new GenDraw.FillableBarRequest
+				{
+					center = center,
+					size = BarSize,
+					fillPercent = (float)wortCount / 25f,
+					filledMat = BarFilledMat,
+					unfilledMat = BarUnfilledMat,
+					margin = 0.1f,
+					rotation = Rot4.North
+				});
 			}
 		}
 
@@ -239,15 +240,30 @@ namespace RimWorld
 			{
 				yield return gizmo;
 			}
-			if (Prefs.DevMode && !Empty)
+			if (!DebugSettings.ShowDevGizmos)
+			{
+				yield break;
+			}
+			if (!Empty)
 			{
 				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "Debug: Set progress to 1";
+				command_Action.defaultLabel = "DEV: Set progress to 1";
 				command_Action.action = delegate
 				{
 					Progress = 1f;
 				};
 				yield return command_Action;
+			}
+			if (SpaceLeftForWort > 0)
+			{
+				Command_Action command_Action2 = new Command_Action();
+				command_Action2.defaultLabel = "DEV: Fill";
+				command_Action2.action = delegate
+				{
+					Progress = 1f;
+					wortCount = 25;
+				};
+				yield return command_Action2;
 			}
 		}
 	}

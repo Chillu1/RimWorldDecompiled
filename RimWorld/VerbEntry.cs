@@ -11,12 +11,6 @@ namespace RimWorld
 
 		public bool IsMeleeAttack => verb.IsMeleeAttack;
 
-		public VerbEntry(Verb verb, Pawn pawn)
-		{
-			this.verb = verb;
-			cachedSelectionWeight = verb.verbProps.AdjustedMeleeSelectionWeight(verb, pawn);
-		}
-
 		public VerbEntry(Verb verb, Pawn pawn, List<Verb> allVerbs, float highestSelWeight)
 		{
 			this.verb = verb;
@@ -29,12 +23,17 @@ namespace RimWorld
 			{
 				return 0f;
 			}
-			return cachedSelectionWeight;
+			float num = cachedSelectionWeight;
+			if (target?.def?.IsEdifice() == true)
+			{
+				num *= verb.verbProps.commonalityVsEdificeFactor;
+			}
+			return num;
 		}
 
 		public override string ToString()
 		{
-			return verb.ToString() + " - " + cachedSelectionWeight;
+			return verb?.ToString() + " - " + cachedSelectionWeight;
 		}
 	}
 }

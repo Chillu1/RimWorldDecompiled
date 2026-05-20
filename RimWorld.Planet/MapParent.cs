@@ -12,35 +12,25 @@ namespace RimWorld.Planet
 	{
 		public bool forceRemoveWorldObjectWhenMapRemoved;
 
+		public bool doorsAlwaysOpenForPlayerPawns;
+
 		private HashSet<IncidentTargetTagDef> hibernatableIncidentTargets;
 
 		private static readonly Texture2D ShowMapCommand = ContentFinder<Texture2D>.Get("UI/Commands/ShowMap");
 
+		private static Rot4 shuttleRotation = Rot4.East;
+
 		public bool HasMap => Map != null;
+
+		public virtual AcceptanceReport CanBeSettled => true;
 
 		protected virtual bool UseGenericEnterMapFloatMenuOption => true;
 
 		public Map Map => Current.Game.FindMap(this);
 
-		public virtual MapGeneratorDef MapGeneratorDef
-		{
-			get
-			{
-				if (def.mapGenerator == null)
-				{
-					return MapGeneratorDefOf.Encounter;
-				}
-				return def.mapGenerator;
-			}
-		}
+		public virtual MapGeneratorDef MapGeneratorDef => def.mapGenerator ?? MapGeneratorDefOf.Encounter;
 
-		public virtual IEnumerable<GenStepWithParams> ExtraGenStepDefs
-		{
-			get
-			{
-				yield break;
-			}
-		}
+		public virtual IEnumerable<GenStepWithParams> ExtraGenStepDefs => Enumerable.Empty<GenStepWithParams>();
 
 		public override bool ExpandMore
 		{
@@ -55,6 +45,8 @@ namespace RimWorld.Planet
 		}
 
 		public virtual bool HandlesConditionCausers => false;
+
+		public virtual Vector3 WorldCameraPosition => base.Tile.Layer.GetTileCenter(base.Tile);
 
 		public virtual void PostMapGenerate()
 		{
@@ -78,6 +70,16 @@ namespace RimWorld.Planet
 				allComps[i].PostMyMapRemoved();
 			}
 			QuestUtility.SendQuestTargetSignals(questTags, "MapRemoved", this.Named("SUBJECT"));
+		}
+
+		public virtual void Notify_MyMapSettled(Map map)
+		{
+			List<WorldObjectComp> allComps = base.AllComps;
+			for (int i = 0; i < allComps.Count; i++)
+			{
+				allComps[i].PostMyMapSettled();
+			}
+			QuestUtility.SendQuestTargetSignals(questTags, "MapSettled", this.Named("SUBJECT"));
 		}
 
 		public virtual void Notify_CaravanFormed(Caravan caravan)
@@ -110,13 +112,68 @@ namespace RimWorld.Planet
 			base.PostRemove();
 			if (HasMap)
 			{
-				Current.Game.DeinitAndRemoveMap(Map);
+				Current.Game.DeinitAndRemoveMap(Map, notifyPlayer: true);
 			}
 		}
 
-		public override void Tick()
+		public virtual void Abandon(bool wasGravshipLaunch)
 		{
-			base.Tick();
+			bool flag = false;
+			int count = Find.Maps.Count;
+			for (int i = 0; i < count; i++)
+			{
+				if (Find.Maps[i].IsPlayerHome && Find.Maps[i] != Map)
+				{
+					flag = true;
+					break;
+				}
+			}
+			if (Map.IsPlayerHome && !flag)
+			{
+				foreach (Pawn allMapsCaravansAndTravellingTransporters_Alive_Colonist in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_Colonists)
+				{
+					allMapsCaravansAndTravellingTransporters_Alive_Colonist.genes?.Notify_NewColony();
+					if (allMapsCaravansAndTravellingTransporters_Alive_Colonist.BeingTransportedOnGravship)
+					{
+						continue;
+					}
+					MemoryThoughtHandler memoryThoughtHandler = allMapsCaravansAndTravellingTransporters_Alive_Colonist.needs?.mood?.thoughts?.memories;
+					if (memoryThoughtHandler != null)
+					{
+						memoryThoughtHandler.RemoveMemoriesOfDef(ThoughtDefOf.NewColonyOptimism);
+						memoryThoughtHandler.RemoveMemoriesOfDef(ThoughtDefOf.NewColonyHope);
+						if (allMapsCaravansAndTravellingTransporters_Alive_Colonist.IsFreeNonSlaveColonist)
+						{
+							memoryThoughtHandler.TryGainMemory(ThoughtDefOf.NewColonyOptimism);
+						}
+					}
+				}
+			}
+			Destroy();
+			if (wasGravshipLaunch && base.Tile.LayerDef == PlanetLayerDefOf.Surface)
+			{
+				WorldObject worldObject = WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.GravshipLaunch);
+				worldObject.Tile = base.Tile;
+				worldObject.SetFaction(base.Faction);
+				Find.WorldObjects.Add(worldObject);
+			}
+		}
+
+		public override void Destroy()
+		{
+			if (Map != null)
+			{
+				for (int num = Map.listerThings.AllThings.Count - 1; num >= 0; num--)
+				{
+					Map.listerThings.AllThings[num].Notify_LeftBehind();
+				}
+			}
+			base.Destroy();
+		}
+
+		protected override void TickInterval(int delta)
+		{
+			base.TickInterval(delta);
 			CheckRemoveMapNow();
 		}
 
@@ -124,6 +181,7 @@ namespace RimWorld.Planet
 		{
 			base.ExposeData();
 			Scribe_Values.Look(ref forceRemoveWorldObjectWhenMapRemoved, "forceRemoveWorldObjectWhenMapRemoved", defaultValue: false);
+			Scribe_Values.Look(ref doorsAlwaysOpenForPlayerPawns, "doorsAlwaysOpenForPlayerPawns", defaultValue: false);
 		}
 
 		public override IEnumerable<Gizmo> GetGizmos()
@@ -158,13 +216,16 @@ namespace RimWorld.Planet
 			{
 				yield return item;
 			}
-			if (hibernatableIncidentTargets == null || hibernatableIncidentTargets.Count <= 0)
+			if (hibernatableIncidentTargets != null && hibernatableIncidentTargets.Count > 0)
 			{
-				yield break;
+				foreach (IncidentTargetTagDef hibernatableIncidentTarget in hibernatableIncidentTargets)
+				{
+					yield return hibernatableIncidentTarget;
+				}
 			}
-			foreach (IncidentTargetTagDef hibernatableIncidentTarget in hibernatableIncidentTargets)
+			if (HasMap && Map.wasSpawnedViaGravShipLanding)
 			{
-				yield return hibernatableIncidentTarget;
+				yield return IncidentTargetTagDefOf.Map_PlayerHome;
 			}
 		}
 
@@ -184,38 +245,32 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public override IEnumerable<FloatMenuOption> GetTransportPodsFloatMenuOptions(IEnumerable<IThingHolder> pods, CompLaunchable representative)
+		public override IEnumerable<FloatMenuOption> GetTransportersFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<PlanetTile, TransportersArrivalAction> launchAction)
 		{
-			foreach (FloatMenuOption transportPodsFloatMenuOption in base.GetTransportPodsFloatMenuOptions(pods, representative))
+			foreach (FloatMenuOption transportersFloatMenuOption in base.GetTransportersFloatMenuOptions(pods, launchAction))
 			{
-				yield return transportPodsFloatMenuOption;
+				yield return transportersFloatMenuOption;
 			}
-			if (!TransportPodsArrivalAction_LandInSpecificCell.CanLandInSpecificCell(pods, this))
+			if (!TransportersArrivalAction_LandInSpecificCell.CanLandInSpecificCell(pods, this))
 			{
 				yield break;
 			}
 			yield return new FloatMenuOption("LandInExistingMap".Translate(Label), delegate
 			{
-				Map myMap = representative.parent.Map;
 				Map map = Map;
 				Current.Game.CurrentMap = map;
 				CameraJumper.TryHideWorld();
 				Find.Targeter.BeginTargeting(TargetingParameters.ForDropPodsDestination(), delegate(LocalTargetInfo x)
 				{
-					representative.TryLaunch(base.Tile, new TransportPodsArrivalAction_LandInSpecificCell(this, x.Cell, representative.parent.TryGetComp<CompShuttle>() != null));
-				}, null, delegate
-				{
-					if (Find.Maps.Contains(myMap))
-					{
-						Current.Game.CurrentMap = myMap;
-					}
-				}, CompLaunchable.TargeterMouseAttachment);
+					launchAction(base.Tile, new TransportersArrivalAction_LandInSpecificCell(this, x.Cell, Rot4.North, landInShuttle: false));
+				}, null, null, CompLaunchable.TargeterMouseAttachment);
 			});
 		}
 
-		public override IEnumerable<FloatMenuOption> GetShuttleFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<int, TransportPodsArrivalAction> launchAction)
+		public override IEnumerable<FloatMenuOption> GetShuttleFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<PlanetTile, TransportersArrivalAction> launchAction)
 		{
-			if (!TransportPodsArrivalAction_LandInSpecificCell.CanLandInSpecificCell(pods, this))
+			ThingWithComps shuttle = ((pods.FirstOrDefault() is CompTransporter compTransporter) ? compTransporter.parent : null);
+			if (!TransportersArrivalAction_LandInSpecificCell.CanLandInSpecificCell(pods, this))
 			{
 				yield break;
 			}
@@ -224,21 +279,36 @@ namespace RimWorld.Planet
 				Map map = Map;
 				Current.Game.CurrentMap = map;
 				CameraJumper.TryHideWorld();
-				Find.Targeter.BeginTargeting(TargetingParameters.ForDropPodsDestination(), delegate(LocalTargetInfo x)
+				ThingDef shuttleDef = shuttle?.def ?? ThingDefOf.Shuttle;
+				shuttleRotation = shuttleDef.defaultPlacingRot;
+				Find.Targeter.BeginTargeting(TargetingParameters.ForCell(), delegate(LocalTargetInfo x)
 				{
-					launchAction(base.Tile, new TransportPodsArrivalAction_LandInSpecificCell(this, x.Cell, landInShuttle: true));
+					launchAction(base.Tile, new TransportersArrivalAction_LandInSpecificCell(this, x.Cell, shuttleRotation, landInShuttle: true));
 				}, delegate(LocalTargetInfo x)
 				{
-					RoyalTitlePermitWorker_CallShuttle.DrawShuttleGhost(x, Map);
+					RoyalTitlePermitWorker_CallShuttle.DrawShuttleGhost(x, Map, shuttleDef, shuttleRotation);
 				}, delegate(LocalTargetInfo x)
 				{
-					AcceptanceReport acceptanceReport = RoyalTitlePermitWorker_CallShuttle.ShuttleCanLandHere(x, Map);
+					AcceptanceReport acceptanceReport = RoyalTitlePermitWorker_CallShuttle.ShuttleCanLandHere(x, Map, shuttleDef, shuttleRotation);
 					if (!acceptanceReport.Accepted)
 					{
 						Messages.Message(acceptanceReport.Reason, new LookTargets(this), MessageTypeDefOf.RejectInput, historical: false);
 					}
 					return acceptanceReport.Accepted;
-				}, null, null, CompLaunchable.TargeterMouseAttachment);
+				}, null, null, CompLaunchable.TargeterMouseAttachment, playSoundOnAction: true, delegate
+				{
+					if (shuttleDef.rotatable)
+					{
+						if (KeyBindingDefOf.Designator_RotateRight.KeyDownEvent)
+						{
+							shuttleRotation = shuttleRotation.Rotated(RotationDirection.Clockwise);
+						}
+						if (KeyBindingDefOf.Designator_RotateLeft.KeyDownEvent)
+						{
+							shuttleRotation = shuttleRotation.Rotated(RotationDirection.Counterclockwise);
+						}
+					}
+				});
 			});
 		}
 
@@ -247,8 +317,8 @@ namespace RimWorld.Planet
 			if (HasMap && ShouldRemoveMapNow(out var alsoRemoveWorldObject))
 			{
 				Map map = Map;
-				Current.Game.DeinitAndRemoveMap(map);
-				if (alsoRemoveWorldObject || forceRemoveWorldObjectWhenMapRemoved)
+				Current.Game.DeinitAndRemoveMap(map, notifyPlayer: true);
+				if (!base.Destroyed && (alsoRemoveWorldObject || forceRemoveWorldObjectWhenMapRemoved))
 				{
 					Destroy();
 				}
@@ -258,6 +328,14 @@ namespace RimWorld.Planet
 		public override string GetInspectString()
 		{
 			string text = base.GetInspectString();
+			if (HasMap && GravshipUtility.TryGetNameOfGravshipOnMap(Map, out var name))
+			{
+				if (!text.NullOrEmpty())
+				{
+					text += "\n";
+				}
+				text += "GravshipOnTileInspectString".Translate().CapitalizeFirst() + ": " + name;
+			}
 			if (this.EnterCooldownBlocksEntering())
 			{
 				if (!text.NullOrEmpty())

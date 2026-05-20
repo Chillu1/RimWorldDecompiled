@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 using RimWorld;
@@ -26,21 +25,20 @@ namespace Verse
 			{
 				xmlWriter.WriteStartDocument();
 				xmlWriter.WriteStartElement("BackstoryTranslations");
-				foreach (KeyValuePair<string, Backstory> allBackstory in BackstoryDatabase.allBackstories)
+				foreach (BackstoryDef allDef in DefDatabase<BackstoryDef>.AllDefs)
 				{
-					Backstory value = allBackstory.Value;
-					xmlWriter.WriteStartElement(value.identifier);
-					xmlWriter.WriteElementString("title", value.title);
-					if (!value.titleFemale.NullOrEmpty())
+					xmlWriter.WriteStartElement(allDef.identifier);
+					xmlWriter.WriteElementString("title", allDef.title);
+					if (!allDef.titleFemale.NullOrEmpty())
 					{
-						xmlWriter.WriteElementString("titleFemale", value.titleFemale);
+						xmlWriter.WriteElementString("titleFemale", allDef.titleFemale);
 					}
-					xmlWriter.WriteElementString("titleShort", value.titleShort);
-					if (!value.titleShortFemale.NullOrEmpty())
+					xmlWriter.WriteElementString("titleShort", allDef.titleShort);
+					if (!allDef.titleShortFemale.NullOrEmpty())
 					{
-						xmlWriter.WriteElementString("titleShortFemale", value.titleShortFemale);
+						xmlWriter.WriteElementString("titleShortFemale", allDef.titleShortFemale);
 					}
-					xmlWriter.WriteElementString("desc", value.baseDesc);
+					xmlWriter.WriteElementString("desc", allDef.description);
 					xmlWriter.WriteEndElement();
 				}
 				xmlWriter.WriteEndElement();

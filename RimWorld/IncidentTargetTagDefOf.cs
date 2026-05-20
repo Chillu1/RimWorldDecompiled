@@ -5,8 +5,6 @@ namespace RimWorld
 	{
 		public static IncidentTargetTagDef World;
 
-		public static IncidentTargetTagDef Caravan;
-
 		public static IncidentTargetTagDef Map_RaidBeacon;
 
 		public static IncidentTargetTagDef Map_PlayerHome;

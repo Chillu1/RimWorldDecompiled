@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
@@ -9,9 +8,11 @@ namespace RimWorld
 {
 	public class BiomeDef : Def
 	{
-		public Type workerClass = typeof(BiomeWorker);
+		public Type workerClass;
 
 		public bool implemented = true;
+
+		public bool generatesNaturally = true;
 
 		public bool canBuildBase = true;
 
@@ -21,6 +22,8 @@ namespace RimWorld
 
 		public bool allowRivers = true;
 
+		public bool allowFarmingCamps = true;
+
 		public float animalDensity;
 
 		public float plantDensity;
@@ -28,6 +31,10 @@ namespace RimWorld
 		public float diseaseMtbDays = 60f;
 
 		public float settlementSelectionWeight = 1f;
+
+		public float campSelectionWeight = 1f;
+
+		public float pollutionOffset;
 
 		public bool impassable;
 
@@ -38,6 +45,8 @@ namespace RimWorld
 		public ThingDef foragedFood;
 
 		public bool wildPlantsCareAboutLocalFertility = true;
+
+		public bool wildPlantsAreCavePlants;
 
 		public float wildPlantRegrowDays = 25f;
 
@@ -51,9 +60,13 @@ namespace RimWorld
 
 		public List<TerrainPatchMaker> terrainPatchMakers = new List<TerrainPatchMaker>();
 
-		private List<BiomePlantRecord> wildPlants = new List<BiomePlantRecord>();
+		public List<BiomePlantRecord> wildPlants = new List<BiomePlantRecord>();
 
 		private List<BiomeAnimalRecord> wildAnimals = new List<BiomeAnimalRecord>();
+
+		private List<BiomeAnimalRecord> pollutionWildAnimals = new List<BiomeAnimalRecord>();
+
+		private List<BiomeAnimalRecord> coastalWildAnimals = new List<BiomeAnimalRecord>();
 
 		private List<BiomeDiseaseRecord> diseases = new List<BiomeDiseaseRecord>();
 
@@ -63,11 +76,94 @@ namespace RimWorld
 
 		public bool isExtremeBiome;
 
+		public bool isWaterBiome;
+
+		public bool allowPollution = true;
+
+		public bool wildAnimalsCanWanderInto = true;
+
+		public bool noAmbientWind;
+
+		public bool inVacuum;
+
+		public bool disableSkyLighting;
+
+		public bool disableShadows;
+
+		public bool noGravel;
+
+		public bool canExitMap = true;
+
+		public bool onlyAllowWhitelistedArrivalModes;
+
+		public bool isBackgroundBiome;
+
+		public float wildAnimalScariaChance;
+
+		public float geyserCountFactor = 1f;
+
+		public float? constantOutdoorTemperature;
+
+		public TerrainDef coastalBeachTerrain;
+
+		public TerrainDef lakeBeachTerrain;
+
+		public TerrainDef riverbankTerrain;
+
+		public TerrainDef mudTerrain;
+
+		public TerrainDef gravelTerrain;
+
+		public TerrainDef waterShallowTerrain;
+
+		public TerrainDef waterDeepTerrain;
+
+		public TerrainDef oceanShallowTerrain;
+
+		public TerrainDef oceanDeepTerrain;
+
+		public TerrainDef waterMovingShallowTerrain;
+
+		public TerrainDef waterMovingChestDeepTerrain;
+
+		public IntRange riverbankSizeRange;
+
+		public List<GameConditionDef> biomeMapConditions = new List<GameConditionDef>();
+
+		public List<GenStepDef> extraGenSteps = new List<GenStepDef>();
+
+		public List<GenStepDef> preventGenSteps = new List<GenStepDef>();
+
+		public List<ThingDef> extraRockTypes;
+
+		public List<ThingDef> forceRockTypes;
+
+		public float maxFishPopulation;
+
+		public BiomeFishTypes fishTypes;
+
+		public List<PlanetLayerDef> layerWhitelist;
+
+		public List<PlanetLayerDef> layerBlacklist;
+
+		[MustTranslate]
+		public string settleWarning;
+
+		public Color? fogOfWarColor;
+
+		public OrbitalDebrisDef orbitalDebris;
+
 		[NoTranslate]
 		public string texture;
 
 		[Unsaved(false)]
 		private Dictionary<PawnKindDef, float> cachedAnimalCommonalities;
+
+		[Unsaved(false)]
+		private Dictionary<PawnKindDef, float> cachedPollutionAnimalCommonalities;
+
+		[Unsaved(false)]
+		private Dictionary<PawnKindDef, float> cachedCoastalAnimalCommonalities;
 
 		[Unsaved(false)]
 		private Dictionary<ThingDef, float> cachedPlantCommonalities;
@@ -82,28 +178,14 @@ namespace RimWorld
 		private List<ThingDef> cachedWildPlants;
 
 		[Unsaved(false)]
-		private int? cachedMaxWildPlantsClusterRadius;
-
-		[Unsaved(false)]
-		private float cachedPlantCommonalitiesSum;
-
-		[Unsaved(false)]
 		private float? cachedLowestWildPlantOrder;
 
 		[Unsaved(false)]
-		private BiomeWorker workerInt;
+		private int? cachedMaxWildPlantsClusterRadius;
 
-		public BiomeWorker Worker
-		{
-			get
-			{
-				if (workerInt == null)
-				{
-					workerInt = (BiomeWorker)Activator.CreateInstance(workerClass);
-				}
-				return workerInt;
-			}
-		}
+		private BiomeWorker worker;
+
+		public BiomeWorker Worker => worker ?? (worker = GenWorker<BiomeWorker>.Get(workerClass));
 
 		public Material DrawMaterial
 		{
@@ -186,7 +268,7 @@ namespace RimWorld
 			{
 				if (!cachedLowestWildPlantOrder.HasValue)
 				{
-					cachedLowestWildPlantOrder = 2.14748365E+09f;
+					cachedLowestWildPlantOrder = 2.1474836E+09f;
 					List<ThingDef> allWildPlants = AllWildPlants;
 					for (int i = 0; i < allWildPlants.Count; i++)
 					{
@@ -211,20 +293,11 @@ namespace RimWorld
 			{
 				foreach (PawnKindDef allDef in DefDatabase<PawnKindDef>.AllDefs)
 				{
-					if (CommonalityOfAnimal(allDef) > 0f)
+					if (CommonalityOfAnimal(allDef) > 0f || CommonalityOfPollutionAnimal(allDef) > 0f || CommonalityOfCoastalAnimal(allDef) > 0f)
 					{
 						yield return allDef;
 					}
 				}
-			}
-		}
-
-		public float PlantCommonalitiesSum
-		{
-			get
-			{
-				CachePlantCommonalitiesIfShould();
-				return cachedPlantCommonalitiesSum;
 			}
 		}
 
@@ -249,6 +322,20 @@ namespace RimWorld
 				}
 				return num2 / num * plantDensity;
 			}
+		}
+
+		public int TreeSightingsPerHourFromCaravan => Mathf.FloorToInt(TreeDensity * 25f);
+
+		public TerrainDef TerrainForAffordance(TerrainAffordanceDef affordance)
+		{
+			foreach (TerrainThreshold item in terrainsByFertility)
+			{
+				if (item.terrain.affordances.Contains(affordance))
+				{
+					return item.terrain;
+				}
+			}
+			return TerrainDefOf.Soil;
 		}
 
 		public float CommonalityOfAnimal(PawnKindDef animalDef)
@@ -282,6 +369,53 @@ namespace RimWorld
 			return 0f;
 		}
 
+		public float CommonalityOfPollutionAnimal(PawnKindDef animalDef)
+		{
+			if (!ModsConfig.BiotechActive)
+			{
+				return 0f;
+			}
+			if (cachedPollutionAnimalCommonalities == null)
+			{
+				cachedPollutionAnimalCommonalities = new Dictionary<PawnKindDef, float>();
+				for (int i = 0; i < pollutionWildAnimals.Count; i++)
+				{
+					cachedPollutionAnimalCommonalities.Add(pollutionWildAnimals[i].animal, pollutionWildAnimals[i].commonality);
+				}
+			}
+			if (cachedPollutionAnimalCommonalities.TryGetValue(animalDef, out var value))
+			{
+				return value;
+			}
+			return 0f;
+		}
+
+		public float CommonalityOfCoastalAnimal(PawnKindDef animalDef)
+		{
+			if (!ModsConfig.OdysseyActive)
+			{
+				return 0f;
+			}
+			if (cachedCoastalAnimalCommonalities == null)
+			{
+				cachedCoastalAnimalCommonalities = new Dictionary<PawnKindDef, float>();
+				for (int i = 0; i < coastalWildAnimals.Count; i++)
+				{
+					cachedCoastalAnimalCommonalities.Add(coastalWildAnimals[i].animal, coastalWildAnimals[i].commonality);
+				}
+			}
+			if (cachedCoastalAnimalCommonalities.TryGetValue(animalDef, out var value))
+			{
+				return value;
+			}
+			return 0f;
+		}
+
+		public bool ShouldSpawnAnimalOnCoast(PawnKindDef animalDef)
+		{
+			return CommonalityOfCoastalAnimal(animalDef) > CommonalityOfAnimal(animalDef);
+		}
+
 		public float CommonalityOfPlant(ThingDef plantDef)
 		{
 			CachePlantCommonalitiesIfShould();
@@ -290,11 +424,6 @@ namespace RimWorld
 				return value;
 			}
 			return 0f;
-		}
-
-		public float CommonalityPctOfPlant(ThingDef plantDef)
-		{
-			return CommonalityOfPlant(plantDef) / PlantCommonalitiesSum;
 		}
 
 		public float CommonalityOfDisease(IncidentDef diseaseInc)
@@ -328,16 +457,6 @@ namespace RimWorld
 			return 0f;
 		}
 
-		public bool IsPackAnimalAllowed(ThingDef pawn)
-		{
-			return allowedPackAnimals.Contains(pawn);
-		}
-
-		public static BiomeDef Named(string defName)
-		{
-			return DefDatabase<BiomeDef>.GetNamed(defName);
-		}
-
 		private void CachePlantCommonalitiesIfShould()
 		{
 			if (cachedPlantCommonalities != null)
@@ -362,11 +481,27 @@ namespace RimWorld
 				{
 					if (allDef.plant.wildBiomes[j].biome == this)
 					{
-						cachedPlantCommonalities.Add(allDef, allDef.plant.wildBiomes[j].commonality);
+						if (cachedPlantCommonalities.ContainsKey(allDef))
+						{
+							cachedPlantCommonalities[allDef] = (cachedPlantCommonalities[allDef] + allDef.plant.wildBiomes[j].commonality) / 2f;
+						}
+						else
+						{
+							cachedPlantCommonalities.Add(allDef, allDef.plant.wildBiomes[j].commonality);
+						}
 					}
 				}
 			}
-			cachedPlantCommonalitiesSum = cachedPlantCommonalities.Sum((KeyValuePair<ThingDef, float> x) => x.Value);
+		}
+
+		public bool IsPackAnimalAllowed(ThingDef pawn)
+		{
+			return allowedPackAnimals.Contains(pawn);
+		}
+
+		public static BiomeDef Named(string defName)
+		{
+			return DefDatabase<BiomeDef>.GetNamed(defName);
 		}
 
 		public override IEnumerable<string> ConfigErrors()
@@ -384,6 +519,27 @@ namespace RimWorld
 				if (wildAnimals.Count((BiomeAnimalRecord a) => a.animal == wa.animal) > 1)
 				{
 					yield return "Duplicate animal record: " + wa.animal.defName;
+				}
+			}
+			if (ModsConfig.BiotechActive)
+			{
+				foreach (BiomeAnimalRecord pa in pollutionWildAnimals)
+				{
+					if (pollutionWildAnimals.Count((BiomeAnimalRecord a) => a.animal == pa.animal) > 1)
+					{
+						yield return "Duplicate pollution animal record: " + pa.animal.defName;
+					}
+				}
+			}
+			if (!ModsConfig.OdysseyActive)
+			{
+				yield break;
+			}
+			foreach (BiomeAnimalRecord ca in coastalWildAnimals)
+			{
+				if (coastalWildAnimals.Count((BiomeAnimalRecord a) => a.animal == ca.animal) > 1)
+				{
+					yield return "Duplicate coastal animal record: " + ca.animal.defName;
 				}
 			}
 		}

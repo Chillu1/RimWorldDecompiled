@@ -24,9 +24,8 @@ namespace RimWorld
 			{
 				return false;
 			}
-			Zone_Growing zone_Growing = settable as Zone_Growing;
 			IntVec3 c;
-			if (zone_Growing != null)
+			if (settable is Zone_Growing zone_Growing)
 			{
 				if (!zone_Growing.allowSow)
 				{
@@ -49,11 +48,7 @@ namespace RimWorld
 		public override Job JobOnCell(Pawn pawn, IntVec3 c, bool forced = false)
 		{
 			Map map = pawn.Map;
-			if (c.IsForbidden(pawn))
-			{
-				return null;
-			}
-			if (!PlantUtility.GrowthSeasonNow(c, map, forSowing: true))
+			if (c.GetVacuum(pawn.Map) >= 0.5f)
 			{
 				return null;
 			}
@@ -65,7 +60,12 @@ namespace RimWorld
 					return null;
 				}
 			}
+			if (!PlantUtility.GrowthSeasonNow(c, map, WorkGiver_Grower.wantedPlantDef))
+			{
+				return null;
+			}
 			List<Thing> thingList = c.GetThingList(map);
+			Zone_Growing zone_Growing = c.GetZone(map) as Zone_Growing;
 			bool flag = false;
 			for (int i = 0; i < thingList.Count; i++)
 			{
@@ -87,14 +87,14 @@ namespace RimWorld
 					return null;
 				}
 			}
-			if (WorkGiver_Grower.wantedPlantDef.plant.cavePlant)
+			if (WorkGiver_Grower.wantedPlantDef.plant.diesToLight)
 			{
-				if (!c.Roofed(map))
+				if (!c.Roofed(map) && !map.GameConditionManager.IsAlwaysDarkOutside)
 				{
 					JobFailReason.Is(CantSowCavePlantBecauseUnroofedTrans);
 					return null;
 				}
-				if (map.glowGrid.GameGlowAt(c, ignoreCavePlants: true) > 0f)
+				if (map.glowGrid.GroundGlowAt(c, ignoreCavePlants: true) > 0f)
 				{
 					JobFailReason.Is(CantSowCavePlantBecauseOfLightTrans);
 					return null;
@@ -111,23 +111,52 @@ namespace RimWorld
 				{
 					return null;
 				}
+				if (zone_Growing != null && !zone_Growing.allowCut)
+				{
+					return null;
+				}
+				if (!forced && plant.TryGetComp<CompPlantPreventCutting>(out var comp) && comp.PreventCutting)
+				{
+					return null;
+				}
+				if (!PlantUtility.PawnWillingToCutPlant_Job(plant, pawn))
+				{
+					return null;
+				}
 				return JobMaker.MakeJob(JobDefOf.CutPlant, plant);
 			}
 			Thing thing2 = PlantUtility.AdjacentSowBlocker(WorkGiver_Grower.wantedPlantDef, c, map);
 			if (thing2 != null)
 			{
-				Plant plant2 = thing2 as Plant;
-				if (plant2 != null && pawn.CanReserve(plant2, 1, -1, null, forced) && !plant2.IsForbidden(pawn))
+				if (thing2 is Plant plant2 && pawn.CanReserveAndReach(plant2, PathEndMode.Touch, Danger.Deadly, 1, -1, null, forced) && !plant2.IsForbidden(pawn))
 				{
 					IPlantToGrowSettable plantToGrowSettable = plant2.Position.GetPlantToGrowSettable(plant2.Map);
 					if (plantToGrowSettable == null || plantToGrowSettable.GetPlantDefToGrow() != plant2.def)
 					{
+						Zone_Growing zone_Growing2 = c.GetZone(map) as Zone_Growing;
+						Zone_Growing zone_Growing3 = plant2.Position.GetZone(map) as Zone_Growing;
+						if ((zone_Growing2 != null && !zone_Growing2.allowCut) || (zone_Growing3 != null && !zone_Growing3.allowCut && plant2.def == zone_Growing3.GetPlantDefToGrow()))
+						{
+							return null;
+						}
+						if (!forced && thing2.TryGetComp(out CompPlantPreventCutting comp2) && comp2.PreventCutting)
+						{
+							return null;
+						}
+						if (PlantUtility.TreeMarkedForExtraction(plant2))
+						{
+							return null;
+						}
+						if (!PlantUtility.PawnWillingToCutPlant_Job(plant2, pawn))
+						{
+							return null;
+						}
 						return JobMaker.MakeJob(JobDefOf.CutPlant, plant2);
 					}
 				}
 				return null;
 			}
-			if (WorkGiver_Grower.wantedPlantDef.plant.sowMinSkill > 0 && pawn.skills != null && pawn.skills.GetSkill(SkillDefOf.Plants).Level < WorkGiver_Grower.wantedPlantDef.plant.sowMinSkill)
+			if (WorkGiver_Grower.wantedPlantDef.plant.sowMinSkill > 0 && ((pawn.skills != null && pawn.skills.GetSkill(SkillDefOf.Plants).Level < WorkGiver_Grower.wantedPlantDef.plant.sowMinSkill) || (pawn.IsColonyMech && pawn.RaceProps.mechFixedSkillLevel < WorkGiver_Grower.wantedPlantDef.plant.sowMinSkill)))
 			{
 				JobFailReason.Is("UnderAllowedSkill".Translate(WorkGiver_Grower.wantedPlantDef.plant.sowMinSkill), def.label);
 				return null;
@@ -145,11 +174,27 @@ namespace RimWorld
 				}
 				if (thing3.def.category == ThingCategory.Plant)
 				{
-					if (!thing3.IsForbidden(pawn))
+					if (thing3.IsForbidden(pawn))
 					{
-						return JobMaker.MakeJob(JobDefOf.CutPlant, thing3);
+						return null;
 					}
-					return null;
+					if (zone_Growing != null && !zone_Growing.allowCut)
+					{
+						return null;
+					}
+					if (!forced && plant.TryGetComp<CompPlantPreventCutting>(out var comp3) && comp3.PreventCutting)
+					{
+						return null;
+					}
+					if (!PlantUtility.PawnWillingToCutPlant_Job(thing3, pawn))
+					{
+						return null;
+					}
+					if (PlantUtility.TreeMarkedForExtraction(thing3))
+					{
+						return null;
+					}
+					return JobMaker.MakeJob(JobDefOf.CutPlant, thing3);
 				}
 				if (thing3.def.EverHaulable)
 				{
@@ -157,7 +202,7 @@ namespace RimWorld
 				}
 				return null;
 			}
-			if (!WorkGiver_Grower.wantedPlantDef.CanEverPlantAt_NewTemp(c, map) || !PlantUtility.GrowthSeasonNow(c, map, forSowing: true) || !pawn.CanReserve(c, 1, -1, null, forced))
+			if (!WorkGiver_Grower.wantedPlantDef.CanNowPlantAt(c, map) || !PlantUtility.GrowthSeasonNow(c, map, WorkGiver_Grower.wantedPlantDef) || !pawn.CanReserve(c, 1, -1, null, forced))
 			{
 				return null;
 			}

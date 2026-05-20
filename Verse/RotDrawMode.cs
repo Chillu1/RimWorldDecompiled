@@ -1,9 +1,12 @@
+using System;
+
 namespace Verse
 {
+	[Flags]
 	public enum RotDrawMode : byte
 	{
-		Fresh,
-		Rotting,
-		Dessicated
+		Fresh = 1,
+		Rotting = 2,
+		Dessicated = 4
 	}
 }

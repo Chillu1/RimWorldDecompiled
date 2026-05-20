@@ -34,14 +34,11 @@ namespace RimWorld
 		{
 			defaultLabel = "ShipLandingBeaconUnusable".Translate();
 			defaultExplanation = "ShipLandingBeaconUnusableDesc".Translate();
+			requireRoyalty = true;
 		}
 
 		public override AlertReport GetReport()
 		{
-			if (!ModsConfig.RoyaltyActive)
-			{
-				return false;
-			}
 			return AlertReport.CulpritsAre(Targets);
 		}
 	}

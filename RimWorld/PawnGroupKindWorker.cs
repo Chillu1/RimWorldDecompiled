@@ -10,7 +10,7 @@ namespace RimWorld
 
 		public static List<List<Pawn>> pawnsBeingGeneratedNow = new List<List<Pawn>>();
 
-		public abstract float MinPointsToGenerateAnything(PawnGroupMaker groupMaker);
+		public abstract float MinPointsToGenerateAnything(PawnGroupMaker groupMaker, FactionDef faction, PawnGroupMakerParms parms = null);
 
 		public List<Pawn> GeneratePawns(PawnGroupMakerParms parms, PawnGroupMaker groupMaker, bool errorOnZeroResults = true)
 		{
@@ -20,9 +20,9 @@ namespace RimWorld
 			{
 				GeneratePawns(parms, groupMaker, list, errorOnZeroResults);
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Exception while generating pawn group: " + arg);
+				Log.Error("Exception while generating pawn group: " + ex);
 				for (int i = 0; i < list.Count; i++)
 				{
 					list[i].Destroy();

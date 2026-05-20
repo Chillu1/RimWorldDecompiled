@@ -8,7 +8,7 @@ namespace Verse
 
 		private bool everFogged;
 
-		public override void Tick()
+		protected override void Tick()
 		{
 			if (base.Spawned)
 			{

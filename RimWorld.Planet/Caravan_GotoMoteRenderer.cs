@@ -6,7 +6,7 @@ namespace RimWorld.Planet
 	[StaticConstructorOnStartup]
 	public class Caravan_GotoMoteRenderer
 	{
-		private int tile;
+		private PlanetTile tile;
 
 		private float lastOrderedToTileTime = -0.51f;
 
@@ -14,7 +14,7 @@ namespace RimWorld.Planet
 
 		private static Material cachedMaterial;
 
-		public static readonly Material FeedbackGoto = MaterialPool.MatFrom("Things/Mote/FeedbackGoto", ShaderDatabase.WorldOverlayTransparent, WorldMaterials.DynamicObjectRenderQueue);
+		public static readonly Material FeedbackGoto = MaterialPool.MatFrom("Things/Mote/FeedbackGoto", ShaderDatabase.WorldOverlayTransparent, 3600);
 
 		private const float Duration = 0.5f;
 
@@ -27,17 +27,17 @@ namespace RimWorld.Planet
 			{
 				if (cachedMaterial == null)
 				{
-					cachedMaterial = MaterialPool.MatFrom((Texture2D)FeedbackGoto.mainTexture, FeedbackGoto.shader, Color.white, WorldMaterials.DynamicObjectRenderQueue);
+					cachedMaterial = MaterialPool.MatFrom((Texture2D)FeedbackGoto.mainTexture, FeedbackGoto.shader, Color.white, 3600);
 				}
 				WorldGrid worldGrid = Find.WorldGrid;
 				Vector3 tileCenter = worldGrid.GetTileCenter(tile);
 				Color value = new Color(1f, 1f, 1f, 1f - num);
 				propertyBlock.SetColor(ShaderPropertyIDs.Color, value);
-				WorldRendererUtility.DrawQuadTangentialToPlanet(tileCenter, 0.8f * worldGrid.averageTileSize, 0.018f, cachedMaterial, counterClockwise: false, useSkyboxLayer: false, propertyBlock);
+				WorldRendererUtility.DrawQuadTangentialToPlanet(tileCenter, 0.8f * worldGrid.AverageTileSize, 0.05f, cachedMaterial, 0f, counterClockwise: false, useSkyboxLayer: false, propertyBlock);
 			}
 		}
 
-		public void OrderedToTile(int tile)
+		public void OrderedToTile(PlanetTile tile)
 		{
 			this.tile = tile;
 			lastOrderedToTileTime = Time.time;

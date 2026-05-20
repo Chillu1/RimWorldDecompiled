@@ -14,17 +14,17 @@ namespace Verse
 			{
 				if (needCached == null)
 				{
-					needCached = base.Pawn.needs.TryGetNeed(Props.needDef);
+					base.Pawn.needs.TryGetNeed(out needCached);
 				}
 				return needCached;
 			}
 		}
 
-		public override void CompPostTick(ref float severityAdjustment)
+		public override void CompPostTickInterval(ref float severityAdjustment, int delta)
 		{
 			if (Need != null)
 			{
-				Need.CurLevelPercentage += Props.percentPerDay / 60000f;
+				Need.CurLevelPercentage += Props.percentPerDay / 60000f * (float)delta;
 			}
 		}
 	}

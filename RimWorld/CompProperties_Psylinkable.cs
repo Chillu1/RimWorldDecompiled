@@ -11,8 +11,10 @@ namespace RimWorld
 
 		public SoundDef linkSound;
 
+		[MustTranslate]
 		public string enoughPlantsLetterLabel;
 
+		[MustTranslate]
 		public string enoughPlantsLetterText;
 
 		public CompProperties_Psylinkable()

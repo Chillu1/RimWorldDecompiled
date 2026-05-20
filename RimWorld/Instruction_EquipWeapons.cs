@@ -6,7 +6,14 @@ namespace RimWorld
 {
 	public class Instruction_EquipWeapons : Lesson_Instruction
 	{
-		protected override float ProgressPercent => (float)base.Map.mapPawns.FreeColonists.Where((Pawn c) => c.equipment.Primary != null).Count() / (float)base.Map.mapPawns.FreeColonistsCount;
+		protected override float ProgressPercent
+		{
+			get
+			{
+				IEnumerable<Pawn> source = base.Map.mapPawns.FreeColonists.Where((Pawn c) => !LifeStageUtility.AlwaysDowned(c));
+				return (float)source.Where((Pawn c) => c.equipment.Primary != null).Count() / (float)source.Count();
+			}
+		}
 
 		private IEnumerable<Thing> Weapons => Find.TutorialState.startingItems.Where((Thing it) => IsWeapon(it) && it.Spawned);
 

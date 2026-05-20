@@ -10,7 +10,9 @@ namespace RimWorld.Planet
 		public override void Notify_GeneratedByQuestGen(SitePart part, Slate slate, List<Rule> outExtraDescriptionRules, Dictionary<string, string> outExtraDescriptionConstants)
 		{
 			base.Notify_GeneratedByQuestGen(part, slate, outExtraDescriptionRules, outExtraDescriptionConstants);
-			Pawn pawn = DownedRefugeeQuestUtility.GenerateRefugee(part.site.Tile);
+			PawnKindDef pawnKind = slate.Get<PawnKindDef>("refugeeKind");
+			float chanceForFaction = (slate.Exists("refugeeFactionChance") ? 0.6f : slate.Get("refugeeFactionChance", 0f));
+			Pawn pawn = DownedRefugeeQuestUtility.GenerateRefugee(part.site.Tile, pawnKind, chanceForFaction);
 			part.things = new ThingOwner<Pawn>(part, oneStackOnly: true);
 			part.things.TryAdd(pawn);
 			if (pawn.relations != null)

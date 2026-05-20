@@ -42,7 +42,7 @@ namespace RimWorld
 			Toil gotoCorpse = Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch).FailOnDespawnedOrNull(TargetIndex.A);
 			yield return Toils_Jump.JumpIfTargetInvalid(TargetIndex.B, gotoCorpse);
 			yield return Toils_Goto.GotoThing(TargetIndex.B, PathEndMode.InteractionCell).FailOnDespawnedOrNull(TargetIndex.B);
-			yield return Toils_General.Wait(300).WithProgressBarToilDelay(TargetIndex.B).FailOnDespawnedOrNull(TargetIndex.B)
+			yield return Toils_General.Wait(Grave?.OpenTicks ?? 60).WithProgressBarToilDelay(TargetIndex.B).FailOnDespawnedOrNull(TargetIndex.B)
 				.FailOnCannotTouch(TargetIndex.B, PathEndMode.InteractionCell);
 			yield return Toils_General.Open(TargetIndex.B);
 			yield return Toils_Reserve.Reserve(TargetIndex.A);
@@ -57,40 +57,41 @@ namespace RimWorld
 
 		private Toil FindCellToDropCorpseToil()
 		{
-			return new Toil
+			Toil toil = ToilMaker.MakeToil("FindCellToDropCorpseToil");
+			toil.initAction = delegate
 			{
-				initAction = delegate
+				IntVec3 result = IntVec3.Invalid;
+				if (!Rand.Chance(0.8f) || !TryFindTableCell(out result))
 				{
-					IntVec3 result = IntVec3.Invalid;
-					if (!Rand.Chance(0.8f) || !TryFindTableCell(out result))
+					bool flag = false;
+					if (RCellFinder.TryFindRandomSpotJustOutsideColony(pawn, out var result2) && CellFinder.TryRandomClosewalkCellNear(result2, pawn.Map, 5, out result, (IntVec3 x) => pawn.CanReserve(x) && x.GetFirstItem(pawn.Map) == null))
 					{
-						bool flag = false;
-						if (RCellFinder.TryFindRandomSpotJustOutsideColony(pawn, out var result2) && CellFinder.TryRandomClosewalkCellNear(result2, pawn.Map, 5, out result, (IntVec3 x) => pawn.CanReserve(x) && x.GetFirstItem(pawn.Map) == null))
-						{
-							flag = true;
-						}
-						if (!flag)
-						{
-							result = CellFinder.RandomClosewalkCellNear(pawn.Position, pawn.Map, 10, (IntVec3 x) => pawn.CanReserve(x) && x.GetFirstItem(pawn.Map) == null);
-						}
+						flag = true;
 					}
-					job.SetTarget(TargetIndex.C, result);
-				},
-				atomicWithPrevious = true
+					if (!flag)
+					{
+						result = CellFinder.RandomClosewalkCellNear(pawn.Position, pawn.Map, 10, (IntVec3 x) => pawn.CanReserve(x) && x.GetFirstItem(pawn.Map) == null);
+					}
+				}
+				job.SetTarget(TargetIndex.C, result);
 			};
+			toil.atomicWithPrevious = true;
+			return toil;
 		}
 
 		private Toil ForbidAndNotifyMentalStateToil()
 		{
-			return new Toil
+			Toil toil = ToilMaker.MakeToil("ForbidAndNotifyMentalStateToil");
+			toil.initAction = delegate
 			{
-				initAction = delegate
+				Corpse?.SetForbidden(value: true);
+				if (pawn.MentalState is MentalState_CorpseObsession mentalState_CorpseObsession)
 				{
-					Corpse?.SetForbidden(value: true);
-					(pawn.MentalState as MentalState_CorpseObsession)?.Notify_CorpseHauled();
-				},
-				atomicWithPrevious = true
+					mentalState_CorpseObsession.Notify_CorpseHauled();
+				}
 			};
+			toil.atomicWithPrevious = true;
+			return toil;
 		}
 
 		private bool TryFindTableCell(out IntVec3 cell)

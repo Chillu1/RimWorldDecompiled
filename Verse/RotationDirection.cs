@@ -4,6 +4,7 @@ namespace Verse
 	{
 		None,
 		Clockwise,
+		Opposite,
 		Counterclockwise
 	}
 }

@@ -10,13 +10,9 @@ namespace Verse.AI
 
 		public override string GetReport()
 		{
-			if (job.def == JobDefOf.Wait_Combat)
+			if (job.def == JobDefOf.Wait_Combat && pawn.RaceProps.Humanlike && pawn.WorkTagIsDisabled(WorkTags.Violent))
 			{
-				if (pawn.RaceProps.Humanlike && pawn.WorkTagIsDisabled(WorkTags.Violent))
-				{
-					return "ReportStanding".Translate();
-				}
-				return base.GetReport();
+				return "ReportStanding".Translate();
 			}
 			return base.GetReport();
 		}
@@ -28,31 +24,46 @@ namespace Verse.AI
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			Toil toil = new Toil();
-			toil.initAction = delegate
+			Toil toil = (job.forceSleep ? Toils_LayDown.LayDown(TargetIndex.A, hasBed: false, lookForOtherJobs: false) : ToilMaker.MakeToil("MakeNewToils"));
+			toil.initAction = (Action)Delegate.Combine(toil.initAction, (Action)delegate
 			{
 				base.Map.pawnDestinationReservationManager.Reserve(pawn, job, pawn.Position);
-				pawn.pather.StopDead();
+				pawn.pather?.StopDead();
 				CheckForAutoAttack();
-			};
-			toil.tickAction = delegate
+			});
+			toil.tickIntervalAction = (Action<int>)Delegate.Combine(toil.tickIntervalAction, (Action<int>)delegate(int delta)
 			{
 				if (job.expiryInterval == -1 && job.def == JobDefOf.Wait_Combat && !pawn.Drafted)
 				{
-					Log.Error(string.Concat(pawn, " in eternal WaitCombat without being drafted."));
+					Log.Error(pawn?.ToString() + " in eternal WaitCombat without being drafted.");
 					ReadyForNextToil();
 				}
-				else if ((Find.TickManager.TicksGame + pawn.thingIDNumber) % 4 == 0)
+				else
 				{
-					CheckForAutoAttack();
+					if (job.forceSleep)
+					{
+						asleep = true;
+					}
+					if (GenTicks.IsTickIntervalDelta(pawn.thingIDNumber, 4, delta))
+					{
+						CheckForAutoAttack();
+					}
 				}
-			};
+			});
 			DecorateWaitToil(toil);
 			toil.defaultCompleteMode = ToilCompleteMode.Never;
-			if (pawn.mindState != null && pawn.mindState.duty != null && pawn.mindState.duty.focus != null)
+			if (job.overrideFacing != Rot4.Invalid)
+			{
+				toil.handlingFacing = true;
+				toil.tickAction = (Action)Delegate.Combine(toil.tickAction, (Action)delegate
+				{
+					pawn.rotationTracker.FaceTarget(pawn.Position + job.overrideFacing.FacingCell);
+				});
+			}
+			else if (pawn.mindState != null && pawn.mindState.duty != null && pawn.mindState.duty.focus != null && job.def != JobDefOf.Wait_Combat)
 			{
 				LocalTargetInfo focusLocal = pawn.mindState.duty.focus;
-				toil.handlingFacing = false;
+				toil.handlingFacing = true;
 				toil.tickAction = (Action)Delegate.Combine(toil.tickAction, (Action)delegate
 				{
 					pawn.rotationTracker.FaceTarget(focusLocal);
@@ -75,7 +86,7 @@ namespace Verse.AI
 
 		private void CheckForAutoAttack()
 		{
-			if (base.pawn.Downed || base.pawn.stances.FullBodyBusy)
+			if (!base.pawn.kindDef.canMeleeAttack || base.pawn.Downed || base.pawn.stances.FullBodyBusy || base.pawn.IsCarryingPawn() || (!base.pawn.IsPlayerControlled && base.pawn.IsPsychologicallyInvisible()) || base.pawn.IsShambler)
 			{
 				return;
 			}
@@ -97,23 +108,19 @@ namespace Verse.AI
 				List<Thing> thingList = c.GetThingList(base.Map);
 				for (int j = 0; j < thingList.Count; j++)
 				{
-					if (flag)
+					if (flag && base.pawn.kindDef.canMeleeAttack && thingList[j] is Pawn pawn && !pawn.ThreatDisabled(base.pawn) && base.pawn.HostileTo(pawn))
 					{
-						Pawn pawn = thingList[j] as Pawn;
-						if (pawn != null && !pawn.Downed && base.pawn.HostileTo(pawn) && GenHostility.IsActiveThreatTo(pawn, base.pawn.Faction))
+						CompActivity comp = pawn.GetComp<CompActivity>();
+						if ((comp == null || comp.IsActive) && !base.pawn.ThreatDisabledBecauseNonAggressiveRoamer(pawn) && GenHostility.IsActiveThreatTo(pawn, base.pawn.Faction, ignoreHives: false))
 						{
 							base.pawn.meleeVerbs.TryMeleeAttack(pawn);
 							collideWithPawns = true;
 							return;
 						}
 					}
-					if (flag2)
+					if (flag2 && thingList[j] is Fire fire2 && (fire == null || fire2.fireSize < fire.fireSize || i == 8) && (fire2.parent == null || fire2.parent != base.pawn))
 					{
-						Fire fire2 = thingList[j] as Fire;
-						if (fire2 != null && (fire == null || fire2.fireSize < fire.fireSize || i == 8) && (fire2.parent == null || fire2.parent != base.pawn))
-						{
-							fire = fire2;
-						}
+						fire = fire2;
 					}
 				}
 			}
@@ -123,7 +130,7 @@ namespace Verse.AI
 			}
 			else
 			{
-				if (!flag || !job.canUseRangedWeapon || base.pawn.Faction == null || job.def != JobDefOf.Wait_Combat || (base.pawn.drafter != null && !base.pawn.drafter.FireAtWill))
+				if (!flag || !job.canUseRangedWeapon || job.def != JobDefOf.Wait_Combat || (base.pawn.drafter != null && !base.pawn.drafter.FireAtWill))
 				{
 					return;
 				}
@@ -131,7 +138,7 @@ namespace Verse.AI
 				if (currentEffectiveVerb != null && !currentEffectiveVerb.verbProps.IsMeleeAttack)
 				{
 					TargetScanFlags targetScanFlags = TargetScanFlags.NeedLOSToAll | TargetScanFlags.NeedThreat | TargetScanFlags.NeedAutoTargetable;
-					if (currentEffectiveVerb.IsIncendiary())
+					if (currentEffectiveVerb.IsIncendiary_Ranged())
 					{
 						targetScanFlags |= TargetScanFlags.NeedNonBurning;
 					}

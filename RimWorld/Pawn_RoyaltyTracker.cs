@@ -23,7 +23,7 @@ namespace RimWorld
 
 		private List<FactionPermit> factionPermits = new List<FactionPermit>();
 
-		private Dictionary<Faction, int> permitPoints = new Dictionary<Faction, int>();
+		private List<Ability> abilities = new List<Ability>();
 
 		public int lastDecreeTicks = -999999;
 
@@ -33,7 +33,7 @@ namespace RimWorld
 
 		private static List<RoyalTitle> EmptyTitles = new List<RoyalTitle>();
 
-		private const int BestowingCeremonyCheckInterval = 900000;
+		private const int BestowingCeremonyCheckInterval = 37500;
 
 		private List<string> tmpDecreeTags = new List<string>();
 
@@ -51,11 +51,7 @@ namespace RimWorld
 
 		private List<Faction> tmpHeirFactions;
 
-		private List<Faction> tmpPermitFactions;
-
 		private List<int> tmpAmounts;
-
-		private List<int> tmpPermitPointsAmounts;
 
 		private List<Pawn> tmpPawns;
 
@@ -67,7 +63,7 @@ namespace RimWorld
 		{
 			get
 			{
-				if (!pawn.IsWildMan())
+				if (!pawn.IsWildMan() && (!pawn.IsMutant || !pawn.mutant.Def.disableTitles))
 				{
 					return titles;
 				}
@@ -94,6 +90,8 @@ namespace RimWorld
 			}
 		}
 
+		public List<Ability> AllAbilitiesForReading => abilities;
+
 		public IEnumerable<QuestScriptDef> PossibleDecreeQuests
 		{
 			get
@@ -115,7 +113,8 @@ namespace RimWorld
 						IIncidentTarget mapHeld = pawn.MapHeld;
 						slate.Set("points", StorytellerUtility.DefaultThreatPointsNow(mapHeld ?? Find.World));
 						slate.Set("asker", pawn);
-						if (allDef.CanRun(slate))
+						mapHeld = pawn.MapHeld;
+						if (allDef.CanRun(slate, mapHeld ?? Find.World))
 						{
 							yield return allDef;
 						}
@@ -128,9 +127,9 @@ namespace RimWorld
 		{
 			get
 			{
-				foreach (KeyValuePair<Faction, int> permitPoint in permitPoints)
+				foreach (Faction item in Find.FactionManager.AllFactionsVisible)
 				{
-					if (permitPoint.Value > 0)
+					if (GetPermitPoints(item) > 0)
 					{
 						return true;
 					}
@@ -210,24 +209,16 @@ namespace RimWorld
 
 		public void AddPermit(RoyalTitlePermitDef permit, Faction faction)
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (!ModLister.CheckRoyalty("Permit") || HasPermit(permit, faction))
 			{
-				Log.ErrorOnce("Permits are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 63693412);
+				return;
 			}
-			else
+			if (permit.prerequisite != null && HasPermit(permit.prerequisite, faction))
 			{
-				if (HasPermit(permit, faction))
-				{
-					return;
-				}
-				if (permit.prerequisite != null && HasPermit(permit.prerequisite, faction))
-				{
-					FactionPermit item = factionPermits.Find((FactionPermit x) => x.Permit == permit.prerequisite && x.Faction == faction);
-					factionPermits.Remove(item);
-				}
-				factionPermits.Add(new FactionPermit(faction, GetCurrentTitle(faction), permit));
-				RecalculatePermitPoints(faction);
+				FactionPermit item = factionPermits.Find((FactionPermit x) => x.Permit == permit.prerequisite && x.Faction == faction);
+				factionPermits.Remove(item);
 			}
+			factionPermits.Add(new FactionPermit(faction, GetCurrentTitle(faction), permit));
 		}
 
 		public void RefundPermits(int favorCost, Faction faction)
@@ -251,7 +242,6 @@ namespace RimWorld
 				int num2 = GetFavor(faction);
 				favor[faction] -= favorCost;
 				OnFavorChanged(faction, num2, num2 - favorCost);
-				RecalculatePermitPoints(faction);
 			}
 		}
 
@@ -274,23 +264,6 @@ namespace RimWorld
 				return false;
 			}
 			return false;
-		}
-
-		[Obsolete]
-		public int GetPermitLastUsedTick(RoyalTitlePermitDef permitDef)
-		{
-			return -1;
-		}
-
-		[Obsolete]
-		public bool PermitOnCooldown(RoyalTitlePermitDef permitDef)
-		{
-			return false;
-		}
-
-		[Obsolete]
-		public void Notify_PermitUsed(RoyalTitlePermitDef permitDef)
-		{
 		}
 
 		public RoyalTitleDef MainTitle()
@@ -333,33 +306,61 @@ namespace RimWorld
 
 		public int GetPermitPoints(Faction faction)
 		{
-			if (!permitPoints.TryGetValue(faction, out var value))
+			int num = 0;
+			RoyalTitleDef royalTitleDef = GetCurrentTitle(faction);
+			int num2 = 200;
+			while (royalTitleDef != null)
 			{
-				return 0;
+				num += royalTitleDef.permitPointsAwarded;
+				royalTitleDef = royalTitleDef.GetPreviousTitle_IncludeNonRewardable(faction);
+				num2--;
+				if (num2 <= 0)
+				{
+					Log.ErrorOnce("GetPermitPoints exceeded iterations limit.", 1837503);
+					break;
+				}
 			}
-			return value;
+			for (int i = 0; i < factionPermits.Count; i++)
+			{
+				if (factionPermits[i].Faction != faction)
+				{
+					continue;
+				}
+				RoyalTitlePermitDef royalTitlePermitDef = factionPermits[i].Permit;
+				num2 = 200;
+				while (royalTitlePermitDef != null)
+				{
+					num -= royalTitlePermitDef.permitPointCost;
+					royalTitlePermitDef = royalTitlePermitDef.prerequisite;
+					num2--;
+					if (num2 <= 0)
+					{
+						Log.ErrorOnce("GetPermitPoints exceeded iterations limit.", 1837503);
+						break;
+					}
+				}
+			}
+			return num;
 		}
 
 		public void GainFavor(Faction faction, int amount)
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (ModLister.CheckRoyalty("Honor"))
 			{
-				Log.ErrorOnce("Honor is a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 63699999);
-				return;
+				int oldAmount = GetFavor(faction);
+				if (!favor.TryGetValue(faction, out var value))
+				{
+					value = 0;
+					favor.Add(faction, 0);
+				}
+				value += amount;
+				favor[faction] = value;
+				if (amount < 0)
+				{
+					TryUpdateTitle(faction);
+				}
+				OnFavorChanged(faction, oldAmount, value);
 			}
-			int oldAmount = GetFavor(faction);
-			if (!favor.TryGetValue(faction, out var value))
-			{
-				value = 0;
-				favor.Add(faction, 0);
-			}
-			value += amount;
-			favor[faction] = value;
-			if (amount < 0)
-			{
-				TryUpdateTitle_NewTemp(faction);
-			}
-			OnFavorChanged(faction, oldAmount, value);
 		}
 
 		public RoyalTitleDef GetTitleAwardedWhenUpdating(Faction faction, int favor)
@@ -404,23 +405,17 @@ namespace RimWorld
 			return num >= nextTitle.favorCost;
 		}
 
-		public bool TryUpdateTitle_NewTemp(Faction faction, bool sendLetter = true, RoyalTitleDef updateTo = null)
+		public bool TryUpdateTitle(Faction faction, bool sendLetter = true, RoyalTitleDef updateTo = null)
 		{
 			RoyalTitleDef currentTitle = GetCurrentTitle(faction);
-			UpdateRoyalTitle_NewTemp(faction, sendLetter, updateTo);
+			UpdateRoyalTitle(faction, sendLetter, updateTo);
 			RoyalTitleDef currentTitle2 = GetCurrentTitle(faction);
 			if (currentTitle2 != currentTitle)
 			{
 				ApplyRewardsForTitle(faction, currentTitle, currentTitle2);
-				OnPostTitleChanged_NewTemp(faction, currentTitle, currentTitle2);
+				OnPostTitleChanged(faction, currentTitle, currentTitle2);
 			}
 			return currentTitle2 != currentTitle;
-		}
-
-		[Obsolete("Will be removed in a future update")]
-		public bool TryUpdateTitle(Faction faction, bool sendLetter = true)
-		{
-			return TryUpdateTitle_NewTemp(faction, sendLetter);
 		}
 
 		public bool TryRemoveFavor(Faction faction, int amount)
@@ -430,36 +425,28 @@ namespace RimWorld
 			{
 				return false;
 			}
-			SetFavor_NewTemp(faction, num - amount);
+			SetFavor(faction, num - amount);
 			return true;
 		}
 
-		public void SetFavor_NewTemp(Faction faction, int amount, bool notifyOnFavorChanged = true)
+		public void SetFavor(Faction faction, int amount, bool notifyOnFavorChanged = true)
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (ModLister.CheckRoyalty("Honor"))
 			{
-				Log.ErrorOnce("Honor is a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 7641236);
-				return;
+				int oldAmount = GetFavor(faction);
+				if (amount == 0 && favor.ContainsKey(faction) && FindFactionTitleIndex(faction) == -1)
+				{
+					favor.Remove(faction);
+				}
+				else
+				{
+					favor.SetOrAdd(faction, amount);
+				}
+				if (notifyOnFavorChanged)
+				{
+					OnFavorChanged(faction, oldAmount, amount);
+				}
 			}
-			int oldAmount = GetFavor(faction);
-			if (amount == 0 && favor.ContainsKey(faction) && FindFactionTitleIndex(faction) == -1)
-			{
-				favor.Remove(faction);
-			}
-			else
-			{
-				favor.SetOrAdd(faction, amount);
-			}
-			if (notifyOnFavorChanged)
-			{
-				OnFavorChanged(faction, oldAmount, amount);
-			}
-		}
-
-		[Obsolete("Will be removed in the future.")]
-		public void SetFavor(Faction faction, int amount)
-		{
-			SetFavor_NewTemp(faction, amount);
 		}
 
 		private void OnFavorChanged(Faction faction, int oldAmount, int newAmount)
@@ -517,7 +504,12 @@ namespace RimWorld
 
 		public RoyalTitleDef GetCurrentTitle(Faction faction)
 		{
-			return GetCurrentTitleInFaction(faction)?.def;
+			RoyalTitle currentTitleInFaction = GetCurrentTitleInFaction(faction);
+			if (AllTitlesInEffectForReading.Contains(currentTitleInFaction))
+			{
+				return currentTitleInFaction?.def;
+			}
+			return null;
 		}
 
 		public RoyalTitle GetCurrentTitleInFaction(Faction faction)
@@ -536,29 +528,27 @@ namespace RimWorld
 
 		public void SetTitle(Faction faction, RoyalTitleDef title, bool grantRewards, bool rewardsOnlyForNewestTitle = false, bool sendLetter = true)
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (ModLister.CheckRoyalty("Honor"))
 			{
-				Log.ErrorOnce("Honor is a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 7445532);
-				return;
+				RoyalTitleDef currentTitle = GetCurrentTitle(faction);
+				OnPreTitleChanged(faction, currentTitle, title, sendLetter);
+				if (grantRewards)
+				{
+					ApplyRewardsForTitle(faction, currentTitle, title, rewardsOnlyForNewestTitle);
+				}
+				int index = FindFactionTitleIndex(faction, createIfNotExisting: true);
+				if (title != null)
+				{
+					titles[index].def = title;
+					titles[index].receivedTick = GenTicks.TicksGame;
+				}
+				else
+				{
+					titles.RemoveAt(index);
+				}
+				SetFavor(faction, 0);
+				OnPostTitleChanged(faction, currentTitle, title);
 			}
-			RoyalTitleDef currentTitle = GetCurrentTitle(faction);
-			OnPreTitleChanged(faction, currentTitle, title, sendLetter);
-			if (grantRewards)
-			{
-				ApplyRewardsForTitle(faction, currentTitle, title, rewardsOnlyForNewestTitle);
-			}
-			int index = FindFactionTitleIndex(faction, createIfNotExisting: true);
-			if (title != null)
-			{
-				titles[index].def = title;
-				titles[index].receivedTick = GenTicks.TicksGame;
-			}
-			else
-			{
-				titles.RemoveAt(index);
-			}
-			SetFavor_NewTemp(faction, 0);
-			OnPostTitleChanged_NewTemp(faction, currentTitle, title);
 		}
 
 		public void ReduceTitle(Faction faction)
@@ -594,8 +584,8 @@ namespace RimWorld
 			{
 				titles[index].def = previousTitle;
 			}
-			SetFavor_NewTemp(faction, 0);
-			OnPostTitleChanged_NewTemp(faction, currentTitle, previousTitle);
+			SetFavor(faction, 0);
+			OnPostTitleChanged(faction, currentTitle, previousTitle);
 		}
 
 		public Pawn GetHeir(Faction faction)
@@ -617,22 +607,22 @@ namespace RimWorld
 
 		public void AssignHeirIfNone(RoyalTitleDef t, Faction faction)
 		{
-			if (!heirs.ContainsKey(faction) && t.Awardable && pawn.FactionOrExtraMiniOrHomeFaction != Faction.Empire)
+			if (!heirs.ContainsKey(faction) && t.Awardable && (Faction.OfEmpire == null || pawn.HomeFaction != Faction.OfEmpire))
 			{
 				SetHeir(t.GetInheritanceWorker(faction).FindHeir(faction, pawn, t), faction);
 			}
 		}
 
-		public void RoyaltyTrackerTick()
+		public void RoyaltyTrackerTickInterval(int delta)
 		{
-			if (pawn.IsHashIntervalTick(900000) && RoyalTitleUtility.ShouldGetBestowingCeremonyQuest(pawn, out var faction))
+			if (pawn.IsHashIntervalTick(37500, delta) && RoyalTitleUtility.ShouldGetBestowingCeremonyQuest(pawn, out var faction))
 			{
 				RoyalTitleUtility.GenerateBestowingCeremonyQuest(pawn, faction);
 			}
 			List<RoyalTitle> allTitlesInEffectForReading = AllTitlesInEffectForReading;
 			for (int i = 0; i < allTitlesInEffectForReading.Count; i++)
 			{
-				allTitlesInEffectForReading[i].RoyalTitleTick_NewTemp();
+				allTitlesInEffectForReading[i].RoyalTitleTick(delta);
 			}
 			if (!pawn.Spawned || pawn.RaceProps.Animal)
 			{
@@ -667,9 +657,8 @@ namespace RimWorld
 
 		public void IssueDecree(bool causedByMentalBreak, string mentalBreakReason = null)
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (!ModLister.CheckRoyalty("Decree"))
 			{
-				Log.ErrorOnce("Decrees are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 281653);
 				return;
 			}
 			IIncidentTarget mapHeld = pawn.MapHeld;
@@ -682,15 +671,15 @@ namespace RimWorld
 				slate.Set("asker", pawn);
 				Quest quest = QuestUtility.GenerateQuestAndMakeAvailable(result, slate);
 				target.StoryState.RecordDecreeFired(result);
-				string str = ((!causedByMentalBreak) ? ((string)"LetterLabelRandomDecree".Translate(pawn)) : ((string)("WildDecree".Translate() + ": " + pawn.LabelShortCap)));
-				string text = ((!causedByMentalBreak) ? ((string)"LetterRandomDecree".Translate(pawn)) : ((string)"LetterDecreeMentalBreak".Translate(pawn)));
+				string text = ((!causedByMentalBreak) ? ((string)"LetterLabelRandomDecree".Translate(pawn)) : ((string)("WildDecree".Translate() + ": " + pawn.LabelShortCap)));
+				string text2 = ((!causedByMentalBreak) ? ((string)"LetterRandomDecree".Translate(pawn)) : ((string)"LetterDecreeMentalBreak".Translate(pawn)));
 				if (mentalBreakReason != null)
 				{
-					text = text + "\n\n" + mentalBreakReason;
+					text2 = text2 + "\n\n" + mentalBreakReason;
 				}
-				text += "\n\n" + "LetterDecree_Quest".Translate(quest.name);
-				ChoiceLetter let = LetterMaker.MakeLetter(str, text, IncidentDefOf.GiveQuest_Random.letterDef, LookTargets.Invalid, null, quest);
-				Find.LetterStack.ReceiveLetter(let);
+				text2 += "\n\n" + "LetterDecree_Quest".Translate(quest.name);
+				ChoiceLetter choiceLetter = LetterMaker.MakeLetter(text, text2, IncidentDefOf.GiveQuest_Random.letterDef, LookTargets.Invalid, null, quest);
+				Find.LetterStack.ReceiveLetter(choiceLetter);
 			}
 		}
 
@@ -750,13 +739,15 @@ namespace RimWorld
 						factionPermits.Remove(list[i]);
 					}
 				}
-				RecalculatePermitPoints(faction);
 			}
 		}
 
 		private void OnPreTitleChanged(Faction faction, RoyalTitleDef currentTitle, RoyalTitleDef newTitle, bool sendLetter = true)
 		{
-			AssignHeirIfNone(newTitle, faction);
+			if (newTitle != null)
+			{
+				AssignHeirIfNone(newTitle, faction);
+			}
 			if (Current.ProgramState == ProgramState.Playing && sendLetter && pawn.IsColonist)
 			{
 				TaggedString taggedString = null;
@@ -772,7 +763,7 @@ namespace RimWorld
 			}
 		}
 
-		private void OnPostTitleChanged_NewTemp(Faction faction, RoyalTitleDef prevTitle, RoyalTitleDef newTitle)
+		private void OnPostTitleChanged(Faction faction, RoyalTitleDef prevTitle, RoyalTitleDef newTitle)
 		{
 			pawn.Notify_DisabledWorkTypesChanged();
 			pawn.needs?.AddOrRemoveNeedsAsAppropriate();
@@ -785,24 +776,16 @@ namespace RimWorld
 						pawn.jobs.Notify_JoyKindDisabled(disabledJoyKind);
 					}
 				}
-				for (int i = 0; i < newTitle.grantedAbilities.Count; i++)
-				{
-					pawn.abilities.GainAbility(newTitle.grantedAbilities[i]);
-				}
+				UpdateAvailableAbilities();
+				pawn.abilities.Notify_TemporaryAbilitiesChanged();
 				UpdateHighestTitleAchieved(faction, newTitle);
 			}
 			QuestUtility.SendQuestTargetSignals(pawn.questTags, "TitleChanged", pawn.Named("SUBJECT"));
 			MeditationFocusTypeAvailabilityCache.ClearFor(pawn);
-			RecalculatePermitPoints(faction);
+			pawn.apparel?.Notify_TitleChanged();
 		}
 
-		[Obsolete("Will be removed in a future update")]
-		private void OnPostTitleChanged(Faction faction, RoyalTitleDef newTitle)
-		{
-			OnPostTitleChanged_NewTemp(faction, newTitle, newTitle);
-		}
-
-		private void UpdateRoyalTitle_NewTemp(Faction faction, bool sendLetter = true, RoyalTitleDef updateTo = null)
+		private void UpdateRoyalTitle(Faction faction, bool sendLetter = true, RoyalTitleDef updateTo = null)
 		{
 			RoyalTitleDef currentTitle = GetCurrentTitle(faction);
 			if (currentTitle != null && !currentTitle.Awardable)
@@ -818,7 +801,7 @@ namespace RimWorld
 			if (num >= nextTitle.favorCost)
 			{
 				OnPreTitleChanged(faction, currentTitle, nextTitle, sendLetter);
-				SetFavor_NewTemp(faction, num - nextTitle.favorCost, notifyOnFavorChanged: false);
+				SetFavor(faction, num - nextTitle.favorCost, notifyOnFavorChanged: false);
 				int index = FindFactionTitleIndex(faction, createIfNotExisting: true);
 				titles[index].def = nextTitle;
 				CleanupThoughts(currentTitle);
@@ -831,15 +814,9 @@ namespace RimWorld
 				}
 				if (nextTitle != updateTo)
 				{
-					UpdateRoyalTitle_NewTemp(faction, sendLetter);
+					UpdateRoyalTitle(faction, sendLetter);
 				}
 			}
-		}
-
-		[Obsolete("Will be removed in a future update.")]
-		private void UpdateRoyalTitle(Faction faction)
-		{
-			UpdateRoyalTitle_NewTemp(faction);
 		}
 
 		public List<Thing> ApplyRewardsForTitle(Faction faction, RoyalTitleDef currentTitle, RoyalTitleDef newTitle, bool onlyForNewestTitle = false)
@@ -880,9 +857,9 @@ namespace RimWorld
 						thing.stackCount = r.count;
 						return thing;
 					}).ToList();
-					for (int j = 0; j < list3.Count; j++)
+					for (int num3 = 0; num3 < list3.Count; num3++)
 					{
-						if (list3[j].def == ThingDefOf.PsychicAmplifier)
+						if (list3[num3].def == ThingDefOf.PsychicAmplifier)
 						{
 							Find.History.Notify_PsylinkAvailable();
 							break;
@@ -899,9 +876,9 @@ namespace RimWorld
 							pawn.inventory.TryAddItemNotForSale(item);
 						}
 					}
-					for (int k = 0; k < list3.Count; k++)
+					for (int num4 = 0; num4 < list3.Count; num4++)
 					{
-						list2.Add(new ThingCount(list3[k], list3[k].stackCount));
+						list2.Add(new ThingCount(list3[num4], list3[num4].stackCount));
 					}
 					list.AddRange(list3);
 				}
@@ -946,18 +923,27 @@ namespace RimWorld
 			{
 				yield break;
 			}
-			Faction key = permitPoints.FirstOrDefault().Key;
-			if (key != null)
+			Faction faction = null;
+			foreach (Faction item in Find.FactionManager.AllFactionsVisibleInViewOrder)
+			{
+				if (GetPermitPoints(item) > 0)
+				{
+					faction = item;
+					break;
+				}
+			}
+			if (faction != null)
 			{
 				Command_Action command_Action = new Command_Action();
 				command_Action.defaultLabel = "ChooseRoyalPermit".Translate();
 				command_Action.defaultDesc = "ChooseRoyalPermit_Desc".Translate();
-				command_Action.icon = key.def.FactionIcon;
-				command_Action.defaultIconColor = key.Color;
+				command_Action.icon = faction.def.FactionIcon;
+				command_Action.defaultIconColor = faction.Color;
 				command_Action.action = delegate
 				{
 					OpenPermitWindow();
 				};
+				command_Action.Order = -100f;
 				yield return command_Action;
 			}
 		}
@@ -971,7 +957,7 @@ namespace RimWorld
 
 		public void Notify_PawnKilled()
 		{
-			if (PawnGenerator.IsBeingGenerated(pawn) || AllTitlesForReading.Count == 0)
+			if (PawnGenerator.IsBeingGenerated(pawn) || AllTitlesForReading.Count == 0 || (pawn.IsMutant && pawn.mutant.Def.disableTitles))
 			{
 				return;
 			}
@@ -1062,11 +1048,21 @@ namespace RimWorld
 			foreach (Faction item in titles.Select((RoyalTitle t) => t.faction).Distinct().ToList())
 			{
 				int index = FindFactionTitleIndex(item);
-				if (titles[index].wasInherited)
+				if (!titles[index].wasInherited)
 				{
-					SetTitle(item, null, grantRewards: false, rewardsOnlyForNewestTitle: false, sendLetter: false);
+					continue;
 				}
+				List<FactionPermit> list = PermitsFromFaction(item);
+				for (int num = 0; num < list.Count; num++)
+				{
+					if (list[num].Title == titles[index].def)
+					{
+						factionPermits.Remove(list[num]);
+					}
+				}
+				SetTitle(item, null, grantRewards: false, rewardsOnlyForNewestTitle: false, sendLetter: false);
 			}
+			UpdateAvailableAbilities();
 		}
 
 		public Gizmo RoyalAidGizmo()
@@ -1079,13 +1075,26 @@ namespace RimWorld
 			{
 				command_Action.defaultLabel = command_Action.defaultLabel + " (" + pawn.LabelShort + ")";
 			}
+			if (pawn.Spawned && pawn.Map.weatherManager.CurWeatherMaxRangeCap >= 0f)
+			{
+				command_Action.defaultDescPostfix = "\n\n" + ("WeatherMaxRangeCap".Translate() + ": " + pawn.Map.weatherManager.curWeather.LabelCap).Colorize(ColoredText.WarningColor);
+			}
 			if (pawn.Downed)
 			{
 				command_Action.Disable("CommandDisabledUnconscious".TranslateWithBackup("CommandCallRoyalAidUnconscious").Formatted(pawn));
 			}
+			if (pawn.IsSlave)
+			{
+				command_Action.Disable("CommandCallRoyalAidSlave".Translate());
+			}
 			if (pawn.IsQuestLodger())
 			{
 				command_Action.Disable("CommandCallRoyalAidLodger".Translate());
+			}
+			Map mapHeld = pawn.MapHeld;
+			if (mapHeld != null && mapHeld.IsPocketMap && mapHeld.generatorDef.disableCallAid)
+			{
+				command_Action.Disable("CommandCallRoyalAidInvalidMap".Translate());
 			}
 			command_Action.action = delegate
 			{
@@ -1132,34 +1141,65 @@ namespace RimWorld
 
 		public IEnumerable<string> GetUnmetThroneroomRequirements(bool includeOnGracePeriod = true, bool onlyOnGracePeriod = false)
 		{
-			if (pawn.ownership.AssignedThrone == null)
+			Building_Throne assignedThrone = pawn.ownership.AssignedThrone;
+			if (assignedThrone == null || !assignedThrone.SpawnedOrAnyParentSpawned || GenTicks.TicksGame - assignedThrone.MapHeld.generationTick < 10)
 			{
 				yield break;
 			}
-			RoyalTitle highestTitle = HighestTitleWithThroneRoomRequirements();
-			if (highestTitle == null)
+			RoyalTitle royalTitle = HighestTitleWithThroneRoomRequirements();
+			if (royalTitle == null)
 			{
 				yield break;
 			}
-			Room throneRoom = pawn.ownership.AssignedThrone.GetRoom();
+			Room throneRoom = assignedThrone.GetRoom();
 			if (throneRoom == null)
 			{
 				yield break;
 			}
 			bool roomValid = RoomRoleWorker_ThroneRoom.Validate(throneRoom) == null;
-			RoyalTitleDef prevTitle = highestTitle.def.GetPreviousTitle(highestTitle.faction);
-			foreach (RoomRequirement throneRoomRequirement in highestTitle.def.throneRoomRequirements)
+			bool gracePeriodActive = royalTitle.RoomRequirementGracePeriodActive(pawn);
+			RoyalTitleDef prevTitle = royalTitle.def.GetPreviousTitle(royalTitle.faction);
+			foreach (RoomRequirement throneRoomRequirement in royalTitle.def.throneRoomRequirements)
 			{
-				if (!roomValid || !throneRoomRequirement.Met(throneRoom, pawn))
+				if (!roomValid || !throneRoomRequirement.MetOrDisabled(throneRoom, pawn))
 				{
-					bool flag = highestTitle.RoomRequirementGracePeriodActive(pawn);
-					bool flag2 = prevTitle != null && !prevTitle.HasSameThroneroomRequirement(throneRoomRequirement);
-					if ((!onlyOnGracePeriod || (flag2 && flag)) && (!(flag && flag2) || includeOnGracePeriod))
+					bool flag = (prevTitle != null && !prevTitle.HasSameThroneroomRequirement(throneRoomRequirement)) || MoveColonyUtility.TitleAndRoleRequirementsGracePeriodActive;
+					if ((!onlyOnGracePeriod || (flag && gracePeriodActive)) && (!(gracePeriodActive && flag) || includeOnGracePeriod))
 					{
 						yield return throneRoomRequirement.LabelCap(throneRoom);
 					}
 				}
 			}
+		}
+
+		public bool AnyUnmetThroneroomRequirements()
+		{
+			if (pawn.ownership.AssignedThrone == null)
+			{
+				return false;
+			}
+			RoyalTitle royalTitle = HighestTitleWithThroneRoomRequirements();
+			if (royalTitle == null)
+			{
+				return false;
+			}
+			Room room = pawn.ownership.AssignedThrone.GetRoom();
+			if (room == null)
+			{
+				return false;
+			}
+			if (RoomRoleWorker_ThroneRoom.Validate(room) != null)
+			{
+				return true;
+			}
+			foreach (RoomRequirement throneRoomRequirement in royalTitle.def.throneRoomRequirements)
+			{
+				if (!throneRoomRequirement.MetOrDisabled(room, pawn))
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 
 		public bool CanRequireBedroom()
@@ -1189,6 +1229,33 @@ namespace RimWorld
 			return royalTitle;
 		}
 
+		public void UpdateAvailableAbilities()
+		{
+			abilities.RemoveAll(delegate(Ability a)
+			{
+				for (int i = 0; i < AllTitlesInEffectForReading.Count; i++)
+				{
+					if (AllTitlesInEffectForReading[i].def.grantedAbilities.Contains(a.def))
+					{
+						return false;
+					}
+				}
+				return true;
+			});
+			for (int num = 0; num < AllTitlesInEffectForReading.Count; num++)
+			{
+				RoyalTitle royalTitle = AllTitlesInEffectForReading[num];
+				for (int num2 = 0; num2 < royalTitle.def.grantedAbilities.Count; num2++)
+				{
+					AbilityDef def = royalTitle.def.grantedAbilities[num2];
+					if (!abilities.Any((Ability a) => a.def == def))
+					{
+						abilities.Add(AbilityUtility.MakeAbility(royalTitle.def.grantedAbilities[num2], pawn));
+					}
+				}
+			}
+		}
+
 		public IEnumerable<string> GetUnmetBedroomRequirements(bool includeOnGracePeriod = true, bool onlyOnGracePeriod = false)
 		{
 			RoyalTitle royalTitle = HighestTitleWithBedroomRequirements();
@@ -1205,9 +1272,9 @@ namespace RimWorld
 			Room bedroom = pawn.ownership.OwnedRoom;
 			foreach (RoomRequirement bedroomRequirement in royalTitle.def.GetBedroomRequirements(pawn))
 			{
-				if (!bedroomRequirement.Met(bedroom))
+				if (!bedroomRequirement.MetOrDisabled(bedroom, pawn))
 				{
-					bool flag = prevTitle != null && !prevTitle.HasSameBedroomRequirement(bedroomRequirement);
+					bool flag = (prevTitle != null && !prevTitle.HasSameBedroomRequirement(bedroomRequirement)) || MoveColonyUtility.TitleAndRoleRequirementsGracePeriodActive;
 					if ((!onlyOnGracePeriod || (flag && gracePeriodActive)) && (!(gracePeriodActive && flag) || includeOnGracePeriod))
 					{
 						yield return bedroomRequirement.LabelCap(bedroom);
@@ -1216,43 +1283,26 @@ namespace RimWorld
 			}
 		}
 
-		public void RecalculatePermitPoints(Faction faction)
+		public bool AnyUnmetBedroomRequirements()
 		{
-			int num = 0;
-			RoyalTitleDef royalTitleDef = GetCurrentTitle(faction);
-			int num2 = 200;
-			while (royalTitleDef != null)
+			RoyalTitle royalTitle = HighestTitleWithBedroomRequirements();
+			if (royalTitle == null)
 			{
-				num += royalTitleDef.permitPointsAwarded;
-				royalTitleDef = royalTitleDef.GetPreviousTitle_IncludeNonRewardable(faction);
-				num2--;
-				if (num2 <= 0)
+				return false;
+			}
+			if (!HasPersonalBedroom())
+			{
+				return false;
+			}
+			Room ownedRoom = pawn.ownership.OwnedRoom;
+			foreach (RoomRequirement bedroomRequirement in royalTitle.def.GetBedroomRequirements(pawn))
+			{
+				if (!bedroomRequirement.MetOrDisabled(ownedRoom, pawn))
 				{
-					Log.ErrorOnce("GetPermitPoints exceeded iterations limit.", 1837503);
-					break;
+					return true;
 				}
 			}
-			for (int i = 0; i < factionPermits.Count; i++)
-			{
-				if (factionPermits[i].Faction != faction)
-				{
-					continue;
-				}
-				RoyalTitlePermitDef royalTitlePermitDef = factionPermits[i].Permit;
-				num2 = 200;
-				while (royalTitlePermitDef != null)
-				{
-					num -= royalTitlePermitDef.permitPointCost;
-					royalTitlePermitDef = royalTitlePermitDef.prerequisite;
-					num2--;
-					if (num2 <= 0)
-					{
-						Log.ErrorOnce("GetPermitPoints exceeded iterations limit.", 1837503);
-						break;
-					}
-				}
-			}
-			permitPoints[faction] = num;
+			return false;
 		}
 
 		public bool HasPersonalBedroom()
@@ -1269,9 +1319,13 @@ namespace RimWorld
 			}
 			foreach (Building_Bed containedBed in ownedRoom.ContainedBeds)
 			{
-				if (containedBed != ownedBed && containedBed.OwnersForReading.Any((Pawn p) => p != pawn && !p.RaceProps.Animal && !LovePartnerRelationUtility.LovePartnerRelationExists(p, pawn)))
+				if (containedBed != ownedBed)
 				{
-					return false;
+					List<Pawn> loveCluster = pawn.GetLoveCluster();
+					if (containedBed.OwnersForReading.Any((Pawn p) => p != pawn && !p.RaceProps.Animal && !loveCluster.Contains(p)))
+					{
+						return false;
+					}
 				}
 			}
 			return true;
@@ -1286,8 +1340,8 @@ namespace RimWorld
 			Scribe_Collections.Look(ref heirs, "heirs", LookMode.Reference, LookMode.Reference, ref tmpHeirFactions, ref tmpPawns);
 			Scribe_Values.Look(ref allowRoomRequirements, "allowRoomRequirements", defaultValue: true);
 			Scribe_Values.Look(ref allowApparelRequirements, "allowApparelRequirements", defaultValue: true);
-			Scribe_Collections.Look(ref permitPoints, "permitPoints", LookMode.Reference, LookMode.Value, ref tmpPermitFactions, ref tmpPermitPointsAmounts);
 			Scribe_Collections.Look(ref factionPermits, "permits", LookMode.Deep);
+			Scribe_Collections.Look(ref abilities, "abilities", LookMode.Deep, pawn);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				if (titles.RemoveAll((RoyalTitle x) => x.def == null) != 0)
@@ -1306,14 +1360,6 @@ namespace RimWorld
 				{
 					factionPermits = new List<FactionPermit>();
 				}
-				if (permitPoints == null)
-				{
-					permitPoints = new Dictionary<Faction, int>();
-					for (int i = 0; i < AllTitlesInEffectForReading.Count; i++)
-					{
-						RecalculatePermitPoints(AllTitlesInEffectForReading[i].faction);
-					}
-				}
 				if (factionPermits.RemoveAll((FactionPermit x) => DefDatabase<RoyalTitlePermitDef>.AllDefs.Any((RoyalTitlePermitDef y) => y.prerequisite == x.Permit && HasPermit(y, x.Faction) && HasPermit(y.prerequisite, x.Faction))) != 0)
 				{
 					Log.Error("Removed some null permits.");
@@ -1322,14 +1368,11 @@ namespace RimWorld
 				{
 					AssignHeirIfNone(title2.def, title2.faction);
 				}
-				for (int j = 0; j < AllTitlesInEffectForReading.Count; j++)
+				if (abilities == null)
 				{
-					RoyalTitle royalTitle = AllTitlesInEffectForReading[j];
-					for (int k = 0; k < royalTitle.def.grantedAbilities.Count; k++)
-					{
-						pawn.abilities.GainAbility(royalTitle.def.grantedAbilities[k]);
-					}
+					abilities = new List<Ability>();
 				}
+				UpdateAvailableAbilities();
 			}
 			BackCompatibility.PostExposeData(this);
 		}

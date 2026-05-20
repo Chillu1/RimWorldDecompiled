@@ -1,0 +1,174 @@
+using System;
+using RimWorld;
+using Unity.Collections;
+using UnityEngine;
+
+namespace Verse
+{
+	public sealed class SandGrid : IExposable, IDisposable
+	{
+		private Map map;
+
+		private NativeArray<float> depthGrid;
+
+		private double totalDepth;
+
+		public const float MaxDepth = 1f;
+
+		internal NativeArray<float> DepthGrid_Unsafe => depthGrid;
+
+		public float TotalDepth => (float)totalDepth;
+
+		public SandGrid(Map map)
+		{
+			if (ModLister.CheckOdyssey("sand"))
+			{
+				this.map = map;
+				depthGrid = new NativeArray<float>(map.cellIndices.NumGridCells, Allocator.Persistent);
+			}
+		}
+
+		public void ExposeData()
+		{
+			MapExposeUtility.ExposeUshort(map, (IntVec3 c) => SandFloatToShort(GetDepth(c)), delegate(IntVec3 c, ushort val)
+			{
+				depthGrid[map.cellIndices.CellToIndex(c)] = SandShortToFloat(val);
+			}, "depthGrid");
+		}
+
+		private static ushort SandFloatToShort(float depth)
+		{
+			depth = Mathf.Clamp(depth, 0f, 1f);
+			depth *= 65535f;
+			return (ushort)Mathf.RoundToInt(depth);
+		}
+
+		private static float SandShortToFloat(ushort depth)
+		{
+			return (float)(int)depth / 65535f;
+		}
+
+		private bool CanHaveSand(int ind)
+		{
+			Building building = map.edificeGrid[ind];
+			if (building != null && !CanCoexistWithSand(building.def))
+			{
+				return false;
+			}
+			TerrainDef terrainDef = map.terrainGrid.TerrainAt(ind);
+			if (terrainDef == null)
+			{
+				return true;
+			}
+			if (!terrainDef.holdSnowOrSand || terrainDef == TerrainDefOf.Sand || terrainDef == TerrainDefOf.SoftSand)
+			{
+				return false;
+			}
+			return true;
+		}
+
+		public static bool CanCoexistWithSand(ThingDef def)
+		{
+			if (def.category == ThingCategory.Building && def.Fillage == FillCategory.Full)
+			{
+				return false;
+			}
+			return true;
+		}
+
+		public void AddDepth(IntVec3 c, float depthToAdd)
+		{
+			if (!depthGrid.IsCreated)
+			{
+				return;
+			}
+			int num = map.cellIndices.CellToIndex(c);
+			float num2 = depthGrid[num];
+			if ((num2 <= 0f && depthToAdd < 0f) || (num2 >= 0.999f && depthToAdd > 1f))
+			{
+				return;
+			}
+			if (!CanHaveSand(num))
+			{
+				depthGrid[num] = 0f;
+				return;
+			}
+			float value = num2 + depthToAdd;
+			value = Mathf.Clamp(value, 0f, 1f);
+			float num3 = value - num2;
+			totalDepth += num3;
+			if (Mathf.Abs(num3) > 0.0001f)
+			{
+				depthGrid[num] = value;
+				CheckVisualOrPathCostChange(c, num2, value);
+			}
+		}
+
+		public void SetDepth(IntVec3 c, float newDepth)
+		{
+			if (depthGrid.IsCreated)
+			{
+				int num = map.cellIndices.CellToIndex(c);
+				if (newDepth > 0f && !CanHaveSand(num))
+				{
+					newDepth = 0f;
+				}
+				newDepth = Mathf.Clamp(newDepth, 0f, 1f);
+				float num2 = depthGrid[num];
+				depthGrid[num] = newDepth;
+				float num3 = newDepth - num2;
+				totalDepth += num3;
+				CheckVisualOrPathCostChange(c, num2, newDepth);
+			}
+		}
+
+		private void CheckVisualOrPathCostChange(IntVec3 c, float oldDepth, float newDepth)
+		{
+			if (!Mathf.Approximately(oldDepth, newDepth))
+			{
+				if (Mathf.Abs(oldDepth - newDepth) > 0.15f || Rand.Value < 0.0125f)
+				{
+					map.mapDrawer.MapMeshDirty(c, MapMeshFlagDefOf.Sand, regenAdjacentCells: true, regenAdjacentSections: false);
+					map.mapDrawer.MapMeshDirty(c, MapMeshFlagDefOf.Things, regenAdjacentCells: true, regenAdjacentSections: false);
+				}
+				else if (newDepth == 0f)
+				{
+					map.mapDrawer.MapMeshDirty(c, MapMeshFlagDefOf.Sand, regenAdjacentCells: true, regenAdjacentSections: false);
+				}
+				float num = 0.4f;
+				if (c.IsPolluted(map) && ((oldDepth > num && newDepth < num) || (oldDepth < num && newDepth > num)))
+				{
+					map.mapDrawer.MapMeshDirty(c, MapMeshFlagDefOf.Terrain, regenAdjacentCells: true, regenAdjacentSections: false);
+				}
+				if (WeatherBuildupUtility.GetBuildupCategory(oldDepth) != WeatherBuildupUtility.GetBuildupCategory(newDepth))
+				{
+					map.pathing.RecalculatePerceivedPathCostAt(c);
+				}
+			}
+		}
+
+		public void MakeMeshDirty(IntVec3 c)
+		{
+			map.mapDrawer.MapMeshDirty(c, MapMeshFlagDefOf.Sand, regenAdjacentCells: true, regenAdjacentSections: false);
+		}
+
+		public float GetDepth(IntVec3 c)
+		{
+			if (!depthGrid.IsCreated || !c.InBounds(map))
+			{
+				return 0f;
+			}
+			return depthGrid[map.cellIndices.CellToIndex(c)];
+		}
+
+		public WeatherBuildupCategory GetCategory(IntVec3 c)
+		{
+			return WeatherBuildupUtility.GetBuildupCategory(GetDepth(c));
+		}
+
+		public void Dispose()
+		{
+			depthGrid.Dispose();
+		}
+	}
+}

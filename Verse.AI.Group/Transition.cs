@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Verse.AI.Group
@@ -108,7 +109,20 @@ namespace Verse.AI.Group
 				}
 				if (DebugViewSettings.logLordToilTransitions)
 				{
-					Log.Message(string.Concat("Transitioning ", sources, " to ", target, " by trigger ", triggers[i], " on signal ", signal));
+					string[] obj = new string[8]
+					{
+						"Transitioning ",
+						sources?.ToString(),
+						" to ",
+						target?.ToString(),
+						" by trigger ",
+						triggers[i]?.ToString(),
+						" on signal ",
+						null
+					};
+					TriggerSignal triggerSignal = signal;
+					obj[7] = triggerSignal.ToString();
+					Log.Message(string.Concat(obj));
 				}
 				Execute(lord);
 				return true;
@@ -118,19 +132,34 @@ namespace Verse.AI.Group
 
 		public void Execute(Lord lord)
 		{
-			if (canMoveToSameState || target != lord.CurLordToil)
+			if (!canMoveToSameState && target == lord.CurLordToil)
 			{
-				for (int i = 0; i < preActions.Count; i++)
+				return;
+			}
+			for (int i = 0; i < preActions.Count; i++)
+			{
+				try
 				{
 					preActions[i].DoAction(this);
 				}
-				if (target != lord.CurLordToil || updateDutiesIfMovedToSameState)
+				catch (Exception ex)
 				{
-					lord.GotoToil(target);
+					Log.Error("Error in lord's preAction: " + ex);
 				}
-				for (int j = 0; j < postActions.Count; j++)
+			}
+			if (target != lord.CurLordToil || updateDutiesIfMovedToSameState)
+			{
+				lord.GotoToil(target);
+			}
+			for (int j = 0; j < postActions.Count; j++)
+			{
+				try
 				{
 					postActions[j].DoAction(this);
+				}
+				catch (Exception ex2)
+				{
+					Log.Error("Error in lord's postAction: " + ex2);
 				}
 			}
 		}

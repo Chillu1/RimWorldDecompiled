@@ -9,8 +9,7 @@ namespace RimWorld
 	{
 		public override bool ShouldShowFor(StatRequest req)
 		{
-			ThingDef thingDef = req.Def as ThingDef;
-			if (thingDef != null && thingDef.IsWeapon)
+			if (req.Def is ThingDef { IsWeapon: not false } thingDef)
 			{
 				return !thingDef.tools.NullOrEmpty();
 			}
@@ -33,13 +32,12 @@ namespace RimWorld
 			}
 			return (from x in VerbUtility.GetAllVerbProperties(thingDef.Verbs, thingDef.tools)
 				where x.verbProps.IsMeleeAttack
-				select x).AverageWeighted((VerbUtility.VerbPropertiesWithSource x) => x.verbProps.AdjustedMeleeSelectionWeight_NewTmp(x.tool, null, thingDef, req.StuffDef, null, comesFromPawnNativeVerbs: false), (VerbUtility.VerbPropertiesWithSource x) => x.verbProps.AdjustedArmorPenetration_NewTmp(x.tool, null, thingDef, req.StuffDef, null));
+				select x).AverageWeighted((VerbUtility.VerbPropertiesWithSource x) => x.verbProps.AdjustedMeleeSelectionWeight(x.tool, null, thingDef, req.StuffDef, null, comesFromPawnNativeVerbs: false), (VerbUtility.VerbPropertiesWithSource x) => x.verbProps.AdjustedArmorPenetration(x.tool, null, thingDef, req.StuffDef, null));
 		}
 
 		public override string GetExplanationUnfinalized(StatRequest req, ToStringNumberSense numberSense)
 		{
-			ThingDef thingDef = req.Def as ThingDef;
-			if (thingDef == null)
+			if (!(req.Def is ThingDef thingDef))
 			{
 				return null;
 			}

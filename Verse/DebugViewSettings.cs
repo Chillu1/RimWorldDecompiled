@@ -1,3 +1,5 @@
+using RimWorld;
+
 namespace Verse
 {
 	public static class DebugViewSettings
@@ -5,6 +7,8 @@ namespace Verse
 		public static bool drawFog = true;
 
 		public static bool drawSnow = true;
+
+		public static bool drawSand = true;
 
 		public static bool drawTerrain = true;
 
@@ -20,15 +24,27 @@ namespace Verse
 
 		public static bool drawWorldOverlays = true;
 
+		public static bool drawGas = true;
+
+		public static bool singleThreadedDrawing = false;
+
+		public static bool drawWorldObjects = true;
+
 		public static bool drawPaths = false;
+
+		public static bool drawPatherState = false;
 
 		public static bool drawCastPositionSearch = false;
 
 		public static bool drawDestSearch = false;
 
+		public static bool drawStyleSearch = false;
+
 		public static bool drawSectionEdges = false;
 
 		public static bool drawRiverDebug = false;
+
+		public static bool drawRiverFlowDebug = false;
 
 		public static bool drawPawnDebug = false;
 
@@ -44,9 +60,9 @@ namespace Verse
 
 		public static bool drawRegionThings = false;
 
-		public static bool drawRooms = false;
+		public static bool drawDistricts = false;
 
-		public static bool drawRoomGroups = false;
+		public static bool drawRooms = false;
 
 		public static bool drawPower = false;
 
@@ -66,6 +82,10 @@ namespace Verse
 
 		public static bool drawAvoidGrid = false;
 
+		public static bool drawBreachingGrid = false;
+
+		public static bool drawBreachingNoise = false;
+
 		public static bool drawLords = false;
 
 		public static bool drawDuties = false;
@@ -74,11 +94,17 @@ namespace Verse
 
 		public static bool drawInfestationChance = false;
 
+		public static bool drawFleshmassHeartChance = false;
+
 		public static bool drawStealDebug = false;
 
 		public static bool drawDeepResources = false;
 
 		public static bool drawAttackTargetScores = false;
+
+		public static bool drawFOVSymmetry = false;
+
+		public static bool drawNonCombatantTimer = false;
 
 		public static bool drawInteractionCells = false;
 
@@ -87,6 +113,38 @@ namespace Verse
 		public static bool drawDestReservations = false;
 
 		public static bool drawDamageRects = false;
+
+		public static bool drawDissolutionCells = false;
+
+		public static bool drawUnpollutionCells = false;
+
+		public static bool drawHateChanterPositions = false;
+
+		public static bool drawDarknessOverlay = true;
+
+		public static bool drawWoundAnchorsOnHover = false;
+
+		public static bool drawMapGraphs = false;
+
+		public static bool drawMapRooms = false;
+
+		public static bool drawIndoorMask = false;
+
+		public static bool drawOutdoorMask = false;
+
+		public static bool drawShamblerAlertMote = true;
+
+		public static bool drawWaterBodies = false;
+
+		public static bool drawMeltingIce = false;
+
+		public static bool drawUsedRects = false;
+
+		public static bool drawRoadPaths = false;
+
+		public static bool drawGravshipMask = false;
+
+		public static bool drawTerrainCurtain = true;
 
 		public static bool writeGame = false;
 
@@ -117,6 +175,8 @@ namespace Verse
 		public static bool writeMoteSaturation = false;
 
 		public static bool writeSnowDepth = false;
+
+		public static bool writeSandDepth = false;
 
 		public static bool writeEcosystem = false;
 
@@ -154,6 +214,10 @@ namespace Verse
 
 		public static bool writeAttackTargets = false;
 
+		public static bool writeRopesAndPens = false;
+
+		public static bool writeRoomRoles = false;
+
 		public static bool logIncapChance = false;
 
 		public static bool logInput = false;
@@ -182,17 +246,35 @@ namespace Verse
 
 		public static bool logFilthSummary = false;
 
+		public static bool logCarriedBetweenJobs = false;
+
+		public static bool logComplexGenPoints = false;
+
+		public static bool saveGravshipRenders = false;
+
 		public static bool debugApparelOptimize = false;
+
+		public static bool disableGravshipRenderShader = false;
 
 		public static bool showAllRoomStats = false;
 
 		public static bool showFloatMenuWorkGivers = false;
 
+		public static bool neverForceNormalSpeed = false;
+
+		public static bool showArchitectMenuOrder = false;
+
+		public static bool showTpsCounter = false;
+
+		public static bool showFpsCounter = false;
+
+		public static bool showMemoryInfo = false;
+
 		public static void drawTerrainWaterToggled()
 		{
 			if (Find.CurrentMap != null)
 			{
-				Find.CurrentMap.mapDrawer.WholeMapChanged(MapMeshFlag.Terrain);
+				Find.CurrentMap.mapDrawer.WholeMapChanged(MapMeshFlagDefOf.Terrain);
 			}
 		}
 
@@ -200,8 +282,18 @@ namespace Verse
 		{
 			if (Find.CurrentMap != null)
 			{
-				Find.CurrentMap.mapDrawer.WholeMapChanged((MapMeshFlag)(-1));
+				Find.CurrentMap.mapDrawer.WholeMapChanged(~(ulong)MapMeshFlagDefOf.None);
 			}
+		}
+
+		public static void drawIndoorMaskToggled()
+		{
+			Find.CurrentMap.mapDrawer.RegenerateEverythingNow();
+		}
+
+		public static void showMemoryInfoToggled()
+		{
+			MemoryUsageUtility.SetShouldRecord(showMemoryInfo);
 		}
 	}
 }

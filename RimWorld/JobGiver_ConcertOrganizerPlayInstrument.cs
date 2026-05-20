@@ -13,8 +13,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			LordJob_Joinable_Concert lordJob_Joinable_Concert = pawn.GetLord().LordJob as LordJob_Joinable_Concert;
-			if (lordJob_Joinable_Concert == null || lordJob_Joinable_Concert.Organizer != pawn)
+			if (!(pawn.GetLord().LordJob is LordJob_Joinable_Concert lordJob_Joinable_Concert) || lordJob_Joinable_Concert.Organizer != pawn)
 			{
 				return null;
 			}

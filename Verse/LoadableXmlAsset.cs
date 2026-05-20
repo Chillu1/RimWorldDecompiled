@@ -1,43 +1,80 @@
 using System;
 using System.IO;
+using System.Text;
 using System.Xml;
 
 namespace Verse
 {
 	public class LoadableXmlAsset
 	{
-		private static XmlReader reader;
+		public readonly string name;
 
-		public string name;
+		public readonly string fullFolderPath;
 
-		public string fullFolderPath;
+		public readonly XmlDocument xmlDoc;
 
-		public XmlDocument xmlDoc;
+		public readonly ModContentPack mod;
 
-		public ModContentPack mod;
+		private const int BufferSize = 16000;
 
-		public string FullFilePath => fullFolderPath + Path.DirectorySeparatorChar + name;
+		private static readonly XmlReaderSettings Settings = new XmlReaderSettings
+		{
+			IgnoreComments = true,
+			IgnoreWhitespace = true,
+			CheckCharacters = false,
+			Async = false
+		};
 
-		public LoadableXmlAsset(string name, string fullFolderPath, string contents)
+		public string FullFilePath
+		{
+			get
+			{
+				string text = fullFolderPath;
+				char directorySeparatorChar = Path.DirectorySeparatorChar;
+				return text + directorySeparatorChar + name;
+			}
+		}
+
+		public LoadableXmlAsset(string name, string text)
 		{
 			this.name = name;
-			this.fullFolderPath = fullFolderPath;
+			fullFolderPath = string.Empty;
 			try
 			{
-				XmlReaderSettings settings = new XmlReaderSettings
-				{
-					IgnoreComments = true,
-					IgnoreWhitespace = true,
-					CheckCharacters = false
-				};
-				using StringReader input = new StringReader(contents);
-				using XmlReader xmlReader = XmlReader.Create(input, settings);
+				using StringReader input = new StringReader(text);
+				using XmlReader reader = XmlReader.Create(input, Settings);
 				xmlDoc = new XmlDocument();
-				xmlDoc.Load(xmlReader);
+				xmlDoc.Load(reader);
 			}
-			catch (Exception ex)
+			catch (Exception arg)
 			{
-				Log.Warning("Exception reading " + name + " as XML: " + ex);
+				Log.Warning($"Exception reading {name} as XML: {arg}");
+				xmlDoc = null;
+			}
+		}
+
+		public LoadableXmlAsset(FileInfo file, ModContentPack mod)
+		{
+			this.mod = mod;
+			name = file.Name;
+			fullFolderPath = file.Directory.FullName;
+			try
+			{
+				using MemoryMappedFileSpanWrapper memoryMappedFileSpanWrapper = new MemoryMappedFileSpanWrapper(file);
+				ReadOnlySpan<byte> readOnlySpan = memoryMappedFileSpanWrapper.GetReadOnlySpan(0L, memoryMappedFileSpanWrapper.FileSize);
+				if (readOnlySpan.Length >= 3 && readOnlySpan[0] == 239 && readOnlySpan[1] == 187 && readOnlySpan[2] == 191)
+				{
+					ReadOnlySpan<byte> readOnlySpan2 = readOnlySpan;
+					readOnlySpan = readOnlySpan2.Slice(3, readOnlySpan2.Length - 3);
+				}
+				using StringReader input = new StringReader(Encoding.UTF8.GetString(readOnlySpan));
+				using XmlReader reader = XmlReader.Create(input, Settings);
+				xmlDoc = new XmlDocument();
+				xmlDoc.Load(reader);
+			}
+			catch (Exception arg)
+			{
+				Log.Warning($"Exception reading {name} as XML: {arg}");
 				xmlDoc = null;
 			}
 		}

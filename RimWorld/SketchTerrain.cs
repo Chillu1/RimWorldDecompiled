@@ -13,13 +13,28 @@ namespace RimWorld
 
 		public bool treatSimilarAsSame;
 
+		private CellRect cachedOccupiedRect = CellRect.Empty;
+
+		private IntVec3 cachedOccupiedRectPos = IntVec3.Invalid;
+
 		public override BuildableDef Buildable => def;
 
 		public override ThingDef Stuff => stuffForComparingSimilar;
 
-		public override CellRect OccupiedRect => CellRect.SingleCell(pos);
-
 		public override float SpawnOrder => 1f;
+
+		public override CellRect OccupiedRect
+		{
+			get
+			{
+				if (cachedOccupiedRectPos != pos)
+				{
+					cachedOccupiedRect = CellRect.SingleCell(pos);
+					cachedOccupiedRectPos = pos;
+				}
+				return cachedOccupiedRect;
+			}
+		}
 
 		public override string Label
 		{
@@ -127,8 +142,16 @@ namespace RimWorld
 			return GenConstruct.CanBuildOnTerrain(def, at, map, Rot4.North);
 		}
 
-		public override bool Spawn(IntVec3 at, Map map, Faction faction, Sketch.SpawnMode spawnMode = Sketch.SpawnMode.Normal, bool wipeIfCollides = false, List<Thing> spawnedThings = null, bool dormant = false)
+		public override bool Spawn(IntVec3 at, Map map, Faction faction, Sketch.SpawnMode spawnMode = Sketch.SpawnMode.Normal, bool wipeIfCollides = false, bool forceTerrainAffordance = false, List<Thing> spawnedThings = null, bool dormant = false, TerrainDef defaultAffordanceTerrain = null)
 		{
+			if (!at.InBounds(map))
+			{
+				return false;
+			}
+			if (forceTerrainAffordance && !CanBuildOnTerrain(at, map))
+			{
+				ForceTerrainAffordance(at, Rot4.North, map, defaultAffordanceTerrain);
+			}
 			if (IsSpawningBlocked(at, map, null, wipeIfCollides))
 			{
 				return false;
@@ -136,13 +159,24 @@ namespace RimWorld
 			switch (spawnMode)
 			{
 			case Sketch.SpawnMode.Blueprint:
-				GenConstruct.PlaceBlueprintForBuild(GetDefFromStuff(), at, map, Rot4.North, faction, null);
+				GenConstruct.PlaceBlueprintForBuild(GetDefFromStuff(), at, map, Rot4.North, faction, null, null, null, sendBPSpawnedSignal: false);
 				break;
 			case Sketch.SpawnMode.Normal:
-				map.terrainGrid.SetTerrain(at, GetDefFromStuff());
+				if (def.isFoundation)
+				{
+					map.terrainGrid.SetFoundation(at, GetDefFromStuff());
+				}
+				else if (def.temporary)
+				{
+					map.terrainGrid.SetTempTerrain(at, GetDefFromStuff());
+				}
+				else
+				{
+					map.terrainGrid.SetTerrain(at, GetDefFromStuff());
+				}
 				break;
 			default:
-				throw new NotImplementedException(string.Concat("Spawn mode ", spawnMode, " not implemented!"));
+				throw new NotImplementedException("Spawn mode " + spawnMode.ToString() + " not implemented!");
 			}
 			return true;
 		}
@@ -155,7 +189,7 @@ namespace RimWorld
 			}
 			foreach (TerrainDef allDef in DefDatabase<TerrainDef>.AllDefs)
 			{
-				if (IsSameOrSimilar(allDef) && !allDef.costList.NullOrEmpty() && allDef.costList[0].thingDef == stuffForComparingSimilar)
+				if (IsSameOrSimilar(allDef) && !allDef.CostList.NullOrEmpty() && allDef.CostList[0].thingDef == stuffForComparingSimilar)
 				{
 					return allDef;
 				}
@@ -165,8 +199,7 @@ namespace RimWorld
 
 		public override bool SameForSubtracting(SketchEntity other)
 		{
-			SketchTerrain sketchTerrain = other as SketchTerrain;
-			if (sketchTerrain == null)
+			if (!(other is SketchTerrain sketchTerrain))
 			{
 				return false;
 			}
@@ -186,6 +219,7 @@ namespace RimWorld
 			SketchTerrain obj = (SketchTerrain)base.DeepCopy();
 			obj.def = def;
 			obj.stuffForComparingSimilar = stuffForComparingSimilar;
+			obj.treatSimilarAsSame = treatSimilarAsSame;
 			return obj;
 		}
 

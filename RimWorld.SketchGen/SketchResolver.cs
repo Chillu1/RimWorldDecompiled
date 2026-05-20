@@ -5,7 +5,7 @@ namespace RimWorld.SketchGen
 {
 	public abstract class SketchResolver
 	{
-		public void Resolve(ResolveParams parms)
+		public void Resolve(SketchResolveParams parms)
 		{
 			try
 			{
@@ -13,11 +13,11 @@ namespace RimWorld.SketchGen
 			}
 			catch (Exception ex)
 			{
-				Log.Error(string.Concat("Exception resolving ", GetType().Name, ": ", ex, "\n\nParms:\n", parms.ToString()));
+				Log.Error("Exception resolving " + GetType().Name + ": " + ex?.ToString() + "\n\nParms:\n" + parms.ToString());
 			}
 		}
 
-		public bool CanResolve(ResolveParams parms)
+		public bool CanResolve(SketchResolveParams parms)
 		{
 			try
 			{
@@ -25,13 +25,13 @@ namespace RimWorld.SketchGen
 			}
 			catch (Exception ex)
 			{
-				Log.Error(string.Concat("Exception test running ", GetType().Name, ": ", ex, "\n\nParms:\n", parms.ToString()));
+				Log.Error("Exception test running " + GetType().Name + ": " + ex?.ToString() + "\n\nParms:\n" + parms.ToString());
 				return false;
 			}
 		}
 
-		protected abstract void ResolveInt(ResolveParams parms);
+		protected abstract void ResolveInt(SketchResolveParams parms);
 
-		protected abstract bool CanResolveInt(ResolveParams parms);
+		protected abstract bool CanResolveInt(SketchResolveParams parms);
 	}
 }

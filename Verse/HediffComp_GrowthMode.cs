@@ -5,7 +5,7 @@ using RimWorld;
 
 namespace Verse
 {
-	public class HediffComp_GrowthMode : HediffComp_SeverityPerDay
+	public class HediffComp_GrowthMode : HediffComp_SeverityModifierBase
 	{
 		private const int CheckGrowthModeChangeInterval = 5000;
 
@@ -37,24 +37,35 @@ namespace Verse
 			severityPerDayRemissionRandomFactor = Props.severityPerDayRemissionRandomFactor.RandomInRange;
 		}
 
-		public override void CompPostTick(ref float severityAdjustment)
+		public override void CompPostTickInterval(ref float severityAdjustment, int delta)
 		{
-			base.CompPostTick(ref severityAdjustment);
-			if (base.Pawn.IsHashIntervalTick(5000) && Rand.MTBEventOccurs(100f, 60000f, 5000f))
+			base.CompPostTickInterval(ref severityAdjustment, delta);
+			if (base.Pawn.IsHashIntervalTick(5000, delta) && Rand.MTBEventOccurs(100f, 60000f, 5000f))
 			{
 				ChangeGrowthMode();
 			}
 		}
 
-		protected override float SeverityChangePerDay()
+		public override float SeverityChangePerDay()
 		{
-			return growthMode switch
+			switch (growthMode)
 			{
-				HediffGrowthMode.Growing => Props.severityPerDayGrowing * severityPerDayGrowingRandomFactor, 
-				HediffGrowthMode.Stable => 0f, 
-				HediffGrowthMode.Remission => Props.severityPerDayRemission * severityPerDayRemissionRandomFactor, 
-				_ => throw new NotImplementedException("GrowthMode"), 
-			};
+			case HediffGrowthMode.Growing:
+			{
+				float num = Props.severityPerDayGrowing * severityPerDayGrowingRandomFactor;
+				if (ModsConfig.BiotechActive && parent.def == HediffDefOf.Carcinoma)
+				{
+					num *= base.Pawn.GetStatValue(StatDefOf.CancerRate);
+				}
+				return num;
+			}
+			case HediffGrowthMode.Stable:
+				return 0f;
+			case HediffGrowthMode.Remission:
+				return Props.severityPerDayRemission * severityPerDayRemissionRandomFactor;
+			default:
+				throw new NotImplementedException("GrowthMode");
+			}
 		}
 
 		private void ChangeGrowthMode()

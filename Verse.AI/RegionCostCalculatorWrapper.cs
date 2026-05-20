@@ -11,9 +11,9 @@ namespace Verse.AI
 
 		private HashSet<Region> destRegions = new HashSet<Region>();
 
-		private int moveTicksCardinal;
+		private float moveTicksCardinal;
 
-		private int moveTicksDiagonal;
+		private float moveTicksDiagonal;
 
 		private RegionCostCalculator regionCostCalculator;
 
@@ -37,7 +37,7 @@ namespace Verse.AI
 			regionCostCalculator = new RegionCostCalculator(map);
 		}
 
-		public void Init(CellRect end, TraverseParms traverseParms, int moveTicksCardinal, int moveTicksDiagonal, ByteGrid avoidGrid, Area allowedArea, bool drafted, List<int> disallowedCorners)
+		public void Init(CellRect end, TraverseParms traverseParms, float moveTicksCardinal, float moveTicksDiagonal, ByteGrid avoidGrid, Area allowedArea, bool drafted, List<int> disallowedCorners)
 		{
 			this.moveTicksCardinal = moveTicksCardinal;
 			this.moveTicksDiagonal = moveTicksDiagonal;
@@ -119,7 +119,7 @@ namespace Verse.AI
 		{
 			int dx = Mathf.Abs(cell.x - endCell.x);
 			int dz = Mathf.Abs(cell.z - endCell.z);
-			return GenMath.OctileDistance(dx, dz, moveTicksCardinal, moveTicksDiagonal);
+			return GenMath.OctileDistance(dx, dz, Mathf.RoundToInt(moveTicksCardinal), Mathf.RoundToInt(moveTicksDiagonal));
 		}
 
 		private int OctileDistanceToEndEps(IntVec3 cell)

@@ -5,9 +5,15 @@ namespace RimWorld
 {
 	public class StatPart_Glow : StatPart
 	{
+		private bool pawnOnly;
+
 		private bool humanlikeOnly;
 
 		private SimpleCurve factorFromGlowCurve;
+
+		private bool ignoreIfPrefersDarkness;
+
+		private bool ignoreIfIncapableOfSight;
 
 		public override IEnumerable<string> ConfigErrors()
 		{
@@ -36,20 +42,42 @@ namespace RimWorld
 
 		private bool ActiveFor(Thing t)
 		{
-			if (humanlikeOnly)
+			if (t is Pawn pawn)
 			{
-				Pawn pawn = t as Pawn;
-				if (pawn != null && !pawn.RaceProps.Humanlike)
+				if (humanlikeOnly && !pawn.RaceProps.Humanlike)
 				{
 					return false;
 				}
+				if (pawn.IsShambler)
+				{
+					return false;
+				}
+				if (ignoreIfIncapableOfSight && PawnUtility.IsBiologicallyOrArtificiallyBlind(pawn))
+				{
+					return false;
+				}
+				if (ignoreIfPrefersDarkness)
+				{
+					if (pawn.Ideo != null && pawn.Ideo.IdeoPrefersDarkness())
+					{
+						return false;
+					}
+					if (pawn.genes != null && !pawn.genes.AffectedByDarkness)
+					{
+						return false;
+					}
+				}
+			}
+			else if (pawnOnly)
+			{
+				return false;
 			}
 			return t.Spawned;
 		}
 
 		private float GlowLevel(Thing t)
 		{
-			return t.Map.glowGrid.GameGlowAt(t.Position);
+			return t.Map.glowGrid.GroundGlowAt(t.Position);
 		}
 
 		private float FactorFromGlow(Thing t)

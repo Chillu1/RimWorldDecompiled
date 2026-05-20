@@ -19,6 +19,8 @@ namespace RimWorld
 
 		public int? hitPoints;
 
+		public float spawnOrder = 2f;
+
 		public override BuildableDef Buildable => def;
 
 		public override ThingDef Stuff => stuff;
@@ -29,7 +31,7 @@ namespace RimWorld
 
 		public override CellRect OccupiedRect => GenAdj.OccupiedRect(pos, rot, def.size);
 
-		public override float SpawnOrder => 2f;
+		public override float SpawnOrder => spawnOrder;
 
 		public int MaxHitPoints => Mathf.RoundToInt(def.GetStatValueAbstract(StatDefOf.MaxHitPoints, stuff ?? GenStuff.DefaultStuffFor(def)));
 
@@ -50,7 +52,7 @@ namespace RimWorld
 
 		public override void DrawGhost(IntVec3 at, Color color)
 		{
-			GhostDrawer.DrawGhostThing_NewTmp(at, rot, def, def.graphic, color, AltitudeLayer.Blueprint, null, drawPlaceWorkers: false);
+			GhostDrawer.DrawGhostThing(at, rot, def, def.graphic, color, AltitudeLayer.Blueprint, null, drawPlaceWorkers: false);
 		}
 
 		public Thing GetSameSpawned(IntVec3 at, Map map)
@@ -62,15 +64,28 @@ namespace RimWorld
 			List<Thing> thingList = at.GetThingList(map);
 			for (int i = 0; i < thingList.Count; i++)
 			{
-				CellRect lhs = GenAdj.OccupiedRect(at, rot, thingList[i].def.Size);
-				CellRect lhs2 = GenAdj.OccupiedRect(at, rot.Opposite, thingList[i].def.Size);
-				CellRect rhs = thingList[i].OccupiedRect();
-				if ((lhs == rhs || lhs2 == rhs) && thingList[i].def == def && (stuff == null || thingList[i].Stuff == stuff) && (thingList[i].Rotation == rot || thingList[i].Rotation == rot.Opposite || !def.rotatable))
+				if (IsSame(thingList[i]))
 				{
 					return thingList[i];
 				}
 			}
 			return null;
+		}
+
+		public bool IsSame(Thing thing)
+		{
+			CellRect cellRect = GenAdj.OccupiedRect(thing.Position, rot, thing.def.Size);
+			CellRect cellRect2 = GenAdj.OccupiedRect(thing.Position, rot.Opposite, thing.def.Size);
+			CellRect cellRect3 = thing.OccupiedRect();
+			if (thing.def == def && (stuff == null || thing.Stuff == stuff) && (thing.Rotation == rot || thing.Rotation == rot.Opposite || !def.rotatable))
+			{
+				if (!(cellRect == cellRect3))
+				{
+					return cellRect2 == cellRect3;
+				}
+				return true;
+			}
+			return false;
 		}
 
 		public override bool IsSameSpawned(IntVec3 at, Map map)
@@ -87,10 +102,10 @@ namespace RimWorld
 			List<Thing> thingList = at.GetThingList(map);
 			for (int i = 0; i < thingList.Count; i++)
 			{
-				CellRect lhs = GenAdj.OccupiedRect(at, rot, thingList[i].def.Size);
-				CellRect lhs2 = GenAdj.OccupiedRect(at, rot.Opposite, thingList[i].def.Size);
-				CellRect rhs = thingList[i].OccupiedRect();
-				if ((lhs == rhs || lhs2 == rhs) && thingList[i].def.entityDefToBuild == def && (stuff == null || ((IConstructible)thingList[i]).EntityToBuildStuff() == stuff) && (thingList[i].Rotation == rot || thingList[i].Rotation == rot.Opposite || !def.rotatable))
+				CellRect cellRect = GenAdj.OccupiedRect(at, rot, thingList[i].def.Size);
+				CellRect cellRect2 = GenAdj.OccupiedRect(at, rot.Opposite, thingList[i].def.Size);
+				CellRect cellRect3 = thingList[i].OccupiedRect();
+				if ((cellRect == cellRect3 || cellRect2 == cellRect3) && thingList[i].def.entityDefToBuild == def && (stuff == null || ((IConstructible)thingList[i]).EntityToBuildStuff() == stuff) && (thingList[i].Rotation == rot || thingList[i].Rotation == rot.Opposite || !def.rotatable))
 				{
 					return thingList[i];
 				}
@@ -137,8 +152,16 @@ namespace RimWorld
 			return GenConstruct.CanBuildOnTerrain(def, at, map, rot, null, stuff ?? GenStuff.DefaultStuffFor(def));
 		}
 
-		public override bool Spawn(IntVec3 at, Map map, Faction faction, Sketch.SpawnMode spawnMode = Sketch.SpawnMode.Normal, bool wipeIfCollides = false, List<Thing> spawnedThings = null, bool dormant = false)
+		public override bool Spawn(IntVec3 at, Map map, Faction faction, Sketch.SpawnMode spawnMode = Sketch.SpawnMode.Normal, bool wipeIfCollides = false, bool forceTerrainAffordance = false, List<Thing> spawnedThings = null, bool dormant = false, TerrainDef defaultAffordanceTerrain = null)
 		{
+			if (!at.RectAbout(def.size, rot).InBounds(map))
+			{
+				return false;
+			}
+			if (forceTerrainAffordance && !CanBuildOnTerrain(at, map))
+			{
+				ForceTerrainAffordance(at, rot, map, defaultAffordanceTerrain);
+			}
 			if (IsSpawningBlocked(at, map, null, wipeIfCollides))
 			{
 				return false;
@@ -146,13 +169,13 @@ namespace RimWorld
 			switch (spawnMode)
 			{
 			case Sketch.SpawnMode.Blueprint:
-				GenConstruct.PlaceBlueprintForBuild(def, at, map, rot, faction, stuff ?? GenStuff.DefaultStuffFor(def));
+				GenConstruct.PlaceBlueprintForBuild(def, at, map, rot, faction, stuff ?? GenStuff.DefaultStuffFor(def), null, null, sendBPSpawnedSignal: false);
 				break;
 			case Sketch.SpawnMode.Normal:
 			{
 				Thing thing2 = Instantiate();
 				spawnedThings?.Add(thing2);
-				if (faction != null)
+				if (faction != null && thing2.def.CanHaveFaction)
 				{
 					thing2.SetFactionDirect(faction);
 				}
@@ -171,19 +194,19 @@ namespace RimWorld
 					thing.SetFactionDirect(faction);
 				}
 				SetDormant(thing, dormant);
-				ActiveDropPodInfo activeDropPodInfo = new ActiveDropPodInfo();
-				activeDropPodInfo.innerContainer.TryAdd(thing, 1);
-				activeDropPodInfo.openDelay = 60;
-				activeDropPodInfo.leaveSlag = false;
-				activeDropPodInfo.despawnPodBeforeSpawningThing = true;
-				activeDropPodInfo.spawnWipeMode = (wipeIfCollides ? new WipeMode?(WipeMode.VanishOrMoveAside) : null);
-				activeDropPodInfo.moveItemsAsideBeforeSpawning = true;
-				activeDropPodInfo.setRotation = rot;
-				DropPodUtility.MakeDropPodAt(at, map, activeDropPodInfo);
+				ActiveTransporterInfo activeTransporterInfo = new ActiveTransporterInfo();
+				activeTransporterInfo.innerContainer.TryAdd(thing, 1);
+				activeTransporterInfo.openDelay = 60;
+				activeTransporterInfo.leaveSlag = false;
+				activeTransporterInfo.despawnPodBeforeSpawningThing = true;
+				activeTransporterInfo.spawnWipeMode = (wipeIfCollides ? new WipeMode?(WipeMode.VanishOrMoveAside) : ((WipeMode?)null));
+				activeTransporterInfo.moveItemsAsideBeforeSpawning = true;
+				activeTransporterInfo.setRotation = rot;
+				DropPodUtility.MakeDropPodAt(at, map, activeTransporterInfo, faction);
 				break;
 			}
 			default:
-				throw new NotImplementedException(string.Concat("Spawn mode ", spawnMode, " not implemented!"));
+				throw new NotImplementedException("Spawn mode " + spawnMode.ToString() + " not implemented!");
 			}
 			return true;
 		}
@@ -206,8 +229,7 @@ namespace RimWorld
 
 		public override bool SameForSubtracting(SketchEntity other)
 		{
-			SketchThing sketchThing = other as SketchThing;
-			if (sketchThing == null)
+			if (!(other is SketchThing sketchThing))
 			{
 				return false;
 			}
@@ -215,9 +237,9 @@ namespace RimWorld
 			{
 				return true;
 			}
-			if (def == sketchThing.def && stuff == sketchThing.stuff && stackCount == sketchThing.stackCount && pos == sketchThing.pos && rot == sketchThing.rot && quality == sketchThing.quality)
+			if (def == sketchThing.def && stuff == sketchThing.stuff && stackCount == sketchThing.stackCount && pos == sketchThing.pos && rot == sketchThing.rot && quality == sketchThing.quality && hitPoints == sketchThing.hitPoints)
 			{
-				return hitPoints == sketchThing.hitPoints;
+				return spawnOrder == sketchThing.spawnOrder;
 			}
 			return false;
 		}
@@ -231,6 +253,7 @@ namespace RimWorld
 			obj.rot = rot;
 			obj.quality = quality;
 			obj.hitPoints = hitPoints;
+			obj.spawnOrder = spawnOrder;
 			return obj;
 		}
 
@@ -243,6 +266,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref rot, "rot");
 			Scribe_Values.Look(ref quality, "quality");
 			Scribe_Values.Look(ref hitPoints, "hitPoints");
+			Scribe_Values.Look(ref spawnOrder, "spawnOrder", 0f);
 		}
 	}
 }

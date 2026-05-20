@@ -1,6 +1,5 @@
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using RimWorld.IO;
 using Steamworks;
 using UnityEngine;
@@ -20,33 +19,9 @@ namespace Verse
 
 		private static readonly List<string> SupportedAutoSelectLanguages = new List<string>
 		{
-			"Arabic",
-			"ChineseSimplified",
-			"ChineseTraditional",
-			"Czech",
-			"Danish",
-			"Dutch",
-			"English",
-			"Estonian",
-			"Finnish",
-			"French",
-			"German",
-			"Hungarian",
-			"Italian",
-			"Japanese",
-			"Korean",
-			"Norwegian",
-			"Polish",
-			"Portuguese",
-			"PortugueseBrazilian",
-			"Romanian",
-			"Russian",
-			"Slovak",
-			"Spanish",
-			"SpanishLatin",
-			"Swedish",
-			"Turkish",
-			"Ukrainian"
+			"Arabic", "ChineseSimplified", "ChineseTraditional", "Czech", "Danish", "Dutch", "English", "Estonian", "Finnish", "French",
+			"German", "Hungarian", "Italian", "Japanese", "Korean", "Norwegian", "Polish", "Portuguese", "PortugueseBrazilian", "Romanian",
+			"Russian", "Slovak", "Spanish", "SpanishLatin", "Swedish", "Turkish", "Ukrainian"
 		};
 
 		public static IEnumerable<LoadedLanguage> AllLoadedLanguages => languages;

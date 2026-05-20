@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -5,6 +6,8 @@ namespace RimWorld.Planet
 {
 	public static class WorldRendererUtility
 	{
+		private const float WorldIntersectionFactor = 1f;
+
 		public static WorldRenderMode CurrentWorldRenderMode
 		{
 			get
@@ -13,40 +16,61 @@ namespace RimWorld.Planet
 				{
 					return WorldRenderMode.None;
 				}
+				if (WorldComponent_GravshipController.CutsceneInProgress)
+				{
+					if (Find.CurrentMap != null && Find.CurrentMap.generatorDef.renderWorld)
+					{
+						return WorldRenderMode.Background;
+					}
+					return WorldRenderMode.None;
+				}
 				if (Current.ProgramState == ProgramState.Playing && Find.CurrentMap == null)
 				{
 					return WorldRenderMode.Planet;
+				}
+				if (Find.World.renderer.wantedMode == WorldRenderMode.Planet)
+				{
+					return WorldRenderMode.Planet;
+				}
+				if (Find.CurrentMap != null && Find.CurrentMap.generatorDef.renderWorld)
+				{
+					return WorldRenderMode.Background;
 				}
 				return Find.World.renderer.wantedMode;
 			}
 		}
 
-		public static bool WorldRenderedNow => CurrentWorldRenderMode != WorldRenderMode.None;
+		public static bool WorldRendered => CurrentWorldRenderMode != WorldRenderMode.None;
 
-		public static void UpdateWorldShadersParams()
+		public static bool WorldBackgroundNow => CurrentWorldRenderMode == WorldRenderMode.Background;
+
+		public static bool WorldSelected => CurrentWorldRenderMode == WorldRenderMode.Planet;
+
+		public static bool DrawingMap => CurrentWorldRenderMode != WorldRenderMode.Planet;
+
+		public static void UpdateGlobalShadersParams()
 		{
-			Vector3 v = -GenCelestial.CurSunPositionInWorldSpace();
-			float value = (Find.PlaySettings.usePlanetDayNightSystem ? 1f : 0f);
-			Shader.SetGlobalVector(ShaderPropertyIDs.PlanetSunLightDirection, v);
+			Vector3 vector = -GenCelestial.CurSunPositionInWorldSpace();
+			float value = ((WorldBackgroundNow || !PlanetLayer.Selected.IsRootSurface || Find.PlaySettings.usePlanetDayNightSystem) ? 1f : 0f);
+			Shader.SetGlobalVector(ShaderPropertyIDs.PlanetSunLightDirection, vector);
 			Shader.SetGlobalFloat(ShaderPropertyIDs.PlanetSunLightEnabled, value);
-			WorldMaterials.PlanetGlow.SetFloat(ShaderPropertyIDs.PlanetRadius, 100f);
-			WorldMaterials.PlanetGlow.SetFloat(ShaderPropertyIDs.GlowRadius, 8f);
+			Shader.SetGlobalFloat(ShaderPropertyIDs.BackgroundModeEnabled, WorldBackgroundNow ? 1f : 0f);
 		}
 
-		public static void PrintQuadTangentialToPlanet(Vector3 pos, float size, float altOffset, LayerSubMesh subMesh, bool counterClockwise = false, bool randomizeRotation = false, bool printUVs = true)
+		public static void PrintQuadTangentialToPlanet(Vector3 pos, float size, float altOffset, LayerSubMesh subMesh, bool counterClockwise = false, float rotation = 0f, bool printUVs = true)
 		{
-			PrintQuadTangentialToPlanet(pos, pos, size, altOffset, subMesh, counterClockwise, randomizeRotation, printUVs);
+			PrintQuadTangentialToPlanet(pos, pos, size, altOffset, subMesh, counterClockwise, rotation, printUVs);
 		}
 
-		public static void PrintQuadTangentialToPlanet(Vector3 pos, Vector3 posForTangents, float size, float altOffset, LayerSubMesh subMesh, bool counterClockwise = false, bool randomizeRotation = false, bool printUVs = true)
+		public static void PrintQuadTangentialToPlanet(Vector3 pos, Vector3 posForTangents, float size, float altOffset, LayerSubMesh subMesh, bool counterClockwise = false, float rotation = 0f, bool printUVs = true)
 		{
-			GetTangentsToPlanet(posForTangents, out var first, out var second, randomizeRotation);
+			GetTangentsToPlanet(posForTangents, out var first, out var second, rotation);
 			Vector3 normalized = posForTangents.normalized;
-			float d = size * 0.5f;
-			Vector3 item = pos - first * d - second * d + normalized * altOffset;
-			Vector3 item2 = pos - first * d + second * d + normalized * altOffset;
-			Vector3 item3 = pos + first * d + second * d + normalized * altOffset;
-			Vector3 item4 = pos + first * d - second * d + normalized * altOffset;
+			float num = size * 0.5f;
+			Vector3 item = pos - first * num - second * num + normalized * altOffset;
+			Vector3 item2 = pos - first * num + second * num + normalized * altOffset;
+			Vector3 item3 = pos + first * num + second * num + normalized * altOffset;
+			Vector3 item4 = pos + first * num - second * num + normalized * altOffset;
 			int count = subMesh.verts.Count;
 			subMesh.verts.Add(item);
 			subMesh.verts.Add(item2);
@@ -79,7 +103,7 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public static void DrawQuadTangentialToPlanet(Vector3 pos, float size, float altOffset, Material material, bool counterClockwise = false, bool useSkyboxLayer = false, MaterialPropertyBlock propertyBlock = null)
+		public static void DrawQuadTangentialToPlanet(Vector3 pos, float size, float altOffset, Material material, float rotationAngle = 0f, bool counterClockwise = false, bool useSkyboxLayer = false, MaterialPropertyBlock propertyBlock = null)
 		{
 			if (material == null)
 			{
@@ -88,10 +112,9 @@ namespace RimWorld.Planet
 			}
 			Vector3 normalized = pos.normalized;
 			Vector3 vector = ((!counterClockwise) ? normalized : (-normalized));
-			Quaternion q = Quaternion.LookRotation(Vector3.Cross(vector, Vector3.up), vector);
-			Vector3 s = new Vector3(size, 1f, size);
-			Matrix4x4 matrix = default(Matrix4x4);
-			matrix.SetTRS(pos + normalized * altOffset, q, s);
+			Quaternion quaternion = Quaternion.LookRotation(Vector3.Cross(vector, Vector3.up), vector);
+			Quaternion q = Quaternion.AngleAxis(rotationAngle, normalized) * quaternion;
+			Matrix4x4 matrix = Matrix4x4.TRS(s: new Vector3(size, 1f, size), pos: pos + normalized * altOffset, q: q);
 			int layer = (useSkyboxLayer ? WorldCameraManager.WorldSkyboxLayer : WorldCameraManager.WorldLayer);
 			if (propertyBlock != null)
 			{
@@ -103,11 +126,18 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public static void GetTangentsToPlanet(Vector3 pos, out Vector3 first, out Vector3 second, bool randomizeRotation = false)
+		public static void GetTangentsToPlanet(Vector3 pos, out Vector3 first, out Vector3 second, float rotation = 0f)
 		{
-			Quaternion rotation = Quaternion.LookRotation(upwards: (!randomizeRotation) ? Vector3.up : Rand.UnitVector3, forward: pos.normalized);
-			first = rotation * Vector3.up;
-			second = rotation * Vector3.right;
+			Vector3 normalized = pos.normalized;
+			Vector3 upwards = Vector3.up;
+			if (Mathf.Abs(Vector3.Dot(normalized, Vector3.up)) > 0.999f)
+			{
+				upwards = Vector3.right;
+			}
+			Quaternion quaternion = Quaternion.LookRotation(normalized, upwards);
+			Quaternion quaternion2 = Quaternion.AngleAxis(rotation, normalized) * quaternion;
+			first = quaternion2 * Vector3.up;
+			second = quaternion2 * Vector3.right;
 		}
 
 		public static Vector3 ProjectOnQuadTangentialToPlanet(Vector3 center, Vector2 point)
@@ -118,9 +148,9 @@ namespace RimWorld.Planet
 
 		public static void GetTangentialVectorFacing(Vector3 root, Vector3 pointToFace, out Vector3 forward, out Vector3 right)
 		{
-			Quaternion rotation = Quaternion.LookRotation(root, pointToFace);
-			forward = rotation * Vector3.up;
-			right = rotation * Vector3.left;
+			Quaternion quaternion = Quaternion.LookRotation(root, pointToFace);
+			forward = quaternion * Vector3.up;
+			right = quaternion * Vector3.left;
 		}
 
 		public static void PrintTextureAtlasUVs(int indexX, int indexY, int numX, int numY, LayerSubMesh subMesh)
@@ -137,9 +167,16 @@ namespace RimWorld.Planet
 
 		public static bool HiddenBehindTerrainNow(Vector3 pos)
 		{
-			Vector3 normalized = pos.normalized;
-			Vector3 currentlyLookingAtPointOnSphere = Find.WorldCameraDriver.CurrentlyLookingAtPointOnSphere;
-			return Vector3.Angle(normalized, currentlyLookingAtPointOnSphere) > 73f;
+			Dictionary<int, PlanetLayer> dictionary = (Dictionary<int, PlanetLayer>)Find.WorldGrid.PlanetLayers;
+			foreach (int key in dictionary.Keys)
+			{
+				PlanetLayer planetLayer = dictionary[key];
+				if (planetLayer.Visible && planetLayer.Def.obstructsExpandingIcons && planetLayer.LineIntersects(Find.WorldCameraDriver.CameraPosition, pos))
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 }

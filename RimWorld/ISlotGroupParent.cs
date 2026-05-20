@@ -5,10 +5,11 @@ namespace RimWorld
 {
 	public interface ISlotGroupParent : IStoreSettingsParent, IHaulDestination
 	{
-		bool IgnoreStoredThingsBeauty
-		{
-			get;
-		}
+		bool IgnoreStoredThingsBeauty { get; }
+
+		string GroupingLabel { get; }
+
+		int GroupingOrder { get; }
 
 		IEnumerable<IntVec3> AllSlotCells();
 

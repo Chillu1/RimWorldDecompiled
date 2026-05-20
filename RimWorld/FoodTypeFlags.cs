@@ -5,11 +5,11 @@ namespace RimWorld
 	[Flags]
 	public enum FoodTypeFlags
 	{
-		None = 0x0,
-		VegetableOrFruit = 0x1,
-		Meat = 0x2,
-		Fluid = 0x4,
-		Corpse = 0x8,
+		None = 0,
+		VegetableOrFruit = 1,
+		Meat = 2,
+		Fluid = 4,
+		Corpse = 8,
 		Seed = 0x10,
 		AnimalProduct = 0x20,
 		Plant = 0x40,
@@ -18,14 +18,15 @@ namespace RimWorld
 		Processed = 0x200,
 		Liquor = 0x400,
 		Kibble = 0x800,
-		VegetarianAnimal = 0xF11,
-		VegetarianRoughAnimal = 0xF51,
+		Fungus = 0x1001,
+		VegetarianAnimal = 0x1F11,
+		VegetarianRoughAnimal = 0x1F51,
 		CarnivoreAnimal = 0xB0A,
 		CarnivoreAnimalStrict = 0xA,
-		OmnivoreAnimal = 0xF1B,
-		OmnivoreRoughAnimal = 0xF5B,
-		DendrovoreAnimal = 0xA91,
+		OmnivoreAnimal = 0x1F1B,
+		OmnivoreRoughAnimal = 0x1F5B,
+		DendrovoreAnimal = 0x1A91,
 		OvivoreAnimal = 0xB20,
-		OmnivoreHuman = 0xF3F
+		OmnivoreHuman = 0x1F3F
 	}
 }

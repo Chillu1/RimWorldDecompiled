@@ -9,8 +9,7 @@ namespace RimWorld
 		protected override float OffsetForBuilding(Thing b)
 		{
 			float num = OffsetFor(b.def);
-			Building_Grave building_Grave;
-			if ((building_Grave = b as Building_Grave) != null && building_Grave.HasCorpse && building_Grave.Corpse.InnerPawn.RaceProps.Humanlike)
+			if (b is Building_Grave { HasCorpse: not false } building_Grave && building_Grave.Corpse.InnerPawn.RaceProps.Humanlike)
 			{
 				num += focusPerFullGrave;
 			}
@@ -28,8 +27,8 @@ namespace RimWorld
 			{
 				return GetExplanationAbstract(parent.def);
 			}
-			int value = BuildingCount(parent);
-			return explanationKey.Translate(value, maxBuildings, base.MaxOffsetPerBuilding.ToString("0%"), (base.MaxOffsetPerBuilding + focusPerFullGrave).ToString("0%")) + ": " + GetOffset(parent).ToStringWithSign("0%");
+			int num = BuildingCount(parent);
+			return explanationKey.Translate(num, maxBuildings, base.MaxOffsetPerBuilding.ToString("0%"), (base.MaxOffsetPerBuilding + focusPerFullGrave).ToString("0%")) + ": " + GetOffset(parent).ToStringWithSign("0%");
 		}
 
 		public override string GetExplanationAbstract(ThingDef def = null)

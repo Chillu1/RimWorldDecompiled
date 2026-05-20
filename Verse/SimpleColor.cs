@@ -8,6 +8,7 @@ namespace Verse
 		Blue,
 		Magenta,
 		Yellow,
-		Cyan
+		Cyan,
+		Orange
 	}
 }

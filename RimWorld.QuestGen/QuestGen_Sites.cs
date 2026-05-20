@@ -20,9 +20,20 @@ namespace RimWorld.QuestGen
 			return questPart_SpawnWorldObject;
 		}
 
-		public static Site GenerateSite(IEnumerable<SitePartDefWithParams> sitePartsParams, int tile, Faction faction, bool hiddenSitePartsPossible = false, RulePack singleSitePartRules = null)
+		public static QuestPart_StartDetectionRaids StartRecurringRaids(this Quest quest, WorldObject worldObject, FloatRange? delayRangeHours = null, int? firstRaidDelayTicks = null, string inSignal = null)
 		{
-			_ = QuestGen.slate;
+			QuestPart_StartDetectionRaids questPart_StartDetectionRaids = new QuestPart_StartDetectionRaids();
+			questPart_StartDetectionRaids.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal) ?? QuestGen.slate.Get<string>("inSignal");
+			questPart_StartDetectionRaids.worldObject = worldObject;
+			questPart_StartDetectionRaids.delayRangeHours = delayRangeHours;
+			questPart_StartDetectionRaids.firstRaidDelayTicks = firstRaidDelayTicks;
+			quest.AddPart(questPart_StartDetectionRaids);
+			return questPart_StartDetectionRaids;
+		}
+
+		public static Site GenerateSite(IEnumerable<SitePartDefWithParams> sitePartsParams, PlanetTile tile, Faction faction, bool hiddenSitePartsPossible = false, RulePack singleSitePartRules = null, WorldObjectDef worldObjectDef = null)
+		{
+			Slate slate = QuestGen.slate;
 			bool flag = false;
 			foreach (SitePartDefWithParams sitePartsParam in sitePartsParams)
 			{
@@ -38,7 +49,7 @@ namespace RimWorld.QuestGen
 				SitePartDefWithParams val = new SitePartDefWithParams(SitePartDefOf.PossibleUnknownThreatMarker, parms);
 				sitePartsParams = sitePartsParams.Concat(Gen.YieldSingle(val));
 			}
-			Site site = SiteMaker.MakeSite(sitePartsParams, tile, faction);
+			Site site = SiteMaker.MakeSite(sitePartsParams, tile, faction, ifHostileThenMustRemainHostile: true, worldObjectDef);
 			List<Rule> list = new List<Rule>();
 			Dictionary<string, string> dictionary = new Dictionary<string, string>();
 			List<string> list2 = new List<string>();
@@ -47,7 +58,7 @@ namespace RimWorld.QuestGen
 			{
 				List<Rule> list3 = new List<Rule>();
 				Dictionary<string, string> dictionary2 = new Dictionary<string, string>();
-				site.parts[i].def.Worker.Notify_GeneratedByQuestGen(site.parts[i], QuestGen.slate, list3, dictionary2);
+				site.parts[i].def.Worker.Notify_GeneratedByQuestGen(site.parts[i], slate, list3, dictionary2);
 				if (site.parts[i].hidden)
 				{
 					continue;
@@ -67,8 +78,7 @@ namespace RimWorld.QuestGen
 				for (int j = 0; j < list3.Count; j++)
 				{
 					Rule rule = list3[j].DeepCopy();
-					Rule_String rule_String = rule as Rule_String;
-					if (rule_String != null && num != 0)
+					if (rule is Rule_String rule_String && num != 0)
 					{
 						rule_String.keyword = "sitePart" + num + "_" + rule_String.keyword;
 					}
@@ -98,7 +108,8 @@ namespace RimWorld.QuestGen
 				list.Add(new Rule_String("allSitePartsDescriptions", list2.ToClauseSequence().Resolve()));
 				if (list2.Count >= 2)
 				{
-					list.Add(new Rule_String("allSitePartsDescriptionsExceptFirst", list2.Skip(1).ToList().ToClauseSequence()));
+					list.Add(new Rule_String("allSitePartsDescriptionsExceptFirst", list2.Skip(1).ToList().ToClauseSequence()
+						.Resolve()));
 				}
 				else
 				{
@@ -114,6 +125,18 @@ namespace RimWorld.QuestGen
 				new Rule_String("site_label", site.Label)
 			});
 			return site;
+		}
+
+		public static QuestPart_SetSitePartThreatPointsToCurrent SetSitePartThreatPointsToCurrent(this Quest quest, Site site, SitePartDef sitePartDef, MapParent useMapParentThreatPoints, string inSignal = null, float threatPointsFactor = 1f)
+		{
+			QuestPart_SetSitePartThreatPointsToCurrent questPart_SetSitePartThreatPointsToCurrent = new QuestPart_SetSitePartThreatPointsToCurrent();
+			questPart_SetSitePartThreatPointsToCurrent.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal) ?? QuestGen.slate.Get<string>("inSignal");
+			questPart_SetSitePartThreatPointsToCurrent.site = site;
+			questPart_SetSitePartThreatPointsToCurrent.sitePartDef = sitePartDef;
+			questPart_SetSitePartThreatPointsToCurrent.useMapParentThreatPoints = useMapParentThreatPoints;
+			questPart_SetSitePartThreatPointsToCurrent.threatPointsFactor = threatPointsFactor;
+			quest.AddPart(questPart_SetSitePartThreatPointsToCurrent);
+			return questPart_SetSitePartThreatPointsToCurrent;
 		}
 	}
 }

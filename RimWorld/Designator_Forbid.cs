@@ -6,7 +6,7 @@ namespace RimWorld
 {
 	public class Designator_Forbid : Designator
 	{
-		public override int DraggableDimensions => 2;
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
 
 		public Designator_Forbid()
 		{
@@ -16,7 +16,7 @@ namespace RimWorld
 			soundDragSustain = SoundDefOf.Designate_DragStandard;
 			soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
 			useMouseIcon = true;
-			soundSucceeded = SoundDefOf.Designate_Claim;
+			soundSucceeded = SoundDefOf.Checkbox_TurnedOff;
 			hotKey = KeyBindingDefOf.Command_ItemForbid;
 			hasDesignateAllFloatMenuOption = true;
 			designateAllLabel = "ForbidAllItems".Translate();

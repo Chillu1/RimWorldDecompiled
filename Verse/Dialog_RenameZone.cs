@@ -2,14 +2,11 @@ using RimWorld;
 
 namespace Verse
 {
-	public class Dialog_RenameZone : Dialog_Rename
+	public class Dialog_RenameZone : Dialog_Rename<Zone>
 	{
-		private Zone zone;
-
 		public Dialog_RenameZone(Zone zone)
+			: base(zone)
 		{
-			this.zone = zone;
-			curName = zone.label;
 		}
 
 		protected override AcceptanceReport NameIsValid(string name)
@@ -19,17 +16,16 @@ namespace Verse
 			{
 				return result;
 			}
-			if (zone.Map.zoneManager.AllZones.Any((Zone z) => z != zone && z.label == name))
+			if (renaming.Map.zoneManager.AllZones.Any((Zone z) => z != renaming && z.label == name) || Current.Game.CurrentMap.storageGroups.HasGroupWithName(name))
 			{
 				return "NameIsInUse".Translate();
 			}
 			return true;
 		}
 
-		protected override void SetName(string name)
+		protected override void OnRenamed(string name)
 		{
-			zone.label = curName;
-			Messages.Message("ZoneGainsName".Translate(curName), MessageTypeDefOf.TaskCompletion, historical: false);
+			Messages.Message("ZoneGainsName".Translate(name), MessageTypeDefOf.TaskCompletion, historical: false);
 		}
 	}
 }

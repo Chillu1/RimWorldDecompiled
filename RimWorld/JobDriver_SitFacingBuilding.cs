@@ -6,25 +6,31 @@ namespace RimWorld
 {
 	public class JobDriver_SitFacingBuilding : JobDriver
 	{
+		private readonly TargetIndex BuildingIndex = TargetIndex.A;
+
+		private readonly TargetIndex SeatIndex = TargetIndex.B;
+
+		private Building Building => (Building)base.TargetThingA;
+
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
 		{
 			if (pawn.Reserve(job.targetA, job, job.def.joyMaxParticipants, 0, null, errorOnFailed))
 			{
-				return pawn.Reserve(job.targetB, job, 1, -1, null, errorOnFailed);
+				return pawn.ReserveSittableOrSpot(job.targetB.Cell, job, errorOnFailed);
 			}
 			return false;
 		}
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			this.EndOnDespawnedOrNull(TargetIndex.A);
-			yield return Toils_Goto.Goto(TargetIndex.B, PathEndMode.OnCell);
-			Toil toil = new Toil();
-			toil.tickAction = delegate
+			this.EndOnDespawnedOrNull(BuildingIndex);
+			yield return Toils_Goto.Goto(SeatIndex, PathEndMode.OnCell);
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
+			toil.tickIntervalAction = delegate(int delta)
 			{
-				base.pawn.rotationTracker.FaceTarget(base.TargetA);
-				base.pawn.GainComfortFromCellIfPossible();
-				JoyUtility.JoyTickCheckEnd(base.pawn, joySource: (Building)base.TargetThingA, fullJoyAction: job.doUntilGatheringEnded ? JoyTickFullJoyAction.None : JoyTickFullJoyAction.EndJob);
+				pawn.rotationTracker.FaceTarget(Building);
+				pawn.GainComfortFromCellIfPossible(delta);
+				JoyUtility.JoyTickCheckEnd(pawn, delta, joySource: Building, fullJoyAction: job.doUntilGatheringEnded ? JoyTickFullJoyAction.None : JoyTickFullJoyAction.EndJob);
 			};
 			toil.handlingFacing = true;
 			toil.defaultCompleteMode = ToilCompleteMode.Delay;

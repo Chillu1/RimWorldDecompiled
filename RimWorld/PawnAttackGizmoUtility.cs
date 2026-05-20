@@ -21,16 +21,25 @@ namespace RimWorld
 
 		public static bool CanShowEquipmentGizmos()
 		{
-			return !AtLeastTwoSelectedColonistsHaveDifferentWeapons();
+			return !AtLeastTwoSelectedPlayerPawnsHaveDifferentWeapons();
 		}
 
 		private static bool ShouldUseSquadAttackGizmo()
 		{
-			if (AtLeastOneSelectedColonistHasRangedWeapon())
+			if (AtLeastOneSelectedPlayerPawnHasRangedWeapon())
 			{
-				return AtLeastTwoSelectedColonistsHaveDifferentWeapons();
+				return AtLeastTwoSelectedPlayerPawnsHaveDifferentWeapons();
 			}
 			return false;
+		}
+
+		private static bool CanOrderPlayerPawn(Pawn pawn)
+		{
+			if (!pawn.IsColonistPlayerControlled && !pawn.IsColonyMechPlayerControlled)
+			{
+				return pawn.IsColonySubhumanPlayerControlled;
+			}
+			return true;
 		}
 
 		private static Gizmo GetSquadAttackGizmo(Pawn pawn)
@@ -38,20 +47,17 @@ namespace RimWorld
 			Command_Target command_Target = new Command_Target();
 			command_Target.defaultLabel = "CommandSquadAttack".Translate();
 			command_Target.defaultDesc = "CommandSquadAttackDesc".Translate();
-			command_Target.targetingParams = TargetingParameters.ForAttackAny();
 			command_Target.hotKey = KeyBindingDefOf.Misc1;
 			command_Target.icon = TexCommand.SquadAttack;
+			command_Target.targetingParams = TargetingParameters.ForAttackAny();
+			command_Target.targetingParams.canTargetLocations = AllSelectedPlayerPawnsCanTargetLocations();
 			if (FloatMenuUtility.GetAttackAction(pawn, LocalTargetInfo.Invalid, out var failStr) == null)
 			{
 				command_Target.Disable(failStr.CapitalizeFirst() + ".");
 			}
-			command_Target.action = delegate(Thing target)
+			command_Target.action = delegate(LocalTargetInfo target)
 			{
-				foreach (Pawn item in Find.Selector.SelectedObjects.Where(delegate(object x)
-				{
-					Pawn pawn2 = x as Pawn;
-					return pawn2 != null && pawn2.IsColonistPlayerControlled && pawn2.Drafted;
-				}).Cast<Pawn>())
+				foreach (Pawn item in Find.Selector.SelectedObjects.Where((object x) => x is Pawn pawn2 && CanOrderPlayerPawn(pawn2) && pawn2.Drafted).Cast<Pawn>())
 				{
 					string failStr2;
 					Action attackAction = FloatMenuUtility.GetAttackAction(item, target, out failStr2);
@@ -61,7 +67,19 @@ namespace RimWorld
 					}
 					else if (!failStr2.NullOrEmpty())
 					{
-						Messages.Message(failStr2, target, MessageTypeDefOf.RejectInput, historical: false);
+						Messages.Message(failStr2, target.Thing, MessageTypeDefOf.RejectInput, historical: false);
+					}
+				}
+			};
+			command_Target.onUpdate = delegate
+			{
+				foreach (Pawn item2 in Find.Selector.SelectedObjects.Where((object x) => x is Pawn pawn2 && CanOrderPlayerPawn(pawn2) && pawn2.Drafted).Cast<Pawn>())
+				{
+					ThingWithComps thingWithComps = item2.equipment.AllEquipmentListForReading.FirstOrDefault((ThingWithComps w) => w.def.IsRangedWeapon);
+					if (thingWithComps != null && thingWithComps.TryGetComp<CompEquippable>(out var comp))
+					{
+						Verb verb = comp.AllVerbs.FirstOrDefault((Verb v) => v.verbProps.hasStandardCommand);
+						verb?.verbProps.DrawRadiusRing(item2.Position, verb);
 					}
 				}
 			};
@@ -74,14 +92,14 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!AtLeastOneSelectedColonistHasRangedWeapon() && !AtLeastOneSelectedColonistHasNoWeapon())
+			if (!AtLeastOneSelectedPlayerPawnHasRangedWeapon() && !AtLeastOneSelectedPlayerPawnHasNoWeapon())
 			{
-				return AtLeastTwoSelectedColonistsHaveDifferentWeapons();
+				return AtLeastTwoSelectedPlayerPawnsHaveDifferentWeapons();
 			}
 			return true;
 		}
 
-		private static Gizmo GetMeleeAttackGizmo(Pawn pawn)
+		public static Gizmo GetMeleeAttackGizmo(Pawn pawn)
 		{
 			Command_Target command_Target = new Command_Target();
 			command_Target.defaultLabel = "CommandMeleeAttack".Translate();
@@ -93,13 +111,9 @@ namespace RimWorld
 			{
 				command_Target.Disable(failStr.CapitalizeFirst() + ".");
 			}
-			command_Target.action = delegate(Thing target)
+			command_Target.action = delegate(LocalTargetInfo target)
 			{
-				foreach (Pawn item in Find.Selector.SelectedObjects.Where(delegate(object x)
-				{
-					Pawn pawn2 = x as Pawn;
-					return pawn2 != null && pawn2.IsColonistPlayerControlled && pawn2.Drafted;
-				}).Cast<Pawn>())
+				foreach (Pawn item in Find.Selector.SelectedObjects.Where((object x) => x is Pawn pawn2 && CanOrderPlayerPawn(pawn2) && pawn2.Drafted).Cast<Pawn>())
 				{
 					string failStr2;
 					Action meleeAttackAction = FloatMenuUtility.GetMeleeAttackAction(item, target, out failStr2);
@@ -109,20 +123,19 @@ namespace RimWorld
 					}
 					else if (!failStr2.NullOrEmpty())
 					{
-						Messages.Message(failStr2, target, MessageTypeDefOf.RejectInput, historical: false);
+						Messages.Message(failStr2, target.Thing, MessageTypeDefOf.RejectInput, historical: false);
 					}
 				}
 			};
 			return command_Target;
 		}
 
-		private static bool AtLeastOneSelectedColonistHasRangedWeapon()
+		private static bool AtLeastOneSelectedPlayerPawnHasRangedWeapon()
 		{
 			List<object> selectedObjectsListForReading = Find.Selector.SelectedObjectsListForReading;
 			for (int i = 0; i < selectedObjectsListForReading.Count; i++)
 			{
-				Pawn pawn = selectedObjectsListForReading[i] as Pawn;
-				if (pawn != null && pawn.IsColonistPlayerControlled && pawn.equipment != null && pawn.equipment.Primary != null && pawn.equipment.Primary.def.IsRangedWeapon)
+				if (selectedObjectsListForReading[i] is Pawn pawn && CanOrderPlayerPawn(pawn) && pawn.equipment != null && pawn.equipment.Primary != null && pawn.equipment.Primary.def.IsRangedWeapon)
 				{
 					return true;
 				}
@@ -130,13 +143,12 @@ namespace RimWorld
 			return false;
 		}
 
-		private static bool AtLeastOneSelectedColonistHasNoWeapon()
+		private static bool AtLeastOneSelectedPlayerPawnHasNoWeapon()
 		{
 			List<object> selectedObjectsListForReading = Find.Selector.SelectedObjectsListForReading;
 			for (int i = 0; i < selectedObjectsListForReading.Count; i++)
 			{
-				Pawn pawn = selectedObjectsListForReading[i] as Pawn;
-				if (pawn != null && pawn.IsColonistPlayerControlled && (pawn.equipment == null || pawn.equipment.Primary == null))
+				if (selectedObjectsListForReading[i] is Pawn pawn && CanOrderPlayerPawn(pawn) && (pawn.equipment == null || pawn.equipment.Primary == null))
 				{
 					return true;
 				}
@@ -144,7 +156,7 @@ namespace RimWorld
 			return false;
 		}
 
-		private static bool AtLeastTwoSelectedColonistsHaveDifferentWeapons()
+		private static bool AtLeastTwoSelectedPlayerPawnsHaveDifferentWeapons()
 		{
 			if (Find.Selector.NumSelected <= 1)
 			{
@@ -155,8 +167,7 @@ namespace RimWorld
 			List<object> selectedObjectsListForReading = Find.Selector.SelectedObjectsListForReading;
 			for (int i = 0; i < selectedObjectsListForReading.Count; i++)
 			{
-				Pawn pawn = selectedObjectsListForReading[i] as Pawn;
-				if (pawn != null && pawn.IsColonistPlayerControlled)
+				if (selectedObjectsListForReading[i] is Pawn pawn && CanOrderPlayerPawn(pawn))
 				{
 					ThingDef thingDef2 = ((pawn.equipment != null && pawn.equipment.Primary != null) ? pawn.equipment.Primary.def : null);
 					if (!flag)
@@ -171,6 +182,25 @@ namespace RimWorld
 				}
 			}
 			return false;
+		}
+
+		private static bool AllSelectedPlayerPawnsCanTargetLocations()
+		{
+			foreach (object selectedObject in Find.Selector.SelectedObjects)
+			{
+				if (selectedObject is Pawn pawn && CanOrderPlayerPawn(pawn) && pawn.Drafted)
+				{
+					if (pawn.equipment.Primary == null || pawn.equipment.PrimaryEq.PrimaryVerb.verbProps.IsMeleeAttack)
+					{
+						return false;
+					}
+					if (!pawn.equipment.PrimaryEq.PrimaryVerb.verbProps.targetParams.canTargetLocations)
+					{
+						return false;
+					}
+				}
+			}
+			return true;
 		}
 	}
 }

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using Verse;
 
 namespace RimWorld
@@ -13,19 +12,17 @@ namespace RimWorld
 			{
 				return false;
 			}
-			Hediff_ImplantWithLevel hediff_ImplantWithLevel = target as Hediff_ImplantWithLevel;
-			if (hediff_ImplantWithLevel == null)
+			if (!(target is Hediff_Level { level: var level } hediff_Level))
 			{
 				return false;
 			}
-			int level = hediff_ImplantWithLevel.level;
-			if (hediff_ImplantWithLevel.def == recipe.changesHediffLevel)
+			if (hediff_Level.def == recipe.changesHediffLevel)
 			{
 				if (hediffLevelOffset <= 0)
 				{
 					return level > 0;
 				}
-				return (float)level < hediff_ImplantWithLevel.def.maxSeverity;
+				return (float)level < hediff_Level.def.maxSeverity;
 			}
 			return false;
 		}
@@ -41,14 +38,14 @@ namespace RimWorld
 			{
 				TaleRecorder.RecordTale(TaleDefOf.DidSurgery, billDoer, pawn);
 			}
-			Hediff_ImplantWithLevel hediff_ImplantWithLevel = (Hediff_ImplantWithLevel)pawn.health.hediffSet.hediffs.FirstOrDefault((Hediff h) => Operable(h, recipe) && h.Part == part);
-			if (hediff_ImplantWithLevel != null)
+			Hediff_Level hediff_Level = (Hediff_Level)pawn.health.hediffSet.hediffs.FirstOrDefault((Hediff h) => Operable(h, recipe) && h.Part == part);
+			if (hediff_Level != null)
 			{
 				if (IsViolationOnPawn(pawn, part, Faction.OfPlayer))
 				{
-					ReportViolation(pawn, billDoer, pawn.FactionOrExtraMiniOrHomeFaction, -70, "GoodwillChangedReason_DowngradedImplant".Translate(hediff_ImplantWithLevel.Label));
+					ReportViolation(pawn, billDoer, pawn.HomeFaction, -70);
 				}
-				hediff_ImplantWithLevel.ChangeLevel(recipe.hediffLevelOffset);
+				hediff_Level.ChangeLevel(recipe.hediffLevelOffset);
 			}
 		}
 	}

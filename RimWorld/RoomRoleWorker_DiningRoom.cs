@@ -17,7 +17,16 @@ namespace RimWorld
 					num++;
 				}
 			}
-			return (float)num * 8f;
+			return (float)num * 12f;
+		}
+
+		public override float GetScoreDeltaIfBuildingPlaced(Room room, ThingDef buildingDef)
+		{
+			if (buildingDef.category == ThingCategory.Building && buildingDef.surfaceType == SurfaceType.Eat)
+			{
+				return 12f;
+			}
+			return 0f;
 		}
 	}
 }

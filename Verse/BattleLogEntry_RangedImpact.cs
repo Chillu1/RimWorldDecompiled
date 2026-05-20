@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using LudeonTK;
 using RimWorld;
 using UnityEngine;
 using Verse.Grammar;
@@ -69,25 +70,25 @@ namespace Verse
 
 		public BattleLogEntry_RangedImpact(Thing initiator, Thing recipient, Thing originalTarget, ThingDef weaponDef, ThingDef projectileDef, ThingDef coverDef)
 		{
-			if (initiator is Pawn)
+			if (initiator is Pawn pawn)
 			{
-				initiatorPawn = initiator as Pawn;
+				initiatorPawn = pawn;
 			}
 			else if (initiator != null)
 			{
 				initiatorThing = initiator.def;
 			}
-			if (recipient is Pawn)
+			if (recipient is Pawn pawn2)
 			{
-				recipientPawn = recipient as Pawn;
+				recipientPawn = pawn2;
 			}
 			else if (recipient != null)
 			{
 				recipientThing = recipient.def;
 			}
-			if (originalTarget is Pawn)
+			if (originalTarget is Pawn pawn3)
 			{
-				originalTargetPawn = originalTarget as Pawn;
+				originalTargetPawn = pawn3;
 				originalTargetMobile = !originalTargetPawn.Downed && !originalTargetPawn.Dead && originalTargetPawn.Awake();
 			}
 			else if (originalTarget != null)
@@ -183,11 +184,7 @@ namespace Verse
 
 		protected override BodyDef DamagedBody()
 		{
-			if (recipientPawn == null)
-			{
-				return null;
-			}
-			return recipientPawn.RaceProps.body;
+			return recipientPawn?.RaceProps.body;
 		}
 
 		protected override GrammarRequest GenerateGrammarRequest()
@@ -241,7 +238,18 @@ namespace Verse
 					result.Constants["ORIGINALTARGET_missing"] = "True";
 				}
 			}
-			result.Rules.AddRange(PlayLogEntryUtility.RulesForOptionalWeapon("WEAPON", weaponDef, projectileDef));
+			if (weaponDef != null)
+			{
+				result.Rules.AddRange(PlayLogEntryUtility.RulesForOptionalWeapon("WEAPON", weaponDef, projectileDef));
+			}
+			else
+			{
+				result.Constants["WEAPON_missing"] = "True";
+				if (projectileDef != null)
+				{
+					result.Rules.AddRange(GrammarUtility.RulesForDef("PROJECTILE", projectileDef));
+				}
+			}
 			if (initiatorPawn != null && initiatorPawn.skills != null)
 			{
 				result.Constants["INITIATOR_skill"] = initiatorPawn.skills.GetSkill(SkillDefOf.Shooting).Level.ToStringCached();
@@ -282,6 +290,21 @@ namespace Verse
 		public override void ExposeData()
 		{
 			base.ExposeData();
+			if (Scribe.mode == LoadSaveMode.Saving)
+			{
+				if (initiatorPawn != null && initiatorPawn.Discarded)
+				{
+					initiatorPawn = null;
+				}
+				if (recipientPawn != null && recipientPawn.Discarded)
+				{
+					recipientPawn = null;
+				}
+				if (originalTargetPawn != null && originalTargetPawn.Discarded)
+				{
+					originalTargetPawn = null;
+				}
+			}
 			Scribe_References.Look(ref initiatorPawn, "initiatorPawn", saveDestroyedThings: true);
 			Scribe_Defs.Look(ref initiatorThing, "initiatorThing");
 			Scribe_References.Look(ref recipientPawn, "recipientPawn", saveDestroyedThings: true);

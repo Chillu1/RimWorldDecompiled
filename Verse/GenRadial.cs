@@ -10,23 +10,26 @@ namespace Verse
 
 		public static IntVec3[] RadialPattern;
 
-		private static float[] RadialPatternRadii;
+		public static float[] RadialPatternRadii;
 
-		private const int RadialPatternCount = 10000;
+		private static int[] LengthSquaredToIndexArray;
 
-		private static List<IntVec3> tmpCells;
+		private const int RadialPatternCount = 20000;
+
+		private const int MAX_RADIUS = 80;
+
+		private static readonly List<IntVec3> tmpCells;
 
 		private static bool working;
 
-		public static float MaxRadialPatternRadius => RadialPatternRadii[RadialPatternRadii.Length - 1];
+		public static float MaxRadialPatternRadius => RadialPatternRadii[^1];
 
 		static GenRadial()
 		{
 			ManualRadialPattern = new IntVec3[49];
-			RadialPattern = new IntVec3[10000];
-			RadialPatternRadii = new float[10000];
+			RadialPattern = new IntVec3[20000];
+			RadialPatternRadii = new float[20000];
 			tmpCells = new List<IntVec3>();
-			working = false;
 			SetupManualRadialPattern();
 			SetupRadialPattern();
 		}
@@ -87,27 +90,58 @@ namespace Verse
 		private static void SetupRadialPattern()
 		{
 			List<IntVec3> list = new List<IntVec3>();
-			for (int i = -60; i < 60; i++)
+			for (int i = -80; i < 80; i++)
 			{
-				for (int j = -60; j < 60; j++)
+				for (int j = -80; j < 80; j++)
 				{
 					list.Add(new IntVec3(i, 0, j));
 				}
 			}
-			list.Sort(delegate(IntVec3 A, IntVec3 B)
+			list.Sort(delegate(IntVec3 a, IntVec3 b)
 			{
-				float num = A.LengthHorizontalSquared;
-				float num2 = B.LengthHorizontalSquared;
-				if (num < num2)
+				float num2 = a.LengthHorizontalSquared;
+				float num3 = b.LengthHorizontalSquared;
+				if (num2 < num3)
 				{
 					return -1;
 				}
-				return (num != num2) ? 1 : 0;
+				return (num2 != num3) ? 1 : 0;
 			});
-			for (int k = 0; k < 10000; k++)
+			for (int num = 0; num < 20000; num++)
 			{
-				RadialPattern[k] = list[k];
-				RadialPatternRadii[k] = list[k].LengthHorizontal;
+				RadialPattern[num] = list[num];
+				RadialPatternRadii[num] = list[num].LengthHorizontal;
+			}
+			BuildLengthSquaredIndex();
+		}
+
+		private static void BuildLengthSquaredIndex()
+		{
+			int num = 6400;
+			LengthSquaredToIndexArray = new int[num + 1];
+			for (int i = 0; i <= num; i++)
+			{
+				LengthSquaredToIndexArray[i] = -1;
+			}
+			for (int j = 0; j < 20000; j++)
+			{
+				int lengthHorizontalSquared = RadialPattern[j].LengthHorizontalSquared;
+				if (LengthSquaredToIndexArray[lengthHorizontalSquared] == -1)
+				{
+					LengthSquaredToIndexArray[lengthHorizontalSquared] = j;
+				}
+			}
+			int num2 = 0;
+			for (int k = 0; k <= num; k++)
+			{
+				if (LengthSquaredToIndexArray[k] != -1)
+				{
+					num2 = LengthSquaredToIndexArray[k];
+				}
+				else
+				{
+					LengthSquaredToIndexArray[k] = num2;
+				}
 			}
 		}
 
@@ -133,18 +167,24 @@ namespace Verse
 		{
 			if (radius >= MaxRadialPatternRadius)
 			{
-				Log.Error("Not enough squares to get to radius " + radius + ". Max is " + MaxRadialPatternRadius);
-				return 10000;
+				Log.Error($"Not enough squares to get to radius {radius}. Max is {MaxRadialPatternRadius}");
+				return 20000;
 			}
 			float num = radius + float.Epsilon;
-			for (int i = 0; i < 10000; i++)
+			int num2 = (int)Math.Floor(num * num);
+			int num3 = 6400;
+			if (num2 > num3)
+			{
+				num2 = num3;
+			}
+			for (int i = LengthSquaredToIndexArray[num2]; i < 20000; i++)
 			{
 				if (RadialPatternRadii[i] > num)
 				{
 					return i;
 				}
 			}
-			return 10000;
+			return 20000;
 		}
 
 		public static float RadiusOfNumCells(int numCells)
@@ -173,9 +213,10 @@ namespace Verse
 		public static IEnumerable<IntVec3> RadialCellsAround(IntVec3 center, float minRadius, float maxRadius)
 		{
 			int numSquares = NumCellsInRadius(maxRadius);
+			float minRadiusSquared = minRadius * minRadius;
 			for (int i = 0; i < numSquares; i++)
 			{
-				if (RadialPattern[i].LengthHorizontal >= minRadius)
+				if ((float)RadialPattern[i].LengthHorizontalSquared >= minRadiusSquared)
 				{
 					yield return RadialPattern[i] + center;
 				}
@@ -203,11 +244,10 @@ namespace Verse
 						{
 							returnedThings = new HashSet<Thing>();
 						}
-						if (returnedThings.Contains(thing))
+						if (!returnedThings.Add(thing))
 						{
 							continue;
 						}
-						returnedThings.Add(thing);
 					}
 					yield return thing;
 				}

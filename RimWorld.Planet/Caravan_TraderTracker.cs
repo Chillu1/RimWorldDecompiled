@@ -32,14 +32,14 @@ namespace RimWorld.Planet
 			get
 			{
 				List<Thing> inv = CaravanInventoryUtility.AllInventoryItems(caravan);
-				for (int j = 0; j < inv.Count; j++)
+				for (int i = 0; i < inv.Count; i++)
 				{
-					yield return inv[j];
+					yield return inv[i];
 				}
 				List<Pawn> pawns = caravan.PawnsListForReading;
-				for (int j = 0; j < pawns.Count; j++)
+				for (int i = 0; i < pawns.Count; i++)
 				{
-					Pawn pawn = pawns[j];
+					Pawn pawn = pawns[i];
 					if (!caravan.IsOwner(pawn) && (!pawn.RaceProps.packAnimal || pawn.inventory == null || pawn.inventory.innerContainer.Count <= 0) && !soldPrisoners.Contains(pawn))
 					{
 						yield return pawn;
@@ -99,14 +99,13 @@ namespace RimWorld.Planet
 		{
 			if (Goods.Contains(toGive))
 			{
-				Log.Error(string.Concat("Tried to add ", toGive, " to stock (pawn's trader tracker), but it's already here."));
+				Log.Error("Tried to add " + toGive?.ToString() + " to stock (pawn's trader tracker), but it's already here.");
 				return;
 			}
 			Caravan caravan = playerNegotiator.GetCaravan();
 			Thing thing = toGive.SplitOff(countToGive);
 			thing.PreTraded(TradeAction.PlayerSells, playerNegotiator, this.caravan);
-			Pawn pawn = thing as Pawn;
-			if (pawn != null)
+			if (thing is Pawn pawn)
 			{
 				CaravanInventoryUtility.MoveAllInventoryToSomeoneElse(pawn, caravan.PawnsListForReading);
 				this.caravan.AddPawn(pawn, addCarriedPawnToWorldPawnsIfAny: false);
@@ -140,8 +139,7 @@ namespace RimWorld.Planet
 			Caravan caravan = playerNegotiator.GetCaravan();
 			Thing thing = toGive.SplitOff(countToGive);
 			thing.PreTraded(TradeAction.PlayerBuys, playerNegotiator, this.caravan);
-			Pawn pawn = thing as Pawn;
-			if (pawn != null)
+			if (thing is Pawn pawn)
 			{
 				CaravanInventoryUtility.MoveAllInventoryToSomeoneElse(pawn, this.caravan.PawnsListForReading);
 				caravan.AddPawn(pawn, addCarriedPawnToWorldPawnsIfAny: true);

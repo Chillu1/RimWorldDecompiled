@@ -11,6 +11,9 @@ namespace RimWorld.QuestGen
 		public SlateRef<string> inSignal;
 
 		[NoTranslate]
+		public SlateRef<string> inSignalDisable;
+
+		[NoTranslate]
 		public SlateRef<IEnumerable<string>> outSignals;
 
 		public QuestNode node;
@@ -39,6 +42,7 @@ namespace RimWorld.QuestGen
 			{
 				QuestPart_Pass questPart_Pass = new QuestPart_Pass();
 				questPart_Pass.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate));
+				questPart_Pass.inSignalDisable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalDisable.GetValue(slate));
 				if (node != null)
 				{
 					questPart_Pass.outSignal = QuestGen.GenerateNewSignal("OuterNodeCompleted");
@@ -48,13 +52,14 @@ namespace RimWorld.QuestGen
 				{
 					questPart_Pass.outSignal = QuestGenUtility.HardcodedSignalWithQuestID(outSignals.GetValue(slate).First());
 				}
-				questPart_Pass.signalListenMode = signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly;
+				questPart_Pass.signalListenMode = signalListenMode.GetValue(slate).GetValueOrDefault();
 				QuestGen.quest.AddPart(questPart_Pass);
 				return;
 			}
 			}
 			QuestPart_PassOutMany questPart_PassOutMany = new QuestPart_PassOutMany();
 			questPart_PassOutMany.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate));
+			questPart_PassOutMany.inSignalDisable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalDisable.GetValue(slate));
 			if (node != null)
 			{
 				string text = QuestGen.GenerateNewSignal("OuterNodeCompleted");
@@ -65,7 +70,7 @@ namespace RimWorld.QuestGen
 			{
 				questPart_PassOutMany.outSignals.Add(QuestGenUtility.HardcodedSignalWithQuestID(item));
 			}
-			questPart_PassOutMany.signalListenMode = signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly;
+			questPart_PassOutMany.signalListenMode = signalListenMode.GetValue(slate).GetValueOrDefault();
 			QuestGen.quest.AddPart(questPart_PassOutMany);
 		}
 	}

@@ -11,8 +11,7 @@ namespace RimWorld
 		{
 			get
 			{
-				Building_Casket building_Casket = parent as Building_Casket;
-				if (building_Casket != null && !building_Casket.HasAnyContents)
+				if (parent is IThingHolder thingHolder && thingHolder.GetDirectlyHeldThings().NullOrEmpty())
 				{
 					return true;
 				}
@@ -25,15 +24,30 @@ namespace RimWorld
 			}
 		}
 
+		public override bool DontDrawParent()
+		{
+			if (ParentIsEmpty)
+			{
+				return !Props.alwaysDrawParent;
+			}
+			return false;
+		}
+
 		public override void PostDraw()
 		{
-			base.PostDraw();
-			if (ParentIsEmpty)
+			if (ParentIsEmpty && parent.def.drawerType != DrawerType.MapMeshOnly)
 			{
 				Mesh mesh = Props.graphicData.Graphic.MeshAt(parent.Rotation);
 				Vector3 drawPos = parent.DrawPos;
-				drawPos.y = AltitudeLayer.BuildingOnTop.AltitudeFor();
 				Graphics.DrawMesh(mesh, drawPos + Props.graphicData.drawOffset.RotatedBy(parent.Rotation), Quaternion.identity, Props.graphicData.Graphic.MatAt(parent.Rotation), 0);
+			}
+		}
+
+		public override void PostPrintOnto(SectionLayer layer)
+		{
+			if (ParentIsEmpty)
+			{
+				Props.graphicData.Graphic.Print(layer, parent, 0f);
 			}
 		}
 	}

@@ -8,23 +8,23 @@ namespace RimWorld.Planet
 {
 	public static class CaravanExitMapUtility
 	{
-		private static List<int> tmpNeighbors = new List<int>();
+		private static readonly List<PlanetTile> tmpNeighbors = new List<PlanetTile>();
 
-		private static List<Pawn> tmpPawns = new List<Pawn>();
+		private static readonly List<Pawn> tmpPawns = new List<Pawn>();
 
-		private static List<int> retTiles = new List<int>();
+		private static readonly List<PlanetTile> retTiles = new List<PlanetTile>();
 
 		private static readonly Rot4[] rotTmp = new Rot4[2];
 
-		private static List<int> tileCandidates = new List<int>();
+		private static readonly List<PlanetTile> tileCandidates = new List<PlanetTile>();
 
-		public static Caravan ExitMapAndCreateCaravan(IEnumerable<Pawn> pawns, Faction faction, int exitFromTile, Direction8Way dir, int destinationTile, bool sendMessage = true)
+		public static Caravan ExitMapAndCreateCaravan(IEnumerable<Pawn> pawns, Faction faction, PlanetTile exitFromTile, Direction8Way dir, PlanetTile destinationTile, bool sendMessage = true)
 		{
-			int directionTile = FindRandomStartingTileBasedOnExitDir(exitFromTile, dir);
+			PlanetTile directionTile = FindRandomStartingTileBasedOnExitDir(exitFromTile, dir);
 			return ExitMapAndCreateCaravan(pawns, faction, exitFromTile, directionTile, destinationTile, sendMessage);
 		}
 
-		public static Caravan ExitMapAndCreateCaravan(IEnumerable<Pawn> pawns, Faction faction, int exitFromTile, int directionTile, int destinationTile, bool sendMessage = true)
+		public static Caravan ExitMapAndCreateCaravan(IEnumerable<Pawn> pawns, Faction faction, PlanetTile exitFromTile, PlanetTile directionTile, PlanetTile destinationTile, bool sendMessage = true)
 		{
 			if (!GenWorldClosest.TryFindClosestPassableTile(exitFromTile, out exitFromTile))
 			{
@@ -72,7 +72,7 @@ namespace RimWorld.Planet
 				caravan.pather.nextTileCostLeft /= 2f;
 				caravan.tweener.ResetTweenedPosToRoot();
 			}
-			if (destinationTile != -1)
+			if (destinationTile.Valid)
 			{
 				List<FloatMenuOption> list = FloatMenuMakerWorld.ChoicesAtFor(destinationTile, caravan);
 				if (list.Any((FloatMenuOption x) => !x.Disabled))
@@ -105,19 +105,19 @@ namespace RimWorld.Planet
 				caravan.AddPawn(pawn, addCarriedPawnToWorldPawnsIfAny: true);
 				pawn.ExitMap(allowedToJoinOrCreateCaravan: false, exitDir);
 			}
-			else if (pawn.IsColonist)
+			else if (pawn.IsColonist || pawn.IsColonySubhumanPlayerControlled)
 			{
 				Map map = pawn.Map;
-				int directionTile = FindRandomStartingTileBasedOnExitDir(map.Tile, exitDir);
-				Caravan caravan2 = ExitMapAndCreateCaravan(Gen.YieldSingle(pawn), pawn.Faction, map.Tile, directionTile, -1, sendMessage: false);
+				PlanetTile directionTile = FindRandomStartingTileBasedOnExitDir(map.Tile, exitDir);
+				Caravan caravan2 = ExitMapAndCreateCaravan(Gen.YieldSingle(pawn), pawn.Faction, map.Tile, directionTile, PlanetTile.Invalid, sendMessage: false);
 				caravan2.autoJoinable = true;
 				bool flag = false;
-				List<Pawn> allPawnsSpawned = map.mapPawns.AllPawnsSpawned;
+				IReadOnlyList<Pawn> allPawnsSpawned = map.mapPawns.AllPawnsSpawned;
 				for (int i = 0; i < allPawnsSpawned.Count; i++)
 				{
 					if (FindCaravanToJoinFor(allPawnsSpawned[i]) != null && !allPawnsSpawned[i].Downed && !allPawnsSpawned[i].Drafted)
 					{
-						if (allPawnsSpawned[i].RaceProps.Animal)
+						if (allPawnsSpawned[i].IsAnimal)
 						{
 							flag = true;
 						}
@@ -134,7 +134,7 @@ namespace RimWorld.Planet
 			}
 			else
 			{
-				Log.Error(string.Concat("Pawn ", pawn, " didn't find any caravan to join, and he can't create one."));
+				Log.Error("Pawn " + pawn?.ToString() + " didn't find any caravan to join, and he can't create one.");
 			}
 		}
 
@@ -148,41 +148,41 @@ namespace RimWorld.Planet
 			{
 				return false;
 			}
-			if (!pawn.IsColonist)
+			if (!pawn.IsColonist && !pawn.IsColonySubhumanPlayerControlled)
 			{
 				return FindCaravanToJoinFor(pawn) != null;
 			}
 			return true;
 		}
 
-		public static List<int> AvailableExitTilesAt(Map map)
+		public static List<PlanetTile> AvailableExitTilesAt(Map map)
 		{
 			retTiles.Clear();
-			int currentTileID = map.Tile;
+			PlanetTile currentTileID = map.Tile;
 			World world = Find.World;
 			WorldGrid grid = world.grid;
 			grid.GetTileNeighbors(currentTileID, tmpNeighbors);
 			for (int i = 0; i < tmpNeighbors.Count; i++)
 			{
-				int num = tmpNeighbors[i];
-				if (IsGoodCaravanStartingTile(num))
+				PlanetTile planetTile = tmpNeighbors[i];
+				if (IsGoodCaravanStartingTile(planetTile))
 				{
-					GetExitMapEdges(grid, currentTileID, num, out var primary, out var secondary);
-					if (((primary != Rot4.Invalid && CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => x.Walkable(map) && !x.Fogged(map), map, primary, CellFinder.EdgeRoadChance_Ignore, out var result)) || (secondary != Rot4.Invalid && CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => x.Walkable(map) && !x.Fogged(map), map, secondary, CellFinder.EdgeRoadChance_Ignore, out result))) && !retTiles.Contains(num))
+					GetExitMapEdges(grid, currentTileID, planetTile, out var primary, out var secondary);
+					if (((primary != Rot4.Invalid && CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => x.Walkable(map) && !x.Fogged(map), map, primary, CellFinder.EdgeRoadChance_Ignore, out var result)) || (secondary != Rot4.Invalid && CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => x.Walkable(map) && !x.Fogged(map), map, secondary, CellFinder.EdgeRoadChance_Ignore, out result))) && !retTiles.Contains(planetTile))
 					{
-						retTiles.Add(num);
+						retTiles.Add(planetTile);
 					}
 				}
 			}
-			retTiles.SortBy((int x) => grid.GetHeadingFromTo(currentTileID, x));
+			retTiles.SortBy((PlanetTile x) => grid.GetHeadingFromTo(currentTileID, x));
 			return retTiles;
 		}
 
-		public static void GetExitMapEdges(WorldGrid grid, int fromTileID, int toTileID, out Rot4 primary, out Rot4 secondary)
+		public static void GetExitMapEdges(WorldGrid grid, PlanetTile fromTile, PlanetTile toTile, out Rot4 primary, out Rot4 secondary)
 		{
 			primary = (secondary = Rot4.Invalid);
 			int num = 0;
-			float heading = grid.GetHeadingFromTo(fromTileID, toTileID);
+			float heading = grid.GetHeadingFromTo(fromTile, toTile);
 			if (heading >= 292.5f || heading <= 67.5f)
 			{
 				rotTmp[num++] = Rot4.North;
@@ -210,68 +210,69 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public static int RandomBestExitTileFrom(Map map)
+		public static PlanetTile RandomBestExitTileFrom(Map map)
 		{
 			Tile tileInfo = map.TileInfo;
-			List<int> options = AvailableExitTilesAt(map);
+			List<PlanetTile> options = AvailableExitTilesAt(map);
 			if (!options.Any())
 			{
-				return -1;
+				return PlanetTile.Invalid;
 			}
-			List<Tile.RoadLink> roads = tileInfo.Roads;
-			if (roads == null)
+			SurfaceTile surface = tileInfo as SurfaceTile;
+			if (surface != null && surface.Roads != null)
 			{
-				return options.RandomElement();
-			}
-			int bestRoadIndex = -1;
-			for (int i = 0; i < roads.Count; i++)
-			{
-				if (options.Contains(roads[i].neighbor) && (bestRoadIndex == -1 || roads[i].road.priority > roads[bestRoadIndex].road.priority))
+				int bestRoadIndex = -1;
+				for (int i = 0; i < surface.Roads.Count; i++)
 				{
-					bestRoadIndex = i;
+					if (options.Contains(surface.Roads[i].neighbor) && (bestRoadIndex == -1 || surface.Roads[i].road.priority > surface.Roads[bestRoadIndex].road.priority))
+					{
+						bestRoadIndex = i;
+					}
 				}
+				if (bestRoadIndex == -1)
+				{
+					return options.RandomElement();
+				}
+				return surface.Roads.Where((SurfaceTile.RoadLink rl) => options.Contains(rl.neighbor) && rl.road == surface.Roads[bestRoadIndex].road).RandomElement().neighbor;
 			}
-			if (bestRoadIndex == -1)
-			{
-				return options.RandomElement();
-			}
-			return roads.Where((Tile.RoadLink rl) => options.Contains(rl.neighbor) && rl.road == roads[bestRoadIndex].road).RandomElement().neighbor;
+			return options.RandomElement();
 		}
 
-		public static int BestExitTileToGoTo(int destinationTile, Map from)
+		public static PlanetTile BestExitTileToGoTo(PlanetTile destinationTile, Map from)
 		{
-			int num = -1;
-			using (WorldPath worldPath = Find.WorldPathFinder.FindPath(from.Tile, destinationTile, null))
+			PlanetTile planetTile = PlanetTile.Invalid;
+			using (WorldPath worldPath = from.Tile.Layer.Pather.FindPath(from.Tile, destinationTile, null))
 			{
 				if (worldPath.Found && worldPath.NodesLeftCount >= 2)
 				{
-					num = worldPath.NodesReversed[worldPath.NodesReversed.Count - 2];
+					List<PlanetTile> nodesReversed = worldPath.NodesReversed;
+					planetTile = nodesReversed[nodesReversed.Count - 2];
 				}
 			}
-			if (num == -1)
+			if (!planetTile.Valid)
 			{
 				return RandomBestExitTileFrom(from);
 			}
-			float num2 = 0f;
-			int num3 = -1;
-			List<int> list = AvailableExitTilesAt(from);
+			float num = 0f;
+			PlanetTile result = PlanetTile.Invalid;
+			List<PlanetTile> list = AvailableExitTilesAt(from);
 			for (int i = 0; i < list.Count; i++)
 			{
-				if (list[i] == num)
+				if (list[i] == planetTile)
 				{
 					return list[i];
 				}
-				float num4 = (Find.WorldGrid.GetTileCenter(list[i]) - Find.WorldGrid.GetTileCenter(num)).MagnitudeHorizontalSquared();
-				if (num3 == -1 || num4 < num2)
+				float num2 = (Find.WorldGrid.GetTileCenter(list[i]) - Find.WorldGrid.GetTileCenter(planetTile)).MagnitudeHorizontalSquared();
+				if (!result.Valid || num2 < num)
 				{
-					num3 = list[i];
-					num2 = num4;
+					result = list[i];
+					num = num2;
 				}
 			}
-			return num3;
+			return result;
 		}
 
-		private static int FindRandomStartingTileBasedOnExitDir(int tileID, Rot4 exitDir)
+		private static PlanetTile FindRandomStartingTileBasedOnExitDir(PlanetTile tileID, Rot4 exitDir)
 		{
 			tileCandidates.Clear();
 			World world = Find.World;
@@ -279,17 +280,17 @@ namespace RimWorld.Planet
 			grid.GetTileNeighbors(tileID, tmpNeighbors);
 			for (int i = 0; i < tmpNeighbors.Count; i++)
 			{
-				int num = tmpNeighbors[i];
-				if (IsGoodCaravanStartingTile(num) && (!exitDir.IsValid || !(grid.GetRotFromTo(tileID, num) != exitDir)))
+				PlanetTile planetTile = tmpNeighbors[i];
+				if (IsGoodCaravanStartingTile(planetTile) && (!exitDir.IsValid || !(grid.GetRotFromTo(tileID, planetTile) != exitDir)))
 				{
-					tileCandidates.Add(num);
+					tileCandidates.Add(planetTile);
 				}
 			}
 			if (tileCandidates.TryRandomElement(out var result))
 			{
 				return result;
 			}
-			if (tmpNeighbors.Where(delegate(int x)
+			if (tmpNeighbors.Where(delegate(PlanetTile x)
 			{
 				if (!IsGoodCaravanStartingTile(x))
 				{
@@ -301,38 +302,38 @@ namespace RimWorld.Planet
 			{
 				return result;
 			}
-			if (tmpNeighbors.Where((int x) => IsGoodCaravanStartingTile(x)).TryRandomElement(out result))
+			if (tmpNeighbors.Where((PlanetTile x) => IsGoodCaravanStartingTile(x)).TryRandomElement(out result))
 			{
 				return result;
 			}
 			return tileID;
 		}
 
-		private static int FindRandomStartingTileBasedOnExitDir(int tileID, Direction8Way exitDir)
+		private static PlanetTile FindRandomStartingTileBasedOnExitDir(PlanetTile tileID, Direction8Way exitDir)
 		{
 			tileCandidates.Clear();
 			WorldGrid grid = Find.World.grid;
 			grid.GetTileNeighbors(tileID, tmpNeighbors);
 			for (int i = 0; i < tmpNeighbors.Count; i++)
 			{
-				int num = tmpNeighbors[i];
-				if (IsGoodCaravanStartingTile(num) && grid.GetDirection8WayFromTo(tileID, num) == exitDir)
+				PlanetTile planetTile = tmpNeighbors[i];
+				if (IsGoodCaravanStartingTile(planetTile) && grid.GetDirection8WayFromTo(tileID, planetTile) == exitDir)
 				{
-					tileCandidates.Add(num);
+					tileCandidates.Add(planetTile);
 				}
 			}
 			if (tileCandidates.TryRandomElement(out var result))
 			{
 				return result;
 			}
-			if (tmpNeighbors.Where((int x) => IsGoodCaravanStartingTile(x)).TryRandomElement(out result))
+			if (tmpNeighbors.Where(IsGoodCaravanStartingTile).TryRandomElement(out result))
 			{
 				return result;
 			}
 			return tileID;
 		}
 
-		private static bool IsGoodCaravanStartingTile(int tile)
+		private static bool IsGoodCaravanStartingTile(PlanetTile tile)
 		{
 			return !Find.World.Impassable(tile);
 		}
@@ -347,7 +348,11 @@ namespace RimWorld.Planet
 			{
 				return null;
 			}
-			int tile = pawn.Map.Tile;
+			if (pawn.Map.IsPocketMap)
+			{
+				return null;
+			}
+			PlanetTile tile = pawn.Map.Tile;
 			Find.WorldGrid.GetTileNeighbors(tile, tmpNeighbors);
 			tmpNeighbors.Add(tile);
 			List<Caravan> caravans = Find.WorldObjects.Caravans;
@@ -358,7 +363,14 @@ namespace RimWorld.Planet
 				{
 					continue;
 				}
-				if (pawn.HostFaction == null)
+				if (pawn.GetMechWorkMode() == MechWorkModeDefOf.Escort)
+				{
+					if (caravan.PawnsListForReading.Contains(pawn.GetOverseer()))
+					{
+						return caravan;
+					}
+				}
+				else if (pawn.HostFaction == null)
 				{
 					if (caravan.Faction == pawn.Faction)
 					{
@@ -383,7 +395,7 @@ namespace RimWorld.Planet
 				{
 					continue;
 				}
-				List<Pawn> allPawnsSpawned = map.mapPawns.AllPawnsSpawned;
+				IReadOnlyList<Pawn> allPawnsSpawned = map.mapPawns.AllPawnsSpawned;
 				for (int j = 0; j < allPawnsSpawned.Count; j++)
 				{
 					if (!allPawnsSpawned[j].IsColonistPlayerControlled && !allPawnsSpawned[j].Downed && FindCaravanToJoinFor(allPawnsSpawned[j]) == c)

@@ -47,7 +47,7 @@ namespace RimWorld
 			inSignal = "DebugSignal" + Rand.Int;
 			if (TileFinder.TryFindNewSiteTile(out var tile))
 			{
-				worldObject = SiteMaker.MakeSite((SitePartDef)null, tile, (Faction)null, ifHostileThenMustRemainHostile: true, (float?)null);
+				worldObject = SiteMaker.MakeSite((SitePartDef)null, tile, (Faction)null, ifHostileThenMustRemainHostile: true, (float?)null, (WorldObjectDef)null);
 			}
 		}
 
@@ -55,8 +55,7 @@ namespace RimWorld
 		{
 			if (worldObject != null && worldObject.Spawned)
 			{
-				MapParent mapParent = worldObject as MapParent;
-				if (mapParent != null && mapParent.HasMap)
+				if (worldObject is MapParent { HasMap: not false } mapParent)
 				{
 					mapParent.forceRemoveWorldObjectWhenMapRemoved = true;
 				}

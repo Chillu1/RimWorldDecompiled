@@ -33,29 +33,34 @@ namespace Verse.AI
 
 		private const float MajorBreakMoodFraction = 0.5714286f;
 
-		private const float ExtremeBreakMoodFraction = 0.142857149f;
+		private const float ExtremeBreakMoodFraction = 1f / 7f;
 
 		private static List<Thought> tmpThoughts = new List<Thought>();
 
-		public float BreakThresholdExtreme => pawn.GetStatValue(StatDefOf.MentalBreakThreshold) * 0.142857149f;
+		public float BreakThresholdExtreme => pawn.GetStatValue(StatDefOf.MentalBreakThreshold, applyPostProcess: true, 5) * (1f / 7f);
 
-		public float BreakThresholdMajor => pawn.GetStatValue(StatDefOf.MentalBreakThreshold) * 0.5714286f;
+		public float BreakThresholdMajor => pawn.GetStatValue(StatDefOf.MentalBreakThreshold, applyPostProcess: true, 5) * 0.5714286f;
 
-		public float BreakThresholdMinor => pawn.GetStatValue(StatDefOf.MentalBreakThreshold);
+		public float BreakThresholdMinor => pawn.GetStatValue(StatDefOf.MentalBreakThreshold, applyPostProcess: true, 5);
 
-		private bool CanDoRandomMentalBreaks
+		public bool CanDoRandomMentalBreaks
 		{
 			get
 			{
-				if (pawn.RaceProps.Humanlike)
+				LifeStageDef curLifeStage = pawn.ageTracker.CurLifeStage;
+				if (curLifeStage == null)
 				{
-					if (!pawn.Spawned)
+					if (pawn.RaceProps.Humanlike)
 					{
-						return pawn.IsCaravanMember();
+						if (!pawn.Spawned)
+						{
+							return pawn.IsCaravanMember();
+						}
+						return true;
 					}
-					return true;
+					return false;
 				}
-				return false;
+				return curLifeStage.canDoRandomMentalBreaks;
 			}
 		}
 
@@ -63,9 +68,9 @@ namespace Verse.AI
 		{
 			get
 			{
-				if (pawn.MentalStateDef == null)
+				if (pawn.MentalStateDef == null && CurMood < BreakThresholdExtreme)
 				{
-					return CurMood < BreakThresholdExtreme;
+					return !Blocked;
 				}
 				return false;
 			}
@@ -75,9 +80,9 @@ namespace Verse.AI
 		{
 			get
 			{
-				if (pawn.MentalStateDef == null && !BreakExtremeIsImminent)
+				if (pawn.MentalStateDef == null && !BreakExtremeIsImminent && CurMood < BreakThresholdMajor)
 				{
-					return CurMood < BreakThresholdMajor;
+					return !Blocked;
 				}
 				return false;
 			}
@@ -87,9 +92,9 @@ namespace Verse.AI
 		{
 			get
 			{
-				if (pawn.MentalStateDef == null && !BreakExtremeIsImminent && !BreakMajorIsImminent)
+				if (pawn.MentalStateDef == null && !BreakExtremeIsImminent && !BreakMajorIsImminent && CurMood < BreakThresholdMinor)
 				{
-					return CurMood < BreakThresholdMinor;
+					return !Blocked;
 				}
 				return false;
 			}
@@ -99,13 +104,15 @@ namespace Verse.AI
 		{
 			get
 			{
-				if (pawn.MentalStateDef == null && !BreakExtremeIsImminent)
+				if (pawn.MentalStateDef == null && BreakExtremeIsImminent && CurMood < BreakThresholdExtreme + 0.1f)
 				{
-					return CurMood < BreakThresholdExtreme + 0.1f;
+					return !Blocked;
 				}
 				return false;
 			}
 		}
+
+		public bool Blocked => pawn.mindState.mentalStateHandler.MentalBreaksBlocked();
 
 		public float CurMood
 		{
@@ -123,21 +130,31 @@ namespace Verse.AI
 		{
 			get
 			{
-				MentalBreakIntensity intensity;
-				for (intensity = CurrentDesiredMoodBreakIntensity; intensity != 0; intensity--)
+				foreach (MentalBreakDef item in GetBreaksForIntensity(CurrentDesiredMoodBreakIntensity, ChooseAnomalyBreak))
 				{
-					IEnumerable<MentalBreakDef> enumerable = DefDatabase<MentalBreakDef>.AllDefsListForReading.Where((MentalBreakDef d) => d.intensity == intensity && d.Worker.BreakCanOccur(pawn));
-					bool flag = false;
-					foreach (MentalBreakDef item in enumerable)
-					{
-						yield return item;
-						flag = true;
-					}
-					if (flag)
-					{
-						break;
-					}
+					yield return item;
 				}
+			}
+		}
+
+		private bool ChooseAnomalyBreak
+		{
+			get
+			{
+				if (!ModsConfig.AnomalyActive)
+				{
+					return false;
+				}
+				if (pawn.IsCreepJoiner)
+				{
+					return true;
+				}
+				MonolithLevelDef levelDef = Find.Anomaly.LevelDef;
+				if (levelDef != null)
+				{
+					return Rand.Chance(levelDef.anomalyMentalBreakChance);
+				}
+				return false;
 			}
 		}
 
@@ -185,13 +202,55 @@ namespace Verse.AI
 			Scribe_Values.Look(ref ticksBelowMinor, "ticksBelowMinor", 0);
 		}
 
-		public void MentalBreakerTick()
+		private IEnumerable<MentalBreakDef> GetBreaksForIntensity(MentalBreakIntensity intensity, bool anomalyBreak, bool tryNonAnomalyBreakIfNoneAvailable = true)
+		{
+			if (ModsConfig.IdeologyActive && pawn.Ideo != null)
+			{
+				bool flag = false;
+				HashSet<MentalBreakDef> cachedPossibleMentalBreaks = pawn.Ideo.cachedPossibleMentalBreaks;
+				foreach (MentalBreakDef item in cachedPossibleMentalBreaks)
+				{
+					if (item.Worker.BreakCanOccur(pawn))
+					{
+						yield return item;
+						flag = true;
+					}
+				}
+				if (flag)
+				{
+					yield break;
+				}
+			}
+			while (intensity != MentalBreakIntensity.None)
+			{
+				MentalBreakIntensity intensityInner = intensity;
+				IEnumerable<MentalBreakDef> enumerable = DefDatabase<MentalBreakDef>.AllDefsListForReading.Where((MentalBreakDef d) => d.intensity == intensityInner && d.Worker.BreakCanOccur(pawn) && d.anomalousBreak == anomalyBreak);
+				if (anomalyBreak && enumerable.EnumerableNullOrEmpty() && tryNonAnomalyBreakIfNoneAvailable)
+				{
+					enumerable = DefDatabase<MentalBreakDef>.AllDefsListForReading.Where((MentalBreakDef d) => d.intensity == intensityInner && d.Worker.BreakCanOccur(pawn) && !d.anomalousBreak);
+				}
+				bool flag2 = false;
+				foreach (MentalBreakDef item2 in enumerable)
+				{
+					yield return item2;
+					flag2 = true;
+				}
+				if (!flag2)
+				{
+					intensity--;
+					continue;
+				}
+				break;
+			}
+		}
+
+		public void MentalBreakerTickInterval(int delta)
 		{
 			if (ticksUntilCanDoMentalBreak > 0 && pawn.Awake())
 			{
-				ticksUntilCanDoMentalBreak--;
+				ticksUntilCanDoMentalBreak -= delta;
 			}
-			if (!CanDoRandomMentalBreaks || pawn.MentalStateDef != null || !pawn.IsHashIntervalTick(150) || !DebugSettings.enableRandomMentalStates)
+			if (!CanDoRandomMentalBreaks || pawn.MentalStateDef != null || !pawn.IsHashIntervalTick(150, delta) || !DebugSettings.enableRandomMentalStates)
 			{
 				return;
 			}
@@ -219,10 +278,10 @@ namespace Verse.AI
 			{
 				ticksBelowMinor = 0;
 			}
-			if ((!TestMoodMentalBreak() || !TryDoRandomMoodCausedMentalBreak()) && pawn.story != null)
+			if ((!TestMoodMentalBreak() || (!AlwaysBerserkUtility.TryTriggerBerserkBloodRage(pawn) && !AlwaysBerserkUtility.TryTriggerBerserkFrenzyInducer(pawn) && !TryDoRandomMoodCausedMentalBreak())) && pawn.story != null)
 			{
 				List<Trait> allTraits = pawn.story.traits.allTraits;
-				for (int i = 0; i < allTraits.Count && !allTraits[i].CurrentData.MentalStateGiver.CheckGive(pawn, 150); i++)
+				for (int i = 0; i < allTraits.Count && (allTraits[i].Suppressed || !allTraits[i].CurrentData.MentalStateGiver.CheckGive(pawn, 150)); i++)
 				{
 				}
 			}
@@ -251,15 +310,7 @@ namespace Verse.AI
 
 		public bool TryDoRandomMoodCausedMentalBreak()
 		{
-			if (!CanDoRandomMentalBreaks || pawn.Downed || !pawn.Awake() || pawn.InMentalState)
-			{
-				return false;
-			}
-			if (pawn.Faction != Faction.OfPlayer && CurrentDesiredMoodBreakIntensity != MentalBreakIntensity.Extreme)
-			{
-				return false;
-			}
-			if (QuestUtility.AnyQuestDisablesRandomMoodCausedMentalBreaksFor(pawn))
+			if (!CanHaveMentalBreak())
 			{
 				return false;
 			}
@@ -273,7 +324,46 @@ namespace Verse.AI
 			{
 				taggedString += "\n\n" + "FinalStraw".Translate(thought.LabelCap);
 			}
-			return result.Worker.TryStart(pawn, taggedString, causedByMood: true);
+			return TryDoMentalBreak(taggedString, result);
+		}
+
+		public bool TryDoMentalBreak(string reason, MentalBreakDef breakDef)
+		{
+			if (!CanHaveMentalBreak())
+			{
+				return false;
+			}
+			return breakDef.Worker.TryStart(pawn, reason, causedByMood: true);
+		}
+
+		public bool TryGetRandomMentalBreak(MentalBreakIntensity intensity, out MentalBreakDef breakDef)
+		{
+			return GetBreaksForIntensity(intensity, ChooseAnomalyBreak).TryRandomElementByWeight((MentalBreakDef d) => d.Worker.CommonalityFor(pawn, moodCaused: true), out breakDef);
+		}
+
+		private bool CanHaveMentalBreak()
+		{
+			if (!CanDoRandomMentalBreaks || pawn.Downed || !pawn.Awake() || pawn.InMentalState)
+			{
+				return false;
+			}
+			if (pawn.IsMutant && pawn.mutant.Def.preventsMentalBreaks)
+			{
+				return false;
+			}
+			if (pawn.Faction != Faction.OfPlayer && CurrentDesiredMoodBreakIntensity != MentalBreakIntensity.Extreme)
+			{
+				return false;
+			}
+			if (QuestUtility.AnyQuestDisablesRandomMoodCausedMentalBreaksFor(pawn))
+			{
+				return false;
+			}
+			if (Blocked)
+			{
+				return false;
+			}
+			return true;
 		}
 
 		private Thought RandomFinalStraw()
@@ -289,8 +379,7 @@ namespace Verse.AI
 				}
 			}
 			float maxMoodOffset = num * 0.5f;
-			Thought result = null;
-			tmpThoughts.Where((Thought x) => x.MoodOffset() <= maxMoodOffset).TryRandomElementByWeight((Thought x) => 0f - x.MoodOffset(), out result);
+			tmpThoughts.Where((Thought x) => x.MoodOffset() <= maxMoodOffset).TryRandomElementByWeight((Thought x) => 0f - x.MoodOffset(), out var result);
 			tmpThoughts.Clear();
 			return result;
 		}
@@ -327,7 +416,7 @@ namespace Verse.AI
 			foreach (MentalBreakDef currentPossibleMoodBreak in CurrentPossibleMoodBreaks)
 			{
 				float num2 = currentPossibleMoodBreak.Worker.CommonalityFor(pawn, moodCaused: true);
-				stringBuilder.AppendLine(string.Concat("   ", currentPossibleMoodBreak, "     ", (num2 / num).ToStringPercent()));
+				stringBuilder.AppendLine("   " + currentPossibleMoodBreak?.ToString() + "     " + (num2 / num).ToStringPercent());
 			}
 			return stringBuilder.ToString();
 		}
@@ -335,11 +424,22 @@ namespace Verse.AI
 		internal void LogPossibleMentalBreaks()
 		{
 			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.AppendLine(string.Concat(pawn, " current possible mood mental breaks:"));
-			stringBuilder.AppendLine("CurrentDesiredMoodBreakIntensity: " + CurrentDesiredMoodBreakIntensity);
-			foreach (MentalBreakDef currentPossibleMoodBreak in CurrentPossibleMoodBreaks)
+			MentalBreakIntensity currentDesiredMoodBreakIntensity = CurrentDesiredMoodBreakIntensity;
+			stringBuilder.AppendLine(pawn?.ToString() + " current possible mood mental breaks:").AppendLine("CurrentDesiredMoodBreakIntensity: " + currentDesiredMoodBreakIntensity);
+			foreach (MentalBreakDef item in GetBreaksForIntensity(currentDesiredMoodBreakIntensity, anomalyBreak: false))
 			{
-				stringBuilder.AppendLine("  " + currentPossibleMoodBreak);
+				stringBuilder.AppendLine("  " + item);
+			}
+			if (ModsConfig.AnomalyActive)
+			{
+				MonolithLevelDef levelDef = Find.Anomaly.LevelDef;
+				if (levelDef != null && levelDef.anomalyMentalBreakChance > 0f)
+				{
+					foreach (MentalBreakDef item2 in GetBreaksForIntensity(currentDesiredMoodBreakIntensity, anomalyBreak: true, tryNonAnomalyBreakIfNoneAvailable: false))
+					{
+						stringBuilder.AppendLine("  " + item2);
+					}
+				}
 			}
 			Log.Message(stringBuilder.ToString());
 		}

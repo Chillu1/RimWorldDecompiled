@@ -29,12 +29,12 @@ namespace RimWorld
 
 		public static void InitGameStart()
 		{
-			LongEventHandler.QueueLongEvent(delegate
+			LongEventHandler.QueueLongEvent(PreLoadAct, "Play", "GeneratingMap", doAsynchronously: true, null);
+			static void PreLoadAct()
 			{
 				Find.GameInitData.PrepForMapGen();
-				Find.GameInitData.startedFromEntry = true;
 				Find.Scenario.PreMapGenerate();
-			}, "Play", "GeneratingMap", doAsynchronously: true, null);
+			}
 		}
 	}
 }

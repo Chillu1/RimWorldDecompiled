@@ -37,12 +37,26 @@ namespace RimWorld
 
 		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			Pawn pawn2 = t as Pawn;
-			if (pawn2 == null || !pawn2.Downed || pawn2.Faction != pawn.Faction || pawn2.InBed() || !pawn.CanReserve(pawn2, 1, -1, null, forced) || GenAI.EnemyIsNear(pawn2, 40f))
+			if (!(t is Pawn pawn2) || !HealthAIUtility.CanRescueNow(pawn, pawn2, forced))
 			{
 				return false;
 			}
-			Thing thing = FindBed(pawn, pawn2);
+			Thing thing = null;
+			if (ChildcareUtility.CanSuckle(pawn2, out var _))
+			{
+				if (!HealthAIUtility.ShouldSeekMedicalRest(pawn2))
+				{
+					return false;
+				}
+				if (ChildcareUtility.SafePlaceForBaby(pawn2, pawn).Thing is Building_Bed building_Bed)
+				{
+					thing = building_Bed;
+				}
+			}
+			else
+			{
+				thing = FindBed(pawn, pawn2);
+			}
 			if (thing != null && pawn2.CanReserve(thing))
 			{
 				return true;
@@ -53,8 +67,8 @@ namespace RimWorld
 		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
 			Pawn pawn2 = t as Pawn;
-			Thing t2 = FindBed(pawn, pawn2);
-			Job job = JobMaker.MakeJob(JobDefOf.Rescue, pawn2, t2);
+			Thing thing = FindBed(pawn, pawn2);
+			Job job = JobMaker.MakeJob(JobDefOf.Rescue, pawn2, thing);
 			job.count = 1;
 			return job;
 		}

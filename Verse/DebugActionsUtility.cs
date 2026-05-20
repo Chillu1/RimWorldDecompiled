@@ -6,7 +6,10 @@ namespace Verse
 	{
 		public static void DustPuffFrom(Thing t)
 		{
-			(t as Pawn)?.Drawer.Notify_DebugAffected();
+			if (t is Pawn pawn)
+			{
+				pawn.Drawer.Notify_DebugAffected();
+			}
 		}
 
 		public static IEnumerable<float> PointsOptions(bool extended)
@@ -31,21 +34,21 @@ namespace Verse
 			}
 			else
 			{
-				for (int l = 20; l < 100; l += 10)
+				for (int i = 20; i < 100; i += 10)
 				{
-					yield return l;
+					yield return i;
 				}
-				for (int l = 100; l < 500; l += 25)
+				for (int i = 100; i < 500; i += 25)
 				{
-					yield return l;
+					yield return i;
 				}
-				for (int l = 500; l < 1500; l += 50)
+				for (int i = 500; i < 1500; i += 50)
 				{
-					yield return l;
+					yield return i;
 				}
-				for (int l = 1500; l <= 5000; l += 100)
+				for (int i = 1500; i <= 5000; i += 100)
 				{
-					yield return l;
+					yield return i;
 				}
 			}
 			yield return 6000f;
@@ -57,14 +60,36 @@ namespace Verse
 
 		public static IEnumerable<int> PopulationOptions()
 		{
-			for (int j = 1; j <= 20; j++)
+			for (int i = 1; i <= 20; i++)
 			{
-				yield return j;
+				yield return i;
 			}
-			for (int j = 30; j <= 50; j += 10)
+			for (int i = 30; i <= 50; i += 10)
 			{
-				yield return j;
+				yield return i;
 			}
+		}
+
+		public static IEnumerable<int> RadiusOptions()
+		{
+			yield return 1;
+			yield return 2;
+			yield return 3;
+			yield return 4;
+			yield return 5;
+			yield return 6;
+			yield return 7;
+			yield return 8;
+			yield return 9;
+			yield return 10;
+			yield return 11;
+			yield return 12;
+			yield return 13;
+			yield return 14;
+			yield return 15;
+			yield return 20;
+			yield return 25;
+			yield return 30;
 		}
 	}
 }

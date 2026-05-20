@@ -10,7 +10,17 @@ namespace Verse
 
 		private const int ForceTicksShort = 240;
 
-		public bool ForcedNormalSpeed => Find.TickManager.TicksGame < forceNormalSpeedUntil;
+		public bool ForcedNormalSpeed
+		{
+			get
+			{
+				if (DebugViewSettings.neverForceNormalSpeed)
+				{
+					return false;
+				}
+				return Find.TickManager.TicksGame < forceNormalSpeedUntil;
+			}
+		}
 
 		public void SignalForceNormalSpeed()
 		{

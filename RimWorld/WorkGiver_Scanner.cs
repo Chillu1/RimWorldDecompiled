@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Verse;
 using Verse.AI;
 
@@ -18,7 +19,7 @@ namespace RimWorld
 
 		public virtual IEnumerable<IntVec3> PotentialWorkCellsGlobal(Pawn pawn)
 		{
-			yield break;
+			return Enumerable.Empty<IntVec3>();
 		}
 
 		public virtual IEnumerable<Thing> PotentialWorkThingsGlobal(Pawn pawn)
@@ -34,6 +35,11 @@ namespace RimWorld
 		public virtual bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
 			return JobOnThing(pawn, t, forced) != null;
+		}
+
+		public virtual string JobInfo(Pawn pawn, Job job)
+		{
+			return string.Empty;
 		}
 
 		public virtual Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
@@ -64,6 +70,11 @@ namespace RimWorld
 		public float GetPriority(Pawn pawn, IntVec3 cell)
 		{
 			return GetPriority(pawn, new TargetInfo(cell, pawn.Map));
+		}
+
+		public virtual ReservationLayerDef GetReservationLayer(Pawn pawn, LocalTargetInfo target)
+		{
+			return null;
 		}
 	}
 }

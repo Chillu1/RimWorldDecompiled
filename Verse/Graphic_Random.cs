@@ -6,6 +6,8 @@ namespace Verse
 	{
 		public override Material MatSingle => subGraphics[Rand.Range(0, subGraphics.Length)].MatSingle;
 
+		public int SubGraphicsCount => subGraphics.Length;
+
 		public override Graphic GetColoredVersion(Shader newShader, Color newColor, Color newColorTwo)
 		{
 			if (newColorTwo != Color.white)
@@ -35,8 +37,11 @@ namespace Verse
 
 		public override void DrawWorker(Vector3 loc, Rot4 rot, ThingDef thingDef, Thing thing, float extraRotation)
 		{
-			Graphic graphic = ((thing == null) ? subGraphics[0] : SubGraphicFor(thing));
-			graphic.DrawWorker(loc, rot, thingDef, thing, extraRotation);
+			((thing != null) ? SubGraphicFor(thing) : subGraphics[0]).DrawWorker(loc, rot, thingDef, thing, extraRotation);
+			if (base.ShadowGraphic != null)
+			{
+				base.ShadowGraphic.DrawWorker(loc, rot, thingDef, thing, extraRotation);
+			}
 		}
 
 		public Graphic SubGraphicFor(Thing thing)
@@ -45,12 +50,27 @@ namespace Verse
 			{
 				return subGraphics[0];
 			}
-			return subGraphics[thing.thingIDNumber % subGraphics.Length];
+			int num = thing.OverrideGraphicIndex ?? thing.thingIDNumber;
+			return subGraphics[num % subGraphics.Length];
+		}
+
+		public Graphic SubGraphicAtIndex(int index)
+		{
+			return subGraphics[index % subGraphics.Length];
 		}
 
 		public Graphic FirstSubgraphic()
 		{
 			return subGraphics[0];
+		}
+
+		public override void Print(SectionLayer layer, Thing thing, float extraRotation)
+		{
+			((thing != null) ? SubGraphicFor(thing) : subGraphics[0]).Print(layer, thing, extraRotation);
+			if (base.ShadowGraphic != null && thing != null)
+			{
+				base.ShadowGraphic.Print(layer, thing, extraRotation);
+			}
 		}
 
 		public override string ToString()

@@ -16,9 +16,9 @@ namespace RimWorld
 			base.DoHeader(rect, table);
 			MouseoverSounds.DoRegion(rect);
 			Rect rect2 = new Rect(rect.x, rect.y + (rect.height - 65f), Mathf.Min(rect.width, 360f), 32f);
-			if (Widgets.ButtonText(rect2, "ManageOutfits".Translate()))
+			if (Widgets.ButtonText(rect2, "ManageApparelPolicies".Translate()))
 			{
-				Find.WindowStack.Add(new Dialog_ManageOutfits(null));
+				Find.WindowStack.Add(new Dialog_ManageApparelPolicies(null));
 				PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.Outfits, KnowledgeAmount.Total);
 			}
 			UIHighlighter.HighlightOpportunity(rect2, "ManageOutfits");
@@ -30,71 +30,68 @@ namespace RimWorld
 			{
 				return;
 			}
-			int num = Mathf.FloorToInt((rect.width - 4f) * 0.714285731f);
-			int num2 = Mathf.FloorToInt((rect.width - 4f) * 0.2857143f);
-			float x = rect.x;
+			Rect rect2 = rect.ContractedBy(0f, 2f);
 			bool somethingIsForced = pawn.outfits.forcedHandler.SomethingIsForced;
-			Rect rect2 = new Rect(x, rect.y + 2f, num, rect.height - 4f);
+			Rect left = rect2;
+			Rect right = default(Rect);
 			if (somethingIsForced)
 			{
-				rect2.width -= 4f + (float)num2;
+				rect2.SplitVerticallyWithMargin(out left, out right, 4f);
 			}
 			if (pawn.IsQuestLodger())
 			{
 				Text.Anchor = TextAnchor.MiddleCenter;
-				Widgets.Label(rect2, "Unchangeable".Translate().Truncate(rect2.width));
-				TooltipHandler.TipRegionByKey(rect2, "QuestRelated_Outfit");
+				Widgets.Label(left, "Unchangeable".Translate().Truncate(left.width));
+				TooltipHandler.TipRegionByKey(left, "QuestRelated_Outfit");
 				Text.Anchor = TextAnchor.UpperLeft;
 			}
 			else
 			{
-				Widgets.Dropdown(rect2, pawn, (Pawn p) => p.outfits.CurrentOutfit, Button_GenerateMenu, pawn.outfits.CurrentOutfit.label.Truncate(rect2.width), null, pawn.outfits.CurrentOutfit.label, null, null, paintable: true);
+				Widgets.Dropdown(left, pawn, (Pawn p) => p.outfits.CurrentApparelPolicy, Button_GenerateMenu, pawn.outfits.CurrentApparelPolicy.label.Truncate(left.width), null, pawn.outfits.CurrentApparelPolicy.label, null, null, paintable: true);
 			}
-			x += rect2.width;
-			x += 4f;
-			Rect rect3 = new Rect(x, rect.y + 2f, num2, rect.height - 4f);
-			if (somethingIsForced)
+			if (!somethingIsForced)
 			{
-				if (Widgets.ButtonText(rect3, "ClearForcedApparel".Translate()))
-				{
-					pawn.outfits.forcedHandler.Reset();
-				}
-				if (Mouse.IsOver(rect3))
-				{
-					TooltipHandler.TipRegion(rect3, new TipSignal(delegate
-					{
-						string text = "ForcedApparel".Translate() + ":\n";
-						foreach (Apparel item in pawn.outfits.forcedHandler.ForcedApparel)
-						{
-							text = text + "\n   " + item.LabelCap;
-						}
-						return text;
-					}, pawn.GetHashCode() * 612));
-				}
-				x += (float)num2;
-				x += 4f;
+				return;
 			}
-			Rect rect4 = new Rect(x, rect.y + 2f, num2, rect.height - 4f);
-			if (!pawn.HasExtraHomeFaction() && Widgets.ButtonText(rect4, "AssignTabEdit".Translate()))
+			if (Widgets.ButtonText(right, "ClearForcedApparel".Translate()))
 			{
-				Find.WindowStack.Add(new Dialog_ManageOutfits(pawn.outfits.CurrentOutfit));
+				pawn.outfits.forcedHandler.Reset();
 			}
-			x += (float)num2;
+			if (!Mouse.IsOver(right))
+			{
+				return;
+			}
+			TooltipHandler.TipRegion(right, new TipSignal(delegate
+			{
+				string text = "ForcedApparel".Translate() + ":\n";
+				foreach (Apparel item in pawn.outfits.forcedHandler.ForcedApparel)
+				{
+					text = text + "\n   " + item.LabelCap;
+				}
+				return text;
+			}, pawn.GetHashCode() * 612));
 		}
 
-		private IEnumerable<Widgets.DropdownMenuElement<Outfit>> Button_GenerateMenu(Pawn pawn)
+		private IEnumerable<Widgets.DropdownMenuElement<ApparelPolicy>> Button_GenerateMenu(Pawn pawn)
 		{
-			foreach (Outfit outfit in Current.Game.outfitDatabase.AllOutfits)
+			foreach (ApparelPolicy outfit in Current.Game.outfitDatabase.AllOutfits)
 			{
-				yield return new Widgets.DropdownMenuElement<Outfit>
+				yield return new Widgets.DropdownMenuElement<ApparelPolicy>
 				{
 					option = new FloatMenuOption(outfit.label, delegate
 					{
-						pawn.outfits.CurrentOutfit = outfit;
+						pawn.outfits.CurrentApparelPolicy = outfit;
 					}),
 					payload = outfit
 				};
 			}
+			yield return new Widgets.DropdownMenuElement<ApparelPolicy>
+			{
+				option = new FloatMenuOption(string.Format("{0}...", "AssignTabEdit".Translate()), delegate
+				{
+					Find.WindowStack.Add(new Dialog_ManageApparelPolicies(pawn.outfits.CurrentApparelPolicy));
+				})
+			};
 		}
 
 		public override int GetMinWidth(PawnTable table)
@@ -119,9 +116,9 @@ namespace RimWorld
 
 		private int GetValueToCompare(Pawn pawn)
 		{
-			if (pawn.outfits != null && pawn.outfits.CurrentOutfit != null)
+			if (pawn.outfits != null && pawn.outfits.CurrentApparelPolicy != null)
 			{
-				return pawn.outfits.CurrentOutfit.uniqueId;
+				return pawn.outfits.CurrentApparelPolicy.id;
 			}
 			return int.MinValue;
 		}

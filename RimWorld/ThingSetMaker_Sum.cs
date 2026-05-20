@@ -68,7 +68,9 @@ namespace RimWorld
 					{
 						continue;
 					}
-					parms2.totalMarketValueRange = new FloatRange(Mathf.Max(parms2.totalMarketValueRange.Value.min - num2, 0f), parms2.totalMarketValueRange.Value.max - num2);
+					float min = ((i < optionsInResolveOrder.Count - 1) ? 0f : Mathf.Max(parms2.totalMarketValueRange.Value.min - num2, 0f));
+					float max = parms2.totalMarketValueRange.Value.max - num2;
+					parms2.totalMarketValueRange = new FloatRange(min, max);
 					if (optionsInResolveOrder[i].maxMarketValue.HasValue)
 					{
 						parms2.totalMarketValueRange = new FloatRange(Mathf.Min(parms2.totalMarketValueRange.Value.min, optionsInResolveOrder[i].maxMarketValue.Value * 0.8f), Mathf.Min(Mathf.Min(parms2.totalMarketValueRange.Value.max, optionsInResolveOrder[i].maxMarketValue.Value)));
@@ -126,6 +128,27 @@ namespace RimWorld
 					continue;
 				}
 				foreach (ThingDef item in options[i].thingSetMaker.AllGeneratableThingsDebug(parms))
+				{
+					yield return item;
+				}
+			}
+		}
+
+		public override IEnumerable<string> ConfigErrors()
+		{
+			if (options.NullOrEmpty())
+			{
+				yield return "no options.";
+				yield break;
+			}
+			for (int i = 0; i < options.Count; i++)
+			{
+				if (options[i].thingSetMaker == null)
+				{
+					yield return "null thingSetMaker";
+					continue;
+				}
+				foreach (string item in options[i].thingSetMaker.ConfigErrors())
 				{
 					yield return item;
 				}

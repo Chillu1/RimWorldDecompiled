@@ -57,68 +57,59 @@ namespace Verse
 			{
 				xElement2.Add(new XText(obj.ToString()));
 			}
-			else if (saveDefsAsRefs && typeof(Def).IsAssignableFrom(type))
+			else if (saveDefsAsRefs && GenTypes.IsDef(type))
 			{
 				string defName = ((Def)obj).defName;
 				xElement2.Add(new XText(defName));
 			}
-			else
+			else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
 			{
-				if (!type.IsGenericType || !(type.GetGenericTypeDefinition() == typeof(List<>)))
-				{
-					if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<, >))
-					{
-						Type expectedType2 = type.GetGenericArguments()[0];
-						Type expectedType3 = type.GetGenericArguments()[1];
-						{
-							foreach (object item in obj as IEnumerable)
-							{
-								object value = item.GetType().GetProperty("Key").GetValue(item, null);
-								object value2 = item.GetType().GetProperty("Value").GetValue(item, null);
-								XElement xElement3 = new XElement("li");
-								xElement3.Add(XElementFromObject(value, expectedType2, "key", null, saveDefsAsRefs: true));
-								xElement3.Add(XElementFromObject(value2, expectedType3, "value", null, saveDefsAsRefs: true));
-								xElement2.Add(xElement3);
-							}
-							return xElement2;
-						}
-					}
-					if (type != expectedType)
-					{
-						XAttribute content = new XAttribute("Class", GenTypes.GetTypeNameWithoutIgnoredNamespaces(obj.GetType()));
-						xElement2.Add(content);
-					}
-					{
-						foreach (FieldInfo item2 in from f in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
-							orderby f.MetadataToken
-							select f)
-						{
-							try
-							{
-								XElement xElement4 = XElementFromField(item2, obj);
-								if (xElement4 != null)
-								{
-									xElement2.Add(xElement4);
-								}
-							}
-							catch
-							{
-								throw;
-							}
-						}
-						return xElement2;
-					}
-				}
-				Type expectedType4 = type.GetGenericArguments()[0];
+				Type expectedType2 = type.GetGenericArguments()[0];
 				int num = (int)type.GetProperty("Count").GetValue(obj, null);
 				for (int i = 0; i < num; i++)
 				{
-					object[] index = new object[1]
-					{
-						i
-					};
-					XNode content2 = XElementFromObject(type.GetProperty("Item").GetValue(obj, index), expectedType4, "li", null, saveDefsAsRefs: true);
+					object[] index = new object[1] { i };
+					XNode content = XElementFromObject(type.GetProperty("Item").GetValue(obj, index), expectedType2, "li", null, saveDefsAsRefs: true);
+					xElement2.Add(content);
+				}
+			}
+			else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Dictionary<, >))
+			{
+				Type expectedType3 = type.GetGenericArguments()[0];
+				Type expectedType4 = type.GetGenericArguments()[1];
+				foreach (object item in obj as IEnumerable)
+				{
+					object value = item.GetType().GetProperty("Key").GetValue(item, null);
+					object value2 = item.GetType().GetProperty("Value").GetValue(item, null);
+					XElement xElement3 = new XElement("li");
+					xElement3.Add(XElementFromObject(value, expectedType3, "key", null, saveDefsAsRefs: true));
+					xElement3.Add(XElementFromObject(value2, expectedType4, "value", null, saveDefsAsRefs: true));
+					xElement2.Add(xElement3);
+				}
+			}
+			else
+			{
+				if (type != expectedType)
+				{
+					XAttribute content2 = new XAttribute("Class", GenTypes.GetTypeNameWithoutIgnoredNamespaces(obj.GetType()));
 					xElement2.Add(content2);
+				}
+				foreach (FieldInfo item2 in from f in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
+					orderby f.MetadataToken
+					select f)
+				{
+					try
+					{
+						XElement xElement4 = XElementFromField(item2, obj);
+						if (xElement4 != null)
+						{
+							xElement2.Add(xElement4);
+						}
+					}
+					catch
+					{
+						throw;
+					}
 				}
 			}
 			return xElement2;

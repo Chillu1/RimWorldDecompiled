@@ -21,15 +21,15 @@ namespace RimWorld
 			{
 				return GetExplanationAbstract(parent.def);
 			}
-			int value = BuildingCount(parent);
-			string value2 = focusPerQuality.Points[focusPerQuality.Points.Count - 1].y.ToString("0%");
-			return explanationKey.Translate(value, maxBuildings, value2) + ": " + GetOffset(parent).ToStringWithSign("0%");
+			int num = BuildingCount(parent);
+			string text = focusPerQuality.Points[focusPerQuality.Points.Count - 1].y.ToString("0%");
+			return explanationKey.Translate(num, maxBuildings, text) + ": " + GetOffset(parent).ToStringWithSign("0%");
 		}
 
 		public override string GetExplanationAbstract(ThingDef def = null)
 		{
-			string value = focusPerQuality.Points[focusPerQuality.Points.Count - 1].y.ToString("0%");
-			return explanationKeyAbstract.Translate(maxBuildings, value) + ": +0-" + MaxOffset().ToString("0%");
+			string text = focusPerQuality.Points[focusPerQuality.Points.Count - 1].y.ToString("0%");
+			return explanationKeyAbstract.Translate(maxBuildings, text) + ": +0-" + MaxOffset().ToString("0%");
 		}
 
 		public override float MaxOffset(Thing parent = null)

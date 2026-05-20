@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LudeonTK;
 using UnityEngine;
 using Verse;
 
@@ -9,6 +10,8 @@ namespace RimWorld.Planet
 		public int uniqueID;
 
 		public FeatureDef def;
+
+		public PlanetLayer layer;
 
 		public string name;
 
@@ -97,14 +100,30 @@ namespace RimWorld.Planet
 			EffectiveDrawSizeCurve[4] = new CurvePoint(EffectiveDrawSizeCurve[4].x, FeatureSizePoint200);
 		}
 
+		public WorldFeature()
+		{
+		}
+
+		public WorldFeature(FeatureDef def, PlanetLayer layer)
+		{
+			this.def = def;
+			this.layer = layer;
+			uniqueID = Find.UniqueIDsManager.GetNextWorldFeatureID();
+		}
+
 		public void ExposeData()
 		{
-			Scribe_Values.Look(ref uniqueID, "uniqueID", 0);
 			Scribe_Defs.Look(ref def, "def");
+			Scribe_Values.Look(ref uniqueID, "uniqueID", 0);
 			Scribe_Values.Look(ref name, "name");
 			Scribe_Values.Look(ref drawCenter, "drawCenter");
 			Scribe_Values.Look(ref drawAngle, "drawAngle", 0f);
 			Scribe_Values.Look(ref maxDrawSizeInTiles, "maxDrawSizeInTiles", 0f);
+			Scribe_References.Look(ref layer, "layer");
+			if (Scribe.mode == LoadSaveMode.PostLoadInit && layer == null)
+			{
+				layer = Find.WorldGrid.Surface;
+			}
 			BackCompatibility.PostExposeData(this);
 		}
 

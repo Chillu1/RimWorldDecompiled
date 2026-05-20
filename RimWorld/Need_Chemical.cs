@@ -51,8 +51,7 @@ namespace RimWorld
 				List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
 				for (int i = 0; i < hediffs.Count; i++)
 				{
-					Hediff_Addiction hediff_Addiction = hediffs[i] as Hediff_Addiction;
-					if (hediff_Addiction != null && hediff_Addiction.def.causesNeed == def)
+					if (hediffs[i] is Hediff_Addiction hediff_Addiction && hediff_Addiction.def.chemicalNeed == def)
 					{
 						return hediff_Addiction;
 					}

@@ -5,7 +5,7 @@ namespace Verse
 {
 	public static class Printer_Plane
 	{
-		private static Color32[] defaultColors = new Color32[4]
+		private static readonly Color32[] DefaultColors = new Color32[4]
 		{
 			new Color32(byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue),
 			new Color32(byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue),
@@ -13,7 +13,7 @@ namespace Verse
 			new Color32(byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue)
 		};
 
-		private static Vector2[] defaultUvs = new Vector2[4]
+		private static readonly Vector2[] DefaultUvs = new Vector2[4]
 		{
 			new Vector2(0f, 0f),
 			new Vector2(0f, 1f),
@@ -21,7 +21,7 @@ namespace Verse
 			new Vector2(1f, 0f)
 		};
 
-		private static Vector2[] defaultUvsFlipped = new Vector2[4]
+		private static readonly Vector2[] DefaultUvsFlipped = new Vector2[4]
 		{
 			new Vector2(1f, 0f),
 			new Vector2(1f, 1f),
@@ -29,15 +29,33 @@ namespace Verse
 			new Vector2(0f, 0f)
 		};
 
-		public static void PrintPlane(SectionLayer layer, Vector3 center, Vector2 size, Material mat, float rot = 0f, bool flipUv = false, Vector2[] uvs = null, Color32[] colors = null, float topVerticesAltitudeBias = 0.01f, float uvzPayload = 0f)
+		public static void GetUVs(Rect rect, out Vector2 uv1, out Vector2 uv2, out Vector2 uv3, out Vector2 uv4, bool flipUv)
+		{
+			if (flipUv)
+			{
+				uv1 = new Vector2(rect.xMax, rect.yMin);
+				uv2 = new Vector2(rect.xMax, rect.yMax);
+				uv3 = new Vector2(rect.xMin, rect.yMax);
+				uv4 = new Vector2(rect.xMin, rect.yMin);
+			}
+			else
+			{
+				uv1 = new Vector2(rect.xMin, rect.yMin);
+				uv2 = new Vector2(rect.xMin, rect.yMax);
+				uv3 = new Vector2(rect.xMax, rect.yMax);
+				uv4 = new Vector2(rect.xMax, rect.yMin);
+			}
+		}
+
+		public static void PrintPlane(MapDrawLayer layer, Vector3 center, Vector2 size, Material mat, float rot = 0f, bool flipUv = false, Vector2[] uvs = null, Color32[] colors = null, float topVerticesAltitudeBias = 0.01f, float uvzPayload = 0f)
 		{
 			if (colors == null)
 			{
-				colors = defaultColors;
+				colors = DefaultColors;
 			}
 			if (uvs == null)
 			{
-				uvs = (flipUv ? defaultUvsFlipped : defaultUvs);
+				uvs = ((!flipUv) ? DefaultUvs : DefaultUvsFlipped);
 			}
 			LayerSubMesh subMesh = layer.GetSubMesh(mat);
 			int count = subMesh.verts.Count;
@@ -47,7 +65,7 @@ namespace Verse
 			subMesh.verts.Add(new Vector3(0.5f * size.x, 0f, -0.5f * size.y));
 			if (rot != 0f)
 			{
-				float num = rot * ((float)Math.PI / 180f);
+				float num = rot * (MathF.PI / 180f);
 				num *= -1f;
 				for (int i = 0; i < 4; i++)
 				{

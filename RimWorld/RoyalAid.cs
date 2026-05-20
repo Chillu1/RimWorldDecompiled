@@ -9,6 +9,8 @@ namespace RimWorld
 
 		public int points;
 
+		public FloatRange? overrideAcceptableTemperatureRange;
+
 		public int pawnCount;
 
 		public PawnKindDef pawnKindDef;

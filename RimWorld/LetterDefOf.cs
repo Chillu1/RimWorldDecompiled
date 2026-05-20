@@ -17,13 +17,43 @@ namespace RimWorld
 
 		public static LetterDef Death;
 
-		public static LetterDef NewQuest;
-
 		public static LetterDef AcceptVisitors;
 
-		public static LetterDef BetrayVisitors;
+		public static LetterDef AcceptJoiner;
+
+		public static LetterDef GameEnded;
 
 		public static LetterDef ChoosePawn;
+
+		public static LetterDef RitualOutcomeNegative;
+
+		public static LetterDef RitualOutcomePositive;
+
+		[MayRequireIdeology]
+		public static LetterDef RelicHuntInstallationFound;
+
+		[MayRequireBiotech]
+		public static LetterDef BabyBirth;
+
+		[MayRequireBiotech]
+		public static LetterDef BabyToChild;
+
+		[MayRequireBiotech]
+		public static LetterDef ChildToAdult;
+
+		[MayRequireBiotech]
+		public static LetterDef ChildBirthday;
+
+		[MayRequireBiotech]
+		public static LetterDef Bossgroup;
+
+		[MayRequireAnomaly]
+		public static LetterDef AcceptCreepJoiner;
+
+		[MayRequireAnomaly]
+		public static LetterDef EntityDiscovered;
+
+		public static LetterDef BundleLetter;
 
 		static LetterDefOf()
 		{

@@ -116,6 +116,11 @@ namespace Verse
 			return new NamedArgument(value, null);
 		}
 
+		public static implicit operator NamedArgument(Ideo value)
+		{
+			return new NamedArgument(value, null);
+		}
+
 		public override string ToString()
 		{
 			return (label.NullOrEmpty() ? "unnamed" : label) + "->" + arg.ToStringSafe();

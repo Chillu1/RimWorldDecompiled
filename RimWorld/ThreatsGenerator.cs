@@ -20,8 +20,8 @@ namespace RimWorld
 
 		public static IEnumerable<FiringIncident> MakeIntervalIncidents(ThreatsGeneratorParams parms, IIncidentTarget target, int startTick)
 		{
-			float num = ThreatScaleToCountFactorCurve.Evaluate(Find.Storyteller.difficultyValues.threatScale);
-			int incCount = IncidentCycleUtility.IncidentCountThisInterval(target, parms.randSeed, (float)startTick / 60000f, parms.onDays, parms.offDays, parms.minSpacingDays, parms.numIncidentsRange.min * num, parms.numIncidentsRange.max * num);
+			float num = ThreatScaleToCountFactorCurve.Evaluate(Find.Storyteller.difficulty.threatScale);
+			int incCount = IncidentCycleUtility.IncidentCountThisInterval(target, parms.randSeed, (float)GenDate.TickGameToSettled(startTick) / 60000f, parms.onDays, parms.offDays, parms.minSpacingDays, parms.numIncidentsRange.min * num, parms.numIncidentsRange.max * num);
 			for (int i = 0; i < incCount; i++)
 			{
 				FiringIncident firingIncident = MakeThreat(parms, target);
@@ -56,9 +56,11 @@ namespace RimWorld
 
 		private static IncidentParms GetIncidentParms(ThreatsGeneratorParams parms, IIncidentTarget target)
 		{
-			IncidentParms incidentParms = new IncidentParms();
-			incidentParms.target = target;
-			incidentParms.points = parms.threatPoints ?? (StorytellerUtility.DefaultThreatPointsNow(target) * parms.currentThreatPointsFactor);
+			IncidentParms incidentParms = new IncidentParms
+			{
+				target = target,
+				points = (parms.threatPoints ?? (StorytellerUtility.DefaultThreatPointsNow(target) * parms.currentThreatPointsFactor))
+			};
 			if (parms.minThreatPoints.HasValue)
 			{
 				incidentParms.points = Mathf.Max(incidentParms.points, parms.minThreatPoints.Value);
@@ -70,11 +72,11 @@ namespace RimWorld
 
 		private static IEnumerable<IncidentDef> GetPossibleIncidents(AllowedThreatsGeneratorThreats allowedThreats)
 		{
-			if ((allowedThreats & AllowedThreatsGeneratorThreats.Raids) != 0)
+			if ((allowedThreats & AllowedThreatsGeneratorThreats.Raids) != AllowedThreatsGeneratorThreats.None)
 			{
 				yield return IncidentDefOf.RaidEnemy;
 			}
-			if ((allowedThreats & AllowedThreatsGeneratorThreats.MechClusters) != 0)
+			if ((allowedThreats & AllowedThreatsGeneratorThreats.MechClusters) != AllowedThreatsGeneratorThreats.None)
 			{
 				yield return IncidentDefOf.MechCluster;
 			}

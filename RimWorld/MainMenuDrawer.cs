@@ -4,6 +4,7 @@ using System.Linq;
 using UnityEngine;
 using Verse;
 using Verse.Profile;
+using Verse.Steam;
 
 namespace RimWorld
 {
@@ -14,13 +15,23 @@ namespace RimWorld
 
 		private static Vector2 translationInfoScrollbarPos;
 
+		private static float webBackgroundYMax;
+
+		private static Rect webRect;
+
+		private static string anomalyReleasedTranslated = null;
+
 		private const float PlayRectWidth = 170f;
 
 		private const float WebRectWidth = 145f;
 
 		private const float RightEdgeMargin = 50f;
 
-		private static readonly Vector2 PaneSize = new Vector2(450f, 450f);
+		private const float WebBGExpansion = 4f;
+
+		private const float ExpansionDetailsWidth = 350f;
+
+		private static readonly Vector2 PaneSize = new Vector2(450f, 550f);
 
 		private static readonly Vector2 TitleSize = new Vector2(1032f, 146f);
 
@@ -34,7 +45,11 @@ namespace RimWorld
 
 		private static readonly string TranslationsContributeURL = "https://rimworldgame.com/helptranslate";
 
-		private static readonly Color PurchasedColor = new Color(1f, 1f, 1f, 0.35f);
+		private static readonly Texture2D WebBGAtlas = ContentFinder<Texture2D>.Get("UI/Widgets/SubtleGradient");
+
+		private static readonly Color WebBGColor = new Color(0f, 0f, 0f, 0.3f);
+
+		private static readonly Color ExpansionReleaseTextColor = new Color(49f / 51f, 0.96862745f, 43f / 85f);
 
 		private const int NumColumns = 2;
 
@@ -46,21 +61,27 @@ namespace RimWorld
 		{
 			PlayerKnowledgeDatabase.Save();
 			ShipCountdown.CancelCountdown();
-			anyMapFiles = GenFilePaths.AllSavedGameFiles.Any();
-			foreach (ExpansionDef allExpansion in ModLister.AllExpansions)
+			if (ModsConfig.IdeologyActive)
 			{
-				if (allExpansion.Status != ExpansionStatus.NotInstalled && !allExpansion.isCore)
-				{
-					BackgroundMain.overrideBGImage = allExpansion.BackgroundImage;
-					break;
-				}
+				ArchonexusCountdown.CancelCountdown();
 			}
+			anyMapFiles = GenFilePaths.AllSavedGameFiles.Any();
+			if (Prefs.RandomBackgroundImage)
+			{
+				BackgroundMain.overrideBGImage = ModLister.AllExpansions.Where((ExpansionDef exp) => exp.Status == ExpansionStatus.Active).RandomElement().BackgroundImage;
+			}
+			else
+			{
+				BackgroundMain.overrideBGImage = Prefs.BackgroundImageExpansion.BackgroundImage;
+			}
+			BackgroundMain.SetupExpansionFadeData();
+			anomalyReleasedTranslated = "MainScreen_AnomalyAvailableNow".Translate();
 		}
 
 		public static void MainMenuOnGUI()
 		{
 			VersionControl.DrawInfoInCorner();
-			Rect rect = new Rect((float)(UI.screenWidth / 2) - PaneSize.x / 2f, (float)(UI.screenHeight / 2) - PaneSize.y / 2f + 50f, PaneSize.x, PaneSize.y);
+			Rect rect = new Rect((float)UI.screenWidth / 2f - PaneSize.x / 2f, (float)UI.screenHeight / 2f - PaneSize.y / 2f + 50f, PaneSize.x, PaneSize.y);
 			rect.x = (float)UI.screenWidth - rect.width - 30f;
 			Rect rect2 = new Rect(0f, rect.y - 30f, (float)UI.screenWidth - 85f, 30f);
 			Text.Font = GameFont.Medium;
@@ -93,28 +114,45 @@ namespace RimWorld
 			DoMainMenuControls(rect, anyMapFiles);
 			DoTranslationInfoRect(new Rect(8f, 100f, 300f, 400f));
 			DoExpansionIcons();
+			SteamDeck.ShowSteamDeckMainMenuControlsIfNotKnown();
 		}
 
 		public static void DoMainMenuControls(Rect rect, bool anyMapFiles)
 		{
-			GUI.BeginGroup(rect);
-			Rect rect2 = new Rect(0f, 0f, 170f, rect.height);
-			Rect rect3 = new Rect(rect2.xMax + 17f, 0f, 145f, rect.height);
+			if (webBackgroundYMax > 0f && Current.ProgramState == ProgramState.Entry)
+			{
+				GUI.color = WebBGColor;
+				Rect rect2 = new Rect(rect.x + webRect.x, rect.y + webRect.y, webRect.width, rect.height);
+				rect2.yMax = rect.y + webBackgroundYMax - 4f;
+				Widgets.DrawAtlas(rect2.ExpandedBy(4f), WebBGAtlas);
+				GUI.color = Color.white;
+			}
+			Widgets.BeginGroup(rect);
+			Rect rect3 = new Rect(0f, 0f, 170f, rect.height);
+			webRect = new Rect(rect3.xMax + 17f, 0f, 145f, rect.height);
 			Text.Font = GameFont.Small;
 			List<ListableOption> list = new List<ListableOption>();
 			if (Current.ProgramState == ProgramState.Entry)
 			{
 				string label = ("Tutorial".CanTranslate() ? ((string)"Tutorial".Translate()) : ((string)"LearnToPlay".Translate()));
-				list.Add(new ListableOption(label, delegate
-				{
-					InitLearnToPlay();
-				}));
+				list.Add(new ListableOption(label, InitLearnToPlay));
 				list.Add(new ListableOption("NewColony".Translate(), delegate
 				{
 					Find.WindowStack.Add(new Page_SelectScenario());
 				}));
+				if (Prefs.DevMode)
+				{
+					list.Add(new ListableOption("DevQuickTest".Translate(), delegate
+					{
+						LongEventHandler.QueueLongEvent(delegate
+						{
+							Root_Play.SetupForQuickTestPlay();
+							PageUtility.InitGameStart();
+						}, "GeneratingMap", doAsynchronously: true, GameAndMapInitExceptionHandlers.ErrorWhileGeneratingMap);
+					}));
+				}
 			}
-			if (Current.ProgramState == ProgramState.Playing && !Current.Game.Info.permadeathMode)
+			if (Current.ProgramState == ProgramState.Playing && !GameDataSaveLoader.SavingIsTemporarilyDisabled && !Current.Game.Info.permadeathMode)
 			{
 				list.Add(new ListableOption("Save".Translate(), delegate
 				{
@@ -136,7 +174,10 @@ namespace RimWorld
 			{
 				list.Add(new ListableOption("ReviewScenario".Translate(), delegate
 				{
-					Find.WindowStack.Add(new Dialog_MessageBox(Find.Scenario.GetFullInformationText(), null, null, null, null, Find.Scenario.name));
+					Find.WindowStack.Add(new Dialog_MessageBox(Find.Scenario.GetFullInformationText(), null, null, null, null, Find.Scenario.name)
+					{
+						layer = WindowLayer.Super
+					});
 				}));
 			}
 			item = new ListableOption("Options".Translate(), delegate
@@ -154,10 +195,7 @@ namespace RimWorld
 				list.Add(item);
 				if (Prefs.DevMode && LanguageDatabase.activeLanguage == LanguageDatabase.defaultLanguage && LanguageDatabase.activeLanguage.anyError)
 				{
-					item = new ListableOption("SaveTranslationReport".Translate(), delegate
-					{
-						LanguageReportGenerator.SaveTranslationReport();
-					});
+					item = new ListableOption("SaveTranslationReport".Translate(), LanguageReportGenerator.SaveTranslationReport);
 					list.Add(item);
 				}
 				item = new ListableOption("Credits".Translate(), delegate
@@ -168,7 +206,7 @@ namespace RimWorld
 			}
 			if (Current.ProgramState == ProgramState.Playing)
 			{
-				if (Current.Game.Info.permadeathMode)
+				if (Current.Game.Info.permadeathMode && !GameDataSaveLoader.SavingIsTemporarilyDisabled)
 				{
 					item = new ListableOption("SaveAndQuitToMainMenu".Translate(), delegate
 					{
@@ -184,10 +222,7 @@ namespace RimWorld
 						LongEventHandler.QueueLongEvent(delegate
 						{
 							GameDataSaveLoader.SaveGame(Current.Game.Info.permadeathModeUniqueName);
-							LongEventHandler.ExecuteWhenFinished(delegate
-							{
-								Root.Shutdown();
-							});
+							LongEventHandler.ExecuteWhenFinished(Root.Shutdown);
 						}, "SavingLongEvent", doAsynchronously: false, null, showExtraUIInfo: false);
 					});
 					list.Add(item);
@@ -198,10 +233,7 @@ namespace RimWorld
 					{
 						if (GameDataSaveLoader.CurrentGameStateIsValuable)
 						{
-							Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("ConfirmQuit".Translate(), delegate
-							{
-								GenScene.GoToMainMenu();
-							}, destructive: true));
+							Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("ConfirmQuit".Translate(), GenScene.GoToMainMenu, destructive: true, null, WindowLayer.Super));
 						}
 						else
 						{
@@ -214,10 +246,7 @@ namespace RimWorld
 					{
 						if (GameDataSaveLoader.CurrentGameStateIsValuable)
 						{
-							Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("ConfirmQuit".Translate(), delegate
-							{
-								Root.Shutdown();
-							}, destructive: true));
+							Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("ConfirmQuit".Translate(), Root.Shutdown, destructive: true, null, WindowLayer.Super));
 						}
 						else
 						{
@@ -230,34 +259,53 @@ namespace RimWorld
 			}
 			else
 			{
-				item = new ListableOption("QuitToOS".Translate(), delegate
-				{
-					Root.Shutdown();
-				});
+				item = new ListableOption("QuitToOS".Translate(), Root.Shutdown);
 				list.Add(item);
 			}
-			OptionListingUtility.DrawOptionListing(rect2, list);
+			OptionListingUtility.DrawOptionListing(rect3, list);
 			Text.Font = GameFont.Small;
 			List<ListableOption> list2 = new List<ListableOption>();
 			ListableOption item2 = new ListableOption_WebLink("FictionPrimer".Translate(), "https://rimworldgame.com/backstory", TexButton.IconBlog);
 			list2.Add(item2);
 			item2 = new ListableOption_WebLink("LudeonBlog".Translate(), "https://ludeon.com/blog", TexButton.IconBlog);
 			list2.Add(item2);
-			item2 = new ListableOption_WebLink("Forums".Translate(), "https://ludeon.com/forums", TexButton.IconForums);
+			item2 = new ListableOption_WebLink("Subreddit".Translate(), "https://www.reddit.com/r/RimWorld/", TexButton.IconReddit);
 			list2.Add(item2);
-			item2 = new ListableOption_WebLink("OfficialWiki".Translate(), "https://rimworldwiki.com", TexButton.IconBlog);
+			item2 = new ListableOption_WebLink("OfficialWiki".Translate(), "https://rimworldwiki.com", TexButton.IconWiki);
 			list2.Add(item2);
-			item2 = new ListableOption_WebLink("TynansTwitter".Translate(), "https://twitter.com/TynanSylvester", TexButton.IconTwitter);
+			item2 = new ListableOption_WebLink("TynansX".Translate(), "https://x.com/TynanSylvester", TexButton.IconX);
 			list2.Add(item2);
 			item2 = new ListableOption_WebLink("TynansDesignBook".Translate(), "https://tynansylvester.com/book", TexButton.IconBook);
 			list2.Add(item2);
 			item2 = new ListableOption_WebLink("HelpTranslate".Translate(), TranslationsContributeURL, TexButton.IconForums);
 			list2.Add(item2);
-			item2 = new ListableOption_WebLink("BuySoundtrack".Translate(), "http://www.lasgameaudio.co.uk/#!store/t04fw", TexButton.IconSoundtrack);
+			item2 = new ListableOption_WebLink("BuySoundtrack".Translate(), delegate
+			{
+				List<FloatMenuOption> options = new List<FloatMenuOption>
+				{
+					new FloatMenuOption("BuySoundtrack_Classic".Translate(), delegate
+					{
+						Application.OpenURL("https://store.steampowered.com/app/990430/RimWorld_Soundtrack/");
+					}),
+					new FloatMenuOption("BuySoundtrack_Royalty".Translate(), delegate
+					{
+						Application.OpenURL("https://store.steampowered.com/app/1244270/RimWorld__Royalty_Soundtrack/");
+					}),
+					new FloatMenuOption("BuySoundtrack_Anomaly".Translate(), delegate
+					{
+						Application.OpenURL("https://store.steampowered.com/app/2914900/RimWorld__Anomaly_Soundtrack/");
+					}),
+					new FloatMenuOption("BuySoundtrack_Odyssey".Translate(), delegate
+					{
+						Application.OpenURL("https://store.steampowered.com/app/3689230/RimWorld__Odyssey_Soundtrack/");
+					})
+				};
+				Find.WindowStack.Add(new FloatMenu(options));
+			}, TexButton.IconSoundtrack);
 			list2.Add(item2);
-			float num = OptionListingUtility.DrawOptionListing(rect3, list2);
-			GUI.BeginGroup(rect3);
-			if (Current.ProgramState == ProgramState.Entry && Widgets.ButtonText(new Rect(0f, num + 10f, rect3.width, 50f), LanguageDatabase.activeLanguage.FriendlyNameNative))
+			webBackgroundYMax = OptionListingUtility.DrawOptionListing(webRect, list2);
+			Widgets.BeginGroup(webRect);
+			if (Current.ProgramState == ProgramState.Entry && Widgets.ButtonText(new Rect(0f, webBackgroundYMax + 10f, webRect.width, 50f), LanguageDatabase.activeLanguage.FriendlyNameNative))
 			{
 				List<FloatMenuOption> list3 = new List<FloatMenuOption>();
 				foreach (LoadedLanguage allLoadedLanguage in LanguageDatabase.AllLoadedLanguages)
@@ -271,119 +319,110 @@ namespace RimWorld
 				}
 				Find.WindowStack.Add(new FloatMenu(list3));
 			}
-			GUI.EndGroup();
-			GUI.EndGroup();
+			Widgets.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		public static void DoExpansionIcons()
 		{
 			List<ExpansionDef> allExpansions = ModLister.AllExpansions;
 			int num = -1;
-			int num2 = 64;
-			int num3 = allExpansions.Count((ExpansionDef e) => !e.isCore);
-			int num4 = num2 / 2 + num2 * num3 + (num3 - 1) * 8;
-			int num5 = num2 + num2 / 2;
-			Rect rect = new Rect(8f, UI.screenHeight - num5 - 8, num4, num5);
+			int num2 = allExpansions.Count((ExpansionDef e) => !e.isCore);
+			int num3 = 32 + 64 * num2 + (num2 - 1) * 8 * 2;
+			Rect rect = new Rect(8f, UI.screenHeight - 96 - 8, num3, 96f);
 			Widgets.DrawWindowBackground(rect);
-			GUI.BeginGroup(rect.ContractedBy((rect.height - (float)num2) / 2f));
-			float num6 = 0f;
-			for (int i = 0; i < allExpansions.Count; i++)
+			Widgets.BeginGroup(rect.ContractedBy(16f));
+			float num4 = 0f;
+			for (int num5 = 0; num5 < allExpansions.Count; num5++)
 			{
-				if (allExpansions[i].isCore)
+				if (!allExpansions[num5].isCore)
 				{
-					continue;
-				}
-				Rect rect2 = new Rect(num6, 0f, num2, num2);
-				num6 += (float)num2;
-				if (Widgets.ButtonImage(rect2, allExpansions[i].Icon, (allExpansions[i].Status != ExpansionStatus.NotInstalled) ? Color.white : PurchasedColor) && !allExpansions[i].StoreURL.NullOrEmpty())
-				{
-					SteamUtility.OpenUrl(allExpansions[i].StoreURL);
-				}
-				GUI.color = Color.white;
-				if (Mouse.IsOver(rect2))
-				{
-					if (allExpansions[i].Status == ExpansionStatus.NotInstalled)
+					Rect rect2 = new Rect(num4, 0f, 64f, 64f);
+					num4 += 72f;
+					GUI.DrawTexture(rect2.ContractedBy(2f), allExpansions[num5].IconFromStatus);
+					if (Widgets.ButtonInvisible(rect2) && !allExpansions[num5].StoreURL.NullOrEmpty())
 					{
-						BackgroundMain.SetOverlayImage(allExpansions[i].BackgroundImage);
+						SteamUtility.OpenUrl(allExpansions[num5].StoreURL);
 					}
-					num = i;
+					if (Mouse.IsOver(rect2))
+					{
+						Widgets.DrawHighlight(rect2);
+						num = num5;
+					}
+					num4 += 8f;
 				}
 			}
-			GUI.EndGroup();
-			if (num < 0)
+			Widgets.EndGroup();
+			if (num >= 0)
 			{
-				BackgroundMain.FadeOut();
-			}
-			else
-			{
-				DoExpansionInfo(num, rect.yMax);
+				BackgroundMain.Notify_Hovered(allExpansions[num]);
+				DoExpansionInfo(num, new Vector2(Mathf.Min(num3 + 16, (float)UI.screenWidth - 350f), rect.yMax));
 			}
 		}
 
-		private static void DoExpansionInfo(int index, float yOffset)
+		private static void DoExpansionInfo(int index, Vector2 offset)
 		{
 			ExpansionDef expansionDef = ModLister.AllExpansions[index];
 			List<Texture2D> previewImages = expansionDef.PreviewImages;
-			float num = 350f;
-			float num2 = 16f;
-			float num3 = 200f;
-			float num4 = num3 * 2f + num2 * 2f;
-			float b = (previewImages.NullOrEmpty() ? 0f : (num3 * 3f + num2 * 2.5f));
+			float num = 16f;
+			float num2 = 200f;
+			float num3 = num2 * 2f + num * 2f;
+			float b = (previewImages.NullOrEmpty() ? 0f : (num2 * 3f + num * 2.5f));
 			Text.Font = GameFont.Medium;
-			float num5 = Text.CalcHeight(expansionDef.label, num - num2 * 2f);
+			float num4 = Text.CalcHeight(expansionDef.label, 350f - num * 2f);
 			Text.Font = GameFont.Small;
 			string text = "ClickForMoreInfo".Translate();
-			float num6 = Text.CalcHeight(expansionDef.description, num - num2 * 2f);
-			float num7 = Text.CalcHeight(text, num - num2 * 2f);
-			b = Mathf.Max(num5 + num7 + num2 + num6 + num2 * 2f, b);
-			Rect rect = new Rect(8f, yOffset - b, num, b);
-			Widgets.DrawWindowBackground(new Rect(rect.x, rect.y, previewImages.NullOrEmpty() ? rect.width : (rect.width + num4), rect.height));
-			Rect position = rect.ContractedBy(num2);
-			GUI.BeginGroup(position);
-			float num8 = 0f;
+			float num5 = Text.CalcHeight(expansionDef.description, 350f - num * 2f);
+			float num6 = Text.CalcHeight(text, 350f - num * 2f);
+			b = Mathf.Max(num4 + num6 + num + num5 + num * 2f, b);
+			Rect rect = new Rect(offset.x, offset.y - b, 350f, b);
+			Widgets.DrawWindowBackground(new Rect(rect.x, rect.y, previewImages.NullOrEmpty() ? rect.width : (rect.width + num3), rect.height));
+			Rect rect2 = rect.ContractedBy(num);
+			Widgets.BeginGroup(rect2);
+			float num7 = 0f;
 			Text.Font = GameFont.Medium;
 			Text.Anchor = TextAnchor.UpperCenter;
-			Widgets.Label(new Rect(0f, num8, position.width, num5), new GUIContent(" " + expansionDef.label, expansionDef.Icon));
+			Widgets.Label(new Rect(0f, num7, rect2.width, num4), new GUIContent(" " + expansionDef.label, expansionDef.Icon));
 			Text.Font = GameFont.Small;
-			num8 += num5;
+			num7 += num4;
 			GUI.color = Color.grey;
-			Widgets.Label(new Rect(0f, num8, position.width, num7), text);
+			Widgets.Label(new Rect(0f, num7, rect2.width, num6), text);
 			GUI.color = Color.white;
 			Text.Anchor = TextAnchor.UpperLeft;
-			num8 += num7 + num2;
-			Widgets.Label(new Rect(0f, num8, position.width, position.height - num8), expansionDef.description);
-			GUI.EndGroup();
+			num7 += num6 + num;
+			Widgets.Label(new Rect(0f, num7, rect2.width, rect2.height - num7), expansionDef.description);
+			Widgets.EndGroup();
 			if (previewImages.NullOrEmpty())
 			{
 				return;
 			}
-			Rect position2 = new Rect(rect.x + rect.width, rect.y, num4, rect.height).ContractedBy(num2);
-			GUI.BeginGroup(position2);
+			Rect rect3 = new Rect(rect.x + rect.width, rect.y, num3, rect.height).ContractedBy(num);
+			Widgets.BeginGroup(rect3);
+			float num8 = 0f;
 			float num9 = 0f;
-			float num10 = 0f;
 			for (int i = 0; i < previewImages.Count; i++)
 			{
-				float num11 = num3 - num2 / 2f;
-				GUI.DrawTexture(new Rect(num9, num10, num11, num11), previewImages[i]);
-				num9 += num3 + num2 / 2f;
-				if (num9 >= position2.width)
+				float num10 = num2 - num / 2f;
+				GUI.DrawTexture(new Rect(num8, num9, num10, num10), previewImages[i]);
+				num8 += num2 + num / 2f;
+				if (num8 >= rect3.width)
 				{
-					num9 = 0f;
-					num10 += num3 + num2 / 2f;
+					num8 = 0f;
+					num9 += num2 + num / 2f;
 				}
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		public static void DoTranslationInfoRect(Rect outRect)
 		{
-			if (LanguageDatabase.activeLanguage == LanguageDatabase.defaultLanguage)
+			if (LanguageDatabase.activeLanguage == LanguageDatabase.defaultLanguage && !DebugSettings.enableTranslationWindowInEnglish)
 			{
 				return;
 			}
 			Widgets.DrawWindowBackground(outRect);
 			Rect rect = outRect.ContractedBy(8f);
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			rect = rect.AtZero();
 			Rect rect2 = new Rect(5f, rect.height - 25f, rect.width - 10f, 25f);
 			rect.height -= 29f;
@@ -394,8 +433,7 @@ namespace RimWorld
 			string text = "";
 			foreach (CreditsEntry credit in LanguageDatabase.activeLanguage.info.credits)
 			{
-				CreditRecord_Role creditRecord_Role = credit as CreditRecord_Role;
-				if (creditRecord_Role != null)
+				if (credit is CreditRecord_Role creditRecord_Role)
 				{
 					text = text + creditRecord_Role.creditee + "\n";
 				}
@@ -415,7 +453,7 @@ namespace RimWorld
 			{
 				TranslationFilesCleaner.CleanupTranslationFiles();
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		private static void DoDevBuildWarningRect(Rect outRect)
@@ -426,11 +464,13 @@ namespace RimWorld
 
 		private static void InitLearnToPlay()
 		{
+			Game.ClearCaches();
 			Current.Game = new Game();
 			Current.Game.InitData = new GameInitData();
 			Current.Game.Scenario = ScenarioDefOf.Tutorial.scenario;
 			Find.Scenario.PreConfigure();
 			Current.Game.storyteller = new Storyteller(StorytellerDefOf.Tutor, DifficultyDefOf.Easy);
+			Find.GameInitData.startedFromEntry = true;
 			Page next = Current.Game.Scenario.GetFirstConfigPage().next;
 			next.prev = null;
 			Find.WindowStack.Add(next);

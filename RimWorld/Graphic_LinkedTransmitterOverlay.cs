@@ -27,12 +27,12 @@ namespace RimWorld
 			return false;
 		}
 
-		public override void Print(SectionLayer layer, Thing parent)
+		public override void Print(SectionLayer layer, Thing parent, float extraRotation)
 		{
 			foreach (IntVec3 item in parent.OccupiedRect())
 			{
 				Vector3 center = item.ToVector3ShiftedWithAltitude(AltitudeLayer.MapDataOverlay);
-				Printer_Plane.PrintPlane(layer, center, new Vector2(1f, 1f), LinkedDrawMatFrom(parent, item));
+				Printer_Plane.PrintPlane(layer, center, new Vector2(1f, 1f), LinkedDrawMatFrom(parent, item), extraRotation);
 			}
 		}
 	}

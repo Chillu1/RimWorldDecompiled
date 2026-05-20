@@ -27,7 +27,7 @@ namespace RimWorld.BaseGen
 			{
 				return false;
 			}
-			if (rp.faction == null || rp.faction != Faction.Empire)
+			if (rp.faction == null || rp.faction != Faction.OfEmpire)
 			{
 				return false;
 			}

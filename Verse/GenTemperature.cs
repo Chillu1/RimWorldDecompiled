@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
@@ -16,11 +17,13 @@ namespace Verse
 
 		public static readonly Color ColorRoomCold = new Color(0f, 0f, 1f, 0.3f);
 
-		private static List<RoomGroup> neighRoomGroups = new List<RoomGroup>();
+		private static readonly List<Room> neighRooms = new List<Room>();
 
-		private static RoomGroup[] beqRoomGroups = new RoomGroup[4];
+		private static readonly HashSet<Room> beqRooms = new HashSet<Room>();
 
-		public static float AverageTemperatureAtTileForTwelfth(int tile, Twelfth twelfth)
+		private const float VacuumTemperatureEqualizationFactor = 0.1f;
+
+		public static float AverageTemperatureAtTileForTwelfth(PlanetTile tile, Twelfth twelfth)
 		{
 			int num = 30000;
 			int num2 = 300000 * (int)twelfth;
@@ -33,7 +36,7 @@ namespace Verse
 			return num3 / 120f;
 		}
 
-		public static float MinTemperatureAtTile(int tile)
+		public static float MinTemperatureAtTile(PlanetTile tile)
 		{
 			float num = float.MaxValue;
 			for (int i = 0; i < 3600000; i += 27000)
@@ -43,7 +46,7 @@ namespace Verse
 			return num;
 		}
 
-		public static float MaxTemperatureAtTile(int tile)
+		public static float MaxTemperatureAtTile(PlanetTile tile)
 		{
 			float num = float.MinValue;
 			for (int i = 0; i < 3600000; i += 27000)
@@ -55,7 +58,19 @@ namespace Verse
 
 		public static FloatRange ComfortableTemperatureRange(this Pawn p)
 		{
-			return new FloatRange(p.GetStatValue(StatDefOf.ComfyTemperatureMin), p.GetStatValue(StatDefOf.ComfyTemperatureMax));
+			return new FloatRange(p.GetStatValue(StatDefOf.ComfyTemperatureMin, applyPostProcess: true, 1), p.GetStatValue(StatDefOf.ComfyTemperatureMax, applyPostProcess: true, 1));
+		}
+
+		public static FloatRange ComfortableTemperatureRange(this Pawn p, List<ThingStuffPair> apparel)
+		{
+			float num = p.GetStatValue(StatDefOf.ComfyTemperatureMin, applyPostProcess: true, 1);
+			float num2 = p.GetStatValue(StatDefOf.ComfyTemperatureMax, applyPostProcess: true, 1);
+			if (apparel != null)
+			{
+				num -= apparel.Sum((ThingStuffPair x) => x.InsulationCold);
+				num2 += apparel.Sum((ThingStuffPair x) => x.InsulationHeat);
+			}
+			return new FloatRange(num, num2);
 		}
 
 		public static FloatRange ComfortableTemperatureRange(ThingDef raceDef, List<ThingStuffPair> apparel = null)
@@ -75,6 +90,24 @@ namespace Verse
 			result.min -= 10f;
 			result.max += 10f;
 			return result;
+		}
+
+		public static FloatRange SafeTemperatureRange(this Pawn p, List<ThingStuffPair> apparel)
+		{
+			FloatRange result = p.ComfortableTemperatureRange(apparel);
+			result.min -= 10f;
+			result.max += 10f;
+			return result;
+		}
+
+		public static bool SafeTemperatureAtCell(this Pawn p, IntVec3 cell, Map map)
+		{
+			return p.SafeTemperatureRange().Includes(GetTemperatureForCell(cell, map));
+		}
+
+		public static bool ComfortableTemperatureAtCell(this Pawn p, IntVec3 cell, Map map)
+		{
+			return p.ComfortableTemperatureRange().Includes(GetTemperatureForCell(cell, map));
 		}
 
 		public static FloatRange SafeTemperatureRange(ThingDef raceDef, List<ThingStuffPair> apparel = null)
@@ -126,13 +159,13 @@ namespace Verse
 				temperature = 21f;
 				return false;
 			}
-			RoomGroup roomGroup = c.GetRoomGroup(map);
-			if (roomGroup == null)
+			Room room = c.GetRoom(map);
+			if (room == null)
 			{
 				temperature = 21f;
 				return false;
 			}
-			temperature = roomGroup.Temperature;
+			temperature = room.Temperature;
 			return true;
 		}
 
@@ -158,34 +191,47 @@ namespace Verse
 			return false;
 		}
 
-		public static float OffsetFromSunCycle(int absTick, int tile)
+		public static float OffsetFromSunCycle(int absTick, PlanetTile tile)
 		{
+			if (!tile.Valid)
+			{
+				return 0f;
+			}
 			float num = GenDate.DayPercent(absTick, Find.WorldGrid.LongLatOf(tile).x);
-			return Mathf.Cos((float)Math.PI * 2f * (num + 0.32f)) * 7f;
+			return Mathf.Cos(MathF.PI * 2f * (num + 0.32f)) * 7f;
 		}
 
-		public static float OffsetFromSeasonCycle(int absTick, int tile)
+		public static float OffsetFromSeasonCycle(int absTick, PlanetTile tile)
 		{
-			float num = (float)(absTick / 60000 % 60) / 60f;
-			return Mathf.Cos((float)Math.PI * 2f * (num - Season.Winter.GetMiddleTwelfth(0f).GetBeginningYearPct())) * (0f - SeasonalShiftAmplitudeAt(tile));
+			float num = (float)absTick / 60000f % 60f / 60f;
+			return Mathf.Cos(MathF.PI * 2f * (num - Season.Winter.GetMiddleTwelfth(0f).GetBeginningYearPct())) * (0f - SeasonalShiftAmplitudeAt(tile));
 		}
 
-		public static float GetTemperatureFromSeasonAtTile(int absTick, int tile)
+		public static float GetTemperatureFromSeasonAtTile(int absTick, PlanetTile tile)
 		{
 			if (absTick == 0)
 			{
 				absTick = 1;
 			}
-			return Find.WorldGrid[tile].temperature + OffsetFromSeasonCycle(absTick, tile);
+			Tile tile2 = Find.WorldGrid[tile];
+			if (tile2 == null)
+			{
+				return 21f;
+			}
+			return tile2.temperature + OffsetFromSeasonCycle(absTick, tile);
 		}
 
-		public static float GetTemperatureAtTile(int tile)
+		public static float GetTemperatureAtTile(PlanetTile tile)
 		{
 			return Current.Game.FindMap(tile)?.mapTemperature.OutdoorTemp ?? GetTemperatureFromSeasonAtTile(GenTicks.TicksAbs, tile);
 		}
 
-		public static float SeasonalShiftAmplitudeAt(int tile)
+		public static float SeasonalShiftAmplitudeAt(PlanetTile tile)
 		{
+			if (!tile.Valid)
+			{
+				return 0f;
+			}
 			if (Find.WorldGrid.LongLatOf(tile).y >= 0f)
 			{
 				return TemperatureTuning.SeasonalTempVariationCurve.Evaluate(Find.WorldGrid.DistanceFromEquatorNormalized(tile));
@@ -193,7 +239,7 @@ namespace Verse
 			return 0f - TemperatureTuning.SeasonalTempVariationCurve.Evaluate(Find.WorldGrid.DistanceFromEquatorNormalized(tile));
 		}
 
-		public static List<Twelfth> TwelfthsInAverageTemperatureRange(int tile, float minTemp, float maxTemp)
+		public static List<Twelfth> TwelfthsInAverageTemperatureRange(PlanetTile tile, float minTemp, float maxTemp)
 		{
 			List<Twelfth> twelfths = new List<Twelfth>();
 			for (int i = 0; i < 12; i++)
@@ -212,19 +258,19 @@ namespace Verse
 			{
 				Twelfth num2 = twelfths.First((Twelfth m) => !twelfths.Contains(m - 1));
 				List<Twelfth> list = new List<Twelfth>();
-				for (int j = (int)num2; j < 12 && twelfths.Contains((Twelfth)j); j++)
+				for (int num3 = (int)num2; num3 < 12 && twelfths.Contains((Twelfth)num3); num3++)
 				{
-					list.Add((Twelfth)j);
+					list.Add((Twelfth)num3);
 				}
-				for (int k = 0; k < 12 && twelfths.Contains((Twelfth)k); k++)
+				for (int num4 = 0; num4 < 12 && twelfths.Contains((Twelfth)num4); num4++)
 				{
-					list.Add((Twelfth)k);
+					list.Add((Twelfth)num4);
 				}
 			}
 			return twelfths;
 		}
 
-		public static Twelfth EarliestTwelfthInAverageTemperatureRange(int tile, float minTemp, float maxTemp)
+		public static Twelfth EarliestTwelfthInAverageTemperatureRange(PlanetTile tile, float minTemp, float maxTemp)
 		{
 			for (int i = 0; i < 12; i++)
 			{
@@ -259,42 +305,42 @@ namespace Verse
 				Log.Error("Added heat to null map.");
 				return false;
 			}
-			RoomGroup roomGroup = c.GetRoomGroup(map);
-			if (roomGroup != null)
+			Room room = c.GetRoom(map);
+			if (room != null)
 			{
-				return roomGroup.PushHeat(energy);
+				return room.PushHeat(energy);
 			}
-			neighRoomGroups.Clear();
+			neighRooms.Clear();
 			for (int i = 0; i < 8; i++)
 			{
 				IntVec3 intVec = c + GenAdj.AdjacentCells[i];
 				if (intVec.InBounds(map))
 				{
-					roomGroup = intVec.GetRoomGroup(map);
-					if (roomGroup != null)
+					room = intVec.GetRoom(map);
+					if (room != null)
 					{
-						neighRoomGroups.Add(roomGroup);
+						neighRooms.Add(room);
 					}
 				}
 			}
-			float energy2 = energy / (float)neighRoomGroups.Count;
-			for (int j = 0; j < neighRoomGroups.Count; j++)
+			float energy2 = energy / (float)neighRooms.Count;
+			for (int j = 0; j < neighRooms.Count; j++)
 			{
-				neighRoomGroups[j].PushHeat(energy2);
+				neighRooms[j].PushHeat(energy2);
 			}
-			bool result = neighRoomGroups.Count > 0;
-			neighRoomGroups.Clear();
+			bool result = neighRooms.Count > 0;
+			neighRooms.Clear();
 			return result;
 		}
 
 		public static void PushHeat(Thing t, float energy)
 		{
 			IntVec3 result;
-			if (t.GetRoomGroup() != null)
+			if (t.GetRoom() != null)
 			{
 				PushHeat(t.Position, t.Map, energy);
 			}
-			else if (GenAdj.TryFindRandomAdjacentCell8WayWithRoomGroup(t, out result))
+			else if (GenAdj.TryFindRandomAdjacentCell8WayWithRoom(t, out result))
 			{
 				PushHeat(result, t.Map, energy);
 			}
@@ -302,13 +348,13 @@ namespace Verse
 
 		public static float ControlTemperatureTempChange(IntVec3 cell, Map map, float energyLimit, float targetTemperature)
 		{
-			RoomGroup roomGroup = cell.GetRoomGroup(map);
-			if (roomGroup == null || roomGroup.UsesOutdoorTemperature)
+			Room room = cell.GetRoom(map);
+			if (room == null || room.UsesOutdoorTemperature)
 			{
 				return 0f;
 			}
-			float b = energyLimit / (float)roomGroup.CellCount;
-			float a = targetTemperature - roomGroup.Temperature;
+			float b = energyLimit / (float)room.CellCount;
+			float a = targetTemperature - room.Temperature;
 			float num = 0f;
 			if (energyLimit > 0f)
 			{
@@ -321,93 +367,93 @@ namespace Verse
 
 		public static void EqualizeTemperaturesThroughBuilding(Building b, float rate, bool twoWay)
 		{
-			int num = 0;
-			float num2 = 0f;
-			if (twoWay)
+			beqRooms.Clear();
+			float num = 0f;
+			foreach (IntVec3 item in b.OccupiedRect())
 			{
-				for (int i = 0; i < 2; i++)
+				if (twoWay)
 				{
-					IntVec3 intVec = ((i == 0) ? (b.Position + b.Rotation.FacingCell) : (b.Position - b.Rotation.FacingCell));
-					if (intVec.InBounds(b.Map))
+					for (int i = 0; i < 2; i++)
 					{
-						RoomGroup roomGroup = intVec.GetRoomGroup(b.Map);
-						if (roomGroup != null)
+						IntVec3 intVec = ((i == 0) ? (item + b.Rotation.FacingCell) : (item - b.Rotation.FacingCell));
+						if (intVec.InBounds(b.Map))
 						{
-							num2 += roomGroup.Temperature;
-							beqRoomGroups[num] = roomGroup;
-							num++;
+							Room room = intVec.GetRoom(b.Map);
+							if (room != null && beqRooms.Add(room))
+							{
+								num += room.Temperature;
+							}
 						}
 					}
+					continue;
 				}
-			}
-			else
-			{
 				for (int j = 0; j < 4; j++)
 				{
-					IntVec3 intVec2 = b.Position + GenAdj.CardinalDirections[j];
+					IntVec3 intVec2 = item + GenAdj.CardinalDirections[j];
 					if (intVec2.InBounds(b.Map))
 					{
-						RoomGroup roomGroup2 = intVec2.GetRoomGroup(b.Map);
-						if (roomGroup2 != null)
+						Room room2 = intVec2.GetRoom(b.Map);
+						if (room2 != null && beqRooms.Add(room2))
 						{
-							num2 += roomGroup2.Temperature;
-							beqRoomGroups[num] = roomGroup2;
-							num++;
+							num += room2.Temperature;
 						}
 					}
 				}
 			}
-			if (num == 0)
+			int count = beqRooms.Count;
+			if (count == 0)
 			{
 				return;
 			}
-			float num3 = num2 / (float)num;
-			RoomGroup roomGroup3 = b.GetRoomGroup();
-			if (roomGroup3 != null)
+			float num2 = num / (float)count;
+			foreach (IntVec3 item2 in b.OccupiedRect())
 			{
-				roomGroup3.Temperature = num3;
+				Room room3 = item2.GetRoom(b.Map);
+				if (room3 != null)
+				{
+					room3.Temperature = num2;
+				}
 			}
-			if (num == 1)
+			if (beqRooms.Count == 1)
 			{
 				return;
 			}
-			float num4 = 1f;
-			for (int k = 0; k < num; k++)
+			float num3 = 1f;
+			foreach (Room beqRoom in beqRooms)
 			{
-				if (!beqRoomGroups[k].UsesOutdoorTemperature)
+				if (!beqRoom.UsesOutdoorTemperature)
 				{
-					float temperature = beqRoomGroups[k].Temperature;
-					float num5 = (num3 - temperature) * rate;
-					float num6 = num5 / (float)beqRoomGroups[k].CellCount;
-					float num7 = beqRoomGroups[k].Temperature + num6;
-					if (num5 > 0f && num7 > num3)
+					float temperature = beqRoom.Temperature;
+					float num4 = (num2 - temperature) * rate;
+					float num5 = num4 / (float)beqRoom.CellCount;
+					float num6 = beqRoom.Temperature + num5;
+					if (num4 > 0f && num6 > num2)
 					{
-						num7 = num3;
+						num6 = num2;
 					}
-					else if (num5 < 0f && num7 < num3)
+					else if (num4 < 0f && num6 < num2)
 					{
-						num7 = num3;
+						num6 = num2;
 					}
-					float num8 = Mathf.Abs((num7 - temperature) * (float)beqRoomGroups[k].CellCount / num5);
-					if (num8 < num4)
+					float num7 = Mathf.Abs((num6 - temperature) * (float)beqRoom.CellCount / num4);
+					if (num7 < num3)
 					{
-						num4 = num8;
+						num3 = num7;
 					}
 				}
 			}
-			for (int l = 0; l < num; l++)
+			foreach (Room beqRoom2 in beqRooms)
 			{
-				if (!beqRoomGroups[l].UsesOutdoorTemperature)
+				if (!beqRoom2.UsesOutdoorTemperature)
 				{
-					float temperature2 = beqRoomGroups[l].Temperature;
-					float num9 = (num3 - temperature2) * rate * num4 / (float)beqRoomGroups[l].CellCount;
-					beqRoomGroups[l].Temperature += num9;
+					float temperature2 = beqRoom2.Temperature;
+					float num8 = num2 - temperature2;
+					float num9 = ((b.Map.Biome.inVacuum && num8 < 0f) ? 0.1f : 1f);
+					float num10 = num8 * rate * num3 * num9 / (float)beqRoom2.CellCount;
+					beqRoom2.Temperature += num10;
 				}
 			}
-			for (int m = 0; m < beqRoomGroups.Length; m++)
-			{
-				beqRoomGroups[m] = null;
-			}
+			beqRooms.Clear();
 		}
 
 		public static float RotRateAtTemperature(float temperature)
@@ -427,11 +473,11 @@ namespace Verse
 		{
 			if (faction == Faction.OfPlayer)
 			{
-				List<Room> allRooms = map.regionGrid.allRooms;
+				IReadOnlyList<Room> allRooms = map.regionGrid.AllRooms;
 				for (int i = 0; i < allRooms.Count; i++)
 				{
 					Room room = allRooms[i];
-					if (room.RegionType.Passable() && !room.Fogged && tempRange.Includes(room.Temperature))
+					if (room.AnyPassable && !room.Fogged && tempRange.Includes(room.Temperature))
 					{
 						return true;
 					}
@@ -441,9 +487,9 @@ namespace Verse
 			return false;
 		}
 
-		public static string GetAverageTemperatureLabel(int tile)
+		public static string GetAverageTemperatureLabel(PlanetTile tile)
 		{
-			return Find.WorldGrid[tile].temperature.ToStringTemperature() + " " + string.Format("({0} {1} {2})", MinTemperatureAtTile(tile).ToStringTemperature("F0"), "RangeTo".Translate(), MaxTemperatureAtTile(tile).ToStringTemperature("F0"));
+			return ((!tile.Valid) ? 21f : Find.WorldGrid[tile].temperature).ToStringTemperature() + string.Format(" ({0} {1} {2})", MinTemperatureAtTile(tile).ToStringTemperature("F0"), "RangeTo".Translate(), MaxTemperatureAtTile(tile).ToStringTemperature("F0"));
 		}
 
 		public static float CelsiusTo(float temp, TemperatureDisplayMode oldMode)

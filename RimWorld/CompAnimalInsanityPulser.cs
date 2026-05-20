@@ -14,7 +14,7 @@ namespace RimWorld
 		public override void PostSpawnSetup(bool respawningAfterLoad)
 		{
 			base.PostSpawnSetup(respawningAfterLoad);
-			if (!respawningAfterLoad)
+			if (!respawningAfterLoad && !parent.BeingTransportedOnGravship)
 			{
 				ticksToInsanityPulse = Props.pulseInterval.RandomInRange;
 			}
@@ -41,7 +41,7 @@ namespace RimWorld
 
 		private void DoAnimalInsanityPulse()
 		{
-			IEnumerable<Pawn> enumerable = parent.Map.mapPawns.AllPawnsSpawned.Where((Pawn p) => p.RaceProps.Animal && p.Position.InHorDistOf(parent.Position, Props.radius));
+			IEnumerable<Pawn> enumerable = parent.Map.mapPawns.AllPawnsSpawned.Where((Pawn p) => p.IsAnimal && p.Position.InHorDistOf(parent.Position, Props.radius));
 			bool flag = false;
 			foreach (Pawn item in enumerable)
 			{

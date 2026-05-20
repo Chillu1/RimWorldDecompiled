@@ -55,12 +55,25 @@ namespace RimWorld
 
 		public override bool CanCoexistWith(ScenPart other)
 		{
-			ScenPart_GameCondition scenPart_GameCondition = other as ScenPart_GameCondition;
-			if (scenPart_GameCondition != null && !scenPart_GameCondition.def.gameCondition.CanCoexistWith(def.gameCondition))
+			if (other is ScenPart_GameCondition scenPart_GameCondition && !scenPart_GameCondition.def.gameCondition.CanCoexistWith(def.gameCondition))
 			{
 				return false;
 			}
 			return true;
+		}
+
+		public override bool HasNullDefs()
+		{
+			if (!base.HasNullDefs())
+			{
+				return def.gameCondition == null;
+			}
+			return true;
+		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode() ^ durationDays.GetHashCode();
 		}
 	}
 }

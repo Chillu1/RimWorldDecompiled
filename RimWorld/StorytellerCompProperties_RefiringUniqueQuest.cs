@@ -6,6 +6,8 @@ namespace RimWorld
 
 		public float refireEveryDays = -1f;
 
+		public int minColonyWealth = -1;
+
 		public StorytellerCompProperties_RefiringUniqueQuest()
 		{
 			compClass = typeof(StorytellerComp_RefiringUniqueQuest);

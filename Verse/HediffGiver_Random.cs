@@ -6,7 +6,9 @@ namespace Verse
 
 		public override void OnIntervalPassed(Pawn pawn, Hediff cause)
 		{
-			if (Rand.MTBEventOccurs(mtbDays, 60000f, 60f) && TryApply(pawn))
+			float num = mtbDays;
+			float num2 = ChanceFactor(pawn);
+			if (num2 != 0f && Rand.MTBEventOccurs(num / num2, 60000f, 60f) && TryApply(pawn))
 			{
 				SendLetter(pawn, cause);
 			}

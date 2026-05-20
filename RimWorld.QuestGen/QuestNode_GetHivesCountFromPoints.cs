@@ -21,12 +21,14 @@ namespace RimWorld.QuestGen
 
 		private void SetVars(Slate slate)
 		{
-			int num = Mathf.RoundToInt(slate.Get("points", 0f) / 220f);
-			if (num < 1)
+			float num = slate.Get("points", 0f);
+			num *= IncidentWorker_Infestation.PointsFactorCurve.Evaluate(num);
+			int num2 = Mathf.RoundToInt(num / 220f);
+			if (num2 < 1)
 			{
-				num = 1;
+				num2 = 1;
 			}
-			slate.Set(storeAs.GetValue(slate), num);
+			slate.Set(storeAs.GetValue(slate), num2);
 		}
 	}
 }

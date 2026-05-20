@@ -17,7 +17,7 @@ namespace RimWorld
 
 		private static float MaxColonistBarWidth => (float)UI.screenWidth - 520f;
 
-		public void CalculateDrawLocs(List<Vector2> outDrawLocs, out float scale)
+		public void CalculateDrawLocs(List<Vector2> outDrawLocs, out float scale, int groupsCount)
 		{
 			if (ColonistBar.Entries.Count == 0)
 			{
@@ -26,18 +26,17 @@ namespace RimWorld
 			}
 			else
 			{
-				CalculateColonistsInGroup();
-				scale = FindBestScale(out var onlyOneRow, out var maxPerGlobalRow);
-				CalculateDrawLocs(outDrawLocs, scale, onlyOneRow, maxPerGlobalRow);
+				CalculateColonistsInGroup(groupsCount);
+				scale = FindBestScale(out var onlyOneRow, out var maxPerGlobalRow, groupsCount);
+				CalculateDrawLocs(outDrawLocs, scale, onlyOneRow, maxPerGlobalRow, groupsCount);
 			}
 		}
 
-		private void CalculateColonistsInGroup()
+		private void CalculateColonistsInGroup(int groupsCount)
 		{
 			entriesInGroup.Clear();
 			List<ColonistBar.Entry> entries = ColonistBar.Entries;
-			int num = CalculateGroupsCount();
-			for (int i = 0; i < num; i++)
+			for (int i = 0; i < groupsCount; i++)
 			{
 				entriesInGroup.Add(0);
 			}
@@ -63,33 +62,32 @@ namespace RimWorld
 			return num2;
 		}
 
-		private float FindBestScale(out bool onlyOneRow, out int maxPerGlobalRow)
+		private float FindBestScale(out bool onlyOneRow, out int maxPerGlobalRow, int groupsCount)
 		{
 			float num = 1f;
 			List<ColonistBar.Entry> entries = ColonistBar.Entries;
-			int num2 = CalculateGroupsCount();
 			while (true)
 			{
-				float num3 = (ColonistBar.BaseSize.x + 24f) * num;
-				float num4 = MaxColonistBarWidth - (float)(num2 - 1) * 25f * num;
-				maxPerGlobalRow = Mathf.FloorToInt(num4 / num3);
+				float num2 = (ColonistBar.BaseSize.x + 24f) * num;
+				float num3 = MaxColonistBarWidth - (float)(groupsCount - 1) * 25f * num;
+				maxPerGlobalRow = Mathf.FloorToInt(num3 / num2);
 				onlyOneRow = true;
-				if (TryDistributeHorizontalSlotsBetweenGroups(maxPerGlobalRow))
+				if (TryDistributeHorizontalSlotsBetweenGroups(maxPerGlobalRow, groupsCount))
 				{
 					int allowedRowsCountForScale = GetAllowedRowsCountForScale(num);
 					bool flag = true;
-					int num5 = -1;
+					int num4 = -1;
 					for (int i = 0; i < entries.Count; i++)
 					{
-						if (num5 != entries[i].group)
+						if (num4 != entries[i].group)
 						{
-							num5 = entries[i].group;
-							int num6 = Mathf.CeilToInt((float)entriesInGroup[entries[i].group] / (float)horizontalSlotsPerGroup[entries[i].group]);
-							if (num6 > 1)
+							num4 = entries[i].group;
+							int num5 = Mathf.CeilToInt((float)entriesInGroup[entries[i].group] / (float)horizontalSlotsPerGroup[entries[i].group]);
+							if (num5 > 1)
 							{
 								onlyOneRow = false;
 							}
-							if (num6 > allowedRowsCountForScale)
+							if (num5 > allowedRowsCountForScale)
 							{
 								flag = false;
 								break;
@@ -106,18 +104,17 @@ namespace RimWorld
 			return num;
 		}
 
-		private bool TryDistributeHorizontalSlotsBetweenGroups(int maxPerGlobalRow)
+		private bool TryDistributeHorizontalSlotsBetweenGroups(int maxPerGlobalRow, int groupsCount)
 		{
-			int num = CalculateGroupsCount();
 			horizontalSlotsPerGroup.Clear();
-			for (int j = 0; j < num; j++)
+			for (int i = 0; i < groupsCount; i++)
 			{
 				horizontalSlotsPerGroup.Add(0);
 			}
-			GenMath.DHondtDistribution(horizontalSlotsPerGroup, (int i) => entriesInGroup[i], maxPerGlobalRow);
-			for (int k = 0; k < horizontalSlotsPerGroup.Count; k++)
+			GenMath.DHondtDistribution(horizontalSlotsPerGroup, (int index2) => entriesInGroup[index2], maxPerGlobalRow);
+			for (int num = 0; num < horizontalSlotsPerGroup.Count; num++)
 			{
-				if (horizontalSlotsPerGroup[k] == 0)
+				if (horizontalSlotsPerGroup[num] == 0)
 				{
 					int num2 = horizontalSlotsPerGroup.Max();
 					if (num2 <= 1)
@@ -126,7 +123,7 @@ namespace RimWorld
 					}
 					int index = horizontalSlotsPerGroup.IndexOf(num2);
 					horizontalSlotsPerGroup[index]--;
-					horizontalSlotsPerGroup[k]++;
+					horizontalSlotsPerGroup[num]++;
 				}
 			}
 			return true;
@@ -145,7 +142,7 @@ namespace RimWorld
 			return 3;
 		}
 
-		private void CalculateDrawLocs(List<Vector2> outDrawLocs, float scale, bool onlyOneRow, int maxPerGlobalRow)
+		private void CalculateDrawLocs(List<Vector2> outDrawLocs, float scale, bool onlyOneRow, int maxPerGlobalRow, int groupsCount)
 		{
 			outDrawLocs.Clear();
 			int num = maxPerGlobalRow;
@@ -157,30 +154,29 @@ namespace RimWorld
 				}
 				num = ColonistBar.Entries.Count;
 			}
-			int num2 = CalculateGroupsCount();
-			float num3 = (ColonistBar.BaseSize.x + 24f) * scale;
-			float num4 = (float)num * num3 + (float)(num2 - 1) * 25f * scale;
+			float num2 = (ColonistBar.BaseSize.x + 24f) * scale;
+			float num3 = (float)num * num2 + (float)(groupsCount - 1) * 25f * scale;
 			List<ColonistBar.Entry> entries = ColonistBar.Entries;
+			int num4 = -1;
 			int num5 = -1;
-			int num6 = -1;
-			float num7 = ((float)UI.screenWidth - num4) / 2f;
+			float num6 = ((float)UI.screenWidth - num3) / 2f;
 			for (int j = 0; j < entries.Count; j++)
 			{
-				if (num5 != entries[j].group)
+				if (num4 != entries[j].group)
 				{
-					if (num5 >= 0)
+					if (num4 >= 0)
 					{
-						num7 += 25f * scale;
-						num7 += (float)horizontalSlotsPerGroup[num5] * scale * (ColonistBar.BaseSize.x + 24f);
+						num6 += 25f * scale;
+						num6 += (float)horizontalSlotsPerGroup[num4] * scale * (ColonistBar.BaseSize.x + 24f);
 					}
-					num6 = 0;
-					num5 = entries[j].group;
+					num5 = 0;
+					num4 = entries[j].group;
 				}
 				else
 				{
-					num6++;
+					num5++;
 				}
-				Vector2 drawLoc = GetDrawLoc(num7, 21f, entries[j].group, num6, scale);
+				Vector2 drawLoc = GetDrawLoc(num6, 21f, entries[j].group, num5, scale);
 				outDrawLocs.Add(drawLoc);
 			}
 		}

@@ -32,7 +32,26 @@ namespace Verse
 
 		public float buildingDamageFactor = 1f;
 
+		public float buildingDamageFactorPassable = 1f;
+
+		public float buildingDamageFactorImpassable = 1f;
+
 		public float plantDamageFactor = 1f;
+
+		public float corpseDamageFactor = 1f;
+
+		public bool causeStun;
+
+		public int stunAdaptationTicks;
+
+		public int? constantStunDurationTicks;
+
+		public StatDef stunResistStat;
+
+		public bool displayAdaptedTextMote = true;
+
+		[MustTranslate]
+		public string adaptedText;
 
 		public bool canUseDeflectMetalEffect = true;
 
@@ -51,11 +70,23 @@ namespace Verse
 
 		public List<DamageDefAdditionalHediff> additionalHediffs;
 
+		public List<HediffDef> additionalHediffsThisPart;
+
+		public bool applyAdditionalHediffsIfHuntingForFood = true;
+
 		public DamageArmorCategoryDef armorCategory;
 
 		public int minDamageToFragment = 99999;
 
 		public FloatRange overkillPctToDestroyPart = new FloatRange(0f, 0.7f);
+
+		public bool consideredHelpful;
+
+		public SimpleCurve igniteChanceByTargetFlammability;
+
+		public float igniteCellChance;
+
+		public bool ignoreShields;
 
 		public bool harmAllLayersUntilOutside;
 
@@ -73,19 +104,41 @@ namespace Verse
 
 		public ThingDef explosionCellMote;
 
+		public FleckDef explosionCellFleck;
+
 		public Color explosionColorCenter = Color.white;
 
 		public Color explosionColorEdge = Color.white;
 
+		public EffecterDef explosionInteriorEffecter;
+
 		public ThingDef explosionInteriorMote;
+
+		public FleckDef explosionInteriorFleck;
+
+		public ThingDef explosionCenterMote;
+
+		public FleckDef explosionCenterFleck;
+
+		public EffecterDef explosionCenterEffecter;
+
+		public EffecterDef explosionCellEffecter;
+
+		public float explosionCellEffecterChance;
+
+		public float explosionCellEffecterMaxRadius;
 
 		public float explosionHeatEnergyPerCell;
 
+		public float expolosionPropagationSpeed = 1f;
+
 		public SoundDef soundExplosion;
 
-		public float stabChanceOfForcedInternal;
+		public float explosionInteriorCellCountMultiplier = 1f;
 
-		public float stabPierceBonus;
+		public float explosionInteriorCellDistanceMultiplier = 0.7f;
+
+		public float stabChanceOfForcedInternal;
 
 		public SimpleCurve cutExtraTargetsCurve;
 
@@ -105,7 +158,7 @@ namespace Verse
 
 		public float scratchSplitPercentage = 0.5f;
 
-		public float biteDamageMultiplier = 1f;
+		public bool scaleDamageToBuildingsBasedOnFlammability;
 
 		[Unsaved(false)]
 		private DamageWorker workerInt;
@@ -131,8 +184,7 @@ namespace Verse
 			}
 			if (externalViolenceForMechanoids)
 			{
-				Pawn pawn = thing as Pawn;
-				if (pawn != null && pawn.RaceProps.IsMechanoid)
+				if (thing is Pawn pawn && pawn.RaceProps.IsMechanoid)
 				{
 					return true;
 				}

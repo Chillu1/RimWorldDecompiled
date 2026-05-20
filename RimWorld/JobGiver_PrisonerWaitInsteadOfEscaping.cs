@@ -12,7 +12,7 @@ namespace RimWorld
 				return null;
 			}
 			Room room = pawn.GetRoom();
-			if (room != null && room.isPrisonCell)
+			if (room != null && room.IsPrisonCell)
 			{
 				return null;
 			}

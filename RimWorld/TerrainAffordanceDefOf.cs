@@ -11,15 +11,13 @@ namespace RimWorld
 
 		public static TerrainAffordanceDef Heavy;
 
-		public static TerrainAffordanceDef GrowSoil;
-
-		public static TerrainAffordanceDef Diggable;
-
 		public static TerrainAffordanceDef SmoothableStone;
 
 		public static TerrainAffordanceDef MovingFluid;
 
 		public static TerrainAffordanceDef Bridgeable;
+
+		public static TerrainAffordanceDef Walkable;
 
 		static TerrainAffordanceDefOf()
 		{

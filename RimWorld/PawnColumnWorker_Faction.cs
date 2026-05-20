@@ -7,27 +7,27 @@ namespace RimWorld
 	{
 		protected override Texture2D GetIconFor(Pawn pawn)
 		{
-			Faction factionOrExtraMiniOrHomeFaction = pawn.FactionOrExtraMiniOrHomeFaction;
-			if (factionOrExtraMiniOrHomeFaction != null && factionOrExtraMiniOrHomeFaction != Faction.OfPlayer)
+			Faction homeFaction = pawn.HomeFaction;
+			if (homeFaction != null && homeFaction != Faction.OfPlayer)
 			{
-				return factionOrExtraMiniOrHomeFaction.def.FactionIcon;
+				return homeFaction.def.FactionIcon;
 			}
 			return null;
 		}
 
 		protected override Color GetIconColor(Pawn pawn)
 		{
-			Faction factionOrExtraMiniOrHomeFaction = pawn.FactionOrExtraMiniOrHomeFaction;
-			if (factionOrExtraMiniOrHomeFaction != null && factionOrExtraMiniOrHomeFaction != Faction.OfPlayer)
+			Faction homeFaction = pawn.HomeFaction;
+			if (homeFaction != null && homeFaction != Faction.OfPlayer)
 			{
-				return factionOrExtraMiniOrHomeFaction.Color;
+				return homeFaction.Color;
 			}
 			return Color.white;
 		}
 
 		protected override string GetIconTip(Pawn pawn)
 		{
-			string text = pawn.FactionOrExtraMiniOrHomeFaction?.Name;
+			string text = pawn.HomeFaction?.Name;
 			if (!text.NullOrEmpty())
 			{
 				return "PawnFactionInfo".Translate(text, pawn);
@@ -37,11 +37,11 @@ namespace RimWorld
 
 		protected override void ClickedIcon(Pawn pawn)
 		{
-			Faction factionOrExtraMiniOrHomeFaction = pawn.FactionOrExtraMiniOrHomeFaction;
-			if (factionOrExtraMiniOrHomeFaction != null)
+			Faction homeFaction = pawn.HomeFaction;
+			if (homeFaction != null)
 			{
 				Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Factions);
-				((MainTabWindow_Factions)Find.MainTabsRoot.OpenTab.TabWindow).ScrollToFaction(factionOrExtraMiniOrHomeFaction);
+				((MainTabWindow_Factions)Find.MainTabsRoot.OpenTab.TabWindow).ScrollToFaction(homeFaction);
 			}
 		}
 	}

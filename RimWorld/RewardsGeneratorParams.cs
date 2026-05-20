@@ -27,6 +27,10 @@ namespace RimWorld
 
 		public bool allowGoodwill;
 
+		public bool allowDevelopmentPoints;
+
+		public bool allowXenogermReimplantation;
+
 		public float populationIntent;
 
 		public string ConfigError()
@@ -38,10 +42,6 @@ namespace RimWorld
 			if (thingRewardDisallowed && thingRewardRequired)
 			{
 				return "thing reward is both disallowed and required";
-			}
-			if (thingRewardDisallowed && !allowRoyalFavor && !allowGoodwill)
-			{
-				return "no reward types are allowed";
 			}
 			return null;
 		}

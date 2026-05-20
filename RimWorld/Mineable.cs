@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using Verse;
 
@@ -6,8 +7,6 @@ namespace RimWorld
 	public class Mineable : Building
 	{
 		private float yieldPct;
-
-		private const float YieldChanceOnNonMiningKill = 0.2f;
 
 		public override void ExposeData()
 		{
@@ -28,11 +27,24 @@ namespace RimWorld
 			}
 		}
 
+		public override void Kill(DamageInfo? dinfo, Hediff exactCulprit = null)
+		{
+			if (dinfo.HasValue && dinfo.Value.Instigator != null && dinfo.Value.Def != DamageDefOf.Mining)
+			{
+				Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.DestroyedMineable, dinfo.Value.Instigator.Named(HistoryEventArgsNames.Doer)));
+			}
+			base.Kill(dinfo, exactCulprit);
+		}
+
 		public void DestroyMined(Pawn pawn)
 		{
 			Map map = base.Map;
 			base.Destroy(DestroyMode.KillFinalize);
-			TrySpawnYield(map, yieldPct, moteOnWaste: true, pawn);
+			TrySpawnYield(map, moteOnWaste: true, pawn);
+			if (pawn != null)
+			{
+				Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.Mined, pawn.Named(HistoryEventArgsNames.Doer)));
+			}
 		}
 
 		public override void Destroy(DestroyMode mode)
@@ -41,11 +53,17 @@ namespace RimWorld
 			base.Destroy(mode);
 			if (mode == DestroyMode.KillFinalize)
 			{
-				TrySpawnYield(map, 0.2f, moteOnWaste: false, null);
+				TrySpawnYield(map, moteOnWaste: false, null);
 			}
 		}
 
+		[Obsolete("Will be removeds.")]
 		private void TrySpawnYield(Map map, float yieldChance, bool moteOnWaste, Pawn pawn)
+		{
+			TrySpawnYield(map, moteOnWaste, pawn);
+		}
+
+		private void TrySpawnYield(Map map, bool moteOnWaste, Pawn pawn)
 		{
 			if (def.building.mineableThing != null && !(Rand.Value > def.building.mineableDropChance))
 			{
@@ -54,15 +72,15 @@ namespace RimWorld
 				{
 					num = Mathf.Max(1, GenMath.RoundRandom((float)num * yieldPct));
 				}
-				Thing thing2 = ThingMaker.MakeThing(def.building.mineableThing);
-				thing2.stackCount = num;
-				GenPlace.TryPlaceThing(thing2, base.Position, map, ThingPlaceMode.Near, ForbidIfNecessary);
+				Thing thing = ThingMaker.MakeThing(def.building.mineableThing);
+				thing.stackCount = num;
+				GenPlace.TryPlaceThing(thing, base.Position, map, ThingPlaceMode.Near, ForbidIfNecessary);
 			}
-			void ForbidIfNecessary(Thing thing, int count)
+			void ForbidIfNecessary(Thing thing2, int count)
 			{
-				if ((pawn == null || !pawn.IsColonist) && thing.def.EverHaulable && !thing.def.designateHaulable)
+				if ((pawn == null || pawn.Faction != Faction.OfPlayer) && thing2.def.EverHaulable && !thing2.def.designateHaulable)
 				{
-					thing.SetForbidden(value: true, warnOnFail: false);
+					thing2.SetForbidden(value: true, warnOnFail: false);
 				}
 			}
 		}
@@ -70,7 +88,12 @@ namespace RimWorld
 		public void Notify_TookMiningDamage(int amount, Pawn miner)
 		{
 			float num = (float)Mathf.Min(amount, HitPoints) / (float)base.MaxHitPoints;
-			yieldPct += num * miner.GetStatValue(StatDefOf.MiningYield);
+			float num2 = 1f;
+			if (miner != null)
+			{
+				num2 = miner.GetStatValue(StatDefOf.MiningYield);
+			}
+			yieldPct += num * num2;
 		}
 	}
 }

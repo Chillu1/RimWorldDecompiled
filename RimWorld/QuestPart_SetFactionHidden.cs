@@ -29,7 +29,7 @@ namespace RimWorld
 		public override void Notify_QuestSignalReceived(Signal signal)
 		{
 			base.Notify_QuestSignalReceived(signal);
-			if (signal.tag == inSignal && faction.Hidden != hidden)
+			if (signal.tag == inSignal && faction != null && faction.Hidden != hidden)
 			{
 				faction.hidden = hidden;
 			}

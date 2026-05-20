@@ -15,9 +15,9 @@ namespace RimWorld
 
 		public static RoomStatDef Impressiveness;
 
-		public static RoomStatDef InfectionChanceFactor;
+		public static RoomStatDef ReadingBonus;
 
-		public static RoomStatDef ResearchSpeedFactor;
+		public static RoomStatDef InfectionChanceFactor;
 
 		public static RoomStatDef GraveVisitingJoyGainFactor;
 

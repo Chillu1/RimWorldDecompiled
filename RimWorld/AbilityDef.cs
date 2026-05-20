@@ -16,6 +16,8 @@ namespace RimWorld
 
 		public AbilityCategoryDef category;
 
+		public int displayOrder;
+
 		public List<StatModifier> statBases;
 
 		public VerbProperties verbProperties;
@@ -25,6 +27,14 @@ namespace RimWorld
 		public JobDef jobDef;
 
 		public ThingDef warmupMote;
+
+		public EffecterDef warmupEffecter;
+
+		public FleckDef emittedFleck;
+
+		public int emissionInterval;
+
+		public string warmupMoteSocialSymbol;
 
 		public SoundDef warmupStartSound;
 
@@ -40,17 +50,43 @@ namespace RimWorld
 
 		public bool canUseAoeToGetTargets = true;
 
+		public bool useAverageTargetPositionForWarmupEffecter;
+
 		public bool targetRequired = true;
 
 		public bool targetWorldCell;
 
 		public bool showGizmoOnWorldView;
 
+		public bool aiCanUse;
+
+		public bool ai_SearchAOEForTargets;
+
+		public bool ai_IsOffensive = true;
+
+		public bool ai_IsIncendiary = true;
+
+		public bool groupAbility;
+
 		public int level;
 
 		public IntRange cooldownTicksRange;
 
+		public bool cooldownPerCharge;
+
+		public bool hasExternallyHandledCooldown;
+
+		public int charges = -1;
+
+		public AbilityGroupDef groupDef;
+
+		public bool overrideGroupCooldown;
+
+		public List<MemeDef> requiredMemes;
+
 		public bool sendLetterOnCooldownComplete;
+
+		public bool sendMessageOnCooldownComplete;
 
 		public bool displayGizmoWhileUndrafted;
 
@@ -66,6 +102,18 @@ namespace RimWorld
 
 		public float detectionChanceOverride = -1f;
 
+		public float uiOrder;
+
+		public bool waitForJobEnd;
+
+		public bool showWhenDrafted = true;
+
+		public bool showOnCharacterCard = true;
+
+		public bool hostile = true;
+
+		public bool casterMustBeCapableOfViolence = true;
+
 		[MustTranslate]
 		public string confirmationDialogText;
 
@@ -75,6 +123,8 @@ namespace RimWorld
 		public Texture2D uiIcon = BaseContent.BadTex;
 
 		private string cachedTooltip;
+
+		private Pawn cachedTooltipPawn;
 
 		private List<string> cachedTargets;
 
@@ -88,13 +138,13 @@ namespace RimWorld
 
 		private string psyfocusCostPercentMax;
 
+		private Texture2D warmupMoteSocialSymbolCached;
+
 		public float EntropyGain => statBases.GetStatValueFromList(StatDefOf.Ability_EntropyGain, 0f);
 
 		public float PsyfocusCost => statBases.GetStatValueFromList(StatDefOf.Ability_PsyfocusCost, 0f);
 
 		public float EffectRadius => statBases.GetStatValueFromList(StatDefOf.Ability_EffectRadius, 0f);
-
-		public float EffectDuration => statBases.GetStatValueFromList(StatDefOf.Ability_Duration, 0f);
 
 		public bool HasAreaOfEffect => EffectRadius > float.Epsilon;
 
@@ -109,6 +159,8 @@ namespace RimWorld
 				return detectionChanceOverride;
 			}
 		}
+
+		public bool IsPsycast => typeof(Psycast).IsAssignableFrom(abilityClass);
 
 		public string PsyfocusCostPercent
 		{
@@ -204,49 +256,78 @@ namespace RimWorld
 			}
 		}
 
-		public IEnumerable<string> StatSummary
+		public Texture2D WarmupMoteSocialSymbol
 		{
 			get
 			{
-				string text = null;
-				foreach (AbilityCompProperties comp in comps)
+				if (!warmupMoteSocialSymbol.NullOrEmpty() && warmupMoteSocialSymbolCached == null)
 				{
-					if (comp.OverridesPsyfocusCost)
-					{
-						text = comp.PsyfocusCostExplanation;
-						break;
-					}
+					warmupMoteSocialSymbolCached = ContentFinder<Texture2D>.Get(warmupMoteSocialSymbol);
 				}
-				if (text == null)
+				return warmupMoteSocialSymbolCached;
+			}
+		}
+
+		public IEnumerable<string> StatSummary(Pawn forPawn = null)
+		{
+			string text = null;
+			foreach (AbilityCompProperties comp in comps)
+			{
+				if (comp.OverridesPsyfocusCost)
 				{
-					if (PsyfocusCost > float.Epsilon)
-					{
-						yield return "AbilityPsyfocusCost".Translate() + ": " + PsyfocusCost.ToStringPercent();
-					}
-				}
-				else
-				{
-					yield return text;
-				}
-				if (EntropyGain > float.Epsilon)
-				{
-					yield return (string)("AbilityEntropyGain".Translate() + ": ") + EntropyGain;
-				}
-				if (verbProperties.warmupTime > float.Epsilon)
-				{
-					yield return (string)("AbilityCastingTime".Translate() + ": ") + verbProperties.warmupTime + "LetterSecond".Translate();
-				}
-				float effectDuration = EffectDuration;
-				if (effectDuration > float.Epsilon)
-				{
-					int num = effectDuration.SecondsToTicks();
-					yield return "AbilityDuration".Translate() + ": " + ((num >= 2500) ? num.ToStringTicksToPeriod() : (effectDuration + (string)"LetterSecond".Translate()));
-				}
-				if (HasAreaOfEffect)
-				{
-					yield return (string)("AbilityEffectRadius".Translate() + ": ") + Mathf.Ceil(EffectRadius);
+					text = comp.PsyfocusCostExplanation;
+					break;
 				}
 			}
+			if (text == null)
+			{
+				if (PsyfocusCost > float.Epsilon)
+				{
+					yield return "AbilityPsyfocusCost".Translate() + ": " + PsyfocusCost.ToStringPercent();
+				}
+			}
+			else
+			{
+				yield return text;
+			}
+			if (EntropyGain > float.Epsilon)
+			{
+				yield return string.Concat("AbilityEntropyGain".Translate() + ": ", EntropyGain.ToString());
+			}
+			if (verbProperties.warmupTime > float.Epsilon)
+			{
+				yield return string.Concat("AbilityCastingTime".Translate() + ": ", verbProperties.warmupTime.ToString()) + "LetterSecond".Translate();
+			}
+			if (cooldownTicksRange.min == cooldownTicksRange.max && cooldownTicksRange.min > 0)
+			{
+				yield return "StatsReport_Cooldown".Translate() + ": " + cooldownTicksRange.min.ToStringTicksToPeriod(allowSeconds: true, shortForm: false, canUseDecimals: true, allowYears: false);
+			}
+			float num = EffectDuration(forPawn);
+			if (num > float.Epsilon)
+			{
+				int num2 = num.SecondsToTicks();
+				yield return "AbilityDuration".Translate() + ": " + ((num2 >= 2500) ? num2.ToStringTicksToPeriod() : (num.ToString() + "LetterSecond".Translate()));
+			}
+			if (HasAreaOfEffect)
+			{
+				yield return string.Concat("AbilityEffectRadius".Translate() + ": ", Mathf.Ceil(EffectRadius).ToString());
+			}
+			if (comps == null)
+			{
+				yield break;
+			}
+			for (int i = 0; i < comps.Count; i++)
+			{
+				foreach (string item in comps[i].ExtraStatSummary())
+				{
+					yield return item;
+				}
+			}
+		}
+
+		public float EffectDuration(Pawn forPawn = null)
+		{
+			return this.GetStatValueAbstract(StatDefOf.Ability_Duration, forPawn);
 		}
 
 		public override void PostLoad()
@@ -262,16 +343,17 @@ namespace RimWorld
 
 		public string GetTooltip(Pawn pawn = null)
 		{
-			if (cachedTooltip == null)
+			if (cachedTooltip == null || cachedTooltipPawn != pawn)
 			{
-				cachedTooltip = base.LabelCap + ((level > 0) ? ((string)("\n" + "Level".Translate() + " ") + level) : "") + "\n\n" + description;
-				string text = StatSummary.ToLineList();
+				cachedTooltip = LabelCap.Colorize(ColoredText.TipSectionTitleColor) + ((level > 0) ? string.Concat("\n" + "Level".Translate().CapitalizeFirst() + " ", level.ToString()) : "") + "\n\n" + description;
+				cachedTooltipPawn = pawn;
+				string text = StatSummary(pawn).ToLineList();
 				if (!text.NullOrEmpty())
 				{
 					cachedTooltip = cachedTooltip + "\n\n" + text;
 				}
 			}
-			if (pawn != null && ModsConfig.RoyaltyActive && abilityClass == typeof(Psycast) && level > 0)
+			if (pawn != null && ModsConfig.RoyaltyActive && IsPsycast && level > 0)
 			{
 				Faction first = Faction.GetMinTitleForImplantAllFactions(HediffDefOf.PsychicAmplifier).First;
 				if (first != null)
@@ -280,7 +362,7 @@ namespace RimWorld
 					RoyalTitleDef currentTitle = pawn.royalty.GetCurrentTitle(first);
 					if (minTitleForImplant != null && (currentTitle == null || currentTitle.seniority < minTitleForImplant.seniority) && DetectionChance > 0f)
 					{
-						return cachedTooltip + "\n\n" + ColoredText.Colorize("PsycastIsIllegal".Translate(pawn.Named("PAWN"), minTitleForImplant.GetLabelCapFor(pawn).Named("TITLE")), ColoredText.WarningColor);
+						return cachedTooltip + "\n\n" + ((string)"PsycastIsIllegal".Translate(pawn.Named("PAWN"), minTitleForImplant.GetLabelCapFor(pawn).Named("TITLE"))).Colorize(ColoredText.WarningColor);
 					}
 				}
 			}
@@ -314,7 +396,7 @@ namespace RimWorld
 			{
 				yield return new StatDrawEntry(StatCategoryDefOf.Ability, StatDefOf.Ability_GoodwillImpact, num, req);
 			}
-			if (level != 0)
+			if (IsPsycast && level != 0)
 			{
 				yield return new StatDrawEntry(StatCategoryDefOf.Ability, StatDefOf.Ability_RequiredPsylink, level, req);
 			}
@@ -351,7 +433,7 @@ namespace RimWorld
 				{
 					if (statBases.Count((StatModifier st) => st.stat == statBase.stat) > 1)
 					{
-						yield return string.Concat("defines the stat base ", statBase.stat, " more than once.");
+						yield return "defines the stat base " + statBase.stat?.ToString() + " more than once.";
 					}
 				}
 			}

@@ -6,62 +6,79 @@ namespace Verse
 {
 	public static class MeshMakerCircles
 	{
-		public static Mesh MakePieMesh(int DegreesWide)
+		private const float PieRadius = 0.55f;
+
+		private const int MaxDegreesWide = 361;
+
+		private const int CircleVertexCount = 92;
+
+		private static readonly List<Vector3> tmpVerts = new List<Vector3>(361);
+
+		private static readonly Vector2[] emptyUVs = new Vector2[361];
+
+		private static readonly Vector3[] tmpCircleVerts = new Vector3[92];
+
+		private static readonly int[] tmpTris = new int[273];
+
+		public static void MakePieMeshes(Mesh[] meshes)
 		{
-			List<Vector2> list = new List<Vector2>();
-			list.Add(new Vector2(0f, 0f));
-			for (int i = 0; i < DegreesWide; i++)
+			if (meshes.Length < 361)
 			{
-				float num = (float)i / 180f * (float)Math.PI;
-				Vector2 item = new Vector2(0f, 0f);
-				item.x = (float)(0.550000011920929 * Math.Cos(num));
-				item.y = (float)(0.550000011920929 * Math.Sin(num));
-				list.Add(item);
+				throw new ArgumentException();
 			}
-			Vector3[] array = new Vector3[list.Count];
-			for (int j = 0; j < array.Length; j++)
+			Vector3[] array = new Vector3[362];
+			array[0] = new Vector3(0f, 0f, 0f);
+			for (int i = 0; i <= 360; i++)
 			{
-				array[j] = new Vector3(list[j].x, 0f, list[j].y);
+				float num = (float)i / 180f * MathF.PI;
+				float x = (float)(0.550000011920929 * Math.Cos(num));
+				float z = (float)(0.550000011920929 * Math.Sin(num));
+				array[i + 1] = new Vector3(x, 0f, z);
 			}
-			int[] triangles = new Triangulator(list.ToArray()).Triangulate();
-			Mesh mesh = new Mesh();
-			mesh.name = "MakePieMesh()";
-			mesh.vertices = array;
-			mesh.uv = new Vector2[list.Count];
-			mesh.triangles = triangles;
-			mesh.RecalculateNormals();
-			mesh.RecalculateBounds();
-			return mesh;
+			int[] array2 = new int[1080];
+			for (int j = 0; j < 360; j++)
+			{
+				array2[j * 3] = j + 2;
+				array2[j * 3 + 1] = j + 1;
+				array2[j * 3 + 2] = 0;
+			}
+			Bounds bounds = default(Bounds);
+			Vector3 vector = 0.55f * new Vector3(1f, 0f, 1f);
+			bounds.SetMinMax(-vector, vector);
+			for (int k = 0; k < 361; k++)
+			{
+				meshes[k] = new Mesh();
+				meshes[k].vertices = array;
+				meshes[k].SetTriangles(array2, 0, 3 * k, 0, calculateBounds: false);
+				meshes[k].RecalculateNormals();
+				meshes[k].bounds = bounds;
+			}
 		}
 
 		public static Mesh MakeCircleMesh(float radius)
 		{
-			List<Vector2> list = new List<Vector2>();
-			list.Add(new Vector2(0f, 0f));
-			for (int i = 0; i <= 360; i += 4)
+			tmpCircleVerts[0] = Vector3.zero;
+			int num = 0;
+			int num2 = 1;
+			while (num <= 360)
 			{
-				float f = (float)i / 180f * (float)Math.PI;
-				list.Add(new Vector2(radius * Mathf.Cos(f), radius * Mathf.Sin(f)));
+				float f = (float)num / 180f * MathF.PI;
+				tmpCircleVerts[num2] = new Vector3(radius * Mathf.Cos(f), 0f, radius * Mathf.Sin(f));
+				num += 4;
+				num2++;
 			}
-			Vector3[] array = new Vector3[list.Count];
-			for (int j = 0; j < array.Length; j++)
+			for (int i = 1; i < tmpCircleVerts.Length; i++)
 			{
-				array[j] = new Vector3(list[j].x, 0f, list[j].y);
+				int num3 = (i - 1) * 3;
+				tmpTris[num3] = 0;
+				tmpTris[num3 + 1] = (i + 1) % tmpCircleVerts.Length;
+				tmpTris[num3 + 2] = i;
 			}
-			int[] array2 = new int[(array.Length - 1) * 3];
-			for (int k = 1; k < array.Length; k++)
-			{
-				int num = (k - 1) * 3;
-				array2[num] = 0;
-				array2[num + 1] = (k + 1) % array.Length;
-				array2[num + 2] = k;
-			}
-			return new Mesh
-			{
-				name = "MakeCircleMesh()",
-				vertices = array,
-				triangles = array2
-			};
+			Mesh mesh = new Mesh();
+			mesh.name = $"CircleMesh_{radius:0.#}";
+			mesh.SetVertices(tmpCircleVerts);
+			mesh.SetTriangles(tmpTris, 0);
+			return mesh;
 		}
 	}
 }

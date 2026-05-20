@@ -29,13 +29,13 @@ namespace RimWorld
 
 		protected virtual bool CanInteractNow => true;
 
+		protected virtual bool CanFeedEver => Animal?.needs?.food != null;
+
 		public override void ExposeData()
 		{
 			base.ExposeData();
 			Scribe_Values.Look(ref feedNutritionLeft, "feedNutritionLeft", 0f);
 		}
-
-		protected abstract Toil FinalInteractToil();
 
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
 		{
@@ -55,33 +55,42 @@ namespace RimWorld
 			yield return Toils_Interpersonal.WaitToBeAbleToInteract(pawn);
 			yield return Toils_Interpersonal.GotoInteractablePosition(TargetIndex.A);
 			yield return TalkToAnimal(TargetIndex.A);
-			foreach (Toil item in FeedToils())
+			if (CanFeedEver)
 			{
-				yield return item;
+				foreach (Toil item in FeedToils())
+				{
+					yield return item;
+				}
 			}
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
 			yield return Toils_Interpersonal.WaitToBeAbleToInteract(pawn);
 			yield return Toils_Interpersonal.GotoInteractablePosition(TargetIndex.A);
 			yield return TalkToAnimal(TargetIndex.A);
-			foreach (Toil item2 in FeedToils())
+			if (CanFeedEver)
 			{
-				yield return item2;
+				foreach (Toil item2 in FeedToils())
+				{
+					yield return item2;
+				}
 			}
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch).FailOn(() => !CanInteractNow);
 			yield return Toils_Interpersonal.SetLastInteractTime(TargetIndex.A);
 			yield return Toils_Interpersonal.WaitToBeAbleToInteract(pawn);
 			yield return Toils_Interpersonal.GotoInteractablePosition(TargetIndex.A);
-			yield return FinalInteractToil();
 		}
 
 		public static float RequiredNutritionPerFeed(Pawn animal)
 		{
+			if (animal.needs.food == null)
+			{
+				return 0f;
+			}
 			return Mathf.Min(animal.needs.food.MaxLevel * 0.15f, 0.3f);
 		}
 
 		private IEnumerable<Toil> FeedToils()
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("FeedToils");
 			toil.initAction = delegate
 			{
 				feedNutritionLeft = RequiredNutritionPerFeed(Animal);
@@ -99,7 +108,7 @@ namespace RimWorld
 
 		private Toil TalkToAnimal(TargetIndex tameeInd)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("TalkToAnimal");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.GetActor();
@@ -115,7 +124,7 @@ namespace RimWorld
 
 		private Toil StartFeedAnimal(TargetIndex tameeInd)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("StartFeedAnimal");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.GetActor();

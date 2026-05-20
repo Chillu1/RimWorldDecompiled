@@ -1,20 +1,56 @@
 using System;
 using System.Collections.Generic;
+using LudeonTK;
 using RimWorld;
 using UnityEngine;
 using Verse.Sound;
 
 namespace Verse
 {
+	[StaticConstructorOnStartup]
 	public class Listing_Standard : Listing
 	{
 		private GameFont font;
+
+		private Rect? boundingRect;
+
+		private Func<Vector2> boundingScrollPositionGetter;
 
 		private List<Pair<Vector2, Vector2>> labelScrollbarPositions;
 
 		private List<Vector2> labelScrollbarPositionsSetThisFrame;
 
+		private int boundingRectCachedForFrame = -1;
+
+		private Rect? boundingRectCached;
+
+		private static readonly Texture2D PinTex = ContentFinder<Texture2D>.Get("UI/Icons/Pin");
+
+		private static readonly Texture2D PinOutlineTex = ContentFinder<Texture2D>.Get("UI/Icons/Pin-Outline");
+
+		public const float PinnableActionHeight = 22f;
+
 		private const float DefSelectionLineHeight = 21f;
+
+		public Rect? BoundingRectCached
+		{
+			get
+			{
+				if (boundingRectCachedForFrame != Time.frameCount)
+				{
+					if (boundingRect.HasValue && boundingScrollPositionGetter != null)
+					{
+						Rect value = boundingRect.Value;
+						Vector2 vector = boundingScrollPositionGetter();
+						value.x += vector.x;
+						value.y += vector.y;
+						boundingRectCached = value;
+					}
+					boundingRectCachedForFrame = Time.frameCount;
+				}
+				return boundingRectCached;
+			}
+		}
 
 		public Listing_Standard(GameFont font)
 		{
@@ -26,18 +62,17 @@ namespace Verse
 			font = GameFont.Small;
 		}
 
+		public Listing_Standard(Rect boundingRect, Func<Vector2> boundingScrollPositionGetter)
+		{
+			font = GameFont.Small;
+			this.boundingRect = boundingRect;
+			this.boundingScrollPositionGetter = boundingScrollPositionGetter;
+		}
+
 		public override void Begin(Rect rect)
 		{
 			base.Begin(rect);
 			Text.Font = font;
-		}
-
-		public void BeginScrollView(Rect rect, ref Vector2 scrollPosition, ref Rect viewRect)
-		{
-			Widgets.BeginScrollView(rect, ref scrollPosition, viewRect);
-			rect.height = 100000f;
-			rect.width -= 20f;
-			Begin(rect.AtZero());
 		}
 
 		public override void End()
@@ -57,19 +92,12 @@ namespace Verse
 			labelScrollbarPositionsSetThisFrame.Clear();
 		}
 
-		public void EndScrollView(ref Rect viewRect)
-		{
-			viewRect = new Rect(0f, 0f, listingRect.width, curY);
-			Widgets.EndScrollView();
-			End();
-		}
-
 		public Rect Label(TaggedString label, float maxHeight = -1f, string tooltip = null)
 		{
-			return Label(label.Resolve(), maxHeight, tooltip);
+			return Label(label.Resolve(), maxHeight, (TipSignal?)(TipSignal)tooltip);
 		}
 
-		public Rect Label(string label, float maxHeight = -1f, string tooltip = null)
+		public Rect Label(string label, float maxHeight = -1f, TipSignal? tipSignal = null)
 		{
 			float num = Text.CalcHeight(label, base.ColumnWidth);
 			bool flag = false;
@@ -79,6 +107,10 @@ namespace Verse
 				flag = true;
 			}
 			Rect rect = GetRect(num);
+			if (BoundingRectCached.HasValue && !rect.Overlaps(BoundingRectCached.Value))
+			{
+				return rect;
+			}
 			if (flag)
 			{
 				Vector2 scrollbarPosition = GetLabelScrollbarPosition(curX, curY);
@@ -89,9 +121,9 @@ namespace Verse
 			{
 				Widgets.Label(rect, label);
 			}
-			if (tooltip != null)
+			if (tipSignal.HasValue)
 			{
-				TooltipHandler.TipRegion(rect, tooltip);
+				TooltipHandler.TipRegion(rect, tipSignal.Value);
 			}
 			Gap(verticalSpacing);
 			return rect;
@@ -105,27 +137,55 @@ namespace Verse
 			float b = Text.CalcHeight(rightLabel, width);
 			float height = Mathf.Max(a, b);
 			Rect rect = GetRect(height);
-			if (!tip.NullOrEmpty())
+			if (!BoundingRectCached.HasValue || rect.Overlaps(BoundingRectCached.Value))
 			{
-				Widgets.DrawHighlightIfMouseover(rect);
-				TooltipHandler.TipRegion(rect, tip);
+				if (!tip.NullOrEmpty())
+				{
+					Widgets.DrawHighlightIfMouseover(rect);
+					TooltipHandler.TipRegion(rect, tip);
+				}
+				Widgets.Label(rect.LeftHalf(), leftLabel);
+				Widgets.Label(rect.RightHalf(), rightLabel);
+				Gap(verticalSpacing);
 			}
-			Widgets.Label(rect.LeftHalf(), leftLabel);
-			Widgets.Label(rect.RightHalf(), rightLabel);
-			Gap(verticalSpacing);
 		}
 
-		[Obsolete]
-		public bool RadioButton(string label, bool active, float tabIn = 0f, string tooltip = null)
+		public Rect SubLabel(string label, float widthPct)
 		{
-			return RadioButton_NewTemp(label, active, tabIn, tooltip);
+			float height = Text.CalcHeight(label, base.ColumnWidth * widthPct);
+			Rect rect = GetRect(height, widthPct);
+			float num = 20f;
+			rect.x += num;
+			rect.width -= num;
+			Text.Font = GameFont.Tiny;
+			GUI.color = Color.gray;
+			Widgets.Label(rect, label);
+			GUI.color = Color.white;
+			Text.Font = GameFont.Small;
+			Gap(verticalSpacing);
+			return rect;
 		}
 
-		public bool RadioButton_NewTemp(string label, bool active, float tabIn = 0f, string tooltip = null, float? tooltipDelay = null)
+		public bool RadioButton(string label, bool active, float tabIn = 0f, string tooltip = null, float? tooltipDelay = null)
+		{
+			return RadioButton(label, active, tabIn, tooltip, tooltipDelay, disabled: false);
+		}
+
+		public bool RadioButton(string label, bool active, float tabIn, string tooltip, float? tooltipDelay, bool disabled)
+		{
+			return RadioButton(label, active, tabIn, 0f, tooltip, tooltipDelay, disabled);
+		}
+
+		public bool RadioButton(string label, bool active, float tabIn, float tabInRight, string tooltip, float? tooltipDelay, bool disabled)
 		{
 			float lineHeight = Text.LineHeight;
 			Rect rect = GetRect(lineHeight);
 			rect.xMin += tabIn;
+			rect.xMax -= tabInRight;
+			if (BoundingRectCached.HasValue && !rect.Overlaps(BoundingRectCached.Value))
+			{
+				return false;
+			}
 			if (!tooltip.NullOrEmpty())
 			{
 				if (Mouse.IsOver(rect))
@@ -135,52 +195,108 @@ namespace Verse
 				TipSignal tip = (tooltipDelay.HasValue ? new TipSignal(tooltip, tooltipDelay.Value) : new TipSignal(tooltip));
 				TooltipHandler.TipRegion(rect, tip);
 			}
-			bool result = Widgets.RadioButtonLabeled(rect, label, active);
+			bool result = Widgets.RadioButtonLabeled(rect, label, active, disabled);
 			Gap(verticalSpacing);
 			return result;
 		}
 
-		public void CheckboxLabeled(string label, ref bool checkOn, string tooltip = null)
+		public void CheckboxLabeled(string label, ref bool checkOn, float tabIn)
 		{
-			float lineHeight = Text.LineHeight;
-			Rect rect = GetRect(lineHeight);
-			if (!tooltip.NullOrEmpty())
+			float height = Text.CalcHeight(label, base.ColumnWidth);
+			Rect rect = GetRect(height);
+			rect.xMin += tabIn;
+			if (!BoundingRectCached.HasValue || rect.Overlaps(BoundingRectCached.Value))
 			{
-				if (Mouse.IsOver(rect))
-				{
-					Widgets.DrawHighlight(rect);
-				}
-				TooltipHandler.TipRegion(rect, tooltip);
+				Widgets.CheckboxLabeled(rect, label, ref checkOn);
+				Gap(verticalSpacing);
 			}
-			Widgets.CheckboxLabeled(rect, label, ref checkOn);
+		}
+
+		public void CheckboxLabeled(string label, ref bool checkOn, string tooltip = null, float height = 0f, float labelPct = 1f)
+		{
+			float height2 = ((height != 0f) ? height : Text.CalcHeight(label, base.ColumnWidth * labelPct));
+			Rect rect = GetRect(height2, labelPct);
+			rect.width = Math.Min(rect.width + 24f, base.ColumnWidth);
+			if (!BoundingRectCached.HasValue || rect.Overlaps(BoundingRectCached.Value))
+			{
+				if (!tooltip.NullOrEmpty())
+				{
+					if (Mouse.IsOver(rect))
+					{
+						Widgets.DrawHighlight(rect);
+					}
+					TooltipHandler.TipRegion(rect, tooltip);
+				}
+				Widgets.CheckboxLabeled(rect, label, ref checkOn);
+			}
 			Gap(verticalSpacing);
 		}
 
 		public bool CheckboxLabeledSelectable(string label, ref bool selected, ref bool checkOn)
 		{
 			float lineHeight = Text.LineHeight;
-			bool result = Widgets.CheckboxLabeledSelectable(GetRect(lineHeight), label, ref selected, ref checkOn);
-			Gap(verticalSpacing);
-			return result;
-		}
-
-		public bool ButtonText(string label, string highlightTag = null)
-		{
-			Rect rect = GetRect(30f);
-			bool result = Widgets.ButtonText(rect, label);
-			if (highlightTag != null)
+			Rect rect = GetRect(lineHeight);
+			bool result = false;
+			if (!BoundingRectCached.HasValue || rect.Overlaps(BoundingRectCached.Value))
 			{
-				UIHighlighter.HighlightOpportunity(rect, highlightTag);
+				result = Widgets.CheckboxLabeledSelectable(rect, label, ref selected, ref checkOn);
 			}
 			Gap(verticalSpacing);
 			return result;
 		}
 
-		public bool ButtonTextLabeled(string label, string buttonLabel)
+		public bool ButtonText(string label, string highlightTag = null, float widthPct = 1f)
 		{
-			Rect rect = GetRect(30f);
-			Widgets.Label(rect.LeftHalf(), label);
-			bool result = Widgets.ButtonText(rect.RightHalf(), buttonLabel);
+			Rect rect = GetRect(30f, widthPct);
+			bool result = false;
+			if (!BoundingRectCached.HasValue || rect.Overlaps(BoundingRectCached.Value))
+			{
+				result = Widgets.ButtonText(rect, label);
+				if (highlightTag != null)
+				{
+					UIHighlighter.HighlightOpportunity(rect, highlightTag);
+				}
+			}
+			Gap(verticalSpacing);
+			return result;
+		}
+
+		public bool ButtonTextLabeled(string label, string buttonLabel, TextAnchor anchor = TextAnchor.UpperLeft, string highlightTag = null, string tooltip = null)
+		{
+			return ButtonTextLabeledPct(label, buttonLabel, 0.5f, anchor, highlightTag, tooltip);
+		}
+
+		public bool ButtonTextLabeledPct(string label, string buttonLabel, float labelPct, TextAnchor anchor = TextAnchor.UpperLeft, string highlightTag = null, string tooltip = null, Texture2D labelIcon = null)
+		{
+			float height = Math.Max(Text.CalcHeight(label, base.ColumnWidth * labelPct), 30f);
+			Rect rect = GetRect(height);
+			Rect rect2 = rect.RightPart(1f - labelPct);
+			rect2.height = 30f;
+			if (highlightTag != null)
+			{
+				UIHighlighter.HighlightOpportunity(rect, highlightTag);
+			}
+			bool result = false;
+			Rect rect3 = rect.LeftPart(labelPct);
+			if (!BoundingRectCached.HasValue || rect.Overlaps(BoundingRectCached.Value))
+			{
+				Text.Anchor = anchor;
+				Widgets.Label(rect3, label);
+				result = Widgets.ButtonText(rect2, buttonLabel.Truncate(rect2.width - 20f));
+				Text.Anchor = TextAnchor.UpperLeft;
+			}
+			if (labelIcon != null)
+			{
+				GUI.DrawTexture(new Rect(Text.CalcSize(label).x + 10f, rect3.y + (rect3.height - Text.LineHeight) / 2f, Text.LineHeight, Text.LineHeight), labelIcon);
+			}
+			if (!tooltip.NullOrEmpty())
+			{
+				if (Mouse.IsOver(rect3))
+				{
+					Widgets.DrawHighlight(rect3);
+				}
+				TooltipHandler.TipRegion(rect3, tooltip);
+			}
 			Gap(verticalSpacing);
 			return result;
 		}
@@ -188,7 +304,12 @@ namespace Verse
 		public bool ButtonImage(Texture2D tex, float width, float height)
 		{
 			NewColumnIfNeeded(height);
-			bool result = Widgets.ButtonImage(new Rect(curX, curY, width, height), tex);
+			Rect butRect = new Rect(curX, curY, width, height);
+			bool result = false;
+			if (!BoundingRectCached.HasValue || butRect.Overlaps(BoundingRectCached.Value))
+			{
+				result = Widgets.ButtonImage(butRect, tex);
+			}
 			Gap(height + verticalSpacing);
 			return result;
 		}
@@ -219,31 +340,55 @@ namespace Verse
 
 		public void TextFieldNumeric<T>(ref T val, ref string buffer, float min = 0f, float max = 1E+09f) where T : struct
 		{
-			Widgets.TextFieldNumeric(GetRect(Text.LineHeight), ref val, ref buffer, min, max);
+			Rect rect = GetRect(Text.LineHeight);
+			if (!BoundingRectCached.HasValue || rect.Overlaps(BoundingRectCached.Value))
+			{
+				Widgets.TextFieldNumeric(rect, ref val, ref buffer, min, max);
+			}
 			Gap(verticalSpacing);
 		}
 
 		public void TextFieldNumericLabeled<T>(string label, ref T val, ref string buffer, float min = 0f, float max = 1E+09f) where T : struct
 		{
-			Widgets.TextFieldNumericLabeled(GetRect(Text.LineHeight), label, ref val, ref buffer, min, max);
+			Rect rect = GetRect(Text.LineHeight);
+			if (!BoundingRectCached.HasValue || rect.Overlaps(BoundingRectCached.Value))
+			{
+				Widgets.TextFieldNumericLabeled(rect, label, ref val, ref buffer, min, max);
+			}
 			Gap(verticalSpacing);
 		}
 
-		public void IntRange(ref IntRange range, int min, int max)
+		public Rect IntRange(ref IntRange range, int min, int max)
 		{
-			Widgets.IntRange(GetRect(28f), (int)base.CurHeight, ref range, min, max);
+			Rect rect = GetRect(32f);
+			if (!BoundingRectCached.HasValue || rect.Overlaps(BoundingRectCached.Value))
+			{
+				Widgets.IntRange(rect, (int)base.CurHeight, ref range, min, max);
+			}
 			Gap(verticalSpacing);
+			return rect;
 		}
 
 		public float Slider(float val, float min, float max)
 		{
-			float num = Widgets.HorizontalSlider(GetRect(22f), val, min, max);
-			if (num != val)
-			{
-				SoundDefOf.DragSlider.PlayOneShotOnCamera();
-			}
+			float result = Widgets.HorizontalSlider(GetRect(22f), val, min, max);
 			Gap(verticalSpacing);
-			return num;
+			return result;
+		}
+
+		public float SliderLabeled(string label, float val, float min, float max, float labelPct = 0.5f, string tooltip = null)
+		{
+			Rect rect = GetRect(30f);
+			Text.Anchor = TextAnchor.MiddleLeft;
+			Widgets.Label(rect.LeftPart(labelPct), label);
+			if (tooltip != null)
+			{
+				TooltipHandler.TipRegion(rect.LeftPart(labelPct), tooltip);
+			}
+			Text.Anchor = TextAnchor.UpperLeft;
+			float result = Widgets.HorizontalSlider(rect.RightPart(1f - labelPct), val, min, max, middleAlignment: true);
+			Gap(verticalSpacing);
+			return result;
 		}
 
 		public void IntAdjuster(ref int val, int countChange, int min = 0)
@@ -282,19 +427,22 @@ namespace Verse
 			Gap(verticalSpacing);
 		}
 
-		public void IntEntry(ref int val, ref string editBuffer, int multiplier = 1)
+		public void IntEntry(ref int val, ref string editBuffer, int multiplier = 1, int min = 0)
 		{
-			Widgets.IntEntry(GetRect(24f), ref val, ref editBuffer, multiplier);
+			Rect rect = GetRect(24f);
+			if (!BoundingRectCached.HasValue || rect.Overlaps(BoundingRectCached.Value))
+			{
+				Widgets.IntEntry(rect, ref val, ref editBuffer, multiplier);
+				if (val < min)
+				{
+					val = min;
+					editBuffer = val.ToString();
+				}
+			}
 			Gap(verticalSpacing);
 		}
 
-		[Obsolete]
-		public Listing_Standard BeginSection(float height)
-		{
-			return BeginSection_NewTemp(height);
-		}
-
-		public Listing_Standard BeginSection_NewTemp(float height, float sectionBorder = 4f, float bottomBorder = 4f)
+		public Listing_Standard BeginSection(float height, float sectionBorder = 4f, float bottomBorder = 4f)
 		{
 			Rect rect = GetRect(height + sectionBorder + bottomBorder);
 			Widgets.DrawMenuSection(rect);
@@ -363,7 +511,7 @@ namespace Verse
 			Text.WordWrap = false;
 			Widgets.Label(rect, name);
 			Text.WordWrap = true;
-			if (deleteCallback != null && Widgets.ButtonImage(new Rect(rect.xMax, rect.y, 21f, 21f), TexButton.DeleteX, Color.white, GenUI.SubtleMouseoverColor))
+			if (deleteCallback != null && Widgets.ButtonImage(new Rect(rect.xMax, rect.y, 21f, 21f), TexButton.Delete, Color.white, GenUI.SubtleMouseoverColor))
 			{
 				deleteCallback();
 			}
@@ -372,47 +520,110 @@ namespace Verse
 			return Widgets.ButtonInvisible(rect);
 		}
 
-		[Obsolete("Only used for mod compatibility")]
-		public void LabelCheckboxDebug(string label, ref bool checkOn)
-		{
-			LabelCheckboxDebug_NewTmp(label, ref checkOn, highlight: false);
-		}
-
-		public void LabelCheckboxDebug_NewTmp(string label, ref bool checkOn, bool highlight)
+		public void LabelCheckboxDebug(string label, ref bool checkOn, bool highlight)
 		{
 			Text.Font = GameFont.Tiny;
 			NewColumnIfNeeded(22f);
 			Rect rect = new Rect(curX, curY, base.ColumnWidth, 22f);
-			Widgets.CheckboxLabeled(rect, label, ref checkOn);
-			if (highlight)
+			if (!BoundingRectCached.HasValue || rect.Overlaps(BoundingRectCached.Value))
 			{
-				GUI.color = Color.yellow;
-				Widgets.DrawBox(rect, 2);
-				GUI.color = Color.white;
+				Widgets.CheckboxLabeled(rect, label.Truncate(rect.width - 15f), ref checkOn);
+				if (highlight)
+				{
+					GUI.color = Color.yellow;
+					Widgets.DrawBox(rect, 2);
+					GUI.color = Color.white;
+				}
 			}
 			Gap(22f + verticalSpacing);
 		}
 
-		[Obsolete("Only used for mod compatibility")]
-		public bool ButtonDebug(string label)
-		{
-			return ButtonDebug_NewTmp(label, highlight: false);
-		}
-
-		public bool ButtonDebug_NewTmp(string label, bool highlight)
+		public bool ButtonDebug(string label, bool highlight)
 		{
 			Text.Font = GameFont.Tiny;
 			NewColumnIfNeeded(22f);
-			bool wordWrap = Text.WordWrap;
-			Text.WordWrap = false;
 			Rect rect = new Rect(curX, curY, base.ColumnWidth, 22f);
-			bool result = Widgets.ButtonText(rect, label);
-			Text.WordWrap = wordWrap;
-			if (highlight)
+			bool result = false;
+			if (!BoundingRectCached.HasValue || rect.Overlaps(BoundingRectCached.Value))
 			{
-				GUI.color = Color.yellow;
-				Widgets.DrawBox(rect, 2);
+				bool wordWrap = Text.WordWrap;
+				Text.WordWrap = false;
+				result = Widgets.ButtonText(rect, "  " + label, drawBackground: true, doMouseoverSound: true, active: true, TextAnchor.MiddleLeft);
+				Text.WordWrap = wordWrap;
+				if (highlight)
+				{
+					GUI.color = Color.yellow;
+					Widgets.DrawBox(rect, 2);
+					GUI.color = Color.white;
+				}
+			}
+			Gap(22f + verticalSpacing);
+			return result;
+		}
+
+		public DebugActionButtonResult ButtonDebugPinnable(string label, bool highlight, bool pinned)
+		{
+			Text.Font = GameFont.Tiny;
+			NewColumnIfNeeded(22f);
+			Rect rect = new Rect(curX, curY, base.ColumnWidth - 22f, 22f);
+			DebugActionButtonResult result = DebugActionButtonResult.None;
+			if (!BoundingRectCached.HasValue || rect.Overlaps(BoundingRectCached.Value))
+			{
+				bool wordWrap = Text.WordWrap;
+				Text.WordWrap = false;
+				if (Widgets.ButtonText(rect, "  " + label, drawBackground: true, doMouseoverSound: true, active: true, TextAnchor.MiddleLeft))
+				{
+					result = DebugActionButtonResult.ButtonPressed;
+				}
+				Text.WordWrap = wordWrap;
+				if (highlight)
+				{
+					GUI.color = Color.yellow;
+					Widgets.DrawBox(rect, 2);
+					GUI.color = Color.white;
+				}
+				Rect rect2 = new Rect(rect.xMax + 2f, rect.y, 22f, 22f).ContractedBy(4f);
+				GUI.color = (pinned ? Color.white : new Color(1f, 1f, 1f, 0.2f));
+				GUI.DrawTexture(rect2, pinned ? PinTex : PinOutlineTex);
 				GUI.color = Color.white;
+				if (Widgets.ButtonInvisible(rect2))
+				{
+					result = DebugActionButtonResult.PinPressed;
+				}
+				Widgets.DrawHighlightIfMouseover(rect2);
+			}
+			Gap(22f + verticalSpacing);
+			return result;
+		}
+
+		public DebugActionButtonResult CheckboxPinnable(string label, ref bool checkOn, bool highlight, bool pinned)
+		{
+			Text.Font = GameFont.Tiny;
+			NewColumnIfNeeded(22f);
+			Rect rect = new Rect(curX, curY, base.ColumnWidth - 22f, 22f);
+			DebugActionButtonResult result = DebugActionButtonResult.None;
+			if (!BoundingRectCached.HasValue || rect.Overlaps(BoundingRectCached.Value))
+			{
+				Widgets.CheckboxLabeled(rect, label.Truncate(rect.width - 24f - 15f), ref checkOn);
+				if (highlight)
+				{
+					GUI.color = Color.yellow;
+					Widgets.DrawBox(rect, 2);
+					GUI.color = Color.white;
+				}
+				if (Mouse.IsOver(rect))
+				{
+					TooltipHandler.TipRegion(rect, label);
+				}
+				Rect rect2 = new Rect(rect.xMax + 2f, rect.y, 22f, 22f).ContractedBy(4f);
+				GUI.color = (pinned ? Color.white : new Color(1f, 1f, 1f, 0.2f));
+				GUI.DrawTexture(rect2, pinned ? PinTex : PinOutlineTex);
+				GUI.color = Color.white;
+				if (Widgets.ButtonInvisible(rect2))
+				{
+					result = DebugActionButtonResult.PinPressed;
+				}
+				Widgets.DrawHighlightIfMouseover(rect2);
 			}
 			Gap(22f + verticalSpacing);
 			return result;

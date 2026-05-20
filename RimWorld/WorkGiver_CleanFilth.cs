@@ -4,9 +4,9 @@ using Verse.AI;
 
 namespace RimWorld
 {
-	internal class WorkGiver_CleanFilth : WorkGiver_Scanner
+	public class WorkGiver_CleanFilth : WorkGiver_Scanner
 	{
-		private int MinTicksSinceThickened = 600;
+		private const int MinTicksSinceThickened = 600;
 
 		public override PathEndMode PathEndMode => PathEndMode.Touch;
 
@@ -26,8 +26,7 @@ namespace RimWorld
 
 		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			Filth filth = t as Filth;
-			if (filth == null)
+			if (!(t is Filth filth))
 			{
 				return false;
 			}
@@ -35,11 +34,11 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!pawn.CanReserve(t, 1, -1, null, forced))
+			if (filth.Fogged() || !pawn.CanReserve(t, 1, -1, null, forced))
 			{
 				return false;
 			}
-			if (filth.TicksSinceThickened < MinTicksSinceThickened)
+			if (filth.TicksSinceThickened < 600)
 			{
 				return false;
 			}
@@ -55,12 +54,12 @@ namespace RimWorld
 			Room room = t.GetRoom();
 			for (int i = 0; i < 100; i++)
 			{
-				IntVec3 intVec = t.Position + GenRadial.RadialPattern[i];
-				if (!intVec.InBounds(map) || intVec.GetRoom(map) != room)
+				IntVec3 c = t.Position + GenRadial.RadialPattern[i];
+				if (!ShouldClean(c))
 				{
 					continue;
 				}
-				List<Thing> thingList = intVec.GetThingList(map);
+				List<Thing> thingList = c.GetThingList(map);
 				for (int j = 0; j < thingList.Count; j++)
 				{
 					Thing thing = thingList[j];
@@ -79,6 +78,34 @@ namespace RimWorld
 				job.targetQueueA.SortBy((LocalTargetInfo targ) => targ.Cell.DistanceToSquared(pawn.Position));
 			}
 			return job;
+			bool ShouldClean(IntVec3 intVec)
+			{
+				if (!intVec.InBounds(map))
+				{
+					return false;
+				}
+				Room room2 = intVec.GetRoom(map);
+				if (room == room2)
+				{
+					return true;
+				}
+				Region region = intVec.GetDoor(map)?.GetRegion(RegionType.Portal);
+				if (region != null && !region.links.NullOrEmpty())
+				{
+					for (int k = 0; k < region.links.Count; k++)
+					{
+						RegionLink regionLink = region.links[k];
+						for (int l = 0; l < 2; l++)
+						{
+							if (regionLink.regions[l] != null && regionLink.regions[l] != region && regionLink.regions[l].valid && regionLink.regions[l].Room == room)
+							{
+								return true;
+							}
+						}
+					}
+				}
+				return false;
+			}
 		}
 	}
 }

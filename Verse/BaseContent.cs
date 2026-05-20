@@ -9,11 +9,15 @@ namespace Verse
 
 		public static readonly string PlaceholderImagePath = "PlaceholderImage";
 
+		public static readonly string PlaceholderGearImagePath = "PlaceholderImage_Gear";
+
 		public static readonly Material BadMat = MaterialPool.MatFrom(BadTexPath, ShaderDatabase.Cutout);
 
 		public static readonly Texture2D BadTex = ContentFinder<Texture2D>.Get(BadTexPath);
 
 		public static readonly Graphic BadGraphic = GraphicDatabase.Get<Graphic_Single>(BadTexPath);
+
+		public static readonly Texture2D PlaceholderImage = ContentFinder<Texture2D>.Get(PlaceholderImagePath);
 
 		public static readonly Texture2D BlackTex = SolidColorMaterials.NewSolidColorTexture(Color.black);
 

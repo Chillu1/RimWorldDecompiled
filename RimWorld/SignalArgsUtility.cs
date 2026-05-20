@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using RimWorld.Planet;
 using Verse;
 
@@ -29,6 +30,11 @@ namespace RimWorld
 			if (args.TryGetArg(name, out TargetInfo arg4))
 			{
 				lookTargets = arg4;
+				return true;
+			}
+			if (args.TryGetArg(name, out List<Thing> arg5))
+			{
+				lookTargets = arg5;
 				return true;
 			}
 			lookTargets = LookTargets.Invalid;

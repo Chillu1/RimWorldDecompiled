@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -79,9 +78,8 @@ namespace RimWorld
 
 		public static void DrawRecordsCard(Rect rect, Pawn pawn)
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (!ModLister.CheckRoyalty("Permit"))
 			{
-				Log.ErrorOnce("Permits are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 43244);
 				return;
 			}
 			rect.yMax -= 4f;
@@ -124,8 +122,8 @@ namespace RimWorld
 					}
 					else
 					{
-						string str = "ReturnAllPermits_Confirm".Translate(8.Named("BASEFAVORCOST"), num.Named("FAVORCOST"), selectedFaction.def.royalFavorLabel.Named("FAVOR"), selectedFaction.Named("FACTION"));
-						Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation(str, delegate
+						string text = "ReturnAllPermits_Confirm".Translate(8.Named("BASEFAVORCOST"), num.Named("FAVORCOST"), selectedFaction.def.royalFavorLabel.Named("FAVOR"), selectedFaction.Named("FACTION"));
+						Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation(text, delegate
 						{
 							pawn.royalty.RefundPermits(8, selectedFaction);
 						}, destructive: true));
@@ -135,12 +133,12 @@ namespace RimWorld
 			}
 			RoyalTitleDef currentTitle = pawn.royalty.GetCurrentTitle(selectedFaction);
 			Rect rect4 = new Rect(rect.xMax - 360f - 4f, rect.y - 4f, 360f, 55f);
-			string text = (string)("CurrentTitle".Translate() + ": " + ((currentTitle != null) ? currentTitle.GetLabelFor(pawn).CapitalizeFirst() : ((string)"None".Translate())) + "\n" + "UnusedPermits".Translate() + ": ") + pawn.royalty.GetPermitPoints(selectedFaction);
+			string text2 = string.Concat("CurrentTitle".Translate() + ": " + ((currentTitle != null) ? currentTitle.GetLabelFor(pawn).CapitalizeFirst() : ((string)"None".Translate())) + "\n" + "UnusedPermits".Translate() + ": ", pawn.royalty.GetPermitPoints(selectedFaction).ToString());
 			if (!selectedFaction.def.royalFavorLabel.NullOrEmpty())
 			{
-				text = text + "\n" + selectedFaction.def.royalFavorLabel.CapitalizeFirst() + ": " + pawn.royalty.GetFavor(selectedFaction);
+				text2 = text2 + "\n" + selectedFaction.def.royalFavorLabel.CapitalizeFirst() + ": " + pawn.royalty.GetFavor(selectedFaction);
 			}
-			Widgets.Label(rect4, text);
+			Widgets.Label(rect4, text2);
 			rect.yMin += 55f;
 			Rect rect5 = new Rect(rect);
 			rect5.width *= 0.33f;
@@ -154,45 +152,45 @@ namespace RimWorld
 		{
 			float num = 0f;
 			RoyalTitleDef currentTitle = pawn.royalty.GetCurrentTitle(selectedFaction);
-			Rect position = new Rect(rect);
-			GUI.BeginGroup(position);
+			Rect rect2 = new Rect(rect);
+			Widgets.BeginGroup(rect2);
 			if (selectedPermit != null)
 			{
 				Text.Font = GameFont.Medium;
-				Rect rect2 = new Rect(0f, num, position.width, 0f);
-				Widgets.LabelCacheHeight(ref rect2, selectedPermit.LabelCap);
+				Rect rect3 = new Rect(0f, num, rect2.width, 0f);
+				Widgets.LabelCacheHeight(ref rect3, selectedPermit.LabelCap);
 				Text.Font = GameFont.Small;
-				num += rect2.height;
+				num += rect3.height;
 				if (!selectedPermit.description.NullOrEmpty())
 				{
-					Rect rect3 = new Rect(0f, num, position.width, 0f);
-					Widgets.LabelCacheHeight(ref rect3, selectedPermit.description);
-					num += rect3.height + 16f;
+					Rect rect4 = new Rect(0f, num, rect2.width, 0f);
+					Widgets.LabelCacheHeight(ref rect4, selectedPermit.description);
+					num += rect4.height + 16f;
 				}
-				Rect rect4 = new Rect(0f, num, position.width, 0f);
+				Rect rect5 = new Rect(0f, num, rect2.width, 0f);
 				string text = "Cooldown".Translate() + ": " + "PeriodDays".Translate(selectedPermit.cooldownDays);
 				if (selectedPermit.royalAid != null && selectedPermit.royalAid.favorCost > 0 && !selectedFaction.def.royalFavorLabel.NullOrEmpty())
 				{
-					text = text + (string)("\n" + "CooldownUseFavorCost".Translate(selectedFaction.def.royalFavorLabel.Named("HONOR")).CapitalizeFirst() + ": ") + selectedPermit.royalAid.favorCost;
+					text = string.Concat(text, "\n" + "CooldownUseFavorCost".Translate(selectedFaction.def.royalFavorLabel.Named("HONOR")).CapitalizeFirst() + ": ", selectedPermit.royalAid.favorCost.ToString());
 				}
 				if (selectedPermit.minTitle != null)
 				{
-					text = text + "\n" + "RequiresTitle".Translate(selectedPermit.minTitle.GetLabelForBothGenders()).Resolve().Colorize((currentTitle != null && currentTitle.seniority >= selectedPermit.minTitle.seniority) ? Color.white : ColoredText.RedReadable);
+					text = text + "\n" + "RequiresTitle".Translate(selectedPermit.minTitle.GetLabelForBothGenders()).Resolve().Colorize((currentTitle != null && currentTitle.seniority >= selectedPermit.minTitle.seniority) ? Color.white : ColorLibrary.RedReadable);
 				}
 				if (selectedPermit.prerequisite != null)
 				{
-					text = text + "\n" + "UpgradeFrom".Translate(selectedPermit.prerequisite.LabelCap).Resolve().Colorize(PermitUnlocked(selectedPermit.prerequisite, pawn) ? Color.white : ColoredText.RedReadable);
+					text = text + "\n" + "UpgradeFrom".Translate(selectedPermit.prerequisite.LabelCap).Resolve().Colorize(PermitUnlocked(selectedPermit.prerequisite, pawn) ? Color.white : ColorLibrary.RedReadable);
 				}
-				Widgets.LabelCacheHeight(ref rect4, text);
-				num += rect4.height + 4f;
-				Rect rect5 = new Rect(0f, position.height - 50f, position.width, 50f);
-				if (selectedPermit.AvailableForPawn(pawn, selectedFaction) && !PermitUnlocked(selectedPermit, pawn) && Widgets.ButtonText(rect5, "AcceptPermit".Translate()))
+				Widgets.LabelCacheHeight(ref rect5, text);
+				num += rect5.height + 4f;
+				Rect rect6 = new Rect(0f, rect2.height - 50f, rect2.width, 50f);
+				if (selectedPermit.AvailableForPawn(pawn, selectedFaction) && !PermitUnlocked(selectedPermit, pawn) && Widgets.ButtonText(rect6, "AcceptPermit".Translate()))
 				{
 					SoundDefOf.Quest_Accepted.PlayOneShotOnCamera();
 					pawn.royalty.AddPermit(selectedPermit, selectedFaction);
 				}
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		private static void DoRightRect(Rect rect, Pawn pawn)
@@ -215,7 +213,7 @@ namespace RimWorld
 				}
 			}
 			Widgets.BeginScrollView(outRect, ref rightScrollPosition, rect2);
-			GUI.BeginGroup(rect2.ContractedBy(10f));
+			Widgets.BeginGroup(rect2.ContractedBy(10f));
 			DrawLines();
 			for (int j = 0; j < allDefsListForReading.Count; j++)
 			{
@@ -225,7 +223,7 @@ namespace RimWorld
 					Vector2 vector = DrawPosition(royalTitlePermitDef);
 					Rect rect3 = new Rect(vector.x, vector.y, 200f, 50f);
 					Color color = Widgets.NormalOptionColor;
-					Color bgColor = (PermitUnlocked(royalTitlePermitDef, pawn) ? TexUI.FinishedResearchColor : TexUI.AvailResearchColor);
+					Color bgColor = (PermitUnlocked(royalTitlePermitDef, pawn) ? TexUI.OldFinishedResearchColor : TexUI.AvailResearchColor);
 					Color borderColor;
 					if (selectedPermit == royalTitlePermitDef)
 					{
@@ -254,7 +252,7 @@ namespace RimWorld
 					Text.Anchor = anchor;
 				}
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			Widgets.EndScrollView();
 		}
 
@@ -294,12 +292,6 @@ namespace RimWorld
 			}
 		}
 
-		[Obsolete("Will be removed in future version")]
-		private static bool PermitAvailable(RoyalTitlePermitDef permit, Pawn pawn)
-		{
-			return permit.AvailableForPawn(pawn, selectedFaction);
-		}
-
 		private static bool PermitUnlocked(RoyalTitlePermitDef permit, Pawn pawn)
 		{
 			if (pawn.royalty.HasPermit(permit, selectedFaction))
@@ -319,8 +311,8 @@ namespace RimWorld
 
 		private static Vector2 DrawPosition(RoyalTitlePermitDef permit)
 		{
-			Vector2 a = new Vector2(permit.uiPosition.x * 200f, permit.uiPosition.y * 50f);
-			return a + a * PermitOptionSpacing;
+			Vector2 vector = new Vector2(permit.uiPosition.x * 200f, permit.uiPosition.y * 50f);
+			return vector + vector * PermitOptionSpacing;
 		}
 
 		private static bool CanDrawPermit(RoyalTitlePermitDef permit)

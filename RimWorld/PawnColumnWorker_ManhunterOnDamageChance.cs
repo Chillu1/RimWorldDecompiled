@@ -6,12 +6,22 @@ namespace RimWorld
 	{
 		protected override string GetTextFor(Pawn pawn)
 		{
-			return PawnUtility.GetManhunterOnDamageChance(pawn).ToStringPercent();
+			float manhunterOnDamageChance = PawnUtility.GetManhunterOnDamageChance(pawn);
+			if (manhunterOnDamageChance == 0f)
+			{
+				return "-";
+			}
+			return manhunterOnDamageChance.ToStringPercent();
 		}
 
 		protected override string GetTip(Pawn pawn)
 		{
-			return "HarmedRevengeChanceExplanation".Translate();
+			return PawnUtility.GetManhunterOnDamageChanceExplanation(pawn.def, pawn);
+		}
+
+		public override int Compare(Pawn a, Pawn b)
+		{
+			return PawnUtility.GetManhunterOnDamageChance(a).CompareTo(PawnUtility.GetManhunterOnDamageChance(b));
 		}
 	}
 }

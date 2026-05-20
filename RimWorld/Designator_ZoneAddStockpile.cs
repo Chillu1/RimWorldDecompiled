@@ -9,6 +9,23 @@ namespace RimWorld
 
 		protected override string NewZoneLabel => preset.PresetName();
 
+		protected virtual bool ShowRightClickHideOptions => true;
+
+		public override IEnumerable<FloatMenuOption> RightClickFloatMenuOptions
+		{
+			get
+			{
+				if (!ShowRightClickHideOptions)
+				{
+					yield break;
+				}
+				foreach (FloatMenuOption hideOption in Command_Hide_ZoneStockpile.GetHideOptions())
+				{
+					yield return hideOption;
+				}
+			}
+		}
+
 		protected override Zone MakeNewZone()
 		{
 			return new Zone_Stockpile(preset, Find.CurrentMap.zoneManager);
@@ -17,6 +34,7 @@ namespace RimWorld
 		public Designator_ZoneAddStockpile()
 		{
 			zoneTypeToPlace = typeof(Zone_Stockpile);
+			soundSucceeded = SoundDefOf.Designate_ZoneAdd_Stockpile;
 		}
 
 		public override AcceptanceReport CanDesignateCell(IntVec3 c)

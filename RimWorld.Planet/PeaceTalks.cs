@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using UnityEngine;
 using Verse;
 using Verse.AI.Group;
@@ -29,6 +30,8 @@ namespace RimWorld.Planet
 
 		private const float BaseWeight_Triumph = 0.1f;
 
+		public const float LeaderOffset = 0.05f;
+
 		private static List<Pair<Action, float>> tmpPossibleOutcomes = new List<Pair<Action, float>>();
 
 		public override Material Material
@@ -37,7 +40,7 @@ namespace RimWorld.Planet
 			{
 				if (cachedMat == null)
 				{
-					cachedMat = MaterialPool.MatFrom(color: (base.Faction == null) ? Color.white : base.Faction.Color, texPath: def.texture, shader: ShaderDatabase.WorldOverlayTransparentLit, renderQueue: WorldMaterials.WorldObjectRenderQueue);
+					cachedMat = MaterialPool.MatFrom(color: (base.Faction == null) ? Color.white : base.Faction.Color, texPath: def.texture, shader: ShaderDatabase.WorldOverlayTransparentLit, renderQueue: 3550);
 				}
 				return cachedMat;
 			}
@@ -51,7 +54,7 @@ namespace RimWorld.Planet
 				Messages.Message("MessagePeaceTalksNoDiplomat".Translate(), caravan, MessageTypeDefOf.NegativeEvent, historical: false);
 				return;
 			}
-			float badOutcomeWeightFactor = GetBadOutcomeWeightFactor(pawn);
+			float badOutcomeWeightFactor = GetBadOutcomeWeightFactor(pawn, caravan);
 			float num = 1f / badOutcomeWeightFactor;
 			tmpPossibleOutcomes.Clear();
 			tmpPossibleOutcomes.Add(new Pair<Action, float>(delegate
@@ -98,8 +101,7 @@ namespace RimWorld.Planet
 			{
 				FactionRelationKind playerRelationKind = base.Faction.PlayerRelationKind;
 				int randomInRange = DiplomacyTuning.Goodwill_PeaceTalksDisasterRange.RandomInRange;
-				base.Faction.TryAffectGoodwillWith(Faction.OfPlayer, randomInRange, canSendMessage: false, canSendHostilityLetter: false);
-				base.Faction.TrySetRelationKind(Faction.OfPlayer, FactionRelationKind.Hostile, canSendLetter: false);
+				Faction.OfPlayer.TryAffectGoodwillWith(base.Faction, Mathf.Min(randomInRange, Faction.OfPlayer.GoodwillToMakeHostile(base.Faction)), canSendMessage: false, canSendHostilityLetter: false, HistoryEventDefOf.PeaceTalksDisaster);
 				IncidentParms incidentParms = StorytellerUtility.DefaultParmsNow(IncidentCategoryDefOf.ThreatBig, caravan);
 				incidentParms.faction = base.Faction;
 				PawnGroupMakerParms defaultPawnGroupMakerParms = IncidentParmsUtility.GetDefaultPawnGroupMakerParms(PawnGroupKindDefOf.Combat, incidentParms, ensureCanGenerateAtLeastOnePawn: true);
@@ -111,11 +113,11 @@ namespace RimWorld.Planet
 					LordMaker.MakeNewLord(incidentParms.faction, new LordJob_AssaultColony(base.Faction), map, list);
 				}
 				Find.TickManager.Notify_GeneratedPotentiallyHostileMap();
-				GlobalTargetInfo target = (list.Any() ? new GlobalTargetInfo(list[0].Position, map) : GlobalTargetInfo.Invalid);
+				GlobalTargetInfo globalTargetInfo = (list.Any() ? new GlobalTargetInfo(list[0].Position, map) : GlobalTargetInfo.Invalid);
 				TaggedString letterLabel = "LetterLabelPeaceTalks_Disaster".Translate();
 				TaggedString letterText = GetLetterText("LetterPeaceTalks_Disaster".Translate(base.Faction.def.pawnsPlural.CapitalizeFirst(), base.Faction.NameColored, Mathf.RoundToInt(randomInRange)), caravan, playerRelationKind);
 				PawnRelationUtility.Notify_PawnsSeenByPlayer_Letter(list, ref letterLabel, ref letterText, "LetterRelatedPawnsGroupGeneric".Translate(Faction.OfPlayer.def.pawnsPlural), informEvenIfSeenBefore: true);
-				Find.LetterStack.ReceiveLetter(letterLabel, letterText, LetterDefOf.ThreatBig, target, base.Faction);
+				Find.LetterStack.ReceiveLetter(letterLabel, letterText, LetterDefOf.ThreatBig, globalTargetInfo, base.Faction);
 			}, "GeneratingMapForNewEncounter", doAsynchronously: false, null);
 		}
 
@@ -123,7 +125,7 @@ namespace RimWorld.Planet
 		{
 			FactionRelationKind playerRelationKind = base.Faction.PlayerRelationKind;
 			int randomInRange = DiplomacyTuning.Goodwill_PeaceTalksBackfireRange.RandomInRange;
-			base.Faction.TryAffectGoodwillWith(Faction.OfPlayer, randomInRange, canSendMessage: false, canSendHostilityLetter: false);
+			Faction.OfPlayer.TryAffectGoodwillWith(base.Faction, randomInRange, canSendMessage: false, canSendHostilityLetter: false, HistoryEventDefOf.PeaceTalksBackfire);
 			Find.LetterStack.ReceiveLetter("LetterLabelPeaceTalks_Backfire".Translate(), GetLetterText("LetterPeaceTalks_Backfire".Translate(base.Faction.NameColored, randomInRange), caravan, playerRelationKind), LetterDefOf.NegativeEvent, caravan, base.Faction);
 		}
 
@@ -136,7 +138,7 @@ namespace RimWorld.Planet
 		{
 			FactionRelationKind playerRelationKind = base.Faction.PlayerRelationKind;
 			int randomInRange = DiplomacyTuning.Goodwill_PeaceTalksSuccessRange.RandomInRange;
-			base.Faction.TryAffectGoodwillWith(Faction.OfPlayer, randomInRange, canSendMessage: false, canSendHostilityLetter: false);
+			Faction.OfPlayer.TryAffectGoodwillWith(base.Faction, randomInRange, canSendMessage: false, canSendHostilityLetter: false, HistoryEventDefOf.PeaceTalksSuccess);
 			Find.LetterStack.ReceiveLetter("LetterLabelPeaceTalks_Success".Translate(), GetLetterText("LetterPeaceTalks_Success".Translate(base.Faction.NameColored, randomInRange), caravan, playerRelationKind, TryGainRoyalFavor(caravan)), LetterDefOf.PositiveEvent, caravan, base.Faction);
 		}
 
@@ -144,13 +146,15 @@ namespace RimWorld.Planet
 		{
 			FactionRelationKind playerRelationKind = base.Faction.PlayerRelationKind;
 			int randomInRange = DiplomacyTuning.Goodwill_PeaceTalksTriumphRange.RandomInRange;
-			base.Faction.TryAffectGoodwillWith(Faction.OfPlayer, randomInRange, canSendMessage: false, canSendHostilityLetter: false);
-			ThingSetMakerParams parms = default(ThingSetMakerParams);
-			parms.makingFaction = base.Faction;
-			parms.techLevel = base.Faction.def.techLevel;
-			parms.maxTotalMass = 20f;
-			parms.totalMarketValueRange = new FloatRange(500f, 1200f);
-			parms.tile = base.Tile;
+			Faction.OfPlayer.TryAffectGoodwillWith(base.Faction, randomInRange, canSendMessage: false, canSendHostilityLetter: false, HistoryEventDefOf.PeaceTalksTriumph);
+			ThingSetMakerParams parms = new ThingSetMakerParams
+			{
+				makingFaction = base.Faction,
+				techLevel = base.Faction.def.techLevel,
+				maxTotalMass = 20f,
+				totalMarketValueRange = new FloatRange(500f, 1200f),
+				tile = base.Tile
+			};
 			List<Thing> list = ThingSetMakerDefOf.Reward_ItemsStandard.root.Generate(parms);
 			for (int i = 0; i < list.Count; i++)
 			{
@@ -186,9 +190,24 @@ namespace RimWorld.Planet
 			return text;
 		}
 
-		private static float GetBadOutcomeWeightFactor(Pawn diplomat)
+		private static float GetBadOutcomeWeightFactor(Pawn diplomat, Caravan caravan)
 		{
-			return GetBadOutcomeWeightFactor(diplomat.GetStatValue(StatDefOf.NegotiationAbility));
+			float statValue = diplomat.GetStatValue(StatDefOf.NegotiationAbility);
+			float num = 0f;
+			if (ModsConfig.IdeologyActive)
+			{
+				bool flag = false;
+				foreach (Pawn pawn in caravan.pawns)
+				{
+					if (pawn == caravan.Faction.leader)
+					{
+						flag = true;
+						break;
+					}
+				}
+				num = (flag ? (-0.05f) : 0.05f);
+			}
+			return GetBadOutcomeWeightFactor(statValue) * (1f + num);
 		}
 
 		private static float GetBadOutcomeWeightFactor(float negotationAbility)

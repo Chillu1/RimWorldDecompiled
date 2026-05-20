@@ -11,6 +11,8 @@ namespace Verse
 
 		public Thing bondedWeapon;
 
+		private static List<KeyBindingDef> tmpKeybindings = new List<KeyBindingDef>();
+
 		public ThingWithComps Primary
 		{
 			get
@@ -50,17 +52,7 @@ namespace Verse
 			}
 		}
 
-		public CompEquippable PrimaryEq
-		{
-			get
-			{
-				if (Primary == null)
-				{
-					return null;
-				}
-				return Primary.GetComp<CompEquippable>();
-			}
-		}
+		public CompEquippable PrimaryEq => Primary?.GetComp<CompEquippable>();
 
 		public List<ThingWithComps> AllEquipmentListForReading => equipment.InnerListForReading;
 
@@ -112,13 +104,12 @@ namespace Verse
 			List<ThingWithComps> allEquipmentListForReading = AllEquipmentListForReading;
 			for (int i = 0; i < allEquipmentListForReading.Count; i++)
 			{
-				allEquipmentListForReading[i].GetComp<CompEquippable>().verbTracker.VerbsTick();
+				ThingWithComps thingWithComps = allEquipmentListForReading[i];
+				if (thingWithComps.def.tickerType != TickerType.Normal)
+				{
+					thingWithComps.GetComp<CompEquippable>().verbTracker.VerbsTick();
+				}
 			}
-		}
-
-		public void EquipmentTrackerTickRare()
-		{
-			equipment.ThingOwnerTickRare();
 		}
 
 		public bool HasAnything()
@@ -128,16 +119,26 @@ namespace Verse
 
 		public void MakeRoomFor(ThingWithComps eq)
 		{
-			if (eq.def.equipmentType == EquipmentType.Primary && Primary != null)
+			MakeRoomFor(eq, out var _);
+		}
+
+		public void MakeRoomFor(ThingWithComps eq, out ThingWithComps dropped)
+		{
+			dropped = null;
+			if (eq.def.equipmentType != EquipmentType.Primary || Primary == null)
 			{
-				if (TryDropEquipment(Primary, out var resultingEq, pawn.Position))
+				return;
+			}
+			if (TryDropEquipment(Primary, out dropped, pawn.Position))
+			{
+				if (dropped != null)
 				{
-					resultingEq?.SetForbidden(value: false);
+					dropped.SetForbidden(value: false);
 				}
-				else
-				{
-					Log.Error(string.Concat(pawn, " couldn't make room for equipment ", eq));
-				}
+			}
+			else
+			{
+				Log.Error(pawn?.ToString() + " couldn't make room for equipment " + eq);
 			}
 		}
 
@@ -150,7 +151,7 @@ namespace Verse
 		{
 			if (!pos.IsValid)
 			{
-				Log.Error(string.Concat(pawn, " tried to drop ", eq, " at invalid cell."));
+				Log.Error(pawn?.ToString() + " tried to drop " + eq?.ToString() + " at invalid cell.");
 				resultingEq = null;
 				return false;
 			}
@@ -165,11 +166,15 @@ namespace Verse
 			return false;
 		}
 
-		public void DropAllEquipment(IntVec3 pos, bool forbid = true)
+		public void DropAllEquipment(IntVec3 pos, bool forbid = true, bool rememberPrimary = false)
 		{
 			for (int num = equipment.Count - 1; num >= 0; num--)
 			{
-				TryDropEquipment(equipment[num], out var _, pos, forbid);
+				bool flag = equipment[num] == Primary;
+				if (TryDropEquipment(equipment[num], out var resultingEq, pos, forbid) && rememberPrimary && flag)
+				{
+					pawn.mindState.droppedWeapon = resultingEq;
+				}
 			}
 		}
 
@@ -182,7 +187,7 @@ namespace Verse
 		{
 			if (!equipment.Contains(eq))
 			{
-				Log.Warning(string.Concat("Tried to destroy equipment ", eq, " but it's not here."));
+				Log.Warning("Tried to destroy equipment " + eq?.ToString() + " but it's not here.");
 				return;
 			}
 			Remove(eq);
@@ -215,37 +220,83 @@ namespace Verse
 		{
 			if (newEq.def.equipmentType == EquipmentType.Primary && Primary != null)
 			{
-				Log.Error(string.Concat("Pawn ", pawn.LabelCap, " got primaryInt equipment ", newEq, " while already having primaryInt equipment ", Primary));
+				Log.Error("Pawn " + pawn.LabelCap + " got primaryInt equipment " + newEq?.ToString() + " while already having primaryInt equipment " + Primary);
 			}
-			else
+			else if (equipment.TryAdd(newEq) && newEq.def.equipmentType == EquipmentType.Primary)
 			{
-				equipment.TryAdd(newEq);
+				pawn.mindState.droppedWeapon = null;
 			}
 		}
 
 		public IEnumerable<Gizmo> GetGizmos()
 		{
+			if (Primary != null)
+			{
+				foreach (Gizmo item in PrimaryEq.CompGetEquippedGizmosExtra())
+				{
+					yield return item;
+				}
+			}
 			if (!PawnAttackGizmoUtility.CanShowEquipmentGizmos())
 			{
 				yield break;
 			}
-			List<ThingWithComps> list = AllEquipmentListForReading;
-			for (int i = 0; i < list.Count; i++)
+			try
 			{
-				ThingWithComps thingWithComps = list[i];
-				foreach (Command verbsCommand in thingWithComps.GetComp<CompEquippable>().GetVerbsCommands())
+				tmpKeybindings.Add(KeyBindingDefOf.Misc1);
+				tmpKeybindings.Add(KeyBindingDefOf.Misc2);
+				tmpKeybindings.Add(KeyBindingDefOf.Misc3);
+				List<ThingWithComps> list = AllEquipmentListForReading;
+				ThingWithComps primaryMelee = list.FirstOrDefault((ThingWithComps w) => w.def.IsMeleeWeapon);
+				ThingWithComps primaryRanged = list.FirstOrDefault((ThingWithComps w) => w.def.IsRangedWeapon);
+				if (primaryMelee != null)
 				{
-					switch (i)
+					KeyBindingDef misc = KeyBindingDefOf.Misc2;
+					foreach (Gizmo item2 in YieldGizmos(primaryMelee, misc))
 					{
-					case 0:
-						verbsCommand.hotKey = KeyBindingDefOf.Misc1;
-						break;
-					case 1:
-						verbsCommand.hotKey = KeyBindingDefOf.Misc2;
-						break;
-					case 2:
-						verbsCommand.hotKey = KeyBindingDefOf.Misc3;
-						break;
+						yield return item2;
+					}
+				}
+				if (primaryRanged != null)
+				{
+					KeyBindingDef misc2 = KeyBindingDefOf.Misc1;
+					foreach (Gizmo item3 in YieldGizmos(primaryRanged, misc2))
+					{
+						yield return item3;
+					}
+				}
+				for (int i = 0; i < list.Count; i++)
+				{
+					ThingWithComps thingWithComps = list[i];
+					if (thingWithComps == primaryMelee || thingWithComps == primaryRanged)
+					{
+						continue;
+					}
+					foreach (Gizmo item4 in YieldGizmos(thingWithComps))
+					{
+						yield return item4;
+					}
+				}
+			}
+			finally
+			{
+				tmpKeybindings.Clear();
+			}
+			static IEnumerable<Gizmo> YieldGizmos(ThingWithComps eq, KeyBindingDef preferredHotKey = null)
+			{
+				foreach (Command verbsCommand in eq.GetComp<CompEquippable>().GetVerbsCommands())
+				{
+					if (tmpKeybindings.Count > 0)
+					{
+						if (preferredHotKey != null && tmpKeybindings.Contains(preferredHotKey))
+						{
+							verbsCommand.hotKey = preferredHotKey;
+							tmpKeybindings.Remove(preferredHotKey);
+						}
+						else
+						{
+							verbsCommand.hotKey = tmpKeybindings.Pop();
+						}
 					}
 					yield return verbsCommand;
 				}
@@ -268,16 +319,28 @@ namespace Verse
 
 		public void Notify_EquipmentRemoved(ThingWithComps eq)
 		{
-			eq.GetComp<CompEquippable>()?.Notify_EquipmentLost();
+			eq.Notify_Unequipped(pawn);
 			if (ModsConfig.RoyaltyActive)
 			{
 				eq.TryGetComp<CompBladelinkWeapon>()?.Notify_EquipmentLost(pawn);
+			}
+			if (ModsConfig.OdysseyActive)
+			{
+				eq.TryGetComp<CompUniqueWeapon>()?.Notify_EquipmentLost(pawn);
+			}
+		}
+
+		public void Notify_AbilityUsed(Ability ability)
+		{
+			if (PrimaryEq is CompEquippableAbility compEquippableAbility && ability == compEquippableAbility.AbilityForReading)
+			{
+				compEquippableAbility.UsedOnce();
 			}
 		}
 
 		public void Notify_PawnSpawned()
 		{
-			if (HasAnything() && pawn.Downed && pawn.GetPosture() != PawnPosture.LayingInBed)
+			if (!pawn.BeingTransportedOnGravship && HasAnything() && pawn.Downed && !pawn.GetPosture().InBed())
 			{
 				if (pawn.kindDef.destroyGearOnDrop)
 				{
@@ -294,7 +357,7 @@ namespace Verse
 		{
 			if (ModsConfig.RoyaltyActive && bondedWeapon != null)
 			{
-				bondedWeapon.TryGetComp<CompBladelinkWeapon>()?.UnBond();
+				bondedWeapon.TryGetComp<CompBladelinkWeapon>()?.UnCode();
 			}
 		}
 

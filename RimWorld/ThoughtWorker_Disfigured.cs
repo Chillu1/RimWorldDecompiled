@@ -14,11 +14,19 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!RelationsUtility.IsDisfigured(other))
+			if (!RelationsUtility.IsDisfigured(other, pawn))
 			{
 				return false;
 			}
-			if (!pawn.health.capacities.CapableOf(PawnCapacityDefOf.Sight))
+			if (PawnUtility.IsBiologicallyBlind(pawn))
+			{
+				return false;
+			}
+			if (!pawn.story.CaresAboutOthersAppearance)
+			{
+				return false;
+			}
+			if (pawn.Ideo != null && pawn.Ideo.IdeoApprovesOfBlindness() && !RelationsUtility.IsDisfigured(other, pawn, ignoreSightSources: true) && (PawnUtility.IsBiologicallyBlind(other) || ThoughtWorker_Precept_HalfBlind.IsHalfBlind(other)))
 			{
 				return false;
 			}

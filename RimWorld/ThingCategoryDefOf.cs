@@ -7,13 +7,15 @@ namespace RimWorld
 	{
 		public static ThingCategoryDef Foods;
 
-		public static ThingCategoryDef FoodMeals;
-
 		public static ThingCategoryDef Manufactured;
 
 		public static ThingCategoryDef Root;
 
 		public static ThingCategoryDef Apparel;
+
+		public static ThingCategoryDef ApparelArmor;
+
+		public static ThingCategoryDef ApparelUtility;
 
 		public static ThingCategoryDef PlantFoodRaw;
 
@@ -51,17 +53,39 @@ namespace RimWorld
 
 		public static ThingCategoryDef Leathers;
 
+		public static ThingCategoryDef Textiles;
+
+		public static ThingCategoryDef Wools;
+
 		public static ThingCategoryDef Buildings;
+
+		public static ThingCategoryDef BuildingsSpecial;
 
 		public static ThingCategoryDef Corpses;
 
 		public static ThingCategoryDef CorpsesHumanlike;
 
+		public static ThingCategoryDef CorpsesAnimal;
+
 		public static ThingCategoryDef CorpsesMechanoid;
 
-		public static ThingCategoryDef CorpsesInsect;
+		public static ThingCategoryDef EggsUnfertilized;
 
-		public static ThingCategoryDef CorpsesAnimal;
+		public static ThingCategoryDef EggsFertilized;
+
+		public static ThingCategoryDef Animals;
+
+		public static ThingCategoryDef ArmorHeadgear;
+
+		public static ThingCategoryDef Stumps;
+
+		public static ThingCategoryDef BookEffects;
+
+		[MayRequireOdyssey]
+		public static ThingCategoryDef Fish;
+
+		[MayRequireOdyssey]
+		public static ThingCategoryDef WeaponsUnique;
 
 		static ThingCategoryDefOf()
 		{

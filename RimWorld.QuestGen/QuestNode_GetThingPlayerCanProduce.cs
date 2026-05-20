@@ -65,28 +65,28 @@ namespace RimWorld.QuestGen
 			{
 				return false;
 			}
-			float x2 = slate.Get("points", 0f);
+			float x = slate.Get("points", 0f);
 			SimpleCurve value = pointsToMaxItemMarketValueCurve.GetValue(slate);
 			float num = maxMarketValueFactor.GetValue(slate) ?? 1f;
-			float maxMarketValue = value.Evaluate(x2) * num;
+			float maxMarketValue = value.Evaluate(x) * num;
 			SimpleCurve value2 = pointsToRequiredWorkCurve.GetValue(slate);
 			float randomInRange = (workAmountRandomFactorRange.GetValue(slate) ?? FloatRange.One).RandomInRange;
-			float num2 = value2.Evaluate(x2) * randomInRange;
+			float num2 = value2.Evaluate(x) * randomInRange;
 			tmpCandidates.Clear();
-			for (int j = 0; j < allWorkTables.Count; j++)
+			for (int i = 0; i < allWorkTables.Count; i++)
 			{
-				if (BuildCopyCommandUtility.FindAllowedDesignator(allWorkTables[j]) == null)
+				if (BuildCopyCommandUtility.FindAllowedDesignator(allWorkTables[i]) == null)
 				{
 					continue;
 				}
-				List<RecipeDef> recipes = allWorkTables[j].AllRecipes;
-				for (int i = 0; i < recipes.Count; i++)
+				List<RecipeDef> recipes = allWorkTables[i].AllRecipes;
+				for (int j = 0; j < recipes.Count; j++)
 				{
-					if (!recipes[i].AvailableNow || !recipes[i].products.Any() || recipes[i].PotentiallyMissingIngredients(null, map).Any())
+					if (!recipes[j].AvailableNow || !recipes[j].products.Any() || recipes[j].PotentiallyMissingIngredients(null, map).Any())
 					{
 						continue;
 					}
-					foreach (ThingDef stuff in recipes[i].products[0].thingDef.MadeFromStuff ? GenStuff.AllowedStuffsFor(recipes[i].products[0].thingDef) : Gen.YieldSingle<ThingDef>(null))
+					foreach (ThingDef stuff in recipes[j].products[0].thingDef.MadeFromStuff ? GenStuff.AllowedStuffsFor(recipes[j].products[0].thingDef) : Gen.YieldSingle<ThingDef>(null))
 					{
 						if (stuff != null && (!map.listerThings.ThingsOfDef(stuff).Any() || stuff.stuffProps.commonality < minStuffCommonality.GetValue(slate)))
 						{
@@ -101,7 +101,7 @@ namespace RimWorld.QuestGen
 								num3 += list[k].stackCount;
 							}
 						}
-						float num4 = recipes[i].WorkAmountTotal(stuff);
+						float num4 = recipes[j].WorkAmountForStuff(stuff);
 						if (!(num4 > 0f))
 						{
 							continue;
@@ -109,18 +109,18 @@ namespace RimWorld.QuestGen
 						int num5 = Mathf.FloorToInt(num2 / num4);
 						if (stuff != null)
 						{
-							IngredientCount ingredientCount = recipes[i].ingredients.Where((IngredientCount x) => x.filter.Allows(stuff)).MaxByWithFallback((IngredientCount x) => x.CountRequiredOfFor(stuff, recipes[i]));
-							num5 = Mathf.Min(num5, Mathf.FloorToInt((float)num3 / (float)ingredientCount.CountRequiredOfFor(stuff, recipes[i])));
+							IngredientCount ingredientCount = recipes[j].ingredients.Where((IngredientCount ingredientCount2) => ingredientCount2.filter.Allows(stuff)).MaxByWithFallback((IngredientCount ingredientCount2) => ingredientCount2.CountRequiredOfFor(stuff, recipes[j]));
+							num5 = Mathf.Min(num5, Mathf.FloorToInt((float)num3 / (float)ingredientCount.CountRequiredOfFor(stuff, recipes[j])));
 						}
 						if (num5 > 0)
 						{
-							tmpCandidates.Add(new Pair<ThingStuffPair, int>(new ThingStuffPair(recipes[i].products[0].thingDef, stuff), recipes[i].products[0].count * num5));
+							tmpCandidates.Add(new Pair<ThingStuffPair, int>(new ThingStuffPair(recipes[j].products[0].thingDef, stuff), recipes[j].products[0].count * num5));
 						}
 					}
 				}
 			}
-			tmpCandidates.RemoveAll((Pair<ThingStuffPair, int> x) => x.Second <= 0);
-			tmpCandidates.RemoveAll((Pair<ThingStuffPair, int> x) => StatDefOf.MarketValue.Worker.GetValueAbstract(x.First.thing, x.First.stuff) > maxMarketValue);
+			tmpCandidates.RemoveAll((Pair<ThingStuffPair, int> pair2) => pair2.Second <= 0);
+			tmpCandidates.RemoveAll((Pair<ThingStuffPair, int> pair2) => StatDefOf.MarketValue.Worker.GetValueAbstract(pair2.First.thing, pair2.First.stuff) > maxMarketValue);
 			if (!tmpCandidates.Any())
 			{
 				return false;

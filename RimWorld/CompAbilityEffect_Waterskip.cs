@@ -13,6 +13,10 @@ namespace RimWorld
 			Map map = parent.pawn.Map;
 			foreach (IntVec3 item in AffectedCells(target, map))
 			{
+				if (!item.InBounds(map))
+				{
+					continue;
+				}
 				List<Thing> thingList = item.GetThingList(map);
 				for (int num = thingList.Count - 1; num >= 0; num--)
 				{
@@ -20,23 +24,26 @@ namespace RimWorld
 					{
 						thingList[num].Destroy();
 					}
+					else if (thingList[num] is Pawn pawn)
+					{
+						pawn.GetInvisibilityComp()?.DisruptInvisibility();
+					}
 				}
 				if (!item.Filled(map))
 				{
 					FilthMaker.TryMakeFilth(item, map, ThingDefOf.Filth_Water);
 				}
-				Mote mote = MoteMaker.MakeStaticMote(item.ToVector3Shifted(), map, ThingDefOf.Mote_WaterskipSplashParticles);
-				if (mote != null)
-				{
-					mote.rotationRate = Rand.Range(-30f, 30f);
-					mote.exactRotation = 90 * Rand.RangeInclusive(0, 3);
-				}
+				FleckCreationData dataStatic = FleckMaker.GetDataStatic(item.ToVector3Shifted(), map, FleckDefOf.WaterskipSplashParticles);
+				dataStatic.rotationRate = Rand.Range(-30, 30);
+				dataStatic.rotation = 90 * Rand.RangeInclusive(0, 3);
+				map.flecks.CreateFleck(dataStatic);
+				CompAbilityEffect_Teleport.SendSkipUsedSignal(item, parent.pawn);
 			}
 		}
 
 		private IEnumerable<IntVec3> AffectedCells(LocalTargetInfo target, Map map)
 		{
-			if (target.Cell.Filled(parent.pawn.Map))
+			if (!target.Cell.InBounds(map) || target.Cell.Filled(parent.pawn.Map))
 			{
 				yield break;
 			}

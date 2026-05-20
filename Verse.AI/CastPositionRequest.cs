@@ -1,3 +1,5 @@
+using System;
+
 namespace Verse.AI
 {
 	public struct CastPositionRequest
@@ -17,6 +19,10 @@ namespace Verse.AI
 		public float maxRangeFromLocus;
 
 		public bool wantCoverFromTarget;
+
+		public IntVec3? preferredCastPosition;
+
+		public Func<IntVec3, bool> validator;
 
 		public int maxRegions;
 	}

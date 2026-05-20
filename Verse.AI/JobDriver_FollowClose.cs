@@ -41,12 +41,12 @@ namespace Verse.AI
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			this.FailOnDespawnedOrNull(TargetIndex.A);
-			Toil toil = new Toil();
-			toil.tickAction = delegate
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
+			toil.tickIntervalAction = delegate(int delta)
 			{
 				Pawn followee = Followee;
 				float followRadius = job.followRadius;
-				if (!pawn.pather.Moving || pawn.IsHashIntervalTick(30))
+				if (!pawn.pather.Moving || pawn.IsHashIntervalTick(30, delta))
 				{
 					bool flag = false;
 					if (CurrentlyWalkingToFollowee)

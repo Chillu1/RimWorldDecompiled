@@ -7,25 +7,13 @@ namespace RimWorld
 	{
 		protected float fullness;
 
-		protected abstract int GatherResourcesIntervalDays
-		{
-			get;
-		}
+		protected abstract int GatherResourcesIntervalDays { get; }
 
-		protected abstract int ResourceAmount
-		{
-			get;
-		}
+		protected abstract int ResourceAmount { get; }
 
-		protected abstract ThingDef ResourceDef
-		{
-			get;
-		}
+		protected abstract ThingDef ResourceDef { get; }
 
-		protected abstract string SaveKey
-		{
-			get;
-		}
+		protected abstract string SaveKey { get; }
 
 		public float Fullness => fullness;
 
@@ -68,8 +56,7 @@ namespace RimWorld
 			if (Active)
 			{
 				float num = 1f / (float)(GatherResourcesIntervalDays * 60000);
-				Pawn pawn = parent as Pawn;
-				if (pawn != null)
+				if (parent is Pawn pawn)
 				{
 					num *= PawnUtility.BodyResourceGrowthSpeed(pawn);
 				}
@@ -85,7 +72,7 @@ namespace RimWorld
 		{
 			if (!Active)
 			{
-				Log.Error(string.Concat(doer, " gathered body resources while not Active: ", parent));
+				Log.Error(doer?.ToString() + " gathered body resources while not Active: " + parent);
 			}
 			if (!Rand.Chance(doer.GetStatValue(StatDefOf.AnimalGatherYield)))
 			{

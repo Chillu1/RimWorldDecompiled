@@ -24,6 +24,8 @@ namespace RimWorld
 
 		public bool paintable;
 
+		public bool groupable;
+
 		public TrainableDef trainable;
 
 		public int gap;
@@ -31,6 +33,10 @@ namespace RimWorld
 		public WorkTypeDef workType;
 
 		public bool moveWorkTypeLabelDown;
+
+		public bool showIcon;
+
+		public bool useLabelShort;
 
 		public int widthPriority;
 

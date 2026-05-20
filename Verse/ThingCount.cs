@@ -12,14 +12,14 @@ namespace Verse
 
 		public int Count => count;
 
-		public ThingCount(Thing thing, int count)
+		public ThingCount(Thing thing, int count, bool ignoreStackLimit = false)
 		{
 			if (count < 0)
 			{
 				Log.Warning("Tried to set ThingCount stack count to " + count + ". thing=" + thing);
 				count = 0;
 			}
-			if (count > thing.stackCount)
+			if (count > thing.stackCount && !ignoreStackLimit)
 			{
 				Log.Warning("Tried to set ThingCount stack count to " + count + ", but thing's stack count is only " + thing.stackCount + ". thing=" + thing);
 				count = thing.stackCount;

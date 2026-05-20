@@ -1,4 +1,5 @@
 using Verse;
+using Verse.Steam;
 
 namespace RimWorld
 {
@@ -16,14 +17,14 @@ namespace RimWorld
 
 		private static void CreateNewVersionDialog()
 		{
-			string value = LastPlayedVersion.Version.Major + "." + LastPlayedVersion.Version.Minor;
-			string value2 = VersionControl.CurrentMajor + "." + VersionControl.CurrentMinor;
-			string str = "GameUpdatedToNewVersionInitial".Translate(value, value2);
-			str += "\n\n";
-			str = ((!BackCompatibility.IsSaveCompatibleWith(LastPlayedVersion.Version.ToString())) ? ((string)(str + "GameUpdatedToNewVersionSavesIncompatible".Translate())) : ((string)(str + "GameUpdatedToNewVersionSavesCompatible".Translate())));
-			str += "\n\n";
-			str += "GameUpdatedToNewVersionSteam".Translate();
-			Find.WindowStack.Add(new Dialog_MessageBox(str));
+			string text = LastPlayedVersion.Version.Major + "." + LastPlayedVersion.Version.Minor;
+			string text2 = VersionControl.CurrentMajor + "." + VersionControl.CurrentMinor;
+			string text3 = "GameUpdatedToNewVersionInitial".Translate(text, text2);
+			text3 += "\n\n";
+			text3 = ((!BackCompatibility.IsSaveCompatibleWith(LastPlayedVersion.Version.ToString())) ? ((string)(text3 + "GameUpdatedToNewVersionSavesIncompatible".Translate())) : ((string)(text3 + "GameUpdatedToNewVersionSavesCompatible".Translate())));
+			text3 += "\n\n";
+			text3 = ((!SteamDeck.IsSteamDeckInNonKeyboardMode) ? ((string)(text3 + "GameUpdatedToNewVersionSteam".Translate())) : ((string)(text3 + "GameUpdatedToNewVersionSteamController".Translate())));
+			Find.WindowStack.Add(new Dialog_MessageBox(text3));
 			dialogDone = true;
 		}
 	}

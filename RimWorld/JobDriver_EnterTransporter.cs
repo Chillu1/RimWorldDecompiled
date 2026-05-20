@@ -20,15 +20,25 @@ namespace RimWorld
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			this.FailOnDespawnedOrNull(TransporterInd);
-			this.FailOn(() => !Transporter.LoadingInProgressOrReadyToLaunch);
-			this.FailOn(() => Shuttle != null && !Shuttle.IsAllowedNow(pawn));
+			this.FailOn(() => Shuttle != null && !Shuttle.IsAllowed(pawn));
 			yield return Toils_Goto.GotoThing(TransporterInd, PathEndMode.Touch);
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
-				CompTransporter transporter = Transporter;
-				pawn.DeSpawn();
-				transporter.GetDirectlyHeldThings().TryAdd(pawn);
+				if (job.playerForced || !LoadTransportersJobUtility.HasJobOnTransporter(pawn, Transporter))
+				{
+					if (!Transporter.LoadingInProgressOrReadyToLaunch)
+					{
+						TransporterUtility.InitiateLoading(Gen.YieldSingle(Transporter));
+					}
+					CompTransporter transporter = Transporter;
+					bool flag = pawn.DeSpawnOrDeselect();
+					transporter.GetDirectlyHeldThings().TryAdd(pawn);
+					if (flag)
+					{
+						Find.Selector.Select(pawn, playSound: false, forceDesignatorDeselect: false);
+					}
+				}
 			};
 			yield return toil;
 		}

@@ -20,7 +20,7 @@ namespace RimWorld
 				List<WorkTypeDef> list = DefDatabase<WorkTypeDef>.AllDefsListForReading;
 				for (int i = 0; i < list.Count; i++)
 				{
-					if ((disabledWorkTags & list[i].workTags) != 0)
+					if ((disabledWorkTags & list[i].workTags) != WorkTags.None)
 					{
 						yield return list[i];
 					}

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Verse;
 
 namespace RimWorld
@@ -15,6 +14,8 @@ namespace RimWorld
 
 			public readonly Thing forThing;
 
+			public readonly ThingDef def;
+
 			public readonly List<MeditationFocusOffsetPerBuilding> defs;
 
 			public CellRequest(IntVec3 c, float r, List<MeditationFocusOffsetPerBuilding> d, Thing t = null)
@@ -23,29 +24,51 @@ namespace RimWorld
 				radius = r;
 				defs = d;
 				forThing = t;
+				def = null;
+			}
+
+			public CellRequest(IntVec3 c, float r, ThingDef d, Thing t = null)
+			{
+				cell = c;
+				radius = r;
+				def = d;
+				defs = null;
+				forThing = t;
 			}
 
 			public bool Equals(CellRequest other)
 			{
-				if (cell.Equals(other.cell) && radius.Equals(other.radius) && GenCollection.ListsEqual(defs, other.defs))
+				if (cell.Equals(other.cell))
 				{
-					return forThing == other.forThing;
+					float num = radius;
+					if (num.Equals(other.radius) && GenCollection.ListsEqual(defs, other.defs) && def == other.def)
+					{
+						return forThing == other.forThing;
+					}
 				}
 				return false;
 			}
 
 			public override int GetHashCode()
 			{
-				IntVec3 intVec = cell;
-				int hashCode = intVec.GetHashCode();
-				hashCode = (hashCode * 397) ^ radius.GetHashCode();
+				int hashCode = cell.GetHashCode();
+				int num = hashCode * 397;
+				float num2 = radius;
+				hashCode = num ^ num2.GetHashCode();
 				if (forThing != null)
 				{
 					hashCode = (hashCode * 397) ^ forThing.GetHashCode();
 				}
-				for (int i = 0; i < defs.Count; i++)
+				if (defs != null)
 				{
-					hashCode ^= defs[i].GetHashCode();
+					for (int i = 0; i < defs.Count; i++)
+					{
+						hashCode ^= defs[i].GetHashCode();
+					}
+				}
+				if (def != null)
+				{
+					hashCode ^= def.GetHashCode();
 				}
 				return hashCode;
 			}
@@ -76,23 +99,41 @@ namespace RimWorld
 			if (!requestCache.TryGetValue(key, out var value))
 			{
 				value = new List<Thing>();
-				foreach (Thing t2 in GenRadial.RadialDistinctThingsAround(cell, map, radius, useCenter: false))
+				foreach (Thing t in GenRadial.RadialDistinctThingsAround(cell, map, radius, useCenter: false))
 				{
-					if (defs.Any((MeditationFocusOffsetPerBuilding d) => d.building == t2.def) && t2.GetRoom() == cell.GetRoom(map) && t2 != forThing)
+					if (defs.Any((MeditationFocusOffsetPerBuilding d) => d.building == t.def) && t.GetRoom() == cell.GetRoom(map) && t != forThing)
 					{
-						value.Add(t2);
+						value.Add(t);
 					}
 				}
-				value.SortBy(delegate(Thing t)
+				value.SortBy(delegate(Thing thing)
 				{
-					float num = t.Position.DistanceTo(cell);
-					MeditationFocusOffsetPerBuilding meditationFocusOffsetPerBuilding = defs.FirstOrDefault((MeditationFocusOffsetPerBuilding d) => d.building == t.def);
+					float num = thing.Position.DistanceTo(cell);
+					MeditationFocusOffsetPerBuilding meditationFocusOffsetPerBuilding = defs.FirstOrDefault((MeditationFocusOffsetPerBuilding d) => d.building == thing.def);
 					if (meditationFocusOffsetPerBuilding != null)
 					{
 						num -= meditationFocusOffsetPerBuilding.offset * 100000f;
 					}
 					return num;
 				});
+				requestCache[key] = value;
+			}
+			return value;
+		}
+
+		public List<Thing> GetForCell(IntVec3 cell, float radius, ThingDef def, Thing forThing = null)
+		{
+			CellRequest key = new CellRequest(cell, radius, def, forThing);
+			if (!requestCache.TryGetValue(key, out var value))
+			{
+				value = new List<Thing>();
+				foreach (Thing item in GenRadial.RadialDistinctThingsAround(cell, map, radius, useCenter: false))
+				{
+					if (def == item.def && item.GetRoom() == cell.GetRoom(map) && item != forThing)
+					{
+						value.Add(item);
+					}
+				}
 				requestCache[key] = value;
 			}
 			return value;

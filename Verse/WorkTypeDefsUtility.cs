@@ -47,12 +47,28 @@ namespace Verse
 				return "WorkTagMining".Translate();
 			case WorkTags.Hunting:
 				return "WorkTagHunting".Translate();
+			case WorkTags.Constructing:
+				return "WorkTagConstructing".Translate();
+			case WorkTags.Shooting:
+				return "WorkTagShooting".Translate();
 			case WorkTags.AllWork:
 				return "WorkTagAllWork".Translate();
 			default:
-				Log.Error("Unknown or mixed worktags for naming: " + (int)tags);
+			{
+				int num = (int)tags;
+				Log.Error("Unknown or mixed worktags for naming: " + num);
 				return "Worktag";
 			}
+			}
+		}
+
+		public static bool ExactlyOneWorkTagSet(this WorkTags workTags)
+		{
+			if (workTags != WorkTags.None)
+			{
+				return (workTags & (workTags - 1)) == 0;
+			}
+			return false;
 		}
 
 		public static bool OverlapsWithOnAnyWorkType(this WorkTags a, WorkTags b)
@@ -61,7 +77,7 @@ namespace Verse
 			for (int i = 0; i < allDefsListForReading.Count; i++)
 			{
 				WorkTypeDef workTypeDef = allDefsListForReading[i];
-				if ((workTypeDef.workTags & a) != 0 && (workTypeDef.workTags & b) != 0)
+				if ((workTypeDef.workTags & a) != WorkTags.None && (workTypeDef.workTags & b) != WorkTags.None)
 				{
 					return true;
 				}

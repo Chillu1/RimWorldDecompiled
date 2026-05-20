@@ -15,13 +15,19 @@ namespace RimWorld
 
 		private static Vector2 scrollPosition;
 
+		private static ScrollPositioner scrollPositioner = new ScrollPositioner();
+
 		private static Vector2 scrollPositionRightPanel;
+
+		private static QuickSearchWidget quickSearchWidget = new QuickSearchWidget();
 
 		private static float listHeight;
 
 		private static float rightPanelHeight;
 
 		private static List<StatDrawEntry> cachedDrawEntries = new List<StatDrawEntry>();
+
+		private static List<string> cachedEntryValues = new List<string>();
 
 		public static int SelectedStatIndex
 		{
@@ -35,26 +41,30 @@ namespace RimWorld
 			}
 		}
 
+		public static QuickSearchWidget QuickSearchWidget => quickSearchWidget;
+
 		public static void Reset()
 		{
 			scrollPosition = default(Vector2);
 			scrollPositionRightPanel = default(Vector2);
 			selectedEntry = null;
+			scrollPositioner.Arm(armed: false);
 			mousedOverEntry = null;
 			cachedDrawEntries.Clear();
+			cachedEntryValues.Clear();
+			quickSearchWidget.Reset();
 			PermitsCardUtility.selectedPermit = null;
-			PermitsCardUtility.selectedFaction = Find.FactionManager.AllFactions.FirstOrDefault((Faction x) => x.def.HasRoyalTitles);
+			PermitsCardUtility.selectedFaction = ((ModLister.RoyaltyInstalled && Current.ProgramState == ProgramState.Playing) ? Faction.OfEmpire : null);
 		}
 
 		public static void DrawStatsReport(Rect rect, Def def, ThingDef stuff)
 		{
 			if (cachedDrawEntries.NullOrEmpty())
 			{
-				BuildableDef buildableDef = def as BuildableDef;
-				StatRequest req = ((buildableDef != null) ? StatRequest.For(buildableDef, stuff) : StatRequest.ForEmpty());
+				StatRequest req = ((def is BuildableDef def2) ? StatRequest.For(def2, stuff) : StatRequest.ForEmpty());
 				cachedDrawEntries.AddRange(def.SpecialDisplayStats(req));
 				cachedDrawEntries.AddRange(from r in StatsToDraw(def, stuff)
-					where r.ShouldDisplay
+					where r.ShouldDisplay()
 					select r);
 				FinalizeCachedDrawEntries(cachedDrawEntries);
 			}
@@ -68,7 +78,7 @@ namespace RimWorld
 				StatRequest req = StatRequest.ForEmpty();
 				cachedDrawEntries.AddRange(def.SpecialDisplayStats(req));
 				cachedDrawEntries.AddRange(from r in StatsToDraw(def)
-					where r.ShouldDisplay
+					where r.ShouldDisplay()
 					select r);
 				FinalizeCachedDrawEntries(cachedDrawEntries);
 			}
@@ -80,13 +90,24 @@ namespace RimWorld
 			if (cachedDrawEntries.NullOrEmpty())
 			{
 				cachedDrawEntries.AddRange(thing.def.SpecialDisplayStats(StatRequest.For(thing)));
-				cachedDrawEntries.AddRange(from r in StatsToDraw(thing)
-					where r.ShouldDisplay
-					select r);
-				cachedDrawEntries.RemoveAll((StatDrawEntry de) => de.stat != null && !de.stat.showNonAbstract);
+				cachedDrawEntries.AddRange(StatsToDraw(thing));
+				cachedDrawEntries.RemoveAll((StatDrawEntry de) => (de.stat != null && !de.stat.showNonAbstract) || !de.ShouldDisplay(thing));
 				FinalizeCachedDrawEntries(cachedDrawEntries);
 			}
 			DrawStatsWorker(rect, thing, null);
+		}
+
+		public static void DrawStatsReport(Rect rect, Hediff hediff)
+		{
+			if (cachedDrawEntries.NullOrEmpty())
+			{
+				cachedDrawEntries.AddRange(hediff.SpecialDisplayStats(StatRequest.ForEmpty()));
+				cachedDrawEntries.AddRange(from r in StatsToDraw(hediff.def, null)
+					where r.ShouldDisplay()
+					select r);
+				FinalizeCachedDrawEntries(cachedDrawEntries);
+			}
+			DrawStatsWorker(rect, null, null);
 		}
 
 		public static void DrawStatsReport(Rect rect, WorldObject worldObject)
@@ -95,7 +116,7 @@ namespace RimWorld
 			{
 				cachedDrawEntries.AddRange(worldObject.def.SpecialDisplayStats(StatRequest.ForEmpty()));
 				cachedDrawEntries.AddRange(from r in StatsToDraw(worldObject)
-					where r.ShouldDisplay
+					where r.ShouldDisplay()
 					select r);
 				cachedDrawEntries.RemoveAll((StatDrawEntry de) => de.stat != null && !de.stat.showNonAbstract);
 				FinalizeCachedDrawEntries(cachedDrawEntries);
@@ -103,13 +124,13 @@ namespace RimWorld
 			DrawStatsWorker(rect, null, worldObject);
 		}
 
-		public static void DrawStatsReport(Rect rect, RoyalTitleDef title, Faction faction)
+		public static void DrawStatsReport(Rect rect, RoyalTitleDef title, Faction faction, Pawn pawn = null)
 		{
 			if (cachedDrawEntries.NullOrEmpty())
 			{
-				cachedDrawEntries.AddRange(title.SpecialDisplayStats(StatRequest.For(title, faction)));
+				cachedDrawEntries.AddRange(title.SpecialDisplayStats(StatRequest.For(title, faction, pawn)));
 				cachedDrawEntries.AddRange(from r in StatsToDraw(title, faction)
-					where r.ShouldDisplay
+					where r.ShouldDisplay(pawn)
 					select r);
 				FinalizeCachedDrawEntries(cachedDrawEntries);
 			}
@@ -123,7 +144,7 @@ namespace RimWorld
 				StatRequest req = StatRequest.ForEmpty();
 				cachedDrawEntries.AddRange(faction.def.SpecialDisplayStats(req));
 				cachedDrawEntries.AddRange(from r in StatsToDraw(faction)
-					where r.ShouldDisplay
+					where r.ShouldDisplay()
 					select r);
 				FinalizeCachedDrawEntries(cachedDrawEntries);
 			}
@@ -133,8 +154,7 @@ namespace RimWorld
 		private static IEnumerable<StatDrawEntry> StatsToDraw(Def def, ThingDef stuff)
 		{
 			yield return DescriptionEntry(def);
-			BuildableDef eDef = def as BuildableDef;
-			if (eDef != null)
+			if (def is BuildableDef eDef)
 			{
 				StatRequest statRequest = StatRequest.For(eDef, stuff);
 				foreach (StatDef item in DefDatabase<StatDef>.AllDefs.Where((StatDef st) => st.Worker.ShouldShowFor(statRequest)))
@@ -142,8 +162,7 @@ namespace RimWorld
 					yield return new StatDrawEntry(item.category, item, eDef.GetStatValueAbstract(item, stuff), StatRequest.For(eDef, stuff));
 				}
 			}
-			ThingDef thingDef = def as ThingDef;
-			if (thingDef == null || !thingDef.IsStuff)
+			if (!(def is ThingDef { IsStuff: not false } thingDef))
 			{
 				yield break;
 			}
@@ -232,12 +251,27 @@ namespace RimWorld
 					yield return new StatDrawEntry(StatCategoryDefOf.StuffStatFactors, stuffDef.stuffProps.statFactors[i].stat, stuffDef.stuffProps.statFactors[i].value, StatRequest.ForEmpty(), ToStringNumberSense.Factor);
 				}
 			}
+			if (!stuffDef.stuffProps.statFactorsQuality.NullOrEmpty())
+			{
+				foreach (StatModifierQuality item in stuffDef.stuffProps.statFactorsQuality)
+				{
+					yield return new StatDrawEntry(StatCategoryDefOf.StuffStatFactors, item.stat, item.ToStringAsFactorRange);
+				}
+			}
 			if (!stuffDef.stuffProps.statOffsets.NullOrEmpty())
 			{
 				for (int i = 0; i < stuffDef.stuffProps.statOffsets.Count; i++)
 				{
 					yield return new StatDrawEntry(StatCategoryDefOf.StuffStatOffsets, stuffDef.stuffProps.statOffsets[i].stat, stuffDef.stuffProps.statOffsets[i].value, StatRequest.ForEmpty(), ToStringNumberSense.Offset);
 				}
+			}
+			if (stuffDef.stuffProps.statOffsetsQuality.NullOrEmpty())
+			{
+				yield break;
+			}
+			foreach (StatModifierQuality item2 in stuffDef.stuffProps.statOffsetsQuality)
+			{
+				yield return new StatDrawEntry(StatCategoryDefOf.StuffStatOffsets, item2.stat, item2.ToStringAsOffsetRange);
 			}
 		}
 
@@ -246,6 +280,33 @@ namespace RimWorld
 			cachedDrawEntries = (from sd in original
 				orderby sd.category.displayOrder, sd.DisplayPriorityWithinCategory descending, sd.LabelCap
 				select sd).ToList();
+			quickSearchWidget.noResultsMatched = !cachedDrawEntries.Any();
+			foreach (StatDrawEntry cachedDrawEntry in cachedDrawEntries)
+			{
+				cachedEntryValues.Add(cachedDrawEntry.ValueString);
+			}
+			if (selectedEntry != null)
+			{
+				selectedEntry = cachedDrawEntries.FirstOrDefault((StatDrawEntry e) => e.Same(selectedEntry));
+			}
+			if (!quickSearchWidget.filter.Active)
+			{
+				return;
+			}
+			foreach (StatDrawEntry cachedDrawEntry2 in cachedDrawEntries)
+			{
+				if (Matches(cachedDrawEntry2))
+				{
+					selectedEntry = cachedDrawEntry2;
+					scrollPositioner.Arm();
+					break;
+				}
+			}
+		}
+
+		private static bool Matches(StatDrawEntry sd)
+		{
+			return quickSearchWidget.filter.Matches(sd.LabelCap);
 		}
 
 		private static StatDrawEntry DescriptionEntry(Def def)
@@ -265,7 +326,7 @@ namespace RimWorld
 
 		private static StatDrawEntry DescriptionEntry(Thing thing)
 		{
-			return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, "Description".Translate(), "", thing.DescriptionFlavor, 99999, null, Dialog_InfoCard.DefsToHyperlinks(thing.def.descriptionHyperlinks));
+			return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, "Description".Translate(), "", thing.DescriptionFlavor, 99999, null, Dialog_InfoCard.DefsToHyperlinks(thing.DescriptionHyperlinks), forceUnfinalizedMode: false, overridesHideStats: true);
 		}
 
 		private static StatDrawEntry DescriptionEntry(WorldObject worldObject)
@@ -319,64 +380,94 @@ namespace RimWorld
 			Rect rect3 = new Rect(rect);
 			rect3.x = rect2.xMax;
 			rect3.width = rect.xMax - rect3.x;
+			scrollPositioner.ClearInterestRects();
 			Text.Font = GameFont.Small;
 			Rect viewRect = new Rect(0f, 0f, rect2.width - 16f, listHeight);
 			Widgets.BeginScrollView(rect2, ref scrollPosition, viewRect);
 			float curY = 0f;
-			string b = null;
+			string text = null;
 			mousedOverEntry = null;
 			for (int i = 0; i < cachedDrawEntries.Count; i++)
 			{
 				StatDrawEntry ent = cachedDrawEntries[i];
-				if ((string)ent.category.LabelCap != b)
+				if (ent.category.LabelCap != text)
 				{
 					Widgets.ListSeparator(ref curY, viewRect.width, ent.category.LabelCap);
-					b = ent.category.LabelCap;
+					text = ent.category.LabelCap;
 				}
-				curY += ent.Draw(8f, curY, viewRect.width - 8f, selectedEntry == ent, delegate
+				bool highlightLabel = false;
+				bool lowlightLabel = false;
+				bool flag = selectedEntry == ent;
+				bool flag2 = false;
+				GUI.color = Color.white;
+				if (quickSearchWidget.filter.Active)
+				{
+					if (Matches(ent))
+					{
+						highlightLabel = true;
+						flag2 = true;
+					}
+					else
+					{
+						lowlightLabel = true;
+					}
+				}
+				Rect rect4 = new Rect(8f, curY, viewRect.width - 8f, 30f);
+				curY = (rect4.yMax = curY + ent.Draw(rect4.x, rect4.y, rect4.width, flag, highlightLabel, lowlightLabel, delegate
 				{
 					SelectEntry(ent);
 				}, delegate
 				{
 					mousedOverEntry = ent;
-				}, scrollPosition, rect2);
+				}, scrollPosition, rect2, cachedEntryValues[i]));
+				if (flag || flag2)
+				{
+					scrollPositioner.RegisterInterestRect(rect4);
+				}
 			}
 			listHeight = curY + 100f;
 			Widgets.EndScrollView();
+			scrollPositioner.ScrollVertically(ref scrollPosition, rect2.size);
 			Rect outRect = rect3.ContractedBy(10f);
 			StatDrawEntry statDrawEntry = selectedEntry ?? mousedOverEntry ?? cachedDrawEntries.FirstOrDefault();
 			if (statDrawEntry == null)
 			{
 				return;
 			}
-			Rect rect4 = new Rect(0f, 0f, outRect.width - 16f, rightPanelHeight);
+			Rect rect5 = new Rect(0f, 0f, outRect.width - 16f, rightPanelHeight);
 			StatRequest statRequest = (statDrawEntry.hasOptionalReq ? statDrawEntry.optionalReq : ((optionalThing == null) ? StatRequest.ForEmpty() : StatRequest.For(optionalThing)));
 			string explanationText = statDrawEntry.GetExplanationText(statRequest);
-			float num = 0f;
-			Widgets.BeginScrollView(outRect, ref scrollPositionRightPanel, rect4);
-			Rect rect5 = rect4;
-			rect5.width -= 4f;
-			Widgets.Label(rect5, explanationText);
-			float num2 = Text.CalcHeight(explanationText, rect5.width) + 10f;
-			num += num2;
+			float num2 = 0f;
+			Widgets.BeginScrollView(outRect, ref scrollPositionRightPanel, rect5);
+			Rect rect6 = rect5;
+			rect6.width -= 4f;
+			Widgets.Label(rect6, explanationText);
+			float num3 = Text.CalcHeight(explanationText, rect6.width) + 10f;
+			num2 += num3;
 			IEnumerable<Dialog_InfoCard.Hyperlink> hyperlinks = statDrawEntry.GetHyperlinks(statRequest);
 			if (hyperlinks != null)
 			{
-				Rect rect6 = new Rect(rect5.x, rect5.y + num2, rect5.width, rect5.height - num2);
+				Rect rect7 = new Rect(rect6.x, rect6.y + num3, rect6.width, rect6.height - num3);
 				Color color = GUI.color;
 				GUI.color = Widgets.NormalOptionColor;
 				foreach (Dialog_InfoCard.Hyperlink item in hyperlinks)
 				{
-					float num3 = Text.CalcHeight(item.Label, rect6.width);
-					Widgets.HyperlinkWithIcon(new Rect(rect6.x, rect6.y, rect6.width, num3), item, "ViewHyperlink".Translate(item.Label));
-					rect6.y += num3;
-					rect6.height -= num3;
-					num += num3;
+					float num4 = Text.CalcHeight(item.Label, rect7.width);
+					Widgets.HyperlinkWithIcon(new Rect(rect7.x, rect7.y, rect7.width, num4), text: item.HasGeneOwnerThing ? item.Label : "ViewHyperlink".Translate(item.Label).ToString(), hyperlink: item);
+					rect7.y += num4;
+					rect7.height -= num4;
+					num2 += num4;
 				}
 				GUI.color = color;
 			}
-			rightPanelHeight = num;
+			rightPanelHeight = num2;
 			Widgets.EndScrollView();
+		}
+
+		public static void Notify_QuickSearchChanged()
+		{
+			cachedDrawEntries.Clear();
+			cachedEntryValues.Clear();
 		}
 	}
 }

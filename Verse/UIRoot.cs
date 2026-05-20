@@ -1,7 +1,9 @@
+using LudeonTK;
 using RimWorld;
 using UnityEngine;
 using Verse.Noise;
 using Verse.Sound;
+using Verse.Steam;
 
 namespace Verse
 {
@@ -9,7 +11,7 @@ namespace Verse
 	{
 		public WindowStack windows = new WindowStack();
 
-		protected DebugWindowsOpener debugWindowOpener = new DebugWindowsOpener();
+		public DebugWindowsOpener debugWindowOpener = new DebugWindowsOpener();
 
 		public ScreenshotModeHandler screenshotMode = new ScreenshotModeHandler();
 
@@ -17,17 +19,32 @@ namespace Verse
 
 		public FeedbackFloaters feedbackFloaters = new FeedbackFloaters();
 
+		public bool HideMotes
+		{
+			get
+			{
+				if (WorldComponent_GravshipController.CutsceneInProgress)
+				{
+					return true;
+				}
+				return false;
+			}
+		}
+
 		public virtual void Init()
 		{
 		}
 
 		public virtual void UIRootOnGUI()
 		{
+			DebugInputLogger.InputLogOnGUI();
 			UnityGUIBugsFixer.OnGUI();
+			SteamDeck.OnGUI();
+			SteamDeck.RootOnGUI();
+			OriginalEventUtility.RecordOriginalEvent(Event.current);
 			Text.StartOfOnGUI();
 			CheckOpenLogWindow();
 			DelayedErrorWindowRequest.DelayedErrorWindowRequestOnGUI();
-			DebugInputLogger.InputLogOnGUI();
 			if (!screenshotMode.FiltersCurrentEvent)
 			{
 				debugWindowOpener.DevToolStarterOnGUI();
@@ -47,7 +64,10 @@ namespace Verse
 			if (Current.Game != null)
 			{
 				GameComponentUtility.GameComponentOnGUI();
+				CellInspectorDrawer.OnGUI();
 			}
+			Find.World?.WorldOnGUI();
+			OriginalEventUtility.Reset();
 		}
 
 		public virtual void UIRootUpdate()
@@ -58,6 +78,7 @@ namespace Verse
 			MouseoverSounds.ResolveFrame();
 			UIHighlighter.UIHighlighterUpdate();
 			Messages.Update();
+			CellInspectorDrawer.Update();
 		}
 
 		private void CheckOpenLogWindow()

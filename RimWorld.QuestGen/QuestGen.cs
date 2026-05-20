@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 using Verse.Grammar;
 
@@ -57,7 +58,7 @@ namespace RimWorld.QuestGen
 			{
 				value = 0;
 			}
-			string result = "Quest" + quest.id + "." + signalString + ((value == 0) ? "" : (value + 1).ToString());
+			string result = string.Format("Quest{0}.{1}{2}", quest.id, signalString, (value == 0) ? "" : (value + 1).ToString());
 			generatedSignals[signalString] = value + 1;
 			return result;
 		}
@@ -68,7 +69,7 @@ namespace RimWorld.QuestGen
 			{
 				value = 0;
 			}
-			string result = "Quest" + quest.id + "." + targetString + ((value == 0) ? "" : (value + 1).ToString());
+			string result = string.Format("Quest{0}.{1}{2}", quest.id, targetString, (value == 0) ? "" : (value + 1).ToString());
 			generatedTargetQuestTags[targetString] = value + 1;
 			return result;
 		}
@@ -77,6 +78,28 @@ namespace RimWorld.QuestGen
 		{
 			generatedSignals.Clear();
 			generatedTargetQuestTags.Clear();
+		}
+
+		public static string GenerateResolvedQuestName(QuestScriptDef root, Slate initialVars)
+		{
+			if (working)
+			{
+				Log.Error("Cannot generated quest name while generating another quest.");
+				return null;
+			}
+			InitializeQuestGen(root, initialVars);
+			root.InitializeRules();
+			try
+			{
+				QuestNode_ResolveQuestName.Resolve();
+			}
+			catch (Exception arg)
+			{
+				Log.Error($"Error while generating quest name: {arg}");
+			}
+			string name = quest.name;
+			ClearQuestGenState();
+			return name;
 		}
 
 		public static Quest Generate(QuestScriptDef root, Slate initialVars)
@@ -92,27 +115,19 @@ namespace RimWorld.QuestGen
 				{
 					throw new Exception("Called Generate() while already working.");
 				}
-				working = true;
-				QuestGen.root = root;
-				slate.Reset();
-				slate.SetAll(initialVars);
-				quest = Quest.MakeRaw();
-				quest.ticksUntilAcceptanceExpiry = (int)(root.expireDaysRange.RandomInRange * 60000f);
-				if (root.defaultChallengeRating > 0)
-				{
-					quest.challengeRating = root.defaultChallengeRating;
-				}
-				quest.root = root;
-				quest.hidden = root.defaultHidden;
-				slate.SetIfNone("inSignal", quest.InitiateSignal);
+				InitializeQuestGen(root, initialVars);
 				root.Run();
+				if (!root.everAcceptableInSpace && !root.autoAccept)
+				{
+					quest.AcceptanceRequirementNotSpace();
+				}
 				try
 				{
 					QuestNode_ResolveQuestName.Resolve();
 				}
 				catch (Exception arg)
 				{
-					Log.Error("Error while generating quest name: " + arg);
+					Log.Error($"Error while generating quest name: {arg}");
 				}
 				try
 				{
@@ -120,7 +135,7 @@ namespace RimWorld.QuestGen
 				}
 				catch (Exception arg2)
 				{
-					Log.Error("Error while generating quest description: " + arg2);
+					Log.Error($"Error while generating quest description: {arg2}");
 				}
 				try
 				{
@@ -128,7 +143,7 @@ namespace RimWorld.QuestGen
 				}
 				catch (Exception arg3)
 				{
-					Log.Error("Error while resolving text requests: " + arg3);
+					Log.Error($"Error while resolving text requests: {arg3}");
 				}
 				AddSlateQuestTags();
 				bool flag = root.autoAccept;
@@ -148,13 +163,15 @@ namespace RimWorld.QuestGen
 				{
 					quest.SetInitiallyAccepted();
 				}
+				if (slate.TryGet<Site>("site", out var var) && var.MainSitePartDef.copyQuestName)
+				{
+					var.customLabel = quest.name;
+				}
 				result = quest;
-				return result;
 			}
 			catch (Exception arg4)
 			{
-				Log.Error("Error in QuestGen: " + arg4);
-				return result;
+				Log.Error($"Error in QuestGen: {arg4}");
 			}
 			finally
 			{
@@ -162,20 +179,47 @@ namespace RimWorld.QuestGen
 				{
 					DeepProfiler.End();
 				}
-				quest = null;
-				QuestGen.root = null;
-				working = false;
-				generatedPawns.Clear();
-				textRequests.Clear();
-				slate.Reset();
-				questDescriptionRules.Clear();
-				questDescriptionConstants.Clear();
-				questNameRules.Clear();
-				questNameConstants.Clear();
-				questContentRules.Clear();
-				slateQuestTagsToAddWhenFinished.Clear();
-				ResetIdCounters();
+				ClearQuestGenState();
 			}
+			return result;
+		}
+
+		private static void InitializeQuestGen(QuestScriptDef root, Slate initialVars)
+		{
+			working = true;
+			QuestGen.root = root;
+			slate.Reset();
+			slate.SetAll(initialVars);
+			quest = Quest.MakeRaw();
+			if (root.expireDaysRange.max > 0f)
+			{
+				quest.acceptanceExpireTick = GenTicks.TicksGame + (int)(root.expireDaysRange.RandomInRange * 60000f);
+			}
+			if (root.defaultChallengeRating > 0)
+			{
+				quest.challengeRating = root.defaultChallengeRating;
+			}
+			quest.root = root;
+			quest.hidden = root.defaultHidden;
+			quest.charity = root.defaultCharity;
+			slate.SetIfNone("inSignal", quest.InitiateSignal);
+		}
+
+		private static void ClearQuestGenState()
+		{
+			quest = null;
+			root = null;
+			working = false;
+			generatedPawns.Clear();
+			textRequests.Clear();
+			slate.Reset();
+			questDescriptionRules.Clear();
+			questDescriptionConstants.Clear();
+			questNameRules.Clear();
+			questNameConstants.Clear();
+			questContentRules.Clear();
+			slateQuestTagsToAddWhenFinished.Clear();
+			ResetIdCounters();
 		}
 
 		public static void AddToGeneratedPawns(Pawn pawn)

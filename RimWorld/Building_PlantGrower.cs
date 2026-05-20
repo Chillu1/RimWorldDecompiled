@@ -23,8 +23,7 @@ namespace RimWorld
 					List<Thing> thingList = base.Map.thingGrid.ThingsListAt(item);
 					for (int i = 0; i < thingList.Count; i++)
 					{
-						Plant plant = thingList[i] as Plant;
-						if (plant != null)
+						if (thingList[i] is Plant plant)
 						{
 							yield return plant;
 						}
@@ -65,6 +64,7 @@ namespace RimWorld
 
 		public override void TickRare()
 		{
+			base.TickRare();
 			if (compPower == null || compPower.PowerOn)
 			{
 				return;
@@ -78,9 +78,12 @@ namespace RimWorld
 
 		public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish)
 		{
-			foreach (Plant item in PlantsOnMe.ToList())
+			if (mode != DestroyMode.WillReplace)
 			{
-				item.Destroy();
+				foreach (Plant item in PlantsOnMe.ToList())
+				{
+					item.Destroy();
+				}
 			}
 			base.DeSpawn(mode);
 		}
@@ -90,7 +93,11 @@ namespace RimWorld
 			string text = base.GetInspectString();
 			if (base.Spawned)
 			{
-				text = ((!PlantUtility.GrowthSeasonNow(base.Position, base.Map, forSowing: true)) ? ((string)(text + ("\n" + "CannotGrowBadSeasonTemperature".Translate()))) : ((string)(text + ("\n" + "GrowSeasonHereNow".Translate()))));
+				if (!text.NullOrEmpty())
+				{
+					text += "\n";
+				}
+				text = ((!PlantUtility.GrowthSeasonNow(base.Position, base.Map, plantDefToGrow)) ? ((string)(text + "CannotGrowBadSeasonTemperature".Translate())) : ((string)(text + "GrowSeasonHereNow".Translate())));
 			}
 			return text;
 		}

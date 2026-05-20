@@ -18,7 +18,7 @@ namespace RimWorld
 				return false;
 			}
 			Map map = (Map)parms.target;
-			if (!map.weatherManager.growthSeasonMemory.GrowthSeasonOutdoorsNow)
+			if (!PlantUtility.GrowthSeasonNow(map, ThingDefOf.Plant_Ambrosia))
 			{
 				return false;
 			}
@@ -63,7 +63,7 @@ namespace RimWorld
 
 		private bool CanSpawnAt(IntVec3 c, Map map)
 		{
-			if (!c.Standable(map) || c.Fogged(map) || map.fertilityGrid.FertilityAt(c) < ThingDefOf.Plant_Ambrosia.plant.fertilityMin || !c.GetRoom(map).PsychologicallyOutdoors || c.GetEdifice(map) != null || !PlantUtility.GrowthSeasonNow(c, map))
+			if (!c.Standable(map) || c.Fogged(map) || map.fertilityGrid.FertilityAt(c) < ThingDefOf.Plant_Ambrosia.plant.fertilityMin || !c.GetRoom(map).PsychologicallyOutdoors || c.GetEdifice(map) != null || !PlantUtility.GrowthSeasonNow(c, map, ThingDefOf.Plant_Ambrosia))
 			{
 				return false;
 			}

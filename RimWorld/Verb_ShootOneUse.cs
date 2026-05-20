@@ -14,7 +14,7 @@ namespace RimWorld
 				}
 				return true;
 			}
-			if (burstShotsLeft < verbProps.burstShotCount)
+			if (burstShotsLeft < base.BurstShotCount)
 			{
 				SelfConsume();
 			}
@@ -24,7 +24,7 @@ namespace RimWorld
 		public override void Notify_EquipmentLost()
 		{
 			base.Notify_EquipmentLost();
-			if (state == VerbState.Bursting && burstShotsLeft < verbProps.burstShotCount)
+			if (state == VerbState.Bursting && burstShotsLeft < base.BurstShotCount)
 			{
 				SelfConsume();
 			}

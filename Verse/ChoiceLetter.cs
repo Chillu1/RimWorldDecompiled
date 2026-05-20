@@ -8,7 +8,7 @@ namespace Verse
 	{
 		public string title;
 
-		public TaggedString text;
+		private TaggedString text;
 
 		public bool radioMode;
 
@@ -18,10 +18,19 @@ namespace Verse
 
 		public List<HediffDef> hyperlinkHediffDefs;
 
-		public abstract IEnumerable<DiaOption> Choices
+		public TaggedString Text
 		{
-			get;
+			get
+			{
+				return text;
+			}
+			set
+			{
+				text = value.CapitalizeFirst();
+			}
 		}
+
+		public abstract IEnumerable<DiaOption> Choices { get; }
 
 		protected DiaOption Option_Close => new DiaOption("Close".Translate())
 		{
@@ -86,7 +95,7 @@ namespace Verse
 			{
 				DiaOption diaOption = new DiaOption("PostponeLetter".Translate());
 				diaOption.resolveTree = true;
-				if (base.TimeoutActive && disappearAtTick <= Find.TickManager.TicksGame + 1)
+				if (LastTickBeforeTimeout)
 				{
 					diaOption.Disable(null);
 				}

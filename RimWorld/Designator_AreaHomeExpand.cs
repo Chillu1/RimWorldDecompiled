@@ -12,7 +12,7 @@ namespace RimWorld
 			defaultDesc = "DesignatorAreaHomeExpandDesc".Translate();
 			icon = ContentFinder<Texture2D>.Get("UI/Designators/HomeAreaOn");
 			soundDragSustain = SoundDefOf.Designate_DragAreaAdd;
-			soundDragChanged = null;
+			soundDragChanged = SoundDefOf.Designate_DragZone_Changed;
 			soundSucceeded = SoundDefOf.Designate_ZoneAdd;
 			tutorTag = "AreaHomeExpand";
 			hotKey = KeyBindingDefOf.Misc4;

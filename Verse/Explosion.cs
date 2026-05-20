@@ -26,6 +26,8 @@ namespace Verse
 
 		public bool applyDamageToExplosionCellsNeighbors;
 
+		public FloatRange? affectedAngle;
+
 		public ThingDef preExplosionSpawnThingDef;
 
 		public float preExplosionSpawnChance;
@@ -34,17 +36,43 @@ namespace Verse
 
 		public ThingDef postExplosionSpawnThingDef;
 
+		public ThingDef postExplosionSpawnThingDefWater;
+
 		public float postExplosionSpawnChance;
 
 		public int postExplosionSpawnThingCount = 1;
 
+		public GasType? postExplosionGasType;
+
+		public int postExplosionGasAmount = 255;
+
+		public float? postExplosionGasRadiusOverride;
+
 		public float chanceToStartFire;
+
+		public SimpleCurve flammabilityChanceCurve;
 
 		public bool damageFalloff;
 
 		public IntVec3? needLOSToCell1;
 
 		public IntVec3? needLOSToCell2;
+
+		public bool doVisualEffects = true;
+
+		public float propagationSpeed = 1f;
+
+		public float excludeRadius;
+
+		public bool doSoundEffects = true;
+
+		public float screenShakeFactor = 1f;
+
+		public List<IntVec3> overrideCells;
+
+		public ThingDef preExplosionSpawnSingleThingDef;
+
+		public ThingDef postExplosionSpawnSingleThingDef;
 
 		private int startTick;
 
@@ -63,7 +91,7 @@ namespace Verse
 		public override void SpawnSetup(Map map, bool respawningAfterLoad)
 		{
 			base.SpawnSetup(map, respawningAfterLoad);
-			if (!respawningAfterLoad)
+			if (!respawningAfterLoad && !base.BeingTransportedOnGravship)
 			{
 				cellsToAffect = SimplePool<List<IntVec3>>.Get();
 				cellsToAffect.Clear();
@@ -100,14 +128,24 @@ namespace Verse
 			cellsToAffect.Clear();
 			damagedThings.Clear();
 			addedCellsAffectedOnlyByDamage.Clear();
-			cellsToAffect.AddRange(damType.Worker.ExplosionCellsToHit(this));
+			if (!overrideCells.NullOrEmpty())
+			{
+				cellsToAffect.AddRange(overrideCells);
+			}
+			else
+			{
+				cellsToAffect.AddRange(damType.Worker.ExplosionCellsToHit(this));
+			}
 			if (applyDamageToExplosionCellsNeighbors)
 			{
 				AddCellsNeighbors(cellsToAffect);
 			}
 			damType.Worker.ExplosionStart(this, cellsToAffect);
 			PlayExplosionSound(explosionSound);
-			MoteMaker.MakeWaterSplash(base.Position.ToVector3Shifted(), base.Map, radius * 6f, 20f);
+			if (doVisualEffects)
+			{
+				FleckMaker.WaterSplash(base.Position.ToVector3Shifted(), base.Map, radius * 6f, 20f);
+			}
 			cellsToAffect.Sort((IntVec3 a, IntVec3 b) => GetCellAffectTick(b).CompareTo(GetCellAffectTick(a)));
 			RegionTraverser.BreadthFirstTraverse(base.Position, base.Map, (Region from, Region to) => true, delegate(Region x)
 			{
@@ -121,9 +159,10 @@ namespace Verse
 				}
 				return false;
 			}, 25);
+			TrySpawnSingleThing(preExplosionSpawnSingleThingDef);
 		}
 
-		public override void Tick()
+		protected override void Tick()
 		{
 			int ticksGame = Find.TickManager.TicksGame;
 			int num = cellsToAffect.Count - 1;
@@ -135,14 +174,45 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					Log.Error(string.Concat("Explosion could not affect cell ", cellsToAffect[num], ": ", ex));
+					Log.Error("Explosion could not affect cell " + cellsToAffect[num].ToString() + ": " + ex);
 				}
 				cellsToAffect.RemoveAt(num);
 				num--;
 			}
 			if (!cellsToAffect.Any())
 			{
+				ExplosionEnded();
 				Destroy();
+			}
+		}
+
+		protected virtual void ExplosionEnded()
+		{
+			TrySpawnSingleThing(postExplosionSpawnSingleThingDef);
+		}
+
+		private void TrySpawnSingleThing(ThingDef thingDef)
+		{
+			if (thingDef == null)
+			{
+				return;
+			}
+			CellRect cellRect = base.Position.RectAbout(thingDef.Size);
+			bool flag = false;
+			if (thingDef.terrainAffordanceNeeded != null)
+			{
+				foreach (IntVec3 item in cellRect)
+				{
+					if (!item.GetAffordances(base.Map).Contains(thingDef.terrainAffordanceNeeded))
+					{
+						flag = true;
+						break;
+					}
+				}
+			}
+			if (!flag)
+			{
+				TrySpawnExplosionThing(thingDef, base.Position, 1);
 			}
 		}
 
@@ -182,17 +252,29 @@ namespace Verse
 			Scribe_Values.Look(ref preExplosionSpawnChance, "preExplosionSpawnChance", 0f);
 			Scribe_Values.Look(ref preExplosionSpawnThingCount, "preExplosionSpawnThingCount", 1);
 			Scribe_Defs.Look(ref postExplosionSpawnThingDef, "postExplosionSpawnThingDef");
+			Scribe_Defs.Look(ref postExplosionSpawnThingDefWater, "postExplosionSpawnThingDefWater");
 			Scribe_Values.Look(ref postExplosionSpawnChance, "postExplosionSpawnChance", 0f);
 			Scribe_Values.Look(ref postExplosionSpawnThingCount, "postExplosionSpawnThingCount", 1);
+			Scribe_Values.Look(ref postExplosionGasType, "postExplosionGasType");
 			Scribe_Values.Look(ref chanceToStartFire, "chanceToStartFire", 0f);
+			Scribe_Deep.Look(ref flammabilityChanceCurve, "flammabilityChanceCurve");
 			Scribe_Values.Look(ref damageFalloff, "dealMoreDamageAtCenter", defaultValue: false);
 			Scribe_Values.Look(ref needLOSToCell1, "needLOSToCell1");
 			Scribe_Values.Look(ref needLOSToCell2, "needLOSToCell2");
+			Scribe_Values.Look(ref affectedAngle, "affectedAngle");
+			Scribe_Values.Look(ref propagationSpeed, "propagationSpeed", 0f);
+			Scribe_Values.Look(ref excludeRadius, "canTargetLocations", 0f);
+			Scribe_Values.Look(ref doSoundEffects, "doSoundEffects", defaultValue: true);
+			Scribe_Values.Look(ref doVisualEffects, "doVisualEffects", defaultValue: true);
+			Scribe_Values.Look(ref screenShakeFactor, "screenShakeFactor", 1f);
+			Scribe_Defs.Look(ref postExplosionSpawnSingleThingDef, "postExplosionSpawnSingleThingDef");
+			Scribe_Defs.Look(ref preExplosionSpawnSingleThingDef, "preExplosionSpawnSingleThingDef");
 			Scribe_Values.Look(ref startTick, "startTick", 0);
 			Scribe_Collections.Look(ref cellsToAffect, "cellsToAffect", LookMode.Value);
 			Scribe_Collections.Look(ref damagedThings, "damagedThings", LookMode.Reference);
 			Scribe_Collections.Look(ref ignoredThings, "ignoredThings", LookMode.Reference);
 			Scribe_Collections.Look(ref addedCellsAffectedOnlyByDamage, "addedCellsAffectedOnlyByDamage", LookMode.Value);
+			Scribe_Collections.Look(ref overrideCells, "overrideCells", LookMode.Value);
 			if (Scribe.mode != LoadSaveMode.PostLoadInit)
 			{
 				return;
@@ -209,31 +291,54 @@ namespace Verse
 
 		private int GetCellAffectTick(IntVec3 cell)
 		{
-			return startTick + (int)((cell - base.Position).LengthHorizontal * 1.5f);
+			return startTick + (int)((cell - base.Position).LengthHorizontal * 1.5f / propagationSpeed);
 		}
 
 		private void AffectCell(IntVec3 c)
 		{
-			if (c.InBounds(base.Map))
+			if (!c.InBounds(base.Map) || (excludeRadius > 0f && (float)c.DistanceToSquared(base.Position) < excludeRadius * excludeRadius))
 			{
-				bool flag = ShouldCellBeAffectedOnlyByDamage(c);
-				if (!flag && Rand.Chance(preExplosionSpawnChance) && c.Walkable(base.Map))
+				return;
+			}
+			TerrainDef terrain = c.GetTerrain(base.Map);
+			bool flag = ShouldCellBeAffectedOnlyByDamage(c);
+			if (!flag && Rand.Chance(preExplosionSpawnChance) && c.Walkable(base.Map))
+			{
+				TrySpawnExplosionThing(preExplosionSpawnThingDef, c, preExplosionSpawnThingCount);
+			}
+			damType.Worker.ExplosionAffectCell(this, c, damagedThings, ignoredThings, !flag);
+			if (!flag)
+			{
+				if (Rand.Chance(postExplosionSpawnChance) && c.Walkable(base.Map))
 				{
-					TrySpawnExplosionThing(preExplosionSpawnThingDef, c, preExplosionSpawnThingCount);
+					ThingDef thingDef = (terrain.IsWater ? (postExplosionSpawnThingDefWater ?? postExplosionSpawnThingDef) : postExplosionSpawnThingDef);
+					TrySpawnExplosionThing(thingDef, c, postExplosionSpawnThingCount);
 				}
-				damType.Worker.ExplosionAffectCell(this, c, damagedThings, ignoredThings, !flag);
-				if (!flag && Rand.Chance(postExplosionSpawnChance) && c.Walkable(base.Map))
+				if (postExplosionGasType.HasValue)
 				{
-					TrySpawnExplosionThing(postExplosionSpawnThingDef, c, postExplosionSpawnThingCount);
+					float num = postExplosionGasRadiusOverride ?? radius;
+					float num2 = num * num;
+					if ((float)c.DistanceToSquared(base.Position) <= num2)
+					{
+						GasUtility.AddGas(c, base.Map, postExplosionGasType.Value, postExplosionGasAmount);
+					}
 				}
-				float num = chanceToStartFire;
-				if (damageFalloff)
+			}
+			float num3 = chanceToStartFire;
+			if (damageFalloff)
+			{
+				num3 *= Mathf.Lerp(1f, 0.2f, c.DistanceTo(base.Position) / radius);
+			}
+			if (Rand.Chance(num3))
+			{
+				FireUtility.TryStartFireIn(c, base.Map, Rand.Range(0.1f, 0.925f), instigator, flammabilityChanceCurve);
+			}
+			if (terrain.temporary)
+			{
+				TempTerrainProps tempTerrain = terrain.tempTerrain;
+				if (tempTerrain != null && tempTerrain.removedByExplosions)
 				{
-					num *= Mathf.Lerp(1f, 0.2f, c.DistanceTo(base.Position) / radius);
-				}
-				if (Rand.Chance(num))
-				{
-					FireUtility.TryStartFireIn(c, base.Map, Rand.Range(0.1f, 0.925f));
+					base.Map.terrainGrid.RemoveTempTerrain(c);
 				}
 			}
 		}
@@ -242,26 +347,31 @@ namespace Verse
 		{
 			if (thingDef != null)
 			{
+				Thing thing;
 				if (thingDef.IsFilth)
 				{
 					FilthMaker.TryMakeFilth(c, base.Map, thingDef, count);
-					return;
 				}
-				Thing thing = ThingMaker.MakeThing(thingDef);
-				thing.stackCount = count;
-				GenSpawn.Spawn(thing, c, base.Map);
+				else if (GenSpawn.TrySpawn(thingDef, c, base.Map, out thing))
+				{
+					thing.stackCount = count;
+					thing.TryGetComp<CompReleaseGas>()?.StartRelease();
+				}
 			}
 		}
 
 		private void PlayExplosionSound(SoundDef explosionSound)
 		{
-			if ((!Prefs.DevMode) ? (!explosionSound.NullOrUndefined()) : (explosionSound != null))
+			if (doSoundEffects)
 			{
-				explosionSound.PlayOneShot(new TargetInfo(base.Position, base.Map));
-			}
-			else
-			{
-				damType.soundExplosion.PlayOneShot(new TargetInfo(base.Position, base.Map));
+				if ((!Prefs.DevMode) ? (!explosionSound.NullOrUndefined()) : (explosionSound != null))
+				{
+					explosionSound.PlayOneShot(new TargetInfo(base.Position, base.Map));
+				}
+				else
+				{
+					damType.soundExplosion.PlayOneShot(new TargetInfo(base.Position, base.Map));
+				}
 			}
 		}
 

@@ -71,14 +71,14 @@ namespace RimWorld
 		public override void Init()
 		{
 			base.Init();
-			LordToilData_Siege data = Data;
-			data.baseRadius = Mathf.InverseLerp(14f, 25f, (float)lord.ownedPawns.Count / 50f);
-			data.baseRadius = Mathf.Clamp(data.baseRadius, 14f, 25f);
+			LordToilData_Siege lordToilData_Siege = Data;
+			lordToilData_Siege.baseRadius = Mathf.InverseLerp(14f, 25f, (float)lord.ownedPawns.Count / 50f);
+			lordToilData_Siege.baseRadius = Mathf.Clamp(lordToilData_Siege.baseRadius, 14f, 25f);
 			List<Thing> list = new List<Thing>();
-			foreach (Blueprint_Build item2 in SiegeBlueprintPlacer.PlaceBlueprints(data.siegeCenter, base.Map, lord.faction, data.blueprintPoints))
+			foreach (Blueprint_Build item2 in SiegeBlueprintPlacer.PlaceBlueprints(lordToilData_Siege.siegeCenter, base.Map, lord.faction, lordToilData_Siege.blueprintPoints))
 			{
-				data.blueprints.Add(item2);
-				foreach (ThingDefCountClass cost in item2.MaterialsNeeded())
+				lordToilData_Siege.blueprints.Add(item2);
+				foreach (ThingDefCountClass cost in item2.TotalMaterialCost())
 				{
 					Thing thing = list.FirstOrDefault((Thing t) => t.def == cost.thingDef);
 					if (thing != null)
@@ -90,54 +90,53 @@ namespace RimWorld
 					thing2.stackCount = cost.count;
 					list.Add(thing2);
 				}
-				ThingDef thingDef = item2.def.entityDefToBuild as ThingDef;
-				if (thingDef != null)
+				if (item2.def.entityDefToBuild is ThingDef turret)
 				{
-					ThingDef thingDef2 = TurretGunUtility.TryFindRandomShellDef(thingDef, allowEMP: false, mustHarmHealth: true, lord.faction.def.techLevel, allowAntigrainWarhead: false, 250f);
-					if (thingDef2 != null)
+					ThingDef thingDef = TurretGunUtility.TryFindRandomShellDef(turret, allowEMP: false, allowToxGas: false, mustHarmHealth: true, lord.faction.def.techLevel, allowAntigrainWarhead: false, 250f, lord.faction);
+					if (thingDef != null)
 					{
-						Thing thing3 = ThingMaker.MakeThing(thingDef2);
+						Thing thing3 = ThingMaker.MakeThing(thingDef);
 						thing3.stackCount = 5;
 						list.Add(thing3);
 					}
 				}
 			}
-			for (int i = 0; i < list.Count; i++)
+			for (int num = 0; num < list.Count; num++)
 			{
-				list[i].stackCount = Mathf.CeilToInt((float)list[i].stackCount * Rand.Range(1f, 1.2f));
+				list[num].stackCount = Mathf.CeilToInt((float)list[num].stackCount * Rand.Range(1f, 1.2f));
 			}
 			List<List<Thing>> list2 = new List<List<Thing>>();
-			for (int j = 0; j < list.Count; j++)
+			for (int num2 = 0; num2 < list.Count; num2++)
 			{
-				while (list[j].stackCount > list[j].def.stackLimit)
+				while (list[num2].stackCount > list[num2].def.stackLimit)
 				{
-					int num = Mathf.CeilToInt((float)list[j].def.stackLimit * Rand.Range(0.9f, 0.999f));
-					Thing thing4 = ThingMaker.MakeThing(list[j].def);
-					thing4.stackCount = num;
-					list[j].stackCount -= num;
+					int num3 = Mathf.CeilToInt((float)list[num2].def.stackLimit * Rand.Range(0.9f, 0.999f));
+					Thing thing4 = ThingMaker.MakeThing(list[num2].def);
+					thing4.stackCount = num3;
+					list[num2].stackCount -= num3;
 					list.Add(thing4);
 				}
 			}
 			List<Thing> list3 = new List<Thing>();
-			for (int k = 0; k < list.Count; k++)
+			for (int num4 = 0; num4 < list.Count; num4++)
 			{
-				list3.Add(list[k]);
-				if (k % 2 == 1 || k == list.Count - 1)
+				list3.Add(list[num4]);
+				if (num4 % 2 == 1 || num4 == list.Count - 1)
 				{
 					list2.Add(list3);
 					list3 = new List<Thing>();
 				}
 			}
 			List<Thing> list4 = new List<Thing>();
-			int num2 = Mathf.RoundToInt(MealCountRangePerRaider.RandomInRange * (float)lord.ownedPawns.Count);
-			for (int l = 0; l < num2; l++)
+			int num5 = Mathf.RoundToInt(MealCountRangePerRaider.RandomInRange * (float)lord.ownedPawns.Count);
+			for (int num6 = 0; num6 < num5; num6++)
 			{
 				Thing item = ThingMaker.MakeThing(ThingDefOf.MealSurvivalPack);
 				list4.Add(item);
 			}
 			list2.Add(list4);
-			DropPodUtility.DropThingGroupsNear(data.siegeCenter, base.Map, list2);
-			data.desiredBuilderFraction = BuilderCountFraction.RandomInRange;
+			DropPodUtility.DropThingGroupsNear(lordToilData_Siege.siegeCenter, base.Map, list2);
+			lordToilData_Siege.desiredBuilderFraction = BuilderCountFraction.RandomInRange;
 		}
 
 		public override void UpdateAllDuties()
@@ -165,9 +164,9 @@ namespace RimWorld
 				num = num2;
 			}
 			int num3 = 0;
-			for (int j = 0; j < lord.ownedPawns.Count; j++)
+			for (int num4 = 0; num4 < lord.ownedPawns.Count; num4++)
 			{
-				Pawn pawn = lord.ownedPawns[j];
+				Pawn pawn = lord.ownedPawns[num4];
 				if (pawn.mindState.duty.def == DutyDefOf.Build)
 				{
 					rememberedDuties.Add(pawn, DutyDefOf.Build);
@@ -175,8 +174,8 @@ namespace RimWorld
 					num3++;
 				}
 			}
-			int num4 = num - num3;
-			for (int k = 0; k < num4; k++)
+			int num5 = num - num3;
+			for (int num6 = 0; num6 < num5; num6++)
 			{
 				if (lord.ownedPawns.Where((Pawn pa) => !rememberedDuties.ContainsKey(pa) && CanBeBuilder(pa)).TryRandomElement(out var result))
 				{
@@ -185,9 +184,9 @@ namespace RimWorld
 					num3++;
 				}
 			}
-			for (int l = 0; l < lord.ownedPawns.Count; l++)
+			for (int num7 = 0; num7 < lord.ownedPawns.Count; num7++)
 			{
-				Pawn pawn2 = lord.ownedPawns[l];
+				Pawn pawn2 = lord.ownedPawns[num7];
 				if (!rememberedDuties.ContainsKey(pawn2))
 				{
 					SetAsDefender(pawn2);
@@ -226,9 +225,9 @@ namespace RimWorld
 
 		private void SetAsBuilder(Pawn p)
 		{
-			LordToilData_Siege data = Data;
-			p.mindState.duty = new PawnDuty(DutyDefOf.Build, data.siegeCenter);
-			p.mindState.duty.radius = data.baseRadius;
+			LordToilData_Siege lordToilData_Siege = Data;
+			p.mindState.duty = new PawnDuty(DutyDefOf.Build, lordToilData_Siege.siegeCenter);
+			p.mindState.duty.radius = lordToilData_Siege.baseRadius;
 			int minLevel = Mathf.Max(ThingDefOf.Sandbags.constructionSkillPrerequisite, ThingDefOf.Turret_Mortar.constructionSkillPrerequisite);
 			p.skills.GetSkill(SkillDefOf.Construction).EnsureMinLevelWithMargin(minLevel);
 			p.workSettings.EnableAndInitialize();
@@ -249,15 +248,15 @@ namespace RimWorld
 
 		private void SetAsDefender(Pawn p)
 		{
-			LordToilData_Siege data = Data;
-			p.mindState.duty = new PawnDuty(DutyDefOf.Defend, data.siegeCenter);
-			p.mindState.duty.radius = data.baseRadius;
+			LordToilData_Siege lordToilData_Siege = Data;
+			p.mindState.duty = new PawnDuty(DutyDefOf.Defend, lordToilData_Siege.siegeCenter);
+			p.mindState.duty.radius = lordToilData_Siege.baseRadius;
 		}
 
 		public override void LordToilTick()
 		{
 			base.LordToilTick();
-			LordToilData_Siege data = Data;
+			LordToilData_Siege lordToilData_Siege = Data;
 			if (lord.ticksInToil == 450)
 			{
 				lord.CurLordToil.UpdateAllDuties();
@@ -270,7 +269,7 @@ namespace RimWorld
 			{
 				return;
 			}
-			if (!Frames.Where((Frame frame) => !frame.Destroyed).Any() && !data.blueprints.Where((Blueprint blue) => !blue.Destroyed).Any() && !base.Map.listerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial).Any((Thing b) => b.Faction == lord.faction && b.def.building.buildingTags.Contains("Artillery")))
+			if (!Frames.Where((Frame frame) => !frame.Destroyed).Any() && !lordToilData_Siege.blueprints.Where((Blueprint blue) => !blue.Destroyed).Any() && !base.Map.listerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial).Any((Thing b) => b.Faction == lord.faction && b.def.building.buildingTags.Contains("Artillery")))
 			{
 				lord.ReceiveMemo("NoArtillery");
 				return;
@@ -278,29 +277,49 @@ namespace RimWorld
 			int num = GenRadial.NumCellsInRadius(20f);
 			int num2 = 0;
 			int num3 = 0;
-			for (int i = 0; i < num; i++)
+			int num4 = 0;
+			int num5 = 0;
+			for (int num6 = 0; num6 < num; num6++)
 			{
-				IntVec3 c = data.siegeCenter + GenRadial.RadialPattern[i];
+				IntVec3 c = lordToilData_Siege.siegeCenter + GenRadial.RadialPattern[num6];
 				if (!c.InBounds(base.Map))
 				{
 					continue;
 				}
 				List<Thing> thingList = c.GetThingList(base.Map);
-				for (int j = 0; j < thingList.Count; j++)
+				for (int num7 = 0; num7 < thingList.Count; num7++)
 				{
-					if (thingList[j].def.IsShell)
+					Thing thing = thingList[num7];
+					if (thing.def.IsShell && thing.def.projectileWhenLoaded?.projectile != null && thing.def.projectileWhenLoaded.projectile.damageDef.harmsHealth)
 					{
-						num2 += thingList[j].stackCount;
+						num2 += thing.stackCount;
 					}
-					if (thingList[j].def == ThingDefOf.MealSurvivalPack)
+					if (thing.def == ThingDefOf.MealSurvivalPack)
 					{
-						num3 += thingList[j].stackCount;
+						num3 += thing.stackCount;
+					}
+					if (thing.def == ThingDefOf.ReinforcedBarrel)
+					{
+						num5 += thing.stackCount;
+					}
+					if (Find.Storyteller.difficulty.classicMortars || thing.def.building == null || !thing.def.building.IsMortar || thing.Faction != lord.faction)
+					{
+						continue;
+					}
+					CompRefuelable compRefuelable = thing.TryGetComp<CompRefuelable>();
+					if (compRefuelable != null)
+					{
+						num4++;
+						if (compRefuelable.Props.fuelFilter.Allows(ThingDefOf.ReinforcedBarrel) && compRefuelable.HasFuel)
+						{
+							num5++;
+						}
 					}
 				}
 			}
 			if (num2 < 4)
 			{
-				ThingDef thingDef = TurretGunUtility.TryFindRandomShellDef(ThingDefOf.Turret_Mortar, allowEMP: false, mustHarmHealth: true, lord.faction.def.techLevel, allowAntigrainWarhead: false, 250f);
+				ThingDef thingDef = TurretGunUtility.TryFindRandomShellDef(ThingDefOf.Turret_Mortar, allowEMP: false, allowToxGas: false, mustHarmHealth: true, lord.faction.def.techLevel, allowAntigrainWarhead: false, 250f, lord.faction);
 				if (thingDef != null)
 				{
 					DropSupplies(thingDef, 6);
@@ -309,6 +328,10 @@ namespace RimWorld
 			if (num3 < 5)
 			{
 				DropSupplies(ThingDefOf.MealSurvivalPack, 12);
+			}
+			if (!Find.Storyteller.difficulty.classicMortars && num5 < num4)
+			{
+				DropSupplies(ThingDefOf.ReinforcedBarrel, num4 - num5);
 			}
 		}
 
@@ -323,11 +346,11 @@ namespace RimWorld
 
 		public override void Cleanup()
 		{
-			LordToilData_Siege data = Data;
-			data.blueprints.RemoveAll((Blueprint blue) => blue.Destroyed);
-			for (int i = 0; i < data.blueprints.Count; i++)
+			LordToilData_Siege lordToilData_Siege = Data;
+			lordToilData_Siege.blueprints.RemoveAll((Blueprint blue) => blue.Destroyed);
+			for (int num = 0; num < lordToilData_Siege.blueprints.Count; num++)
 			{
-				data.blueprints[i].Destroy(DestroyMode.Cancel);
+				lordToilData_Siege.blueprints[num].Destroy(DestroyMode.Cancel);
 			}
 			foreach (Frame item in Frames.ToList())
 			{

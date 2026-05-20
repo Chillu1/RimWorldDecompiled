@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -11,21 +10,11 @@ namespace RimWorld
 
 		private DefMap<RecordDef, float> records = new DefMap<RecordDef, float>();
 
-		private double storyRelevance;
-
 		private Battle battleActive;
 
 		private int battleExitTick;
 
-		private float storyRelevanceBonus;
-
 		private const int UpdateTimeRecordsIntervalTicks = 80;
-
-		private const float StoryRelevanceBonusRange = 100f;
-
-		private const float StoryRelevanceMultiplierPerYear = 0.2f;
-
-		public float StoryRelevance => (float)storyRelevance + storyRelevanceBonus;
 
 		public Battle BattleActive
 		{
@@ -52,15 +41,11 @@ namespace RimWorld
 		public Pawn_RecordsTracker(Pawn pawn)
 		{
 			this.pawn = pawn;
-			Rand.PushState();
-			Rand.Seed = pawn.thingIDNumber * 681;
-			storyRelevanceBonus = Rand.Range(0f, 100f);
-			Rand.PopState();
 		}
 
-		public void RecordsTick()
+		public void RecordsTickInterval(int delta)
 		{
-			if (!pawn.Dead && pawn.IsHashIntervalTick(80))
+			if (!pawn.Dead && pawn.IsHashIntervalTick(80, delta))
 			{
 				RecordsTickUpdate(80);
 				battleActive = BattleActive;
@@ -82,14 +67,13 @@ namespace RimWorld
 					records[allDefsListForReading[i]] += interval;
 				}
 			}
-			storyRelevance *= Math.Pow(0.20000000298023224, 0.0);
 		}
 
 		public void Increment(RecordDef def)
 		{
 			if (def.type != RecordType.Int)
 			{
-				Log.Error(string.Concat("Tried to increment record \"", def.defName, "\" whose record type is \"", def.type, "\"."));
+				Log.Error("Tried to increment record \"" + def.defName + "\" whose record type is \"" + def.type.ToString() + "\".");
 			}
 			else
 			{
@@ -109,7 +93,7 @@ namespace RimWorld
 				records[def] += value;
 				return;
 			}
-			Log.Error(string.Concat("Tried to add value to record \"", def.defName, "\" whose record type is \"", def.type, "\"."));
+			Log.Error("Tried to add value to record \"" + def.defName + "\" whose record type is \"" + def.type.ToString() + "\".");
 		}
 
 		public float GetValue(RecordDef def)
@@ -127,11 +111,6 @@ namespace RimWorld
 			return Mathf.RoundToInt(records[def]);
 		}
 
-		public void AccumulateStoryEvent(StoryEventDef def)
-		{
-			storyRelevance += def.importance;
-		}
-
 		public void EnterBattle(Battle battle)
 		{
 			battleActive = battle;
@@ -142,7 +121,6 @@ namespace RimWorld
 		{
 			battleActive = BattleActive;
 			Scribe_Deep.Look(ref records, "records");
-			Scribe_Values.Look(ref storyRelevance, "storyRelevance", 0.0);
 			Scribe_References.Look(ref battleActive, "battleActive");
 			Scribe_Values.Look(ref battleExitTick, "battleExitTick", 0);
 			BackCompatibility.PostExposeData(this);

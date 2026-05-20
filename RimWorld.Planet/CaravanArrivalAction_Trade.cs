@@ -20,7 +20,7 @@ namespace RimWorld.Planet
 			this.settlement = settlement;
 		}
 
-		public override FloatMenuAcceptanceReport StillValid(Caravan caravan, int destinationTile)
+		public override FloatMenuAcceptanceReport StillValid(Caravan caravan, PlanetTile destinationTile)
 		{
 			FloatMenuAcceptanceReport floatMenuAcceptanceReport = base.StillValid(caravan, destinationTile);
 			if (!floatMenuAcceptanceReport)
@@ -52,7 +52,7 @@ namespace RimWorld.Planet
 			return settlement != null && settlement.Spawned && !settlement.HasMap && settlement.Faction != null && settlement.Faction != Faction.OfPlayer && !settlement.Faction.def.permanentEnemy && !settlement.Faction.HostileTo(Faction.OfPlayer) && settlement.CanTradeNow && HasNegotiator(caravan, settlement);
 		}
 
-		private static bool HasNegotiator(Caravan caravan, Settlement settlement)
+		public static bool HasNegotiator(Caravan caravan, Settlement settlement)
 		{
 			Pawn pawn = BestCaravanPawnUtility.FindBestNegotiator(caravan, settlement.Faction, settlement.TraderKind);
 			if (pawn != null)

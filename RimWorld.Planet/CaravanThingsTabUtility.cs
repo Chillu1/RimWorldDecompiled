@@ -101,6 +101,22 @@ namespace RimWorld.Planet
 			GUI.color = Color.white;
 		}
 
+		public static void DoOpenSpecificTabButtonInvisible(Rect rect, Pawn pawn, ref Pawn specificTabForPawn)
+		{
+			if (Widgets.ButtonInvisible(rect))
+			{
+				if (pawn == specificTabForPawn)
+				{
+					specificTabForPawn = null;
+				}
+				else
+				{
+					specificTabForPawn = pawn;
+				}
+				SoundDefOf.TabClose.PlayOneShotOnCamera();
+			}
+		}
+
 		public static void DrawMass(TransferableImmutable transferable, Rect rect)
 		{
 			float num = 0f;

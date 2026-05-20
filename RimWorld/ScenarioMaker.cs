@@ -15,22 +15,52 @@ namespace RimWorld
 		{
 			Rand.PushState();
 			Rand.Seed = seed.GetHashCode();
-			int @int = Rand.Int;
+			int seed2 = Rand.Int;
 			int[] array = new int[10];
 			for (int i = 0; i < array.Length; i++)
 			{
 				array[i] = Rand.Int;
 			}
-			int int2 = Rand.Int;
+			int seed3 = Rand.Int;
 			scen = new Scenario();
 			scen.Category = ScenarioCategory.CustomLocal;
 			scen.name = NameGenerator.GenerateName(RulePackDefOf.NamerScenario);
 			scen.description = null;
 			scen.summary = null;
-			Rand.Seed = @int;
+			Rand.Seed = seed2;
 			scen.playerFaction = (ScenPart_PlayerFaction)MakeScenPart(ScenPartDefOf.PlayerFaction);
 			scen.parts.Add(MakeScenPart(ScenPartDefOf.ConfigPage_ConfigureStartingPawns));
 			scen.parts.Add(MakeScenPart(ScenPartDefOf.PlayerPawnsArriveMethod));
+			scen.surfaceLayer = new ScenPart_PlanetLayer
+			{
+				def = ScenPartDefOf.PlanetLayerFixed,
+				layer = PlanetLayerDefOf.Surface,
+				settingsDef = PlanetLayerSettingsDefOf.Surface,
+				hide = true,
+				tag = "Surface"
+			};
+			if (ModsConfig.OdysseyActive)
+			{
+				ScenPart_PlanetLayer scenPart_PlanetLayer = new ScenPart_PlanetLayer
+				{
+					def = ScenPartDefOf.PlanetLayerFixed,
+					layer = PlanetLayerDefOf.Orbit,
+					settingsDef = PlanetLayerSettingsDefOf.Orbit,
+					hide = true,
+					tag = "Orbit"
+				};
+				scen.parts.Add(scenPart_PlanetLayer);
+				scen.surfaceLayer.connections.Add(new LayerConnection
+				{
+					tag = scenPart_PlanetLayer.tag,
+					zoomMode = LayerConnection.ZoomMode.ZoomOut
+				});
+				scenPart_PlanetLayer.connections.Add(new LayerConnection
+				{
+					tag = scen.surfaceLayer.tag,
+					zoomMode = LayerConnection.ZoomMode.ZoomIn
+				});
+			}
 			Rand.Seed = array[0];
 			AddCategoryScenParts(scen, ScenPartCategory.PlayerPawnFilter, Rand.RangeInclusive(-1, 2));
 			Rand.Seed = array[1];
@@ -45,7 +75,7 @@ namespace RimWorld
 			AddCategoryScenParts(scen, ScenPartCategory.WorldThing, Rand.RangeInclusive(-3, 6));
 			Rand.Seed = array[6];
 			AddCategoryScenParts(scen, ScenPartCategory.GameCondition, Rand.RangeInclusive(-1, 2));
-			Rand.Seed = int2;
+			Rand.Seed = seed3;
 			foreach (ScenPart allPart in scen.AllParts)
 			{
 				allPart.Randomize();
@@ -102,7 +132,7 @@ namespace RimWorld
 				yield break;
 			}
 			IEnumerable<ScenPartDef> allowedParts = from d in AddableParts(scen)
-				where d.category == cat
+				where d.canBeRandomlyAdded && d.category == cat
 				select d;
 			int numYielded = 0;
 			int numTries = 0;
@@ -117,7 +147,7 @@ namespace RimWorld
 				numTries++;
 				if (numTries > 100)
 				{
-					Log.Error(string.Concat("Could not add ScenPart of category ", cat, " to scenario ", scen, " after 50 tries."));
+					Log.Error("Could not add ScenPart of category " + cat.ToString() + " to scenario " + scen?.ToString() + " after 50 tries.");
 					break;
 				}
 			}

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using RimWorld;
 using RimWorld.QuestGen;
 using UnityEngine;
@@ -12,49 +13,49 @@ namespace Verse
 	{
 		public static float lastQuestGeneratedRewardValue;
 
-		private static readonly float[] QuestRewardDebugPointLevels = new float[8]
-		{
-			35f,
-			100f,
-			200f,
-			400f,
-			800f,
-			1600f,
-			3200f,
-			6000f
-		};
+		private static readonly int[] QuestNumOptions = new int[7] { 1, 2, 5, 10, 25, 50, 100 };
 
-		[DebugAction("Quests", "Generate quest", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void GenerateQuest()
+		private static readonly float[] QuestRewardDebugPointLevels = new float[8] { 35f, 100f, 200f, 400f, 800f, 1600f, 3200f, 6000f };
+
+		[DebugAction("Quests", "Generate quest", false, false, false, false, false, 0, false, actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static List<DebugActionNode> GenerateQuest()
 		{
-			GenerateQuests(1, logDescOnly: false);
+			return GenerateQuests(1);
 		}
 
-		[DebugAction("Quests", "Generate quests x10", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void GenerateQuests10()
+		[DebugAction("Quests", "Generate quests x#", false, false, false, false, false, 0, false, actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static List<DebugActionNode> GenerateQuests()
 		{
-			GenerateQuests(10, logDescOnly: false);
+			List<DebugActionNode> list = new List<DebugActionNode>();
+			for (int i = 0; i < QuestNumOptions.Length; i++)
+			{
+				int count = QuestNumOptions[i];
+				DebugActionNode debugActionNode = new DebugActionNode(count.ToString());
+				foreach (DebugActionNode item in GenerateQuests(count))
+				{
+					debugActionNode.AddChild(item);
+				}
+				list.Add(debugActionNode);
+			}
+			return list;
 		}
 
-		[DebugAction("Quests", "Generate quests x30", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void GenerateQuests30()
+		[DebugAction("Quests", "Generate quests (1x for each points)", false, false, false, false, false, 0, false, actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static List<DebugActionNode> GenerateQuestsSamples()
 		{
-			GenerateQuests(30, logDescOnly: false);
-		}
-
-		[DebugAction("Quests", "Generate quests (1x for each points)", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void GenerateQuestsSamples()
-		{
-			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			List<DebugActionNode> list = new List<DebugActionNode>();
 			foreach (QuestScriptDef scriptDef in DefDatabase<QuestScriptDef>.AllDefs.Where((QuestScriptDef x) => x.IsRootAny))
 			{
-				list.Add(new DebugMenuOption(scriptDef.defName, DebugMenuOptionMode.Action, delegate
+				list.Add(new DebugActionNode(scriptDef.defName, DebugActionType.Action, delegate
 				{
 					foreach (float item in DebugActionsUtility.PointsOptions(extended: false))
 					{
 						try
 						{
-							if (!scriptDef.CanRun(item))
+							QuestScriptDef questScriptDef = scriptDef;
+							float points = item;
+							IIncidentTarget randomPlayerHomeMap = Find.RandomPlayerHomeMap;
+							if (!questScriptDef.CanRun(points, randomPlayerHomeMap ?? Find.World))
 							{
 								Log.Error("Cannot generate quest " + scriptDef.defName + " for " + item + " points!");
 							}
@@ -71,181 +72,212 @@ namespace Verse
 					}
 				}));
 			}
-			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list.OrderBy((DebugMenuOption op) => op.label)));
+			return list;
 		}
 
-		private static void GenerateQuests(int count, bool logDescOnly)
+		private static List<DebugActionNode> GenerateQuests(int count, bool logDescOnly = false)
 		{
-			Action<QuestScriptDef, Slate> generateQuest = delegate(QuestScriptDef script, Slate slate)
+			List<DebugActionNode> list = new List<DebugActionNode>();
+			list.Add(new DebugActionNode("*Natural random", DebugActionType.Action, delegate
+			{
+				Slate slate2 = new Slate();
+				QuestScriptDef script = NaturalRandomQuestChooser.ChooseNaturalRandomQuest(slate2.Get("points", 0f), Find.CurrentMap);
+				GetQuest(script, slate2);
+			}));
+			foreach (QuestScriptDef item in DefDatabase<QuestScriptDef>.AllDefs.Where((QuestScriptDef x) => x.IsRootAny))
+			{
+				QuestScriptDef localScriptDef = item;
+				DebugActionNode debugActionNode = new DebugActionNode(localScriptDef.defName);
+				Slate slate = new Slate();
+				slate.Set("discoveryMethod", "QuestDiscoveredFromDebug".Translate());
+				if (localScriptDef.affectedByPoints && localScriptDef.affectedByPopulation)
+				{
+					debugActionNode.childGetter = delegate
+					{
+						List<DebugActionNode> list2 = new List<DebugActionNode>();
+						foreach (float item2 in DebugActionsUtility.PointsOptions(extended: false))
+						{
+							string text = $"{item2:F0} points";
+							GetSlateValuesForPoints(localScriptDef, slate, item2);
+							QuestScriptDef questScriptDef = localScriptDef;
+							Slate slate2 = slate;
+							IIncidentTarget currentMap = Find.CurrentMap;
+							if (!questScriptDef.CanRun(slate2, currentMap ?? Find.World))
+							{
+								text += " [not now]";
+							}
+							DebugActionNode debugActionNode2 = new DebugActionNode(text);
+							Slate localSlate = slate.DeepCopy();
+							debugActionNode2.childGetter = () => SelectPopulation(localScriptDef, localSlate, generate: true);
+							list2.Add(debugActionNode2);
+						}
+						return list2;
+					};
+				}
+				else if (item.affectedByPoints)
+				{
+					debugActionNode.childGetter = () => SelectPoints(localScriptDef, slate, generate: true);
+				}
+				else if (localScriptDef.affectedByPopulation)
+				{
+					debugActionNode.childGetter = () => SelectPopulation(localScriptDef, slate, generate: true);
+				}
+				else
+				{
+					debugActionNode.action = delegate
+					{
+						GetQuest(localScriptDef, slate);
+					};
+				}
+				list.Add(debugActionNode);
+			}
+			return list.OrderBy((DebugActionNode op) => op.label).ToList();
+			void GetQuest(QuestScriptDef script, Slate slate2)
 			{
 				int num = 0;
 				for (int i = 0; i < count; i++)
 				{
 					if (script.IsRootDecree)
 					{
-						Pawn pawn = slate.Get<Pawn>("asker");
-						if (pawn.royalty.AllTitlesForReading.NullOrEmpty())
+						Pawn pawn = slate2.Get<Pawn>("asker");
+						if (pawn.royalty.AllTitlesForReading.NullOrEmpty() && Faction.OfEmpire != null)
 						{
-							pawn.royalty.SetTitle(Faction.Empire, RoyalTitleDefOf.Knight, grantRewards: false);
-							Messages.Message("Dev: Gave " + RoyalTitleDefOf.Knight.label + " title to " + pawn.LabelCap, pawn, MessageTypeDefOf.NeutralEvent, historical: false);
+							pawn.royalty.SetTitle(Faction.OfEmpire, RoyalTitleDefOf.Knight, grantRewards: false);
+							Messages.Message("DEV: Gave " + RoyalTitleDefOf.Knight.label + " title to " + pawn.LabelCap, pawn, MessageTypeDefOf.NeutralEvent, historical: false);
 						}
 						Find.CurrentMap.StoryState.RecordDecreeFired(script);
 					}
-					if (count != 1 && !script.CanRun(slate))
+					IIncidentTarget currentMap = Find.CurrentMap;
+					if (!script.CanRun(slate2, currentMap ?? Find.World))
 					{
-						num++;
+						if (count == 1 && !script.affectedByPoints && !script.affectedByPopulation)
+						{
+							Messages.Message("DEV: Failed to generate quest. CanRun returned false.", MessageTypeDefOf.RejectInput, historical: false);
+						}
+						else if (count > 1)
+						{
+							num++;
+						}
 					}
 					else if (!logDescOnly)
 					{
-						Quest quest = QuestUtility.GenerateQuestAndMakeAvailable(script, slate);
-						if (!quest.hidden)
+						Quest quest = QuestUtility.GenerateQuestAndMakeAvailable(script, slate2);
+						if (!quest.hidden && quest.root.sendAvailableLetter)
 						{
 							QuestUtility.SendLetterQuestAvailable(quest);
 						}
 					}
 					else
 					{
-						Quest quest2 = QuestUtility.GenerateQuestAndMakeAvailable(script, slate);
-						string text2 = quest2.name;
-						if (slate.Exists("points"))
+						Quest quest2 = QuestUtility.GenerateQuestAndMakeAvailable(script, slate2);
+						string text = quest2.name;
+						if (slate2.Exists("points"))
 						{
-							text2 = text2 + "(" + slate.Get("points", 0f) + " points)";
+							text = text + "(" + slate2.Get("points", 0f) + " points)";
 						}
-						if (slate.Exists("population"))
+						if (slate2.Exists("population"))
 						{
-							text2 = text2 + "(" + slate.Get("population", 0) + " population)";
+							text = text + "(" + slate2.Get("population", 0) + " population)";
 						}
-						text2 += "\n--------------\n" + quest2.description + "\n--------------";
-						Log.Message(text2);
+						text += "\n--------------\n" + quest2.description + "\n--------------";
+						Log.Message(text);
 						Find.QuestManager.Remove(quest2);
 					}
 				}
 				if (num != 0)
 				{
-					Messages.Message("Dev: Generated only " + (count - num) + " quests.", MessageTypeDefOf.RejectInput, historical: false);
+					Messages.Message("DEV: Generated only " + (count - num) + " quests.", MessageTypeDefOf.RejectInput, historical: false);
 				}
-			};
-			Action<QuestScriptDef, Slate, Action> selectPoints = delegate(QuestScriptDef script, Slate slate, Action next)
-			{
-				List<DebugMenuOption> list3 = new List<DebugMenuOption>();
-				float localPoints = default(float);
-				foreach (float item in DebugActionsUtility.PointsOptions(extended: false))
-				{
-					localPoints = item;
-					string text = item.ToString("F0") + " points";
-					if (script != null)
-					{
-						if (script.IsRootDecree)
-						{
-							slate.Set("asker", PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists.RandomElement());
-						}
-						if (script == QuestScriptDefOf.LongRangeMineralScannerLump)
-						{
-							slate.Set("targetMineableThing", ThingDefOf.Gold);
-							slate.Set("targetMineable", ThingDefOf.MineableGold);
-							slate.Set("worker", PawnsFinder.AllMaps_FreeColonists.FirstOrDefault());
-						}
-						slate.Set("points", localPoints);
-						if (!script.CanRun(slate))
-						{
-							text += " [not now]";
-						}
-					}
-					list3.Add(new DebugMenuOption(text, DebugMenuOptionMode.Action, delegate
-					{
-						slate.Set("points", localPoints);
-						next();
-					}));
-				}
-				Find.WindowStack.Add(new Dialog_DebugOptionListLister(list3));
-			};
-			Action<Slate, Action> selectPopulation = delegate(Slate slate, Action next)
-			{
-				List<DebugMenuOption> list2 = new List<DebugMenuOption>
-				{
-					new DebugMenuOption("*Don't set", DebugMenuOptionMode.Action, next)
-				};
-				int localPopulation = default(int);
-				foreach (int item2 in DebugActionsUtility.PopulationOptions())
-				{
-					localPopulation = item2;
-					list2.Add(new DebugMenuOption(item2.ToString("F0") + " colony population", DebugMenuOptionMode.Action, delegate
-					{
-						slate.Set("population", localPopulation);
-						next();
-					}));
-				}
-				Find.WindowStack.Add(new Dialog_DebugOptionListLister(list2));
-			};
-			List<DebugMenuOption> list = new List<DebugMenuOption>();
-			list.Add(new DebugMenuOption("*Natural random", DebugMenuOptionMode.Action, delegate
-			{
-				Slate slate3 = new Slate();
-				selectPoints(null, slate3, delegate
-				{
-					float points = slate3.Get("points", 0f);
-					QuestScriptDef script2 = NaturalRandomQuestChooser.ChooseNaturalRandomQuest(points, Find.CurrentMap);
-					if (script2.affectedByPopulation)
-					{
-						selectPopulation(slate3, delegate
-						{
-							generateQuest(script2, slate3);
-						});
-					}
-					else
-					{
-						generateQuest(script2, slate3);
-					}
-				});
-			}));
-			foreach (QuestScriptDef scriptDef in DefDatabase<QuestScriptDef>.AllDefs.Where((QuestScriptDef x) => x.IsRootAny))
-			{
-				QuestScriptDef localScriptDef = scriptDef;
-				string defName = localScriptDef.defName;
-				list.Add(new DebugMenuOption(defName, DebugMenuOptionMode.Action, delegate
-				{
-					Slate slate2 = new Slate();
-					if (localScriptDef.affectedByPoints && localScriptDef.affectedByPopulation)
-					{
-						selectPoints(localScriptDef, slate2, delegate
-						{
-							selectPopulation(slate2, delegate
-							{
-								generateQuest(localScriptDef, slate2);
-							});
-						});
-					}
-					else if (scriptDef.affectedByPoints)
-					{
-						selectPoints(localScriptDef, slate2, delegate
-						{
-							generateQuest(localScriptDef, slate2);
-						});
-					}
-					else if (localScriptDef.affectedByPopulation)
-					{
-						selectPopulation(slate2, delegate
-						{
-							generateQuest(localScriptDef, slate2);
-						});
-					}
-					else
-					{
-						generateQuest(localScriptDef, slate2);
-					}
-				}));
 			}
-			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list.OrderBy((DebugMenuOption op) => op.label)));
+			static void GetSlateValuesForPoints(QuestScriptDef script, Slate slate2, float points)
+			{
+				if (script != null)
+				{
+					if (script.IsRootDecree)
+					{
+						slate2.Set("asker", PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists.RandomElement());
+					}
+					if (script == QuestScriptDefOf.LongRangeMineralScannerLump)
+					{
+						slate2.Set("targetMineableThing", ThingDefOf.Gold);
+						slate2.Set("targetMineable", ThingDefOf.MineableGold);
+						slate2.Set("worker", PawnsFinder.AllMaps_FreeColonists.FirstOrDefault());
+					}
+					slate2.Set("points", points);
+				}
+			}
+			List<DebugActionNode> SelectPoints(QuestScriptDef script, Slate slate2, bool generate)
+			{
+				List<DebugActionNode> list2 = new List<DebugActionNode>();
+				foreach (float item3 in DebugActionsUtility.PointsOptions(extended: false))
+				{
+					float localPoints = item3;
+					string text = $"{item3:F0} points";
+					GetSlateValuesForPoints(script, slate2, item3);
+					QuestScriptDef questScriptDef = script;
+					Slate slate3 = slate2;
+					IIncidentTarget currentMap = Find.CurrentMap;
+					if (!questScriptDef.CanRun(slate3, currentMap ?? Find.World))
+					{
+						text += " [not now]";
+					}
+					list2.Add(new DebugActionNode(text, DebugActionType.Action, delegate
+					{
+						slate2.Set("points", localPoints);
+						if (generate)
+						{
+							GetQuest(script, slate2);
+						}
+					}));
+				}
+				return list2;
+			}
+			List<DebugActionNode> SelectPopulation(QuestScriptDef script, Slate slate2, bool generate)
+			{
+				List<DebugActionNode> list2 = new List<DebugActionNode>
+				{
+					new DebugActionNode("*Don't set", DebugActionType.Action, delegate
+					{
+						slate2.Remove("population");
+						if (generate)
+						{
+							GetQuest(script, slate2);
+						}
+					})
+				};
+				foreach (int item4 in DebugActionsUtility.PopulationOptions())
+				{
+					int localPopulation = item4;
+					string text = $"{item4:F0} colony population";
+					slate2.Set("population", localPopulation);
+					QuestScriptDef questScriptDef = script;
+					Slate slate3 = slate2;
+					IIncidentTarget currentMap = Find.CurrentMap;
+					if (!questScriptDef.CanRun(slate3, currentMap ?? Find.World))
+					{
+						text += " [not now]";
+					}
+					list2.Add(new DebugActionNode(text, DebugActionType.Action, delegate
+					{
+						slate2.Set("population", localPopulation);
+						if (generate)
+						{
+							GetQuest(script, slate2);
+						}
+					}));
+				}
+				return list2;
+			}
 		}
 
-		[DebugAction("Quests", "QuestPart test", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void TestQuestPart()
+		[DebugAction("Quests", "QuestPart test", false, false, false, false, false, 0, false, actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static List<DebugActionNode> TestQuestPart()
 		{
-			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			List<DebugActionNode> list = new List<DebugActionNode>();
 			foreach (Type item in typeof(QuestPart).AllSubclassesNonAbstract())
 			{
 				Type localQuestPartType = item;
-				list.Add(new DebugMenuOption(localQuestPartType.Name, DebugMenuOptionMode.Action, delegate
+				list.Add(new DebugActionNode(localQuestPartType.Name, DebugActionType.Action, delegate
 				{
 					Quest quest = Quest.MakeRaw();
 					quest.name = "DEBUG QUEST (" + localQuestPartType.Name + ")";
@@ -254,13 +286,13 @@ namespace Verse
 					questPart.AssignDebugData();
 					quest.description = "A debug quest to test " + localQuestPartType.Name + "\n\n" + Scribe.saver.DebugOutputFor(questPart);
 					Find.QuestManager.Add(quest);
-					Find.LetterStack.ReceiveLetter("Dev: Quest", quest.description, LetterDefOf.PositiveEvent, LookTargets.Invalid, null, quest);
+					Find.LetterStack.ReceiveLetter("DEV: Quest", quest.description, LetterDefOf.PositiveEvent, LookTargets.Invalid, null, quest);
 				}));
 			}
-			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+			return list;
 		}
 
-		[DebugAction("Quests", "Log generated quest savedata", actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("Quests", "Log generated quest savedata", false, false, false, false, false, 0, false, actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		public static void QuestExample()
 		{
 			List<DebugMenuOption> list = new List<DebugMenuOption>();
@@ -270,10 +302,9 @@ namespace Verse
 				list.Add(new DebugMenuOption(localRuleDef.defName, DebugMenuOptionMode.Action, delegate
 				{
 					List<DebugMenuOption> list2 = new List<DebugMenuOption>();
-					float localPoints = default(float);
 					foreach (float item in DebugActionsUtility.PointsOptions(extended: true))
 					{
-						localPoints = item;
+						float localPoints = item;
 						list2.Add(new DebugMenuOption(item.ToString("F0"), DebugMenuOptionMode.Action, delegate
 						{
 							Slate slate = new Slate();
@@ -375,14 +406,18 @@ namespace Verse
 			slate.Set("points", StorytellerUtility.DefaultThreatPointsNow(Find.World));
 			DebugTables.MakeTablesDialog(from x in DefDatabase<QuestScriptDef>.AllDefs
 				orderby x.IsRootRandomSelected descending, x.IsRootDecree descending
-				select x, new TableDataGetter<QuestScriptDef>("defName", (QuestScriptDef d) => d.defName), new TableDataGetter<QuestScriptDef>("points\nmin", (QuestScriptDef d) => (!(d.rootMinPoints > 0f)) ? "" : d.rootMinPoints.ToString()), new TableDataGetter<QuestScriptDef>("progress\nmin", (QuestScriptDef d) => (!(d.rootMinProgressScore > 0f)) ? "" : d.rootMinProgressScore.ToString()), new TableDataGetter<QuestScriptDef>("increases\npop", (QuestScriptDef d) => d.rootIncreasesPopulation.ToStringCheckBlank()), new TableDataGetter<QuestScriptDef>("root\nweight", (QuestScriptDef d) => (!(d.rootSelectionWeight > 0f)) ? "" : d.rootSelectionWeight.ToString()), new TableDataGetter<QuestScriptDef>("decree\nweight", (QuestScriptDef d) => (!(d.decreeSelectionWeight > 0f)) ? "" : d.decreeSelectionWeight.ToString()), new TableDataGetter<QuestScriptDef>("decree\ntags", (QuestScriptDef d) => d.decreeTags.ToCommaList()), new TableDataGetter<QuestScriptDef>("auto\naccept", (QuestScriptDef d) => d.autoAccept.ToStringCheckBlank()), new TableDataGetter<QuestScriptDef>("expiry\ndays", (QuestScriptDef d) => (!(d.expireDaysRange.TrueMax > 0f)) ? "" : d.expireDaysRange.ToString()), new TableDataGetter<QuestScriptDef>("CanRun\nnow", (QuestScriptDef d) => d.CanRun(slate).ToStringCheckBlank()), new TableDataGetter<QuestScriptDef>("canGiveRoyalFavor", (QuestScriptDef d) => d.canGiveRoyalFavor.ToStringCheckBlank()), new TableDataGetter<QuestScriptDef>("possible rewards", delegate(QuestScriptDef d)
+				select x, new TableDataGetter<QuestScriptDef>("defName", (QuestScriptDef d) => d.defName), new TableDataGetter<QuestScriptDef>("points\nmin", (QuestScriptDef d) => (!(d.rootMinPoints > 0f)) ? "" : d.rootMinPoints.ToString()), new TableDataGetter<QuestScriptDef>("progress\nmin", (QuestScriptDef d) => (!(d.rootMinProgressScore > 0f)) ? "" : d.rootMinProgressScore.ToString()), new TableDataGetter<QuestScriptDef>("increases\npop", (QuestScriptDef d) => d.rootIncreasesPopulation.ToStringCheckBlank()), new TableDataGetter<QuestScriptDef>("root\nweight", (QuestScriptDef d) => (!(d.rootSelectionWeight > 0f)) ? "" : d.rootSelectionWeight.ToString()), new TableDataGetter<QuestScriptDef>("decree\nweight", (QuestScriptDef d) => (!(d.decreeSelectionWeight > 0f)) ? "" : d.decreeSelectionWeight.ToString()), new TableDataGetter<QuestScriptDef>("decree\ntags", (QuestScriptDef d) => d.decreeTags.ToCommaList()), new TableDataGetter<QuestScriptDef>("auto\naccept", (QuestScriptDef d) => d.autoAccept.ToStringCheckBlank()), new TableDataGetter<QuestScriptDef>("expiry\ndays", (QuestScriptDef d) => (!(d.expireDaysRange.TrueMax > 0f)) ? "" : d.expireDaysRange.ToString("0.##")), new TableDataGetter<QuestScriptDef>("refire\ndays", (QuestScriptDef d) => (!(d.minRefireDays > 0f)) ? "" : d.minRefireDays.ToString("0.##")), new TableDataGetter<QuestScriptDef>("CanRun\nnow", delegate(QuestScriptDef d)
+			{
+				Slate slate2 = slate;
+				IIncidentTarget currentMap = Find.CurrentMap;
+				return d.CanRun(slate2, currentMap ?? Find.World).ToStringCheckBlank();
+			}), new TableDataGetter<QuestScriptDef>("canGiveRoyalFavor", (QuestScriptDef d) => d.canGiveRoyalFavor.ToStringCheckBlank()), new TableDataGetter<QuestScriptDef>("possible rewards", delegate(QuestScriptDef d)
 			{
 				RewardsGeneratorParams? rewardsParams = null;
 				bool multiple = false;
 				slate.Set<Action<QuestNode, Slate>>("testRunCallback", delegate(QuestNode node, Slate curSlate)
 				{
-					QuestNode_GiveRewards questNode_GiveRewards = node as QuestNode_GiveRewards;
-					if (questNode_GiveRewards != null)
+					if (node is QuestNode_GiveRewards questNode_GiveRewards)
 					{
 						if (rewardsParams.HasValue)
 						{
@@ -394,7 +429,9 @@ namespace Verse
 						}
 					}
 				});
-				bool flag = d.CanRun(slate);
+				Slate slate2 = slate;
+				IIncidentTarget currentMap = Find.CurrentMap;
+				bool flag = d.CanRun(slate2, currentMap ?? Find.World);
 				slate.Remove("testRunCallback");
 				if (multiple)
 				{

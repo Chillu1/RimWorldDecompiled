@@ -54,7 +54,7 @@ namespace Verse
 					vector.x = 260f;
 					vector.y = Text.CalcHeight(finalText, vector.x);
 				}
-				return new Rect(0f, 0f, vector.x, vector.y).ContractedBy(-4f);
+				return new Rect(0f, 0f, vector.x, vector.y).ContractedBy(-4f).RoundedCeil();
 			}
 		}
 

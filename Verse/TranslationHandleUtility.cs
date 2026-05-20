@@ -39,10 +39,7 @@ namespace Verse
 			int num2 = 0;
 			for (int i = 0; i < num; i++)
 			{
-				object value = property2.GetValue(list, new object[1]
-				{
-					i
-				});
+				object value = property2.GetValue(list, new object[1] { i });
 				if (value == null)
 				{
 					continue;
@@ -74,10 +71,7 @@ namespace Verse
 			int num3 = 0;
 			for (int k = 0; k < num; k++)
 			{
-				object value3 = property2.GetValue(list, new object[1]
-				{
-					k
-				});
+				object value3 = property2.GetValue(list, new object[1] { k });
 				if (value3 == null)
 				{
 					continue;
@@ -172,10 +166,7 @@ namespace Verse
 			int num4 = (int)property.GetValue(list, null);
 			for (int j = 0; j < num4; j++)
 			{
-				object value2 = property2.GetValue(list, new object[1]
-				{
-					j
-				});
+				object value2 = property2.GetValue(list, new object[1] { j });
 				if (value2 == null)
 				{
 					continue;
@@ -241,9 +232,9 @@ namespace Verse
 			{
 				text = item.ToString();
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				throw new InvalidOperationException("Could not get element by handle because one of the elements threw an exception in its ToString(): " + arg);
+				throw new InvalidOperationException("Could not get element by handle because one of the elements threw an exception in its ToString(): " + ex);
 			}
 			if (text.NullOrEmpty())
 			{

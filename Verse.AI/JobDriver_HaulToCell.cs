@@ -12,6 +12,12 @@ namespace Verse.AI
 
 		private const TargetIndex StoreCellInd = TargetIndex.B;
 
+		private const int MinimumHaulingJobTicks = 30;
+
+		public Thing ToHaul => job.GetTarget(TargetIndex.A).Thing;
+
+		protected virtual bool DropCarriedThingIfNotTarget => false;
+
 		public override void ExposeData()
 		{
 			base.ExposeData();
@@ -59,28 +65,53 @@ namespace Verse.AI
 		public override void Notify_Starting()
 		{
 			base.Notify_Starting();
-			if (base.TargetThingA != null)
-			{
-				forbiddenInitially = base.TargetThingA.IsForbidden(pawn);
-			}
-			else
-			{
-				forbiddenInitially = false;
-			}
+			forbiddenInitially = base.TargetThingA != null && base.TargetThingA.IsForbidden(pawn);
+		}
+
+		protected virtual Toil BeforeDrop()
+		{
+			return Toils_General.Label();
 		}
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			this.FailOnDestroyedOrNull(TargetIndex.A);
 			this.FailOnBurningImmobile(TargetIndex.B);
+			this.FailOnForbidden(TargetIndex.B);
 			if (!forbiddenInitially)
 			{
 				this.FailOnForbidden(TargetIndex.A);
 			}
+			yield return Toils_General.DoAtomic(delegate
+			{
+				startTick = Find.TickManager.TicksGame;
+			});
 			Toil reserveTargetA = Toils_Reserve.Reserve(TargetIndex.A);
 			yield return reserveTargetA;
+			Toil postCarry = Toils_General.Label();
+			Toil checkJumpPostCarry = Toils_Jump.JumpIf(postCarry, delegate
+			{
+				Thing carriedThing = pawn.carryTracker.CarriedThing;
+				if (carriedThing == null)
+				{
+					return false;
+				}
+				return pawn.carryTracker.AvailableStackSpace(ToHaul.def) <= 0 || carriedThing == ToHaul;
+			});
+			yield return checkJumpPostCarry;
+			yield return Toils_General.DoAtomic(delegate
+			{
+				if (DropCarriedThingIfNotTarget && pawn.IsCarrying())
+				{
+					if (DebugViewSettings.logCarriedBetweenJobs)
+					{
+						Log.Message($"Dropping {pawn.carryTracker.CarriedThing} because it is not the designated Thing to haul.");
+					}
+					pawn.carryTracker.TryDropCarriedThing(pawn.Position, ThingPlaceMode.Near, out var _);
+				}
+			});
 			Toil toilGoto = null;
-			toilGoto = Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.ClosestTouch).FailOnSomeonePhysicallyInteracting(TargetIndex.A).FailOn((Func<bool>)delegate
+			toilGoto = Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.ClosestTouch, canGotoSpawnedParent: true).FailOnSomeonePhysicallyInteracting(TargetIndex.A).FailOn((Func<bool>)delegate
 			{
 				Pawn actor = toilGoto.actor;
 				Job curJob = actor.jobs.curJob;
@@ -95,14 +126,33 @@ namespace Verse.AI
 				return false;
 			});
 			yield return toilGoto;
-			yield return Toils_Haul.StartCarryThing(TargetIndex.A, putRemainderInQueue: false, subtractNumTakenFromJobCount: true);
+			yield return checkJumpPostCarry;
+			yield return Toils_Haul.StartCarryThing(TargetIndex.A, putRemainderInQueue: false, subtractNumTakenFromJobCount: true, failIfStackCountLessThanJobCount: false, reserve: true, HaulAIUtility.IsInHaulableInventory(ToHaul));
+			yield return postCarry;
 			if (job.haulOpportunisticDuplicates)
 			{
 				yield return Toils_Haul.CheckForGetOpportunityDuplicate(reserveTargetA, TargetIndex.A, TargetIndex.B);
 			}
 			Toil carryToCell = Toils_Haul.CarryHauledThingToCell(TargetIndex.B);
 			yield return carryToCell;
+			yield return PossiblyDelay();
+			yield return BeforeDrop();
 			yield return Toils_Haul.PlaceHauledThingInCell(TargetIndex.B, carryToCell, storageMode: true);
+		}
+
+		private Toil PossiblyDelay()
+		{
+			Toil toil = ToilMaker.MakeToil("PossiblyDelay");
+			toil.atomicWithPrevious = true;
+			toil.tickIntervalAction = delegate
+			{
+				if (Find.TickManager.TicksGame >= startTick + 30)
+				{
+					ReadyForNextToil();
+				}
+			};
+			toil.defaultCompleteMode = ToilCompleteMode.Never;
+			return toil;
 		}
 	}
 }

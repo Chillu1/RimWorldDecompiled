@@ -15,7 +15,7 @@ namespace Verse
 
 		public sbyte mapIndex = -1;
 
-		private Room roomInt;
+		private District districtInt;
 
 		public List<RegionLink> links = new List<RegionLink>();
 
@@ -33,9 +33,9 @@ namespace Verse
 
 		public bool valid = true;
 
-		private ListerThings listerThings = new ListerThings(ListerThingsUse.Region);
+		private readonly ListerThings listerThings = new ListerThings(ListerThingsUse.Region);
 
-		public uint[] closedIndex = new uint[RegionTraverser.NumWorkers];
+		public readonly uint[] closedIndex = new uint[RegionTraverser.NumWorkers];
 
 		public uint reachedIndex;
 
@@ -45,17 +45,17 @@ namespace Verse
 
 		public int mark;
 
-		private List<KeyValuePair<Pawn, Danger>> cachedDangers = new List<KeyValuePair<Pawn, Danger>>();
+		private readonly Dictionary<Pawn, Danger> cachedDangers = new Dictionary<Pawn, Danger>();
 
-		private int cachedDangersForFrame;
+		private int cachedDangersForTick;
 
 		private float cachedBaseDesiredPlantsCount;
 
 		private int cachedBaseDesiredPlantsCountForTick = -999999;
 
-		private static Dictionary<Pawn, FloatRange> cachedSafeTemperatureRanges = new Dictionary<Pawn, FloatRange>();
+		private static readonly Dictionary<Pawn, FloatRange> cachedSafeTemperatureRanges = new Dictionary<Pawn, FloatRange>();
 
-		private static int cachedSafeTemperatureRangesForFrame;
+		private static int cachedSafeTemperatureRangesForTick;
 
 		private int debug_makeTick = -1000;
 
@@ -156,25 +156,21 @@ namespace Verse
 			}
 		}
 
-		public Room Room
+		public Room Room => District?.Room;
+
+		public District District
 		{
 			get
 			{
-				return roomInt;
+				return districtInt;
 			}
 			set
 			{
-				if (value != roomInt)
+				if (value != districtInt)
 				{
-					if (roomInt != null)
-					{
-						roomInt.RemoveRegion(this);
-					}
-					roomInt = value;
-					if (roomInt != null)
-					{
-						roomInt.AddRegion(this);
-					}
+					districtInt?.RemoveRegion(this);
+					districtInt = value;
+					districtInt?.AddRegion(this);
 				}
 			}
 		}
@@ -225,15 +221,20 @@ namespace Verse
 				stringBuilder.AppendLine("id: " + id);
 				stringBuilder.AppendLine("mapIndex: " + mapIndex);
 				stringBuilder.AppendLine("links count: " + links.Count);
+				stringBuilder.AppendLine("type: " + type);
+				stringBuilder.AppendLine("touchesMapEdge: " + touchesMapEdge);
 				foreach (RegionLink link in links)
 				{
-					stringBuilder.AppendLine("  --" + link.ToString());
+					stringBuilder.AppendLine("  --" + link);
 				}
 				stringBuilder.AppendLine("valid: " + valid);
 				stringBuilder.AppendLine("makeTick: " + debug_makeTick);
+				stringBuilder.AppendLine("districtID: " + ((District != null) ? District.ID.ToString() : "null district!"));
 				stringBuilder.AppendLine("roomID: " + ((Room != null) ? Room.ID.ToString() : "null room!"));
-				stringBuilder.AppendLine("extentsClose: " + extentsClose);
-				stringBuilder.AppendLine("extentsLimit: " + extentsLimit);
+				CellRect cellRect = extentsClose;
+				stringBuilder.AppendLine("extentsClose: " + cellRect.ToString());
+				cellRect = extentsLimit;
+				stringBuilder.AppendLine("extentsLimit: " + cellRect.ToString());
 				stringBuilder.AppendLine("ListerThings:");
 				if (listerThings.AllThings != null)
 				{
@@ -280,7 +281,7 @@ namespace Verse
 
 		public bool Allows(TraverseParms tp, bool isDestination)
 		{
-			if (tp.mode != TraverseMode.PassAllDestroyableThings && tp.mode != TraverseMode.PassAllDestroyableThingsNotWater && !type.Passable())
+			if (tp.mode != TraverseMode.PassAllDestroyableThings && tp.mode != TraverseMode.PassAllDestroyablePlayerOwnedThings && tp.mode != TraverseMode.PassAllDestroyableThingsNotWater && !type.Passable())
 			{
 				return false;
 			}
@@ -296,21 +297,35 @@ namespace Verse
 					}
 				}
 			}
+			bool flag = type == RegionType.Fence && tp.fenceBlocked && !tp.canBashFences;
 			switch (tp.mode)
 			{
 			case TraverseMode.ByPawn:
 				if (door != null)
 				{
-					ByteGrid avoidGrid = tp.pawn.GetAvoidGrid();
-					if (avoidGrid != null && avoidGrid[door.Position] == byte.MaxValue)
+					if (tp.pawn == null)
 					{
-						return false;
+						if (!door.FreePassage && !door.Open)
+						{
+							return tp.canBashDoors;
+						}
+						return true;
+					}
+					if (tp.pawn.TryGetAvoidGrid(out var grid))
+					{
+						foreach (IntVec3 item in door.OccupiedRect())
+						{
+							if (grid.Grid[Map.cellIndices.CellToIndex(item)] == byte.MaxValue && item.GetRegion(Map) == this)
+							{
+								return false;
+							}
+						}
 					}
 					if (tp.pawn.HostileTo(door))
 					{
 						if (!door.CanPhysicallyPass(tp.pawn))
 						{
-							return tp.canBash;
+							return tp.canBashDoors;
 						}
 						return true;
 					}
@@ -320,21 +335,22 @@ namespace Verse
 					}
 					return false;
 				}
-				return true;
+				return !flag;
 			case TraverseMode.NoPassClosedDoors:
-				if (door != null)
+			case TraverseMode.NoPassClosedDoorsOrWater:
+				if (door == null || door.FreePassage)
 				{
-					return door.FreePassage;
+					return !flag;
 				}
-				return true;
+				return false;
 			case TraverseMode.PassDoors:
-				return true;
+				return !flag;
 			case TraverseMode.PassAllDestroyableThings:
 				return true;
-			case TraverseMode.NoPassClosedDoorsOrWater:
+			case TraverseMode.PassAllDestroyablePlayerOwnedThings:
 				if (door != null)
 				{
-					return door.FreePassage;
+					return door.Faction != Faction.OfPlayer;
 				}
 				return true;
 			case TraverseMode.PassAllDestroyableThingsNotWater:
@@ -344,50 +360,82 @@ namespace Verse
 			}
 		}
 
+		public IEnumerable<CellRect> EnumerateRectangleCover()
+		{
+			List<IntVec3> uncoveredCells = new List<IntVec3>(Cells);
+			while (uncoveredCells.Count > 0)
+			{
+				IntVec3 intVec = uncoveredCells.PopFront();
+				int i = intVec.x;
+				int num;
+				for (num = intVec.z; uncoveredCells.Contains(new IntVec3(i + 1, 0, num)); i++)
+				{
+				}
+				while (true)
+				{
+					bool flag = false;
+					for (int j = intVec.x; j <= i; j++)
+					{
+						if (!uncoveredCells.Contains(new IntVec3(j, 0, num + 1)))
+						{
+							flag = true;
+							break;
+						}
+					}
+					if (flag)
+					{
+						break;
+					}
+					num++;
+				}
+				CellRect cellRect = new CellRect(intVec.x, intVec.z, i - intVec.x + 1, num - intVec.z + 1);
+				HashSet<IntVec3> toRemove = new HashSet<IntVec3>(cellRect.Cells);
+				uncoveredCells.RemoveAll((IntVec3 x) => toRemove.Contains(x));
+				yield return cellRect;
+			}
+		}
+
 		public Danger DangerFor(Pawn p)
 		{
 			if (Current.ProgramState == ProgramState.Playing)
 			{
-				if (cachedDangersForFrame != Time.frameCount)
+				Danger value;
+				if (cachedDangersForTick != GenTicks.TicksGame)
 				{
 					cachedDangers.Clear();
-					cachedDangersForFrame = Time.frameCount;
+					cachedDangersForTick = GenTicks.TicksGame;
 				}
-				else
+				else if (cachedDangers.TryGetValue(p, out value))
 				{
-					for (int i = 0; i < cachedDangers.Count; i++)
-					{
-						if (cachedDangers[i].Key == p)
-						{
-							return cachedDangers[i].Value;
-						}
-					}
+					return value;
 				}
 			}
-			float temperature = Room.Temperature;
-			FloatRange value;
+			Room room = Room;
+			float temperature = room.Temperature;
+			FloatRange value2;
 			if (Current.ProgramState == ProgramState.Playing)
 			{
-				if (cachedSafeTemperatureRangesForFrame != Time.frameCount)
+				if (cachedSafeTemperatureRangesForTick != GenTicks.TicksGame)
 				{
 					cachedSafeTemperatureRanges.Clear();
-					cachedSafeTemperatureRangesForFrame = Time.frameCount;
+					cachedSafeTemperatureRangesForTick = GenTicks.TicksGame;
 				}
-				if (!cachedSafeTemperatureRanges.TryGetValue(p, out value))
+				if (!cachedSafeTemperatureRanges.TryGetValue(p, out value2))
 				{
-					value = p.SafeTemperatureRange();
-					cachedSafeTemperatureRanges.Add(p, value);
+					value2 = p.SafeTemperatureRange();
+					cachedSafeTemperatureRanges.Add(p, value2);
 				}
 			}
 			else
 			{
-				value = p.SafeTemperatureRange();
+				value2 = p.SafeTemperatureRange();
 			}
-			Danger danger = (value.Includes(temperature) ? Danger.None : ((!value.ExpandedBy(80f).Includes(temperature)) ? Danger.Deadly : Danger.Some));
-			if (Current.ProgramState == ProgramState.Playing)
+			Danger danger = (value2.Includes(temperature) ? Danger.None : (value2.ExpandedBy(80f).Includes(temperature) ? Danger.Some : Danger.Deadly));
+			if (room.Vacuum > 0.5f && p.ConcernedByVacuum)
 			{
-				cachedDangers.Add(new KeyValuePair<Pawn, Danger>(p, danger));
+				danger = Danger.Deadly;
 			}
+			cachedDangers[p] = danger;
 			return danger;
 		}
 
@@ -473,8 +521,8 @@ namespace Verse
 
 		public override string ToString()
 		{
-			string str = ((door == null) ? "null" : door.ToString());
-			return string.Concat("Region(id=", id, ", mapIndex=", mapIndex, ", center=", extentsClose.CenterCell, ", links=", links.Count, ", cells=", CellCount, (door != null) ? (", portal=" + str) : null, ")");
+			string text = ((door == null) ? "null" : door.ToString());
+			return "Region(id=" + id + ", mapIndex=" + mapIndex + ", center=" + extentsClose.CenterCell.ToString() + ", links=" + links.Count + ", cells=" + CellCount + ", touchesMapEdge=" + touchesMapEdge + ((door != null) ? (", portal=" + text) : null) + ")";
 		}
 
 		public void DebugDraw()
@@ -491,7 +539,7 @@ namespace Verse
 			int num = Mathf.RoundToInt(Time.realtimeSinceStartup * 2f) % 2;
 			if (DebugViewSettings.drawRegions)
 			{
-				GenDraw.DrawFieldEdges(color: (!valid) ? Color.red : ((!DebugIsNew) ? Color.green : Color.yellow), cells: Cells.ToList());
+				GenDraw.DrawFieldEdges(Cells.ToList(), DebugColor());
 				foreach (Region neighbor in Neighbors)
 				{
 					GenDraw.DrawFieldEdges(neighbor.Cells.ToList(), Color.grey);
@@ -505,10 +553,13 @@ namespace Verse
 					{
 						continue;
 					}
-					foreach (IntVec3 cell in link.span.Cells)
+					List<IntVec3> list = link.span.Cells.ToList();
+					Material mat = DebugSolidColorMats.MaterialOf(Color.magenta * new Color(1f, 1f, 1f, 0.25f));
+					foreach (IntVec3 item in list)
 					{
-						CellRenderer.RenderCell(cell, DebugSolidColorMats.MaterialOf(Color.magenta));
+						CellRenderer.RenderCell(item, mat);
 					}
+					GenDraw.DrawFieldEdges(list, Color.white);
 				}
 			}
 			if (!DebugViewSettings.drawRegionThings)
@@ -519,6 +570,19 @@ namespace Verse
 			{
 				CellRenderer.RenderSpot(allThing.TrueCenter(), (float)(allThing.thingIDNumber % 256) / 256f);
 			}
+		}
+
+		private Color DebugColor()
+		{
+			if (!valid)
+			{
+				return Color.red;
+			}
+			if (DebugIsNew)
+			{
+				return Color.yellow;
+			}
+			return Color.green;
 		}
 
 		public void Debug_Notify_Traversed()
@@ -537,8 +601,7 @@ namespace Verse
 			{
 				return false;
 			}
-			Region region = obj as Region;
-			if (region == null)
+			if (!(obj is Region region))
 			{
 				return false;
 			}

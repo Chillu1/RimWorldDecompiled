@@ -7,7 +7,7 @@ namespace Ionic.Zlib
 	{
 		public static int URShift(int number, int bits)
 		{
-			return (int)((uint)number >> bits);
+			return number >>> bits;
 		}
 
 		public static int ReadInput(TextReader sourceTextReader, byte[] target, int start, int count)

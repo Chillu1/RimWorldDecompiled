@@ -6,9 +6,9 @@ namespace RimWorld
 {
 	public class Designator_Uninstall : Designator
 	{
-		public override int DraggableDimensions => 2;
-
 		protected override DesignationDef Designation => DesignationDefOf.Uninstall;
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
 
 		public Designator_Uninstall()
 		{
@@ -67,17 +67,18 @@ namespace RimWorld
 			if (DebugSettings.godMode || t.GetStatValue(StatDefOf.WorkToBuild) == 0f || t.def.IsFrame)
 			{
 				t.Uninstall();
+				return;
 			}
-			else
+			base.Map.designationManager.AddDesignation(new Designation(t, Designation));
+			if (ModsConfig.AnomalyActive && t is Building_HoldingPlatform { Occupied: not false } building_HoldingPlatform)
 			{
-				base.Map.designationManager.AddDesignation(new Designation(t, Designation));
+				Messages.Message("MessageOccupiedHoldingPlatformUninstalled".Translate(), building_HoldingPlatform, MessageTypeDefOf.CautionInput);
 			}
 		}
 
 		public override AcceptanceReport CanDesignateThing(Thing t)
 		{
-			Building building = t as Building;
-			if (building == null)
+			if (!(t is Building building))
 			{
 				return false;
 			}
@@ -89,7 +90,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!DebugSettings.godMode && building.Faction != Faction.OfPlayer)
+			if (!DebugSettings.godMode && building.Faction != Faction.OfPlayer && !building.def.building.alwaysUninstallable)
 			{
 				if (building.Faction != null)
 				{

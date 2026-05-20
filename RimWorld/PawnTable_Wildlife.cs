@@ -7,7 +7,7 @@ namespace RimWorld
 {
 	public class PawnTable_Wildlife : PawnTable
 	{
-		protected override IEnumerable<Pawn> PrimarySortFunction(IEnumerable<Pawn> input)
+		protected override IEnumerable<Pawn> LabelSortFunction(IEnumerable<Pawn> input)
 		{
 			return from p in input
 				orderby p.RaceProps.baseBodySize descending, p.def.label

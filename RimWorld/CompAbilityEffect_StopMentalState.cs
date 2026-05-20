@@ -7,10 +7,18 @@ namespace RimWorld
 	{
 		public new CompProperties_AbilityStopMentalState Props => (CompProperties_AbilityStopMentalState)props;
 
+		public override bool HideTargetPawnTooltip => true;
+
 		public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
 		{
 			base.Apply(target, dest);
-			target.Pawn?.MentalState.RecoverFromState();
+			Pawn pawn = target.Pawn;
+			Hediff firstHediffOfDef = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.CatatonicBreakdown);
+			if (firstHediffOfDef != null)
+			{
+				pawn.health.RemoveHediff(firstHediffOfDef);
+			}
+			pawn?.MentalState?.RecoverFromState();
 		}
 
 		public override bool CanApplyOn(LocalTargetInfo target, LocalTargetInfo dest)
@@ -23,11 +31,11 @@ namespace RimWorld
 			Pawn pawn = target.Pawn;
 			if (pawn != null)
 			{
-				if (!AbilityUtility.ValidateHasMentalState(pawn, throwMessages))
+				if (!AbilityUtility.ValidateHasMentalState(pawn, throwMessages, parent))
 				{
 					return false;
 				}
-				if (Props.exceptions.Contains(pawn.MentalStateDef))
+				if (pawn.MentalStateDef != null && Props.exceptions.Contains(pawn.MentalStateDef))
 				{
 					if (throwMessages)
 					{
@@ -41,8 +49,8 @@ namespace RimWorld
 					Pawn pawn2 = parent.pawn;
 					if (throwMessages)
 					{
-						TaggedString value = ("MentalBreakIntensity" + TargetMentalBreakIntensity(target)).Translate();
-						Messages.Message("CommandPsycastNotEnoughPsyfocusForMentalBreak".Translate(num.ToStringPercent(), value, pawn2.psychicEntropy.CurrentPsyfocus.ToStringPercent("0.#"), parent.def.label.Named("PSYCASTNAME"), pawn2.Named("CASTERNAME")), pawn, MessageTypeDefOf.RejectInput, historical: false);
+						TaggedString taggedString = ("MentalBreakIntensity" + TargetMentalBreakIntensity(target)).Translate();
+						Messages.Message("CommandPsycastNotEnoughPsyfocusForMentalBreak".Translate(num.ToStringPercent(), taggedString, pawn2.psychicEntropy.CurrentPsyfocus.ToStringPercent("0.#"), parent.def.label.Named("PSYCASTNAME"), pawn2.Named("CASTERNAME")), pawn, MessageTypeDefOf.RejectInput, historical: false);
 					}
 					return false;
 				}
@@ -52,16 +60,24 @@ namespace RimWorld
 
 		public MentalBreakIntensity TargetMentalBreakIntensity(LocalTargetInfo target)
 		{
-			MentalStateDef mentalStateDef = target.Pawn?.MentalStateDef;
-			if (mentalStateDef != null)
+			Pawn pawn = target.Pawn;
+			if (pawn != null)
 			{
-				List<MentalBreakDef> allDefsListForReading = DefDatabase<MentalBreakDef>.AllDefsListForReading;
-				for (int i = 0; i < allDefsListForReading.Count; i++)
+				MentalStateDef mentalStateDef = pawn.MentalStateDef;
+				if (mentalStateDef != null)
 				{
-					if (allDefsListForReading[i].mentalState == mentalStateDef)
+					List<MentalBreakDef> allDefsListForReading = DefDatabase<MentalBreakDef>.AllDefsListForReading;
+					for (int i = 0; i < allDefsListForReading.Count; i++)
 					{
-						return allDefsListForReading[i].intensity;
+						if (allDefsListForReading[i].mentalState == mentalStateDef)
+						{
+							return allDefsListForReading[i].intensity;
+						}
 					}
+				}
+				else if (pawn.health.hediffSet.HasHediff(HediffDefOf.CatatonicBreakdown))
+				{
+					return MentalBreakIntensity.Extreme;
 				}
 			}
 			return MentalBreakIntensity.Minor;
@@ -78,7 +94,7 @@ namespace RimWorld
 			};
 		}
 
-		public override string ExtraLabel(LocalTargetInfo target)
+		public override string ExtraLabelMouseAttachment(LocalTargetInfo target)
 		{
 			if (target.Pawn != null && Valid(target))
 			{

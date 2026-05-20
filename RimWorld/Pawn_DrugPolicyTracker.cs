@@ -19,6 +19,10 @@ namespace RimWorld
 		{
 			get
 			{
+				if (pawn.IsMutant && pawn.mutant.Def.disablePolicies)
+				{
+					return null;
+				}
 				if (curPolicy == null)
 				{
 					curPolicy = Current.Game.drugPolicyDatabase.DefaultDrugPolicy();
@@ -112,7 +116,7 @@ namespace RimWorld
 		{
 			if (!drug.IsDrug)
 			{
-				Log.Warning(string.Concat(drug, " is not a drug."));
+				Log.Warning(drug?.ToString() + " is not a drug.");
 				return false;
 			}
 			return drugTakeRecords.Any((DrugTakeRecord x) => x.drug == drug);
@@ -122,7 +126,7 @@ namespace RimWorld
 		{
 			if (!thingDef.IsIngestible)
 			{
-				Log.Error(string.Concat(thingDef, " is not ingestible."));
+				Log.Error(thingDef?.ToString() + " is not ingestible.");
 				return false;
 			}
 			if (!thingDef.IsDrug)
@@ -130,7 +134,7 @@ namespace RimWorld
 				Log.Error("AllowedToTakeScheduledEver on non-drug " + thingDef);
 				return false;
 			}
-			if (thingDef.IsNonMedicalDrug && pawn.IsTeetotaler())
+			if (thingDef.IsNonMedicalDrug && !pawn.CanTakeDrug(thingDef))
 			{
 				return false;
 			}
@@ -150,7 +154,7 @@ namespace RimWorld
 		{
 			if (!thingDef.IsIngestible)
 			{
-				Log.Error(string.Concat(thingDef, " is not ingestible."));
+				Log.Error(thingDef?.ToString() + " is not ingestible.");
 				return false;
 			}
 			if (!thingDef.IsDrug)
@@ -162,7 +166,11 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (thingDef.IsNonMedicalDrug && pawn.IsTeetotaler())
+			if (thingDef.IsNonMedicalDrug && !pawn.CanTakeDrug(thingDef))
+			{
+				return false;
+			}
+			if (thingDef.ingestible.drugCategory == DrugCategory.Hard && !new HistoryEvent(HistoryEventDefOf.IngestedHardDrug, pawn.Named(HistoryEventArgsNames.Doer)).DoerWillingToDo())
 			{
 				return false;
 			}
@@ -173,7 +181,7 @@ namespace RimWorld
 		{
 			if (!thingDef.IsIngestible)
 			{
-				Log.Error(string.Concat(thingDef, " is not ingestible."));
+				Log.Error(thingDef?.ToString() + " is not ingestible.");
 				return false;
 			}
 			if (!thingDef.IsDrug)
@@ -249,9 +257,9 @@ namespace RimWorld
 				float num3 = 1f / (float)(num2 + 1);
 				int num4 = 0;
 				float dayPercentNotSleeping = DayPercentNotSleeping;
-				for (int i = 0; i < num2; i++)
+				for (int num5 = 0; num5 < num2; num5++)
 				{
-					if (dayPercentNotSleeping > (float)(i + 1) * num3 - num3 * 0.5f)
+					if (dayPercentNotSleeping > (float)(num5 + 1) * num3 - num3 * 0.5f)
 					{
 						num4++;
 					}
@@ -285,6 +293,14 @@ namespace RimWorld
 			}
 			drugTakeRecord.lastTakenTicks = Find.TickManager.TicksGame;
 			drugTakeRecord.TimesTakenThisDay++;
+		}
+
+		public void Notify_LeftSuspension(int suspendedTicks)
+		{
+			foreach (DrugTakeRecord drugTakeRecord in drugTakeRecords)
+			{
+				drugTakeRecord.Notify_LeftSuspension(suspendedTicks);
+			}
 		}
 
 		private int LastTicksWhenTakenDrugWhichCanCauseOverdose()

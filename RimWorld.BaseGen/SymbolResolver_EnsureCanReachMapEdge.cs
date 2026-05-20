@@ -5,7 +5,7 @@ namespace RimWorld.BaseGen
 {
 	public class SymbolResolver_EnsureCanReachMapEdge : SymbolResolver
 	{
-		private static HashSet<Room> visited = new HashSet<Room>();
+		private static HashSet<District> visited = new HashSet<District>();
 
 		private static List<IntVec3> path = new List<IntVec3>();
 
@@ -34,49 +34,36 @@ namespace RimWorld.BaseGen
 				{
 					continue;
 				}
-				Room room = intVec.GetRoom(map);
-				if (room == null || visited.Contains(room))
+				District district = intVec.GetDistrict(map);
+				if (district == null || visited.Contains(district))
 				{
 					continue;
 				}
-				visited.Add(room);
+				visited.Add(district);
 				TraverseParms traverseParms = TraverseParms.For(TraverseMode.PassDoors);
-				if (!map.reachability.CanReachMapEdge(intVec, traverseParms))
-				{
-					bool found = false;
-					IntVec3 foundDest = IntVec3.Invalid;
-					map.floodFiller.FloodFill(intVec, (IntVec3 x) => !found && CanTraverse(x, canPathThroughNonStandable), delegate(IntVec3 x)
-					{
-						if (!found && map.reachability.CanReachMapEdge(x, traverseParms))
-						{
-							found = true;
-							foundDest = x;
-						}
-					}, int.MaxValue, rememberParents: true);
-					if (found)
-					{
-						ReconstructPathAndDestroyWalls(foundDest, room, rp);
-					}
-				}
-				room = intVec.GetRoom(map);
-				if (room == null)
+				if (map.reachability.CanReachMapEdge(intVec, traverseParms))
 				{
 					continue;
 				}
-				RegionTraverser.BreadthFirstTraverse(room.Regions[0], (Region from, Region r) => r.Allows(traverseParms, isDestination: false), delegate(Region r)
+				bool found = false;
+				IntVec3 foundDest = IntVec3.Invalid;
+				map.floodFiller.FloodFill(intVec, (IntVec3 x) => !found && CanTraverse(x, canPathThroughNonStandable), delegate(IntVec3 x)
 				{
-					if (r.Room.TouchesMapEdge)
+					if (!found && map.reachability.CanReachMapEdge(x, traverseParms))
 					{
-						MapGenerator.rootsToUnfog.Add(r.AnyCell);
-						return true;
+						found = true;
+						foundDest = x;
 					}
-					return false;
-				}, 9999);
+				}, int.MaxValue, rememberParents: true);
+				if (found)
+				{
+					ReconstructPathAndDestroyWalls(foundDest, district, rp);
+				}
 			}
 			visited.Clear();
 		}
 
-		private void ReconstructPathAndDestroyWalls(IntVec3 foundDest, Room room, ResolveParams rp)
+		private void ReconstructPathAndDestroyWalls(IntVec3 foundDest, District room, ResolveParams rp)
 		{
 			Map map = BaseGen.globalSettings.map;
 			map.floodFiller.ReconstructLastFloodFillPath(foundDest, path);

@@ -46,7 +46,7 @@ namespace RimWorld
 			pawn.ownership.ClaimMeditationSpot((Building)parent);
 		}
 
-		public override void TryUnassignPawn(Pawn pawn, bool sort = true)
+		public override void TryUnassignPawn(Pawn pawn, bool sort = true, bool uninstall = false)
 		{
 			pawn.ownership.UnclaimMeditationSpot();
 		}

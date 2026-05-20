@@ -9,7 +9,7 @@ namespace Verse.Sound
 		protected static T GetOrMakeFilterOn<T>(AudioSource source) where T : Behaviour
 		{
 			T val = source.gameObject.GetComponent<T>();
-			if ((Object)val != (Object)null)
+			if (val != null)
 			{
 				val.enabled = true;
 			}

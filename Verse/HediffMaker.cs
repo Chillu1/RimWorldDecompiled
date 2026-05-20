@@ -8,7 +8,7 @@ namespace Verse
 		{
 			if (pawn == null)
 			{
-				Log.Error(string.Concat("Cannot make hediff ", def, " for null pawn."));
+				Log.Error("Cannot make hediff " + def?.ToString() + " for null pawn.");
 				return null;
 			}
 			Hediff obj = (Hediff)Activator.CreateInstance(def.hediffClass);

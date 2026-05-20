@@ -31,6 +31,8 @@ namespace Verse
 
 		public const float BloodFilthDropChanceFactorLaying = 0.0004f;
 
+		public const float BloodSmearFilthDropChanceFactorCrawling = 0.015f;
+
 		public const int BaseTicksAfterInjuryToStopBleeding = 90000;
 
 		public const int TicksAfterMissingBodyPartToStopBeingFresh = 90000;
@@ -38,6 +40,8 @@ namespace Verse
 		public const float DefaultPainShockThreshold = 0.8f;
 
 		public const int InjuryHealInterval = 600;
+
+		public const int RapidRegenInjuryHealInterval = 15;
 
 		public const float InjuryHealPerDay_Base = 8f;
 
@@ -107,13 +111,40 @@ namespace Verse
 
 		public const float DeathOnDownedChance_NonColonyMechanoid = 1f;
 
+		public static readonly SimpleCurve DeathOnDownedChance_EntityFromThreatCurve = new SimpleCurve
+		{
+			new CurvePoint(100f, 0f),
+			new CurvePoint(1000f, 0.5f),
+			new CurvePoint(5000f, 0.9f)
+		};
+
 		public static readonly SimpleCurve DeathOnDownedChance_NonColonyHumanlikeFromPopulationIntentCurve = new SimpleCurve
+		{
+			new CurvePoint(-1f, 0.8667f),
+			new CurvePoint(0f, 0.8f),
+			new CurvePoint(1f, 0.5657f),
+			new CurvePoint(2f, 0.5f),
+			new CurvePoint(8f, 0.2632f)
+		};
+
+		public static readonly SimpleCurve DeathOnDownedChance_NonColonyHumanlikeFromPopulationIntentCurve_WaveringPrisoners = new SimpleCurve
 		{
 			new CurvePoint(-1f, 0.92f),
 			new CurvePoint(0f, 0.85f),
 			new CurvePoint(1f, 0.62f),
 			new CurvePoint(2f, 0.55f),
 			new CurvePoint(8f, 0.3f)
+		};
+
+		public const int MaxPopulationAlwaysRecruitable = 3;
+
+		public static readonly SimpleCurve NonRecruitableChanceOverPopulationIntentCurve = new SimpleCurve
+		{
+			new CurvePoint(-1f, 0.4f),
+			new CurvePoint(0f, 0.25f),
+			new CurvePoint(1f, 0.13f),
+			new CurvePoint(2f, 0.1f),
+			new CurvePoint(8f, 0.05f)
 		};
 
 		public const float TendPriority_LifeThreateningDisease = 1f;

@@ -14,7 +14,14 @@ namespace Verse
 			if (target.HasThing)
 			{
 				Thing thing = target.Thing;
-				if (!thing.Spawned)
+				if (thing.Spawned)
+				{
+					if (thing.Map != map)
+					{
+						return false;
+					}
+				}
+				else
 				{
 					if (pawn != null)
 					{
@@ -35,11 +42,14 @@ namespace Verse
 							return true;
 						}
 					}
-					return false;
-				}
-				if (thing.Map != map)
-				{
-					return false;
+					if (!thing.SpawnedOrAnyParentSpawned)
+					{
+						return false;
+					}
+					if (thing.MapHeld != map)
+					{
+						return false;
+					}
 				}
 			}
 			if (!target.HasThing || (target.Thing.def.size.x == 1 && target.Thing.def.size.z == 1))
@@ -53,7 +63,7 @@ namespace Verse
 			{
 				return true;
 			}
-			if (peMode == PathEndMode.Touch && TouchPathEndModeUtility.IsAdjacentOrInsideAndAllowedToTouch(start, target, map))
+			if (peMode == PathEndMode.Touch && TouchPathEndModeUtility.IsAdjacentOrInsideAndAllowedToTouch(start, target, map.pathing.For(pawn)))
 			{
 				return true;
 			}
@@ -84,8 +94,8 @@ namespace Verse
 
 		public static bool CanReachImmediate(IntVec3 start, CellRect rect, Map map, PathEndMode peMode, Pawn pawn)
 		{
-			IntVec3 c = rect.ClosestCellTo(start);
-			return CanReachImmediate(start, c, map, peMode, pawn);
+			IntVec3 intVec = rect.ClosestCellTo(start);
+			return CanReachImmediate(start, intVec, map, peMode, pawn);
 		}
 	}
 }

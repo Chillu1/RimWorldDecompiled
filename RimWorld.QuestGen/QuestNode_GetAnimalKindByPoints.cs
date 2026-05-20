@@ -18,7 +18,7 @@ namespace RimWorld.QuestGen
 		private bool SetVars(Slate slate)
 		{
 			float points = slate.Get("points", 0f);
-			if (DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef x) => x.RaceProps.Animal && x.combatPower < points).TryRandomElement(out var result))
+			if (DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef x) => x.RaceProps.Animal && !x.RaceProps.Dryad && !x.RaceProps.neverIncludeInQuests && x.combatPower < points).TryRandomElement(out var result))
 			{
 				slate.Set("animalKindDef", result);
 				return true;

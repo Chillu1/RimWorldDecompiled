@@ -19,7 +19,15 @@ namespace RimWorld
 
 		protected override bool Satisfied(Pawn pawn)
 		{
-			return pawn.needs.TryGetNeed(need).CurLevelPercentage > threshold;
+			if (!pawn.needs.TryGetNeed(this.need, out var need))
+			{
+				return false;
+			}
+			if (need is Need_Seeker)
+			{
+				return need.CurInstantLevelPercentage > threshold;
+			}
+			return need.CurLevelPercentage > threshold;
 		}
 	}
 }

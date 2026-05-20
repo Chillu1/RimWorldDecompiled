@@ -58,11 +58,10 @@ namespace RimWorld
 
 		public override bool Equals(object obj)
 		{
-			if (!(obj is QualityRange))
+			if (!(obj is QualityRange qualityRange))
 			{
 				return false;
 			}
-			QualityRange qualityRange = (QualityRange)obj;
 			if (qualityRange.min == min)
 			{
 				return qualityRange.max == max;

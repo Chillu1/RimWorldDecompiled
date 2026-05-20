@@ -1,3 +1,4 @@
+using System.Linq;
 using Verse;
 
 namespace RimWorld
@@ -18,12 +19,22 @@ namespace RimWorld
 
 		public virtual Pawn GeneratePawn()
 		{
-			Gender? fixedGender = null;
-			if (def.pawnFixedGender != 0)
+			Gender? gender = null;
+			if (def.pawnFixedGender != Gender.None)
 			{
-				fixedGender = def.pawnFixedGender;
+				gender = def.pawnFixedGender;
 			}
-			return PawnGenerator.GeneratePawn(new PawnGenerationRequest(def.pawnKind, Faction.OfPlayer, PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: true, newborn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, def.pawnMustBeCapableOfViolence, 20f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, null, 1f, null, null, null, null, null, null, null, fixedGender));
+			Ideo result = null;
+			if (ModsConfig.IdeologyActive && !Find.IdeoManager.IdeosListForReading.Where((Ideo i) => !Faction.OfPlayer.ideos.Has(i)).TryRandomElementByWeight((Ideo x) => IdeoUtility.IdeoChangeToWeight(null, x), out result))
+			{
+				Find.IdeoManager.IdeosListForReading.Where((Ideo i) => !Faction.OfPlayer.ideos.IsPrimary(i)).TryRandomElementByWeight((Ideo x) => IdeoUtility.IdeoChangeToWeight(null, x), out result);
+			}
+			PawnKindDef pawnKind = def.pawnKind;
+			Faction ofPlayer = Faction.OfPlayer;
+			bool pawnMustBeCapableOfViolence = def.pawnMustBeCapableOfViolence;
+			Gender? fixedGender = gender;
+			Ideo fixedIdeo = result;
+			return PawnGenerator.GeneratePawn(new PawnGenerationRequest(pawnKind, ofPlayer, PawnGenerationContext.NonPlayer, null, forceGenerateNewPawn: true, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, pawnMustBeCapableOfViolence, 20f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowPregnant: false, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, 0f, null, 1f, null, null, null, null, null, null, null, fixedGender, null, null, null, fixedIdeo));
 		}
 
 		public virtual bool CanSpawnJoiner(Map map)

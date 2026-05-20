@@ -14,7 +14,7 @@ namespace RimWorld
 			get
 			{
 				string text = base.Label;
-				if (AnyPawn.Name != null && !AnyPawn.Name.Numerical)
+				if (AnyPawn.Name != null && !AnyPawn.Name.Numerical && !AnyPawn.RaceProps.Humanlike)
 				{
 					text = text + ", " + AnyPawn.def.label;
 				}
@@ -30,7 +30,7 @@ namespace RimWorld
 				{
 					return "";
 				}
-				return AnyPawn.MainDesc(writeFaction: true) + "\n\n" + AnyPawn.def.description;
+				return AnyPawn.MainDesc(writeFaction: true) + "\n\n" + AnyPawn.DescriptionDetailed;
 			}
 		}
 
@@ -43,7 +43,12 @@ namespace RimWorld
 				List<Pawn> list = thingsColony.Take(base.CountToTransferToDestination).Cast<Pawn>().ToList();
 				for (int i = 0; i < list.Count; i++)
 				{
+					bool num = GuestUtility.IsSellingToSlavery(list[i], TradeSession.trader.Faction);
 					TradeSession.trader.GiveSoldThingToTrader(list[i], 1, TradeSession.playerNegotiator);
+					if (num)
+					{
+						Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.SoldSlave, TradeSession.playerNegotiator.Named(HistoryEventArgsNames.Doer)));
+					}
 				}
 			}
 			else if (base.ActionToDo == TradeAction.PlayerBuys)

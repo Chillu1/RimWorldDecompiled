@@ -18,24 +18,27 @@ namespace Verse.AI.Group
 			data = new LordToilData_DefendPoint();
 		}
 
-		public LordToil_DefendPoint(IntVec3 defendPoint, float defendRadius = 28f, float? wanderRadius = null)
+		public LordToil_DefendPoint(IntVec3 defendPoint, float? defendRadius = null, float? wanderRadius = null)
 			: this()
 		{
 			Data.defendPoint = defendPoint;
-			Data.defendRadius = defendRadius;
+			Data.defendRadius = defendRadius ?? 28f;
 			Data.wanderRadius = wanderRadius;
 		}
 
 		public override void UpdateAllDuties()
 		{
-			LordToilData_DefendPoint data = Data;
+			LordToilData_DefendPoint lordToilData_DefendPoint = Data;
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
 				Pawn pawn = lord.ownedPawns[i];
-				pawn.mindState.duty = new PawnDuty(DutyDefOf.Defend, data.defendPoint);
-				pawn.mindState.duty.focusSecond = data.defendPoint;
-				pawn.mindState.duty.radius = ((pawn.kindDef.defendPointRadius >= 0f) ? pawn.kindDef.defendPointRadius : data.defendRadius);
-				pawn.mindState.duty.wanderRadius = data.wanderRadius;
+				if (pawn?.mindState != null)
+				{
+					pawn.mindState.duty = new PawnDuty(DutyDefOf.Defend, lordToilData_DefendPoint.defendPoint);
+					pawn.mindState.duty.focusSecond = lordToilData_DefendPoint.defendPoint;
+					pawn.mindState.duty.radius = ((pawn.kindDef.defendPointRadius >= 0f) ? pawn.kindDef.defendPointRadius : lordToilData_DefendPoint.defendRadius);
+					pawn.mindState.duty.wanderRadius = lordToilData_DefendPoint.wanderRadius;
+				}
 			}
 		}
 

@@ -35,6 +35,8 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<bool> canGeneratePawn;
 
+		public SlateRef<bool> mustHaveSettlementOnLayer;
+
 		public SlateRef<bool> requireResearchedBedroomFurnitureIfRoyal;
 
 		public SlateRef<PawnKindDef> mustBeOfKind;
@@ -48,6 +50,8 @@ namespace RimWorld.QuestGen
 		public SlateRef<float?> hostileWeight;
 
 		public SlateRef<float?> nonHostileWeight;
+
+		public SlateRef<bool> factionMustBePermanent = true;
 
 		public SlateRef<int> maxUsablePawnsToGenerate = 10;
 
@@ -95,7 +99,7 @@ namespace RimWorld.QuestGen
 
 		private bool TryFindFactionForPawnGeneration(Slate slate, out Faction faction)
 		{
-			return Find.FactionManager.GetFactions_NewTemp(allowHidden: false, allowDefeated: false, allowNonHumanlike: false).Where(delegate(Faction x)
+			return Find.FactionManager.GetFactions(allowHidden: false, allowDefeated: false, allowNonHumanlike: false).Where(delegate(Faction x)
 			{
 				if (excludeFactionDefs.GetValue(slate) != null && excludeFactionDefs.GetValue(slate).Contains(x.def))
 				{
@@ -109,11 +113,19 @@ namespace RimWorld.QuestGen
 				{
 					return false;
 				}
-				if (!(allowPermanentEnemyFaction.GetValue(slate) ?? false) && x.def.permanentEnemy)
+				if (slate.TryGet<Map>("map", out var var) && mustHaveSettlementOnLayer.GetValue(slate) && var.Tile.Valid && !Find.WorldObjects.AnyFactionSettlementOnLayer(x, var.Tile.Layer))
 				{
 					return false;
 				}
-				return ((int)x.def.techLevel >= (int)minTechLevel.GetValue(slate)) ? true : false;
+				if (allowPermanentEnemyFaction.GetValue(slate) != true && x.def.permanentEnemy)
+				{
+					return false;
+				}
+				if ((int)x.def.techLevel < (int)minTechLevel.GetValue(slate))
+				{
+					return false;
+				}
+				return (!factionMustBePermanent.GetValue(slate) || !x.temporary) ? true : false;
 			}).TryRandomElementByWeight((Faction x) => x.HostileTo(Faction.OfPlayer) ? (hostileWeight.GetValue(slate) ?? 1f) : (nonHostileWeight.GetValue(slate) ?? 1f), out faction);
 		}
 
@@ -157,9 +169,9 @@ namespace RimWorld.QuestGen
 					senRange = FloatRange.Zero;
 				}
 				IEnumerable<RoyalTitleDef> source = DefDatabase<RoyalTitleDef>.AllDefsListForReading.Where((RoyalTitleDef t) => faction.def.RoyalTitlesAllInSeniorityOrderForReading.Contains(t) && (senRange.max <= 0f || senRange.IncludesEpsilon(t.seniority)));
-				if (requireResearchedBedroomFurnitureIfRoyal.GetValue(slate) && source.Any((RoyalTitleDef x) => PlayerHasResearchedBedroomRequirementsFor(x)))
+				if (requireResearchedBedroomFurnitureIfRoyal.GetValue(slate) && source.Any(PlayerHasResearchedBedroomRequirementsFor))
 				{
-					source = source.Where((RoyalTitleDef x) => PlayerHasResearchedBedroomRequirementsFor(x));
+					source = source.Where(PlayerHasResearchedBedroomRequirementsFor);
 				}
 				fixedTitle = source.RandomElementByWeight((RoyalTitleDef t) => t.commonality);
 				if (mustBeOfKind.GetValue(slate) == null && !DefDatabase<PawnKindDef>.AllDefsListForReading.Where((PawnKindDef k) => k.titleRequired != null && k.titleRequired == fixedTitle).TryRandomElement(out result))
@@ -173,9 +185,12 @@ namespace RimWorld.QuestGen
 			}
 			if (result == null)
 			{
-				result = DefDatabase<PawnKindDef>.AllDefsListForReading.Where((PawnKindDef kind) => kind.race.race.Humanlike).RandomElement();
+				result = DefDatabase<PawnKindDef>.AllDefsListForReading.Where((PawnKindDef pawnKindDef) => pawnKindDef.race.race.Humanlike).RandomElement();
 			}
-			Pawn pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(result, faction, PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: true, newborn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: false, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, null, 1f, null, null, null, null, null, null, null, null, null, null, null, fixedTitle));
+			PawnKindDef kind = result;
+			Faction faction2 = faction;
+			RoyalTitleDef fixedTitle2 = fixedTitle;
+			Pawn pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(kind, faction2, PawnGenerationContext.NonPlayer, null, forceGenerateNewPawn: true, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: false, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowPregnant: false, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, 0f, null, 1f, null, null, null, null, null, null, null, null, null, null, fixedTitle2));
 			Find.WorldPawns.PassToWorld(pawn);
 			if (pawn.royalty != null && pawn.royalty.AllTitlesForReading.Any())
 			{
@@ -212,7 +227,11 @@ namespace RimWorld.QuestGen
 			{
 				return false;
 			}
-			if (seniorityRange.GetValue(slate) != default(FloatRange) && (pawn.royalty == null || pawn.royalty.MostSeniorTitle == null || !seniorityRange.GetValue(slate).IncludesEpsilon(pawn.royalty.MostSeniorTitle.def.seniority)))
+			if (seniorityRange.GetValue(slate) != default(FloatRange) && (pawn.royalty?.MostSeniorTitle == null || !seniorityRange.GetValue(slate).IncludesEpsilon(pawn.royalty.MostSeniorTitle.def.seniority)))
+			{
+				return false;
+			}
+			if (factionMustBePermanent.GetValue(slate) && pawn.Faction != null && pawn.Faction.temporary)
 			{
 				return false;
 			}
@@ -252,7 +271,8 @@ namespace RimWorld.QuestGen
 			{
 				return false;
 			}
-			if (!(allowPermanentEnemyFaction.GetValue(slate) ?? true) && pawn.Faction != null && pawn.Faction.def.permanentEnemy)
+			bool? value = allowPermanentEnemyFaction.GetValue(slate);
+			if (value.HasValue && value != true && pawn.Faction != null && pawn.Faction.def.permanentEnemy)
 			{
 				return false;
 			}
@@ -275,7 +295,7 @@ namespace RimWorld.QuestGen
 			}
 			for (int i = 0; i < title.bedroomRequirements.Count; i++)
 			{
-				if (!title.bedroomRequirements[i].PlayerHasResearched())
+				if (!title.bedroomRequirements[i].PlayerCanBuildNow())
 				{
 					return false;
 				}

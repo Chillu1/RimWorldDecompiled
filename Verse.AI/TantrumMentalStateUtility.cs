@@ -22,7 +22,7 @@ namespace Verse.AI
 			{
 				return false;
 			}
-			if (!thing.Destroyed && thing.Spawned && thing != pawn && (thing.def.category == ThingCategory.Pawn || thing.def.useHitPoints) && (thing.def.category == ThingCategory.Pawn || !thing.def.CanHaveFaction || thing.Faction == pawn.Faction) && (thing.def.category != ThingCategory.Item || !(thing.MarketValue * (float)thing.stackCount < 75f)) && (thing.def.category != ThingCategory.Pawn || !((Pawn)thing).Downed) && ((thing.def.category != ThingCategory.Item && thing.def.category != ThingCategory.Building) || !(thing.MarketValue * (float)thing.stackCount < (float)extraMinBuildingOrItemMarketValue)))
+			if (!thing.Destroyed && thing.Spawned && thing != pawn && (thing.def.category == ThingCategory.Pawn || thing.def.useHitPoints) && (thing.def.category == ThingCategory.Pawn || !thing.def.CanHaveFaction || thing.Faction == pawn.Faction) && (thing.def.category != ThingCategory.Item || !(thing.MarketValue * (float)thing.stackCount < 75f)) && (thing.def.category != ThingCategory.Pawn || !((Pawn)thing).Downed) && ((thing.def.category != ThingCategory.Item && thing.def.category != ThingCategory.Building) || !(thing.MarketValue * (float)thing.stackCount < (float)extraMinBuildingOrItemMarketValue)) && (thing.def.category != ThingCategory.Building || !thing.def.building.ai_neverTrashThis))
 			{
 				if (!skipReachabilityCheck)
 				{
@@ -91,8 +91,7 @@ namespace Verse.AI
 
 		public static bool CanAttackPrisoner(Pawn pawn, Thing prisoner)
 		{
-			Pawn pawn2 = prisoner as Pawn;
-			if (pawn2 != null && pawn2.IsPrisoner && !pawn2.Downed)
+			if (prisoner is Pawn { IsPrisoner: not false, Downed: false } pawn2)
 			{
 				return pawn2.HostFaction == pawn.Faction;
 			}

@@ -11,6 +11,8 @@ namespace Verse
 	{
 		public delegate void PossibleDefInjectionTraverser(string suggestedPath, string normalizedPath, bool isCollection, string currentValue, IEnumerable<string> currentValueCollection, bool translationAllowed, bool fullListTranslationAllowed, FieldInfo fieldInfo, Def def);
 
+		private static Dictionary<Type, List<FieldInfo>> cachedFieldsInDeterministicOrder = new Dictionary<Type, List<FieldInfo>>();
+
 		public static void ForEachPossibleDefInjection(Type defType, PossibleDefInjectionTraverser action, ModMetaData onlyFromMod = null)
 		{
 			foreach (Def item in GenDefDatabase.GetAllDefsInDatabaseForDef(defType))
@@ -30,12 +32,12 @@ namespace Verse
 
 		private static void ForEachPossibleDefInjectionInDefRecursive(object obj, string curNormalizedPath, string curSuggestedPath, HashSet<object> visited, bool translationAllowed, Def def, PossibleDefInjectionTraverser action)
 		{
-			if (obj == null || (!obj.GetType().IsValueType && visited.Contains(obj)))
+			if (obj == null || obj is Thing || (!obj.GetType().IsValueType && visited.Contains(obj)))
 			{
 				return;
 			}
 			visited.Add(obj);
-			foreach (FieldInfo item in FieldsInDeterministicOrder(obj.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)))
+			foreach (FieldInfo item in FieldsInDeterministicOrder(obj.GetType()))
 			{
 				object value = item.GetValue(obj);
 				bool flag = translationAllowed && !item.HasAttribute<NoTranslateAttribute>() && !item.HasAttribute<UnsavedAttribute>();
@@ -54,9 +56,8 @@ namespace Verse
 					}
 					action(suggestedPath, text, isCollection: false, currentValue, null, flag, fullListTranslationAllowed: false, item, def);
 				}
-				else if (value is IEnumerable<string>)
+				else if (value is IEnumerable<string> currentValueCollection)
 				{
-					IEnumerable<string> currentValueCollection = (IEnumerable<string>)value;
 					bool flag2 = item.HasAttribute<TranslationCanChangeCountAttribute>();
 					string text2 = curNormalizedPath + "." + item.Name;
 					string suggestedPath2 = curSuggestedPath + "." + item.Name;
@@ -66,9 +67,8 @@ namespace Verse
 					}
 					action(suggestedPath2, text2, isCollection: true, null, currentValueCollection, flag, flag && flag2, item, def);
 				}
-				else if (value is IEnumerable)
+				else if (value is IEnumerable enumerable)
 				{
-					IEnumerable enumerable = (IEnumerable)value;
 					int num = 0;
 					foreach (object item2 in enumerable)
 					{
@@ -120,11 +120,17 @@ namespace Verse
 			return true;
 		}
 
-		private static IEnumerable<FieldInfo> FieldsInDeterministicOrder(IEnumerable<FieldInfo> fields)
+		private static List<FieldInfo> FieldsInDeterministicOrder(Type type)
 		{
-			return from x in fields
+			if (cachedFieldsInDeterministicOrder.TryGetValue(type, out var value))
+			{
+				return value;
+			}
+			List<FieldInfo> list = (from x in type.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic)
 				orderby x.HasAttribute<UnsavedAttribute>() || x.HasAttribute<NoTranslateAttribute>(), x.Name == "label" descending, x.Name == "description" descending, x.Name
-				select x;
+				select x).ToList();
+			cachedFieldsInDeterministicOrder.Add(type, list);
+			return list;
 		}
 	}
 }

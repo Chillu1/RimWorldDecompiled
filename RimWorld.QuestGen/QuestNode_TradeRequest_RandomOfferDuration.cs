@@ -18,7 +18,7 @@ namespace RimWorld.QuestGen
 		[NoTranslate]
 		public SlateRef<string> storeEstimatedTravelTimeAs;
 
-		public static int RandomOfferDurationTicks(int tileIdFrom, int tileIdTo, out int travelTicks)
+		public static int RandomOfferDurationTicks(PlanetTile tileIdFrom, PlanetTile tileIdTo, out int travelTicks)
 		{
 			int randomInRange = SiteTuning.QuestSiteTimeoutDaysRange.RandomInRange;
 			travelTicks = CaravanArrivalTimeEstimator.EstimatedTicksToArrive(tileIdFrom, tileIdTo, null);
@@ -36,13 +36,22 @@ namespace RimWorld.QuestGen
 		{
 			Slate slate = QuestGen.slate;
 			Map map = slate.Get<Map>("map");
-			slate.Set(storeAs.GetValue(slate), RandomOfferDurationTicks(map.Tile, settlement.GetValue(slate).Tile, out var travelTicks));
-			slate.Set(storeEstimatedTravelTimeAs.GetValue(slate), travelTicks);
+			PlanetTile tile = map.Tile;
+			PlanetTile tile2 = settlement.GetValue(slate).Tile;
+			if (tile2.Valid && tile.Valid && tile.Layer == tile2.Layer && tile.LayerDef.SurfaceTiles)
+			{
+				slate.Set(storeAs.GetValue(slate), RandomOfferDurationTicks(map.Tile, settlement.GetValue(slate).Tile, out var travelTicks));
+				slate.Set(storeEstimatedTravelTimeAs.GetValue(slate), travelTicks);
+			}
 		}
 
 		protected override bool TestRunInt(Slate slate)
 		{
 			Map map = slate.Get<Map>("map");
+			if (map.Tile.Layer != settlement.GetValue(slate).Tile.Layer)
+			{
+				return false;
+			}
 			slate.Set(storeAs.GetValue(slate), RandomOfferDurationTicks(map.Tile, settlement.GetValue(slate).Tile, out var travelTicks));
 			slate.Set(storeEstimatedTravelTimeAs.GetValue(slate), travelTicks);
 			return true;

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine;
 using Verse;
 
 namespace RimWorld
@@ -9,11 +10,22 @@ namespace RimWorld
 	{
 		public Pawn pawn;
 
+		public Gene sourceGene;
+
+		public Gene suppressedByGene;
+
 		public TraitDef def;
 
 		private int degree;
 
 		private bool scenForced;
+
+		[LoadAlias("suppressed")]
+		public bool suppressedByTrait;
+
+		private List<string> suppressedReasons = new List<string>();
+
+		private static List<WorkTypeDef> tmpDisabledWorktypes = new List<WorkTypeDef>();
 
 		public int Degree => degree;
 
@@ -24,6 +36,25 @@ namespace RimWorld
 		public string LabelCap => CurrentData.GetLabelCapFor(pawn);
 
 		public bool ScenForced => scenForced;
+
+		public bool Suppressed
+		{
+			get
+			{
+				if (ModsConfig.BiotechActive)
+				{
+					if (suppressedByTrait || suppressedByGene != null)
+					{
+						return true;
+					}
+					if (sourceGene != null && sourceGene.Overridden && sourceGene.overriddenByGene.def != sourceGene.def)
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+		}
 
 		public Trait()
 		{
@@ -39,8 +70,11 @@ namespace RimWorld
 		public void ExposeData()
 		{
 			Scribe_Defs.Look(ref def, "def");
+			Scribe_References.Look(ref sourceGene, "sourceGene");
 			Scribe_Values.Look(ref degree, "degree", 0);
 			Scribe_Values.Look(ref scenForced, "scenForced", defaultValue: false);
+			Scribe_Values.Look(ref suppressedByTrait, "suppressedByTrait", defaultValue: false);
+			Scribe_References.Look(ref suppressedByGene, "suppressedBy");
 			if (Scribe.mode == LoadSaveMode.ResolvingCrossRefs && def == null)
 			{
 				def = DefDatabase<TraitDef>.GetRandom();
@@ -50,6 +84,10 @@ namespace RimWorld
 
 		public float OffsetOfStat(StatDef stat)
 		{
+			if (Suppressed)
+			{
+				return 0f;
+			}
 			float num = 0f;
 			TraitDegreeData currentData = CurrentData;
 			if (currentData.statOffsets != null)
@@ -67,6 +105,10 @@ namespace RimWorld
 
 		public float MultiplierOfStat(StatDef stat)
 		{
+			if (Suppressed)
+			{
+				return 1f;
+			}
 			float num = 1f;
 			TraitDegreeData currentData = CurrentData;
 			if (currentData.statFactors != null)
@@ -85,25 +127,24 @@ namespace RimWorld
 		public string TipString(Pawn pawn)
 		{
 			StringBuilder stringBuilder = new StringBuilder();
+			suppressedReasons.Clear();
 			TraitDegreeData currentData = CurrentData;
-			stringBuilder.Append(currentData.description.Formatted(pawn.Named("PAWN")).AdjustedFor(pawn).Resolve());
+			stringBuilder.AppendLine(currentData.description.Formatted(pawn.Named("PAWN")).AdjustedFor(pawn).Resolve());
 			bool num = CurrentData.skillGains.Count > 0;
 			bool flag = GetPermaThoughts().Any();
 			bool flag2 = currentData.statOffsets != null;
 			bool flag3 = currentData.statFactors != null;
-			if (num || flag || flag2 || flag3)
+			if (num || flag || flag2 || flag3 || !Mathf.Approximately(currentData.painFactor, 1f) || currentData.painOffset != 0f || !currentData.aptitudes.NullOrEmpty())
 			{
-				stringBuilder.AppendLine();
 				stringBuilder.AppendLine();
 			}
 			if (num)
 			{
-				foreach (KeyValuePair<SkillDef, int> skillGain in CurrentData.skillGains)
+				foreach (SkillGain skillGain in CurrentData.skillGains)
 				{
-					if (skillGain.Value != 0)
+					if (skillGain.amount != 0)
 					{
-						string value = "    " + skillGain.Key.skillLabel.CapitalizeFirst() + ":   " + skillGain.Value.ToString("+##;-##");
-						stringBuilder.AppendLine(value);
+						stringBuilder.AppendLine("    " + skillGain.skill.skillLabel.CapitalizeFirst() + ":   " + skillGain.amount.ToString("+##;-##"));
 					}
 				}
 			}
@@ -120,9 +161,13 @@ namespace RimWorld
 				{
 					StatModifier statModifier = currentData.statOffsets[i];
 					string valueToStringAsOffset = statModifier.ValueToStringAsOffset;
-					string value2 = "    " + statModifier.stat.LabelCap + " " + valueToStringAsOffset;
-					stringBuilder.AppendLine(value2);
+					string value = "    " + statModifier.stat.LabelCap + " " + valueToStringAsOffset;
+					stringBuilder.AppendLine(value);
 				}
+			}
+			if (currentData.painOffset != 0f)
+			{
+				stringBuilder.AppendLine("    " + "Pain".Translate() + " " + currentData.painOffset.ToStringByStyle(ToStringStyle.PercentOne, ToStringNumberSense.Offset));
 			}
 			if (flag3)
 			{
@@ -130,15 +175,34 @@ namespace RimWorld
 				{
 					StatModifier statModifier2 = currentData.statFactors[j];
 					string toStringAsFactor = statModifier2.ToStringAsFactor;
-					string value3 = "    " + statModifier2.stat.LabelCap + " " + toStringAsFactor;
-					stringBuilder.AppendLine(value3);
+					string value2 = "    " + statModifier2.stat.LabelCap + " " + toStringAsFactor;
+					stringBuilder.AppendLine(value2);
 				}
 			}
-			if (currentData.hungerRateFactor != 1f)
+			if (!Mathf.Approximately(currentData.hungerRateFactor, 1f))
 			{
-				string t = currentData.hungerRateFactor.ToStringByStyle(ToStringStyle.PercentOne, ToStringNumberSense.Factor);
-				string value4 = "    " + "HungerRate".Translate() + " " + t;
-				stringBuilder.AppendLine(value4);
+				string text = currentData.hungerRateFactor.ToStringByStyle(ToStringStyle.PercentOne, ToStringNumberSense.Factor);
+				string value3 = "    " + "HungerRate".Translate() + " " + text;
+				stringBuilder.AppendLine(value3);
+			}
+			if (!Mathf.Approximately(currentData.painFactor, 1f))
+			{
+				stringBuilder.AppendLine("    " + "Pain".Translate() + " " + currentData.painFactor.ToStringByStyle(ToStringStyle.PercentOne, ToStringNumberSense.Factor));
+			}
+			if (!currentData.aptitudes.NullOrEmpty())
+			{
+				stringBuilder.AppendLine().AppendLineTagged(("Aptitudes".Translate().CapitalizeFirst() + ":").AsTipTitle());
+				stringBuilder.AppendLine(currentData.aptitudes.Select((Aptitude x) => x.skill.LabelCap.ToString() + " " + x.level.ToStringWithSign()).ToLineList("  - ", capitalizeItems: true));
+			}
+			if (!currentData.enablesNeeds.NullOrEmpty())
+			{
+				stringBuilder.AppendLine().AppendLineTagged(("AddsNeeds".Translate().CapitalizeFirst() + ":").AsTipTitle());
+				stringBuilder.AppendLine(currentData.enablesNeeds.Select((NeedDef x) => x.LabelCap.ToString()).ToLineList("  - ", capitalizeItems: true));
+			}
+			if (!currentData.disablesNeeds.NullOrEmpty())
+			{
+				stringBuilder.AppendLine().AppendLineTagged(("DisablesNeeds".Translate().CapitalizeFirst() + ":").AsTipTitle());
+				stringBuilder.AppendLine(currentData.disablesNeeds.Select((NeedDef x) => x.LabelCap.ToString()).ToLineList("  - ", capitalizeItems: true));
 			}
 			if (ModsConfig.RoyaltyActive)
 			{
@@ -146,26 +210,85 @@ namespace RimWorld
 				if (!allowedMeditationFocusTypes.NullOrEmpty())
 				{
 					stringBuilder.AppendLine();
-					stringBuilder.AppendLine();
-					stringBuilder.AppendLine("EnablesMeditationFocusType".Translate() + ":\n" + allowedMeditationFocusTypes.Select((MeditationFocusDef f) => f.LabelCap.RawText).ToLineList("  - "));
+					stringBuilder.AppendLine("EnablesMeditationFocusType".Translate().Colorize(ColoredText.TipSectionTitleColor) + ":\n" + allowedMeditationFocusTypes.Select((MeditationFocusDef f) => f.LabelCap.Resolve()).ToLineList("  - "));
 				}
 			}
-			if (stringBuilder.Length > 0 && stringBuilder[stringBuilder.Length - 1] == '\n')
+			if (ModsConfig.IdeologyActive)
 			{
-				if (stringBuilder.Length > 1 && stringBuilder[stringBuilder.Length - 2] == '\r')
+				List<IssueDef> affectedIssues = CurrentData.GetAffectedIssues(def);
+				if (affectedIssues.Count != 0)
 				{
-					stringBuilder.Remove(stringBuilder.Length - 2, 2);
+					stringBuilder.AppendLine();
+					stringBuilder.AppendLine("OverridesSomePrecepts".Translate().Colorize(ColoredText.TipSectionTitleColor) + ":\n" + affectedIssues.Select((IssueDef x) => x.LabelCap.Resolve()).ToLineList("  - "));
 				}
-				else
+				List<MemeDef> affectedMemes = CurrentData.GetAffectedMemes(def, agreeable: true);
+				if (affectedMemes.Count > 0)
 				{
+					stringBuilder.AppendLine();
+					stringBuilder.AppendLine("AgreeableMemes".Translate().Colorize(ColoredText.TipSectionTitleColor) + ":\n" + affectedMemes.Select((MemeDef x) => x.LabelCap.Resolve()).ToLineList("  - "));
+				}
+				List<MemeDef> affectedMemes2 = CurrentData.GetAffectedMemes(def, agreeable: false);
+				if (affectedMemes2.Count > 0)
+				{
+					stringBuilder.AppendLine();
+					stringBuilder.AppendLine("DisagreeableMemes".Translate().Colorize(ColoredText.TipSectionTitleColor) + ":\n" + affectedMemes2.Select((MemeDef x) => x.LabelCap.Resolve()).ToLineList("  - "));
+				}
+			}
+			if (ModsConfig.BiotechActive)
+			{
+				if (sourceGene != null)
+				{
+					stringBuilder.AppendLine().AppendLine(("AddedByGene".Translate() + ": " + sourceGene.LabelCap).Colorize(ColoredText.GeneColor));
+				}
+				if (Suppressed)
+				{
+					foreach (Trait allTrait in pawn.story.traits.allTraits)
+					{
+						if (allTrait != this && allTrait.def.CanSuppress(this))
+						{
+							suppressedReasons.Add(string.Format("{0} ({1})", allTrait.Label, "Trait".Translate()));
+						}
+					}
+					if (sourceGene != null && sourceGene.Overridden && sourceGene.overriddenByGene.def != sourceGene.def)
+					{
+						suppressedReasons.Add(string.Format("{0} ({1})", sourceGene.overriddenByGene.Label, "Gene".Translate()));
+					}
+					if (suppressedByGene != null)
+					{
+						suppressedReasons.Add(string.Format("{0} ({1})", suppressedByGene.Label, "Gene".Translate()));
+					}
+					if (suppressedReasons.Any())
+					{
+						stringBuilder.AppendLine().AppendLine(("Suppressed".Translate().CapitalizeFirst() + ": " + "SuppressedDesc".Translate() + ":\n" + suppressedReasons.ToLineList("  - ", capitalizeItems: true)).Colorize(ColoredText.SubtleGrayColor));
+					}
+				}
+			}
+			if (stringBuilder.Length > 0)
+			{
+				if (stringBuilder[stringBuilder.Length - 1] == '\n')
+				{
+					if (stringBuilder.Length > 1)
+					{
+						if (stringBuilder[stringBuilder.Length - 2] == '\r')
+						{
+							stringBuilder.Remove(stringBuilder.Length - 2, 2);
+							goto IL_0919;
+						}
+					}
 					stringBuilder.Remove(stringBuilder.Length - 1, 1);
 				}
 			}
+			goto IL_0919;
+			IL_0919:
 			return stringBuilder.ToString();
 		}
 
 		public override string ToString()
 		{
+			if (def == null)
+			{
+				return "Trait(null)";
+			}
 			return "Trait(" + def.ToString() + "-" + degree + ")";
 		}
 
@@ -200,25 +323,27 @@ namespace RimWorld
 			TraitDegreeData currentData = CurrentData;
 			if (!currentData.mentalBreakInspirationGainSet.NullOrEmpty() && !(Rand.Value > currentData.mentalBreakInspirationGainChance))
 			{
-				pawn.mindState.inspirationHandler.TryStartInspiration_NewTemp(currentData.mentalBreakInspirationGainSet.RandomElement(), currentData.mentalBreakInspirationGainReasonText);
+				pawn.mindState.inspirationHandler.TryStartInspiration(currentData.mentalBreakInspirationGainSet.RandomElement(), currentData.mentalBreakInspirationGainReasonText);
 			}
 		}
 
-		public IEnumerable<WorkTypeDef> GetDisabledWorkTypes()
+		public List<WorkTypeDef> GetDisabledWorkTypes()
 		{
-			for (int j = 0; j < def.disabledWorkTypes.Count; j++)
+			tmpDisabledWorktypes.Clear();
+			for (int i = 0; i < def.disabledWorkTypes.Count; i++)
 			{
-				yield return def.disabledWorkTypes[j];
+				tmpDisabledWorktypes.Add(def.disabledWorkTypes[i]);
 			}
-			List<WorkTypeDef> workTypeDefList = DefDatabase<WorkTypeDef>.AllDefsListForReading;
-			for (int j = 0; j < workTypeDefList.Count; j++)
+			List<WorkTypeDef> allDefsListForReading = DefDatabase<WorkTypeDef>.AllDefsListForReading;
+			for (int j = 0; j < allDefsListForReading.Count; j++)
 			{
-				WorkTypeDef workTypeDef = workTypeDefList[j];
+				WorkTypeDef workTypeDef = allDefsListForReading[j];
 				if (!AllowsWorkType(workTypeDef))
 				{
-					yield return workTypeDef;
+					tmpDisabledWorktypes.Add(workTypeDef);
 				}
 			}
+			return tmpDisabledWorktypes;
 		}
 	}
 }

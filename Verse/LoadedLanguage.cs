@@ -37,8 +37,6 @@ namespace Verse
 
 		public List<string> loadErrors = new List<string>();
 
-		public List<string> backstoriesLoadErrors = new List<string>();
-
 		public bool anyKeyedReplacementsXmlParseError;
 
 		public string lastKeyedReplacementsXmlParseErrorInFile;
@@ -138,6 +136,8 @@ namespace Verse
 			}
 		}
 
+		public LanguageWordInfo WordInfo => wordInfo;
+
 		public string LegacyFolderName => legacyFolderName;
 
 		public LoadedLanguage(string folderName)
@@ -195,7 +195,7 @@ namespace Verse
 			string friendlyNameNative = text;
 			int num = text.FirstIndexOf((char c) => c == '(');
 			int num2 = text.LastIndexOf(")");
-			if (num2 > num)
+			if (num >= 0 && num2 >= 0 && num2 > num)
 			{
 				friendlyNameEnglish = text.Substring(0, num - 1);
 				friendlyNameNative = text.Substring(num + 1, num2 - num - 1);
@@ -244,12 +244,19 @@ namespace Verse
 					}
 					if (directory.Exists)
 					{
+						List<VirtualFile> list = new List<VirtualFile>();
 						foreach (VirtualFile file2 in directory.GetFiles("*.xml", SearchOption.AllDirectories))
 						{
 							if (TryRegisterFileIfNew(localDirectory, file2.FullPath))
 							{
-								LoadFromFile_Keyed(file2);
+								list.Add(file2);
 							}
+						}
+						List<string> list2 = (from x in list.AsParallel()
+							select x.ReadAllText()).ToList();
+						for (int num = 0; num < list2.Count; num++)
+						{
+							LoadFromFile_Keyed(list[num], list2[num]);
 						}
 					}
 					VirtualDirectory directory2 = localDirectory.Item1.GetDirectory("DefLinked");
@@ -273,15 +280,22 @@ namespace Verse
 							}
 							if (typeInAnyAssembly == null)
 							{
-								loadErrors.Add(string.Concat("Error loading language from ", allDirectory, ": dir ", directory4.Name, " doesn't correspond to any def type. Skipping..."));
+								loadErrors.Add("Error loading language from " + allDirectory?.ToString() + ": dir " + directory4.Name + " doesn't correspond to any def type. Skipping...");
 								continue;
 							}
+							List<VirtualFile> list3 = new List<VirtualFile>();
 							foreach (VirtualFile file3 in directory4.GetFiles("*.xml", SearchOption.AllDirectories))
 							{
 								if (TryRegisterFileIfNew(localDirectory, file3.FullPath))
 								{
-									LoadFromFile_DefInject(file3, typeInAnyAssembly);
+									list3.Add(file3);
 								}
+							}
+							List<string> list4 = (from x in list3.AsParallel()
+								select x.ReadAllText()).ToList();
+							for (int num2 = 0; num2 < list4.Count; num2++)
+							{
+								LoadFromFile_DefInject(list3[num2], typeInAnyAssembly, list4[num2]);
 							}
 						}
 					}
@@ -303,9 +317,9 @@ namespace Verse
 					wordInfo.LoadFrom(localDirectory, this);
 				}
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Exception loading language data. Rethrowing. Exception: " + arg);
+				Log.Error("Exception loading language data. Rethrowing. Exception: " + ex);
 				throw;
 			}
 			finally
@@ -343,7 +357,7 @@ namespace Verse
 			}
 			catch (Exception ex)
 			{
-				loadErrors.Add(string.Concat("Exception loading from strings file ", file, ": ", ex));
+				loadErrors.Add("Exception loading from strings file " + file?.ToString() + ": " + ex);
 				return;
 			}
 			string text2 = file.FullPath;
@@ -364,20 +378,18 @@ namespace Verse
 				{
 					value.Add(item2);
 				}
+				return;
 			}
-			else
-			{
-				stringFiles.Add(text2, list);
-			}
+			stringFiles.Add(text2, list);
 		}
 
-		private void LoadFromFile_Keyed(VirtualFile file)
+		private void LoadFromFile_Keyed(VirtualFile file, string preloadedFileContents)
 		{
 			Dictionary<string, string> dictionary = new Dictionary<string, string>();
 			Dictionary<string, int> dictionary2 = new Dictionary<string, int>();
 			try
 			{
-				foreach (DirectXmlLoaderSimple.XmlKeyValuePair item in DirectXmlLoaderSimple.ValuesFromXmlFile(file))
+				foreach (DirectXmlLoaderSimple.XmlKeyValuePair item in DirectXmlLoaderSimple.ValuesFromXmlFile(preloadedFileContents))
 				{
 					if (dictionary.ContainsKey(item.key))
 					{
@@ -390,7 +402,7 @@ namespace Verse
 			}
 			catch (Exception ex)
 			{
-				loadErrors.Add(string.Concat("Exception loading from translation file ", file, ": ", ex));
+				loadErrors.Add("Exception loading from translation file " + file?.ToString() + ": " + ex);
 				dictionary.Clear();
 				dictionary2.Clear();
 				anyKeyedReplacementsXmlParseError = true;
@@ -414,7 +426,7 @@ namespace Verse
 			}
 		}
 
-		public void LoadFromFile_DefInject(VirtualFile file, Type defType)
+		public void LoadFromFile_DefInject(VirtualFile file, Type defType, string preloadedFileContents)
 		{
 			DefInjectionPackage defInjectionPackage = defInjections.Where((DefInjectionPackage di) => di.defType == defType).FirstOrDefault();
 			if (defInjectionPackage == null)
@@ -422,7 +434,7 @@ namespace Verse
 				defInjectionPackage = new DefInjectionPackage(defType);
 				defInjections.Add(defInjectionPackage);
 			}
-			defInjectionPackage.AddDataFromFile(file, out var xmlParseError);
+			defInjectionPackage.AddDataFromFile(file, out var xmlParseError, preloadedFileContents);
 			if (xmlParseError)
 			{
 				anyDefInjectionsXmlParseError = true;
@@ -505,9 +517,9 @@ namespace Verse
 			return value.fileSource + ":" + value.fileSourceLine;
 		}
 
-		public Gender ResolveGender(string str, string fallback = null)
+		public Gender ResolveGender(string str, string fallback = null, Gender defaultGender = Gender.Male)
 		{
-			return wordInfo.ResolveGender(str, fallback);
+			return wordInfo.ResolveGender(str, fallback, defaultGender);
 		}
 
 		public void InjectIntoData_BeforeImpliedDefs()
@@ -522,9 +534,9 @@ namespace Verse
 				{
 					defInjection.InjectIntoDefs(errorOnDefNotFound: false);
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Error("Critical error while injecting translations into defs: " + arg);
+					Log.Error("Critical error while injecting translations into defs: " + ex);
 				}
 			}
 		}
@@ -543,13 +555,11 @@ namespace Verse
 					defInjection.InjectIntoDefs(errorOnDefNotFound: true);
 					num += defInjection.loadErrors.Count;
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Error("Critical error while injecting translations into defs: " + arg);
+					Log.Error("Critical error while injecting translations into defs: " + ex);
 				}
 			}
-			BackstoryTranslationUtility.LoadAndInjectBackstoryData(AllDirectories, backstoriesLoadErrors);
-			num += backstoriesLoadErrors.Count;
 			if (num != 0)
 			{
 				anyError = true;

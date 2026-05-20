@@ -17,11 +17,11 @@ namespace RimWorld
 			UpdateCarriersDuties(trader);
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
-				Pawn p = lord.ownedPawns[i];
-				TraderCaravanRole traderCaravanRole = p.GetTraderCaravanRole();
-				if (traderCaravanRole != TraderCaravanRole.Carrier && traderCaravanRole != TraderCaravanRole.Trader)
+				Pawn pawn = lord.ownedPawns[i];
+				TraderCaravanRole traderCaravanRole = pawn.GetTraderCaravanRole();
+				if (traderCaravanRole != TraderCaravanRole.Carrier && traderCaravanRole != TraderCaravanRole.Trader && pawn.Spawned)
 				{
-					UpdateDutyForChattelOrGuard(p, trader);
+					UpdateDutyForChattelOrGuard(pawn, trader);
 				}
 			}
 		}
@@ -85,6 +85,10 @@ namespace RimWorld
 
 		private bool TryToDefendClosestCarrier(Pawn p, float escortRadius)
 		{
+			if (!p.Spawned)
+			{
+				return false;
+			}
 			Pawn closestCarrier = GetClosestCarrier(p);
 			Thing thing = GenClosest.ClosestThingReachable(p.Position, p.Map, ThingRequest.ForGroup(ThingRequestGroup.Corpse), PathEndMode.ClosestTouch, TraverseParms.For(p), 20f, delegate(Thing x)
 			{

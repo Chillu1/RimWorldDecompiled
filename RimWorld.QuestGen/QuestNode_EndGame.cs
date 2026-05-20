@@ -30,7 +30,7 @@ namespace RimWorld.QuestGen
 			Slate slate = QuestGen.slate;
 			QuestPart_EndGame endGame = new QuestPart_EndGame();
 			endGame.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? slate.Get<string>("inSignal");
-			endGame.signalListenMode = signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly;
+			endGame.signalListenMode = signalListenMode.GetValue(slate).GetValueOrDefault();
 			QuestGen.AddTextRequest("root", delegate(string x)
 			{
 				endGame.introText = x;

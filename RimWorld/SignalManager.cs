@@ -12,11 +12,13 @@ namespace RimWorld
 
 		public List<ISignalReceiver> receivers = new List<ISignalReceiver>();
 
+		private static List<ISignalReceiver> tmpReceivers = new List<ISignalReceiver>();
+
 		public void RegisterReceiver(ISignalReceiver receiver)
 		{
 			if (receiver == null)
 			{
-				Log.Error("Tried to register a null reciever.");
+				Log.Error("Tried to register a null receiver.");
 			}
 			else if (receivers.Contains(receiver))
 			{
@@ -49,15 +51,17 @@ namespace RimWorld
 			{
 				Log.Message("Signal: tag=" + signal.tag.ToStringSafe() + " args=" + signal.args.Args.ToStringSafeEnumerable());
 			}
-			for (int i = 0; i < receivers.Count; i++)
+			tmpReceivers.Clear();
+			tmpReceivers.AddRange(receivers);
+			for (int i = 0; i < tmpReceivers.Count; i++)
 			{
 				try
 				{
-					receivers[i].Notify_SignalReceived(signal);
+					tmpReceivers[i].Notify_SignalReceived(signal);
 				}
 				catch (Exception ex)
 				{
-					Log.Error("Error while sending signal to " + receivers[i].ToStringSafe() + ": " + ex);
+					Log.Error("Error while sending signal to " + tmpReceivers[i].ToStringSafe() + ": " + ex);
 				}
 			}
 		}

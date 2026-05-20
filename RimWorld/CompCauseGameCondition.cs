@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using RimWorld.Planet;
 using Verse;
@@ -21,7 +20,7 @@ namespace RimWorld
 
 		public IEnumerable<GameCondition> CausedConditions => causedConditions.Values;
 
-		public bool Active
+		public virtual bool Active
 		{
 			get
 			{
@@ -33,7 +32,7 @@ namespace RimWorld
 			}
 		}
 
-		public int MyTile
+		public PlanetTile MyTile
 		{
 			get
 			{
@@ -45,7 +44,7 @@ namespace RimWorld
 				{
 					return parent.Tile;
 				}
-				return -1;
+				return PlanetTile.Invalid;
 			}
 		}
 
@@ -79,6 +78,7 @@ namespace RimWorld
 				foreach (KeyValuePair<Map, GameCondition> causedCondition in causedConditions)
 				{
 					causedCondition.Value.conditionCauser = parent;
+					causedCondition.Value.hideSource = Props.hideSource;
 				}
 			}
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
@@ -87,13 +87,25 @@ namespace RimWorld
 			}
 		}
 
-		public bool InAoE(int tile)
+		public bool InAoE(PlanetTile tile)
 		{
-			if (MyTile == -1 || !Active)
+			if (!MyTile.Valid || !tile.Valid || !Active)
 			{
 				return false;
 			}
-			return Find.WorldGrid.TraversalDistanceBetween(MyTile, tile, passImpassable: true, Props.worldRange + 1) <= Props.worldRange;
+			if (tile == MyTile)
+			{
+				return true;
+			}
+			if (Props.worldRange <= 0)
+			{
+				return false;
+			}
+			if (tile.Layer != MyTile.Layer)
+			{
+				return false;
+			}
+			return Find.WorldGrid.ApproxDistanceInTiles(tile, MyTile) < (float)Props.worldRange;
 		}
 
 		protected GameCondition GetConditionInstance(Map map)
@@ -155,6 +167,7 @@ namespace RimWorld
 			GameCondition gameCondition = GameConditionMaker.MakeCondition(ConditionDef);
 			gameCondition.Duration = gameCondition.TransitionTicks;
 			gameCondition.conditionCauser = parent;
+			gameCondition.hideSource = Props.hideSource;
 			map.gameConditionManager.RegisterCondition(gameCondition);
 			causedConditions.Add(map, gameCondition);
 			SetupCondition(gameCondition, map);
@@ -181,7 +194,7 @@ namespace RimWorld
 
 		public override string CompInspectStringExtra()
 		{
-			if (Prefs.DevMode)
+			if (DebugSettings.godMode)
 			{
 				GameCondition gameCondition = parent.Map.GameConditionManager.ActiveConditions.Find((GameCondition c) => c.def == Props.conditionDef);
 				if (gameCondition == null)
@@ -193,17 +206,7 @@ namespace RimWorld
 			return base.CompInspectStringExtra();
 		}
 
-		[Obsolete]
-		public virtual void RandomizeSettings_NewTemp(float points)
-		{
-		}
-
-		public virtual void RandomizeSettings_NewTemp_NewTemp(Site site)
-		{
-		}
-
-		[Obsolete]
-		public virtual void RandomizeSettings()
+		public virtual void RandomizeSettings(Site site)
 		{
 		}
 	}

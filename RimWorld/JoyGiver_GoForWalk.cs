@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Verse;
 using Verse.AI;
@@ -17,14 +16,11 @@ namespace RimWorld
 			{
 				return null;
 			}
-			Predicate<IntVec3> cellValidator = (IntVec3 x) => !PawnUtility.KnownDangerAt(x, pawn.Map, pawn) && !x.GetTerrain(pawn.Map).avoidWander && x.Standable(pawn.Map) && !x.Roofed(pawn.Map);
-			IntVec3 result4;
-			Predicate<Region> validator = (Region x) => x.Room.PsychologicallyOutdoors && !x.IsForbiddenEntirely(pawn) && x.TryFindRandomCellInRegionUnforbidden(pawn, cellValidator, out result4);
-			if (!CellFinder.TryFindClosestRegionWith(pawn.GetRegion(), TraverseParms.For(pawn), validator, 100, out var result))
+			if (!CellFinder.TryFindClosestRegionWith(pawn.GetRegion(), TraverseParms.For(pawn), RegionValidator, 100, out var result))
 			{
 				return null;
 			}
-			if (!result.TryFindRandomCellInRegionUnforbidden(pawn, cellValidator, out var result2))
+			if (!result.TryFindRandomCellInRegionUnforbidden(pawn, CellValidator, out var result2))
 			{
 				return null;
 			}
@@ -40,6 +36,23 @@ namespace RimWorld
 			}
 			job.locomotionUrgency = LocomotionUrgency.Walk;
 			return job;
+			bool CellValidator(IntVec3 x)
+			{
+				if (!PawnUtility.KnownDangerAt(x, pawn.Map, pawn) && !x.Fogged(pawn.Map) && !x.GetTerrain(pawn.Map).avoidWander && x.Standable(pawn.Map))
+				{
+					return !x.Roofed(pawn.Map);
+				}
+				return false;
+			}
+			bool RegionValidator(Region x)
+			{
+				IntVec3 result4;
+				if (x.Room.PsychologicallyOutdoors && !x.IsForbiddenEntirely(pawn))
+				{
+					return x.TryFindRandomCellInRegionUnforbidden(pawn, CellValidator, out result4);
+				}
+				return false;
+			}
 		}
 	}
 }

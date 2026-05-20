@@ -13,19 +13,21 @@ namespace RimWorld
 	{
 		public DragBox dragBox = new DragBox();
 
+		public MultiPawnGotoController gotoController = new MultiPawnGotoController();
+
 		private List<object> selected = new List<object>();
 
-		private List<object> shelved = new List<object>();
-
-		private static List<string> cantTakeReasons = new List<string>();
-
-		private const float PawnSelectRadius = 1f;
+		public const float PawnSelectRadius = 1f;
 
 		private const int MaxNumSelected = 200;
 
-		private static List<Pawn> tmpSelectedPawns = new List<Pawn>();
+		private static readonly List<Pawn> tmpSelectedPawns = new List<Pawn>();
 
-		private bool ShiftIsHeld
+		private static List<Thing> tmp_selectedBoxThings = new List<Thing>();
+
+		private static readonly List<Pawn> tmpDraftedGotoPawns = new List<Pawn>();
+
+		public static bool ShiftIsHeld
 		{
 			get
 			{
@@ -88,8 +90,7 @@ namespace RimWorld
 				tmpSelectedPawns.Clear();
 				for (int i = 0; i < selected.Count; i++)
 				{
-					Pawn item;
-					if ((item = selected[i] as Pawn) != null)
+					if (selected[i] is Pawn item)
 					{
 						tmpSelectedPawns.Add(item);
 					}
@@ -120,6 +121,41 @@ namespace RimWorld
 			}
 		}
 
+		public Plan SelectedPlan
+		{
+			get
+			{
+				if (selected.Count == 0)
+				{
+					return null;
+				}
+				return selected[0] as Plan;
+			}
+			set
+			{
+				ClearSelection();
+				if (value != null)
+				{
+					Select(value);
+				}
+			}
+		}
+
+		public bool AnyPawnSelected
+		{
+			get
+			{
+				for (int i = 0; i < selected.Count; i++)
+				{
+					if (selected[i] is Pawn)
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+		}
+
 		public void SelectorOnGUI()
 		{
 			HandleMapClicks();
@@ -128,9 +164,17 @@ namespace RimWorld
 				ClearSelection();
 				Event.current.Use();
 			}
-			if (NumSelected > 0 && Find.MainTabsRoot.OpenTab == null && !WorldRendererUtility.WorldRenderedNow)
+			if (NumSelected > 0 && Find.MainTabsRoot.OpenTab == null && !WorldRendererUtility.WorldSelected)
 			{
 				Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Inspect, playSound: false);
+			}
+		}
+
+		public void SelectorOnGUI_BeforeMainTabs()
+		{
+			if (gotoController.Active)
+			{
+				gotoController.OnGUI();
 			}
 		}
 
@@ -151,54 +195,75 @@ namespace RimWorld
 					}
 					Event.current.Use();
 				}
-				if (Event.current.button == 1 && selected.Count > 0)
+				if (Event.current.button == 1 && SelectedPawns.Any())
 				{
-					if (selected.Count == 1 && selected[0] is Pawn)
+					List<FloatMenuOption> list = null;
+					FloatMenuContext context = null;
+					try
 					{
-						FloatMenuMakerMap.TryMakeFloatMenu((Pawn)selected[0]);
+						list = FloatMenuMakerMap.GetOptions(SelectedPawns, UI.MouseMapPosition(), out context);
 					}
-					else if (!FloatMenuMakerMap.TryMakeMultiSelectFloatMenu(SelectedPawns))
+					catch (Exception ex)
 					{
-						cantTakeReasons.Clear();
-						for (int i = 0; i < selected.Count; i++)
+						Log.Error("Error trying to make float menu: " + ex);
+					}
+					if (!list.NullOrEmpty())
+					{
+						FloatMenuOption autoTakeOption = FloatMenuMakerMap.GetAutoTakeOption(list);
+						if (context.IsMultiselect && context.ValidSelectedPawns.Count() > 1 && list.Count == 1 && list[0].isGoto)
 						{
-							Pawn pawn = selected[i] as Pawn;
-							if (pawn != null)
-							{
-								MassTakeFirstAutoTakeableOption_NewTemp(pawn, UI.MouseCell(), out var cantTakeReason);
-								if (cantTakeReason != null)
-								{
-									cantTakeReasons.Add(cantTakeReason);
-								}
-							}
+							HandleMultiselectGoto(context);
 						}
-						if (cantTakeReasons.Count == selected.Count)
+						else if (autoTakeOption != null)
 						{
-							FloatMenu window = new FloatMenu((from r in cantTakeReasons.Distinct()
-								select new FloatMenuOption(r, null)).ToList());
-							Find.WindowStack.Add(window);
+							autoTakeOption.Chosen(colonistOrdering: true, null);
 						}
+						else
+						{
+							string title = ((!context.IsMultiselect) ? context.FirstSelectedPawn.LabelCap : null);
+							FloatMenuMap floatMenuMap = new FloatMenuMap(list, title, UI.MouseMapPosition());
+							floatMenuMap.givesColonistOrders = true;
+							Find.WindowStack.Add(floatMenuMap);
+						}
+					}
+					else if (context != null && context.IsMultiselect)
+					{
+						HandleMultiselectGoto(context);
 					}
 					Event.current.Use();
 				}
 			}
-			if (Event.current.rawType != EventType.MouseUp)
+			if (Event.current.rawType == EventType.MouseUp)
 			{
-				return;
+				if (Event.current.button == 0)
+				{
+					if (dragBox.active)
+					{
+						dragBox.active = false;
+						if (!dragBox.IsValid)
+						{
+							SelectUnderMouse();
+						}
+						else
+						{
+							SelectInsideDragBox();
+						}
+					}
+				}
+				else if (Event.current.button == 1 && gotoController.Active)
+				{
+					gotoController.FinalizeInteraction();
+				}
+				Event.current.Use();
 			}
-			if (Event.current.button == 0 && dragBox.active)
+			if (gotoController.Active && !Input.GetMouseButton(1) && !Input.GetMouseButton(2))
 			{
-				dragBox.active = false;
-				if (!dragBox.IsValid)
-				{
-					SelectUnderMouse();
-				}
-				else
-				{
-					SelectInsideDragBox();
-				}
+				gotoController.FinalizeInteraction();
 			}
-			Event.current.Use();
+			if (gotoController.Active)
+			{
+				gotoController.ProcessInputEvents();
+			}
 		}
 
 		public bool IsSelected(object obj)
@@ -210,7 +275,7 @@ namespace RimWorld
 		{
 			SelectionDrawer.Clear();
 			selected.Clear();
-			shelved.Clear();
+			gotoController.Deactivate();
 		}
 
 		public void Deselect(object obj)
@@ -218,33 +283,11 @@ namespace RimWorld
 			DeselectInternal(obj);
 		}
 
-		private void DeselectInternal(object obj, bool clearShelfOnRemove = true)
+		private void DeselectInternal(object obj)
 		{
 			if (selected.Contains(obj))
 			{
 				selected.Remove(obj);
-				if (clearShelfOnRemove)
-				{
-					shelved.Clear();
-				}
-			}
-		}
-
-		public void ShelveSelected(object obj)
-		{
-			if (IsSelected(obj))
-			{
-				DeselectInternal(obj, clearShelfOnRemove: false);
-				shelved.Add(obj);
-			}
-		}
-
-		public void Unshelve(object obj, bool playSound = true, bool forceDesignatorDeselect = true)
-		{
-			if (shelved.Contains(obj))
-			{
-				shelved.Remove(obj);
-				SelectInternal(obj, playSound, forceDesignatorDeselect, clearShelfOnAdd: false);
 			}
 		}
 
@@ -253,7 +296,7 @@ namespace RimWorld
 			SelectInternal(obj, playSound, forceDesignatorDeselect);
 		}
 
-		private void SelectInternal(object obj, bool playSound = true, bool forceDesignatorDeselect = true, bool clearShelfOnAdd = true)
+		private void SelectInternal(object obj, bool playSound = true, bool forceDesignatorDeselect = true)
 		{
 			if (obj == null)
 			{
@@ -261,9 +304,9 @@ namespace RimWorld
 				return;
 			}
 			Thing thing = obj as Thing;
-			if (thing == null && !(obj is Zone))
+			if (thing == null && !(obj is Zone) && !(obj is Plan))
 			{
-				Log.Error(string.Concat("Tried to select ", obj, " which is neither a Thing nor a Zone."));
+				Log.Error($"Tried to select {obj} which is neither a Thing, Zone, or Plan.");
 				return;
 			}
 			if (thing != null && thing.Destroyed)
@@ -271,8 +314,13 @@ namespace RimWorld
 				Log.Error("Cannot select destroyed thing.");
 				return;
 			}
-			Pawn pawn = obj as Pawn;
-			if (pawn != null && pawn.IsWorldPawn())
+			CompSelectProxy compSelectProxy = thing.TryGetComp<CompSelectProxy>();
+			if (compSelectProxy != null && compSelectProxy.thingToSelect != null)
+			{
+				SelectInternal(compSelectProxy.thingToSelect, playSound, forceDesignatorDeselect);
+				return;
+			}
+			if (obj is Pawn p && p.IsWorldPawn())
 			{
 				Log.Error("Cannot select world pawns.");
 				return;
@@ -281,7 +329,7 @@ namespace RimWorld
 			{
 				Find.DesignatorManager.Deselect();
 			}
-			if (SelectedZone != null && !(obj is Zone))
+			if ((SelectedZone != null) ^ !(obj is Zone) ^ !(obj is Plan))
 			{
 				ClearSelection();
 			}
@@ -289,11 +337,39 @@ namespace RimWorld
 			{
 				ClearSelection();
 			}
-			Map map = ((thing != null) ? thing.Map : ((Zone)obj).Map);
+			if (obj is Plan && SelectedPlan == null)
+			{
+				ClearSelection();
+			}
+			Map map = null;
+			if (thing != null)
+			{
+				map = thing.MapHeld;
+			}
+			else if (obj is Zone zone)
+			{
+				map = zone.Map;
+			}
+			else if (obj is Plan plan)
+			{
+				map = plan.Map;
+			}
 			for (int num = selected.Count - 1; num >= 0; num--)
 			{
-				Thing thing2 = selected[num] as Thing;
-				if (((thing2 != null) ? thing2.Map : ((Zone)selected[num]).Map) != map)
+				Map map2 = null;
+				if (selected[num] is Thing thing2)
+				{
+					map2 = thing2.MapHeld;
+				}
+				else if (selected[num] is Zone zone2)
+				{
+					map2 = zone2.Map;
+				}
+				else if (selected[num] is Plan plan2)
+				{
+					map2 = plan2.Map;
+				}
+				if (map2 != map)
 				{
 					Deselect(selected[num]);
 				}
@@ -304,7 +380,7 @@ namespace RimWorld
 				{
 					Current.Game.CurrentMap = map;
 					SoundDefOf.MapSelected.PlayOneShotOnCamera();
-					IntVec3 cell = thing?.Position ?? ((Zone)obj).Cells[0];
+					IntVec3 cell = thing?.PositionHeld ?? ((Zone)obj).Cells[0];
 					Find.CameraDriver.JumpToCurrentMapLoc(cell);
 				}
 				if (playSound)
@@ -312,10 +388,7 @@ namespace RimWorld
 					PlaySelectionSoundFor(obj);
 				}
 				selected.Add(obj);
-				if (clearShelfOnAdd)
-				{
-					shelved.Clear();
-				}
+				thing?.Notify_ThingSelected();
 				SelectionDrawer.Notify_Selected(obj);
 			}
 		}
@@ -323,6 +396,7 @@ namespace RimWorld
 		public void Notify_DialogOpened()
 		{
 			dragBox.active = false;
+			gotoController.Deactivate();
 		}
 
 		private void PlaySelectionSoundFor(object obj)
@@ -331,13 +405,13 @@ namespace RimWorld
 			{
 				SoundDefOf.ColonistSelected.PlayOneShotOnCamera();
 			}
-			else if (obj is Thing || obj is Zone)
+			else if (obj is Thing || obj is Zone || obj is Plan)
 			{
 				SoundDefOf.ThingSelected.PlayOneShotOnCamera();
 			}
 			else
 			{
-				Log.Warning("Can't determine selection sound for " + obj);
+				Log.Warning($"Can't determine selection sound for {obj}");
 			}
 		}
 
@@ -376,36 +450,16 @@ namespace RimWorld
 				return;
 			}
 			List<Thing> boxThings = ThingSelectionUtility.MultiSelectableThingsInScreenRectDistinct(dragBox.ScreenRect).ToList();
-			Func<Predicate<Thing>, bool> func = delegate(Predicate<Thing> predicate)
-			{
-				foreach (Thing item in boxThings.Where((Thing t) => predicate(t)))
-				{
-					Select(item);
-					selectedSomething = true;
-				}
-				return selectedSomething;
-			};
-			Predicate<Thing> arg = (Thing t) => t.def.category == ThingCategory.Pawn && ((Pawn)t).RaceProps.Humanlike && t.Faction == Faction.OfPlayer;
-			if (func(arg))
+			if (SelectWhere(IsColonist, SelectorUtility.SortInColonistBarOrder) || SelectWhere(IsHumanlike) || SelectWhere(IsResource) || SelectWhere(IsPawn) || SelectWhere((Thing t) => t.def.selectable))
 			{
 				return;
 			}
-			Predicate<Thing> arg2 = (Thing t) => t.def.category == ThingCategory.Pawn && ((Pawn)t).RaceProps.Humanlike;
-			if (func(arg2))
+			foreach (Zone item in ThingSelectionUtility.MultiSelectableZonesInScreenRectDistinct(dragBox.ScreenRect).ToList())
 			{
-				return;
+				selectedSomething = true;
+				Select(item);
 			}
-			Predicate<Thing> arg3 = (Thing t) => t.def.CountAsResource;
-			if (func(arg3))
-			{
-				return;
-			}
-			Predicate<Thing> arg4 = (Thing t) => t.def.category == ThingCategory.Pawn;
-			if (func(arg4) || func((Thing t) => t.def.selectable))
-			{
-				return;
-			}
-			foreach (Zone item2 in ThingSelectionUtility.MultiSelectableZonesInScreenRectDistinct(dragBox.ScreenRect).ToList())
+			foreach (Plan item2 in ThingSelectionUtility.MultiSelectablePlansInScreenRectDistinct(dragBox.ScreenRect).ToList())
 			{
 				selectedSomething = true;
 				Select(item2);
@@ -414,13 +468,56 @@ namespace RimWorld
 			{
 				SelectUnderMouse();
 			}
+			static bool IsColonist(Thing t)
+			{
+				if (t.def.category == ThingCategory.Pawn && (((Pawn)t).RaceProps.Humanlike || (ModsConfig.BiotechActive && ((Pawn)t).RaceProps.IsMechanoid)))
+				{
+					return t.Faction == Faction.OfPlayer;
+				}
+				return false;
+			}
+			static bool IsHumanlike(Thing t)
+			{
+				if (t.def.category == ThingCategory.Pawn)
+				{
+					return ((Pawn)t).RaceProps.Humanlike;
+				}
+				return false;
+			}
+			static bool IsPawn(Thing t)
+			{
+				return t.def.category == ThingCategory.Pawn;
+			}
+			static bool IsResource(Thing t)
+			{
+				return t.def.CountAsResource;
+			}
+			bool SelectWhere(Predicate<Thing> predicate, Action<List<Thing>> postProcessor = null)
+			{
+				tmp_selectedBoxThings.Clear();
+				foreach (Thing item3 in boxThings.Where((Thing t) => predicate(t)))
+				{
+					tmp_selectedBoxThings.Add(item3);
+				}
+				if (tmp_selectedBoxThings.Any())
+				{
+					postProcessor?.Invoke(tmp_selectedBoxThings);
+					foreach (Thing tmp_selectedBoxThing in tmp_selectedBoxThings)
+					{
+						Select(tmp_selectedBoxThing);
+						selectedSomething = true;
+					}
+				}
+				tmp_selectedBoxThings.Clear();
+				return selectedSomething;
+			}
 		}
 
 		private IEnumerable<object> SelectableObjectsUnderMouse()
 		{
 			Vector2 mousePositionOnUIInverted = UI.MousePositionOnUIInverted;
 			Thing thing = Find.ColonistBar.ColonistOrCorpseAt(mousePositionOnUIInverted);
-			if (thing != null && thing.Spawned)
+			if (thing != null && thing.SpawnedOrAnyParentSpawned)
 			{
 				yield return thing;
 			}
@@ -430,19 +527,21 @@ namespace RimWorld
 				{
 					yield break;
 				}
-				TargetingParameters targetingParameters = new TargetingParameters();
-				targetingParameters.mustBeSelectable = true;
-				targetingParameters.canTargetPawns = true;
-				targetingParameters.canTargetBuildings = true;
-				targetingParameters.canTargetItems = true;
-				targetingParameters.mapObjectTargetsMustBeAutoAttackable = false;
-				List<Thing> selectableList = GenUI.ThingsUnderMouse(UI.MouseMapPosition(), 1f, targetingParameters);
+				TargetingParameters clickParams = new TargetingParameters
+				{
+					mustBeSelectable = true,
+					canTargetPawns = true,
+					canTargetBuildings = true,
+					canTargetItems = true,
+					mapObjectTargetsMustBeAutoAttackable = false
+				};
+				List<Thing> selectableList = GenUI.ThingsUnderMouse(UI.MouseMapPosition(), 1f, clickParams);
 				if (selectableList.Count > 0 && selectableList[0] is Pawn && (selectableList[0].DrawPos - UI.MouseMapPosition()).MagnitudeHorizontal() < 0.4f)
 				{
 					for (int num = selectableList.Count - 1; num >= 0; num--)
 					{
 						Thing thing2 = selectableList[num];
-						if (thing2.def.category == ThingCategory.Pawn && (thing2.DrawPos - UI.MouseMapPosition()).MagnitudeHorizontal() > 0.4f)
+						if (thing2.def.category == ThingCategory.Pawn && (thing2.DrawPosHeld.Value - UI.MouseMapPosition()).MagnitudeHorizontal() > 0.4f)
 						{
 							selectableList.Remove(thing2);
 						}
@@ -457,6 +556,11 @@ namespace RimWorld
 				{
 					yield return zone;
 				}
+				Plan plan = Find.CurrentMap.planManager.PlanAt(UI.MouseCell());
+				if (plan != null)
+				{
+					yield return plan;
+				}
 			}
 		}
 
@@ -465,16 +569,26 @@ namespace RimWorld
 			List<Thing> thingList = c.GetThingList(map);
 			for (int i = 0; i < thingList.Count; i++)
 			{
-				Thing thing = thingList[i];
-				if (ThingSelectionUtility.SelectableByMapClick(thing))
+				Thing t = thingList[i];
+				if (!ThingSelectionUtility.SelectableByMapClick(t))
 				{
-					yield return thing;
+					continue;
+				}
+				yield return t;
+				foreach (Thing item in ContainingSelectionUtility.SelectableContainedThings(t))
+				{
+					yield return item;
 				}
 			}
 			Zone zone = map.zoneManager.ZoneAt(c);
 			if (zone != null)
 			{
 				yield return zone;
+			}
+			Plan plan = map.planManager.PlanAt(c);
+			if (plan != null)
+			{
+				yield return plan;
 			}
 		}
 
@@ -486,13 +600,8 @@ namespace RimWorld
 				CameraJumper.TryJumpAndSelect(caravan);
 				return;
 			}
-			Thing thing = Find.ColonistBar.ColonistOrCorpseAt(UI.MousePositionOnUIInverted);
-			if (thing != null && !thing.Spawned)
-			{
-				CameraJumper.TryJump(thing);
-				return;
-			}
 			List<object> list = SelectableObjectsUnderMouse().ToList();
+			list.SortBy((object x) => (!(x is Building_Storage)) ? 1 : 0);
 			if (list.Count == 0)
 			{
 				if (!ShiftIsHeld)
@@ -502,19 +611,19 @@ namespace RimWorld
 			}
 			else if (list.Count == 1)
 			{
-				object obj2 = list[0];
+				object obj = list[0];
 				if (!ShiftIsHeld)
 				{
 					ClearSelection();
-					Select(obj2);
+					Select(obj);
 				}
-				else if (!selected.Contains(obj2))
+				else if (!selected.Contains(obj))
 				{
-					Select(obj2);
+					Select(obj);
 				}
 				else
 				{
-					Deselect(obj2);
+					Deselect(obj);
 				}
 			}
 			else
@@ -523,26 +632,59 @@ namespace RimWorld
 				{
 					return;
 				}
-				object obj3 = list.Where((object obj) => selected.Contains(obj)).FirstOrDefault();
-				if (obj3 != null)
+				object obj2 = list.FirstOrDefault((object item) => selected.Contains(item));
+				if (obj2 != null)
 				{
-					if (!ShiftIsHeld)
+					if (ShiftIsHeld)
 					{
-						int num = list.IndexOf(obj3) + 1;
-						if (num >= list.Count)
+						foreach (object item in list)
 						{
-							num -= list.Count;
+							if (selected.Contains(item))
+							{
+								Deselect(item);
+							}
 						}
-						ClearSelection();
-						Select(list[num]);
 						return;
 					}
-					foreach (object item in list)
+					int num = list.IndexOf(obj2) + 1;
+					if (num >= list.Count)
 					{
-						if (selected.Contains(item))
+						num -= list.Count;
+					}
+					if (obj2 is Thing thing && thing.def.category == ThingCategory.Item && thing.Spawned && thing.Position.GetItemCount(thing.Map) >= 2 && list.All(delegate(object x)
+					{
+						if (x is Thing thing2 && thing2.def.category != ThingCategory.Item)
 						{
-							Deselect(item);
+							Building obj3 = thing2 as Building;
+							if (obj3 == null)
+							{
+								return false;
+							}
+							return obj3.MaxItemsInCell > 1;
 						}
+						return true;
+					}))
+					{
+						if (obj2 != list[0])
+						{
+							ClearSelection();
+							Select(list[0]);
+						}
+						else if (list[list.Count - 1] is Building { MaxItemsInCell: >1 })
+						{
+							ClearSelection();
+							Select(list[list.Count - 1]);
+						}
+						else
+						{
+							ClearSelection();
+							Select(list[num]);
+						}
+					}
+					else
+					{
+						ClearSelection();
+						Select(list[num]);
 					}
 				}
 				else
@@ -558,7 +700,7 @@ namespace RimWorld
 
 		public void SelectNextAt(IntVec3 c, Map map)
 		{
-			if (SelectedObjects.Count() != 1)
+			if (SelectedObjects.Count != 1)
 			{
 				Log.Error("Cannot select next at with < or > 1 selected.");
 				return;
@@ -580,81 +722,113 @@ namespace RimWorld
 			{
 				return;
 			}
-			Thing clickedThing = list.FirstOrDefault((object o) => o is Pawn && ((Pawn)o).Faction == Faction.OfPlayer && !((Pawn)o).IsPrisoner) as Thing;
-			clickedThing = list.FirstOrDefault((object o) => o is Pawn) as Thing;
+			Thing clickedThing = list.FirstOrDefault((object o) => o is Pawn pawn && pawn.Faction == Faction.OfPlayer && !pawn.IsPrisoner) as Thing;
 			if (clickedThing == null)
 			{
-				clickedThing = list.Where((object o) => o is Thing && !((Thing)o).def.neverMultiSelect).FirstOrDefault() as Thing;
+				clickedThing = list.FirstOrDefault((object o) => o is Pawn) as Thing;
+			}
+			if (clickedThing != null && !clickedThing.Spawned)
+			{
+				clickedThing = null;
+			}
+			if (clickedThing == null)
+			{
+				clickedThing = list.FirstOrDefault(delegate(object o)
+				{
+					if (!(o is Thing thing2))
+					{
+						return false;
+					}
+					return !thing2.def.neverMultiSelect;
+				}) as Thing;
 			}
 			Rect rect = new Rect(0f, 0f, UI.screenWidth, UI.screenHeight);
 			if (clickedThing == null)
 			{
-				if (list.FirstOrDefault((object o) => o is Zone && ((Zone)o).IsMultiselectable) == null)
+				if (!(list.FirstOrDefault((object o) => o is Zone zone && zone.IsMultiselectable) is Zone matchType))
 				{
 					return;
 				}
-				foreach (Zone item in ThingSelectionUtility.MultiSelectableZonesInScreenRectDistinct(rect))
 				{
-					if (!IsSelected(item))
+					foreach (Zone item in ThingSelectionUtility.MultiSelectableZonesInScreenRectDistinct(rect, matchType))
 					{
-						Select(item);
+						if (!IsSelected(item))
+						{
+							Select(item);
+						}
 					}
+					return;
 				}
-				return;
 			}
-			IEnumerable<Thing> enumerable = ThingSelectionUtility.MultiSelectableThingsInScreenRectDistinct(rect);
-			Predicate<Thing> predicate = delegate(Thing t)
+			Building edifice = clickedThing.PositionHeld.GetEdifice(clickedThing.MapHeld);
+			if (edifice != null && edifice is Building_Storage building_Storage && building_Storage.GetSlotGroup().HeldThings.Contains(clickedThing))
 			{
-				if (t.def != clickedThing.GetInnerIfMinified().def || t.Faction != clickedThing.Faction || IsSelected(t))
-				{
-					return false;
-				}
-				Pawn pawn = clickedThing as Pawn;
-				if (pawn != null)
-				{
-					Pawn pawn2 = t as Pawn;
-					if (pawn2.RaceProps != pawn.RaceProps)
-					{
-						return false;
-					}
-					if (pawn2.HostFaction != pawn.HostFaction)
-					{
-						return false;
-					}
-				}
-				return true;
-			};
-			foreach (Thing item2 in (IEnumerable)enumerable)
+				Deselect(edifice);
+			}
+			foreach (Thing item2 in (IEnumerable)ThingSelectionUtility.MultiSelectableThingsInScreenRectDistinct(rect))
 			{
-				if (predicate(item2.GetInnerIfMinified()))
+				if (Validator(item2.GetInnerIfMinified()))
 				{
 					Select(item2);
 				}
 			}
-		}
-
-		[Obsolete("Obsolete, only used to avoid error when patching")]
-		private static void MassTakeFirstAutoTakeableOption(Pawn pawn, IntVec3 dest)
-		{
-			MassTakeFirstAutoTakeableOption_NewTemp(pawn, dest, out var _);
-		}
-
-		private static void MassTakeFirstAutoTakeableOption_NewTemp(Pawn pawn, IntVec3 dest, out string cantTakeReason)
-		{
-			FloatMenuOption floatMenuOption = null;
-			cantTakeReason = null;
-			foreach (FloatMenuOption item in FloatMenuMakerMap.ChoicesAtFor(dest.ToVector3Shifted(), pawn))
+			bool Validator(Thing t)
 			{
-				if (item.Disabled || !item.autoTakeable)
+				Thing innerIfMinified = clickedThing.GetInnerIfMinified();
+				if (IsSelected(t) || t.Faction != innerIfMinified.Faction)
 				{
-					cantTakeReason = item.Label;
+					return false;
 				}
-				else if (floatMenuOption == null || item.autoTakeablePriority > floatMenuOption.autoTakeablePriority)
+				if (innerIfMinified is Pawn pawn && t is Pawn pawn2)
 				{
-					floatMenuOption = item;
+					if (pawn2.HostFaction != pawn.HostFaction)
+					{
+						return false;
+					}
+					if (pawn2.mutant?.Def != pawn.mutant?.Def)
+					{
+						return false;
+					}
+					if (!SelectorUtility.IsEquivalentRace(pawn2, pawn))
+					{
+						return false;
+					}
+					return true;
+				}
+				return t.def == innerIfMinified.def;
+			}
+		}
+
+		private void HandleMultiselectGoto(FloatMenuContext context)
+		{
+			tmpDraftedGotoPawns.Clear();
+			foreach (Pawn allSelectedPawn in context.allSelectedPawns)
+			{
+				if ((bool)FloatMenuMakerMap.ShouldGenerateFloatMenuForPawn(allSelectedPawn) && allSelectedPawn.Drafted)
+				{
+					tmpDraftedGotoPawns.Add(allSelectedPawn);
 				}
 			}
-			floatMenuOption?.Chosen(colonistOrdering: true, null);
+			if (tmpDraftedGotoPawns.Count == 1)
+			{
+				if ((bool)FloatMenuOptionProvider_DraftedMove.PawnCanGoto(tmpDraftedGotoPawns[0], context.ClickedCell))
+				{
+					FloatMenuOptionProvider_DraftedMove.PawnGotoAction(context.ClickedCell, tmpDraftedGotoPawns[0], context.ClickedCell);
+				}
+			}
+			else
+			{
+				IntVec3 mouseCell = CellFinder.StandableCellNear(context.ClickedCell, context.map, 2.9f);
+				if (mouseCell.IsValid)
+				{
+					gotoController.StartInteraction(mouseCell);
+					foreach (Pawn tmpDraftedGotoPawn in tmpDraftedGotoPawns)
+					{
+						gotoController.AddPawn(tmpDraftedGotoPawn);
+					}
+				}
+			}
+			tmpDraftedGotoPawns.Clear();
 		}
 	}
 }

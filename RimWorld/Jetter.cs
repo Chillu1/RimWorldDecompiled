@@ -26,7 +26,7 @@ namespace RimWorld
 
 		private const int TicksBetweenMoves = 3;
 
-		public override void Tick()
+		protected override void Tick()
 		{
 			if (JState == JetterState.WickBurning)
 			{

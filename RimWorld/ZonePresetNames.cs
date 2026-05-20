@@ -10,6 +10,7 @@ namespace RimWorld
 			{
 				StorageSettingsPreset.DumpingStockpile => "DumpingStockpile".Translate(), 
 				StorageSettingsPreset.DefaultStockpile => "Stockpile".Translate(), 
+				StorageSettingsPreset.CorpseStockpile => "CorpseStockpile".Translate(), 
 				_ => "Zone".Translate(), 
 			};
 		}

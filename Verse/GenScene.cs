@@ -16,6 +16,7 @@ namespace Verse
 		public static void GoToMainMenu()
 		{
 			LongEventHandler.ClearQueuedEvents();
+			Current.Game?.Dispose();
 			LongEventHandler.QueueLongEvent(delegate
 			{
 				MemoryUtility.ClearAllMapsAndWorld();

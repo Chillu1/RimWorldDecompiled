@@ -9,7 +9,7 @@ namespace RimWorld
 			CompRottable compRottable = t.TryGetComp<CompRottable>();
 			if (compRottable == null)
 			{
-				if (t.def.IsIngestible)
+				if (t.def.IsIngestible && !t.def.IsDrug)
 				{
 					return true;
 				}
@@ -22,7 +22,11 @@ namespace RimWorld
 		{
 			if (def.GetCompProperties<CompProperties_Rottable>() == null)
 			{
-				return def.IsIngestible;
+				if (def.IsIngestible)
+				{
+					return !def.IsDrug;
+				}
+				return false;
 			}
 			return true;
 		}
@@ -34,7 +38,7 @@ namespace RimWorld
 			{
 				return true;
 			}
-			if (compProperties == null && def.IsIngestible)
+			if (compProperties == null && def.IsIngestible && !def.IsDrug)
 			{
 				return true;
 			}

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Verse;
 
@@ -8,9 +9,31 @@ namespace RimWorld.Planet
 	{
 		public Caravan caravan;
 
+		public Dictionary<Pawn, Pawn> breastfeedingBabyToFeeder;
+
+		private readonly List<Pawn> tmpPawns = new List<Pawn>();
+
+		private static List<Hediff> tmpHediffs = new List<Hediff>();
+
 		private static List<JoyKindDef> tmpAvailableJoyKinds = new List<JoyKindDef>();
 
 		private static List<Thing> tmpInvFood = new List<Thing>();
+
+		public bool AnyPawnsNeedRest
+		{
+			get
+			{
+				List<Pawn> pawnsListForReading = caravan.PawnsListForReading;
+				for (int i = 0; i < pawnsListForReading.Count; i++)
+				{
+					if (pawnsListForReading[i].needs?.rest != null)
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+		}
 
 		public Caravan_NeedsTracker()
 		{
@@ -23,23 +46,26 @@ namespace RimWorld.Planet
 
 		public void ExposeData()
 		{
+			Scribe_Collections.Look(ref breastfeedingBabyToFeeder, "breastfeedingBabyToFeeder", LookMode.Reference, LookMode.Reference);
 		}
 
-		public void NeedsTrackerTick()
+		public void NeedsTrackerTickInterval(int delta)
 		{
-			TrySatisfyPawnsNeeds();
+			TrySatisfyPawnsNeeds(delta);
 		}
 
-		public void TrySatisfyPawnsNeeds()
+		public void TrySatisfyPawnsNeeds(int delta)
 		{
-			List<Pawn> pawnsListForReading = caravan.PawnsListForReading;
-			for (int num = pawnsListForReading.Count - 1; num >= 0; num--)
+			tmpPawns.Clear();
+			tmpPawns.AddRange(caravan.PawnsListForReading.ToList());
+			tmpPawns.Sort((Pawn p1, Pawn p2) => p1.RaceProps.Humanlike.CompareTo(p2.RaceProps.Humanlike));
+			for (int num = tmpPawns.Count - 1; num >= 0; num--)
 			{
-				TrySatisfyPawnNeeds(pawnsListForReading[num]);
+				TrySatisfyPawnNeeds(tmpPawns[num], delta);
 			}
 		}
 
-		private void TrySatisfyPawnNeeds(Pawn pawn)
+		private void TrySatisfyPawnNeeds(Pawn pawn, int delta)
 		{
 			if (pawn.Dead)
 			{
@@ -49,35 +75,40 @@ namespace RimWorld.Planet
 			for (int i = 0; i < allNeeds.Count; i++)
 			{
 				Need need = allNeeds[i];
-				Need_Rest need_Rest = need as Need_Rest;
-				Need_Food need_Food = need as Need_Food;
-				Need_Chemical need_Chemical = need as Need_Chemical;
-				Need_Joy need_Joy = need as Need_Joy;
-				if (need_Rest != null)
+				if (need is Need_Rest rest)
 				{
-					TrySatisfyRestNeed(pawn, need_Rest);
+					TrySatisfyRestNeed(pawn, rest, delta);
 				}
-				else if (need_Food != null)
+				else if (need is Need_Food food)
 				{
-					TrySatisfyFoodNeed(pawn, need_Food);
+					TrySatisfyFoodNeed(pawn, food, delta);
 				}
-				else if (need_Chemical != null)
+				else if (need is Need_Chemical chemical)
 				{
-					TrySatisfyChemicalNeed(pawn, need_Chemical);
+					TrySatisfyChemicalNeed(pawn, chemical, delta);
 				}
-				else if (need_Joy != null)
+				else if (need is Need_Joy joy)
 				{
-					TrySatisfyJoyNeed(pawn, need_Joy);
+					TrySatisfyJoyNeed(pawn, joy, delta);
+				}
+			}
+			if (ModsConfig.BiotechActive && pawn.genes != null)
+			{
+				Gene_Hemogen firstGeneOfType = pawn.genes.GetFirstGeneOfType<Gene_Hemogen>();
+				if (firstGeneOfType != null)
+				{
+					TrySatisfyHemogenNeed(pawn, firstGeneOfType, delta);
 				}
 			}
 			Pawn_PsychicEntropyTracker psychicEntropy = pawn.psychicEntropy;
-			if (psychicEntropy.Psylink != null)
+			if (psychicEntropy?.Psylink != null)
 			{
-				TryGainPsyfocus(psychicEntropy);
+				TryGainPsyfocus(psychicEntropy, delta);
 			}
+			TrySatisfyChemicalDependencies(pawn, delta);
 		}
 
-		private void TrySatisfyRestNeed(Pawn pawn, Need_Rest rest)
+		private void TrySatisfyRestNeed(Pawn pawn, Need_Rest rest, int delta)
 		{
 			if (!caravan.pather.MovingNow || pawn.InCaravanBed() || pawn.CarriedByCaravan())
 			{
@@ -86,8 +117,54 @@ namespace RimWorld.Planet
 			}
 		}
 
-		private void TrySatisfyFoodNeed(Pawn pawn, Need_Food food)
+		private void TrySatisfyFoodNeed(Pawn pawn, Need_Food food, int delta)
 		{
+			if (!ChildcareUtility.CanSuckle(pawn, out var reason))
+			{
+				breastfeedingBabyToFeeder?.Remove(pawn);
+			}
+			else
+			{
+				breastfeedingBabyToFeeder = breastfeedingBabyToFeeder ?? new Dictionary<Pawn, Pawn>(8);
+				if (breastfeedingBabyToFeeder.TryGetValue(pawn, out var value))
+				{
+					if (!caravan.PawnsListForReading.Contains(value))
+					{
+						breastfeedingBabyToFeeder.Remove(pawn);
+					}
+					else if (!ChildcareUtility.CanBreastfeed(value, out reason))
+					{
+						breastfeedingBabyToFeeder.Remove(pawn);
+					}
+					else
+					{
+						if (ChildcareUtility.SuckleFromLactatingPawn(pawn, value, delta))
+						{
+							return;
+						}
+						breastfeedingBabyToFeeder.Remove(pawn);
+					}
+				}
+				if (!ChildcareUtility.WantsSuckle(pawn, out reason))
+				{
+					return;
+				}
+				foreach (Pawn pawn2 in caravan.pawns)
+				{
+					if (!breastfeedingBabyToFeeder.ContainsValue(pawn2) && ChildcareUtility.CanMomBreastfeedBabyNow(pawn2, pawn, out reason) && ChildcareUtility.CanAutoBreastfeed(pawn2, pawn, forced: false, out reason))
+					{
+						breastfeedingBabyToFeeder[pawn] = pawn2;
+						if (ChildcareUtility.SuckleFromLactatingPawn(pawn, pawn2, delta))
+						{
+							return;
+						}
+					}
+				}
+			}
+			if (!food.Starving)
+			{
+				food.lastNonStarvingTick = Find.TickManager.TicksGame;
+			}
 			if ((int)food.CurCategory < 1)
 			{
 				return;
@@ -108,23 +185,58 @@ namespace RimWorld.Planet
 					if (owner != null)
 					{
 						owner.inventory.innerContainer.Remove(food2);
-						caravan.RecacheImmobilizedNow();
-						caravan.RecacheDaysWorthOfFood();
+						caravan.RecacheInventory();
 					}
 					if (!caravan.notifiedOutOfFood && !CaravanInventoryUtility.TryGetBestFood(caravan, pawn, out food2, out owner))
 					{
-						Messages.Message("MessageCaravanRanOutOfFood".Translate(caravan.LabelCap, pawn.Label, pawn.Named("PAWN")), caravan, MessageTypeDefOf.ThreatBig);
+						Messages.Message("MessageCaravanRanOutOfFood".Translate(caravan.LabelCap), caravan, MessageTypeDefOf.ThreatBig);
 						caravan.notifiedOutOfFood = true;
 					}
 				}
 			}
 		}
 
-		private void TrySatisfyChemicalNeed(Pawn pawn, Need_Chemical chemical)
+		private void TrySatisfyHemogenNeed(Pawn pawn, Gene_Hemogen hemogenGene, int delta)
 		{
-			if ((int)chemical.CurCategory < 2 && CaravanInventoryUtility.TryGetDrugToSatisfyChemicalNeed(caravan, pawn, chemical, out var drug, out var owner))
+			if (!hemogenGene.ShouldConsumeHemogenNow())
+			{
+				return;
+			}
+			Thing thing = CaravanInventoryUtility.AllInventoryItems(caravan).FirstOrFallback((Thing t) => t.def == ThingDefOf.HemogenPack);
+			if (thing != null)
+			{
+				Pawn ownerOf = CaravanInventoryUtility.GetOwnerOf(caravan, thing);
+				float num = thing.Ingested(pawn, thing.GetStatValue(StatDefOf.Nutrition));
+				if (pawn.needs?.food != null)
+				{
+					pawn.needs.food.CurLevel += num;
+				}
+				if (thing.Destroyed && ownerOf != null)
+				{
+					ownerOf.inventory.innerContainer.Remove(thing);
+					caravan.RecacheInventory();
+				}
+			}
+		}
+
+		private void TrySatisfyChemicalNeed(Pawn pawn, Need_Chemical chemical, int delta)
+		{
+			if ((int)chemical.CurCategory < 2 && CaravanInventoryUtility.TryGetDrugToSatisfyChemicalNeed(caravan, pawn, chemical.AddictionHediff, out var drug, out var owner))
 			{
 				IngestDrug(pawn, drug, owner);
+			}
+		}
+
+		private void TrySatisfyChemicalDependencies(Pawn pawn, int delta)
+		{
+			tmpHediffs.Clear();
+			tmpHediffs.AddRange(pawn.health.hediffSet.hediffs);
+			foreach (Hediff tmpHediff in tmpHediffs)
+			{
+				if (tmpHediff is Hediff_ChemicalDependency { ShouldSatify: not false } hediff_ChemicalDependency && CaravanInventoryUtility.TryGetDrugToSatisfyChemicalNeed(caravan, pawn, hediff_ChemicalDependency, out var drug, out var owner))
+				{
+					IngestDrug(pawn, drug, owner);
+				}
 			}
 		}
 
@@ -139,14 +251,13 @@ namespace RimWorld.Planet
 			if (drug.Destroyed && drugOwner != null)
 			{
 				drugOwner.inventory.innerContainer.Remove(drug);
-				caravan.RecacheImmobilizedNow();
-				caravan.RecacheDaysWorthOfFood();
+				caravan.RecacheInventory();
 			}
 		}
 
-		private void TrySatisfyJoyNeed(Pawn pawn, Need_Joy joy)
+		private void TrySatisfyJoyNeed(Pawn pawn, Need_Joy joy, int delta)
 		{
-			if (!pawn.IsHashIntervalTick(1250))
+			if (!pawn.IsHashIntervalTick(1250, delta))
 			{
 				return;
 			}
@@ -173,11 +284,11 @@ namespace RimWorld.Planet
 			return 4E-05f;
 		}
 
-		public void TryGainPsyfocus(Pawn_PsychicEntropyTracker tracker)
+		public void TryGainPsyfocus(Pawn_PsychicEntropyTracker tracker, int delta)
 		{
 			if (!caravan.pather.MovingNow && !caravan.NightResting)
 			{
-				tracker.GainPsyfocus();
+				tracker.GainPsyfocus_NewTemp(delta);
 			}
 		}
 
@@ -196,7 +307,7 @@ namespace RimWorld.Planet
 			for (int j = 0; j < pawnsListForReading.Count; j++)
 			{
 				Pawn pawn = pawnsListForReading[j];
-				if (!pawn.RaceProps.EatsFood || VirtualPlantsUtility.CanEatVirtualPlantsNow(pawn))
+				if (!pawn.RaceProps.EatsFood || pawn.needs?.food == null || VirtualPlantsUtility.CanEatVirtualPlantsNow(pawn))
 				{
 					continue;
 				}

@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using Verse;
 
@@ -24,22 +23,20 @@ namespace RimWorld
 		protected override bool TryExecuteWorker(IncidentParms parms)
 		{
 			Map map = (Map)parms.target;
-			if (map.passingShipManager.passingShips.Count >= 5)
+			if (parms.traderKind == null && !DefDatabase<TraderKindDef>.AllDefs.Where((TraderKindDef x) => CanSpawn(map, x)).TryRandomElementByWeight((TraderKindDef traderDef) => traderDef.CalculatedCommonality, out parms.traderKind))
 			{
 				return false;
 			}
-			if (DefDatabase<TraderKindDef>.AllDefs.Where((TraderKindDef x) => CanSpawn(map, x)).TryRandomElementByWeight((TraderKindDef traderDef) => traderDef.CalculatedCommonality, out var result))
+			TradeShip tradeShip = new TradeShip(parms.traderKind, GetFaction(parms.traderKind));
+			tradeShip.WasAnnounced = false;
+			if (map.listerBuildings.allBuildingsColonist.Any((Building b) => b.def.IsCommsConsole && (b.GetComp<CompPowerTrader>() == null || b.GetComp<CompPowerTrader>().PowerOn)))
 			{
-				TradeShip tradeShip = new TradeShip(result, GetFaction(result));
-				if (map.listerBuildings.allBuildingsColonist.Any((Building b) => b.def.IsCommsConsole && (b.GetComp<CompPowerTrader>() == null || b.GetComp<CompPowerTrader>().PowerOn)))
-				{
-					SendStandardLetter(tradeShip.def.LabelCap, "TraderArrival".Translate(tradeShip.name, tradeShip.def.label, (tradeShip.Faction == null) ? "TraderArrivalNoFaction".Translate() : "TraderArrivalFromFaction".Translate(tradeShip.Faction.Named("FACTION"))), LetterDefOf.PositiveEvent, parms, LookTargets.Invalid);
-				}
-				map.passingShipManager.AddShip(tradeShip);
-				tradeShip.GenerateThings();
-				return true;
+				SendStandardLetter(tradeShip.def.LabelCap, "TraderArrival".Translate(tradeShip.name, tradeShip.def.label, (tradeShip.Faction == null) ? "TraderArrivalNoFaction".Translate() : "TraderArrivalFromFaction".Translate(tradeShip.Faction.Named("FACTION"))), LetterDefOf.PositiveEvent, parms, LookTargets.Invalid);
+				tradeShip.WasAnnounced = true;
 			}
-			throw new InvalidOperationException();
+			map.passingShipManager.AddShip(tradeShip);
+			tradeShip.GenerateThings();
+			return true;
 		}
 
 		private Faction GetFaction(TraderKindDef trader)
@@ -72,7 +69,7 @@ namespace RimWorld
 			}
 			foreach (Pawn freeColonist in map.mapPawns.FreeColonists)
 			{
-				if (freeColonist.CanTradeWith(faction, trader))
+				if (freeColonist.CanTradeWith(faction, trader).Accepted)
 				{
 					return true;
 				}

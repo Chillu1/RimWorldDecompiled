@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
+using Verse.AI;
 
 namespace Verse
 {
@@ -14,7 +17,11 @@ namespace Verse
 
 		private ThingDef bloodDef;
 
+		private ThingDef bloodSmearDef;
+
 		public bool hasGenders = true;
+
+		public Gender forceGender;
 
 		public bool needsRest = true;
 
@@ -22,13 +29,15 @@ namespace Verse
 
 		public ThinkTreeDef thinkTreeConstant;
 
+		public DutyDef dutyBoss;
+
 		public PawnNameCategory nameCategory;
 
 		public FoodTypeFlags foodType;
 
 		public BodyDef body;
 
-		public Type deathActionWorkerClass;
+		public DeathActionProperties deathAction = new DeathActionProperties();
 
 		public List<AnimalBiomeRecord> wildBiomes;
 
@@ -42,6 +51,42 @@ namespace Verse
 
 		public List<HediffGiverSetDef> hediffGiverSets;
 
+		public float? roamMtbDays;
+
+		public bool allowedOnCaravan = true;
+
+		public bool canReleaseToWild = true;
+
+		public bool playerCanChangeMaster = true;
+
+		public bool showTrainables = true;
+
+		public bool hideTrainingTab;
+
+		public bool doesntMove;
+
+		public PawnRenderTreeDef renderTree;
+
+		public AnimationDef startingAnimation;
+
+		public ThingDef linkedCorpseKind;
+
+		public bool canOpenFactionlessDoors = true;
+
+		public bool alwaysAwake;
+
+		public bool alwaysViolent;
+
+		public bool isImmuneToInfections;
+
+		public float bleedRateFactor = 1f;
+
+		public bool canBecomeShambler;
+
+		public bool neverIncludeInQuests;
+
+		public bool canBeVacuumBurnt = true;
+
 		public bool herdAnimal;
 
 		public bool packAnimal;
@@ -49,8 +94,6 @@ namespace Verse
 		public bool predator;
 
 		public float maxPreyBodySize = 99999f;
-
-		public float wildness;
 
 		public float petness;
 
@@ -64,9 +107,63 @@ namespace Verse
 
 		public bool herdMigrationAllowed = true;
 
+		public AnimalType animalType;
+
 		public List<ThingDef> willNeverEat;
 
-		public float gestationPeriodDays = 10f;
+		public bool giveNonToolUserBeatFireVerb;
+
+		public bool disableIgniteVerb;
+
+		public bool disableAreaControl;
+
+		public bool waterSeeker;
+
+		public int? waterCellCost;
+
+		public bool disableMating;
+
+		public List<ThingDef> canCrossBreedWith;
+
+		public List<ThingDef> crossAggroWith;
+
+		public bool canFishForFood;
+
+		public bool canFlyInVacuum;
+
+		public PawnKindDef manhunterPackUseLabelFrom;
+
+		public float flightStartChanceOnJobStart;
+
+		public float flightSpeedFactor = 2.8f;
+
+		public bool canFlyIntoMap;
+
+		public bool canLeaveMapFlying;
+
+		public float leaveMapOnFleeChance;
+
+		public int maxMechEnergy = 100;
+
+		public List<WorkTypeDef> mechEnabledWorkTypes = new List<WorkTypeDef>();
+
+		public int mechFixedSkillLevel = 10;
+
+		public List<MechWorkTypePriority> mechWorkTypePriorities;
+
+		public int? bulletStaggerDelayTicks;
+
+		public float? bulletStaggerSpeedFactor;
+
+		public EffecterDef bulletStaggerEffecterDef;
+
+		public bool bulletStaggerIgnoreBodySize;
+
+		public MechWeightClassDef mechWeightClass;
+
+		public List<DetritusLeavingType> detritusLeavings = new List<DetritusLeavingType>();
+
+		public float gestationPeriodDays = -1f;
 
 		public SimpleCurve litterSizeCurve;
 
@@ -80,13 +177,13 @@ namespace Verse
 
 		public TrainabilityDef trainability;
 
+		public List<TrainableDef> specialTrainables;
+
 		private RulePackDef nameGenerator;
 
 		private RulePackDef nameGeneratorFemale;
 
 		public float nameOnTameChance;
-
-		public float nameOnNuzzleChance;
 
 		public float baseBodySize = 1f;
 
@@ -96,6 +193,10 @@ namespace Verse
 
 		public List<LifeStageAge> lifeStageAges = new List<LifeStageAge>();
 
+		public List<LifeStageWorkSettings> lifeStageWorkSettings = new List<LifeStageWorkSettings>();
+
+		public bool hasMeat = true;
+
 		[MustTranslate]
 		public string meatLabel;
 
@@ -103,15 +204,29 @@ namespace Verse
 
 		public float meatMarketValue = 2f;
 
+		public ThingDef specificMeatDef;
+
 		public ThingDef useMeatFrom;
 
 		public ThingDef useLeatherFrom;
+
+		public bool hasCorpse = true;
+
+		public bool hasUnnaturalCorpse;
+
+		public bool corpseHiddenWhileUndiscovered;
 
 		public ThingDef leatherDef;
 
 		public ShadowData specialShadowData;
 
+		public List<Vector3> headPosPerRotation;
+
 		public IntRange soundCallIntervalRange = new IntRange(2000, 4000);
+
+		public float soundCallIntervalFriendlyFactor = 1f;
+
+		public float soundCallIntervalAggressiveFactor = 0.25f;
 
 		public SoundDef soundMeleeHitPawn;
 
@@ -121,14 +236,24 @@ namespace Verse
 
 		public SoundDef soundMeleeDodge;
 
-		[Unsaved(false)]
-		private DeathActionWorker deathActionWorkerInt;
+		public SoundDef soundAmbience;
+
+		public SoundDef soundMoving;
+
+		public SoundDef soundEating;
+
+		public KnowledgeCategoryDef knowledgeCategory;
+
+		public int anomalyKnowledge;
 
 		[Unsaved(false)]
 		public ThingDef meatDef;
 
 		[Unsaved(false)]
 		public ThingDef corpseDef;
+
+		[Unsaved(false)]
+		public ThingDef unnaturalCorpseDef;
 
 		[Unsaved(false)]
 		private PawnKindDef cachedAnyPawnKind;
@@ -141,11 +266,27 @@ namespace Verse
 		{
 			get
 			{
-				if (!ToolUser)
+				if (!ToolUser && IsFlesh)
 				{
-					return IsFlesh;
+					return !IsAnomalyEntity;
 				}
 				return false;
+			}
+		}
+
+		public bool Insect => FleshType == FleshTypeDefOf.Insectoid;
+
+		public bool Dryad => animalType == AnimalType.Dryad;
+
+		public bool ShouldHaveAbilityTracker
+		{
+			get
+			{
+				if (!Humanlike)
+				{
+					return IsMechanoid;
+				}
+				return true;
 			}
 		}
 
@@ -190,56 +331,45 @@ namespace Verse
 			}
 		}
 
-		public DeathActionWorker DeathActionWorker
-		{
-			get
-			{
-				if (deathActionWorkerInt == null)
-				{
-					if (deathActionWorkerClass != null)
-					{
-						deathActionWorkerInt = (DeathActionWorker)Activator.CreateInstance(deathActionWorkerClass);
-					}
-					else
-					{
-						deathActionWorkerInt = new DeathActionWorker_Simple();
-					}
-				}
-				return deathActionWorkerInt;
-			}
-		}
+		public DeathActionWorker DeathActionWorker => deathAction.Worker;
 
-		public FleshTypeDef FleshType
-		{
-			get
-			{
-				if (fleshType != null)
-				{
-					return fleshType;
-				}
-				return FleshTypeDefOf.Normal;
-			}
-		}
+		public FleshTypeDef FleshType => fleshType ?? FleshTypeDefOf.Normal;
 
 		public bool IsMechanoid => FleshType == FleshTypeDefOf.Mechanoid;
 
-		public bool IsFlesh => FleshType != FleshTypeDefOf.Mechanoid;
+		public bool IsFlesh => FleshType.isOrganic;
 
-		public ThingDef BloodDef
+		public bool IsAnomalyEntity
 		{
 			get
 			{
-				if (bloodDef != null)
+				if (ModsConfig.AnomalyActive)
 				{
-					return bloodDef;
+					if (FleshType != FleshTypeDefOf.EntityMechanical && FleshType != FleshTypeDefOf.EntityFlesh)
+					{
+						return FleshType == FleshTypeDefOf.Fleshbeast;
+					}
+					return true;
 				}
-				if (IsFlesh)
-				{
-					return ThingDefOf.Filth_Blood;
-				}
-				return null;
+				return false;
 			}
 		}
+
+		public bool IsDrone
+		{
+			get
+			{
+				if (ModsConfig.OdysseyActive)
+				{
+					return FleshType == FleshTypeDefOf.Drone;
+				}
+				return false;
+			}
+		}
+
+		public ThingDef BloodDef => bloodDef;
+
+		public ThingDef BloodSmearDef => bloodSmearDef;
 
 		public bool CanDoHerdMigration
 		{
@@ -252,6 +382,14 @@ namespace Verse
 				return false;
 			}
 		}
+
+		public bool CanPassFences => !FenceBlocked;
+
+		public bool FenceBlocked => Roamer;
+
+		public bool Roamer => roamMtbDays.HasValue;
+
+		public bool IsWorkMech => !mechEnabledWorkTypes.NullOrEmpty();
 
 		public PawnKindDef AnyPawnKind
 		{
@@ -319,7 +457,11 @@ namespace Verse
 
 		public void ResolveReferencesSpecial()
 		{
-			if (useMeatFrom != null)
+			if (specificMeatDef != null)
+			{
+				meatDef = specificMeatDef;
+			}
+			else if (useMeatFrom != null)
 			{
 				meatDef = useMeatFrom.race.meatDef;
 			}
@@ -329,23 +471,19 @@ namespace Verse
 			}
 		}
 
-		public IEnumerable<string> ConfigErrors()
+		public IEnumerable<string> ConfigErrors(ThingDef thingDef)
 		{
-			if (soundMeleeHitPawn == null)
+			if (thingDef.IsCorpse)
 			{
-				yield return "soundMeleeHitPawn is null";
-			}
-			if (soundMeleeHitBuilding == null)
-			{
-				yield return "soundMeleeHitBuilding is null";
-			}
-			if (soundMeleeMiss == null)
-			{
-				yield return "soundMeleeMiss is null";
+				yield break;
 			}
 			if (predator && !Eats(FoodTypeFlags.Meat))
 			{
 				yield return "predator but doesn't eat meat";
+			}
+			if (canFishForFood && !Eats(FoodTypeFlags.Meat))
+			{
+				yield return "canFishForFood but doesn't eat meat";
 			}
 			for (int i = 0; i < lifeStageAges.Count; i++)
 			{
@@ -356,6 +494,10 @@ namespace Verse
 						yield return "lifeStages minAges are not in ascending order";
 					}
 				}
+			}
+			if (thingDef.IsCaravanRideable() && !lifeStageAges.Any((LifeStageAge s) => s.def.caravanRideable))
+			{
+				yield return "must contain at least one lifeStage with caravanRideable when CaravanRidingSpeedFactor is defined";
 			}
 			if (litterSizeCurve != null)
 			{
@@ -368,17 +510,17 @@ namespace Verse
 			{
 				yield return "can be named, but has no nameGenerator";
 			}
-			if (Animal && wildness < 0f)
+			if (specificMeatDef != null && useMeatFrom != null)
 			{
-				yield return "is animal but wildness is not defined";
+				yield return "specificMeatDef and useMeatFrom are both non-null. specificMeatDef will be chosen.";
 			}
 			if (useMeatFrom != null && useMeatFrom.category != ThingCategory.Pawn)
 			{
 				yield return "tries to use meat from non-pawn " + useMeatFrom;
 			}
-			if (useMeatFrom != null && useMeatFrom.race.useMeatFrom != null)
+			if (useMeatFrom?.race.useMeatFrom != null)
 			{
-				yield return string.Concat("tries to use meat from ", useMeatFrom, " which uses meat from ", useMeatFrom.race.useMeatFrom);
+				yield return "tries to use meat from " + useMeatFrom?.ToString() + " which uses meat from " + useMeatFrom.race.useMeatFrom;
 			}
 			if (useLeatherFrom != null && useLeatherFrom.category != ThingCategory.Pawn)
 			{
@@ -386,25 +528,61 @@ namespace Verse
 			}
 			if (useLeatherFrom != null && useLeatherFrom.race.useLeatherFrom != null)
 			{
-				yield return string.Concat("tries to use leather from ", useLeatherFrom, " which uses leather from ", useLeatherFrom.race.useLeatherFrom);
+				yield return "tries to use leather from " + useLeatherFrom?.ToString() + " which uses leather from " + useLeatherFrom.race.useLeatherFrom;
 			}
 			if (Animal && trainability == null)
 			{
 				yield return "animal has trainability = null";
 			}
+			if (fleshType == FleshTypeDefOf.Normal && gestationPeriodDays < 0f)
+			{
+				yield return "normal flesh but gestationPeriodDays not configured.";
+			}
+			if (IsMechanoid && thingDef.butcherProducts.NullOrEmpty())
+			{
+				yield return thingDef.label + " mech has no butcher products set";
+			}
+			foreach (string item2 in deathAction.ConfigErrors())
+			{
+				yield return item2;
+			}
+			if (renderTree == null)
+			{
+				yield return "renderTree is null";
+			}
+			if (canCrossBreedWith == null)
+			{
+				yield break;
+			}
+			foreach (ThingDef item3 in canCrossBreedWith)
+			{
+				if (item3.race == null || !item3.race.Animal)
+				{
+					yield return "tries to set canCrossBreedWith " + item3.defName + " but that is not an animal";
+				}
+			}
 		}
 
 		public IEnumerable<StatDrawEntry> SpecialDisplayStats(ThingDef parentDef, StatRequest req)
 		{
-			yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "Race".Translate(), parentDef.LabelCap, parentDef.description, 2100);
-			if (!parentDef.race.IsMechanoid)
+			Pawn pawnThing = req.Pawn ?? (req.Thing as Pawn);
+			if (!ModsConfig.BiotechActive || !Humanlike || pawnThing?.genes == null || pawnThing.genes.Xenotype == XenotypeDefOf.Baseliner)
 			{
-				string text = foodType.ToHumanString().CapitalizeFirst();
-				yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "Diet".Translate(), text, "Stat_Race_Diet_Desc".Translate(text), 1500);
+				yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "Race".Translate(), parentDef.LabelCap, parentDef.description, 4205, null, null, forceUnfinalizedMode: false, overridesHideStats: true);
 			}
-			if (req.HasThing && req.Thing is Pawn && (req.Thing as Pawn).needs != null && (req.Thing as Pawn).needs.food != null)
+			if (pawnThing != null && pawnThing.IsMutant && pawnThing.mutant.Def.overrideFoodType)
 			{
-				yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "HungerRate".Translate(), ((req.Thing as Pawn).needs.food.FoodFallPerTickAssumingCategory(HungerCategory.Fed) * 60000f).ToString("0.##"), NutritionEatenPerDayExplanation_NewTemp(req.Thing as Pawn), 1600);
+				string text = pawnThing.mutant.Def.foodType.ToHumanString().CapitalizeFirst();
+				yield return new StatDrawEntry(StatCategoryDefOf.PawnFood, "Diet".Translate(), text, "Stat_Race_Diet_Desc".Translate(text), 1500);
+			}
+			else if (!parentDef.race.IsMechanoid && !parentDef.race.IsAnomalyEntity && !parentDef.race.IsDrone)
+			{
+				string text2 = foodType.ToHumanString().CapitalizeFirst();
+				yield return new StatDrawEntry(StatCategoryDefOf.PawnFood, "Diet".Translate(), text2, "Stat_Race_Diet_Desc".Translate(text2), 1500);
+			}
+			if (pawnThing != null && pawnThing.needs?.food != null)
+			{
+				yield return new StatDrawEntry(StatCategoryDefOf.PawnFood, "FoodConsumption".Translate(), NutritionEatenPerDay(pawnThing), NutritionEatenPerDayExplanation(pawnThing), 1600);
 			}
 			if (parentDef.race.leatherDef != null)
 			{
@@ -413,38 +591,99 @@ namespace Verse
 					new Dialog_InfoCard.Hyperlink(parentDef.race.leatherDef)
 				});
 			}
-			if (parentDef.race.Animal || wildness > 0f)
+			if (parentDef.race.Animal || ((pawnThing?.IsWildMan() ?? false) && parentDef.GetStatValueAbstract(StatDefOf.Wildness) > 0f))
 			{
-				yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "Wildness".Translate(), wildness.ToStringPercent(), TrainableUtility.GetWildnessExplanation(parentDef), 2050);
-				yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "HarmedRevengeChance".Translate(), PawnUtility.GetManhunterOnDamageChance(parentDef.race).ToStringPercent(), "HarmedRevengeChanceExplanation".Translate(), 510);
-				yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "TameFailedRevengeChance".Translate(), parentDef.race.manhunterOnTameFailChance.ToStringPercent(), "Stat_Race_Animal_TameFailedRevengeChance_Desc".Translate(), 511);
+				float f = ((pawnThing == null) ? PawnUtility.GetManhunterOnDamageChance(parentDef) : PawnUtility.GetManhunterOnDamageChance(pawnThing));
+				yield return new StatDrawEntry(StatCategoryDefOf.Animals, "HarmedRevengeChance".Translate(), f.ToStringPercent(), PawnUtility.GetManhunterOnDamageChanceExplanation(parentDef, pawnThing), 510);
+				float f2 = ((pawnThing == null) ? PawnUtility.GetManhunterOnTameFailChance(parentDef) : PawnUtility.GetManhunterOnTameFailChance(pawnThing));
+				yield return new StatDrawEntry(StatCategoryDefOf.Animals, "TameFailedRevengeChance".Translate(), f2.ToStringPercent(), PawnUtility.GetManhunterOnTameFailChanceExplanation(parentDef, pawnThing), 511);
 			}
-			if ((int)intelligence < 2 && trainability != null)
+			TrainabilityDef trainabilityDef = TrainableUtility.GetTrainability(pawnThing) ?? trainability;
+			if ((int)intelligence < 2 && trainabilityDef != null && !parentDef.race.IsAnomalyEntity && !parentDef.race.IsDrone)
 			{
-				yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "Trainability".Translate(), trainability.LabelCap, "Stat_Race_Trainability_Desc".Translate(), 2500);
+				StringBuilder sb = new StringBuilder();
+				sb.AppendLine("Stat_Race_Trainability_Desc".Translate());
+				if (ModsConfig.OdysseyActive && (pawnThing?.health.hediffSet.HasHediff(HediffDefOf.SentienceCatalyst) ?? false))
+				{
+					sb.AppendLine();
+					sb.AppendLine("StatsReport_SentienceCatalystInstalled".Translate());
+				}
+				yield return new StatDrawEntry(StatCategoryDefOf.Animals, "Trainability".Translate(), trainabilityDef.LabelCap, sb.ToString(), 2500);
+				sb.Clear();
+				sb.AppendLine("StatsReport_AvailableTraining_Desc".Translate());
+				bool visible;
+				IOrderedEnumerable<TrainableDef> orderedEnumerable = from td in DefDatabase<TrainableDef>.AllDefsListForReading
+					where Pawn_TrainingTracker.CanAssignToTrain(td, parentDef, out visible, pawnThing)
+					orderby td.listPriority descending
+					select td;
+				foreach (TrainableDef item in orderedEnumerable)
+				{
+					sb.AppendLine();
+					sb.AppendLine(item.LabelCap.Colorize(ColorLibrary.Yellow).ResolveTags());
+					sb.AppendLine(item.description);
+				}
+				if (sb.Length != 0)
+				{
+					yield return new StatDrawEntry(StatCategoryDefOf.Animals, "StatsReport_AvailableTraining".Translate(), orderedEnumerable.Select((TrainableDef td) => td.label).ToCommaList().CapitalizeFirst(), sb.ToString(), 2499);
+				}
 			}
-			yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "StatsReport_LifeExpectancy".Translate(), lifeExpectancy.ToStringByStyle(ToStringStyle.Integer), "Stat_Race_LifeExpectancy_Desc".Translate(), 2000);
-			if ((int)intelligence < 2 && !parentDef.race.IsMechanoid)
+			if (!parentDef.race.IsDrone)
 			{
-				yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "AnimalFilthRate".Translate(), (PawnUtility.AnimalFilthChancePerCell(parentDef, parentDef.race.baseBodySize) * 1000f).ToString("F2"), "AnimalFilthRateExplanation".Translate(1000.ToString()), 2203);
+				yield return new StatDrawEntry(StatCategoryDefOf.PawnHealth, "StatsReport_LifeExpectancy".Translate(), lifeExpectancy.ToStringByStyle(ToStringStyle.Integer), "Stat_Race_LifeExpectancy_Desc".Translate(), 4300);
+			}
+			if (parentDef.race.Animal || (pawnThing?.FenceBlocked ?? FenceBlocked))
+			{
+				yield return new StatDrawEntry(StatCategoryDefOf.Animals, "StatsReport_BlockedByFences".Translate(), (pawnThing?.FenceBlocked ?? FenceBlocked) ? "Yes".Translate() : "No".Translate(), "Stat_Race_BlockedByFences_Desc".Translate(), 2040);
 			}
 			if (parentDef.race.Animal)
 			{
-				yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "PackAnimal".Translate(), packAnimal ? "Yes".Translate() : "No".Translate(), "PackAnimalExplanation".Translate(), 2202);
+				yield return new StatDrawEntry(StatCategoryDefOf.Animals, "PackAnimal".Translate(), packAnimal ? "Yes".Translate() : "No".Translate(), "PackAnimalExplanation".Translate(), 2202);
+				if (pawnThing != null && pawnThing.gender != Gender.None)
+				{
+					yield return new StatDrawEntry(StatCategoryDefOf.BasicsPawn, "Sex".Translate(), pawnThing.gender.GetLabel(animal: true).CapitalizeFirst(), pawnThing.gender.GetLabel(animal: true).CapitalizeFirst(), 4204);
+				}
 				if (parentDef.race.nuzzleMtbHours > 0f)
 				{
-					yield return new StatDrawEntry(StatCategoryDefOf.PawnSocial, "NuzzleInterval".Translate(), Mathf.RoundToInt(parentDef.race.nuzzleMtbHours * 2500f).ToStringTicksToPeriod(), "NuzzleIntervalExplanation".Translate(), 500);
+					float num = ((pawnThing != null) ? NuzzleUtility.GetNuzzleMTBHours(pawnThing) : parentDef.race.nuzzleMtbHours);
+					yield return new StatDrawEntry(StatCategoryDefOf.Animals, "NuzzleInterval".Translate(), Mathf.RoundToInt(num * 2500f).ToStringTicksToPeriod(), "NuzzleIntervalExplanation".Translate(), 500);
 				}
+				if (parentDef.race.roamMtbDays.HasValue && (pawnThing?.Roamer ?? true))
+				{
+					yield return new StatDrawEntry(StatCategoryDefOf.Animals, "StatsReport_RoamInterval".Translate(), Mathf.RoundToInt((pawnThing?.RoamMtbDays ?? parentDef.race.roamMtbDays).Value * 60000f).ToStringTicksToPeriod(), "Stat_Race_RoamInterval_Desc".Translate(), 2030);
+				}
+				foreach (StatDrawEntry item2 in AnimalProductionUtility.AnimalProductionStats(parentDef))
+				{
+					yield return item2;
+				}
+			}
+			if (!ModsConfig.BiotechActive || !IsMechanoid)
+			{
+				yield break;
+			}
+			if (mechWeightClass != null)
+			{
+				yield return new StatDrawEntry(StatCategoryDefOf.Mechanoid, "MechWeightClass".Translate(), mechWeightClass.LabelCap, "MechWeightClassExplanation".Translate(), 500);
+			}
+			ThingDef thingDef = MechanitorUtility.RechargerForMech(parentDef);
+			if (thingDef != null)
+			{
+				yield return new StatDrawEntry(StatCategoryDefOf.Mechanoid, "StatsReport_RechargerNeeded".Translate(), thingDef.LabelCap, "StatsReport_RechargerNeeded_Desc".Translate(), 503, null, new Dialog_InfoCard.Hyperlink[1]
+				{
+					new Dialog_InfoCard.Hyperlink(thingDef)
+				});
+			}
+			foreach (StatDrawEntry item3 in MechWorkUtility.SpecialDisplayStats(parentDef, req))
+			{
+				yield return item3;
 			}
 		}
 
-		[Obsolete("Will be replaced with NutritionEatenPerDayExplanation_NewTemp soon.")]
-		public static string NutritionEatenPerDayExplanation(Pawn p)
+		public static string NutritionEatenPerDay(Pawn p)
 		{
-			return NutritionEatenPerDayExplanation_NewTemp(p, showDiet: true, showLegend: true, showCalculations: false);
+			return (p.needs.food.FoodFallPerTickAssumingCategory(HungerCategory.Fed) * 60000f).ToString("0.##");
 		}
 
-		public static string NutritionEatenPerDayExplanation_NewTemp(Pawn p, bool showDiet = false, bool showLegend = false, bool showCalculations = true)
+		public static string NutritionEatenPerDayExplanation(Pawn p, bool showDiet = false, bool showLegend = false, bool showCalculations = true)
 		{
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.AppendLine("NutritionEatenPerDayTip".Translate(ThingDefOf.MealSimple.GetStatValueAbstract(StatDefOf.Nutrition).ToString("0.##")));
@@ -461,7 +700,7 @@ namespace Verse
 				DietCategory[] array = (DietCategory[])Enum.GetValues(typeof(DietCategory));
 				for (int i = 0; i < array.Length; i++)
 				{
-					if (array[i] != 0 && array[i] != DietCategory.Omnivorous)
+					if (array[i] != DietCategory.NeverEats && array[i] != DietCategory.Omnivorous)
 					{
 						stringBuilder.AppendLine(array[i].ToStringHumanShort() + " - " + array[i].ToStringHuman());
 					}
@@ -470,7 +709,7 @@ namespace Verse
 			}
 			if (showCalculations)
 			{
-				stringBuilder.AppendLine("StatsReport_BaseValue".Translate() + ": " + (p.ageTracker.CurLifeStage.hungerRateFactor * p.RaceProps.baseHungerRate * 2.66666666E-05f * 60000f).ToStringByStyle(ToStringStyle.FloatTwo));
+				stringBuilder.AppendLine("StatsReport_BaseValue".Translate() + ": " + (p.ageTracker.CurLifeStage.hungerRateFactor * p.RaceProps.baseHungerRate * 2.6666667E-05f * 60000f).ToStringByStyle(ToStringStyle.FloatTwo));
 				if (p.health.hediffSet.HungerRateFactor != 1f)
 				{
 					stringBuilder.AppendLine();
@@ -486,29 +725,63 @@ namespace Verse
 					{
 						if (hediff2.CurStage != null && hediff2.CurStage.hungerRateFactorOffset != 0f)
 						{
-							stringBuilder.AppendLine("    " + hediff2.LabelCap + ": +" + hediff2.CurStage.hungerRateFactorOffset.ToStringByStyle(ToStringStyle.FloatMaxOne, ToStringNumberSense.Factor));
+							stringBuilder.AppendLine("    " + hediff2.LabelCap + ": " + hediff2.CurStage.hungerRateFactorOffset.ToStringByStyle(ToStringStyle.FloatMaxOne, ToStringNumberSense.Offset));
 						}
 					}
 				}
-				if (p.story != null && p.story.traits != null && p.story.traits.HungerRateFactor != 1f)
+				if (p.story?.traits != null && p.story.traits.HungerRateFactor != 1f)
 				{
 					stringBuilder.AppendLine();
 					stringBuilder.AppendLine("StatsReport_RelevantTraits".Translate() + ": " + p.story.traits.HungerRateFactor.ToStringByStyle(ToStringStyle.PercentOne, ToStringNumberSense.Factor));
 					foreach (Trait allTrait in p.story.traits.allTraits)
 					{
-						if (allTrait.CurrentData.hungerRateFactor != 1f)
+						if (!allTrait.Suppressed && allTrait.CurrentData.hungerRateFactor != 1f)
 						{
 							stringBuilder.AppendLine("    " + allTrait.LabelCap + ": " + allTrait.CurrentData.hungerRateFactor.ToStringByStyle(ToStringStyle.PercentOne, ToStringNumberSense.Factor));
 						}
 					}
 				}
-				if (p.GetStatValue(StatDefOf.HungerRateMultiplier) != 1f)
+				Building_Bed building_Bed = p.CurrentBed() ?? p.CurrentCaravanBed();
+				if (building_Bed != null)
 				{
-					stringBuilder.AppendLine();
-					stringBuilder.AppendLine(StatDefOf.HungerRateMultiplier.LabelCap + ": " + p.GetStatValue(StatDefOf.HungerRateMultiplier).ToStringByStyle(ToStringStyle.FloatMaxOne, ToStringNumberSense.Factor));
+					float statValue = building_Bed.GetStatValue(StatDefOf.BedHungerRateFactor);
+					if (statValue != 1f)
+					{
+						stringBuilder.AppendLine().AppendLine("StatsReport_InBed".Translate() + ": x" + statValue.ToStringPercent());
+					}
+				}
+				if (ModsConfig.BiotechActive)
+				{
+					Hediff firstHediffOfDef = p.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Lactating);
+					if (firstHediffOfDef != null)
+					{
+						HediffComp_Lactating hediffComp_Lactating = firstHediffOfDef.TryGetComp<HediffComp_Lactating>();
+						if (hediffComp_Lactating != null)
+						{
+							float f = hediffComp_Lactating.AddedNutritionPerDay();
+							stringBuilder.AppendLine();
+							stringBuilder.AppendLine(firstHediffOfDef.LabelBaseCap + ": " + f.ToStringWithSign());
+						}
+					}
+				}
+				if (p.genes != null)
+				{
+					int num = 0;
+					foreach (Gene item in p.genes.GenesListForReading)
+					{
+						if (!item.Overridden)
+						{
+							num += item.def.biostatMet;
+						}
+					}
+					float num2 = GeneTuning.MetabolismToFoodConsumptionFactorCurve.Evaluate(num);
+					if (num2 != 1f)
+					{
+						stringBuilder.AppendLine().AppendLine("FactorForMetabolism".Translate() + ": x" + num2.ToStringPercent());
+					}
 				}
 				stringBuilder.AppendLine();
-				stringBuilder.AppendLine("StatsReport_FinalValue".Translate() + ": " + (p.needs.food.FoodFallPerTickAssumingCategory(HungerCategory.Fed) * 60000f).ToStringByStyle(ToStringStyle.FloatMaxTwo));
+				stringBuilder.AppendLine("StatsReport_FinalValue".Translate() + ": " + NutritionEatenPerDay(p));
 			}
 			return stringBuilder.ToString().TrimEndNewlines();
 		}

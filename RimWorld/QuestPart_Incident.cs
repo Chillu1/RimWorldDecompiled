@@ -14,6 +14,18 @@ namespace RimWorld
 
 		private MapParent mapParent;
 
+		public MapParent MapParent
+		{
+			get
+			{
+				return mapParent;
+			}
+			set
+			{
+				mapParent = value;
+			}
+		}
+
 		public override IEnumerable<GlobalTargetInfo> QuestLookTargets
 		{
 			get
@@ -42,30 +54,32 @@ namespace RimWorld
 				incidentParms.forced = true;
 			}
 			incidentParms.quest = quest;
+			if (incidentParms.target == null && (mapParent == null || !mapParent.HasMap || !quest.IsParentSuitableForQuest(mapParent)))
+			{
+				mapParent = quest.TryFindNewSuitableMapParentForRetarget() ?? Find.AnyPlayerHomeMap?.Parent;
+			}
 			if (mapParent != null)
 			{
 				if (mapParent.HasMap)
 				{
 					incidentParms.target = mapParent.Map;
-					if (incident.Worker.CanFireNow(incidentParms, forced: true))
+					if (incident.Worker.CanFireNow(incidentParms))
 					{
 						incident.Worker.TryExecute(incidentParms);
 					}
 					incidentParms.target = null;
 				}
 			}
-			else if (incidentParms.target != null && incident.Worker.CanFireNow(incidentParms, forced: true))
+			else if (incidentParms.target != null && incident.Worker.CanFireNow(incidentParms))
 			{
 				incident.Worker.TryExecute(incidentParms);
 			}
-			incidentParms = null;
 		}
 
 		public void SetIncidentParmsAndRemoveTarget(IncidentParms value)
 		{
 			incidentParms = value;
-			Map map = incidentParms.target as Map;
-			if (map != null)
+			if (incidentParms.target is Map map)
 			{
 				mapParent = map.Parent;
 				incidentParms.target = null;

@@ -13,15 +13,6 @@ namespace RimWorld
 		{
 			generated.relations.AddDirectRelation(PawnRelationDefOf.ExLover, other);
 			LovePartnerRelationUtility.TryToShareChildrenForGeneratedLovePartner(generated, other, request, 0.35f);
-			ResolveMySkinColor(ref request, generated, other);
-		}
-
-		private static void ResolveMySkinColor(ref PawnGenerationRequest request, Pawn generated, Pawn other)
-		{
-			if (!request.FixedMelanin.HasValue)
-			{
-				request.SetFixedMelanin(PawnSkinColors.GetRandomMelaninSimilarTo(other.story.melanin));
-			}
 		}
 	}
 }

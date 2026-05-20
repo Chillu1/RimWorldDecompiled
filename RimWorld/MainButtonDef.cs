@@ -24,6 +24,10 @@ namespace RimWorld
 
 		public string iconPath;
 
+		public bool closesWorldView;
+
+		public bool validWithClassicIdeo = true;
+
 		[Unsaved(false)]
 		public KeyBindingDef hotKey;
 
@@ -85,7 +89,7 @@ namespace RimWorld
 			{
 				if (cachedShortenedLabelCap == null)
 				{
-					cachedShortenedLabelCap = base.LabelCap.Shorten();
+					cachedShortenedLabelCap = LabelCap.Shorten();
 				}
 				return cachedShortenedLabelCap;
 			}
@@ -99,7 +103,7 @@ namespace RimWorld
 				{
 					GameFont font = Text.Font;
 					Text.Font = GameFont.Small;
-					cachedLabelCapWidth = Text.CalcSize(base.LabelCap).x;
+					cachedLabelCapWidth = Text.CalcSize(LabelCap).x;
 					Text.Font = font;
 				}
 				return cachedLabelCapWidth;

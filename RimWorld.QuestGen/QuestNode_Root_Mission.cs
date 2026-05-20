@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using RimWorld.Planet;
 using Verse;
 using Verse.Grammar;
@@ -25,12 +24,12 @@ namespace RimWorld.QuestGen
 
 		public FloatRange timeLimitDays = new FloatRange(2f, 5f);
 
-		private static List<Map> tmpMaps = new List<Map>();
+		public bool canBeSpace;
 
-		protected abstract string QuestTag
-		{
-			get;
-		}
+		[Obsolete("This field is no longer used.")]
+		private static readonly List<Map> tmpMaps = new List<Map>();
+
+		protected abstract string QuestTag { get; }
 
 		protected virtual bool AddCampLootReward => false;
 
@@ -50,47 +49,86 @@ namespace RimWorld.QuestGen
 			return true;
 		}
 
-		protected abstract Site GenerateSite(Pawn asker, float threatPoints, int pawnCount, int population, int tile);
+		protected abstract Site GenerateSite(Pawn asker, float threatPoints, int pawnCount, int population, PlanetTile tile);
 
-		protected virtual bool TryFindSiteTile(out int tile)
+		protected virtual bool TryFindSiteTile(out PlanetTile tile, bool exitOnFirstTileFound = false)
 		{
-			return TileFinder.TryFindNewSiteTile(out tile, 80, 85);
+			return TileFinder.TryFindNewSiteTile(out tile, 80, 85, allowCaravans: false, null, 0.5f, canSelectComboLandmarks: true, TileFinderMode.Near, exitOnFirstTileFound, canBeSpace);
+		}
+
+		public static bool PawnCanFight(Pawn p)
+		{
+			if (p.Downed)
+			{
+				return false;
+			}
+			if (p.health.hediffSet.BleedRateTotal > 0f)
+			{
+				return false;
+			}
+			if (p.health.hediffSet.HasTendableNonInjuryNonMissingPartHediff())
+			{
+				return false;
+			}
+			if (p.IsQuestLodger())
+			{
+				return false;
+			}
+			if (p.IsSlave)
+			{
+				return false;
+			}
+			if (!p.DevelopmentalStage.Adult())
+			{
+				return false;
+			}
+			return true;
 		}
 
 		private void ResolveParameters(Slate slate, out int requiredPawnCount, out int population, out Map colonyMap)
 		{
-			try
+			colonyMap = slate.Get<Map>("map");
+			if (colonyMap != null && colonyMap.IsPlayerHome)
 			{
-				foreach (Map map in Find.Maps)
+				QuestScriptDef root = QuestGen.Root;
+				if (root == null || root.IsParentSuitableForQuest(colonyMap.Parent))
 				{
-					if (map.IsPlayerHome)
-					{
-						tmpMaps.Add(map);
-					}
+					goto IL_0066;
 				}
-				colonyMap = tmpMaps.RandomElementWithFallback();
-				population = (slate.Exists("population") ? slate.Get("population", 0) : colonyMap.mapPawns.FreeColonists.Where((Pawn c) => DoesPawnCountAsAvailableForFight(c)).Count());
-				requiredPawnCount = GetRequiredPawnCount(population, slate.Get("points", 0));
 			}
-			finally
+			colonyMap = QuestGen.Root?.TryFindNewSuitableMapParentForRetarget()?.Map ?? Find.AnyPlayerHomeMap;
+			goto IL_0066;
+			IL_0066:
+			if (colonyMap == null)
 			{
-				tmpMaps.Clear();
+				population = -1;
+				requiredPawnCount = -1;
+			}
+			else
+			{
+				population = (slate.Exists("population") ? slate.Get("population", 0) : colonyMap.mapPawns.FreeColonists.Count(DoesPawnCountAsAvailableForFight));
+				requiredPawnCount = GetRequiredPawnCount(population, slate.Get("points", 0));
 			}
 		}
 
 		protected override void RunInt()
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (!ModLister.CheckRoyalty("Mission"))
 			{
-				Log.ErrorOnce("Missions are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 324345634);
 				return;
 			}
 			Quest quest = QuestGen.quest;
 			Slate slate = QuestGen.slate;
 			string text = QuestGenUtility.HardcodedTargetQuestTagWithQuestID(QuestTag);
+			QuestGenUtility.RunAdjustPointsForDistantFight();
 			int num = slate.Get("points", 0);
 			Pawn asker = GetAsker(quest);
 			ResolveParameters(slate, out var requiredPawnCount, out var population, out var colonyMap);
+			if (requiredPawnCount <= 0 || population <= 0)
+			{
+				Log.Error($"Mission '{text}' of type '{GetType().Name}' and def '{QuestGen.Root.defName}' has invalid required pawn count ({requiredPawnCount}) or population ({population}). This should have been caught in TestRunInt().");
+				return;
+			}
 			TryFindSiteTile(out var tile);
 			slate.Set("asker", asker);
 			slate.Set("askerFaction", asker.Faction);
@@ -100,7 +138,6 @@ namespace RimWorld.QuestGen
 			string inSignal = QuestGenUtility.HardcodedSignalWithQuestID("askerFaction.BecameHostileToPlayer");
 			string text2 = QuestGenUtility.QuestTagSignal(text, "AllEnemiesDefeated");
 			string signalSentSatisfied = QuestGenUtility.HardcodedSignalWithQuestID("shuttle.SentSatisfied");
-			QuestGenUtility.HardcodedSignalWithQuestID("shuttle.Spawned");
 			string text3 = QuestGenUtility.QuestTagSignal(text, "MapRemoved");
 			string signalChosenPawn = QuestGen.GenerateNewSignal("ChosenPawnSignal");
 			quest.GiveRewards(new RewardsGeneratorParams
@@ -110,59 +147,61 @@ namespace RimWorld.QuestGen
 				giverFaction = asker.Faction,
 				rewardValue = RewardValueCurve.Evaluate(num),
 				chosenPawnSignal = signalChosenPawn
-			}, text2, null, null, null, null, null, delegate
+			}, text2, null, null, null, null, addCampLootReward: AddCampLootReward, asker: asker, useDifficultyFactor: null, runIfChosenPawnSignalUsed: delegate
 			{
 				quest.Letter(LetterDefOf.ChoosePawn, null, label: asker.Faction.def.royalFavorLabel, text: "LetterTextHonorAward_BanditCamp".Translate(asker.Faction.def.royalFavorLabel), chosenPawnSignal: signalChosenPawn, relatedFaction: null, useColonistsOnMap: null, useColonistsFromCaravanArg: false, signalListenMode: QuestPart.SignalListenMode.OngoingOnly, lookTargets: null, filterDeadPawnsFromLookTargets: false, textRules: null, labelRules: null, getColonistsFromSignal: signalSentSatisfied);
-			}, null, AddCampLootReward, asker);
-			Thing shuttle = QuestGen_Shuttle.GenerateShuttle(null, null, null, acceptColonists: true, onlyAcceptColonists: true, onlyAcceptHealthy: false, requiredPawnCount, dropEverythingIfUnsatisfied: true, leaveImmediatelyWhenSatisfied: true, dropEverythingOnArrival: false, stayAfterDroppedEverythingOnArrival: true, site, colonyMap.Parent, requiredPawnCount, null, permitShuttle: false, hideControls: false);
-			shuttle.TryGetComp<CompShuttle>().sendAwayIfQuestFinished = quest;
+			});
+			Thing shuttle = QuestGen_Shuttle.GenerateShuttle(null, null, null, acceptColonists: true, onlyAcceptColonists: true, onlyAcceptHealthy: false, requiredPawnCount, dropEverythingIfUnsatisfied: true, leaveImmediatelyWhenSatisfied: true, dropEverythingOnArrival: false, stayAfterDroppedEverythingOnArrival: true, site, colonyMap.Parent, requiredPawnCount, null, permitShuttle: false, hideControls: false, allowSlaves: false, requireAllColonistsOnMap: false, acceptColonyPrisoners: true);
 			slate.Set("shuttle", shuttle);
-			quest.SpawnWorldObject(site, null, signalSentSatisfied);
 			QuestUtility.AddQuestTag(ref shuttle.questTags, text);
-			quest.SpawnSkyfaller(colonyMap, ThingDefOf.ShuttleIncoming, Gen.YieldSingle(shuttle), Faction.OfPlayer, null, null, lookForSafeSpot: true, tryLandInShipLandingZone: true);
+			quest.SpawnWorldObject(site);
+			TransportShip transportShip = quest.GenerateTransportShip(TransportShipDefOf.Ship_Shuttle, null, shuttle).transportShip;
+			slate.Set("transportShip", transportShip);
+			QuestUtility.AddQuestTag(ref transportShip.questTags, text);
+			quest.SendTransportShipAwayOnCleanup(transportShip, unloadContents: true, TransportShipDropMode.None);
+			Quest quest2 = quest;
+			MapParent parent = colonyMap.Parent;
+			Faction ofEmpire = Faction.OfEmpire;
+			quest2.AddShipJob_Arrive(transportShip, parent, null, null, ShipJobStartMode.Instant, ofEmpire);
+			quest.AddShipJob_WaitSendable(transportShip, site, leaveImmeiatelyWhenSatisfied: true);
+			quest.AddShipJob(transportShip, ShipJobDefOf.Unload);
+			quest.AddShipJob_WaitSendable(transportShip, colonyMap.Parent, leaveImmeiatelyWhenSatisfied: true, targetPlayerSettlement: true);
+			quest.AddShipJob(transportShip, ShipJobDefOf.Unload);
+			quest.AddShipJob_FlyAway(transportShip, null, null, TransportShipDropMode.None);
+			quest.TendPawns(null, shuttle, signalSentSatisfied);
+			quest.RequiredShuttleThings(shuttle, site, QuestGenUtility.HardcodedSignalWithQuestID("transportShip.FlewAway"), requireAllColonistsOnMap: true);
 			quest.ShuttleLeaveDelay(shuttle, 60000, null, Gen.YieldSingle(signalSentSatisfied), null, delegate
 			{
-				quest.SendShuttleAway(shuttle, dropEverything: true);
 				quest.End(QuestEndOutcome.Fail, 0, null, null, QuestPart.SignalListenMode.OngoingOnly, sendStandardLetter: true);
 			});
 			string inSignal2 = QuestGenUtility.HardcodedSignalWithQuestID("shuttle.Killed");
-			quest.SetFactionRelations(asker.Faction, FactionRelationKind.Hostile, inSignal2);
+			quest.FactionGoodwillChange(asker.Faction, 0, inSignal2, canSendMessage: true, canSendHostilityLetter: true, getLookTargetFromSignal: true, HistoryEventDefOf.ShuttleDestroyed, QuestPart.SignalListenMode.OngoingOnly, ensureMakesHostile: true);
 			quest.End(QuestEndOutcome.Fail, 0, null, inSignal2, QuestPart.SignalListenMode.OngoingOnly, sendStandardLetter: true);
+			string inSignal3 = QuestGenUtility.HardcodedSignalWithQuestID("shuttle.LeftBehind");
+			quest.End(QuestEndOutcome.Fail, 0, null, inSignal3, QuestPart.SignalListenMode.OngoingOnly, sendStandardLetter: true);
 			quest.SignalPass(delegate
 			{
 				quest.End(QuestEndOutcome.Fail, 0, null, null, QuestPart.SignalListenMode.OngoingOnly, sendStandardLetter: true);
 			}, inSignal);
 			quest.FeedPawns(null, shuttle, signalSentSatisfied);
-			Quest quest2 = quest;
-			Action action = delegate
-			{
-				quest.SendShuttleAway(shuttle, dropEverything: true);
-			};
-			string inSignalDisable = signalSentSatisfied;
-			quest2.SignalPassActivable(action, null, text2, null, null, inSignalDisable);
 			QuestUtility.AddQuestTag(ref site.questTags, text);
 			slate.Set("site", site);
-			quest.SendShuttleAwayOnCleanup(shuttle, dropEverything: true);
 			quest.SignalPassActivable(delegate
 			{
 				quest.Message("MessageMissionGetBackToShuttle".Translate(site.Faction.Named("FACTION")), MessageTypeDefOf.PositiveEvent, getLookTargetsFromSignal: false, null, new LookTargets(shuttle));
+				quest.Notify_PlayerRaidedSomeone(null, site);
 			}, signalSentSatisfied, text2);
 			quest.SignalPassAllSequence(delegate
 			{
 				quest.End(QuestEndOutcome.Success, 0, null, null, QuestPart.SignalListenMode.OngoingOnly, sendStandardLetter: true);
-			}, new List<string>
-			{
-				signalSentSatisfied,
-				text2,
-				text3
-			});
+			}, new List<string> { signalSentSatisfied, text2, text3 });
 			Quest quest3 = quest;
-			Action action2 = delegate
+			Action action = delegate
 			{
 				quest.End(QuestEndOutcome.Fail, 0, null, null, QuestPart.SignalListenMode.OngoingOnly, sendStandardLetter: true);
 			};
-			inSignalDisable = text2;
-			quest3.SignalPassActivable(action2, null, text3, null, null, inSignalDisable);
+			string inSignalDisable = text2;
+			quest3.SignalPassActivable(action, null, text3, null, null, inSignalDisable);
 			int num2 = (int)(timeLimitDays.RandomInRange * 60000f);
 			slate.Set("timeoutTicks", num2);
 			quest.WorldObjectTimeout(site, num2);
@@ -173,23 +212,24 @@ namespace RimWorld.QuestGen
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			if (!ModLister.RoyaltyInstalled)
+			QuestGenUtility.TestRunAdjustPointsForDistantFight(slate);
+			if (!ModLister.CheckRoyalty("Mission"))
 			{
-				Log.ErrorOnce("Missions are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 324345634);
 				return false;
 			}
-			if (IsViolent && !Find.Storyteller.difficultyValues.allowViolentQuests)
+			if (IsViolent && !Find.Storyteller.difficulty.allowViolentQuests)
 			{
 				return false;
 			}
 			ResolveParameters(slate, out var requiredPawnCount, out var population, out var colonyMap);
-			if (requiredPawnCount == -1)
+			if (requiredPawnCount <= 0 || population <= 0)
 			{
 				return false;
 			}
+			PlanetTile tile;
 			if (CanGetAsker() && colonyMap != null)
 			{
-				return TryFindSiteTile(out population);
+				return TryFindSiteTile(out tile, exitOnFirstTileFound: true);
 			}
 			return false;
 		}

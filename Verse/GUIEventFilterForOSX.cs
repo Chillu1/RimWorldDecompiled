@@ -11,7 +11,7 @@ namespace Verse
 
 		public static void CheckRejectGUIEvent()
 		{
-			if (UnityData.platform != RuntimePlatform.OSXPlayer || (Event.current.type != 0 && Event.current.type != EventType.MouseUp))
+			if (UnityData.platform != RuntimePlatform.OSXPlayer || (Event.current.type != EventType.MouseDown && Event.current.type != EventType.MouseUp))
 			{
 				return;
 			}

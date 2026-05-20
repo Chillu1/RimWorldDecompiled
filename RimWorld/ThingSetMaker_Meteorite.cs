@@ -15,7 +15,7 @@ namespace RimWorld
 		public static void Reset()
 		{
 			nonSmoothedMineables.Clear();
-			nonSmoothedMineables.AddRange(DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef x) => x.mineable && x != ThingDefOf.CollapsedRocks && x != ThingDefOf.RaisedRocks && !x.IsSmoothed));
+			nonSmoothedMineables.AddRange(DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef x) => x.mineable && !x.building.mineablePreventMeteorite && !x.IsSmoothed));
 		}
 
 		protected override void Generate(ThingSetMakerParams parms, List<Thing> outThings)

@@ -1,3 +1,4 @@
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -38,11 +39,6 @@ namespace RimWorld
 			preventCameraMotion = false;
 		}
 
-		public override void DoWindowContents(Rect inRect)
-		{
-			SetInitialSizeAndPosition();
-		}
-
 		protected override void SetInitialSizeAndPosition()
 		{
 			base.SetInitialSizeAndPosition();
@@ -55,6 +51,15 @@ namespace RimWorld
 				windowRect.x = (float)UI.screenWidth - windowRect.width;
 			}
 			windowRect.y = (float)(UI.screenHeight - 35) - windowRect.height;
+		}
+
+		public override void PostOpen()
+		{
+			base.PostOpen();
+			if (def.closesWorldView)
+			{
+				Find.World.renderer.wantedMode = WorldRenderMode.None;
+			}
 		}
 	}
 }

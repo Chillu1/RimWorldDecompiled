@@ -6,6 +6,10 @@ namespace RimWorld
 
 		public bool canApplyToMentallyBroken;
 
+		public bool canApplyToUnconscious;
+
+		public bool canApplyToAsleep;
+
 		public CompProperties_AbilitySocialInteraction()
 		{
 			compClass = typeof(CompAbilityEffect_SocialInteraction);

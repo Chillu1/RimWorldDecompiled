@@ -19,39 +19,13 @@ namespace RimWorld
 				List<Thing> thingList = item.GetThingList(map);
 				for (int i = 0; i < thingList.Count; i++)
 				{
-					Pawn pawn = thingList[i] as Pawn;
-					if (pawn != null && pawn.IsColonist)
+					if (thingList[i] is Pawn { IsColonist: not false })
 					{
 						return true;
 					}
 				}
 			}
 			return false;
-		}
-
-		public static void MakeDropoffShuttle(Map map, List<Thing> contents, Faction faction = null)
-		{
-			if (!DropCellFinder.TryFindShipLandingArea(map, out var result, out var firstBlockingThing))
-			{
-				if (firstBlockingThing != null)
-				{
-					Messages.Message("ShuttleBlocked".Translate("BlockedBy".Translate(firstBlockingThing).CapitalizeFirst()), firstBlockingThing, MessageTypeDefOf.NeutralEvent);
-				}
-				result = DropCellFinder.TryFindSafeLandingSpotCloseToColony(map, ThingDefOf.Shuttle.Size);
-			}
-			Thing thing = ThingMaker.MakeThing(ThingDefOf.Shuttle);
-			thing.TryGetComp<CompShuttle>().dropEverythingOnArrival = true;
-			for (int i = 0; i < contents.Count; i++)
-			{
-				Pawn p;
-				if ((p = contents[i] as Pawn) != null)
-				{
-					Find.WorldPawns.RemovePawn(p);
-				}
-			}
-			thing.SetFaction(faction);
-			thing.TryGetComp<CompTransporter>().innerContainer.TryAddRangeOrTransfer(contents);
-			GenPlace.TryPlaceThing(SkyfallerMaker.MakeSkyfaller(ThingDefOf.ShuttleIncoming, Gen.YieldSingle(thing)), result, map, ThingPlaceMode.Near);
 		}
 	}
 }

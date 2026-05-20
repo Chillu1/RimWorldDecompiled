@@ -17,20 +17,20 @@ namespace RimWorld
 			{
 				for (int j = 0; j < tmpCells.Count; j++)
 				{
-					IntVec3 c = tmpCells[j];
-					if (c.IsForbidden(pawn) || !pawn.CanReserve(c))
+					IntVec3 intVec = tmpCells[j];
+					if (intVec.IsForbidden(pawn) || !pawn.CanReserveSittableOrSpot(intVec))
 					{
 						continue;
 					}
 					if (i == 0)
 					{
-						Building edifice = c.GetEdifice(pawn.Map);
-						if (edifice == null || !edifice.def.building.isSittable || !pawn.CanReserve(edifice))
+						Building edifice = intVec.GetEdifice(pawn.Map);
+						if (edifice == null || !edifice.def.building.isSittable)
 						{
 							continue;
 						}
 					}
-					return JobMaker.MakeJob(def.jobDef, t, c);
+					return JobMaker.MakeJob(def.jobDef, t, intVec);
 				}
 				if (def.requireChair)
 				{

@@ -18,6 +18,10 @@ namespace Verse
 
 		public SoundDef soundDeath;
 
+		public SoundDef soundAmbience;
+
+		public SoundDef soundAttack;
+
 		private static readonly Texture2D VeryYoungIcon = ContentFinder<Texture2D>.Get("UI/Icons/LifeStage/VeryYoung");
 
 		private static readonly Texture2D YoungIcon = ContentFinder<Texture2D>.Get("UI/Icons/LifeStage/Young");

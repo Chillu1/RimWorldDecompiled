@@ -7,34 +7,19 @@ namespace RimWorld
 {
 	public class Dialog_AdvancedGameConfig : Window
 	{
-		private int selTile = -1;
-
 		private const float ColumnWidth = 200f;
 
-		private static readonly int[] MapSizes = new int[6]
-		{
-			200,
-			225,
-			250,
-			275,
-			300,
-			325
-		};
+		public static readonly int[] MapSizes = new int[6] { 200, 225, 250, 275, 300, 325 };
 
-		private static readonly int[] TestMapSizes = new int[2]
-		{
-			350,
-			400
-		};
+		private static readonly int[] TestMapSizes = new int[2] { 350, 400 };
 
 		public override Vector2 InitialSize => new Vector2(700f, 500f);
 
-		public Dialog_AdvancedGameConfig(int selTile)
+		public Dialog_AdvancedGameConfig()
 		{
 			doCloseButton = true;
 			forcePause = true;
 			absorbInputAroundWindow = true;
-			this.selTile = selTile;
 		}
 
 		public override void DoWindowContents(Rect inRect)
@@ -107,14 +92,10 @@ namespace RimWorld
 			Text.Font = GameFont.Small;
 			listing_Standard.Label("");
 			bool flag = false;
-			if (selTile >= 0 && Find.GameInitData.startingSeason != 0)
+			if (Find.GameInitData.startingSeason == Season.Winter)
 			{
-				float y = Find.WorldGrid.LongLatOf(selTile).y;
-				if (GenTemperature.AverageTemperatureAtTileForTwelfth(selTile, Find.GameInitData.startingSeason.GetFirstTwelfth(y)) < 3f)
-				{
-					listing_Standard.Label("MapTemperatureDangerWarning".Translate());
-					flag = true;
-				}
+				listing_Standard.Label("MapWinterWarning".Translate());
+				flag = true;
 			}
 			if (Find.GameInitData.mapSize > 280)
 			{

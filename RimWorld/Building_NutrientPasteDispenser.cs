@@ -60,6 +60,7 @@ namespace RimWorld
 		{
 			base.SpawnSetup(map, respawningAfterLoad);
 			powerComp = GetComp<CompPowerTrader>();
+			cachedAdjCellsCardinal = null;
 		}
 
 		public virtual Building AdjacentReachableHopper(Pawn reacher)
@@ -67,7 +68,7 @@ namespace RimWorld
 			for (int i = 0; i < AdjCellsCardinalInBounds.Count; i++)
 			{
 				Building edifice = AdjCellsCardinalInBounds[i].GetEdifice(base.Map);
-				if (edifice != null && edifice.def == ThingDefOf.Hopper && reacher.CanReach(edifice, PathEndMode.Touch, Danger.Deadly))
+				if (edifice != null && edifice.IsHopper() && reacher.CanReach(edifice, PathEndMode.Touch, Danger.Deadly) && !edifice.IsBurning())
 				{
 					return edifice;
 				}
@@ -121,7 +122,7 @@ namespace RimWorld
 					{
 						thing = thing3;
 					}
-					if (thing3.def == ThingDefOf.Hopper)
+					if (thing3.IsHopper())
 					{
 						thing2 = thing3;
 					}
@@ -150,7 +151,7 @@ namespace RimWorld
 					{
 						thing = thing3;
 					}
-					if (thing3.def == ThingDefOf.Hopper)
+					if (thing3.IsHopper())
 					{
 						thing2 = thing3;
 					}
@@ -169,11 +170,24 @@ namespace RimWorld
 
 		public static bool IsAcceptableFeedstock(ThingDef def)
 		{
-			if (def.IsNutritionGivingIngestible && def.ingestible.preferability != 0 && (def.ingestible.foodType & FoodTypeFlags.Plant) != FoodTypeFlags.Plant)
+			if (def.IsNutritionGivingIngestible && def.ingestible.preferability != FoodPreferability.Undefined && (def.ingestible.foodType & FoodTypeFlags.Plant) != FoodTypeFlags.Plant)
 			{
 				return (def.ingestible.foodType & FoodTypeFlags.Tree) != FoodTypeFlags.Tree;
 			}
 			return false;
+		}
+
+		public override IEnumerable<Gizmo> GetGizmos()
+		{
+			foreach (Gizmo gizmo in base.GetGizmos())
+			{
+				yield return gizmo;
+			}
+			Designator_Build designator_Build = BuildCopyCommandUtility.FindAllowedDesignator(ThingDefOf.Hopper);
+			if (designator_Build != null)
+			{
+				yield return designator_Build;
+			}
 		}
 
 		public override string GetInspectString()

@@ -36,7 +36,11 @@ namespace RimWorld
 
 		public float minThreatPoints = float.MinValue;
 
+		public float maxThreatPoints = float.MaxValue;
+
 		public List<BiomeDef> allowedBiomes;
+
+		public List<BiomeDef> disallowedBiomes;
 
 		[NoTranslate]
 		public List<string> tags;
@@ -48,7 +52,21 @@ namespace RimWorld
 
 		public TaleDef tale;
 
+		public int minAnomalyThreatLevel = -1;
+
 		public int minGreatestPopulation = -1;
+
+		private bool ignoreRecentSelectionWeighting;
+
+		public bool hidden;
+
+		public List<PlanetLayerDef> layerWhitelist;
+
+		public List<PlanetLayerDef> layerBlacklist;
+
+		public bool canOccurOnAllPlanetLayers;
+
+		public EntityCodexEntryDef codexEntry;
 
 		[MustTranslate]
 		public string letterText;
@@ -59,6 +77,8 @@ namespace RimWorld
 		public LetterDef letterDef;
 
 		public List<HediffDef> letterHyperlinkHediffDefs;
+
+		public bool letterSingularForm;
 
 		public PawnKindDef pawnKind;
 
@@ -82,11 +102,24 @@ namespace RimWorld
 
 		public List<BodyPartDef> diseasePartsToAffect;
 
+		[MustTranslate]
+		public string diseaseLethalLetterText;
+
+		public DevelopmentalStage diseaseDevelopmentStage = DevelopmentalStage.Baby | DevelopmentalStage.Child | DevelopmentalStage.Adult;
+
 		public ThingDef mechClusterBuilding;
 
 		public List<MTBByBiome> mtbDaysByBiome;
 
 		public QuestScriptDef questScriptDef;
+
+		public ThingDef treeDef;
+
+		public GenStepDef treeGenStepDef;
+
+		public string letterTextPlural;
+
+		public float treeGrowth;
 
 		[Unsaved(false)]
 		private IncidentWorker workerInt;
@@ -94,7 +127,17 @@ namespace RimWorld
 		[Unsaved(false)]
 		private List<IncidentDef> cachedRefireCheckIncidents;
 
-		public bool NeedsParmsPoints => category.needsParmsPoints;
+		public bool ShouldIgnoreRecentWeighting
+		{
+			get
+			{
+				if (!ignoreRecentSelectionWeighting && category != IncidentCategoryDefOf.Special)
+				{
+					return category == IncidentCategoryDefOf.GiveQuest;
+				}
+				return true;
+			}
+		}
 
 		public IncidentWorker Worker
 		{
@@ -132,6 +175,8 @@ namespace RimWorld
 				return cachedRefireCheckIncidents;
 			}
 		}
+
+		public bool IsAnomalyIncident => minAnomalyThreatLevel >= 0;
 
 		public static IncidentDef Named(string defName)
 		{
@@ -179,9 +224,17 @@ namespace RimWorld
 			{
 				yield return "allows world target type along with other targets. World targeting incidents should only target the world.";
 			}
-			if (TargetTagAllowed(IncidentTargetTagDefOf.World) && allowedBiomes != null)
+			if (TargetTagAllowed(IncidentTargetTagDefOf.World) && (allowedBiomes != null || disallowedBiomes != null))
 			{
 				yield return "world-targeting incident has a biome restriction list";
+			}
+			if (!allowedBiomes.NullOrEmpty() && !disallowedBiomes.NullOrEmpty())
+			{
+				yield return "allowedBiomes (white list) and disallowedBiomes (black list) are both defined.";
+			}
+			if (questScriptDef != null && questScriptDef.rootSelectionWeight != 0f)
+			{
+				yield return "quest is run from both incident and random quest.";
 			}
 		}
 

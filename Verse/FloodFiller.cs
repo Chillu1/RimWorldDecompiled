@@ -83,8 +83,7 @@ namespace Verse
 			}
 			if (extraRoots != null)
 			{
-				IList<IntVec3> list = extraRoots as IList<IntVec3>;
-				if (list != null)
+				if (extraRoots is IList<IntVec3> list)
 				{
 					for (int i = 0; i < list.Count; i++)
 					{

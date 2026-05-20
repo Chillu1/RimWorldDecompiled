@@ -62,7 +62,7 @@ namespace RimWorld
 				yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.ClosestTouch).FailOnForbidden(TargetIndex.A);
 				yield return Toils_Ingest.PickupIngestible(TargetIndex.A, Deliveree);
 			}
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;
@@ -73,15 +73,19 @@ namespace RimWorld
 			toil.FailOnDestroyedNullOrForbidden(TargetIndex.B);
 			toil.AddFailCondition(delegate
 			{
+				if (!base.pawn.IsCarryingThing(job.GetTarget(TargetIndex.A).Thing))
+				{
+					return true;
+				}
 				Pawn pawn = (Pawn)toil.actor.jobs.curJob.targetB.Thing;
 				if (!pawn.IsPrisonerOfColony)
 				{
 					return true;
 				}
-				return (!pawn.guest.CanBeBroughtFood) ? true : false;
+				return !pawn.guest.CanBeBroughtFood;
 			});
 			yield return toil;
-			Toil toil2 = new Toil();
+			Toil toil2 = ToilMaker.MakeToil("MakeNewToils");
 			toil2.initAction = delegate
 			{
 				pawn.carryTracker.TryDropCarriedThing(toil2.actor.jobs.curJob.targetC.Cell, ThingPlaceMode.Direct, out var _);

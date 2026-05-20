@@ -36,7 +36,9 @@ namespace Verse
 			if (messages.Count != 0)
 			{
 				string value = CompiledLog();
-				string path = GenFilePaths.SaveDataFolderPath + Path.DirectorySeparatorChar + "LogSimple.txt";
+				string saveDataFolderPath = GenFilePaths.SaveDataFolderPath;
+				char directorySeparatorChar = Path.DirectorySeparatorChar;
+				string path = saveDataFolderPath + directorySeparatorChar + "LogSimple.txt";
 				using (StreamWriter streamWriter = new StreamWriter(path, append: false))
 				{
 					streamWriter.Write(value);

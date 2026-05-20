@@ -21,8 +21,6 @@ namespace RimWorld
 
 		public float colorFromSpectrum = -999f;
 
-		public float centralMelanin = 0.5f;
-
 		private List<FactionRelation> relations = new List<FactionRelation>();
 
 		public Pawn leader;
@@ -35,7 +33,11 @@ namespace RimWorld
 
 		public int lastTraderRequestTick = -9999999;
 
+		public int lastOrbitalTraderRequestTick = -9999999;
+
 		public int lastMilitaryAidRequestTick = -9999999;
+
+		public int lastExecutionTick = -9999999;
 
 		private int naturalGoodwillTimer;
 
@@ -47,11 +49,19 @@ namespace RimWorld
 
 		public Color? color;
 
+		public Color? allegianceColor;
+
 		public bool? hidden;
 
 		public bool temporary;
 
-		public bool hostileFromMemberCapture = true;
+		public bool factionHostileOnHarmByPlayer;
+
+		public bool neverFlee;
+
+		public FactionIdeosTracker ideos;
+
+		public bool deactivated;
 
 		private List<Map> avoidGridsBasicKeysWorkingList;
 
@@ -61,7 +71,11 @@ namespace RimWorld
 
 		private List<ByteGrid> avoidGridsSmartValuesWorkingList;
 
+		private const int MinGoodwillForGainFriendlyExit = 4;
+
 		private static List<PawnKindDef> allPawnKinds = new List<PawnKindDef>();
+
+		private List<Pawn> tmpPrisonersRequiringBloodfeeders = new List<Pawn>();
 
 		public const int RoyalThingUseViolationGoodwillImpact = 4;
 
@@ -89,6 +103,8 @@ namespace RimWorld
 
 		public FactionRelationKind PlayerRelationKind => RelationKindWith(OfPlayer);
 
+		public int NaturalGoodwill => Find.GoodwillSituationManager.GetNaturalGoodwill(this);
+
 		public Color Color
 		{
 			get
@@ -105,15 +121,41 @@ namespace RimWorld
 			}
 		}
 
+		public Color AllegianceColor
+		{
+			get
+			{
+				Color valueOrDefault = allegianceColor.GetValueOrDefault();
+				if (!allegianceColor.HasValue)
+				{
+					valueOrDefault = Color;
+					allegianceColor = valueOrDefault;
+				}
+				return allegianceColor.Value;
+			}
+			set
+			{
+				allegianceColor = value;
+			}
+		}
+
 		public string LeaderTitle
 		{
 			get
 			{
-				if (leader != null && leader.gender == Gender.Female && !string.IsNullOrEmpty(def.leaderTitleFemale))
+				if (ideos == null || ideos.PrimaryIdeo == null || ideos.PrimaryIdeo.leaderTitleMale.NullOrEmpty())
 				{
-					return def.leaderTitleFemale;
+					if (leader != null && leader.gender == Gender.Female && !def.leaderTitleFemale.NullOrEmpty())
+					{
+						return def.leaderTitleFemale;
+					}
+					return def.leaderTitle;
 				}
-				return def.leaderTitle;
+				if (leader != null && leader.gender == Gender.Female)
+				{
+					return ideos.PrimaryIdeo.leaderTitleFemale;
+				}
+				return ideos.PrimaryIdeo.leaderTitleMale;
 			}
 		}
 
@@ -121,9 +163,9 @@ namespace RimWorld
 		{
 			get
 			{
-				if (!IsPlayer && !Hidden)
+				if (!IsPlayer && !Hidden && !temporary)
 				{
-					return !temporary;
+					return def.humanlikeFaction;
 				}
 				return false;
 			}
@@ -135,14 +177,11 @@ namespace RimWorld
 			{
 				if (HasName)
 				{
-					return name.ApplyTag(this);
+					return name.CapitalizeFirst().ApplyTag(this);
 				}
 				return def.LabelCap;
 			}
 		}
-
-		[Obsolete]
-		public bool CanGiveGoodwillRewards => CanEverGiveGoodwillRewards;
 
 		public bool CanEverGiveGoodwillRewards
 		{
@@ -193,7 +232,17 @@ namespace RimWorld
 
 		public static Faction OfAncientsHostile => Find.FactionManager.OfAncientsHostile;
 
-		public static Faction Empire => Find.FactionManager.Empire;
+		public static Faction OfEmpire => Find.FactionManager.OfEmpire;
+
+		public static Faction OfPirates => Find.FactionManager.OfPirates;
+
+		public static Faction OfHoraxCult => Find.FactionManager.OfHoraxCult;
+
+		public static Faction OfEntities => Find.FactionManager.OfEntities;
+
+		public static Faction OfTradersGuild => Find.FactionManager.OfTradersGuild;
+
+		public static Faction OfSalvagers => Find.FactionManager.OfSalvagers;
 
 		public static Faction OfPlayerSilentFail
 		{
@@ -225,30 +274,36 @@ namespace RimWorld
 			Scribe_Values.Look(ref loadID, "loadID", 0);
 			Scribe_Values.Look(ref randomKey, "randomKey", 0);
 			Scribe_Values.Look(ref colorFromSpectrum, "colorFromSpectrum", 0f);
-			Scribe_Values.Look(ref centralMelanin, "centralMelanin", 0f);
 			Scribe_Collections.Look(ref relations, "relations", LookMode.Deep);
 			Scribe_Deep.Look(ref kidnapped, "kidnapped", this);
+			Scribe_Deep.Look(ref ideos, "ideos", this);
 			Scribe_Collections.Look(ref predatorThreats, "predatorThreats", LookMode.Deep);
 			Scribe_Values.Look(ref defeated, "defeated", defaultValue: false);
 			Scribe_Values.Look(ref lastTraderRequestTick, "lastTraderRequestTick", -9999999);
+			Scribe_Values.Look(ref lastOrbitalTraderRequestTick, "lastOrbitalTraderRequestTick", -9999999);
 			Scribe_Values.Look(ref lastMilitaryAidRequestTick, "lastMilitaryAidRequestTick", -9999999);
+			Scribe_Values.Look(ref lastExecutionTick, "lastExecutionTick", -9999999);
 			Scribe_Values.Look(ref naturalGoodwillTimer, "naturalGoodwillTimer", 0);
 			Scribe_Values.Look(ref allowRoyalFavorRewards, "allowRoyalFavorRewards", defaultValue: true);
 			Scribe_Values.Look(ref allowGoodwillRewards, "allowGoodwillRewards", defaultValue: true);
 			Scribe_Collections.Look(ref questTags, "questTags", LookMode.Value);
 			Scribe_Values.Look(ref hidden, "hidden");
 			Scribe_Values.Look(ref temporary, "temporary", defaultValue: false);
+			Scribe_Values.Look(ref factionHostileOnHarmByPlayer, "factionHostileOnHarmByPlayer", defaultValue: false);
 			Scribe_Values.Look(ref color, "color");
-			Scribe_Values.Look(ref hostileFromMemberCapture, "hostileFromMemberCapture", defaultValue: false);
+			Scribe_Values.Look(ref neverFlee, "neverFlee", defaultValue: false);
+			Scribe_Values.Look(ref allegianceColor, "mechColor");
+			Scribe_Values.Look(ref deactivated, "deactivated", defaultValue: false);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				predatorThreats.RemoveAll((PredatorThreat x) => x.predator == null);
 			}
+			BackCompatibility.PostExposeData(this);
 		}
 
 		public void FactionTick()
 		{
-			CheckNaturalTendencyToReachGoodwillThreshold();
+			CheckReachNaturalGoodwill();
 			kidnapped.KidnappedPawnsTrackerTick();
 			for (int num = predatorThreats.Count - 1; num >= 0; num--)
 			{
@@ -298,37 +353,35 @@ namespace RimWorld
 			}
 		}
 
-		private void CheckNaturalTendencyToReachGoodwillThreshold()
+		private void CheckReachNaturalGoodwill()
 		{
-			if (IsPlayer)
+			if (IsPlayer || !HasGoodwill || def.permanentEnemy)
 			{
 				return;
 			}
-			int playerGoodwill = PlayerGoodwill;
-			if (def.naturalColonyGoodwill.Includes(playerGoodwill))
+			int num = BaseGoodwillWith(OfPlayer);
+			IntRange intRange = new IntRange(NaturalGoodwill - 50, NaturalGoodwill + 50);
+			if (intRange.Includes(num))
 			{
 				naturalGoodwillTimer = 0;
 				return;
 			}
 			naturalGoodwillTimer++;
-			if (playerGoodwill < def.naturalColonyGoodwill.min)
+			if (num < intRange.min)
 			{
-				if (def.goodwillDailyGain != 0f)
-				{
-					int num = (int)(10f / def.goodwillDailyGain * 60000f);
-					if (naturalGoodwillTimer >= num)
-					{
-						TryAffectGoodwillWith(OfPlayer, Mathf.Min(10, def.naturalColonyGoodwill.min - playerGoodwill), canSendMessage: true, reason: "GoodwillChangedReason_NaturallyOverTime".Translate(def.naturalColonyGoodwill.min.ToString()), canSendHostilityLetter: !temporary);
-						naturalGoodwillTimer = 0;
-					}
-				}
-			}
-			else if (playerGoodwill > def.naturalColonyGoodwill.max && def.goodwillDailyFall != 0f)
-			{
-				int num2 = (int)(10f / def.goodwillDailyFall * 60000f);
+				int num2 = 3000000;
 				if (naturalGoodwillTimer >= num2)
 				{
-					TryAffectGoodwillWith(OfPlayer, -Mathf.Min(10, playerGoodwill - def.naturalColonyGoodwill.max), canSendMessage: true, reason: "GoodwillChangedReason_NaturallyOverTime".Translate(def.naturalColonyGoodwill.max.ToString()), canSendHostilityLetter: !temporary);
+					TryAffectGoodwillWith(OfPlayer, Mathf.Min(10, intRange.min - num), canSendMessage: true, reason: HistoryEventDefOf.ReachNaturalGoodwill, canSendHostilityLetter: !temporary);
+					naturalGoodwillTimer = 0;
+				}
+			}
+			else if (num > intRange.max)
+			{
+				int num3 = 3000000;
+				if (naturalGoodwillTimer >= num3)
+				{
+					TryAffectGoodwillWith(OfPlayer, -Mathf.Min(10, num - intRange.max), canSendMessage: true, reason: HistoryEventDefOf.ReachNaturalGoodwill, canSendHostilityLetter: !temporary);
 					naturalGoodwillTimer = 0;
 				}
 			}
@@ -338,44 +391,40 @@ namespace RimWorld
 		{
 			if (RelationWith(other, allowNull: true) == null)
 			{
-				int a = (def.permanentEnemy ? (-100) : def.startingGoodwill.RandomInRange);
-				if (IsPlayer)
-				{
-					a = 100;
-				}
-				if (def.permanentEnemyToEveryoneExceptPlayer && !other.IsPlayer)
-				{
-					a = -100;
-				}
-				if (def.permanentEnemyToEveryoneExcept != null && !def.permanentEnemyToEveryoneExcept.Contains(other.def))
-				{
-					a = -100;
-				}
-				int b = (other.def.permanentEnemy ? (-100) : other.def.startingGoodwill.RandomInRange);
-				if (other.IsPlayer)
-				{
-					b = 100;
-				}
-				if (other.def.permanentEnemyToEveryoneExceptPlayer && !IsPlayer)
-				{
-					b = -100;
-				}
-				if (other.def.permanentEnemyToEveryoneExcept != null && !other.def.permanentEnemyToEveryoneExcept.Contains(def))
-				{
-					b = -100;
-				}
+				int a = GetInitialGoodwill(this, other);
+				int b = GetInitialGoodwill(other, this);
 				int num = Mathf.Min(a, b);
 				FactionRelationKind kind = ((num > -10) ? ((num < 75) ? FactionRelationKind.Neutral : FactionRelationKind.Ally) : FactionRelationKind.Hostile);
 				FactionRelation factionRelation = new FactionRelation();
 				factionRelation.other = other;
-				factionRelation.goodwill = num;
+				factionRelation.baseGoodwill = num;
 				factionRelation.kind = kind;
 				relations.Add(factionRelation);
 				FactionRelation factionRelation2 = new FactionRelation();
 				factionRelation2.other = this;
-				factionRelation2.goodwill = num;
+				factionRelation2.baseGoodwill = num;
 				factionRelation2.kind = kind;
 				other.relations.Add(factionRelation2);
+			}
+			static int GetInitialGoodwill(Faction faction, Faction faction2)
+			{
+				if (faction.def.permanentEnemy)
+				{
+					return -100;
+				}
+				if (faction.def.permanentEnemyToEveryoneExceptPlayer && !faction2.IsPlayer)
+				{
+					return -100;
+				}
+				if (faction.def.permanentEnemyToEveryoneExcept != null && !faction.def.permanentEnemyToEveryoneExcept.Contains(faction2.def))
+				{
+					return -100;
+				}
+				if (faction.def.naturalEnemy)
+				{
+					return -80;
+				}
+				return 0;
 			}
 		}
 
@@ -383,7 +432,7 @@ namespace RimWorld
 		{
 			if (relation.other == this)
 			{
-				Log.Error(string.Concat("Tried to set relation between faction ", this, " and itself."));
+				Log.Error("Tried to set relation between faction " + this?.ToString() + " and itself.");
 				return;
 			}
 			if (relation.other == null)
@@ -396,7 +445,6 @@ namespace RimWorld
 			relations.Add(relation);
 			FactionRelation factionRelation = new FactionRelation();
 			factionRelation.other = this;
-			factionRelation.goodwill = relation.goodwill;
 			factionRelation.kind = relation.kind;
 			relation.other.relations.Add(factionRelation);
 		}
@@ -411,7 +459,10 @@ namespace RimWorld
 					List<PawnGenOption> options = def.pawnGroupMakers[i].options;
 					for (int j = 0; j < options.Count; j++)
 					{
-						allPawnKinds.Add(options[j].kind);
+						if (options[j].kind.RaceProps.Humanlike)
+						{
+							allPawnKinds.Add(options[j].kind);
+						}
 					}
 				}
 			}
@@ -424,11 +475,20 @@ namespace RimWorld
 			return result;
 		}
 
+		public bool IsPlayerGoodwillMinimum()
+		{
+			if (!def.permanentEnemy)
+			{
+				return PlayerGoodwill <= -100;
+			}
+			return true;
+		}
+
 		public FactionRelation RelationWith(Faction other, bool allowNull = false)
 		{
 			if (other == this)
 			{
-				Log.Error(string.Concat("Tried to get relation between faction ", this, " and itself."));
+				Log.Error("Tried to get relation between faction " + this?.ToString() + " and itself.");
 				return new FactionRelation();
 			}
 			for (int i = 0; i < relations.Count; i++)
@@ -440,15 +500,29 @@ namespace RimWorld
 			}
 			if (!allowNull)
 			{
-				Log.Error(string.Concat("Faction ", name, " has null relation with ", other, ". Returning dummy relation."));
+				Log.Error("Faction " + name + " has null relation with " + other?.ToString() + ". Returning dummy relation.");
 				return new FactionRelation();
 			}
 			return null;
 		}
 
+		public int BaseGoodwillWith(Faction other)
+		{
+			return RelationWith(other).baseGoodwill;
+		}
+
 		public int GoodwillWith(Faction other)
 		{
-			return RelationWith(other).goodwill;
+			int num = BaseGoodwillWith(other);
+			if (IsPlayer)
+			{
+				num = Mathf.Min(num, Find.GoodwillSituationManager.GetMaxGoodwill(other));
+			}
+			else if (other.IsPlayer)
+			{
+				num = Mathf.Min(num, Find.GoodwillSituationManager.GetMaxGoodwill(this));
+			}
+			return num;
 		}
 
 		public FactionRelationKind RelationKindWith(Faction other)
@@ -466,10 +540,43 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (QuestUtility.IsGoodwillLockedByQuest(this, other))
+			{
+				return false;
+			}
 			return true;
 		}
 
-		public bool TryAffectGoodwillWith(Faction other, int goodwillChange, bool canSendMessage = true, bool canSendHostilityLetter = true, string reason = null, GlobalTargetInfo? lookTarget = null)
+		public int GoodwillToMakeHostile(Faction other)
+		{
+			if (this.HostileTo(other))
+			{
+				return 0;
+			}
+			return -75 - GoodwillWith(other);
+		}
+
+		public int CalculateAdjustedGoodwillChange(Faction other, int goodwillChange)
+		{
+			int num = GoodwillWith(other);
+			if (IsPlayer || other.IsPlayer)
+			{
+				int num2 = (IsPlayer ? other.NaturalGoodwill : NaturalGoodwill);
+				if ((num2 < num && goodwillChange < 0) || (num2 > num && goodwillChange > 0))
+				{
+					int num3 = Mathf.Min(Mathf.Abs(num - num2), Mathf.Abs(goodwillChange));
+					int num4 = Mathf.RoundToInt(0.25f * (float)num3);
+					if (goodwillChange < 0)
+					{
+						num4 = -num4;
+					}
+					goodwillChange += num4;
+				}
+			}
+			return goodwillChange;
+		}
+
+		public bool TryAffectGoodwillWith(Faction other, int goodwillChange, bool canSendMessage = true, bool canSendHostilityLetter = true, HistoryEventDef reason = null, GlobalTargetInfo? lookTarget = null)
 		{
 			if (!CanChangeGoodwillFor(other, goodwillChange))
 			{
@@ -480,38 +587,64 @@ namespace RimWorld
 				return true;
 			}
 			int num = GoodwillWith(other);
-			int num2 = Mathf.Clamp(num + goodwillChange, -100, 100);
-			if (num == num2)
+			goodwillChange = CalculateAdjustedGoodwillChange(other, goodwillChange);
+			int num2 = BaseGoodwillWith(other);
+			int num3 = Mathf.Clamp(num2 + goodwillChange, -100, 100);
+			if (num2 == num3)
 			{
 				return true;
 			}
+			if (reason != null && (IsPlayer || other.IsPlayer))
+			{
+				Faction arg = (IsPlayer ? other : this);
+				Find.HistoryEventsManager.RecordEvent(new HistoryEvent(reason, arg.Named(HistoryEventArgsNames.AffectedFaction), goodwillChange.Named(HistoryEventArgsNames.CustomGoodwill)));
+			}
 			FactionRelation factionRelation = RelationWith(other);
-			factionRelation.goodwill = num2;
-			factionRelation.CheckKindThresholds(this, canSendHostilityLetter, reason, lookTarget ?? GlobalTargetInfo.Invalid, out var sentLetter);
+			factionRelation.baseGoodwill = num3;
+			factionRelation.CheckKindThresholds(this, canSendHostilityLetter, reason?.LabelCap ?? ((TaggedString)null), lookTarget ?? GlobalTargetInfo.Invalid, out var sentLetter);
 			FactionRelation factionRelation2 = other.RelationWith(this);
 			FactionRelationKind kind = factionRelation2.kind;
-			factionRelation2.goodwill = factionRelation.goodwill;
+			factionRelation2.baseGoodwill = factionRelation.baseGoodwill;
 			factionRelation2.kind = factionRelation.kind;
 			bool sentLetter2;
 			if (kind != factionRelation2.kind)
 			{
-				other.Notify_RelationKindChanged(this, kind, canSendHostilityLetter, reason, lookTarget ?? GlobalTargetInfo.Invalid, out sentLetter2);
+				other.Notify_RelationKindChanged(this, kind, canSendHostilityLetter, reason?.LabelCap ?? ((TaggedString)null), lookTarget ?? GlobalTargetInfo.Invalid, out sentLetter2);
 			}
 			else
 			{
 				sentLetter2 = false;
 			}
-			if (canSendMessage && !sentLetter && !sentLetter2 && Current.ProgramState == ProgramState.Playing && (IsPlayer || other.IsPlayer))
+			int num4 = GoodwillWith(other);
+			if (canSendMessage && num != num4 && !sentLetter && !sentLetter2 && Current.ProgramState == ProgramState.Playing && (IsPlayer || other.IsPlayer))
 			{
 				Faction faction = (IsPlayer ? other : this);
-				string text = (reason.NullOrEmpty() ? ((string)"MessageGoodwillChanged".Translate(faction.name, num.ToString("F0"), factionRelation.goodwill.ToString("F0"))) : ((string)"MessageGoodwillChangedWithReason".Translate(faction.name, num.ToString("F0"), factionRelation.goodwill.ToString("F0"), reason)));
+				string text = ((reason == null) ? ((string)"MessageGoodwillChanged".Translate(faction.name, num.ToString("F0"), num4.ToString("F0"))) : ((string)"MessageGoodwillChangedWithReason".Translate(faction.name, num.ToString("F0"), num4.ToString("F0"), reason.label)));
 				Messages.Message(text, lookTarget ?? GlobalTargetInfo.Invalid, ((float)goodwillChange > 0f) ? MessageTypeDefOf.PositiveEvent : MessageTypeDefOf.NegativeEvent);
 			}
 			return true;
 		}
 
+		public void Notify_GoodwillSituationsChanged(Faction other, bool canSendHostilityLetter, string reason, GlobalTargetInfo? lookTarget)
+		{
+			FactionRelation factionRelation = RelationWith(other);
+			factionRelation.CheckKindThresholds(this, canSendHostilityLetter, reason, lookTarget ?? GlobalTargetInfo.Invalid, out var sentLetter);
+			FactionRelation factionRelation2 = other.RelationWith(this);
+			FactionRelationKind kind = factionRelation2.kind;
+			factionRelation2.kind = factionRelation.kind;
+			if (kind != factionRelation2.kind)
+			{
+				other.Notify_RelationKindChanged(this, kind, canSendHostilityLetter, reason, lookTarget ?? GlobalTargetInfo.Invalid, out sentLetter);
+			}
+		}
+
 		public void SetRelationDirect(Faction other, FactionRelationKind kind, bool canSendHostilityLetter = true, string reason = null, GlobalTargetInfo? lookTarget = null)
 		{
+			if (HasGoodwill && other.HasGoodwill)
+			{
+				Log.Error("Tried to use SetRelationDirect for factions which use goodwill. The relation would be overriden by goodwill anyway. faction=" + this?.ToString() + ", other=" + other);
+				return;
+			}
 			FactionRelation factionRelation = RelationWith(other);
 			if (factionRelation.kind != kind)
 			{
@@ -520,52 +653,6 @@ namespace RimWorld
 				Notify_RelationKindChanged(other, kind2, canSendHostilityLetter, reason, lookTarget ?? GlobalTargetInfo.Invalid, out var sentLetter);
 				other.RelationWith(this).kind = kind;
 				other.Notify_RelationKindChanged(this, kind2, canSendHostilityLetter, reason, lookTarget ?? GlobalTargetInfo.Invalid, out sentLetter);
-			}
-		}
-
-		public bool TrySetNotHostileTo(Faction other, bool canSendLetter = true, string reason = null, GlobalTargetInfo? lookTarget = null)
-		{
-			if (RelationKindWith(other) == FactionRelationKind.Hostile)
-			{
-				TrySetRelationKind(other, FactionRelationKind.Neutral, canSendLetter, reason, lookTarget);
-			}
-			return RelationKindWith(other) != FactionRelationKind.Hostile;
-		}
-
-		public bool TrySetNotAlly(Faction other, bool canSendLetter = true, string reason = null, GlobalTargetInfo? lookTarget = null)
-		{
-			if (RelationKindWith(other) == FactionRelationKind.Ally)
-			{
-				TrySetRelationKind(other, FactionRelationKind.Neutral, canSendLetter, reason, lookTarget);
-			}
-			return RelationKindWith(other) != FactionRelationKind.Ally;
-		}
-
-		public bool TrySetRelationKind(Faction other, FactionRelationKind kind, bool canSendLetter = true, string reason = null, GlobalTargetInfo? lookTarget = null)
-		{
-			FactionRelation factionRelation = RelationWith(other);
-			if (factionRelation.kind == kind)
-			{
-				return true;
-			}
-			if (!HasGoodwill)
-			{
-				SetRelationDirect(other, kind, canSendLetter, reason, lookTarget);
-				return true;
-			}
-			switch (kind)
-			{
-			case FactionRelationKind.Hostile:
-				TryAffectGoodwillWith(other, -75 - factionRelation.goodwill, canSendMessage: false, canSendLetter, reason, lookTarget);
-				return factionRelation.kind == FactionRelationKind.Hostile;
-			case FactionRelationKind.Neutral:
-				TryAffectGoodwillWith(other, -factionRelation.goodwill, canSendMessage: false, canSendLetter, reason, lookTarget);
-				return factionRelation.kind == FactionRelationKind.Neutral;
-			case FactionRelationKind.Ally:
-				TryAffectGoodwillWith(other, 75 - factionRelation.goodwill, canSendMessage: false, canSendLetter, reason, lookTarget);
-				return factionRelation.kind == FactionRelationKind.Ally;
-			default:
-				throw new NotSupportedException(kind.ToString());
 			}
 		}
 
@@ -609,7 +696,8 @@ namespace RimWorld
 				text += "LetterRelationsChange_Hostile".Translate(NameColored);
 				if (HasGoodwill)
 				{
-					text += "\n\n" + "LetterRelationsChange_HostileGoodwillDescription".Translate(PlayerGoodwill.ToStringWithSign(), (-75).ToStringWithSign(), 0.ToStringWithSign());
+					string key = (def.hideGiftingInHostilityText ? "LetterRelationsChange_HostileGoodwillDescription_NoGifting" : "LetterRelationsChange_HostileGoodwillDescription");
+					text += "\n\n" + key.Translate(PlayerGoodwill.ToStringWithSign(), (-75).ToStringWithSign(), 0.ToStringWithSign());
 				}
 				if (!reason.NullOrEmpty())
 				{
@@ -658,72 +746,108 @@ namespace RimWorld
 
 		public void Notify_MemberTookDamage(Pawn member, DamageInfo dinfo)
 		{
-			if (dinfo.Instigator != null && !IsPlayer)
+			if (dinfo.Instigator == null || IsPlayer)
 			{
-				Pawn pawn = dinfo.Instigator as Pawn;
-				if (pawn != null && pawn.CurJob != null && pawn.CurJob.def == JobDefOf.PredatorHunt)
+				return;
+			}
+			Pawn pawn = dinfo.Instigator as Pawn;
+			if (pawn != null && pawn.CurJob != null && pawn.CurJob.def == JobDefOf.PredatorHunt)
+			{
+				TookDamageFromPredator(pawn);
+			}
+			if (dinfo.Instigator.Faction != null && dinfo.Def.ExternalViolenceFor(member) && !this.HostileTo(dinfo.Instigator.Faction))
+			{
+				if (factionHostileOnHarmByPlayer && dinfo.Instigator.Faction == OfPlayer)
 				{
-					TookDamageFromPredator(pawn);
+					SetRelationDirect(OfPlayer, FactionRelationKind.Hostile);
 				}
-				if (dinfo.Instigator.Faction != null && dinfo.Def.ExternalViolenceFor(member) && !this.HostileTo(dinfo.Instigator.Faction) && !member.InAggroMentalState && (pawn == null || !pawn.InAggroMentalState) && (!member.InMentalState || !member.MentalStateDef.IsExtreme || member.MentalStateDef.category != MentalStateCategory.Malicious || PlayerRelationKind != FactionRelationKind.Ally) && (dinfo.Instigator.Faction != OfPlayer || (!PrisonBreakUtility.IsPrisonBreaking(member) && !member.IsQuestHelper())) && dinfo.Instigator.Faction == OfPlayer && !IsMutuallyHostileCrossfire(dinfo))
+				if (!member.InAggroMentalState && (pawn == null || !pawn.InAggroMentalState) && (!member.InMentalState || !member.MentalStateDef.IsExtreme || member.MentalStateDef.category != MentalStateCategory.Malicious || PlayerRelationKind != FactionRelationKind.Ally) && (dinfo.Instigator.Faction != OfPlayer || (!PrisonBreakUtility.IsPrisonBreaking(member) && !member.IsQuestHelper())) && (pawn == null || !SlaveRebellionUtility.IsRebelling(pawn)) && dinfo.Instigator.Faction == OfPlayer && !IsMutuallyHostileCrossfire(dinfo) && !member.IsSlaveOfColony)
 				{
 					float num = Mathf.Min(100f, dinfo.Amount);
-					int num2 = (int)(-1.3f * num);
-					TryAffectGoodwillWith(dinfo.Instigator.Faction, num2, canSendMessage: true, reason: "GoodwillChangedReason_AttackedPawn".Translate(member.LabelShort, member), lookTarget: member, canSendHostilityLetter: !temporary);
+					int goodwillChange = (int)(-1.3f * num);
+					OfPlayer.TryAffectGoodwillWith(this, goodwillChange, canSendMessage: true, !temporary, HistoryEventDefOf.AttackedMember, member);
 				}
+			}
+		}
+
+		public void Notify_BuildingRemoved(Building building, Pawn deconstructor)
+		{
+			if (!IsPlayer && factionHostileOnHarmByPlayer && deconstructor != null && deconstructor.Faction == OfPlayer)
+			{
+				SetRelationDirect(OfPlayer, FactionRelationKind.Hostile);
 			}
 		}
 
 		public void Notify_BuildingTookDamage(Building building, DamageInfo dinfo)
 		{
-			if (dinfo.Instigator != null && !IsPlayer && dinfo.Instigator.Faction != null && dinfo.Def.ExternalViolenceFor(building) && !this.HostileTo(dinfo.Instigator.Faction) && dinfo.Instigator.Faction == OfPlayer && !IsMutuallyHostileCrossfire(dinfo))
+			if (dinfo.Instigator != null && !IsPlayer && dinfo.Instigator.Faction != null && dinfo.Def.ExternalViolenceFor(building) && !this.HostileTo(dinfo.Instigator.Faction))
 			{
-				float num = Mathf.Min(100f, dinfo.Amount);
-				int goodwillChange = (int)(-1f * num);
-				TryAffectGoodwillWith(dinfo.Instigator.Faction, goodwillChange, canSendMessage: true, canSendHostilityLetter: true, "GoodwillChangedReason_AttackedPawn".Translate(building.LabelShort, building), building);
+				if (factionHostileOnHarmByPlayer && dinfo.Instigator.Faction == OfPlayer)
+				{
+					SetRelationDirect(OfPlayer, FactionRelationKind.Hostile);
+				}
+				if (dinfo.Instigator.Faction == OfPlayer && !IsMutuallyHostileCrossfire(dinfo))
+				{
+					float num = Mathf.Min(100f, dinfo.Amount);
+					int goodwillChange = (int)(-1f * num);
+					OfPlayer.TryAffectGoodwillWith(this, goodwillChange, canSendMessage: true, canSendHostilityLetter: true, HistoryEventDefOf.AttackedBuilding, building);
+				}
 			}
 		}
 
 		public void Notify_MemberCaptured(Pawn member, Faction violator)
 		{
-			if (violator != this && RelationKindWith(violator) != 0 && hostileFromMemberCapture)
+			if (ideos != null)
 			{
-				TrySetRelationKind(violator, FactionRelationKind.Hostile, reason: "GoodwillChangedReason_CapturedPawn".Translate(member.LabelShort, member), lookTarget: member, canSendLetter: !temporary);
+				ideos.Notify_MemberGainedOrLost();
+			}
+			if (violator != this && !temporary && !member.IsSlaveOfColony)
+			{
+				OfPlayer.TryAffectGoodwillWith(this, OfPlayer.GoodwillToMakeHostile(this), canSendMessage: true, !temporary, HistoryEventDefOf.MemberCaptured, member);
 			}
 		}
 
 		public void Notify_MemberStripped(Pawn member, Faction violator)
 		{
-			if (violator != this && !Hidden && !member.Dead && violator == OfPlayer && RelationKindWith(violator) != 0)
+			if (violator != this && !Hidden && !member.Dead && violator == OfPlayer && RelationKindWith(violator) != FactionRelationKind.Hostile)
 			{
-				TryAffectGoodwillWith(OfPlayer, -40, canSendMessage: true, reason: "GoodwillChangedReason_PawnStripped".Translate(member), lookTarget: member, canSendHostilityLetter: !temporary);
+				OfPlayer.TryAffectGoodwillWith(this, -40, canSendMessage: true, !temporary, HistoryEventDefOf.MemberStripped, member);
 			}
 		}
 
-		public void Notify_MemberDied(Pawn member, DamageInfo? dinfo, bool wasWorldPawn, Map map)
+		public void Notify_MemberDied(Pawn member, DamageInfo? dinfo, bool wasWorldPawn, bool wasGuilty, Map map)
 		{
+			if (ideos != null)
+			{
+				ideos.Notify_MemberGainedOrLost();
+			}
 			if (IsPlayer)
 			{
+				if (ModsConfig.BiotechActive && map != null && member.IsBloodfeeder())
+				{
+					CheckForPrisonersAssignedToBloodfeederInteractionMode(map, member);
+				}
 				return;
 			}
-			if (!wasWorldPawn && !PawnGenerator.IsBeingGenerated(member) && Current.ProgramState == ProgramState.Playing && map != null && map.IsPlayerHome && !this.HostileTo(OfPlayer))
+			if (!wasWorldPawn && !PawnGenerator.IsBeingGenerated(member) && Current.ProgramState == ProgramState.Playing && map != null && !member.IsSubhuman && !member.IsSlaveOfColony && map.IsPlayerHome && !this.HostileTo(OfPlayer))
 			{
 				if (dinfo.HasValue && dinfo.Value.Category == DamageInfo.SourceCategory.Collapse)
 				{
-					bool flag = MessagesRepeatAvoider.MessageShowAllowed("FactionRelationAdjustmentCrushed-" + Name, 5f);
-					TryAffectGoodwillWith(OfPlayer, member.RaceProps.Humanlike ? (-25) : (-15), flag, reason: "GoodwillChangedReason_PawnCrushed".Translate(member.LabelShort, member), lookTarget: new TargetInfo(member.Position, map), canSendHostilityLetter: !temporary);
+					bool canSendMessage = MessagesRepeatAvoider.MessageShowAllowed("FactionRelationAdjustmentCrushed-" + Name, 5f);
+					int goodwillChange = (member.RaceProps.Humanlike ? (-25) : (-15));
+					OfPlayer.TryAffectGoodwillWith(this, goodwillChange, canSendMessage, !temporary, HistoryEventDefOf.MemberCrushed, new TargetInfo(member.Position, map));
 				}
 				else if (dinfo.HasValue && (dinfo.Value.Instigator == null || dinfo.Value.Instigator.Faction == null))
 				{
-					Pawn pawn = dinfo.Value.Instigator as Pawn;
-					if (pawn == null || !pawn.RaceProps.Animal || pawn.mindState.mentalStateHandler.CurStateDef != MentalStateDefOf.ManhunterPermanent)
+					if (!(dinfo.Value.Instigator is Pawn pawn) || !pawn.RaceProps.Animal || pawn.mindState?.mentalStateHandler.CurStateDef != MentalStateDefOf.ManhunterPermanent)
 					{
-						TryAffectGoodwillWith(OfPlayer, member.RaceProps.Humanlike ? (-5) : (-3), canSendMessage: true, reason: "GoodwillChangedReason_PawnDied".Translate(member.LabelShort, member), lookTarget: member, canSendHostilityLetter: !temporary);
+						int goodwillChange2 = (member.RaceProps.Humanlike ? (-5) : (-3));
+						OfPlayer.TryAffectGoodwillWith(this, goodwillChange2, canSendMessage: true, !temporary, HistoryEventDefOf.MemberNeutrallyDied, member);
 					}
 				}
-				else if (member.kindDef.factionHostileOnDeath || (member.kindDef.factionHostileOnKill && dinfo.HasValue && dinfo.Value.Instigator != null && dinfo.Value.Instigator.Faction == OfPlayer))
+				else if ((member.kindDef.factionHostileOnDeath || (member.kindDef.factionHostileOnKill && dinfo.HasValue && dinfo.Value.Instigator != null && dinfo.Value.Instigator.Faction == OfPlayer)) && !wasGuilty)
 				{
-					TrySetRelationKind(OfPlayer, FactionRelationKind.Hostile, !temporary);
+					OfPlayer.TryAffectGoodwillWith(this, OfPlayer.GoodwillToMakeHostile(this), canSendMessage: true, !temporary, HistoryEventDefOf.MemberKilled);
 				}
 			}
 			if (member == leader)
@@ -732,17 +856,60 @@ namespace RimWorld
 			}
 		}
 
+		private void CheckForPrisonersAssignedToBloodfeederInteractionMode(Map map, Pawn member)
+		{
+			List<Pawn> freeColonistsAndPrisoners = map.mapPawns.FreeColonistsAndPrisoners;
+			foreach (Pawn item in freeColonistsAndPrisoners)
+			{
+				if (item.IsPrisonerOfColony && item.guest.HasInteractionWith((PrisonerInteractionModeDef interaction) => interaction.hideIfNoBloodfeeders))
+				{
+					tmpPrisonersRequiringBloodfeeders.Add(item);
+				}
+			}
+			if (!tmpPrisonersRequiringBloodfeeders.Any())
+			{
+				tmpPrisonersRequiringBloodfeeders.Clear();
+				return;
+			}
+			foreach (Pawn item2 in freeColonistsAndPrisoners)
+			{
+				if (!item2.IsPrisonerOfColony && item2.IsBloodfeeder())
+				{
+					tmpPrisonersRequiringBloodfeeders.Clear();
+					return;
+				}
+			}
+			Messages.Message("MessageNoBloodfeedersPrisonerInteractionReset".Translate(), tmpPrisonersRequiringBloodfeeders, MessageTypeDefOf.NeutralEvent);
+			foreach (Pawn tmpPrisonersRequiringBloodfeeder in tmpPrisonersRequiringBloodfeeders)
+			{
+				tmpPrisonersRequiringBloodfeeder.guest.ToggleNonExclusiveInteraction(PrisonerInteractionModeDefOf.Bloodfeed, enabled: false);
+			}
+			tmpPrisonersRequiringBloodfeeders.Clear();
+		}
+
+		public void Notify_PawnJoined(Pawn p)
+		{
+			if (ideos != null)
+			{
+				ideos.Notify_MemberGainedOrLost();
+			}
+			if (p.RaceProps.Humanlike && !def.humanlikeFaction && !p.IsSubhuman && !p.IsCreepJoiner && !p.IsDuplicate && !p.Dead)
+			{
+				Log.Error("Humanlike pawn " + p.LabelShort + " was added to non-humanlike faction " + def.label);
+			}
+		}
+
 		public void Notify_LeaderDied()
 		{
 			Pawn pawn = leader;
-			string str = "LetterLeadersDeathLabel".Translate(name, LeaderTitle).Resolve().CapitalizeFirst();
-			string text = "LetterLeadersDeath".Translate(NameColored, LeaderTitle, pawn.Named("OLDLEADER")).Resolve().CapitalizeFirst();
+			string text = "LetterLeadersDeathLabel".Translate(name, LeaderTitle).Resolve().CapitalizeFirst();
+			string text2 = "LetterLeadersDeath".Translate(NameColored, LeaderTitle, pawn.Named("OLDLEADER")).Resolve().CapitalizeFirst();
 			if (TryGenerateNewLeader())
 			{
-				string str2 = "LetterNewLeader".Translate(LeaderTitle, leader.Named("NEWLEADER")).Resolve().CapitalizeFirst();
+				string text3 = "LetterNewLeader".Translate(LeaderTitle, leader.Named("NEWLEADER")).Resolve().CapitalizeFirst();
 				if (!temporary)
 				{
-					Find.LetterStack.ReceiveLetter(str, text + "\n\n" + str2, LetterDefOf.NeutralEvent, GlobalTargetInfo.Invalid, this);
+					Find.LetterStack.ReceiveLetter(text, text2 + "\n\n" + text3, LetterDefOf.NeutralEvent, GlobalTargetInfo.Invalid, this);
 				}
 				QuestUtility.SendQuestTargetSignals(pawn.questTags, "NoLongerFactionLeader", pawn.Named("SUBJECT"), leader.Named("NEWFACTIONLEADER"));
 			}
@@ -750,7 +917,7 @@ namespace RimWorld
 			{
 				if (!temporary)
 				{
-					Find.LetterStack.ReceiveLetter(str, text, LetterDefOf.NeutralEvent, GlobalTargetInfo.Invalid, this);
+					Find.LetterStack.ReceiveLetter(text, text2, LetterDefOf.NeutralEvent, GlobalTargetInfo.Invalid, this);
 				}
 				QuestUtility.SendQuestTargetSignals(pawn.questTags, "NoLongerFactionLeader", pawn.Named("SUBJECT"));
 			}
@@ -790,7 +957,7 @@ namespace RimWorld
 					{
 						if ((item.Faction == this && item.HostFaction == other) || (item.Faction == other && item.HostFaction == this))
 						{
-							item.guest.SetGuestStatus(item.HostFaction, prisoner: true);
+							item.guest.SetGuestStatus(item.HostFaction, GuestStatus.Prisoner);
 						}
 					}
 				}
@@ -812,12 +979,12 @@ namespace RimWorld
 				}
 				if (list.Any())
 				{
-					string str;
-					string str2;
+					string text;
+					string text2;
 					if (list.Count == 1)
 					{
-						str = "LetterLabelSiteNoLongerHostile".Translate();
-						str2 = "LetterSiteNoLongerHostile".Translate(NameColored, list[0].Label);
+						text = "LetterLabelSiteNoLongerHostile".Translate();
+						text2 = "LetterSiteNoLongerHostile".Translate(NameColored, list[0].Label);
 					}
 					else
 					{
@@ -835,24 +1002,24 @@ namespace RimWorld
 								stringBuilder.Append(" (" + component.pawn[0].LabelCap + ")");
 							}
 						}
-						str = "LetterLabelSiteNoLongerHostileMulti".Translate();
-						str2 = (string)("LetterSiteNoLongerHostileMulti".Translate(NameColored) + ":\n\n") + stringBuilder;
+						text = "LetterLabelSiteNoLongerHostileMulti".Translate();
+						text2 = string.Concat("LetterSiteNoLongerHostileMulti".Translate(NameColored) + ":\n\n", stringBuilder?.ToString());
 					}
-					Find.LetterStack.ReceiveLetter(str, str2, LetterDefOf.NeutralEvent, new LookTargets(list.Select((Site x) => new GlobalTargetInfo(x.Tile))));
-					for (int k = 0; k < list.Count; k++)
+					Find.LetterStack.ReceiveLetter(text, text2, LetterDefOf.NeutralEvent, new LookTargets(list.Select((Site x) => new GlobalTargetInfo(x.Tile))));
+					for (int num = 0; num < list.Count; num++)
 					{
-						list[k].Destroy();
+						list[num].Destroy();
 					}
 				}
 			}
 			if (other == OfPlayer && this.HostileTo(OfPlayer))
 			{
 				List<WorldObject> allWorldObjects = Find.WorldObjects.AllWorldObjects;
-				for (int l = 0; l < allWorldObjects.Count; l++)
+				for (int num2 = 0; num2 < allWorldObjects.Count; num2++)
 				{
-					if (allWorldObjects[l].Faction == this)
+					if (allWorldObjects[num2].Faction == this)
 					{
-						TradeRequestComp component2 = allWorldObjects[l].GetComponent<TradeRequestComp>();
+						TradeRequestComp component2 = allWorldObjects[num2].GetComponent<TradeRequestComp>();
 						if (component2 != null && component2.ActiveRequest)
 						{
 							component2.Disable();
@@ -866,27 +1033,27 @@ namespace RimWorld
 			}
 			if (canSendLetter)
 			{
-				TaggedString text = "";
-				TryAppendRelationKindChangedInfo(ref text, previousKind, factionRelationKind, reason);
+				TaggedString text3 = "";
+				TryAppendRelationKindChangedInfo(ref text3, previousKind, factionRelationKind, reason);
 				switch (factionRelationKind)
 				{
 				case FactionRelationKind.Hostile:
-					Find.LetterStack.ReceiveLetter("LetterLabelRelationsChange_Hostile".Translate(Name), text, LetterDefOf.NegativeEvent, lookTarget, this);
+					Find.LetterStack.ReceiveLetter("LetterLabelRelationsChange_Hostile".Translate(Name), text3, LetterDefOf.NegativeEvent, lookTarget, this);
 					sentLetter = true;
 					break;
 				case FactionRelationKind.Ally:
-					Find.LetterStack.ReceiveLetter("LetterLabelRelationsChange_Ally".Translate(Name), text, LetterDefOf.PositiveEvent, lookTarget, this);
+					Find.LetterStack.ReceiveLetter("LetterLabelRelationsChange_Ally".Translate(Name), text3, LetterDefOf.PositiveEvent, lookTarget, this);
 					sentLetter = true;
 					break;
 				case FactionRelationKind.Neutral:
 					if (previousKind == FactionRelationKind.Hostile)
 					{
-						Find.LetterStack.ReceiveLetter("LetterLabelRelationsChange_NeutralFromHostile".Translate(Name), text, LetterDefOf.PositiveEvent, lookTarget, this);
+						Find.LetterStack.ReceiveLetter("LetterLabelRelationsChange_NeutralFromHostile".Translate(Name), text3, LetterDefOf.PositiveEvent, lookTarget, this);
 						sentLetter = true;
 					}
 					else
 					{
-						Find.LetterStack.ReceiveLetter("LetterLabelRelationsChange_NeutralFromAlly".Translate(Name), text, LetterDefOf.NeutralEvent, lookTarget, this);
+						Find.LetterStack.ReceiveLetter("LetterLabelRelationsChange_NeutralFromAlly".Translate(Name), text3, LetterDefOf.NeutralEvent, lookTarget, this);
 						sentLetter = true;
 					}
 					break;
@@ -897,13 +1064,13 @@ namespace RimWorld
 				return;
 			}
 			List<Map> maps = Find.Maps;
-			for (int m = 0; m < maps.Count; m++)
+			for (int num3 = 0; num3 < maps.Count; num3++)
 			{
-				maps[m].attackTargetsCache.Notify_FactionHostilityChanged(this, other);
-				LordManager lordManager = maps[m].lordManager;
-				for (int n = 0; n < lordManager.lords.Count; n++)
+				maps[num3].attackTargetsCache.Notify_FactionHostilityChanged(this, other);
+				LordManager lordManager = maps[num3].lordManager;
+				for (int num4 = 0; num4 < lordManager.lords.Count; num4++)
 				{
-					Lord lord = lordManager.lords[n];
+					Lord lord = lordManager.lords[num4];
 					if (lord.faction == other)
 					{
 						lord.Notify_FactionRelationsChanged(this, previousKind);
@@ -918,37 +1085,55 @@ namespace RimWorld
 
 		public void Notify_PlayerTraded(float marketValueSentByPlayer, Pawn playerNegotiator)
 		{
-			TryAffectGoodwillWith(OfPlayer, (int)(marketValueSentByPlayer / 600f), canSendMessage: true, reason: "GoodwillChangedReason_Traded".Translate(), lookTarget: playerNegotiator, canSendHostilityLetter: !temporary);
+			int goodwillChange = (int)(marketValueSentByPlayer / 600f);
+			OfPlayer.TryAffectGoodwillWith(this, goodwillChange, canSendMessage: true, !temporary, HistoryEventDefOf.Traded, playerNegotiator);
 		}
 
-		public void Notify_MemberExitedMap(Pawn member, bool free)
+		public void Notify_MemberExitedMap(Pawn member, bool freed)
 		{
-			if (free && member.HostFaction != null)
+			bool num = freed && (member.HostFaction == OfPlayer || member.Faction == OfPlayer);
+			bool flag = !freed && !member.Faction.HostileTo(OfPlayer);
+			if (num || flag)
 			{
 				bool isHealthy;
-				int goodwillGainForPrisonerRelease = GetGoodwillGainForPrisonerRelease(member, out isHealthy);
-				if (member.mindState.AvailableForGoodwillReward)
+				bool isInMentalState;
+				int goodwillGainForExit = GetGoodwillGainForExit(member, freed, out isHealthy, out isInMentalState);
+				if (member.mindState.AvailableForGoodwillReward && (freed || goodwillGainForExit >= 4))
 				{
-					TryAffectGoodwillWith(member.HostFaction, goodwillGainForPrisonerRelease, canSendMessage: true, reason: isHealthy ? "GoodwillChangedReason_ExitedMapHealthy".Translate(member.LabelShort, member) : "GoodwillChangedReason_Tended".Translate(member.LabelShort, member), canSendHostilityLetter: !temporary);
+					HistoryEventDef reason = (freed ? HistoryEventDefOf.MemberExitedMapHealthy : HistoryEventDefOf.FriendlyExitedMapTended);
+					OfPlayer.TryAffectGoodwillWith(this, goodwillGainForExit, canSendMessage: true, !temporary, reason);
 				}
 			}
 			member.mindState.timesGuestTendedToByPlayer = 0;
 		}
 
-		public int GetGoodwillGainForPrisonerRelease(Pawn member, out bool isHealthy)
+		public int GetGoodwillGainForExit(Pawn member, bool freed, out bool isHealthy, out bool isInMentalState)
 		{
 			isHealthy = false;
+			isInMentalState = member.InMentalState;
 			float num = 0f;
-			if (!member.InMentalState && member.health.hediffSet.BleedRateTotal < 0.001f)
+			bool flag = !freed && !member.Faction.HostileTo(OfPlayer) && member.mindState.timesGuestTendedToByPlayer > 0;
+			if (member.health.hediffSet.BleedRateTotal < 0.001f && (freed || flag))
 			{
 				isHealthy = true;
-				num += 12f;
-				if (PawnUtility.IsFactionLeader(member))
+				if (!isInMentalState)
 				{
-					num += 40f;
+					num += 12f;
+					if (PawnUtility.IsFactionLeader(member))
+					{
+						num += 40f;
+					}
 				}
 			}
 			return (int)(num + (float)Mathf.Min(member.mindState.timesGuestTendedToByPlayer, 10) * 1f);
+		}
+
+		public void Notify_MemberLeftExtraFaction(Pawn member)
+		{
+			if (member.HomeFaction != this && leader == member)
+			{
+				Notify_LeaderLost();
+			}
 		}
 
 		[Obsolete("Will be removed in the future")]
@@ -968,7 +1153,7 @@ namespace RimWorld
 					Map map = Find.Maps[i];
 					for (int j = 0; j < map.mapPawns.AllPawnsCount; j++)
 					{
-						if (map.mapPawns.AllPawns[j] != pawn && !map.mapPawns.AllPawns[j].Destroyed && map.mapPawns.AllPawns[j].FactionOrExtraMiniOrHomeFaction == this)
+						if (map.mapPawns.AllPawns[j] != pawn && !map.mapPawns.AllPawns[j].Destroyed && map.mapPawns.AllPawns[j].HomeFaction == this)
 						{
 							leader = map.mapPawns.AllPawns[j];
 						}
@@ -994,7 +1179,14 @@ namespace RimWorld
 				}
 				if (list.TryRandomElement(out var result))
 				{
-					PawnGenerationRequest request = new PawnGenerationRequest(result, this, PawnGenerationContext.NonPlayer, -1, def.leaderForceGenerateNewPawn);
+					PawnKindDef kind = result;
+					bool leaderForceGenerateNewPawn = def.leaderForceGenerateNewPawn;
+					PawnGenerationRequest request = new PawnGenerationRequest(kind, this, PawnGenerationContext.NonPlayer, null, leaderForceGenerateNewPawn);
+					Gender supremeGender = ideos.PrimaryIdeo.SupremeGender;
+					if (supremeGender != Gender.None)
+					{
+						request.FixedGender = supremeGender;
+					}
 					leader = PawnGenerator.GeneratePawn(request);
 					if (leader.RaceProps.IsFlesh)
 					{
@@ -1051,11 +1243,11 @@ namespace RimWorld
 				return null;
 			}
 			string text = "CallOnRadio".Translate(GetCallLabel());
-			text = text + " (" + PlayerRelationKind.GetLabel() + ", " + PlayerGoodwill.ToStringWithSign() + ")";
+			text = text + " (" + PlayerRelationKind.GetLabelCap() + ", " + PlayerGoodwill.ToStringWithSign() + ")";
 			if (!LeaderIsAvailableToTalk())
 			{
-				string str = ((leader == null) ? ((string)"LeaderUnavailableNoLeader".Translate()) : ((string)"LeaderUnavailable".Translate(leader.LabelShort, leader)));
-				return new FloatMenuOption(text + " (" + str + ")", null, def.FactionIcon, Color);
+				string text2 = ((leader == null) ? ((string)"LeaderUnavailableNoLeader".Translate()) : ((string)"LeaderUnavailable".Translate(leader.LabelShort, leader)));
+				return new FloatMenuOption(text + " (" + text2 + ")", null, def.FactionIcon, Color);
 			}
 			return FloatMenuUtility.DecoratePrioritizedTask(new FloatMenuOption(text, delegate
 			{
@@ -1093,9 +1285,17 @@ namespace RimWorld
 
 		private bool IsMutuallyHostileCrossfire(DamageInfo dinfo)
 		{
-			if (dinfo.Instigator != null && dinfo.IntendedTarget != null && dinfo.IntendedTarget.HostileTo(dinfo.Instigator))
+			if (dinfo.Instigator != null && dinfo.IntendedTarget != null)
 			{
-				return dinfo.IntendedTarget.HostileTo(this);
+				if (!dinfo.IntendedTarget.HostileTo(dinfo.Instigator) || !dinfo.IntendedTarget.HostileTo(this))
+				{
+					if (dinfo.IntendedTarget.Faction.HostileTo(dinfo.Instigator.Faction))
+					{
+						return dinfo.IntendedTarget.Faction.HostileTo(this);
+					}
+					return false;
+				}
+				return true;
 			}
 			return false;
 		}
@@ -1106,7 +1306,7 @@ namespace RimWorld
 			{
 				RoyalTitleDef minTitleToUse = ThingRequiringRoyalPermissionUtility.GetMinTitleToUse(implantOrWeapon, this, violationSourceLevel);
 				string arg = ((minTitleToUse == null) ? ((string)"None".Translate()) : minTitleToUse.GetLabelCapFor(pawn));
-				TryAffectGoodwillWith(pawn.Faction, -4, canSendMessage: true, canSendHostilityLetter: true, "GoodwillChangedReason_UsedForbiddenThing".Translate(pawn.Named("PAWN"), violationSourceName.Named("CULPRIT")), pawn);
+				OfPlayer.TryAffectGoodwillWith(this, -4, canSendMessage: true, canSendHostilityLetter: true, HistoryEventDefOf.UsedForbiddenThing, pawn);
 				Find.LetterStack.ReceiveLetter("LetterLawViolationDetectedLabel".Translate(pawn.Named("PAWN")).CapitalizeFirst(), "LetterLawViolationDetectedForbiddenThingUse".Translate(arg.Named("TITLE"), pawn.Named("PAWN"), violationSourceName.Named("CULPRIT"), this.Named("FACTION"), 4.ToString().Named("GOODWILL"), detectionChance.ToStringPercent().Named("CHANCE")), LetterDefOf.NegativeEvent, pawn);
 			}
 		}
@@ -1165,6 +1365,17 @@ namespace RimWorld
 				}
 			}
 			return default(Pair<Faction, RoyalTitleDef>);
+		}
+
+		public void ChangeGoodwill_Debug(Faction other, int goodwillChange)
+		{
+			int baseGoodwill = Mathf.Clamp(BaseGoodwillWith(other) + goodwillChange, -100, 100);
+			FactionRelation factionRelation = RelationWith(other);
+			factionRelation.baseGoodwill = baseGoodwill;
+			factionRelation.CheckKindThresholds(this, canSendLetter: false, null, GlobalTargetInfo.Invalid, out var _);
+			FactionRelation factionRelation2 = other.RelationWith(this);
+			factionRelation2.baseGoodwill = factionRelation.baseGoodwill;
+			factionRelation2.kind = factionRelation.kind;
 		}
 
 		public string GetUniqueLoadID()

@@ -61,7 +61,7 @@ namespace Verse
 			targets.Add(new GlobalTargetInfo(c, map));
 		}
 
-		public LookTargets(int tile)
+		public LookTargets(PlanetTile tile)
 		{
 			targets = new List<GlobalTargetInfo>();
 			targets.Add(new GlobalTargetInfo(tile));
@@ -95,8 +95,7 @@ namespace Verse
 			{
 				return;
 			}
-			IList<TargetInfo> list = targets as IList<TargetInfo>;
-			if (list != null)
+			if (targets is IList<TargetInfo> list)
 			{
 				for (int i = 0; i < list.Count; i++)
 				{
@@ -281,8 +280,7 @@ namespace Verse
 			{
 				return;
 			}
-			IList<T> list = things as IList<T>;
-			if (list != null)
+			if (things is IList<T> list)
 			{
 				for (int i = 0; i < list.Count; i++)
 				{
@@ -302,8 +300,7 @@ namespace Verse
 			{
 				return;
 			}
-			IList<T> list = worldObjects as IList<T>;
-			if (list != null)
+			if (worldObjects is IList<T> list)
 			{
 				for (int i = 0; i < list.Count; i++)
 				{

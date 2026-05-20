@@ -19,11 +19,11 @@ namespace RimWorld
 			return !fac.HostileTo(other);
 		}
 
-		public static AcceptanceReport CanTradeWith_NewTemp(this Pawn p, Faction faction, TraderKindDef traderKind = null)
+		public static AcceptanceReport CanTradeWith(this Pawn p, Faction faction, TraderKindDef traderKind = null)
 		{
-			if (p.skills.GetSkill(SkillDefOf.Social).TotallyDisabled)
+			if (p.skills == null || p.skills.GetSkill(SkillDefOf.Social).TotallyDisabled)
 			{
-				return AcceptanceReport.WasRejected;
+				return new AcceptanceReport("IncapableOfCapacity".Translate(SkillDefOf.Social.label));
 			}
 			if (faction != null)
 			{
@@ -43,11 +43,6 @@ namespace RimWorld
 			return AcceptanceReport.WasAccepted;
 		}
 
-		public static bool CanTradeWith(this Pawn p, Faction faction, TraderKindDef traderKind = null)
-		{
-			return p.CanTradeWith_NewTemp(faction, traderKind).Accepted;
-		}
-
 		public static Faction DefaultFactionFrom(FactionDef ft)
 		{
 			if (ft == null)
@@ -58,11 +53,11 @@ namespace RimWorld
 			{
 				return Faction.OfPlayer;
 			}
-			if (Find.FactionManager.AllFactions.Where((Faction fac) => fac.def == ft).TryRandomElement(out var result))
+			if (!Find.FactionManager.AllFactions.Where((Faction x) => x.def == ft).TryRandomElement(out var result) && !Find.FactionManager.AllFactions.Where((Faction x) => x.def.replacesFaction != null && x.def.replacesFaction == ft).TryRandomElement(out result))
 			{
-				return result;
+				return null;
 			}
-			return null;
+			return result;
 		}
 
 		public static bool IsPoliticallyProper(this Thing thing, Pawn pawn)
@@ -84,6 +79,43 @@ namespace RimWorld
 				return true;
 			}
 			return false;
+		}
+
+		public static bool IsPlayerSafe(this Faction faction)
+		{
+			return faction?.IsPlayer ?? false;
+		}
+
+		public static void ResetAllFactionRelations()
+		{
+			foreach (Faction item in Find.FactionManager.AllFactionsListForReading)
+			{
+				item.RemoveAllRelations();
+				foreach (Faction item2 in Find.FactionManager.AllFactionsListForReading)
+				{
+					if (item != item2)
+					{
+						item.TryMakeInitialRelationsWith(item2);
+					}
+				}
+			}
+		}
+
+		public static int GetSlavesInFactionCount(Faction faction)
+		{
+			if (faction == null)
+			{
+				return 0;
+			}
+			int num = 0;
+			foreach (Pawn item in PawnsFinder.AllMaps_SpawnedPawnsInFaction(faction))
+			{
+				if (item.IsSlave)
+				{
+					num++;
+				}
+			}
+			return num;
 		}
 	}
 }

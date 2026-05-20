@@ -42,7 +42,7 @@ namespace RimWorld
 				{
 					yield return involvedFaction;
 				}
-				if (settlement.Faction != null)
+				if (settlement?.Faction != null)
 				{
 					yield return settlement.Faction;
 				}

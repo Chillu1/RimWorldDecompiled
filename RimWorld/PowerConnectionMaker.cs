@@ -28,8 +28,7 @@ namespace RimWorld
 			{
 				CompPower compPower = deadPc.connectChildren[i];
 				compPower.connectParent = null;
-				CompPowerTrader compPowerTrader = compPower as CompPowerTrader;
-				if (compPowerTrader != null)
+				if (compPower is CompPowerTrader compPowerTrader)
 				{
 					compPowerTrader.PowerOn = false;
 				}
@@ -41,7 +40,7 @@ namespace RimWorld
 		{
 			if (pc.connectParent == null && pc.parent.Spawned)
 			{
-				CompPower compPower = BestTransmitterForConnector(pc.parent.Position, pc.parent.Map, disallowedNets);
+				CompPower compPower = BestTransmitterForConnector(pc.parent.def.building.isAttachment ? GenConstruct.GetWallAttachedTo(pc.parent).Position : pc.parent.Position, pc.parent.Map, disallowedNets);
 				if (compPower != null)
 				{
 					pc.ConnectToTransmitter(compPower);
@@ -78,7 +77,7 @@ namespace RimWorld
 		{
 			if (!b.parent.Spawned)
 			{
-				Log.Warning(string.Concat("Can't check potential connectors for ", b, " because it's unspawned."));
+				Log.Warning("Can't check potential connectors for " + b?.ToString() + " because it's unspawned.");
 				yield break;
 			}
 			CellRect rect = b.parent.OccupiedRect().ExpandedBy(6).ClipInsideMap(b.parent.Map);
@@ -88,11 +87,11 @@ namespace RimWorld
 				{
 					IntVec3 c = new IntVec3(x, 0, z);
 					List<Thing> thingList = b.parent.Map.thingGrid.ThingsListAt(c);
-					for (int i = 0; i < thingList.Count; i++)
+					for (int j = 0; j < thingList.Count; j++)
 					{
-						if (thingList[i].def.ConnectToPower)
+						if (thingList[j].def.ConnectToPower)
 						{
-							yield return ((Building)thingList[i]).PowerComp;
+							yield return ((Building)thingList[j]).PowerComp;
 						}
 					}
 				}

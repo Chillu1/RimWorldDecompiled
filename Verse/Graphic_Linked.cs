@@ -11,6 +11,8 @@ namespace Verse
 
 		public override Material MatSingle => MaterialAtlasPool.SubMaterialFromAtlas(subGraphic.MatSingle, LinkDirections.None);
 
+		public Graphic SubGraphic => subGraphic;
+
 		public Graphic_Linked()
 		{
 		}
@@ -18,6 +20,7 @@ namespace Verse
 		public Graphic_Linked(Graphic subGraphic)
 		{
 			this.subGraphic = subGraphic;
+			data = subGraphic.data;
 		}
 
 		public override Graphic GetColoredVersion(Shader newShader, Color newColor, Color newColorTwo)
@@ -28,10 +31,14 @@ namespace Verse
 			};
 		}
 
-		public override void Print(SectionLayer layer, Thing thing)
+		public override void Print(SectionLayer layer, Thing thing, float extraRotation)
 		{
 			Material mat = LinkedDrawMatFrom(thing, thing.Position);
-			Printer_Plane.PrintPlane(layer, thing.TrueCenter(), new Vector2(1f, 1f), mat);
+			Printer_Plane.PrintPlane(layer, thing.TrueCenter(), new Vector2(1f, 1f), mat, extraRotation);
+			if (base.ShadowGraphic != null && thing != null)
+			{
+				base.ShadowGraphic.Print(layer, thing, 0f);
+			}
 		}
 
 		public override Material MatSingleFor(Thing thing)
@@ -39,7 +46,7 @@ namespace Verse
 			return LinkedDrawMatFrom(thing, thing.Position);
 		}
 
-		protected Material LinkedDrawMatFrom(Thing parent, IntVec3 cell)
+		protected virtual Material LinkedDrawMatFrom(Thing parent, IntVec3 cell)
 		{
 			int num = 0;
 			int num2 = 1;
@@ -65,6 +72,10 @@ namespace Verse
 			if (!c.InBounds(parent.Map))
 			{
 				return (parent.def.graphicData.linkFlags & LinkFlags.MapEdge) != 0;
+			}
+			if (ModsConfig.OdysseyActive && (parent.Map.terrainGrid.FoundationAt(c)?.IsSubstructure ?? false) != (parent.Map.terrainGrid.FoundationAt(parent.Position)?.IsSubstructure ?? false))
+			{
+				return false;
 			}
 			return (parent.Map.linkGrid.LinkFlagsAt(c) & parent.def.graphicData.linkFlags) != 0;
 		}

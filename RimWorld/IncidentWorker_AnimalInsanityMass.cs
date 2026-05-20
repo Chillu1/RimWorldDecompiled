@@ -18,7 +18,7 @@ namespace RimWorld
 
 		public static void DriveInsane(Pawn p)
 		{
-			p.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Manhunter, null, forceWake: true);
+			p.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Manhunter, null, forced: false, forceWake: true);
 		}
 
 		protected override bool TryExecuteWorker(IncidentParms parms)
@@ -43,8 +43,7 @@ namespace RimWorld
 			List<Pawn> list = map.mapPawns.AllPawnsSpawned.Where((Pawn p) => p.kindDef == animalDef && AnimalUsable(p)).ToList();
 			float combatPower = animalDef.combatPower;
 			float num = 0f;
-			int num2 = 0;
-			Pawn pawn = null;
+			List<Pawn> list2 = new List<Pawn>();
 			list.Shuffle();
 			foreach (Pawn item in list)
 			{
@@ -54,29 +53,29 @@ namespace RimWorld
 				}
 				DriveInsane(item);
 				num += combatPower;
-				num2++;
-				pawn = item;
+				list2.Add(item);
 			}
 			if (num == 0f)
 			{
 				return false;
 			}
-			string str;
-			string str2;
+			string text;
+			string text2;
 			LetterDef baseLetterDef;
-			if (num2 == 1)
+			if (list2.Count == 1)
 			{
-				str = "LetterLabelAnimalInsanitySingle".Translate(pawn.LabelShort, pawn.Named("ANIMAL"));
-				str2 = "AnimalInsanitySingle".Translate(pawn.LabelShort, pawn.Named("ANIMAL"));
+				Pawn pawn = list2.First();
+				text = "LetterLabelAnimalInsanitySingle".Translate(pawn.LabelShort, pawn.Named("ANIMAL")).CapitalizeFirst();
+				text2 = "AnimalInsanitySingle".Translate(pawn.LabelShort, pawn.Named("ANIMAL")).CapitalizeFirst();
 				baseLetterDef = LetterDefOf.ThreatSmall;
 			}
 			else
 			{
-				str = "LetterLabelAnimalInsanityMultiple".Translate(animalDef.GetLabelPlural());
-				str2 = "AnimalInsanityMultiple".Translate(animalDef.GetLabelPlural());
+				text = "LetterLabelAnimalInsanityMultiple".Translate(animalDef.GetLabelPlural()).CapitalizeFirst();
+				text2 = "AnimalInsanityMultiple".Translate(animalDef.GetLabelPlural()).CapitalizeFirst();
 				baseLetterDef = LetterDefOf.ThreatBig;
 			}
-			SendStandardLetter(str, str2, baseLetterDef, parms, pawn);
+			SendStandardLetter(text, text2, baseLetterDef, parms, list2);
 			SoundDefOf.PsychicPulseGlobal.PlayOneShotOnCamera(map);
 			if (map == Find.CurrentMap)
 			{

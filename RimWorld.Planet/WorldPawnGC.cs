@@ -13,7 +13,9 @@ namespace RimWorld.Planet
 
 		private int currentGCRate = 1;
 
-		private const int AdditionalStoryRelevantPawns = 20;
+		private const int AdditionalRandomHumanlikes = 10;
+
+		private const float AdditionalRandomHumanlikeKeepChance = 0.25f;
 
 		private const int GCUpdateInterval = 15000;
 
@@ -77,7 +79,7 @@ namespace RimWorld.Planet
 
 		private IEnumerable AccumulatePawnGCData(Dictionary<Pawn, string> keptPawns)
 		{
-			foreach (Pawn item in PawnsFinder.AllMapsWorldAndTemporary_AliveOrDead)
+			foreach (Pawn item in Find.WorldPawns.AllPawnsAliveOrDead)
 			{
 				string criticalPawnReason = GetCriticalPawnReason(item);
 				if (!criticalPawnReason.NullOrEmpty())
@@ -93,28 +95,26 @@ namespace RimWorld.Planet
 					logDotgraph.AppendLine(string.Format("{0} [color=\"{1}\" shape=\"{2}\"];", DotgraphIdentifier(item), (item.relations != null && item.relations.everSeenByPlayer) ? "black" : "grey", item.RaceProps.Humanlike ? "oval" : "box"));
 				}
 			}
-			foreach (Pawn item2 in (from pawn in PawnsFinder.AllMapsWorldAndTemporary_Alive
-				where AllowedAsStoryPawn(pawn) && !keptPawns.ContainsKey(pawn)
-				orderby pawn.records.StoryRelevance descending
-				select pawn).Take(20))
+			foreach (Pawn item2 in Find.WorldPawns.AllPawnsAlive.Where((Pawn p) => p.RaceProps.Humanlike && !keptPawns.ContainsKey(p) && Rand.ChanceSeeded(0.25f, p.thingIDNumber ^ 0x3A73ECFD)).Take(10))
 			{
-				keptPawns[item2] = "StoryRelevant";
+				keptPawns[item2] = "RandomlyKept";
 			}
 			Pawn[] criticalPawns = keptPawns.Keys.ToArray();
 			Pawn[] array = criticalPawns;
-			foreach (Pawn pawn2 in array)
+			foreach (Pawn pawn in array)
 			{
-				AddAllRelationships(pawn2, keptPawns);
+				AddAllRelationships(pawn, keptPawns);
 				yield return null;
 			}
-			Pawn[] array2 = criticalPawns;
-			foreach (Pawn pawn3 in array2)
+			array = criticalPawns;
+			foreach (Pawn pawn2 in array)
 			{
-				AddAllMemories(pawn3, keptPawns);
+				AddAllMemories(pawn2, keptPawns);
+				yield return null;
 			}
 		}
 
-		private Dictionary<Pawn, string> AccumulatePawnGCDataImmediate()
+		public Dictionary<Pawn, string> AccumulatePawnGCDataImmediate()
 		{
 			Dictionary<Pawn, string> dictionary = new Dictionary<Pawn, string>();
 			AccumulatePawnGCData(dictionary).ExecuteEnumerable();
@@ -125,18 +125,20 @@ namespace RimWorld.Planet
 		{
 			Dictionary<Pawn, string> dictionary = AccumulatePawnGCDataImmediate();
 			Dictionary<string, int> dictionary2 = new Dictionary<string, int>();
-			foreach (Pawn item in Find.WorldPawns.AllPawnsAlive)
+			foreach (Pawn item in Find.WorldPawns.AllPawnsAliveOrDead)
 			{
-				string key = "Discarded";
+				string text = "Discarded";
 				if (dictionary.ContainsKey(item))
 				{
-					key = dictionary[item];
+					text = dictionary[item];
 				}
-				if (!dictionary2.ContainsKey(key))
+				if (!dictionary2.ContainsKey(text))
 				{
-					dictionary2[key] = 0;
+					dictionary2[text] = 0;
 				}
-				dictionary2[key]++;
+				string key = text;
+				int value = dictionary2[key] + 1;
+				dictionary2[key] = value;
 			}
 			return (from kvp in dictionary2
 				orderby kvp.Value descending
@@ -156,9 +158,17 @@ namespace RimWorld.Planet
 			{
 				if (pawn.IsWorldPawn() && !keptPawns.ContainsKey(pawn))
 				{
-					Find.WorldPawns.RemoveAndDiscardPawnViaGC(pawn);
+					pawn.markedForDiscard = true;
 				}
 			}
+			foreach (Pawn pawn2 in worldPawnsSnapshot)
+			{
+				if (pawn2.IsWorldPawn() && !keptPawns.ContainsKey(pawn2))
+				{
+					Find.WorldPawns.RemoveAndDiscardPawnViaGC(pawn2);
+				}
+			}
+			Find.RelationshipRecords.CleanupUnusedRecords();
 		}
 
 		private string GetCriticalPawnReason(Pawn pawn)
@@ -170,6 +180,10 @@ namespace RimWorld.Planet
 			if (PawnUtility.EverBeenColonistOrTameAnimal(pawn) && pawn.RaceProps.Humanlike)
 			{
 				return "Colonist";
+			}
+			if (pawn.RaceProps.Animal && TrainableUtility.GetAllColonistBondsFor(pawn).Any())
+			{
+				return "BondedAnimal";
 			}
 			if (PawnGenerator.IsBeingGenerated(pawn))
 			{
@@ -226,21 +240,16 @@ namespace RimWorld.Planet
 			{
 				return "ReservedByQuest";
 			}
-			return null;
-		}
-
-		private bool AllowedAsStoryPawn(Pawn pawn)
-		{
-			if (!pawn.RaceProps.Humanlike)
+			if (Find.WorldPawns.PawnSourced(pawn))
 			{
-				return false;
+				return "CompPawnSource";
 			}
-			return true;
+			return null;
 		}
 
 		public void AddAllRelationships(Pawn pawn, Dictionary<Pawn, string> keptPawns)
 		{
-			if (pawn.relations == null)
+			if (pawn.relations == null || (!pawn.Spawned && (!pawn.RaceProps.Humanlike || !pawn.Faction.IsPlayerSafe())))
 			{
 				return;
 			}
@@ -264,7 +273,7 @@ namespace RimWorld.Planet
 
 		public void AddAllMemories(Pawn pawn, Dictionary<Pawn, string> keptPawns)
 		{
-			if (pawn.needs == null || pawn.needs.mood == null || pawn.needs.mood.thoughts == null || pawn.needs.mood.thoughts.memories == null)
+			if (pawn.needs == null || pawn.needs.mood == null || pawn.needs.mood.thoughts == null || pawn.needs.mood.thoughts.memories == null || (!pawn.Spawned && (!pawn.RaceProps.Humanlike || !pawn.Faction.IsPlayerSafe())))
 			{
 				return;
 			}

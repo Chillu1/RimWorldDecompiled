@@ -7,11 +7,16 @@ namespace RimWorld
 	{
 		public List<string> tags;
 
+		private HashSet<string> tagsSet;
+
+		private HashSet<string> TagsSet => tagsSet ?? (tagsSet = new HashSet<string>(tags));
+
 		public override bool Met(Room r, Pawn p = null)
 		{
+			Map map = r.Map;
 			foreach (IntVec3 cell in r.Cells)
 			{
-				List<string> list = cell.GetTerrain(r.Map).tags;
+				List<string> list = cell.GetTerrain(map).tags;
 				if (list.NullOrEmpty())
 				{
 					return false;
@@ -19,7 +24,7 @@ namespace RimWorld
 				bool flag = false;
 				foreach (string item in list)
 				{
-					if (tags.Contains(item))
+					if (TagsSet.Contains(item))
 					{
 						flag = true;
 						break;
@@ -63,6 +68,16 @@ namespace RimWorld
 			if (tags.NullOrEmpty())
 			{
 				yield return "tags are null or empty";
+			}
+		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_Collections.Look(ref tags, "tags", LookMode.Undefined);
+			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			{
+				tagsSet = new HashSet<string>(tags);
 			}
 		}
 	}

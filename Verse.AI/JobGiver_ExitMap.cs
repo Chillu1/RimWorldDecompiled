@@ -18,6 +18,8 @@ namespace Verse.AI
 
 		protected bool failIfCantJoinOrCreateCaravan;
 
+		protected bool canFlyOutOfMap = true;
+
 		public override ThinkNode DeepCopy(bool resolve = true)
 		{
 			JobGiver_ExitMap obj = (JobGiver_ExitMap)base.DeepCopy(resolve);
@@ -28,19 +30,42 @@ namespace Verse.AI
 			obj.forceCanDigIfAnyHostileActiveThreat = forceCanDigIfAnyHostileActiveThreat;
 			obj.forceCanDigIfCantReachMapEdge = forceCanDigIfCantReachMapEdge;
 			obj.failIfCantJoinOrCreateCaravan = failIfCantJoinOrCreateCaravan;
+			obj.canFlyOutOfMap = canFlyOutOfMap;
 			return obj;
 		}
 
 		protected override Job TryGiveJob(Pawn pawn)
 		{
+			if (pawn.Downed && !pawn.Crawling)
+			{
+				return null;
+			}
+			if (!pawn.MapHeld.CanEverExit)
+			{
+				if (pawn.MapHeld.IsPocketMap)
+				{
+					foreach (Thing item in pawn.MapHeld.listerThings.ThingsMatching(ThingRequest.ForGroup(ThingRequestGroup.MapPortal)))
+					{
+						if (pawn.CanReach(item, PathEndMode.Touch, Danger.Deadly))
+						{
+							return JobMaker.MakeJob(JobDefOf.EnterPortal, item);
+						}
+					}
+				}
+				return null;
+			}
+			if (canFlyOutOfMap && pawn.RaceProps.canLeaveMapFlying && !pawn.Position.Roofed(pawn.Map) && pawn.Faction != Faction.OfPlayer && pawn.flight.CanEverFly && !pawn.IsQuestLodger())
+			{
+				return JobMaker.MakeJob(JobDefOf.ExitMapFlying);
+			}
 			bool flag = forceCanDig || (pawn.mindState.duty != null && pawn.mindState.duty.canDig && !pawn.CanReachMapEdge()) || (forceCanDigIfCantReachMapEdge && !pawn.CanReachMapEdge()) || (forceCanDigIfAnyHostileActiveThreat && pawn.Faction != null && GenHostility.AnyHostileActiveThreatTo(pawn.Map, pawn.Faction, countDormantPawnsAsHostile: true));
-			if (!TryFindGoodExitDest(pawn, flag, out var dest))
+			if (!TryFindGoodExitDest(pawn, flag, canBash, out var dest))
 			{
 				return null;
 			}
 			if (flag)
 			{
-				using PawnPath path = pawn.Map.pathFinder.FindPath(pawn.Position, dest, TraverseParms.For(pawn, Danger.Deadly, TraverseMode.PassAllDestroyableThings));
+				using PawnPath path = pawn.Map.pathFinder.FindPathNow(pawn.Position, dest, TraverseParms.For(pawn, Danger.Deadly, TraverseMode.PassAllDestroyableThings));
 				IntVec3 cellBefore;
 				Thing thing = path.FirstBlockingBuilding(out cellBefore, pawn);
 				if (thing != null)
@@ -57,10 +82,10 @@ namespace Verse.AI
 			job2.failIfCantJoinOrCreateCaravan = failIfCantJoinOrCreateCaravan;
 			job2.locomotionUrgency = PawnUtility.ResolveLocomotion(pawn, defaultLocomotion, LocomotionUrgency.Jog);
 			job2.expiryInterval = jobMaxDuration;
-			job2.canBash = canBash;
+			job2.canBashDoors = canBash;
 			return job2;
 		}
 
-		protected abstract bool TryFindGoodExitDest(Pawn pawn, bool canDig, out IntVec3 dest);
+		protected abstract bool TryFindGoodExitDest(Pawn pawn, bool canDig, bool canBash, out IntVec3 dest);
 	}
 }

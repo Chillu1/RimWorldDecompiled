@@ -6,12 +6,27 @@ namespace Verse
 {
 	public static class GenClamor
 	{
+		public delegate void ClamorEffect(Thing source, Pawn hearer);
+
 		public static void DoClamor(Thing source, float radius, ClamorDef type)
 		{
 			DoClamor(source, source.Position, radius, type);
 		}
 
 		public static void DoClamor(Thing source, IntVec3 position, float radius, ClamorDef type)
+		{
+			DoClamor(source, position, radius, delegate(Thing _, Pawn hearer)
+			{
+				hearer.HearClamor(source, type);
+			});
+		}
+
+		public static void DoClamor(Thing source, float radius, ClamorEffect clamorEffect)
+		{
+			DoClamor(source, source.Position, radius, clamorEffect);
+		}
+
+		public static void DoClamor(Thing source, IntVec3 position, float radius, ClamorEffect clamorEffect)
 		{
 			if (source.MapHeld == null)
 			{
@@ -31,7 +46,7 @@ namespace Verse
 					float num = Mathf.Clamp01(pawn.health.capacities.GetLevel(PawnCapacityDefOf.Hearing));
 					if (num > 0f && pawn.Position.InHorDistOf(position, radius * num))
 					{
-						pawn.HearClamor(source, type);
+						clamorEffect(source, pawn);
 					}
 				}
 				return false;

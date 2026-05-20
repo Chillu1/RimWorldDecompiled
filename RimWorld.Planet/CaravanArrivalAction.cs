@@ -4,17 +4,11 @@ namespace RimWorld.Planet
 {
 	public abstract class CaravanArrivalAction : IExposable
 	{
-		public abstract string Label
-		{
-			get;
-		}
+		public abstract string Label { get; }
 
-		public abstract string ReportString
-		{
-			get;
-		}
+		public abstract string ReportString { get; }
 
-		public virtual FloatMenuAcceptanceReport StillValid(Caravan caravan, int destinationTile)
+		public virtual FloatMenuAcceptanceReport StillValid(Caravan caravan, PlanetTile destinationTile)
 		{
 			return true;
 		}

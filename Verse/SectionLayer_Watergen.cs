@@ -8,12 +8,12 @@ namespace Verse
 		public SectionLayer_Watergen(Section section)
 			: base(section)
 		{
-			relevantChangeTypes = MapMeshFlag.Terrain;
+			relevantChangeTypes = MapMeshFlagDefOf.Terrain;
 		}
 
-		public override Material GetMaterialFor(TerrainDef terrain)
+		public override Material GetMaterialFor(CellTerrain terrain)
 		{
-			return terrain.waterDepthMaterial;
+			return terrain.def.waterDepthMaterial;
 		}
 
 		public override void DrawLayer()
@@ -28,7 +28,7 @@ namespace Verse
 				LayerSubMesh layerSubMesh = subMeshes[i];
 				if (layerSubMesh.finalized && !layerSubMesh.disabled)
 				{
-					Graphics.DrawMesh(layerSubMesh.mesh, Vector3.zero, Quaternion.identity, layerSubMesh.material, SubcameraDefOf.WaterDepth.LayerId);
+					Graphics.DrawMesh(layerSubMesh.mesh, Matrix4x4.identity, layerSubMesh.material, SubcameraDefOf.WaterDepth.LayerId);
 				}
 			}
 		}

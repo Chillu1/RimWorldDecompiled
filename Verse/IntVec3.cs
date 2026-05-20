@@ -1,5 +1,7 @@
 using System;
 using System.Globalization;
+using System.Runtime.CompilerServices;
+using Unity.Mathematics;
 using UnityEngine;
 
 namespace Verse
@@ -12,15 +14,58 @@ namespace Verse
 
 		public int z;
 
+		public static readonly IntVec3 Zero = new IntVec3(0, 0, 0);
+
+		public static readonly IntVec3 North = new IntVec3(0, 0, 1);
+
+		public static readonly IntVec3 East = new IntVec3(1, 0, 0);
+
+		public static readonly IntVec3 South = new IntVec3(0, 0, -1);
+
+		public static readonly IntVec3 West = new IntVec3(-1, 0, 0);
+
+		public static readonly IntVec3 NorthWest = new IntVec3(-1, 0, 1);
+
+		public static readonly IntVec3 NorthEast = new IntVec3(1, 0, 1);
+
+		public static readonly IntVec3 SouthWest = new IntVec3(-1, 0, -1);
+
+		public static readonly IntVec3 SouthEast = new IntVec3(1, 0, -1);
+
+		public static readonly IntVec3 Invalid = new IntVec3(-1000, -1000, -1000);
+
 		public IntVec2 ToIntVec2 => new IntVec2(x, z);
 
-		public bool IsValid => y >= 0;
+		public bool IsValid
+		{
+			[MethodImpl(MethodImplOptions.AggressiveInlining)]
+			get
+			{
+				return y >= 0;
+			}
+		}
 
 		public int LengthHorizontalSquared => x * x + z * z;
 
 		public float LengthHorizontal => GenMath.Sqrt(x * x + z * z);
 
 		public int LengthManhattan => ((x >= 0) ? x : (-x)) + ((z >= 0) ? z : (-z));
+
+		public float Magnitude => Mathf.Sqrt(x * x + z * z);
+
+		public float SqrMagnitude => x * x + z * z;
+
+		public bool IsCardinal
+		{
+			get
+			{
+				if (x != 0)
+				{
+					return z == 0;
+				}
+				return true;
+			}
+		}
 
 		public float AngleFlat
 		{
@@ -34,25 +79,25 @@ namespace Verse
 			}
 		}
 
-		public static IntVec3 Zero => new IntVec3(0, 0, 0);
+		public static implicit operator int3(IntVec3 value)
+		{
+			return new int3(value.x, value.y, value.z);
+		}
 
-		public static IntVec3 North => new IntVec3(0, 0, 1);
+		public static implicit operator float3(IntVec3 value)
+		{
+			return new float3(value.x, value.y, value.z);
+		}
 
-		public static IntVec3 East => new IntVec3(1, 0, 0);
+		public static implicit operator IntVec3(int3 value)
+		{
+			return new IntVec3(value.x, value.y, value.z);
+		}
 
-		public static IntVec3 South => new IntVec3(0, 0, -1);
-
-		public static IntVec3 West => new IntVec3(-1, 0, 0);
-
-		public static IntVec3 NorthWest => new IntVec3(-1, 0, 1);
-
-		public static IntVec3 NorthEast => new IntVec3(1, 0, 1);
-
-		public static IntVec3 SouthWest => new IntVec3(-1, 0, -1);
-
-		public static IntVec3 SouthEast => new IntVec3(1, 0, -1);
-
-		public static IntVec3 Invalid => new IntVec3(-1000, -1000, -1000);
+		public static implicit operator IntVec3(float3 value)
+		{
+			return new IntVec3(Mathf.FloorToInt(value.x), Mathf.FloorToInt(value.y), Mathf.FloorToInt(value.z));
+		}
 
 		public IntVec3(int newX, int newY, int newZ)
 		{
@@ -75,6 +120,11 @@ namespace Verse
 			z = (int)v.y;
 		}
 
+		public static IntVec3 operator -(IntVec3 a)
+		{
+			return new IntVec3(-a.x, -a.y, -a.z);
+		}
+
 		public static IntVec3 FromString(string str)
 		{
 			str = str.TrimStart('(');
@@ -88,11 +138,16 @@ namespace Verse
 				int newZ = Convert.ToInt32(array[2], invariantCulture);
 				return new IntVec3(newX, newY, newZ);
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Warning(str + " is not a valid IntVec3 format. Exception: " + arg);
+				Log.Warning(str + " is not a valid IntVec3 format. Exception: " + ex);
 				return Invalid;
 			}
+		}
+
+		public Vector2 ToVector2()
+		{
+			return new Vector2(x, z);
 		}
 
 		public Vector3 ToVector3()
@@ -132,9 +187,23 @@ namespace Verse
 			return new IntVec3((int)v.x, newY, (int)v.z);
 		}
 
+		public static IntVec3 FromPolar(float angle, float distance)
+		{
+			float num = Mathf.Cos(angle * (MathF.PI / 180f)) * distance;
+			float num2 = Mathf.Sin(angle * (MathF.PI / 180f)) * distance;
+			return new IntVec3((int)num, 0, (int)num2);
+		}
+
 		public Vector2 ToUIPosition()
 		{
 			return ToVector3Shifted().MapToUIPosition();
+		}
+
+		public Rect ToUIRect()
+		{
+			Vector2 vector = ToVector3().MapToUIPosition();
+			Vector2 vector2 = (this + NorthEast).ToVector3().MapToUIPosition();
+			return new Rect(vector.x, vector2.y, vector2.x - vector.x, vector.y - vector2.y);
 		}
 
 		public bool AdjacentToCardinal(IntVec3 other)
@@ -154,6 +223,19 @@ namespace Verse
 			return false;
 		}
 
+		public bool CardinalTo(IntVec3 other)
+		{
+			if (!IsValid || !other.IsValid)
+			{
+				return false;
+			}
+			if (other.z != z)
+			{
+				return other.x == x;
+			}
+			return true;
+		}
+
 		public bool AdjacentToDiagonal(IntVec3 other)
 		{
 			if (!IsValid)
@@ -167,14 +249,23 @@ namespace Verse
 			return false;
 		}
 
-		public bool AdjacentToCardinal(Room room)
+		public bool AdjacentTo(IntVec3 other)
+		{
+			if (!AdjacentToDiagonal(other))
+			{
+				return AdjacentToCardinal(other);
+			}
+			return true;
+		}
+
+		public bool AdjacentToCardinal(District district)
 		{
 			if (!IsValid)
 			{
 				return false;
 			}
-			Map map = room.Map;
-			if (this.InBounds(map) && this.GetRoom(map, RegionType.Set_All) == room)
+			Map map = district.Map;
+			if (this.InBounds(map) && this.GetDistrict(map, RegionType.Set_All) == district)
 			{
 				return true;
 			}
@@ -182,7 +273,7 @@ namespace Verse
 			for (int i = 0; i < cardinalDirections.Length; i++)
 			{
 				IntVec3 intVec = this + cardinalDirections[i];
-				if (intVec.InBounds(map) && intVec.GetRoom(map, RegionType.Set_All) == room)
+				if (intVec.InBounds(map) && intVec.GetDistrict(map, RegionType.Set_All) == district)
 				{
 					return true;
 				}
@@ -193,6 +284,20 @@ namespace Verse
 		public IntVec3 ClampInsideMap(Map map)
 		{
 			return ClampInsideRect(CellRect.WholeMap(map));
+		}
+
+		public IntVec3 ClampMagnitude(float magnitude)
+		{
+			float lengthHorizontal = LengthHorizontal;
+			if (lengthHorizontal <= magnitude)
+			{
+				return this;
+			}
+			float num = (float)x / lengthHorizontal;
+			float num2 = (float)z / lengthHorizontal;
+			x = Mathf.RoundToInt(num * magnitude);
+			z = Mathf.RoundToInt(num2 * magnitude);
+			return this;
 		}
 
 		public IntVec3 ClampInsideRect(CellRect rect)
@@ -216,6 +321,16 @@ namespace Verse
 		public static IntVec3 operator *(IntVec3 a, int i)
 		{
 			return new IntVec3(a.x * i, a.y * i, a.z * i);
+		}
+
+		public static IntVec3 operator *(int i, IntVec3 a)
+		{
+			return new IntVec3(a.x * i, a.y * i, a.z * i);
+		}
+
+		public static IntVec3 operator /(IntVec3 a, int i)
+		{
+			return new IntVec3(a.x / i, a.y / i, a.z / i);
 		}
 
 		public static bool operator ==(IntVec3 a, IntVec3 b)

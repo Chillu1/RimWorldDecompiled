@@ -5,9 +5,9 @@ namespace RimWorld
 {
 	public class Designator_Haul : Designator
 	{
-		public override int DraggableDimensions => 2;
-
 		protected override DesignationDef Designation => DesignationDefOf.Haul;
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
 
 		public Designator_Haul()
 		{

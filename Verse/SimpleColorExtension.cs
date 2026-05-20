@@ -16,6 +16,7 @@ namespace Verse
 				SimpleColor.Magenta => Color.magenta, 
 				SimpleColor.Yellow => Color.yellow, 
 				SimpleColor.Cyan => Color.cyan, 
+				SimpleColor.Orange => ColorLibrary.Orange, 
 				_ => throw new ArgumentException(), 
 			};
 		}

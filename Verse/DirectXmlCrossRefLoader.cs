@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 using System.Xml;
+using UnityEngine;
 
 namespace Verse
 {
@@ -20,21 +21,27 @@ namespace Verse
 
 		private class WantedRefForObject : WantedRef
 		{
-			public FieldInfo fi;
+			private readonly FieldInfo fi;
 
-			public string defName;
+			private readonly string defName;
 
-			public Def resolvedDef;
+			private readonly string mayRequireMod;
 
-			public string mayRequireMod;
+			private readonly string[] mayRequireAnyMod;
 
-			public Type overrideFieldType;
+			private readonly Type overrideFieldType;
+
+			private Def resolvedDef;
 
 			private bool BadCrossRefAllowed
 			{
 				get
 				{
-					if (!mayRequireMod.NullOrEmpty() && !ModsConfig.IsActive(mayRequireMod))
+					if (!mayRequireMod.NullOrEmpty() && !ModLister.AllModsActiveNoSuffix(mayRequireMod.Split(',')))
+					{
+						return true;
+					}
+					if (!mayRequireAnyMod.NullOrEmpty() && !ModLister.AnyModActiveNoSuffix(mayRequireAnyMod))
 					{
 						return true;
 					}
@@ -42,13 +49,14 @@ namespace Verse
 				}
 			}
 
-			public WantedRefForObject(object wanter, FieldInfo fi, string targetDefName, string mayRequireMod = null, Type overrideFieldType = null)
+			public WantedRefForObject(object wanter, FieldInfo fi, string targetDefName, string mayRequireMod = null, string mayRequireAnyMod = null, Type overrideFieldType = null)
 			{
 				base.wanter = wanter;
 				this.fi = fi;
 				defName = targetDefName;
 				this.mayRequireMod = mayRequireMod;
 				this.overrideFieldType = overrideFieldType;
+				this.mayRequireAnyMod = mayRequireAnyMod?.ToLower().Split(',');
 			}
 
 			public override bool TryResolve(FailMode failReportMode)
@@ -60,18 +68,32 @@ namespace Verse
 				}
 				Type type = overrideFieldType ?? fi.FieldType;
 				resolvedDef = GenDefDatabase.GetDefSilentFail(type, defName);
+				if (MistypedMayRequire(mayRequireMod))
+				{
+					Log.Error("Faulty MayRequire at def " + defName.ToStringSafe() + ": " + mayRequireMod);
+				}
+				if (!mayRequireAnyMod.NullOrEmpty())
+				{
+					string[] array = mayRequireAnyMod;
+					foreach (string text in array)
+					{
+						if (MistypedMayRequire(text))
+						{
+							Log.Error("Faulty MayRequire at def " + defName.ToStringSafe() + ": " + text);
+						}
+					}
+				}
 				if (resolvedDef == null)
 				{
 					if (failReportMode == FailMode.LogErrors && !BadCrossRefAllowed)
 					{
-						Log.Error(string.Concat("Could not resolve cross-reference: No ", type, " named ", defName.ToStringSafe(), " found to give to ", wanter.GetType(), " ", wanter.ToStringSafe()));
+						Log.Error("Could not resolve cross-reference: No " + type?.ToString() + " named " + defName.ToStringSafe() + " found to give to " + wanter.GetType()?.ToString() + " " + wanter.ToStringSafe());
 					}
 					return false;
 				}
-				SoundDef soundDef = resolvedDef as SoundDef;
-				if (soundDef != null && soundDef.isUndefined)
+				if (resolvedDef is SoundDef { isUndefined: not false })
 				{
-					Log.Warning(string.Concat("Could not resolve cross-reference: No ", type, " named ", defName.ToStringSafe(), " found to give to ", wanter.GetType(), " ", wanter.ToStringSafe(), " (using undefined sound instead)"));
+					Log.Warning("Could not resolve cross-reference: No " + type?.ToString() + " named " + defName.ToStringSafe() + " found to give to " + wanter.GetType()?.ToString() + " " + wanter.ToStringSafe() + " (using undefined sound instead)");
 				}
 				fi.SetValue(wanter, resolvedDef);
 				return true;
@@ -84,6 +106,8 @@ namespace Verse
 
 			private List<string> mayRequireMods;
 
+			private Dictionary<string, List<string>> mayRequireModsAny;
+
 			private object debugWanterInfo;
 
 			public WantedRefForList(object wanter, object debugWanterInfo)
@@ -92,7 +116,7 @@ namespace Verse
 				this.debugWanterInfo = debugWanterInfo;
 			}
 
-			public void AddWantedListEntry(string newTargetDefName, string mayRequireMod = null)
+			public void AddWantedListEntry(string newTargetDefName, string mayRequireMod = null, string mayRequireAnyMod = null)
 			{
 				if (!mayRequireMod.NullOrEmpty() && mayRequireMods == null)
 				{
@@ -102,10 +126,32 @@ namespace Verse
 						mayRequireMods.Add(null);
 					}
 				}
+				if (!mayRequireAnyMod.NullOrEmpty() && mayRequireModsAny == null)
+				{
+					mayRequireModsAny = new Dictionary<string, List<string>>();
+					for (int j = 0; j < defNames.Count; j++)
+					{
+						mayRequireModsAny.Add(defNames[j], new List<string>());
+					}
+				}
 				defNames.Add(newTargetDefName);
 				if (mayRequireMods != null)
 				{
 					mayRequireMods.Add(mayRequireMod);
+				}
+				if (mayRequireModsAny == null || mayRequireAnyMod == null)
+				{
+					return;
+				}
+				string[] array = mayRequireAnyMod.ToLower().Split(',');
+				foreach (string text in array)
+				{
+					if (mayRequireModsAny.TryGetValue(newTargetDefName, out var value))
+					{
+						value.Add(text.Trim());
+						continue;
+					}
+					mayRequireModsAny.Add(newTargetDefName, new List<string> { text.Trim() });
 				}
 			}
 
@@ -114,7 +160,15 @@ namespace Verse
 				bool flag = false;
 				for (int i = 0; i < defNames.Count; i++)
 				{
-					bool flag2 = mayRequireMods != null && i < mayRequireMods.Count && !mayRequireMods[i].NullOrEmpty() && !ModsConfig.IsActive(mayRequireMods[i]);
+					bool flag2 = mayRequireMods != null && i < mayRequireMods.Count && !mayRequireMods[i].NullOrEmpty() && !ModLister.AllModsActiveNoSuffix(mayRequireMods[i].Split(','));
+					if (mayRequireModsAny != null && mayRequireModsAny.TryGetValue(defNames[i], out var value) && !ModLister.AnyModActiveNoSuffix(value))
+					{
+						flag2 = true;
+					}
+					if (mayRequireMods != null && i < mayRequireMods.Count && MistypedMayRequire(mayRequireMods[i]))
+					{
+						Log.Error("Faulty MayRequire: " + mayRequireMods[i]);
+					}
 					T val = TryResolveDef<T>(defNames[i], (!flag2) ? failReportMode : FailMode.Silent, debugWanterInfo);
 					if (val != null)
 					{
@@ -157,14 +211,35 @@ namespace Verse
 			public override bool TryResolve(FailMode failReportMode)
 			{
 				failReportMode = FailMode.LogErrors;
-				bool flag = typeof(Def).IsAssignableFrom(typeof(K));
-				bool flag2 = typeof(Def).IsAssignableFrom(typeof(V));
+				bool flag = GenTypes.IsDef(typeof(K));
+				bool flag2 = GenTypes.IsDef(typeof(V));
 				foreach (XmlNode wantedDictRef in wantedDictRefs)
 				{
 					XmlNode xmlNode = wantedDictRef["key"];
 					XmlNode xmlNode2 = wantedDictRef["value"];
-					object first = ((!flag) ? xmlNode : ((object)TryResolveDef<K>(xmlNode.InnerText, failReportMode, debugWanterInfo)));
-					object second = ((!flag2) ? xmlNode2 : ((object)TryResolveDef<V>(xmlNode2.InnerText, failReportMode, debugWanterInfo)));
+					string text = xmlNode?.InnerText;
+					string text2 = xmlNode2?.InnerText;
+					object first;
+					object second;
+					if (text == null || text2 == null)
+					{
+						if (failReportMode == FailMode.LogErrors)
+						{
+							string text3 = "Missing 'key' and/or 'value'.";
+							if (debugWanterInfo != null)
+							{
+								text3 = text3 + " (wanter=" + debugWanterInfo.ToStringSafe() + ")";
+							}
+							Log.Error(text3);
+						}
+						first = default(K);
+						second = default(V);
+					}
+					else
+					{
+						first = ((!flag) ? xmlNode : ((object)TryResolveDef<K>(text, failReportMode, debugWanterInfo)));
+						second = ((!flag2) ? xmlNode2 : ((object)TryResolveDef<V>(text2, failReportMode, debugWanterInfo)));
+					}
 					makingData.Add(new Pair<object, object>(first, second));
 				}
 				return true;
@@ -192,7 +267,7 @@ namespace Verse
 					}
 					catch
 					{
-						Log.Error(string.Concat("Failed to load key/value pair: ", makingDatum.First, ", ", makingDatum.Second));
+						Log.Error("Failed to load key/value pair: " + makingDatum.First?.ToString() + ", " + makingDatum.Second);
 					}
 				}
 			}
@@ -204,12 +279,55 @@ namespace Verse
 
 		public static bool LoadingInProgress => wantedRefs.Count > 0;
 
-		public static void RegisterObjectWantsCrossRef(object wanter, FieldInfo fi, string targetDefName, string mayRequireMod = null, Type assumeFieldType = null)
+		public static bool MistypedMayRequire(string mayRequireMod)
+		{
+			if (!Application.isEditor)
+			{
+				return false;
+			}
+			if (mayRequireMod.NullOrEmpty())
+			{
+				return false;
+			}
+			if (mayRequireMod.Contains(','))
+			{
+				string[] array = mayRequireMod.Split(',');
+				for (int i = 0; i < array.Length; i++)
+				{
+					if (!ExpansionFound(array[i]))
+					{
+						return true;
+					}
+				}
+			}
+			else if (!ExpansionFound(mayRequireMod))
+			{
+				return true;
+			}
+			return false;
+			static bool ExpansionFound(string modID)
+			{
+				for (int j = 0; j < ModContentPack.ProductPackageIDs.Length; j++)
+				{
+					if (modID.EqualsIgnoreCase(ModContentPack.ProductPackageIDs[j]))
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+		}
+
+		public static void RegisterObjectWantsCrossRef(object wanter, FieldInfo fi, string targetDefName, string mayRequireMod = null, string mayRequireAnyMod = null, Type assumeFieldType = null)
 		{
 			DeepProfiler.Start("RegisterObjectWantsCrossRef (object, FieldInfo, string)");
 			try
 			{
-				WantedRefForObject item = new WantedRefForObject(wanter, fi, targetDefName, mayRequireMod, assumeFieldType);
+				if (wanter.GetType().IsValueType)
+				{
+					Log.Error($"Cannot use value types for object cross reference. {wanter.GetType()} is a value type but wants a cross reference to {fi.FieldType} {targetDefName} via field {fi.Name}.");
+				}
+				WantedRefForObject item = new WantedRefForObject(wanter, fi, targetDefName, mayRequireMod, mayRequireAnyMod, assumeFieldType);
 				wantedRefs.Add(item);
 			}
 			finally
@@ -218,12 +336,17 @@ namespace Verse
 			}
 		}
 
-		public static void RegisterObjectWantsCrossRef(object wanter, string fieldName, string targetDefName, string mayRequireMod = null, Type overrideFieldType = null)
+		public static void RegisterObjectWantsCrossRef(object wanter, string fieldName, string targetDefName, string mayRequireMod = null, string mayRequireAnyMod = null, Type overrideFieldType = null)
 		{
 			DeepProfiler.Start("RegisterObjectWantsCrossRef (object,string,string)");
 			try
 			{
-				WantedRefForObject item = new WantedRefForObject(wanter, wanter.GetType().GetField(fieldName), targetDefName, mayRequireMod, overrideFieldType);
+				FieldInfo field = wanter.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+				if (wanter.GetType().IsValueType)
+				{
+					Log.Error($"Cannot use value types for object cross reference. {wanter.GetType()} is a value type but wants a cross reference to {field?.FieldType} {targetDefName} via field {field?.Name ?? fieldName}.");
+				}
+				WantedRefForObject item = new WantedRefForObject(wanter, field, targetDefName, mayRequireMod, mayRequireAnyMod, overrideFieldType);
 				wantedRefs.Add(item);
 			}
 			finally
@@ -232,13 +355,18 @@ namespace Verse
 			}
 		}
 
-		public static void RegisterObjectWantsCrossRef(object wanter, string fieldName, XmlNode parentNode, string mayRequireMod = null, Type overrideFieldType = null)
+		public static void RegisterObjectWantsCrossRef(object wanter, string fieldName, XmlNode parentNode, string mayRequireMod = null, string mayRequireAnyMod = null, Type overrideFieldType = null)
 		{
 			DeepProfiler.Start("RegisterObjectWantsCrossRef (object,string,XmlNode)");
 			try
 			{
+				if (wanter.GetType().IsValueType)
+				{
+					Log.Error($"Cannot use value types for object cross reference. {wanter.GetType()} is a value type but wants a cross reference to {parentNode.Name} via field {fieldName}.");
+				}
 				string mayRequireMod2 = mayRequireMod ?? parentNode.Attributes?["MayRequire"]?.Value.ToLower();
-				WantedRefForObject item = new WantedRefForObject(wanter, wanter.GetType().GetField(fieldName), parentNode.Name, mayRequireMod2, overrideFieldType);
+				string mayRequireAnyMod2 = mayRequireAnyMod ?? parentNode.Attributes?["MayRequireAnyOf"]?.Value.ToLower();
+				WantedRefForObject item = new WantedRefForObject(wanter, wanter.GetType().GetField(fieldName), parentNode.Name, mayRequireMod2, mayRequireAnyMod2, overrideFieldType);
 				wantedRefs.Add(item);
 			}
 			finally
@@ -247,7 +375,7 @@ namespace Verse
 			}
 		}
 
-		public static void RegisterListWantsCrossRef<T>(List<T> wanterList, string targetDefName, object debugWanterInfo = null, string mayRequireMod = null)
+		public static void RegisterListWantsCrossRef<T>(List<T> wanterList, string targetDefName, object debugWanterInfo = null, string mayRequireMod = null, string mayRequireAnyMod = null)
 		{
 			DeepProfiler.Start("RegisterListWantsCrossRef");
 			try
@@ -263,7 +391,7 @@ namespace Verse
 				{
 					wantedRefForList = (WantedRefForList<T>)value;
 				}
-				wantedRefForList.AddWantedListEntry(targetDefName, mayRequireMod);
+				wantedRefForList.AddWantedListEntry(targetDefName, mayRequireMod, mayRequireAnyMod);
 			}
 			finally
 			{
@@ -307,7 +435,7 @@ namespace Verse
 				}
 				if (failReportMode == FailMode.LogErrors)
 				{
-					string text = string.Concat("Could not resolve cross-reference to ", typeof(T), " named ", defName);
+					string text = "Could not resolve cross-reference to " + typeof(T)?.ToString() + " named " + defName.ToStringSafe();
 					if (debugWanterInfo != null)
 					{
 						text = text + " (wanter=" + debugWanterInfo.ToStringSafe() + ")";

@@ -4,8 +4,8 @@ namespace RimWorld
 	{
 		Safe,
 		Overloaded,
-		Hyperloaded,
-		BrainCharring,
-		BrainRoasting
+		VeryOverloaded,
+		Extreme,
+		Overwhelming
 	}
 }

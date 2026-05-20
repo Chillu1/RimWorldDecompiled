@@ -8,13 +8,50 @@ namespace RimWorld
 	{
 		protected virtual PawnGroupKindDef PawnGroupKindDef => PawnGroupKindDefOf.Peaceful;
 
-		protected override bool FactionCanBeGroupSource(Faction f, Map map, bool desperate = false)
+		public override bool FactionCanBeGroupSource(Faction f, IncidentParms parms, bool desperate = false)
 		{
-			if (base.FactionCanBeGroupSource(f, map, desperate) && !f.Hidden && !f.HostileTo(Faction.OfPlayer) && f.def.pawnGroupMakers != null && f.def.pawnGroupMakers.Any((PawnGroupMaker x) => x.kindDef == PawnGroupKindDef))
+			if (!base.FactionCanBeGroupSource(f, parms, desperate))
 			{
-				return !NeutralGroupIncidentUtility.AnyBlockingHostileLord(map, f);
+				return false;
 			}
-			return false;
+			if (f.Hidden || f.HostileTo(Faction.OfPlayer))
+			{
+				return false;
+			}
+			if (f.def.pawnGroupMakers == null || !f.def.pawnGroupMakers.Any((PawnGroupMaker x) => x.kindDef == PawnGroupKindDef))
+			{
+				return false;
+			}
+			Map map = (Map)parms.target;
+			if (NeutralGroupIncidentUtility.AnyBlockingHostileLord(map, f))
+			{
+				return false;
+			}
+			if (!f.def.neutralArrivalLayerWhitelist.NullOrEmpty() && !f.def.neutralArrivalLayerWhitelist.Contains(map.Tile.LayerDef))
+			{
+				return false;
+			}
+			if (!f.def.neutralArrivalLayerBlacklist.NullOrEmpty() && f.def.neutralArrivalLayerBlacklist.Contains(map.Tile.LayerDef))
+			{
+				return false;
+			}
+			return true;
+		}
+
+		protected override bool CanFireNowSub(IncidentParms parms)
+		{
+			if (!base.CanFireNowSub(parms))
+			{
+				return false;
+			}
+			foreach (GameCondition activeCondition in ((Map)parms.target).GameConditionManager.ActiveConditions)
+			{
+				if (activeCondition.def.preventNeutralVisitors)
+				{
+					return false;
+				}
+			}
+			return true;
 		}
 
 		protected bool TryResolveParms(IncidentParms parms)
@@ -34,9 +71,13 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (parms.faction == null && !CandidateFactions(map).TryRandomElement(out parms.faction) && !CandidateFactions(map, desperate: true).TryRandomElement(out parms.faction))
+			if (parms.faction == null)
 			{
-				return false;
+				if (CandidateFactions(parms).TryRandomElement(out parms.faction))
+				{
+					return true;
+				}
+				return CandidateFactions(parms, desperate: true).TryRandomElement(out parms.faction);
 			}
 			return true;
 		}
@@ -51,6 +92,7 @@ namespace RimWorld
 			{
 				IntVec3 loc = CellFinder.RandomClosewalkCellNear(parms.spawnCenter, map, 5);
 				GenSpawn.Spawn(item, loc, map);
+				parms.storeGeneratedNeutralPawns?.Add(item);
 			}
 			return list;
 		}

@@ -7,6 +7,8 @@ namespace RimWorld
 {
 	public static class NamePlayerFactionDialogUtility
 	{
+		public const int CharacterLimit = 64;
+
 		public static bool IsValidName(string s)
 		{
 			if (s.Length == 0)

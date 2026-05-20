@@ -9,11 +9,20 @@ namespace RimWorld
 
 		protected override void ModifyPlayToil(Toil toil)
 		{
+			ModLister.CheckRoyaltyOrIdeology("Instrument");
 			base.ModifyPlayToil(toil);
 			toil.AddPreInitAction(delegate
 			{
-				MusicalInstrument.StartPlaying(pawn);
+				MusicalInstrument?.StartPlaying(pawn);
+				toil.tickIntervalAction = delegate(int delta)
+				{
+					toil.actor.rotationTracker.FaceTarget(toil.actor.CurJob.GetTarget((!base.TargetC.IsValid) ? TargetIndex.A : TargetIndex.C));
+					pawn.GainComfortFromCellIfPossible(delta);
+					JoyUtility.JoyTickCheckEnd(pawn, delta, JoyTickFullJoyAction.EndJob, 1f, MusicalInstrument);
+				};
 			});
+			toil.handlingFacing = true;
+			toil.FailOnDespawnedNullOrForbidden(TargetIndex.A);
 			toil.AddFinishAction(delegate
 			{
 				MusicalInstrument.StopPlaying();

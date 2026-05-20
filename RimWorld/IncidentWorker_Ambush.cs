@@ -20,10 +20,9 @@ namespace RimWorld
 
 		protected override bool CanFireNowSub(IncidentParms parms)
 		{
-			Map map = parms.target as Map;
-			IntVec3 cell;
-			if (map != null)
+			if (parms.target is Map map)
 			{
+				IntVec3 cell;
 				return TryFindEntryCell(map, out cell);
 			}
 			return CaravanIncidentUtility.CanFireIncidentWhichWantsToGenerateMapAt(parms.target.Tile);

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RimWorld.Utility;
 using Verse;
 using Verse.AI;
 
@@ -20,15 +21,16 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			CompReloadable comp = Gear?.TryGetComp<CompReloadable>();
-			this.FailOn(() => comp == null);
-			this.FailOn(() => comp.Wearer != pawn);
-			this.FailOn(() => !comp.NeedsReload(allowForcedReload: true));
+			IReloadableComp reloadableComp = Gear?.TryGetComp<CompApparelReloadable>();
+			IReloadableComp reloadable = reloadableComp ?? Gear?.TryGetComp<CompEquippableAbilityReloadable>();
+			this.FailOn(() => reloadable == null);
+			this.FailOn(() => ReloadableUtility.OwnerOf(reloadable) != pawn);
+			this.FailOn(() => !reloadable.NeedsReload(allowForceReload: true));
 			this.FailOnDestroyedOrNull(TargetIndex.A);
 			this.FailOnIncapable(PawnCapacityDefOf.Manipulation);
 			Toil getNextIngredient = Toils_General.Label();
 			yield return getNextIngredient;
-			foreach (Toil item in ReloadAsMuchAsPossible(comp))
+			foreach (Toil item in ReloadAsMuchAsPossible(reloadable))
 			{
 				yield return item;
 			}
@@ -36,11 +38,11 @@ namespace RimWorld
 			yield return Toils_Goto.GotoThing(TargetIndex.B, PathEndMode.ClosestTouch).FailOnDespawnedNullOrForbidden(TargetIndex.B).FailOnSomeonePhysicallyInteracting(TargetIndex.B);
 			yield return Toils_Haul.StartCarryThing(TargetIndex.B, putRemainderInQueue: false, subtractNumTakenFromJobCount: true).FailOnDestroyedNullOrForbidden(TargetIndex.B);
 			yield return Toils_Jump.JumpIf(getNextIngredient, () => !job.GetTargetQueue(TargetIndex.B).NullOrEmpty());
-			foreach (Toil item2 in ReloadAsMuchAsPossible(comp))
+			foreach (Toil item2 in ReloadAsMuchAsPossible(reloadable))
 			{
 				yield return item2;
 			}
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
 				Thing carriedThing = pawn.carryTracker.CarriedThing;
@@ -53,16 +55,16 @@ namespace RimWorld
 			yield return toil;
 		}
 
-		private IEnumerable<Toil> ReloadAsMuchAsPossible(CompReloadable comp)
+		private IEnumerable<Toil> ReloadAsMuchAsPossible(IReloadableComp reloadable)
 		{
 			Toil done = Toils_General.Label();
-			yield return Toils_Jump.JumpIf(done, () => pawn.carryTracker.CarriedThing == null || pawn.carryTracker.CarriedThing.stackCount < comp.MinAmmoNeeded(allowForcedReload: true));
-			yield return Toils_General.Wait(comp.Props.baseReloadTicks).WithProgressBarToilDelay(TargetIndex.A);
-			Toil toil = new Toil();
+			yield return Toils_Jump.JumpIf(done, () => pawn.carryTracker.CarriedThing == null || pawn.carryTracker.CarriedThing.stackCount < reloadable.MinAmmoNeeded(allowForcedReload: true));
+			yield return Toils_General.Wait(reloadable.BaseReloadTicks).WithProgressBarToilDelay(TargetIndex.A);
+			Toil toil = ToilMaker.MakeToil("ReloadAsMuchAsPossible");
 			toil.initAction = delegate
 			{
 				Thing carriedThing = pawn.carryTracker.CarriedThing;
-				comp.ReloadFrom(carriedThing);
+				reloadable.ReloadFrom(carriedThing);
 			};
 			toil.defaultCompleteMode = ToilCompleteMode.Instant;
 			yield return toil;

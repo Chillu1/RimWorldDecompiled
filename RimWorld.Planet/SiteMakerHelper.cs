@@ -74,7 +74,7 @@ namespace RimWorld.Planet
 		{
 			if (faction != null)
 			{
-				if (possibleSiteParts.Where((SitePartDef x) => x == null || ((existingSiteParts == null || existingSiteParts.All((SitePartDef p) => p != x && p.CompatibleWith(x))) && FactionCanOwn(x, faction, disallowNonHostileFactions, extraFactionValidator))).TryRandomElement(out sitePart))
+				if (possibleSiteParts.Where((SitePartDef x) => x == null || (x.Worker.IsAvailable() && (existingSiteParts == null || existingSiteParts.All((SitePartDef p) => p != x && p.CompatibleWith(x))) && FactionCanOwn(x, faction, disallowNonHostileFactions, extraFactionValidator))).TryRandomElement(out sitePart))
 				{
 					return true;
 				}
@@ -84,7 +84,7 @@ namespace RimWorld.Planet
 				possibleFactions.Clear();
 				possibleFactions.Add(null);
 				possibleFactions.AddRange(Find.FactionManager.AllFactionsListForReading);
-				if (possibleSiteParts.Where((SitePartDef x) => x == null || ((existingSiteParts == null || existingSiteParts.All((SitePartDef p) => p != x && p.CompatibleWith(x))) && possibleFactions.Any((Faction fac) => FactionCanOwn(existingSiteParts, fac, disallowNonHostileFactions, extraFactionValidator) && FactionCanOwn(x, fac, disallowNonHostileFactions, extraFactionValidator)))).TryRandomElement(out sitePart))
+				if (possibleSiteParts.Where((SitePartDef x) => x == null || (x.Worker.IsAvailable() && (existingSiteParts == null || existingSiteParts.All((SitePartDef p) => p != x && p.CompatibleWith(x))) && possibleFactions.Any((Faction fac) => FactionCanOwn(existingSiteParts, fac, disallowNonHostileFactions, extraFactionValidator) && FactionCanOwn(x, fac, disallowNonHostileFactions, extraFactionValidator)))).TryRandomElement(out sitePart))
 				{
 					possibleFactions.Clear();
 					return true;
@@ -110,7 +110,7 @@ namespace RimWorld.Planet
 			return false;
 		}
 
-		public static void GenerateDefaultParams(float points, int tile, Faction faction, IEnumerable<SitePartDef> siteParts, out List<SitePartDefWithParams> sitePartDefsWithParams)
+		public static void GenerateDefaultParams(float points, PlanetTile tile, Faction faction, IEnumerable<SitePartDef> siteParts, out List<SitePartDefWithParams> sitePartDefsWithParams)
 		{
 			int num = 0;
 			if (siteParts != null)

@@ -24,7 +24,7 @@ namespace Verse
 			for (int i = 0; i < RoofCollapseUtility.RoofSupportRadialCellsCount; i++)
 			{
 				IntVec3 intVec = position + GenRadial.RadialPattern[i];
-				if (intVec.InBounds(map) && roofGrid.Roofed(intVec.x, intVec.z) && !map.roofCollapseBuffer.IsMarkedToCollapse(intVec) && !RoofCollapseUtility.WithinRangeOfRoofHolder(intVec, map))
+				if (intVec.InBounds(map) && roofGrid.Roofed(intVec.x, intVec.z) && roofGrid.RoofAt(intVec).canCollapse && !map.roofCollapseBuffer.IsMarkedToCollapse(intVec) && !RoofCollapseUtility.WithinRangeOfRoofHolder(intVec, map))
 				{
 					if (removalMode && (canRemoveThickRoof || intVec.GetRoof(map).VanishOnCollapse))
 					{
@@ -39,6 +39,21 @@ namespace Verse
 			}
 			CheckCollapseFlyingRoofs(roofsCollapsingBecauseTooFar, map, removalMode, canRemoveThickRoof);
 			roofsCollapsingBecauseTooFar.Clear();
+		}
+
+		public static void CheckAndRemoveCollpsingRoofs(Map map)
+		{
+			foreach (IntVec3 allCell in map.AllCells)
+			{
+				if (allCell.Roofed(map))
+				{
+					Building edifice = allCell.GetEdifice(map);
+					if (edifice != null && edifice.def.holdsRoof)
+					{
+						ProcessRoofHolderDespawned(new CellRect(allCell.x, allCell.z, 1, 1), allCell, map, removalMode: true, canRemoveThickRoof: true);
+					}
+				}
+			}
 		}
 
 		public static void RemoveBulkCollapsingRoofs(List<IntVec3> nearCells, Map map)

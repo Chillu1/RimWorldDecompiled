@@ -8,16 +8,20 @@ namespace RimWorld
 
 		public override void Notify_PawnEvent(Pawn p, AdaptationEvent ev, DamageInfo? dinfo = null)
 		{
-			if (!p.RaceProps.Humanlike || !p.IsColonist || (ev != AdaptationEvent.Died && ev != AdaptationEvent.Kidnapped && ev != AdaptationEvent.LostBecauseMapClosed && ev != 0))
+			if (!p.RaceProps.Humanlike || !p.IsColonist || (ev != AdaptationEvent.Died && ev != AdaptationEvent.Kidnapped && ev != AdaptationEvent.LostBecauseMapClosed && ev != AdaptationEvent.Downed))
 			{
 				return;
 			}
-			foreach (Pawn item in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_OfPlayerFaction)
+			foreach (Pawn item in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction)
 			{
-				if (item.RaceProps.Humanlike && !item.Downed)
+				if (item.RaceProps.Humanlike && !item.IsPrisoner && ((item != p && !item.Downed) || (ModsConfig.BiotechActive && item.Deathresting && !SanguophageUtility.ShouldBeDeathrestingOrInComaInsteadOfDead(item))))
 				{
 					return;
 				}
+			}
+			if (ModsConfig.AnomalyActive && (DeathRefusalUtility.HasPlayerControlledDeathRefusal(p) || DeathRefusalUtility.PlayerHasCorpseWithDeathRefusal()))
+			{
+				return;
 			}
 			Map anyPlayerHomeMap = Find.AnyPlayerHomeMap;
 			if (anyPlayerHomeMap != null)

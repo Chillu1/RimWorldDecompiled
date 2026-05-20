@@ -4,6 +4,15 @@ namespace Verse.Grammar
 {
 	public struct GrammarRequest
 	{
+		public interface ICustomizer
+		{
+			int PriorityBucket(Rule rule);
+
+			void Notify_RuleUsed(Rule rule);
+
+			bool ValidateRule(Rule rule);
+		}
+
 		private List<Rule> rules;
 
 		private List<RulePack> includesBare;
@@ -11,6 +20,8 @@ namespace Verse.Grammar
 		private List<RulePackDef> includes;
 
 		private Dictionary<string, string> constants;
+
+		public ICustomizer customizer;
 
 		public List<Rule> RulesAllowNull => rules;
 
@@ -65,6 +76,27 @@ namespace Verse.Grammar
 					constants = new Dictionary<string, string>();
 				}
 				return constants;
+			}
+		}
+
+		public bool HasRule(string keyword)
+		{
+			if (rules != null && rules.Any(HasTargetRule))
+			{
+				return true;
+			}
+			if (includes != null && includes.Any((RulePackDef i) => i.RulesPlusIncludes.Any(HasTargetRule)))
+			{
+				return true;
+			}
+			if (includesBare != null && includesBare.Any((RulePack rp) => rp.Rules.Any(HasTargetRule)))
+			{
+				return true;
+			}
+			return false;
+			bool HasTargetRule(Rule r)
+			{
+				return r.keyword == keyword;
 			}
 		}
 

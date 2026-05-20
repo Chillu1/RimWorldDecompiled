@@ -13,6 +13,8 @@ namespace Verse.AI.Group
 
 		public Thing thing;
 
+		public Thing otherThing;
+
 		public DamageInfo dinfo;
 
 		public PawnLostCondition condition;
@@ -33,6 +35,7 @@ namespace Verse.AI.Group
 			memo = null;
 			signal = default(Signal);
 			thing = null;
+			otherThing = null;
 			dinfo = default(DamageInfo);
 			condition = PawnLostCondition.Undefined;
 			faction = null;
@@ -69,15 +72,17 @@ namespace Verse.AI.Group
 			}
 			if (dinfo.Def != null)
 			{
-				stringBuilder.Append(", dinfo=" + dinfo);
+				DamageInfo damageInfo = dinfo;
+				stringBuilder.Append(", dinfo=" + damageInfo.ToString());
 			}
-			if (condition != 0)
+			if (condition != PawnLostCondition.Undefined)
 			{
 				stringBuilder.Append(", condition=" + condition);
 			}
-			if (signal.tag != null)
+			if (this.signal.tag != null)
 			{
-				stringBuilder.Append(", signal=" + signal);
+				Signal signal = this.signal;
+				stringBuilder.Append(", signal=" + signal.ToString());
 			}
 			stringBuilder.Append(")");
 			return stringBuilder.ToString();

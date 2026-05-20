@@ -58,12 +58,16 @@ namespace Verse
 			{
 				return CellRect.Empty;
 			}
-			CellRect rect = CellRect.SingleCell(c);
+			return ExpandRect(CellRect.SingleCell(c), map, processed, predicate, keepSquare: true);
+		}
+
+		public static CellRect ExpandRect(CellRect rect, Map map, HashSet<IntVec3> processed, Predicate<IntVec3> predicate, bool keepSquare = false)
+		{
 			bool flag;
 			do
 			{
 				flag = false;
-				if (rect.Width <= rect.Height)
+				if (!keepSquare || rect.Width <= rect.Height)
 				{
 					if (rect.maxX + 1 < map.Size.x && CanExpand(Rot4.East))
 					{
@@ -76,7 +80,7 @@ namespace Verse
 						flag = true;
 					}
 				}
-				if (rect.Height <= rect.Width)
+				if (!keepSquare || rect.Height <= rect.Width)
 				{
 					if (rect.maxZ + 1 < map.Size.z && CanExpand(Rot4.North))
 					{

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,19 +5,19 @@ using Verse;
 
 namespace RimWorld
 {
-	public class CompBladelinkWeapon : ThingComp
+	public class CompBladelinkWeapon : CompBiocodable
 	{
-		private bool bonded;
-
-		private string bondedPawnLabel;
-
 		private int lastKillTick = -1;
 
 		private List<WeaponTraitDef> traits = new List<WeaponTraitDef>();
 
-		public Pawn bondedPawn;
-
 		private static readonly IntRange TraitsRange = new IntRange(1, 2);
+
+		private bool oldBonded;
+
+		private string oldBondedPawnLabel;
+
+		private Pawn oldBondedPawn;
 
 		public List<WeaponTraitDef> TraitsListForReading => traits;
 
@@ -34,7 +33,7 @@ namespace RimWorld
 			}
 		}
 
-		public bool Bondable
+		public override bool Biocodable
 		{
 			get
 			{
@@ -59,7 +58,12 @@ namespace RimWorld
 
 		public override void PostDestroy(DestroyMode mode, Map previousMap)
 		{
-			UnBond();
+			UnCode();
+		}
+
+		public override void Notify_MapRemoved()
+		{
+			UnCode();
 		}
 
 		private void InitializeTraits()
@@ -69,21 +73,26 @@ namespace RimWorld
 			{
 				traits = new List<WeaponTraitDef>();
 			}
-			Rand.PushState(parent.HashOffset());
-			int randomInRange = TraitsRange.RandomInRange;
-			for (int i = 0; i < randomInRange; i++)
+			using (new RandBlock(MapGenerator.mapBeingGenerated?.NextGenSeed ?? parent.HashOffset()))
 			{
-				IEnumerable<WeaponTraitDef> source = allDefs.Where((WeaponTraitDef x) => CanAddTrait(x));
-				if (source.Any())
+				int randomInRange = TraitsRange.RandomInRange;
+				for (int i = 0; i < randomInRange; i++)
 				{
-					traits.Add(source.RandomElementByWeight((WeaponTraitDef x) => x.commonality));
+					IEnumerable<WeaponTraitDef> source = allDefs.Where(CanAddTrait);
+					if (source.Any())
+					{
+						traits.Add(source.RandomElementByWeight((WeaponTraitDef x) => x.commonality));
+					}
 				}
 			}
-			Rand.PopState();
 		}
 
 		private bool CanAddTrait(WeaponTraitDef trait)
 		{
+			if (trait.weaponCategory != WeaponCategoryDefOf.BladeLink)
+			{
+				return false;
+			}
 			if (!traits.NullOrEmpty())
 			{
 				for (int i = 0; i < traits.Count; i++)
@@ -99,15 +108,11 @@ namespace RimWorld
 
 		public override void Notify_Equipped(Pawn pawn)
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (!ModLister.CheckRoyalty("Persona weapon"))
 			{
-				Log.ErrorOnce("Persona weapons are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 988331);
 				return;
 			}
-			if (Bondable)
-			{
-				BondToPawn(pawn);
-			}
+			base.Notify_Equipped(pawn);
 			if (!traits.NullOrEmpty())
 			{
 				for (int i = 0; i < traits.Count; i++)
@@ -117,15 +122,20 @@ namespace RimWorld
 			}
 		}
 
-		private void BondToPawn(Pawn pawn)
+		public override void CodeFor(Pawn pawn)
 		{
-			if (pawn.IsColonistPlayerControlled && bondedPawn == null)
+			if (base.Biocodable)
 			{
-				Find.LetterStack.ReceiveLetter("LetterBladelinkWeaponBondedLabel".Translate(pawn.Named("PAWN"), parent.Named("WEAPON")), "LetterBladelinkWeaponBonded".Translate(pawn.Named("PAWN"), parent.Named("WEAPON")), LetterDefOf.PositiveEvent, new LookTargets(pawn));
+				if (pawn.IsColonistPlayerControlled && base.CodedPawn == null)
+				{
+					Find.LetterStack.ReceiveLetter("LetterBladelinkWeaponBondedLabel".Translate(pawn.Named("PAWN"), parent.Named("WEAPON")), "LetterBladelinkWeaponBonded".Translate(pawn.Named("PAWN"), parent.Named("WEAPON")), LetterDefOf.PositiveEvent, new LookTargets(pawn));
+				}
+				base.CodeFor(pawn);
 			}
-			bonded = true;
-			bondedPawnLabel = pawn.Name.ToStringFull;
-			bondedPawn = pawn;
+		}
+
+		protected override void OnCodedFor(Pawn pawn)
+		{
 			lastKillTick = GenTicks.TicksAbs;
 			pawn.equipment.bondedWeapon = parent;
 			if (!traits.NullOrEmpty())
@@ -171,22 +181,20 @@ namespace RimWorld
 			}
 		}
 
-		public void UnBond()
+		public override void UnCode()
 		{
-			if (bondedPawn != null)
+			if (base.CodedPawn != null)
 			{
-				bondedPawn.equipment.bondedWeapon = null;
+				base.CodedPawn.equipment.bondedWeapon = null;
 				if (!traits.NullOrEmpty())
 				{
 					for (int i = 0; i < traits.Count; i++)
 					{
-						traits[i].Worker.Notify_Unbonded(bondedPawn);
+						traits[i].Worker.Notify_Unbonded(base.CodedPawn);
 					}
 				}
 			}
-			bonded = false;
-			bondedPawn = null;
-			bondedPawnLabel = null;
+			base.UnCode();
 			lastKillTick = -1;
 		}
 
@@ -197,13 +205,13 @@ namespace RimWorld
 			{
 				text += "Stat_Thing_PersonaWeaponTrait_Label".Translate() + ": " + traits.Select((WeaponTraitDef x) => x.label).ToCommaList().CapitalizeFirst();
 			}
-			if (Bondable)
+			if (Biocodable)
 			{
 				if (!text.NullOrEmpty())
 				{
 					text += "\n";
 				}
-				text = ((bondedPawn != null) ? (text + "BondedWith".Translate(bondedPawnLabel.ApplyTag(TagType.Name)).Resolve()) : ((string)(text + "NotBonded".Translate())));
+				text = ((base.CodedPawn != null) ? (text + "BondedWith".Translate(base.CodedPawnLabel.ApplyTag(TagType.Name)).Resolve()) : ((string)(text + "NotBonded".Translate())));
 			}
 			return text;
 		}
@@ -211,35 +219,47 @@ namespace RimWorld
 		public override void PostExposeData()
 		{
 			base.PostExposeData();
-			Scribe_Values.Look(ref bonded, "bonded", defaultValue: false);
-			Scribe_Values.Look(ref bondedPawnLabel, "bondedPawnLabel");
 			Scribe_Values.Look(ref lastKillTick, "lastKillTick", -1);
-			Scribe_References.Look(ref bondedPawn, "bondedPawn", saveDestroyedThings: true);
 			Scribe_Collections.Look(ref traits, "traits", LookMode.Def);
+			if (Scribe.mode != LoadSaveMode.Saving)
+			{
+				Scribe_Values.Look(ref oldBonded, "bonded", defaultValue: false);
+				Scribe_Values.Look(ref oldBondedPawnLabel, "bondedPawnLabel");
+				Scribe_References.Look(ref oldBondedPawn, "bondedPawn", saveDestroyedThings: true);
+			}
 			if (Scribe.mode != LoadSaveMode.PostLoadInit)
 			{
 				return;
+			}
+			if (oldBonded)
+			{
+				CodeFor(oldBondedPawn);
 			}
 			if (traits == null)
 			{
 				traits = new List<WeaponTraitDef>();
 			}
-			if (bondedPawn != null)
+			if (oldBondedPawn != null)
 			{
-				if (string.IsNullOrEmpty(bondedPawnLabel) || !bonded)
+				if (string.IsNullOrEmpty(oldBondedPawnLabel) || !oldBonded)
 				{
-					bondedPawnLabel = bondedPawn.Name.ToStringFull;
-					bonded = true;
+					codedPawnLabel = oldBondedPawn.Name.ToStringFull;
+					biocoded = true;
 				}
-				if (bondedPawn.equipment.bondedWeapon == null)
+				if (oldBondedPawn.equipment.bondedWeapon == null)
 				{
-					bondedPawn.equipment.bondedWeapon = parent;
+					oldBondedPawn.equipment.bondedWeapon = parent;
 				}
-				else if (bondedPawn.equipment.bondedWeapon != parent)
+				else if (oldBondedPawn.equipment.bondedWeapon != parent)
 				{
-					UnBond();
+					UnCode();
 				}
 			}
+		}
+
+		public override string TransformLabel(string label)
+		{
+			return label;
 		}
 
 		public override IEnumerable<StatDrawEntry> SpecialDisplayStats()
@@ -267,12 +287,7 @@ namespace RimWorld
 					stringBuilder.AppendLine();
 				}
 			}
-			yield return new StatDrawEntry(StatCategoryDefOf.Weapon, "Stat_Thing_PersonaWeaponTrait_Label".Translate(), traits.Select((WeaponTraitDef x) => x.label).ToCommaList().CapitalizeFirst(), stringBuilder.ToString(), 5404);
-		}
-
-		[Obsolete("Will be removed in the future")]
-		public override void Notify_UsedWeapon(Pawn pawn)
-		{
+			yield return new StatDrawEntry(parent.def.IsMeleeWeapon ? StatCategoryDefOf.Weapon_Melee : StatCategoryDefOf.Weapon_Ranged, "Stat_Thing_PersonaWeaponTrait_Label".Translate(), traits.Select((WeaponTraitDef x) => x.label).ToCommaList().CapitalizeFirst(), stringBuilder.ToString(), 1104);
 		}
 	}
 }

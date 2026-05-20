@@ -42,13 +42,7 @@ namespace Ionic.Zlib
 
 		internal InflateBlocks blocks;
 
-		private static readonly byte[] mark = new byte[4]
-		{
-			0,
-			0,
-			255,
-			255
-		};
+		private static readonly byte[] mark = new byte[4] { 0, 0, 255, 255 };
 
 		internal bool HandleRfc1950HeaderBytes
 		{
@@ -222,7 +216,7 @@ namespace Ionic.Zlib
 					case -3:
 						mode = InflateManagerMode.BAD;
 						marker = 0;
-						continue;
+						goto end_IL_0025;
 					case 0:
 						num2 = num;
 						break;
@@ -296,7 +290,11 @@ namespace Ionic.Zlib
 				case InflateManagerMode.BAD:
 					throw new ZlibException($"Bad state ({_codec.Message})");
 				default:
-					throw new ZlibException("Stream error.");
+					{
+						throw new ZlibException("Stream error.");
+					}
+					end_IL_0025:
+					break;
 				}
 			}
 		}

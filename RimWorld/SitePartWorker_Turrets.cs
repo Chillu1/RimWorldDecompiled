@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using RimWorld.Planet;
 using RimWorld.QuestGen;
 using UnityEngine;
@@ -20,11 +18,11 @@ namespace RimWorld
 		public override string GetArrivedLetterPart(Map map, out LetterDef preferredLetterDef, out LookTargets lookTargets)
 		{
 			string arrivedLetterPart = base.GetArrivedLetterPart(map, out preferredLetterDef, out lookTargets);
-			lookTargets = map.listerThings.AllThings.FirstOrDefault((Thing x) => x is Building_TurretGun && x.HostileTo(Faction.OfPlayer)) ?? map.listerThings.AllThings.FirstOrDefault((Thing x) => x is Building_TurretGun);
+			lookTargets = new LookTargets(map.Parent);
 			return arrivedLetterPart;
 		}
 
-		public override SitePartParams GenerateDefaultParams(float myThreatPoints, int tile, Faction faction)
+		public override SitePartParams GenerateDefaultParams(float myThreatPoints, PlanetTile tile, Faction faction)
 		{
 			SitePartParams sitePartParams = base.GenerateDefaultParams(myThreatPoints, tile, faction);
 			sitePartParams.mortarsCount = Rand.RangeInclusive(0, 1);
@@ -35,22 +33,16 @@ namespace RimWorld
 		public override void Notify_GeneratedByQuestGen(SitePart part, Slate slate, List<Rule> outExtraDescriptionRules, Dictionary<string, string> outExtraDescriptionConstants)
 		{
 			base.Notify_GeneratedByQuestGen(part, slate, outExtraDescriptionRules, outExtraDescriptionConstants);
-			string threatsInfo_NewTmp = GetThreatsInfo_NewTmp(part.parms, part.site.Faction);
-			outExtraDescriptionRules.Add(new Rule_String("threatsInfo", threatsInfo_NewTmp));
+			string threatsInfo = GetThreatsInfo(part.parms, part.site.Faction);
+			outExtraDescriptionRules.Add(new Rule_String("threatsInfo", threatsInfo));
 		}
 
 		public override string GetPostProcessedThreatLabel(Site site, SitePart sitePart)
 		{
-			return base.GetPostProcessedThreatLabel(site, sitePart) + ": " + GetThreatsInfo_NewTmp(sitePart.parms, site.Faction);
+			return base.GetPostProcessedThreatLabel(site, sitePart) + ": " + GetThreatsInfo(sitePart.parms, site.Faction);
 		}
 
-		[Obsolete]
-		private string GetThreatsInfo(SitePartParams parms)
-		{
-			return GetThreatsInfo_NewTmp(parms, null);
-		}
-
-		private string GetThreatsInfo_NewTmp(SitePartParams parms, Faction faction)
+		private string GetThreatsInfo(SitePartParams parms, Faction faction)
 		{
 			threatsTmp.Clear();
 			int num = parms.mortarsCount + 1;

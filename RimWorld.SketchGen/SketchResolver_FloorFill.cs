@@ -17,16 +17,16 @@ namespace RimWorld.SketchGen
 
 		private static List<IntVec3> tmpCells = new List<IntVec3>();
 
-		protected override void ResolveInt(ResolveParams parms)
+		protected override void ResolveInt(SketchResolveParams parms)
 		{
 			CellRect outerRect = parms.rect ?? parms.sketch.OccupiedRect;
 			if (!TryFindFloors(out var floor, out var floor2, parms))
 			{
 				return;
 			}
-			bool num = parms.floorFillRoomsOnly ?? false;
-			bool flag = parms.singleFloorType ?? false;
-			if (num)
+			bool valueOrDefault = parms.floorFillRoomsOnly == true;
+			bool valueOrDefault2 = parms.singleFloorType == true;
+			if (valueOrDefault)
 			{
 				tmpWalls.Clear();
 				for (int i = 0; i < parms.sketch.Things.Count; i++)
@@ -42,21 +42,23 @@ namespace RimWorld.SketchGen
 					}
 				}
 				tmpVisited.Clear();
-				foreach (IntVec3 item2 in outerRect)
 				{
-					if (!tmpWalls.Contains(item2))
+					foreach (IntVec3 item2 in outerRect)
 					{
-						FloorFillRoom_NewTmp(item2, tmpWalls, tmpVisited, parms.sketch, floor, floor2, outerRect, flag);
+						if (!tmpWalls.Contains(item2))
+						{
+							FloorFillRoom(item2, tmpWalls, tmpVisited, parms.sketch, floor, floor2, outerRect, valueOrDefault2);
+						}
 					}
+					return;
 				}
-				return;
 			}
 			bool[,] array = AbstractShapeGenerator.Generate(outerRect.Width, outerRect.Height, horizontalSymmetry: true, verticalSymmetry: true);
 			foreach (IntVec3 item3 in outerRect)
 			{
 				if (!parms.sketch.ThingsAt(item3).Any((SketchThing x) => x.def.Fillage == FillCategory.Full))
 				{
-					if (array[item3.x - outerRect.minX, item3.z - outerRect.minZ] || flag)
+					if (array[item3.x - outerRect.minX, item3.z - outerRect.minZ] || valueOrDefault2)
 					{
 						parms.sketch.AddTerrain(floor, item3, wipeIfCollides: false);
 					}
@@ -68,7 +70,7 @@ namespace RimWorld.SketchGen
 			}
 		}
 
-		protected override bool CanResolveInt(ResolveParams parms)
+		protected override bool CanResolveInt(SketchResolveParams parms)
 		{
 			if (!TryFindFloors(out var _, out var _, parms))
 			{
@@ -77,15 +79,15 @@ namespace RimWorld.SketchGen
 			return true;
 		}
 
-		private static bool TryFindFloors(out TerrainDef floor1, out TerrainDef floor2, ResolveParams parms)
+		private static bool TryFindFloors(out TerrainDef floor1, out TerrainDef floor2, SketchResolveParams parms)
 		{
-			Predicate<TerrainDef> validator = (TerrainDef x) => SketchGenUtility.IsFloorAllowed_NewTmp(x, parms.allowWood ?? true, parms.allowConcrete ?? true, parms.useOnlyStonesAvailableOnMap, parms.onlyBuildableByPlayer ?? false, parms.onlyStoneFloors ?? true);
+			Predicate<TerrainDef> validator = (TerrainDef x) => SketchGenUtility.IsFloorAllowed(x, parms.allowWood ?? true, parms.allowConcrete ?? true, parms.useOnlyStonesAvailableOnMap, parms.onlyBuildableByPlayer == true, parms.onlyStoneFloors ?? true);
 			if (!BaseGenUtility.TryRandomInexpensiveFloor(out floor1, validator))
 			{
 				floor2 = null;
 				return false;
 			}
-			if (parms.singleFloorType ?? false)
+			if (parms.singleFloorType == true)
 			{
 				floor2 = null;
 				return true;
@@ -94,13 +96,7 @@ namespace RimWorld.SketchGen
 			return BaseGenUtility.TryRandomInexpensiveFloor(out floor2, (TerrainDef x) => x != floor1Local && (validator == null || validator(x)));
 		}
 
-		[Obsolete("Obsolete. Only needed for mod back-compatibility.")]
-		private void FloorFillRoom(IntVec3 c, HashSet<IntVec3> walls, HashSet<IntVec3> visited, Sketch sketch, TerrainDef def1, TerrainDef def2, CellRect outerRect)
-		{
-			FloorFillRoom_NewTmp(c, walls, visited, sketch, def1, def2, outerRect, singleFloorType: false);
-		}
-
-		private void FloorFillRoom_NewTmp(IntVec3 c, HashSet<IntVec3> walls, HashSet<IntVec3> visited, Sketch sketch, TerrainDef def1, TerrainDef def2, CellRect outerRect, bool singleFloorType)
+		private void FloorFillRoom(IntVec3 c, HashSet<IntVec3> walls, HashSet<IntVec3> visited, Sketch sketch, TerrainDef def1, TerrainDef def2, CellRect outerRect, bool singleFloorType)
 		{
 			if (visited.Contains(c))
 			{

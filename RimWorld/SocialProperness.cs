@@ -32,7 +32,27 @@ namespace RimWorld
 				}
 				return true;
 			}
+			if (ModsConfig.BiotechActive && t.def == ThingDefOf.HemogenPack)
+			{
+				return !BloodfeedingPrisonerInRoom(t.GetRoom());
+			}
 			return !intVec.IsInPrisonCell(t.Map);
+		}
+
+		public static bool BloodfeedingPrisonerInRoom(Room r)
+		{
+			if (r == null || !r.IsPrisonCell)
+			{
+				return false;
+			}
+			foreach (Pawn owner in r.Owners)
+			{
+				if (owner.IsBloodfeeder())
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 }

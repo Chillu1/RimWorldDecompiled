@@ -1,13 +1,15 @@
 using System.Collections.Generic;
+using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
 {
 	public class StockGenerator_BuySlaves : StockGenerator
 	{
-		public override IEnumerable<Thing> GenerateThings(int forTile, Faction faction = null)
+		public override IEnumerable<Thing> GenerateThings(PlanetTile forTile, Faction faction = null)
 		{
-			yield break;
+			return Enumerable.Empty<Thing>();
 		}
 
 		public override bool HandlesThingDef(ThingDef thingDef)
@@ -17,6 +19,15 @@ namespace RimWorld
 				return thingDef.tradeability != Tradeability.None;
 			}
 			return false;
+		}
+
+		public override Tradeability TradeabilityFor(ThingDef thingDef)
+		{
+			if (!HandlesThingDef(thingDef))
+			{
+				return Tradeability.None;
+			}
+			return Tradeability.Sellable;
 		}
 	}
 }

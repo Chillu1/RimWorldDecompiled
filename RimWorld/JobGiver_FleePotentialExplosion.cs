@@ -22,6 +22,10 @@ namespace RimWorld
 				pawn.mindState.knownExploder = null;
 				return null;
 			}
+			if (pawn.Downed && !pawn.health.CanCrawl)
+			{
+				return null;
+			}
 			if (PawnUtility.PlayerForcedJobNowOrSoon(pawn))
 			{
 				return null;

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Text;
 using Verse;
@@ -12,7 +11,9 @@ namespace RimWorld
 
 		private static StringBuilder debugSb;
 
-		private static List<float> wornApparelScores = new List<float>();
+		private static readonly List<float> wornApparelScores = new List<float>();
+
+		private static readonly List<Thing> tmpApparelList = new List<Thing>();
 
 		private const int ApparelOptimizeCheckIntervalMin = 6000;
 
@@ -32,18 +33,18 @@ namespace RimWorld
 		{
 			new CurvePoint(0f, 0f),
 			new CurvePoint(0.2f, 0.2f),
-			new CurvePoint(0.22f, 0.6f),
-			new CurvePoint(0.5f, 0.6f),
+			new CurvePoint(0.22f, 0.3f),
+			new CurvePoint(0.5f, 0.3f),
 			new CurvePoint(0.52f, 1f)
 		};
 
-		private static HashSet<BodyPartGroupDef> tmpBodyPartGroupsWithRequirement = new HashSet<BodyPartGroupDef>();
+		private static readonly List<LocalTargetInfo> tmpQueueDye = new List<LocalTargetInfo>();
 
-		private static HashSet<ThingDef> tmpAllowedApparels = new HashSet<ThingDef>();
+		private static readonly List<LocalTargetInfo> tmpQueueApparel = new List<LocalTargetInfo>();
 
-		private static HashSet<ThingDef> tmpRequiredApparels = new HashSet<ThingDef>();
+		private static readonly List<Apparel> tmpApparelToRecolor = new List<Apparel>();
 
-		private void SetNextOptimizeTick(Pawn pawn)
+		private static void SetNextOptimizeTick(Pawn pawn)
 		{
 			pawn.mindState.nextApparelOptimizeTick = Find.TickManager.TicksGame + Rand.Range(6000, 9000);
 		}
@@ -52,12 +53,16 @@ namespace RimWorld
 		{
 			if (pawn.outfits == null)
 			{
-				Log.ErrorOnce(string.Concat(pawn, " tried to run JobGiver_OptimizeApparel without an OutfitTracker"), 5643897);
+				Log.ErrorOnce($"{pawn} tried to run JobGiver_OptimizeApparel without an OutfitTracker", 5643897);
 				return null;
 			}
 			if (pawn.Faction != Faction.OfPlayer)
 			{
-				Log.ErrorOnce(string.Concat("Non-colonist ", pawn, " tried to optimize apparel."), 764323);
+				Log.ErrorOnce($"Non-colonist {pawn} tried to optimize apparel.", 764323);
+				return null;
+			}
+			if (pawn.IsMutant && pawn.mutant.Def.disableApparel)
+			{
 				return null;
 			}
 			if (pawn.IsQuestLodger())
@@ -74,53 +79,89 @@ namespace RimWorld
 			else
 			{
 				debugSb = new StringBuilder();
-				debugSb.AppendLine(string.Concat("Scanning for ", pawn, " at ", pawn.Position));
+				debugSb.AppendLine($"Scanning for {pawn} at {pawn.Position}");
 			}
-			Outfit currentOutfit = pawn.outfits.CurrentOutfit;
+			if (ModsConfig.IdeologyActive && TryCreateRecolorJob(pawn, out var job))
+			{
+				return job;
+			}
+			ApparelPolicy currentApparelPolicy = pawn.outfits.CurrentApparelPolicy;
 			List<Apparel> wornApparel = pawn.apparel.WornApparel;
 			for (int num = wornApparel.Count - 1; num >= 0; num--)
 			{
-				if (!currentOutfit.filter.Allows(wornApparel[num]) && pawn.outfits.forcedHandler.AllowedToAutomaticallyDrop(wornApparel[num]) && !pawn.apparel.IsLocked(wornApparel[num]))
+				bool flag = false;
+				Apparel apparel = wornApparel[num];
+				if (pawn.MapHeld.Biome.inVacuum && pawn.Position.GetVacuum(pawn.MapHeld) >= 0.5f)
 				{
-					Job job = JobMaker.MakeJob(JobDefOf.RemoveApparel, wornApparel[num]);
-					job.haulDroppedApparel = true;
-					return job;
+					flag = apparel.GetStatValue(StatDefOf.VacuumResistance, applyPostProcess: true, 60) > 0f;
+				}
+				if (!flag && !currentApparelPolicy.filter.Allows(apparel) && pawn.outfits.forcedHandler.AllowedToAutomaticallyDrop(apparel) && !pawn.apparel.IsLocked(apparel))
+				{
+					Job job2 = JobMaker.MakeJob(JobDefOf.RemoveApparel, apparel);
+					job2.haulDroppedApparel = true;
+					return job2;
 				}
 			}
 			Thing thing = null;
 			float num2 = 0f;
-			List<Thing> list = pawn.Map.listerThings.ThingsInGroup(ThingRequestGroup.Apparel);
-			if (list.Count == 0)
+			tmpApparelList.Clear();
+			pawn.Map.listerThings.GetAllThings(in tmpApparelList, ThingRequestGroup.Apparel, null, lookInHaulSources: true);
+			foreach (IHaulSource item2 in pawn.Map.haulDestinationManager.AllHaulSourcesListForReading)
+			{
+				foreach (Thing item3 in (IEnumerable<Thing>)item2.GetDirectlyHeldThings())
+				{
+					if (item3 is Apparel item)
+					{
+						tmpApparelList.Add(item);
+					}
+				}
+			}
+			if (tmpApparelList.Count == 0)
 			{
 				SetNextOptimizeTick(pawn);
 				return null;
 			}
-			neededWarmth = PawnApparelGenerator.CalculateNeededWarmth(pawn, pawn.Map.Tile, GenLocalDate.Twelfth(pawn));
+			neededWarmth = PawnApparelGenerator.CalculateNeededWarmth(pawn, pawn.Map.TileInfo.tile, GenLocalDate.Twelfth(pawn));
 			wornApparelScores.Clear();
 			for (int i = 0; i < wornApparel.Count; i++)
 			{
 				wornApparelScores.Add(ApparelScoreRaw(pawn, wornApparel[i]));
 			}
-			for (int j = 0; j < list.Count; j++)
+			for (int j = 0; j < tmpApparelList.Count; j++)
 			{
-				Apparel apparel = (Apparel)list[j];
-				if (currentOutfit.filter.Allows(apparel) && apparel.IsInAnyStorage() && !apparel.IsForbidden(pawn) && !apparel.IsBurning() && (apparel.def.apparel.gender == Gender.None || apparel.def.apparel.gender == pawn.gender))
+				Apparel apparel2 = (Apparel)tmpApparelList[j];
+				if (!currentApparelPolicy.filter.Allows(apparel2) || !apparel2.IsInAnyStorage() || apparel2.IsForbidden(pawn) || apparel2.IsBurning() || (apparel2.def.apparel.gender != Gender.None && apparel2.def.apparel.gender != pawn.gender))
 				{
-					float num3 = ApparelScoreGain_NewTmp(pawn, apparel, wornApparelScores);
-					if (DebugViewSettings.debugApparelOptimize)
+					continue;
+				}
+				float num3 = ApparelScoreGain(pawn, apparel2, wornApparelScores);
+				if (DebugViewSettings.debugApparelOptimize)
+				{
+					debugSb.AppendLine($"{apparel2.LabelCap}: {num3:F2}");
+				}
+				if (num3 < 0.05f || num3 < num2 || (CompBiocodable.IsBiocoded(apparel2) && !CompBiocodable.IsBiocodedFor(apparel2, pawn)) || !ApparelUtility.HasPartsToWear(pawn, apparel2.def))
+				{
+					continue;
+				}
+				LocalTargetInfo target = apparel2;
+				if (apparel2.ParentHolder is IApparelSource apparelSource && apparelSource is Thing thing2)
+				{
+					if (!apparelSource.ApparelSourceEnabled)
 					{
-						debugSb.AppendLine(apparel.LabelCap + ": " + num3.ToString("F2"));
+						continue;
 					}
-					if (!(num3 < 0.05f) && !(num3 < num2) && (!EquipmentUtility.IsBiocoded(apparel) || EquipmentUtility.IsBiocodedFor(apparel, pawn)) && ApparelUtility.HasPartsToWear(pawn, apparel.def) && pawn.CanReserveAndReach(apparel, PathEndMode.OnCell, pawn.NormalMaxDanger()))
-					{
-						thing = apparel;
-						num2 = num3;
-					}
+					target = thing2;
+				}
+				if (pawn.CanReserveAndReach(target, PathEndMode.OnCell, pawn.NormalMaxDanger()) && apparel2.def.apparel.developmentalStageFilter.Has(pawn.DevelopmentalStage))
+				{
+					thing = apparel2;
+					num2 = num3;
 				}
 			}
+			tmpApparelList.Clear();
 			if (DebugViewSettings.debugApparelOptimize)
 			{
-				debugSb.AppendLine("BEST: " + thing);
+				debugSb.AppendLine($"BEST: {thing}");
 				Log.Message(debugSb.ToString());
 				debugSb = null;
 			}
@@ -132,9 +173,94 @@ namespace RimWorld
 			return JobMaker.MakeJob(JobDefOf.Wear, thing);
 		}
 
-		public static float ApparelScoreGain_NewTmp(Pawn pawn, Apparel ap, List<float> wornScoresCache)
+		public static bool TryCreateRecolorJob(Pawn pawn, out Job job, bool dryRun = false)
 		{
-			if (ap is ShieldBelt && pawn.equipment.Primary != null && pawn.equipment.Primary.def.IsWeaponUsingProjectiles)
+			if (!ModLister.CheckIdeology("Apparel recoloring"))
+			{
+				job = null;
+				return false;
+			}
+			if (pawn.apparel.AnyApparelNeedsRecoloring)
+			{
+				Thing thing = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(ThingDefOf.StylingStation), PathEndMode.Touch, TraverseParms.For(pawn), 9999f, (Thing t) => !t.IsForbidden(pawn) && pawn.CanReserve(t) && pawn.CanReserveSittableOrSpot(t.InteractionCell));
+				if (thing != null)
+				{
+					try
+					{
+						foreach (Apparel item in pawn.apparel.WornApparel)
+						{
+							if (item.DesiredColor.HasValue)
+							{
+								tmpApparelToRecolor.Add(item);
+							}
+						}
+						List<Thing> list = pawn.Map.listerThings.ThingsOfDef(ThingDefOf.Dye);
+						if (tmpApparelToRecolor.Count > 0)
+						{
+							list.SortBy((Thing t) => t.Position.DistanceToSquared(pawn.Position));
+							foreach (Thing item2 in list)
+							{
+								if (!pawn.CanReach(item2, PathEndMode.Touch, Danger.Some) || item2.IsForbidden(pawn))
+								{
+									continue;
+								}
+								for (int num = 0; num < item2.stackCount && pawn.CanReserve(item2, 1, num + 1); num++)
+								{
+									tmpQueueApparel.Add(tmpApparelToRecolor[tmpApparelToRecolor.Count - 1]);
+									if (!tmpQueueDye.Contains(item2))
+									{
+										tmpQueueDye.Add(item2);
+									}
+									tmpApparelToRecolor.RemoveAt(tmpApparelToRecolor.Count - 1);
+									if (tmpApparelToRecolor.Count == 0)
+									{
+										break;
+									}
+								}
+								if (tmpApparelToRecolor.Count == 0)
+								{
+									break;
+								}
+							}
+							if (tmpQueueApparel.Count > 0)
+							{
+								if (dryRun)
+								{
+									job = null;
+								}
+								else
+								{
+									job = JobMaker.MakeJob(JobDefOf.RecolorApparel);
+									List<LocalTargetInfo> targetQueue = job.GetTargetQueue(TargetIndex.A);
+									List<LocalTargetInfo> targetQueue2 = job.GetTargetQueue(TargetIndex.B);
+									targetQueue.AddRange(tmpQueueDye);
+									targetQueue2.AddRange(tmpQueueApparel);
+									job.SetTarget(TargetIndex.C, thing);
+									job.count = tmpQueueApparel.Count;
+								}
+								return true;
+							}
+						}
+					}
+					finally
+					{
+						tmpApparelToRecolor.Clear();
+						tmpQueueApparel.Clear();
+						tmpQueueDye.Clear();
+					}
+				}
+			}
+			job = null;
+			return false;
+		}
+
+		public static float ApparelScoreGain(Pawn pawn, Apparel ap, List<float> wornScoresCache)
+		{
+			if (ap.def == ThingDefOf.Apparel_ShieldBelt && pawn.equipment.Primary != null && pawn.equipment.Primary.def.IsWeaponUsingProjectiles)
+			{
+				return -1000f;
+			}
+			if (ap.def.apparel.ignoredByNonViolent && pawn.WorkTagIsDisabled(WorkTags.Violent))
 			{
 				return -1000f;
 			}
@@ -160,21 +286,26 @@ namespace RimWorld
 			return num;
 		}
 
-		[Obsolete("Only need this overload to not break mod compatibility.")]
-		public static float ApparelScoreGain(Pawn pawn, Apparel ap)
-		{
-			wornApparelScores.Clear();
-			for (int i = 0; i < pawn.apparel.WornApparel.Count; i++)
-			{
-				wornApparelScores.Add(ApparelScoreRaw(pawn, pawn.apparel.WornApparel[i]));
-			}
-			return ApparelScoreGain_NewTmp(pawn, ap, wornApparelScores);
-		}
-
 		public static float ApparelScoreRaw(Pawn pawn, Apparel ap)
 		{
+			if (!ap.PawnCanWear(pawn, ignoreGender: true))
+			{
+				return -10f;
+			}
+			if (ap.def.apparel.blocksVision)
+			{
+				return -10f;
+			}
+			if (ap.def.apparel.slaveApparel && !pawn.IsSlave)
+			{
+				return -10f;
+			}
+			if (ap.def.apparel.mechanitorApparel && pawn.mechanitor == null)
+			{
+				return -10f;
+			}
 			float num = 0.1f + ap.def.apparel.scoreOffset;
-			float num2 = ap.GetStatValue(StatDefOf.ArmorRating_Sharp) + ap.GetStatValue(StatDefOf.ArmorRating_Blunt) + ap.GetStatValue(StatDefOf.ArmorRating_Heat);
+			float num2 = ap.GetStatValue(StatDefOf.ArmorRating_Sharp) + ap.GetStatValue(StatDefOf.ArmorRating_Blunt);
 			num += num2;
 			if (ap.def.useHitPoints)
 			{
@@ -189,7 +320,7 @@ namespace RimWorld
 				num3 *= InsulationColdScoreFactorCurve_NeedWarm.Evaluate(statValue);
 			}
 			num *= num3;
-			if (ap.WornByCorpse && (pawn == null || ThoughtUtility.CanGetThought_NewTemp(pawn, ThoughtDefOf.DeadMansApparel, checkIfNullified: true)))
+			if (ap.WornByCorpse && (pawn == null || ThoughtUtility.CanGetThought(pawn, ThoughtDefOf.DeadMansApparel, checkIfNullified: true)))
 			{
 				num -= 0.5f;
 				if (num > 0f)
@@ -199,64 +330,86 @@ namespace RimWorld
 			}
 			if (ap.Stuff == ThingDefOf.Human.race.leatherDef)
 			{
-				if (pawn == null || ThoughtUtility.CanGetThought_NewTemp(pawn, ThoughtDefOf.HumanLeatherApparelSad, checkIfNullified: true))
-				{
-					num -= 0.5f;
-					if (num > 0f)
-					{
-						num *= 0.1f;
-					}
-				}
-				if (pawn != null && ThoughtUtility.CanGetThought_NewTemp(pawn, ThoughtDefOf.HumanLeatherApparelHappy, checkIfNullified: true))
+				if (pawn.Ideo != null && pawn.Ideo.LikesHumanLeatherApparel)
 				{
 					num += 0.12f;
+				}
+				else
+				{
+					if (pawn == null || ThoughtUtility.CanGetThought(pawn, ThoughtDefOf.HumanLeatherApparelSad, checkIfNullified: true))
+					{
+						num -= 0.5f;
+						if (num > 0f)
+						{
+							num *= 0.1f;
+						}
+					}
+					if (pawn != null && ThoughtUtility.CanGetThought(pawn, ThoughtDefOf.HumanLeatherApparelHappy, checkIfNullified: true))
+					{
+						num += 0.12f;
+					}
 				}
 			}
 			if (pawn != null && !ap.def.apparel.CorrectGenderForWearing(pawn.gender))
 			{
 				num *= 0.01f;
 			}
-			if (pawn != null && pawn.royalty != null && pawn.royalty.AllTitlesInEffectForReading.Count > 0)
+			bool flag = false;
+			if (pawn != null)
 			{
-				tmpAllowedApparels.Clear();
-				tmpRequiredApparels.Clear();
-				tmpBodyPartGroupsWithRequirement.Clear();
-				QualityCategory qualityCategory = QualityCategory.Awful;
-				foreach (RoyalTitle item in pawn.royalty.AllTitlesInEffectForReading)
+				foreach (ApparelRequirementWithSource allRequirement in pawn.apparel.AllRequirements)
 				{
-					if (item.def.requiredApparel != null)
+					foreach (BodyPartGroupDef item in allRequirement.requirement.bodyPartGroupsMatchAny)
 					{
-						for (int i = 0; i < item.def.requiredApparel.Count; i++)
+						if (ap.def.apparel.bodyPartGroups.Contains(item))
 						{
-							tmpAllowedApparels.AddRange(item.def.requiredApparel[i].AllAllowedApparelForPawn(pawn, ignoreGender: false, includeWorn: true));
-							tmpRequiredApparels.AddRange(item.def.requiredApparel[i].AllRequiredApparelForPawn(pawn, ignoreGender: false, includeWorn: true));
-							tmpBodyPartGroupsWithRequirement.AddRange(item.def.requiredApparel[i].bodyPartGroupsMatchAny);
+							flag = true;
+							break;
 						}
 					}
-					if ((int)item.def.requiredMinimumApparelQuality > (int)qualityCategory)
+					if (flag)
 					{
-						qualityCategory = item.def.requiredMinimumApparelQuality;
+						break;
 					}
 				}
-				bool num4 = ap.def.apparel.bodyPartGroups.Any((BodyPartGroupDef bp) => tmpBodyPartGroupsWithRequirement.Contains(bp));
+			}
+			if (flag)
+			{
+				bool flag2 = false;
+				bool flag3 = false;
+				foreach (ApparelRequirementWithSource allRequirement2 in pawn.apparel.AllRequirements)
+				{
+					if (allRequirement2.requirement.RequiredForPawn(pawn, ap.def))
+					{
+						flag2 = true;
+					}
+					if (allRequirement2.requirement.AllowedForPawn(pawn, ap.def))
+					{
+						flag3 = true;
+					}
+				}
+				if (flag2)
+				{
+					num *= 25f;
+				}
+				else if (flag3)
+				{
+					num *= 10f;
+				}
+			}
+			if (pawn != null && pawn.royalty != null && pawn.royalty.AllTitlesInEffectForReading.Count > 0)
+			{
+				QualityCategory qualityCategory = QualityCategory.Awful;
+				foreach (RoyalTitle item2 in pawn.royalty.AllTitlesInEffectForReading)
+				{
+					if ((int)item2.def.requiredMinimumApparelQuality > (int)qualityCategory)
+					{
+						qualityCategory = item2.def.requiredMinimumApparelQuality;
+					}
+				}
 				if (ap.TryGetQuality(out var qc) && (int)qc < (int)qualityCategory)
 				{
 					num *= 0.25f;
-				}
-				if (num4)
-				{
-					foreach (ThingDef tmpRequiredApparel in tmpRequiredApparels)
-					{
-						tmpAllowedApparels.Remove(tmpRequiredApparel);
-					}
-					if (tmpAllowedApparels.Contains(ap.def))
-					{
-						num *= 10f;
-					}
-					if (tmpRequiredApparels.Contains(ap.def))
-					{
-						num *= 25f;
-					}
 				}
 			}
 			return num;

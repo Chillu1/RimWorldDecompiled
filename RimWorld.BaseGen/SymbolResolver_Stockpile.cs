@@ -20,7 +20,11 @@ namespace RimWorld.BaseGen
 				int num2 = rp.stockpileConcreteContents.Count - 1;
 				while (num2 >= 0 && num < cells.Count)
 				{
-					GenSpawn.Spawn(rp.stockpileConcreteContents[num2], cells[num], map);
+					Thing thing = GenSpawn.Spawn(rp.stockpileConcreteContents[num2], cells[num], map);
+					if (thing != null && thing.def.category == ThingCategory.Item)
+					{
+						thing.SetForbidden(value: true, warnOnFail: false);
+					}
 					num++;
 					num2--;
 				}
@@ -43,10 +47,12 @@ namespace RimWorld.BaseGen
 			}
 			else
 			{
-				value = default(ThingSetMakerParams);
-				value.techLevel = ((rp.faction != null) ? rp.faction.def.techLevel : TechLevel.Undefined);
-				value.makingFaction = rp.faction;
-				value.validator = (ThingDef x) => (rp.faction == null || (int)x.techLevel >= (int)rp.faction.def.techLevel || !x.IsWeapon || !(x.GetStatValueAbstract(StatDefOf.MarketValue, GenStuff.DefaultStuffFor(x)) < 100f)) ? true : false;
+				value = new ThingSetMakerParams
+				{
+					techLevel = ((rp.faction != null) ? rp.faction.def.techLevel : TechLevel.Undefined),
+					makingFaction = rp.faction,
+					validator = (ThingDef x) => (rp.faction == null || (int)x.techLevel >= (int)rp.faction.def.techLevel || !x.IsWeapon || !(x.GetStatValueAbstract(StatDefOf.MarketValue, GenStuff.DefaultStuffFor(x)) < 100f)) ? true : false
+				};
 				float num4 = rp.stockpileMarketValue ?? Mathf.Min((float)cells.Count * 130f, 1800f);
 				value.totalMarketValueRange = new FloatRange(num4, num4);
 			}

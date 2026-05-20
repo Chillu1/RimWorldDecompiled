@@ -25,16 +25,17 @@ namespace RimWorld.QuestGen
 		protected override void RunInt()
 		{
 			Slate slate = QuestGen.slate;
-			ThingSetMakerParams parms = default(ThingSetMakerParams);
-			parms.totalMarketValueRange = totalMarketValueRange.GetValue(slate);
-			parms.makingFaction = factionOf.GetValue(slate)?.Faction;
-			parms.qualityGenerator = qualityGenerator.GetValue(slate);
+			ThingSetMakerParams parms = new ThingSetMakerParams
+			{
+				totalMarketValueRange = totalMarketValueRange.GetValue(slate),
+				makingFaction = factionOf.GetValue(slate)?.Faction,
+				qualityGenerator = qualityGenerator.GetValue(slate)
+			};
 			List<Thing> list = thingSetMaker.GetValue(slate).root.Generate(parms);
 			QuestGen.slate.Set(storeAs.GetValue(slate), list);
 			for (int i = 0; i < list.Count; i++)
 			{
-				Pawn pawn = list[i] as Pawn;
-				if (pawn != null)
+				if (list[i] is Pawn pawn)
 				{
 					QuestGen.AddToGeneratedPawns(pawn);
 					if (!pawn.IsWorldPawn())

@@ -43,6 +43,49 @@ namespace RimWorld
 			}
 		}
 
+		public static bool IsRequirementActive(ApparelRequirement requirement, ApparelRequirementSource source, Pawn pawn, out string disabledByLabel)
+		{
+			bool flag = false;
+			if (pawn.story != null && pawn.story.traits != null && pawn.story.traits.HasTrait(TraitDefOf.Nudist))
+			{
+				flag = true;
+			}
+			else if (pawn.Ideo != null && pawn.Ideo.IdeoPrefersNudity())
+			{
+				flag = true;
+			}
+			if (flag)
+			{
+				disabledByLabel = "Nudism".Translate();
+				return false;
+			}
+			if (source != ApparelRequirementSource.Title && pawn.royalty != null && !pawn.royalty.AllTitlesForReading.NullOrEmpty())
+			{
+				foreach (RoyalTitle item in pawn.royalty.AllTitlesForReading)
+				{
+					if (!item.def.requiredApparel.NullOrEmpty())
+					{
+						disabledByLabel = item.def.GetLabelCapFor(pawn);
+						return false;
+					}
+				}
+			}
+			disabledByLabel = null;
+			return true;
+		}
+
+		public static Apparel GetApparelReplacedByNewApparel(Pawn pawn, Apparel newApparel)
+		{
+			for (int i = 0; i < pawn.apparel.WornApparel.Count; i++)
+			{
+				if (!CanWearTogether(newApparel.def, pawn.apparel.WornApparel[i].def, pawn.RaceProps.body))
+				{
+					return pawn.apparel.WornApparel[i];
+				}
+			}
+			return null;
+		}
+
 		public static bool CanWearTogether(ThingDef A, ThingDef B, BodyDef body)
 		{
 			bool flag = false;
@@ -104,20 +147,6 @@ namespace RimWorld
 
 		public static bool HasPartsToWear(Pawn p, ThingDef apparel)
 		{
-			List<Hediff> hediffs = p.health.hediffSet.hediffs;
-			bool flag = false;
-			for (int j = 0; j < hediffs.Count; j++)
-			{
-				if (hediffs[j] is Hediff_MissingPart)
-				{
-					flag = true;
-					break;
-				}
-			}
-			if (!flag)
-			{
-				return true;
-			}
 			IEnumerable<BodyPartRecord> notMissingParts = p.health.hediffSet.GetNotMissingParts();
 			List<BodyPartGroupDef> groups = apparel.apparel.bodyPartGroups;
 			int i;

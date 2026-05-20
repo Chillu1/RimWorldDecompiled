@@ -18,15 +18,15 @@ namespace RimWorld
 		{
 			if (signal.type == TriggerSignalType.Tick && Find.TickManager.TicksGame % 800 == 0)
 			{
-				TriggerData_PawnCycleInd data = Data;
-				data.pawnCycleInd++;
-				if (data.pawnCycleInd >= lord.ownedPawns.Count)
+				TriggerData_PawnCycleInd triggerData_PawnCycleInd = Data;
+				triggerData_PawnCycleInd.pawnCycleInd++;
+				if (triggerData_PawnCycleInd.pawnCycleInd >= lord.ownedPawns.Count)
 				{
-					data.pawnCycleInd = 0;
+					triggerData_PawnCycleInd.pawnCycleInd = 0;
 				}
 				if (lord.ownedPawns.Any())
 				{
-					Pawn pawn = lord.ownedPawns[data.pawnCycleInd];
+					Pawn pawn = lord.ownedPawns[triggerData_PawnCycleInd.pawnCycleInd];
 					if (pawn.Spawned && !pawn.Downed && !pawn.InMentalState && KidnapAIUtility.ReachableWoundedGuest(pawn) != null)
 					{
 						return true;

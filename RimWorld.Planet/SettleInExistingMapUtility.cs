@@ -24,7 +24,12 @@ namespace RimWorld.Planet
 					Settle(map);
 				});
 			};
-			if (SettleUtility.PlayerSettlementsCountLimitReached)
+			AcceptanceReport canBeSettled = map.Parent.CanBeSettled;
+			if (!canBeSettled.Accepted)
+			{
+				command_Settle.Disable(canBeSettled.Reason.NullOrEmpty() ? ((string)"CommandSettleFailGeneric".Translate()) : canBeSettled.Reason);
+			}
+			else if (SettleUtility.PlayerSettlementsCountLimitReached)
 			{
 				if (Prefs.MaxNumberOfPlayerSettlements > 1)
 				{
@@ -35,7 +40,7 @@ namespace RimWorld.Planet
 					command_Settle.Disable("CommandSettleFailAlreadyHaveBase".Translate());
 				}
 			}
-			if (!command_Settle.disabled)
+			if (!command_Settle.Disabled)
 			{
 				if (map.mapPawns.FreeColonistsCount == 0)
 				{
@@ -48,10 +53,9 @@ namespace RimWorld.Planet
 						if (GenHostility.IsActiveThreatToPlayer(item))
 						{
 							command_Settle.Disable("CommandSettleFailEnemies".Translate());
-							return command_Settle;
+							break;
 						}
 					}
-					return command_Settle;
 				}
 			}
 			return command_Settle;
@@ -62,17 +66,22 @@ namespace RimWorld.Planet
 			MapParent parent = map.Parent;
 			Settlement settlement = SettleUtility.AddNewHome(map.Tile, Faction.OfPlayer);
 			map.info.parent = settlement;
-			parent?.Destroy();
+			if (parent != null)
+			{
+				parent.Notify_MyMapSettled(map);
+				parent.Destroy();
+			}
 			Messages.Message("MessageSettledInExistingMap".Translate(), settlement, MessageTypeDefOf.PositiveEvent, historical: false);
 			tmpPlayerPawns.Clear();
 			tmpPlayerPawns.AddRange(map.mapPawns.AllPawnsSpawned.Where((Pawn x) => x.Faction == Faction.OfPlayer || x.HostFaction == Faction.OfPlayer));
 			CaravanEnterMapUtility.DropAllInventory(tmpPlayerPawns);
 			tmpPlayerPawns.Clear();
 			List<Pawn> prisonersOfColonySpawned = map.mapPawns.PrisonersOfColonySpawned;
-			for (int i = 0; i < prisonersOfColonySpawned.Count; i++)
+			for (int num = 0; num < prisonersOfColonySpawned.Count; num++)
 			{
-				prisonersOfColonySpawned[i].guest.WaitInsteadOfEscapingForDefaultTicks();
+				prisonersOfColonySpawned[num].guest.WaitInsteadOfEscapingForDefaultTicks();
 			}
+			settlement.Notify_MyMapSettled(map);
 		}
 	}
 }

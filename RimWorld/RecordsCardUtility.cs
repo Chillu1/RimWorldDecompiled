@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Verse;
 
@@ -11,6 +12,20 @@ namespace RimWorld
 		private static float listHeight;
 
 		private const float RecordsLeftPadding = 8f;
+
+		private static List<RecordDef> allRecordsSorted;
+
+		private static List<RecordDef> AllRecordsSorted
+		{
+			get
+			{
+				if (allRecordsSorted == null)
+				{
+					allRecordsSorted = DefDatabase<RecordDef>.AllDefsListForReading.OrderBy((RecordDef x) => x.displayOrder).ToList();
+				}
+				return allRecordsSorted;
+			}
+		}
 
 		public static void DrawRecordsCard(Rect rect, Pawn pawn)
 		{
@@ -32,42 +47,42 @@ namespace RimWorld
 
 		private static float DrawTimeRecords(Rect leftRect, Pawn pawn)
 		{
-			List<RecordDef> allDefsListForReading = DefDatabase<RecordDef>.AllDefsListForReading;
+			List<RecordDef> list = AllRecordsSorted;
 			float curY = 0f;
-			GUI.BeginGroup(leftRect);
+			Widgets.BeginGroup(leftRect);
 			Widgets.ListSeparator(ref curY, leftRect.width, "TimeRecordsCategory".Translate());
-			for (int i = 0; i < allDefsListForReading.Count; i++)
+			for (int i = 0; i < list.Count; i++)
 			{
-				if (allDefsListForReading[i].type == RecordType.Time)
+				if (list[i].type == RecordType.Time)
 				{
-					curY += DrawRecord(8f, curY, leftRect.width - 8f, allDefsListForReading[i], pawn);
+					curY += DrawRecord(8f, curY, leftRect.width - 8f, list[i], pawn);
 				}
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			return curY;
 		}
 
 		private static float DrawMiscRecords(Rect rightRect, Pawn pawn)
 		{
-			List<RecordDef> allDefsListForReading = DefDatabase<RecordDef>.AllDefsListForReading;
+			List<RecordDef> list = AllRecordsSorted;
 			float curY = 0f;
-			GUI.BeginGroup(rightRect);
+			Widgets.BeginGroup(rightRect);
 			Widgets.ListSeparator(ref curY, rightRect.width, "MiscRecordsCategory".Translate());
-			for (int i = 0; i < allDefsListForReading.Count; i++)
+			for (int i = 0; i < list.Count; i++)
 			{
-				if (allDefsListForReading[i].type == RecordType.Int || allDefsListForReading[i].type == RecordType.Float)
+				if (list[i].type == RecordType.Int || list[i].type == RecordType.Float)
 				{
-					curY += DrawRecord(8f, curY, rightRect.width - 8f, allDefsListForReading[i], pawn);
+					curY += DrawRecord(8f, curY, rightRect.width - 8f, list[i], pawn);
 				}
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			return curY;
 		}
 
 		private static float DrawRecord(float x, float y, float width, RecordDef record, Pawn pawn)
 		{
 			float num = width * 0.45f;
-			string text = ((record.type != 0) ? pawn.records.GetValue(record).ToString("0.##") : pawn.records.GetAsInt(record).ToStringTicksToPeriod());
+			string text = ((record.type != RecordType.Time) ? pawn.records.GetValue(record).ToString("0.##") : pawn.records.GetAsInt(record).ToStringTicksToPeriod());
 			Rect rect = new Rect(8f, y, width, Text.CalcHeight(text, num));
 			if (Mouse.IsOver(rect))
 			{

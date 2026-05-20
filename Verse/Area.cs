@@ -1,10 +1,9 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace Verse
 {
-	public abstract class Area : IExposable, ILoadReferenceable, ICellBoolGiver
+	public abstract class Area : IExposable, ILoadReferenceable, ICellBoolGiver, IRenameable
 	{
 		public AreaManager areaManager;
 
@@ -16,24 +15,23 @@ namespace Verse
 
 		private Texture2D colorTextureInt;
 
+		public virtual string RenamableLabel { get; set; }
+
+		public virtual string BaseLabel { get; set; }
+
+		public virtual string InspectLabel => RenamableLabel;
+
 		public Map Map => areaManager.map;
+
+		public BoolGrid InnerGrid => innerGrid;
 
 		public int TrueCount => innerGrid.TrueCount;
 
-		public abstract string Label
-		{
-			get;
-		}
+		public abstract string Label { get; }
 
-		public abstract Color Color
-		{
-			get;
-		}
+		public abstract Color Color { get; }
 
-		public abstract int ListPriority
-		{
-			get;
-		}
+		public abstract int ListPriority { get; }
 
 		public Texture2D ColorTexture
 		{
@@ -119,11 +117,6 @@ namespace Verse
 			return false;
 		}
 
-		public virtual void SetLabel(string label)
-		{
-			throw new NotImplementedException();
-		}
-
 		protected virtual void Set(IntVec3 c, bool val)
 		{
 			int index = Map.cellIndices.CellToIndex(c);
@@ -137,6 +130,7 @@ namespace Verse
 		private void MarkDirty(IntVec3 c)
 		{
 			Drawer.SetDirty();
+			Map.pathFinder.MapData.Notify_AreaDelta(this, c);
 			c.GetRegion(Map, RegionType.Set_All)?.Notify_AreaChanged(this);
 		}
 
@@ -147,7 +141,7 @@ namespace Verse
 
 		public void MarkForDraw()
 		{
-			if (Map == Find.CurrentMap)
+			if (Map == Find.CurrentMap && !Find.ScreenshotModeHandler.Active)
 			{
 				Drawer.MarkForDraw();
 			}
@@ -162,6 +156,19 @@ namespace Verse
 		{
 			innerGrid.Invert();
 			Drawer.SetDirty();
+		}
+
+		public void Clear()
+		{
+			innerGrid.Clear();
+			Drawer.SetDirty();
+		}
+
+		protected void InvalidateColorTexture()
+		{
+			Object.Destroy(colorTextureInt);
+			colorTextureInt = null;
+			drawer?.Notify_ColorChanged();
 		}
 
 		public abstract string GetUniqueLoadID();

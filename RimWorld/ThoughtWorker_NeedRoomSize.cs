@@ -11,12 +11,21 @@ namespace RimWorld
 			{
 				return ThoughtState.Inactive;
 			}
+			if (!p.Awake())
+			{
+				return ThoughtState.Inactive;
+			}
 			Room room = p.GetRoom();
 			if (room == null || room.PsychologicallyOutdoors)
 			{
 				return ThoughtState.Inactive;
 			}
-			return p.needs.roomsize.CurCategory switch
+			RoomSizeCategory curCategory = p.needs.roomsize.CurCategory;
+			if (p.Ideo != null && (int)curCategory < 2 && p.needs.PrefersIndoors)
+			{
+				return ThoughtState.Inactive;
+			}
+			return curCategory switch
 			{
 				RoomSizeCategory.VeryCramped => ThoughtState.ActiveAtStage(0), 
 				RoomSizeCategory.Cramped => ThoughtState.ActiveAtStage(1), 

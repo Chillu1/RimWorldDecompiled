@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using JetBrains.Annotations;
 using UnityEngine;
 using Verse;
 
@@ -22,6 +23,8 @@ namespace RimWorld
 
 		public bool forceUnfinalizedMode;
 
+		public bool overridesHideStats;
+
 		private IEnumerable<Dialog_InfoCard.Hyperlink> hyperlinks;
 
 		private string labelInt;
@@ -35,18 +38,6 @@ namespace RimWorld
 		private string explanationText;
 
 		private ToStringNumberSense numberSense;
-
-		public bool ShouldDisplay
-		{
-			get
-			{
-				if (stat != null)
-				{
-					return !Mathf.Approximately(value, stat.hideAtValue);
-				}
-				return true;
-			}
-		}
 
 		public string LabelCap
 		{
@@ -88,6 +79,7 @@ namespace RimWorld
 			displayOrderWithinCategory = (overrideDisplayPriorityWithinCategory.HasValue ? overrideDisplayPriorityWithinCategory.Value : stat.displayPriorityInCategory);
 			this.optionalReq = optionalReq;
 			this.forceUnfinalizedMode = forceUnfinalizedMode;
+			overridesHideStats = stat.overridesHideStats;
 			hasOptionalReq = true;
 			if (numberSense == ToStringNumberSense.Undefined)
 			{
@@ -99,7 +91,18 @@ namespace RimWorld
 			}
 		}
 
-		public StatDrawEntry(StatCategoryDef category, string label, string valueString, string reportText, int displayPriorityWithinCategory, string overrideReportTitle = null, IEnumerable<Dialog_InfoCard.Hyperlink> hyperlinks = null, bool forceUnfinalizedMode = false)
+		public StatDrawEntry(StatCategoryDef category, StatDef stat, string value)
+		{
+			this.category = category;
+			this.stat = stat;
+			labelInt = null;
+			valueStringInt = value;
+			overridesHideStats = stat.overridesHideStats;
+			hasOptionalReq = false;
+			numberSense = ToStringNumberSense.Undefined;
+		}
+
+		public StatDrawEntry(StatCategoryDef category, string label, string valueString, string reportText, int displayPriorityWithinCategory, string overrideReportTitle = null, IEnumerable<Dialog_InfoCard.Hyperlink> hyperlinks = null, bool forceUnfinalizedMode = false, bool overridesHideStats = false)
 		{
 			this.category = category;
 			stat = null;
@@ -112,6 +115,7 @@ namespace RimWorld
 			this.overrideReportTitle = overrideReportTitle;
 			this.hyperlinks = hyperlinks;
 			this.forceUnfinalizedMode = forceUnfinalizedMode;
+			this.overridesHideStats = overridesHideStats;
 		}
 
 		public StatDrawEntry(StatCategoryDef category, StatDef stat)
@@ -123,6 +127,19 @@ namespace RimWorld
 			valueStringInt = "-";
 			displayOrderWithinCategory = stat.displayPriorityInCategory;
 			numberSense = ToStringNumberSense.Undefined;
+		}
+
+		public bool ShouldDisplay([CanBeNull] Thing thing = null)
+		{
+			if (thing != null && thing.def.hideStats && !overridesHideStats && !DebugSettings.showHiddenInfo)
+			{
+				return false;
+			}
+			if (stat != null)
+			{
+				return !Mathf.Approximately(value, stat.hideAtValue);
+			}
+			return true;
 		}
 
 		public IEnumerable<Dialog_InfoCard.Hyperlink> GetHyperlinks(StatRequest req)
@@ -177,12 +194,14 @@ namespace RimWorld
 			return this;
 		}
 
-		public float Draw(float x, float y, float width, bool selected, Action clickedCallback, Action mousedOverCallback, Vector2 scrollPosition, Rect scrollOutRect)
+		public float Draw(float x, float y, float width, bool selected, bool highlightLabel, bool lowlightLabel, Action clickedCallback, Action mousedOverCallback, Vector2 scrollPosition, Rect scrollOutRect, string valueCached = null)
 		{
 			float num = width * 0.45f;
-			Rect rect = new Rect(8f, y, width, Text.CalcHeight(ValueString, num));
+			string text = valueCached ?? ValueString;
+			Rect rect = new Rect(8f, y, width, Text.CalcHeight(text, num));
 			if (!(y - scrollPosition.y + rect.height < 0f) && !(y - scrollPosition.y > scrollOutRect.height))
 			{
+				GUI.color = Color.white;
 				if (selected)
 				{
 					Widgets.DrawHighlightSelected(rect);
@@ -191,13 +210,22 @@ namespace RimWorld
 				{
 					Widgets.DrawHighlight(rect);
 				}
+				if (highlightLabel)
+				{
+					Widgets.DrawTextHighlight(rect);
+				}
+				if (lowlightLabel)
+				{
+					GUI.color = Color.grey;
+				}
 				Rect rect2 = rect;
 				rect2.width -= num;
 				Widgets.Label(rect2, LabelCap);
 				Rect rect3 = rect;
 				rect3.x = rect2.xMax;
 				rect3.width = num;
-				Widgets.Label(rect3, ValueString);
+				Widgets.Label(rect3, text);
+				GUI.color = Color.white;
 				if (stat != null && Mouse.IsOver(rect))
 				{
 					StatDef localStat = stat;
@@ -213,6 +241,23 @@ namespace RimWorld
 				}
 			}
 			return rect.height;
+		}
+
+		public bool Same(StatDrawEntry other)
+		{
+			if (other == null)
+			{
+				return false;
+			}
+			if (this == other)
+			{
+				return true;
+			}
+			if (stat == other.stat)
+			{
+				return labelInt == other.labelInt;
+			}
+			return false;
 		}
 
 		public override string ToString()

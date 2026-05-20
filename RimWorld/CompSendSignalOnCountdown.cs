@@ -5,7 +5,7 @@ using Verse.Sound;
 
 namespace RimWorld
 {
-	public class CompSendSignalOnCountdown : ThingComp
+	public class CompSendSignalOnCountdown : ThingComp, IThingGlower
 	{
 		public string signalTag;
 
@@ -14,6 +14,11 @@ namespace RimWorld
 		private const float MaxDistActivationByOther = 40f;
 
 		private CompProperties_SendSignalOnCountdown Props => (CompProperties_SendSignalOnCountdown)props;
+
+		public bool ShouldBeLitNow()
+		{
+			return ticksLeft > 0;
+		}
 
 		public override void Initialize(CompProperties props)
 		{
@@ -24,7 +29,7 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (Prefs.DevMode)
+			if (Prefs.DevMode && DebugSettings.godMode)
 			{
 				Command_Action command_Action = new Command_Action();
 				command_Action.defaultLabel = "DEV: Activate";
@@ -40,7 +45,6 @@ namespace RimWorld
 
 		public override void CompTick()
 		{
-			base.CompTick();
 			if (parent.IsHashIntervalTick(250))
 			{
 				TickRareWorker();
@@ -76,7 +80,7 @@ namespace RimWorld
 			{
 				return "expired".Translate().CapitalizeFirst();
 			}
-			return "SendSignalOnCountdownCompTime".Translate(ticksLeft.ToStringTicksToPeriod());
+			return "SendSignalOnCountdownCompTime".Translate(ticksLeft.ToStringTicksToPeriod()).Resolve();
 		}
 
 		public override void Notify_SignalReceived(Signal signal)

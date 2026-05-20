@@ -9,7 +9,7 @@ namespace RimWorld
 		public override void CompTick()
 		{
 			base.CompTick();
-			if (!base.Active || Find.TickManager.TicksGame % 3451 != 0)
+			if (!Active || Find.TickManager.TicksGame % 3451 != 0)
 			{
 				return;
 			}
@@ -21,7 +21,7 @@ namespace RimWorld
 					List<Pawn> pawnsListForReading = caravans[i].PawnsListForReading;
 					for (int j = 0; j < pawnsListForReading.Count; j++)
 					{
-						GameCondition_ToxicFallout.DoPawnToxicDamage(pawnsListForReading[j]);
+						ToxicUtility.DoPawnToxicDamage(pawnsListForReading[j]);
 					}
 				}
 			}

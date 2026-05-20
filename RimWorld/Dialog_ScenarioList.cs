@@ -13,11 +13,13 @@ namespace RimWorld
 			{
 				try
 				{
-					files.Add(new SaveFileInfo(allCustomScenarioFile));
+					SaveFileInfo saveFileInfo = new SaveFileInfo(allCustomScenarioFile);
+					saveFileInfo.LoadData();
+					files.Add(saveFileInfo);
 				}
-				catch (Exception ex)
+				catch (Exception arg)
 				{
-					Log.Error("Exception loading " + allCustomScenarioFile.Name + ": " + ex.ToString());
+					Log.Error($"Exception loading {allCustomScenarioFile.Name}: {arg}");
 				}
 			}
 		}

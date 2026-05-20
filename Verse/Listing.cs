@@ -59,10 +59,10 @@ namespace Verse
 			}
 		}
 
-		public Rect GetRect(float height)
+		public Rect GetRect(float height, float widthPct = 1f)
 		{
 			NewColumnIfNeeded(height);
-			Rect result = new Rect(curX, curY, ColumnWidth, height);
+			Rect result = new Rect(curX, curY, ColumnWidth * widthPct, height);
 			curY += height;
 			return result;
 		}
@@ -110,12 +110,12 @@ namespace Verse
 			curX = 0f;
 			curY = 0f;
 			maxHeightColumnSeen = 0f;
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 		}
 
 		public virtual void End()
 		{
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 	}
 }

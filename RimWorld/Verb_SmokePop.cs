@@ -13,7 +13,7 @@ namespace RimWorld
 		public override float HighlightFieldRadiusAroundTarget(out bool needLOSToCenter)
 		{
 			needLOSToCenter = false;
-			return base.EquipmentSource.GetStatValue(StatDefOf.SmokepopBeltRadius);
+			return base.EquipmentSource.GetStatValue(StatDefOf.PackRadius);
 		}
 
 		public override void DrawHighlight(LocalTargetInfo target)
@@ -21,13 +21,14 @@ namespace RimWorld
 			DrawHighlightFieldRadiusAroundTarget(caster);
 		}
 
-		public static void Pop(CompReloadable comp)
+		public static void Pop(CompApparelReloadable comp)
 		{
-			if (comp != null && comp.CanBeUsed)
+			if (comp != null && comp.CanBeUsed(out var _))
 			{
 				ThingWithComps parent = comp.parent;
 				Pawn wearer = comp.Wearer;
-				GenExplosion.DoExplosion(wearer.Position, wearer.Map, parent.GetStatValue(StatDefOf.SmokepopBeltRadius), DamageDefOf.Smoke, null, -1, -1f, null, null, null, null, ThingDefOf.Gas_Smoke, 1f);
+				float statValue = parent.GetStatValue(StatDefOf.PackRadius);
+				GenExplosion.DoExplosion(wearer.Position, wearer.Map, statValue, DamageDefOf.Smoke, null, -1, -1f, null, null, null, null, null, 0f, 1, GasType.BlindSmoke);
 				comp.UsedOnce();
 			}
 		}

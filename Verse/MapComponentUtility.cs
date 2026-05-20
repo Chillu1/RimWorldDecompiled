@@ -53,6 +53,22 @@ namespace Verse
 			}
 		}
 
+		public static void MapComponentOnDraw(Map map)
+		{
+			List<MapComponent> components = map.components;
+			for (int i = 0; i < components.Count; i++)
+			{
+				try
+				{
+					components[i].MapComponentDraw();
+				}
+				catch (Exception ex)
+				{
+					Log.Error(ex.ToString());
+				}
+			}
+		}
+
 		public static void FinalizeInit(Map map)
 		{
 			List<MapComponent> components = map.components;
@@ -94,9 +110,9 @@ namespace Verse
 				{
 					components[i].MapRemoved();
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Error("Could not notify map component: " + arg);
+					Log.Error("Could not notify map component: " + ex);
 				}
 			}
 		}

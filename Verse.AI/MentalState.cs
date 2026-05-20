@@ -8,13 +8,21 @@ namespace Verse.AI
 
 		public MentalStateDef def;
 
-		private int age;
+		protected int age;
 
 		public bool causedByMood;
 
+		public bool causedByDamage;
+
+		public bool causedByPsycast;
+
+		public Pawn causedByPawn;
+
 		public int forceRecoverAfterTicks = -1;
 
-		private const int TickInterval = 150;
+		public Faction sourceFaction;
+
+		protected const int MentalStateTickInterval = 30;
 
 		public int Age => age;
 
@@ -22,12 +30,18 @@ namespace Verse.AI
 
 		protected virtual bool CanEndBeforeMaxDurationNow => true;
 
+		public virtual bool AllowRestingInBed => true;
+
 		public virtual void ExposeData()
 		{
 			Scribe_Defs.Look(ref def, "def");
 			Scribe_Values.Look(ref age, "age", 0);
 			Scribe_Values.Look(ref causedByMood, "causedByMood", defaultValue: false);
+			Scribe_Values.Look(ref causedByDamage, "causedByDamage", defaultValue: false);
+			Scribe_Values.Look(ref causedByPsycast, "causedByPsycast", defaultValue: false);
+			Scribe_References.Look(ref causedByPawn, "causedByPawn");
 			Scribe_Values.Look(ref forceRecoverAfterTicks, "forceRecoverAfterTicks", 0);
+			Scribe_References.Look(ref sourceFaction, "sourceFaction");
 		}
 
 		public virtual void PostStart(string reason)
@@ -50,12 +64,12 @@ namespace Verse.AI
 			}
 		}
 
-		public virtual void MentalStateTick()
+		public virtual void MentalStateTick(int delta)
 		{
-			if (pawn.IsHashIntervalTick(150))
+			if (pawn.IsHashIntervalTick(30, delta))
 			{
-				age += 150;
-				if (age >= def.maxTicksBeforeRecovery || (age >= def.minTicksBeforeRecovery && CanEndBeforeMaxDurationNow && Rand.MTBEventOccurs(def.recoveryMtbDays, 60000f, 150f)) || (forceRecoverAfterTicks != -1 && age >= forceRecoverAfterTicks))
+				age += 30;
+				if (age >= def.maxTicksBeforeRecovery || (age >= def.minTicksBeforeRecovery && CanEndBeforeMaxDurationNow && Rand.MTBEventOccurs(def.recoveryMtbDays, 60000f, 30f)) || (forceRecoverAfterTicks != -1 && age >= forceRecoverAfterTicks))
 				{
 					RecoverFromState();
 				}
@@ -70,7 +84,7 @@ namespace Verse.AI
 		{
 			if (pawn.MentalState != this)
 			{
-				Log.Error(string.Concat("Recovered from ", def, " but pawn's mental state is not this, it is ", pawn.MentalState));
+				Log.Error("Recovered from " + def?.ToString() + " but pawn's mental state is not this, it is " + pawn.MentalState);
 			}
 			if (!pawn.Dead)
 			{
@@ -80,11 +94,15 @@ namespace Verse.AI
 					pawn.needs.mood.thoughts.memories.TryGainMemory(def.moodRecoveryThought);
 				}
 				pawn.mindState.mentalBreaker.Notify_RecoveredFromMentalState();
+				pawn.mindState.mentalFitGenerator.Notify_RecoveredFromMentalState();
 				if (pawn.story != null && pawn.story.traits != null)
 				{
 					foreach (Trait allTrait in pawn.story.traits.allTraits)
 					{
-						allTrait.Notify_MentalStateEndedOn(pawn, causedByMood);
+						if (!allTrait.Suppressed)
+						{
+							allTrait.Notify_MentalStateEndedOn(pawn, causedByMood);
+						}
 					}
 				}
 				if (def.IsAggro)
@@ -92,9 +110,9 @@ namespace Verse.AI
 					pawn.mindState.enemyTarget = null;
 				}
 			}
-			if (pawn.Spawned)
+			if (def.stopsJobs && pawn.Spawned)
 			{
-				pawn.jobs.EndCurrentJob(JobCondition.InterruptForced);
+				pawn.jobs.StopAll(ifLayingKeepLaying: true);
 			}
 			PostEnd();
 		}
@@ -119,7 +137,7 @@ namespace Verse.AI
 			return RandomSocialMode.SuperActive;
 		}
 
-		public virtual string GetBeginLetterText()
+		public virtual TaggedString GetBeginLetterText()
 		{
 			if (def.beginLetter.NullOrEmpty())
 			{
@@ -133,7 +151,11 @@ namespace Verse.AI
 		{
 		}
 
-		public virtual void Notify_SlaughteredAnimal()
+		public virtual void Notify_SlaughteredTarget()
+		{
+		}
+
+		public virtual void Notify_ReleasedTarget()
 		{
 		}
 	}

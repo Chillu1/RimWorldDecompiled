@@ -15,11 +15,11 @@ namespace RimWorld
 		{
 			this.FailOnDespawnedOrNull(TargetIndex.A);
 			yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.InteractionCell).FailOn((Toil to) => !((Building_CommsConsole)to.actor.jobs.curJob.GetTarget(TargetIndex.A).Thing).CanUseCommsNow);
-			Toil openComms = new Toil();
+			Toil openComms = ToilMaker.MakeToil("MakeNewToils");
 			openComms.initAction = delegate
 			{
 				Pawn actor = openComms.actor;
-				if (((Building_CommsConsole)actor.jobs.curJob.GetTarget(TargetIndex.A).Thing).CanUseCommsNow)
+				if (((Building_CommsConsole)actor.jobs.curJob.GetTarget(TargetIndex.A).Thing).CanUseCommsNow && actor.jobs.curJob.commTarget != null)
 				{
 					actor.jobs.curJob.commTarget.TryOpenComms(actor);
 				}

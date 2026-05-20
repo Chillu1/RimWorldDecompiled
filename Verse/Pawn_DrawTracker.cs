@@ -21,6 +21,8 @@ namespace Verse
 
 		private PawnBreathMoteMaker breathMoteMaker;
 
+		private PawnWaterRippleMaker waterRippleMaker;
+
 		private const float MeleeJitterDistance = 0.5f;
 
 		public Vector3 DrawPos
@@ -28,13 +30,11 @@ namespace Verse
 			get
 			{
 				tweener.PreDrawPosCalculation();
-				Vector3 tweenedPos = tweener.TweenedPos;
-				tweenedPos += jitterer.CurrentOffset;
-				tweenedPos += leaner.LeanOffset;
-				tweenedPos.y = pawn.def.Altitude;
-				return tweenedPos;
+				return (tweener.TweenedPos + jitterer.CurrentOffset + leaner.LeanOffset + OffsetForcedByJob() + FlyingOffset()).WithY(pawn.def.Altitude + FlightYOffset() + SeededYOffset);
 			}
 		}
+
+		public float SeededYOffset { get; }
 
 		public Pawn_DrawTracker(Pawn pawn)
 		{
@@ -46,23 +46,56 @@ namespace Verse
 			ui = new PawnUIOverlay(pawn);
 			footprintMaker = new PawnFootprintMaker(pawn);
 			breathMoteMaker = new PawnBreathMoteMaker(pawn);
+			waterRippleMaker = new PawnWaterRippleMaker(pawn);
+			SeededYOffset = Rand.RangeSeeded(-0.03658537f, 0.03658537f, pawn.thingIDNumber);
 		}
 
-		public void DrawTrackerTick()
+		public void ProcessPostTickVisuals(int ticksPassed)
 		{
-			if (pawn.Spawned && (Current.ProgramState != ProgramState.Playing || Find.CameraDriver.CurrentViewRect.ExpandedBy(3).Contains(pawn.Position)))
+			if (pawn.Spawned)
 			{
-				jitterer.JitterHandlerTick();
-				footprintMaker.FootprintMakerTick();
-				breathMoteMaker.BreathMoteMakerTick();
-				leaner.LeanerTick();
-				renderer.RendererTick();
+				jitterer.ProcessPostTickVisuals(ticksPassed);
+				footprintMaker.ProcessPostTickVisuals(ticksPassed);
+				breathMoteMaker.ProcessPostTickVisuals(ticksPassed);
+				waterRippleMaker.ProcessPostTickVisuals(ticksPassed);
+				leaner.ProcessPostTickVisuals(ticksPassed);
+				renderer.ProcessPostTickVisuals(ticksPassed);
 			}
 		}
 
-		public void DrawAt(Vector3 loc)
+		public void DrawShadowAt(Vector3 loc)
 		{
-			renderer.RenderPawnAt(loc);
+			using (new ProfilerBlock("Draw Shadow At()"))
+			{
+				renderer.RenderShadowOnlyAt(loc);
+			}
+		}
+
+		private Vector3 OffsetForcedByJob()
+		{
+			if (pawn.jobs?.curDriver != null)
+			{
+				return pawn.jobs.curDriver.ForcedBodyOffset;
+			}
+			return Vector3.zero;
+		}
+
+		private Vector3 FlyingOffset()
+		{
+			if (pawn.flight == null)
+			{
+				return Vector3.zero;
+			}
+			return new Vector3(0f, 0f, 0.6f) * pawn.flight.PositionOffsetFactor;
+		}
+
+		private float FlightYOffset()
+		{
+			if (pawn.flight == null)
+			{
+				return 0f;
+			}
+			return 0.03658537f * pawn.flight.PositionOffsetFactor;
 		}
 
 		public void Notify_Spawned()
@@ -108,7 +141,7 @@ namespace Verse
 		{
 			for (int i = 0; i < 10; i++)
 			{
-				MoteMaker.ThrowAirPuffUp(pawn.DrawPos, pawn.Map);
+				FleckMaker.ThrowAirPuffUp(pawn.DrawPosHeld.Value, pawn.MapHeld);
 			}
 			jitterer.AddOffset(0.05f, Rand.Range(0, 360));
 		}

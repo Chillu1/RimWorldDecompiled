@@ -25,6 +25,8 @@ namespace RimWorld
 
 		public int minSize;
 
+		public bool isPond;
+
 		[Unsaved(false)]
 		private ModuleBase noise;
 

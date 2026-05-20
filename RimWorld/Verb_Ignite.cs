@@ -13,7 +13,7 @@ namespace RimWorld
 		{
 			Thing thing = currentTarget.Thing;
 			Pawn casterPawn = CasterPawn;
-			FireUtility.TryStartFireIn(thing.OccupiedRect().ClosestCellTo(casterPawn.Position), casterPawn.Map, 0.3f);
+			FireUtility.TryStartFireIn(thing.OccupiedRect().ClosestCellTo(casterPawn.Position), casterPawn.Map, 0.3f, casterPawn);
 			if (casterPawn.Spawned)
 			{
 				casterPawn.Drawer.Notify_MeleeAttackOn(thing);

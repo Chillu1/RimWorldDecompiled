@@ -24,7 +24,7 @@ namespace RimWorld
 				}
 				foreach (ThingWithComps item in pawns[i].equipment.AllEquipmentListForReading)
 				{
-					CompBiocodableWeapon comp = item.GetComp<CompBiocodableWeapon>();
+					CompBiocodable comp = item.GetComp<CompBiocodable>();
 					if (comp != null && !comp.Biocoded)
 					{
 						comp.CodeFor(pawns[i]);

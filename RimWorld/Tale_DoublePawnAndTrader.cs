@@ -33,9 +33,9 @@ namespace RimWorld
 			Scribe_Deep.Look(ref traderData, "traderData");
 		}
 
-		protected override IEnumerable<Rule> SpecialTextGenerationRules()
+		protected override IEnumerable<Rule> SpecialTextGenerationRules(Dictionary<string, string> outConstants)
 		{
-			foreach (Rule item in base.SpecialTextGenerationRules())
+			foreach (Rule item in base.SpecialTextGenerationRules(outConstants))
 			{
 				yield return item;
 			}

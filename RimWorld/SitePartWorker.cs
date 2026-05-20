@@ -32,7 +32,7 @@ namespace RimWorld
 		public virtual string GetArrivedLetterPart(Map map, out LetterDef preferredLetterDef, out LookTargets lookTargets)
 		{
 			preferredLetterDef = def.arrivedLetterDef;
-			lookTargets = null;
+			lookTargets = new LookTargets(map.Parent);
 			return def.arrivedLetter;
 		}
 
@@ -41,7 +41,7 @@ namespace RimWorld
 			return def.label;
 		}
 
-		public virtual SitePartParams GenerateDefaultParams(float myThreatPoints, int tile, Faction faction)
+		public virtual SitePartParams GenerateDefaultParams(float myThreatPoints, PlanetTile tile, Faction faction)
 		{
 			return new SitePartParams
 			{
@@ -59,12 +59,24 @@ namespace RimWorld
 		{
 		}
 
+		public virtual bool IsAvailable()
+		{
+			return true;
+		}
+
 		public virtual void PostDrawExtraSelectionOverlays(SitePart sitePart)
 		{
 		}
 
 		public virtual void PostDestroy(SitePart sitePart)
 		{
+			if (def.leaveAbandonedSettlement && sitePart.site.Tile.LayerDef == PlanetLayerDefOf.Surface)
+			{
+				WorldObject worldObject = WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.AbandonedSettlement);
+				worldObject.Tile = sitePart.site.Tile;
+				worldObject.SetFaction(Faction.OfPlayer);
+				Find.WorldObjects.Add(worldObject);
+			}
 		}
 
 		public virtual void Notify_SiteMapAboutToBeRemoved(SitePart sitePart)

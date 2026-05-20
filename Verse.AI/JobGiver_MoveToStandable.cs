@@ -22,8 +22,7 @@ namespace Verse.AI
 			List<Thing> thingList = pawn.Position.GetThingList(pawn.Map);
 			for (int i = 0; i < thingList.Count; i++)
 			{
-				Pawn pawn2 = thingList[i] as Pawn;
-				if (pawn2 != null && pawn2 != pawn && pawn2.Faction == pawn.Faction && pawn2.Drafted && !pawn2.pather.MovingNow)
+				if (thingList[i] is Pawn pawn2 && pawn2 != pawn && pawn2.Faction == pawn.Faction && pawn2.Drafted && !pawn2.pather.MovingNow)
 				{
 					return FindBetterPositionJob(pawn);
 				}
@@ -31,7 +30,7 @@ namespace Verse.AI
 			return null;
 		}
 
-		private Job FindBetterPositionJob(Pawn pawn)
+		private static Job FindBetterPositionJob(Pawn pawn)
 		{
 			IntVec3 intVec = RCellFinder.BestOrderedGotoDestNear(pawn.Position, pawn);
 			if (intVec.IsValid && intVec != pawn.Position)

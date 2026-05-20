@@ -8,41 +8,33 @@ namespace RimWorld
 	{
 		public static Toil GotoInteractablePosition(TargetIndex target)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("GotoInteractablePosition");
 			toil.initAction = delegate
 			{
-				Pawn actor2 = toil.actor;
-				Pawn pawn2 = (Pawn)(Thing)actor2.CurJob.GetTarget(target);
-				if (InteractionUtility.IsGoodPositionForInteraction(actor2, pawn2))
+				Pawn actor = toil.actor;
+				Pawn pawn = (Pawn)(Thing)actor.CurJob.GetTarget(target);
+				if (SocialInteractionUtility.IsGoodPositionForInteraction(actor, pawn))
 				{
-					actor2.jobs.curDriver.ReadyForNextToil();
+					actor.jobs.curDriver.ReadyForNextToil();
 				}
 				else
 				{
-					actor2.pather.StartPath(pawn2, PathEndMode.Touch);
+					actor.pather.StartPath(pawn, PathEndMode.Touch);
 				}
 			};
-			toil.tickAction = delegate
+			toil.tickIntervalAction = delegate
 			{
 				Pawn actor = toil.actor;
 				Pawn pawn = (Pawn)(Thing)actor.CurJob.GetTarget(target);
 				Map map = actor.Map;
-				if (InteractionUtility.IsGoodPositionForInteraction(actor, pawn) && actor.Position.InHorDistOf(pawn.Position, Mathf.CeilToInt(3f)) && (!actor.pather.Moving || actor.pather.nextCell.GetDoor(map) == null))
+				if (SocialInteractionUtility.IsGoodPositionForInteraction(actor, pawn) && actor.Position.InHorDistOf(pawn.Position, Mathf.CeilToInt(3f)) && (!actor.pather.Moving || actor.pather.nextCell.GetDoor(map) == null))
 				{
 					actor.pather.StopDead();
 					actor.jobs.curDriver.ReadyForNextToil();
 				}
 				else if (!actor.pather.Moving)
 				{
-					IntVec3 intVec = IntVec3.Invalid;
-					for (int i = 0; i < 9 && (i != 8 || !intVec.IsValid); i++)
-					{
-						IntVec3 intVec2 = pawn.Position + GenAdj.AdjacentCellsAndInside[i];
-						if (intVec2.InBounds(map) && intVec2.Walkable(map) && intVec2 != actor.Position && InteractionUtility.IsGoodPositionForInteraction(intVec2, pawn.Position, map) && actor.CanReach(intVec2, PathEndMode.OnCell, Danger.Deadly) && (!intVec.IsValid || actor.Position.DistanceToSquared(intVec2) < actor.Position.DistanceToSquared(intVec)))
-						{
-							intVec = intVec2;
-						}
-					}
+					IntVec3 intVec = SocialInteractionUtility.BestInteractableCell(actor, pawn);
 					if (intVec.IsValid)
 					{
 						actor.pather.StartPath(intVec, PathEndMode.OnCell);
@@ -60,7 +52,7 @@ namespace RimWorld
 
 		public static Toil GotoPrisoner(Pawn pawn, Pawn talkee, PrisonerInteractionModeDef mode)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("GotoPrisoner");
 			toil.initAction = delegate
 			{
 				pawn.pather.StartPath(talkee, PathEndMode.Touch);
@@ -71,7 +63,7 @@ namespace RimWorld
 				{
 					return true;
 				}
-				if (mode != PrisonerInteractionModeDefOf.Execution && !talkee.Awake())
+				if (mode.mustBeAwake && !talkee.Awake())
 				{
 					return true;
 				}
@@ -79,7 +71,47 @@ namespace RimWorld
 				{
 					return true;
 				}
-				return (talkee.guest == null || talkee.guest.interactionMode != mode) ? true : false;
+				return (talkee.guest == null || talkee.guest.IsInteractionDisabled(mode)) ? true : false;
+			});
+			toil.socialMode = RandomSocialMode.Off;
+			toil.defaultCompleteMode = ToilCompleteMode.PatherArrival;
+			return toil;
+		}
+
+		public static Toil GotoGuiltyColonist(Pawn pawn, Pawn talkee)
+		{
+			Toil toil = ToilMaker.MakeToil("GotoGuiltyColonist");
+			toil.initAction = delegate
+			{
+				pawn.pather.StartPath(talkee, PathEndMode.Touch);
+			};
+			toil.AddFailCondition(delegate
+			{
+				if (talkee.DestroyedOrNull())
+				{
+					return true;
+				}
+				return !talkee.guilt.IsGuilty;
+			});
+			toil.socialMode = RandomSocialMode.Off;
+			toil.defaultCompleteMode = ToilCompleteMode.PatherArrival;
+			return toil;
+		}
+
+		public static Toil GotoSlave(Pawn pawn, Pawn talkee)
+		{
+			Toil toil = ToilMaker.MakeToil("GotoSlave");
+			toil.initAction = delegate
+			{
+				pawn.pather.StartPath(talkee, PathEndMode.Touch);
+			};
+			toil.AddFailCondition(delegate
+			{
+				if (talkee.DestroyedOrNull())
+				{
+					return true;
+				}
+				return !talkee.IsSlaveOfColony;
 			});
 			toil.socialMode = RandomSocialMode.Off;
 			toil.defaultCompleteMode = ToilCompleteMode.PatherArrival;
@@ -88,54 +120,95 @@ namespace RimWorld
 
 		public static Toil WaitToBeAbleToInteract(Pawn pawn)
 		{
-			return new Toil
+			Toil toil = ToilMaker.MakeToil("WaitToBeAbleToInteract");
+			toil.initAction = delegate
 			{
-				initAction = delegate
+				if (!pawn.interactions.InteractedTooRecentlyToInteract())
 				{
-					if (!pawn.interactions.InteractedTooRecentlyToInteract())
-					{
-						pawn.jobs.curDriver.ReadyForNextToil();
-					}
-				},
-				tickAction = delegate
-				{
-					if (!pawn.interactions.InteractedTooRecentlyToInteract())
-					{
-						pawn.jobs.curDriver.ReadyForNextToil();
-					}
-				},
-				socialMode = RandomSocialMode.Off,
-				defaultCompleteMode = ToilCompleteMode.Never
-			};
-		}
-
-		public static Toil ConvinceRecruitee(Pawn pawn, Pawn talkee)
-		{
-			Toil obj = new Toil
-			{
-				initAction = delegate
-				{
-					if (!pawn.interactions.TryInteractWith(talkee, InteractionDefOf.BuildRapport))
-					{
-						pawn.jobs.curDriver.ReadyForNextToil();
-					}
-					else
-					{
-						pawn.records.Increment(RecordDefOf.PrisonersChatted);
-					}
+					pawn.jobs.curDriver.ReadyForNextToil();
 				}
 			};
-			obj.FailOn(() => !talkee.guest.ScheduledForInteraction);
-			obj.socialMode = RandomSocialMode.Off;
-			obj.defaultCompleteMode = ToilCompleteMode.Delay;
-			obj.defaultDuration = 350;
-			obj.activeSkill = () => SkillDefOf.Social;
-			return obj;
+			toil.tickIntervalAction = delegate
+			{
+				if (!pawn.interactions.InteractedTooRecentlyToInteract())
+				{
+					pawn.jobs.curDriver.ReadyForNextToil();
+				}
+			};
+			toil.socialMode = RandomSocialMode.Off;
+			toil.defaultCompleteMode = ToilCompleteMode.Never;
+			return toil;
+		}
+
+		public static Toil ConvinceRecruitee(Pawn pawn, Pawn talkee, InteractionDef interactionDef = null)
+		{
+			Toil toil = ToilMaker.MakeToil("ConvinceRecruitee");
+			toil.initAction = delegate
+			{
+				if (!pawn.interactions.TryInteractWith(talkee, interactionDef ?? InteractionDefOf.BuildRapport))
+				{
+					pawn.jobs.curDriver.ReadyForNextToil();
+				}
+				else
+				{
+					pawn.records.Increment(RecordDefOf.PrisonersChatted);
+				}
+			};
+			toil.FailOn(() => !talkee.guest.ScheduledForInteraction);
+			toil.socialMode = RandomSocialMode.Off;
+			toil.defaultCompleteMode = ToilCompleteMode.Delay;
+			toil.defaultDuration = 350;
+			toil.activeSkill = () => SkillDefOf.Social;
+			return toil;
+		}
+
+		public static Toil Interrogate(Pawn pawn, Pawn talkee)
+		{
+			Toil toil = ToilMaker.MakeToil("Interrogate");
+			toil.initAction = delegate
+			{
+				if (!pawn.interactions.TryInteractWith(talkee, InteractionDefOf.InterrogateIdentity))
+				{
+					pawn.jobs.curDriver.ReadyForNextToil();
+				}
+				else
+				{
+					pawn.records.Increment(RecordDefOf.PrisonersChatted);
+				}
+			};
+			toil.FailOn(() => !talkee.guest.ScheduledForInteraction);
+			toil.socialMode = RandomSocialMode.Off;
+			toil.defaultCompleteMode = ToilCompleteMode.Delay;
+			toil.defaultDuration = 350;
+			toil.activeSkill = () => SkillDefOf.Social;
+			return toil;
+		}
+
+		public static Toil ReduceWill(Pawn pawn, Pawn talkee)
+		{
+			Toil toil = ToilMaker.MakeToil("ReduceWill");
+			toil.initAction = delegate
+			{
+				if (!pawn.interactions.TryInteractWith(talkee, InteractionDefOf.ReduceWill))
+				{
+					pawn.jobs.curDriver.ReadyForNextToil();
+				}
+				else
+				{
+					pawn.records.Increment(RecordDefOf.PrisonersChatted);
+				}
+			};
+			toil.FailOn(() => !talkee.guest.ScheduledForInteraction);
+			toil.socialMode = RandomSocialMode.Off;
+			toil.defaultCompleteMode = ToilCompleteMode.Delay;
+			toil.defaultDuration = 350;
+			toil.activeSkill = () => SkillDefOf.Social;
+			return toil;
 		}
 
 		public static Toil SetLastInteractTime(TargetIndex targetInd)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("SetLastInteractTime");
 			toil.initAction = delegate
 			{
 				Pawn obj = (Pawn)toil.actor.jobs.curJob.GetTarget(targetInd).Thing;
@@ -148,7 +221,7 @@ namespace RimWorld
 
 		public static Toil TryRecruit(TargetIndex recruiteeInd)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("TryRecruit");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;
@@ -168,7 +241,7 @@ namespace RimWorld
 
 		public static Toil TryTrain(TargetIndex traineeInd)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("TryTrain");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;
@@ -176,7 +249,7 @@ namespace RimWorld
 				if (pawn.Spawned && pawn.Awake() && actor.interactions.TryInteractWith(pawn, InteractionDefOf.TrainAttempt))
 				{
 					float statValue = actor.GetStatValue(StatDefOf.TrainAnimalChance);
-					statValue *= GenMath.LerpDouble(0f, 1f, 1.5f, 0.5f, pawn.RaceProps.wildness);
+					statValue *= GenMath.LerpDouble(0f, 1f, 1.5f, 0.5f, pawn.GetStatValue(StatDefOf.Wildness));
 					if (actor.relations.DirectRelationExists(PawnRelationDefOf.Bond, pawn))
 					{
 						statValue *= 5f;
@@ -218,7 +291,7 @@ namespace RimWorld
 
 		public static Toil Interact(TargetIndex otherPawnInd, InteractionDef interaction)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("Interact");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;
@@ -231,6 +304,55 @@ namespace RimWorld
 			toil.socialMode = RandomSocialMode.Off;
 			toil.defaultCompleteMode = ToilCompleteMode.Delay;
 			toil.defaultDuration = 60;
+			return toil;
+		}
+
+		public static Toil TryEnslave(TargetIndex prisonerInd)
+		{
+			Toil toil = ToilMaker.MakeToil("TryEnslave");
+			toil.initAction = delegate
+			{
+				Pawn actor = toil.actor;
+				Pawn pawn = (Pawn)actor.jobs.curJob.GetTarget(prisonerInd).Thing;
+				if (pawn.Spawned && pawn.Awake())
+				{
+					actor.interactions.TryInteractWith(pawn, InteractionDefOf.EnslaveAttempt);
+				}
+			};
+			toil.socialMode = RandomSocialMode.Off;
+			toil.defaultCompleteMode = ToilCompleteMode.Delay;
+			toil.defaultDuration = 350;
+			toil.activeSkill = () => SkillDefOf.Social;
+			return toil;
+		}
+
+		public static Toil TryConvert(TargetIndex prisonerInd)
+		{
+			Toil toil = ToilMaker.MakeToil("TryConvert");
+			toil.initAction = delegate
+			{
+				Pawn actor = toil.actor;
+				Pawn recipient = (Pawn)actor.jobs.curJob.GetTarget(prisonerInd).Thing;
+				actor.interactions.TryInteractWith(recipient, InteractionDefOf.ConvertIdeoAttempt);
+			};
+			toil.socialMode = RandomSocialMode.Off;
+			toil.defaultCompleteMode = ToilCompleteMode.Delay;
+			toil.defaultDuration = 350;
+			toil.activeSkill = () => SkillDefOf.Social;
+			return toil;
+		}
+
+		public static Toil ExtractHemogen(TargetIndex prisonerInd, float bloodLoss)
+		{
+			Toil toil = ToilMaker.MakeToil("ExtractHemogen");
+			toil.initAction = delegate
+			{
+				GenPlace.TryPlaceThing(ThingMaker.MakeThing(ThingDefOf.HemogenPack), toil.actor.Position, toil.actor.Map, ThingPlaceMode.Near);
+				Pawn pawn = (Pawn)toil.actor.jobs.curJob.GetTarget(prisonerInd).Thing;
+				Hediff hediff = HediffMaker.MakeHediff(HediffDefOf.BloodLoss, pawn);
+				hediff.Severity = bloodLoss;
+				pawn.health.AddHediff(hediff);
+			};
 			return toil;
 		}
 	}

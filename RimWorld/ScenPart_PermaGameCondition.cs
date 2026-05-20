@@ -65,12 +65,25 @@ namespace RimWorld
 			{
 				return true;
 			}
-			ScenPart_PermaGameCondition scenPart_PermaGameCondition = other as ScenPart_PermaGameCondition;
-			if (scenPart_PermaGameCondition != null && !gameCondition.CanCoexistWith(scenPart_PermaGameCondition.gameCondition))
+			if (other is ScenPart_PermaGameCondition scenPart_PermaGameCondition && !gameCondition.CanCoexistWith(scenPart_PermaGameCondition.gameCondition))
 			{
 				return false;
 			}
 			return true;
+		}
+
+		public override bool HasNullDefs()
+		{
+			if (!base.HasNullDefs())
+			{
+				return gameCondition == null;
+			}
+			return true;
+		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode() ^ ((gameCondition != null) ? gameCondition.GetHashCode() : 0);
 		}
 	}
 }

@@ -20,7 +20,7 @@ namespace Verse.AI
 		{
 			this.FailOnDestroyedOrNull(TargetIndex.A);
 			this.FailOnBurningImmobile(TargetIndex.B);
-			this.FailOn(() => ((Pawn)(Thing)GetActor().CurJob.GetTarget(TargetIndex.A)).guest.interactionMode != PrisonerInteractionModeDefOf.Release);
+			this.FailOn(() => ((Pawn)(Thing)GetActor().CurJob.GetTarget(TargetIndex.A)).guest.IsInteractionDisabled(PrisonerInteractionModeDefOf.Release));
 			this.FailOnDowned(TargetIndex.A);
 			this.FailOnAggroMentalState(TargetIndex.A);
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.ClosestTouch).FailOn(() => !Prisoner.IsPrisonerOfColony || !Prisoner.guest.PrisonerIsSecure).FailOnSomeonePhysicallyInteracting(TargetIndex.A);
@@ -28,16 +28,16 @@ namespace Verse.AI
 			Toil carryToCell = Toils_Haul.CarryHauledThingToCell(TargetIndex.B);
 			yield return carryToCell;
 			yield return Toils_Haul.PlaceHauledThingInCell(TargetIndex.B, carryToCell, storageMode: false);
-			Toil setReleased = new Toil();
+			Toil setReleased = ToilMaker.MakeToil("MakeNewToils");
 			setReleased.initAction = delegate
 			{
 				Pawn pawn = setReleased.actor.jobs.curJob.targetA.Thing as Pawn;
 				GenGuest.PrisonerRelease(pawn);
-				pawn.guest.ClearLastRecruiterData();
 				if (!PawnBanishUtility.WouldBeLeftToDie(pawn, pawn.Map.Tile))
 				{
 					GenGuest.AddHealthyPrisonerReleasedThoughts(pawn);
 				}
+				QuestUtility.SendQuestTargetSignals(pawn.questTags, "Released", pawn.Named("SUBJECT"));
 			};
 			yield return setReleased;
 		}

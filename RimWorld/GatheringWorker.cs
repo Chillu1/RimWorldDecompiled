@@ -43,10 +43,7 @@ namespace RimWorld
 				return false;
 			}
 			LordJob lordJob = CreateLordJob(spot, organizer);
-			LordMaker.MakeNewLord(organizer.Faction, lordJob, organizer.Map, (!lordJob.OrganizerIsStartingPawn) ? null : new Pawn[1]
-			{
-				organizer
-			});
+			LordMaker.MakeNewLord(organizer.Faction, lordJob, organizer.Map, (!lordJob.OrganizerIsStartingPawn) ? null : new Pawn[1] { organizer });
 			SendLetter(spot, organizer);
 			return true;
 		}

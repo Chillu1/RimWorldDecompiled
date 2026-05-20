@@ -9,21 +9,23 @@ namespace Verse
 		{
 		}
 
-		public override void SubTrigger(TargetInfo A, TargetInfo B)
+		public override void SubTrigger(TargetInfo A, TargetInfo B, int overrideSpawnTick = -1, bool force = false)
 		{
 			ticksLeft = def.initialDelayTicks;
 		}
 
 		public override void SubEffectTick(TargetInfo A, TargetInfo B)
 		{
-			if (ticksLeft == 0)
-			{
-				MakeMote(A, B);
-			}
-			if (ticksLeft >= 0)
+			bool flag = ticksLeft > 0;
+			if (flag)
 			{
 				ticksLeft--;
 			}
+			if (ticksLeft <= 0 && flag)
+			{
+				MakeMote(A, B);
+			}
+			base.SubEffectTick(A, B);
 		}
 	}
 }

@@ -6,7 +6,7 @@ using Verse;
 namespace RimWorld
 {
 	[StaticConstructorOnStartup]
-	public class Designator_Dropdown : Designator
+	public class Designator_Dropdown : DesignatorWithEyedropper
 	{
 		private List<Designator> elements = new List<Designator>();
 
@@ -45,9 +45,9 @@ namespace RimWorld
 
 		public override float PanelReadoutTitleExtraRightMargin => activeDesignator.PanelReadoutTitleExtraRightMargin;
 
-		public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth)
+		public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth, GizmoRenderParms parms)
 		{
-			GizmoResult result = base.GizmoOnGUI(topLeft, maxWidth);
+			GizmoResult result = base.GizmoOnGUI(topLeft, maxWidth, parms);
 			DrawExtraOptionsIcon(topLeft, GetWidth(maxWidth));
 			return result;
 		}
@@ -88,37 +88,140 @@ namespace RimWorld
 
 		public override void ProcessInput(Event ev)
 		{
+			Window window = (elements.Any((Designator x) => x is Designator_Place { PlacingDef: { } placingDef } && placingDef.designatorDropdown.useGridMenu) ? SetupGridMenu(ev) : SetupFloatMenu(ev));
+			Find.WindowStack.Add(window);
+			Find.DesignatorManager.Select(activeDesignator);
+		}
+
+		private Window SetupGridMenu(Event ev)
+		{
+			List<FloatMenuGridOption> list = new List<FloatMenuGridOption>();
+			if (elements.Any((Designator x) => x is Designator_Place { PlacingDef: TerrainDef placingDef2 } && placingDef2.designatorDropdown.includeEyeDropperTool))
+			{
+				if (eyedropper == null)
+				{
+					eyedropper = new Designator_Eyedropper(delegate(ColorDef newCol)
+					{
+						for (int i = 0; i < elements.Count; i++)
+						{
+							Designator designator2 = elements[i];
+							if (designator2 is Designator_Place { PlacingDef: TerrainDef placingDef2 } && placingDef2.colorDef == newCol)
+							{
+								GetDesignatorSelectAction(ev, designator2)();
+								break;
+							}
+						}
+					}, "SelectColoredFloor".Translate(), "DesignatorEyeDropperDesc_Carpet".Translate());
+				}
+				Texture2D eyeDropperTex = Designator_Eyedropper.EyeDropperTex;
+				Action action = delegate
+				{
+					Find.DesignatorManager.Select(eyedropper);
+				};
+				TipSignal? tooltip = "DesignatorEyeDropperDesc_Carpet".Translate();
+				list.Add(new FloatMenuGridOption(eyeDropperTex, action, null, tooltip));
+			}
+			for (int num = 0; num < elements.Count; num++)
+			{
+				Designator designator = elements[num];
+				if (!designator.Visible)
+				{
+					continue;
+				}
+				if (designator is Designator_Place { PlacingDef: { } placingDef } designator_Place)
+				{
+					if (placingDef.designatorDropdown.iconSource == DesignatorDropdownGroupDef.IconSource.Cost)
+					{
+						ThingDef designatorCost = GetDesignatorCost(designator);
+						if (designatorCost != null)
+						{
+							Texture2D iconFor = Widgets.GetIconFor(designatorCost);
+							Action designatorSelectAction = GetDesignatorSelectAction(ev, designator);
+							TipSignal? tooltip = designator.LabelCap;
+							list.Add(new FloatMenuGridOption(iconFor, designatorSelectAction, null, tooltip));
+							continue;
+						}
+					}
+					if (placingDef.designatorDropdown.iconSource == DesignatorDropdownGroupDef.IconSource.Placed)
+					{
+						FloatMenuGridOption floatMenuGridOption = new FloatMenuGridOption((Texture2D)designator_Place.icon, GetDesignatorSelectAction(ev, designator), designator_Place.IconDrawColor, designator.LabelCap);
+						if (placingDef is TerrainDef)
+						{
+							floatMenuGridOption.iconTexCoords = Widgets.CroppedTerrainTextureRect((Texture2D)designator_Place.icon);
+						}
+						list.Add(floatMenuGridOption);
+					}
+				}
+				else
+				{
+					Log.Error("Trying to setup grid float menu with designator without icon.");
+				}
+			}
+			return new FloatMenuGrid(list)
+			{
+				onCloseCallback = delegate
+				{
+					activeDesignatorSet = true;
+				}
+			};
+		}
+
+		private Window SetupFloatMenu(Event ev)
+		{
 			List<FloatMenuOption> list = new List<FloatMenuOption>();
 			for (int i = 0; i < elements.Count; i++)
 			{
-				Designator des = elements[i];
-				if (des.Visible)
+				Designator designator = elements[i];
+				if (!designator.Visible)
 				{
-					Action action = delegate
+					continue;
+				}
+				if (designator is Designator_Place { PlacingDef: { } placingDef } designator_Place)
+				{
+					if (placingDef.designatorDropdown.iconSource == DesignatorDropdownGroupDef.IconSource.Cost)
 					{
-						base.ProcessInput(ev);
-						Find.DesignatorManager.Select(des);
-						SetActiveDesignator(des);
-					};
-					ThingDef designatorCost = GetDesignatorCost(des);
-					if (designatorCost != null)
-					{
-						list.Add(new FloatMenuOption(des.LabelCap, action, designatorCost));
+						ThingDef designatorCost = GetDesignatorCost(designator);
+						if (designatorCost != null)
+						{
+							list.Add(new FloatMenuOption(designator.LabelCap, GetDesignatorSelectAction(ev, designator), designatorCost));
+							continue;
+						}
 					}
-					else
+					if (placingDef.designatorDropdown.iconSource == DesignatorDropdownGroupDef.IconSource.Placed)
 					{
-						list.Add(new FloatMenuOption(des.LabelCap, action));
+						FloatMenuOption floatMenuOption = new FloatMenuOption(designator.LabelCap, GetDesignatorSelectAction(ev, designator), (Texture2D)designator_Place.icon, designator_Place.IconDrawColor);
+						if (placingDef is TerrainDef)
+						{
+							floatMenuOption.iconTexCoords = Widgets.CroppedTerrainTextureRect((Texture2D)designator_Place.icon);
+						}
+						list.Add(floatMenuOption);
+						continue;
 					}
 				}
+				list.Add(new FloatMenuOption(designator.LabelCap, GetDesignatorSelectAction(ev, designator)));
 			}
-			FloatMenu floatMenu = new FloatMenu(list);
-			floatMenu.vanishIfMouseDistant = true;
-			floatMenu.onCloseCallback = delegate
+			return new FloatMenu(list)
 			{
-				activeDesignatorSet = true;
+				onCloseCallback = delegate
+				{
+					activeDesignatorSet = true;
+				}
 			};
-			Find.WindowStack.Add(floatMenu);
-			Find.DesignatorManager.Select(activeDesignator);
+		}
+
+		private Action GetDesignatorSelectAction(Event ev, Designator des)
+		{
+			return delegate
+			{
+				base.ProcessInput(ev);
+				Find.DesignatorManager.Select(des);
+				SetActiveDesignator(des);
+			};
+		}
+
+		public override void DrawIcon(Rect rect, Material buttonMat, GizmoRenderParms parms)
+		{
+			activeDesignator?.DrawIcon(rect, buttonMat, parms);
 		}
 
 		public override AcceptanceReport CanDesignateCell(IntVec3 loc)
@@ -138,14 +241,9 @@ namespace RimWorld
 
 		private ThingDef GetDesignatorCost(Designator des)
 		{
-			Designator_Place designator_Place = des as Designator_Place;
-			if (designator_Place != null)
+			if (des is Designator_Place { PlacingDef: var placingDef } && placingDef.CostList != null && placingDef.CostList.Count > 0)
 			{
-				BuildableDef placingDef = designator_Place.PlacingDef;
-				if (placingDef.costList.Count > 0)
-				{
-					return placingDef.costList.MaxBy((ThingDefCountClass c) => c.thingDef.BaseMarketValue * (float)c.count).thingDef;
-				}
+				return placingDef.CostList.MaxBy((ThingDefCountClass c) => c.thingDef.BaseMarketValue * (float)c.count).thingDef;
 			}
 			return null;
 		}

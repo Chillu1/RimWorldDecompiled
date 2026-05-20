@@ -4,7 +4,7 @@ namespace Verse
 {
 	public static class Printer_Mesh
 	{
-		public static void PrintMesh(SectionLayer layer, Vector3 center, Mesh mesh, Material mat)
+		public static void PrintMesh(SectionLayer layer, Matrix4x4 TRS, Mesh mesh, Material mat)
 		{
 			LayerSubMesh subMesh = layer.GetSubMesh(mat);
 			int count = subMesh.verts.Count;
@@ -14,7 +14,7 @@ namespace Verse
 			Vector2[] uv = mesh.uv;
 			for (int i = 0; i < vertexCount; i++)
 			{
-				subMesh.verts.Add(vertices[i] + center);
+				subMesh.verts.Add(TRS.MultiplyPoint3x4(vertices[i]));
 				if (colors.Length > i)
 				{
 					subMesh.colors.Add(colors[i]);

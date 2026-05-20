@@ -1,4 +1,5 @@
 using System;
+using RimWorld;
 
 namespace Verse
 {
@@ -7,7 +8,7 @@ namespace Verse
 		public SectionLayer_ThingsGeneral(Section section)
 			: base(section)
 		{
-			relevantChangeTypes = MapMeshFlag.Things;
+			relevantChangeTypes = MapMeshFlagDefOf.Things;
 			requireAddToMapMesh = true;
 		}
 
@@ -19,7 +20,7 @@ namespace Verse
 			}
 			catch (Exception ex)
 			{
-				Log.Error(string.Concat("Exception printing ", t, " at ", t.Position, ": ", ex.ToString()));
+				Log.Error("Exception printing " + t?.ToString() + " at " + t.Position.ToString() + ": " + ex);
 			}
 		}
 	}

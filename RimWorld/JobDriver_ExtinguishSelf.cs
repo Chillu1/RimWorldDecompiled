@@ -24,11 +24,11 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.defaultCompleteMode = ToilCompleteMode.Delay;
 			toil.defaultDuration = 150;
 			yield return toil;
-			Toil toil2 = new Toil();
+			Toil toil2 = ToilMaker.MakeToil("MakeNewToils");
 			toil2.initAction = delegate
 			{
 				TargetFire.Destroy();

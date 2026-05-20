@@ -25,14 +25,14 @@ namespace RimWorld
 		{
 			this.FailOnDespawnedOrNull(TargetIndex.A);
 			this.FailOn(() => OtherFiance.Drafted || !pawn.Position.AdjacentTo8WayOrInside(OtherFiance));
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
 				ticksLeftToMarry = 2500;
 			};
-			toil.tickAction = delegate
+			toil.tickIntervalAction = delegate(int delta)
 			{
-				ticksLeftToMarry--;
+				ticksLeftToMarry -= delta;
 				if (ticksLeftToMarry <= 0)
 				{
 					ticksLeftToMarry = 0;
@@ -42,7 +42,7 @@ namespace RimWorld
 			toil.defaultCompleteMode = ToilCompleteMode.Never;
 			toil.FailOn(() => !pawn.relations.DirectRelationExists(PawnRelationDefOf.Fiance, OtherFiance));
 			yield return toil;
-			Toil toil2 = new Toil();
+			Toil toil2 = ToilMaker.MakeToil("MakeNewToils");
 			toil2.defaultCompleteMode = ToilCompleteMode.Instant;
 			toil2.initAction = delegate
 			{

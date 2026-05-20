@@ -1,16 +1,45 @@
 using System.Collections.Generic;
-using System.Linq;
 using Verse;
 
 namespace RimWorld
 {
 	public static class FilthMaker
 	{
-		private static List<Filth> toBeRemoved = new List<Filth>();
+		private static readonly List<Filth> toBeRemoved = new List<Filth>();
 
-		public static bool CanMakeFilth(IntVec3 c, Map map, ThingDef filthDef, FilthSourceFlags additionalFlags = FilthSourceFlags.None)
+		public static bool CanMakeFilth(IntVec3 cell, Map map, ThingDef filthDef, FilthSourceFlags additionalFlags = FilthSourceFlags.None)
 		{
-			return TerrainAcceptsFilth(c.GetTerrain(map), filthDef, additionalFlags);
+			TerrainGrid terrainGrid = map.terrainGrid;
+			foreach (IntVec3 item in GenAdj.OccupiedRect(cell, Rot4.North, filthDef.size))
+			{
+				if (!item.InBounds(map))
+				{
+					return false;
+				}
+				TerrainDef terrainDef = terrainGrid.FoundationAt(item) ?? terrainGrid.TerrainAt(item);
+				if (!filthDef.filth.ignoreFilthMultiplierStat && (filthDef.filth.placementMask & FilthSourceFlags.Natural) == 0 && Rand.Value > terrainDef.GetStatValueAbstract(StatDefOf.FilthMultiplier))
+				{
+					return false;
+				}
+				FilthSourceFlags filthSourceFlags = filthDef.filth.placementMask | additionalFlags;
+				if (terrainDef.filthAcceptanceMask != FilthSourceFlags.None && filthSourceFlags.HasFlag(FilthSourceFlags.Pawn))
+				{
+					if (item.GetRoof(map) != null)
+					{
+						return true;
+					}
+					Room room = item.GetRoom(map);
+					if (room != null && !room.TouchesMapEdge && !room.UsesOutdoorTemperature)
+					{
+						return true;
+					}
+				}
+				if (!TerrainAcceptsFilth(terrainDef, filthDef, additionalFlags))
+				{
+					return false;
+				}
+			}
+			return true;
 		}
 
 		public static bool TerrainAcceptsFilth(TerrainDef terrainDef, ThingDef filthDef, FilthSourceFlags additionalFlags = FilthSourceFlags.None)
@@ -23,12 +52,23 @@ namespace RimWorld
 			return (terrainDef.filthAcceptanceMask & filthSourceFlags) == filthSourceFlags;
 		}
 
-		public static bool TryMakeFilth(IntVec3 c, Map map, ThingDef filthDef, int count = 1, FilthSourceFlags additionalFlags = FilthSourceFlags.None)
+		public static bool TryMakeFilth(IntVec3 c, Map map, ThingDef filthDef, int count = 1, FilthSourceFlags additionalFlags = FilthSourceFlags.None, bool shouldPropagate = true)
 		{
 			bool flag = false;
 			for (int i = 0; i < count; i++)
 			{
-				flag |= TryMakeFilth(c, map, filthDef, null, shouldPropagate: true, additionalFlags);
+				flag |= TryMakeFilth(c, map, filthDef, null, shouldPropagate, out var _, additionalFlags);
+			}
+			return flag;
+		}
+
+		public static bool TryMakeFilth(IntVec3 c, Map map, ThingDef filthDef, out Filth outFilth, int count = 1, FilthSourceFlags additionalFlags = FilthSourceFlags.None, bool shouldPropagate = true)
+		{
+			outFilth = null;
+			bool flag = false;
+			for (int i = 0; i < count; i++)
+			{
+				flag |= TryMakeFilth(c, map, filthDef, null, shouldPropagate, out outFilth, additionalFlags);
 			}
 			return flag;
 		}
@@ -38,42 +78,54 @@ namespace RimWorld
 			bool flag = false;
 			for (int i = 0; i < count; i++)
 			{
-				flag |= TryMakeFilth(c, map, filthDef, Gen.YieldSingle(source), shouldPropagate: true, additionalFlags);
+				flag |= TryMakeFilth(c, map, filthDef, Gen.YieldSingle(source), shouldPropagate: true, out var _, additionalFlags);
 			}
 			return flag;
 		}
 
 		public static bool TryMakeFilth(IntVec3 c, Map map, ThingDef filthDef, IEnumerable<string> sources, FilthSourceFlags additionalFlags = FilthSourceFlags.None)
 		{
-			return TryMakeFilth(c, map, filthDef, sources, shouldPropagate: true, additionalFlags);
+			Filth outFilth;
+			return TryMakeFilth(c, map, filthDef, sources, shouldPropagate: true, out outFilth, additionalFlags);
 		}
 
-		private static bool TryMakeFilth(IntVec3 c, Map map, ThingDef filthDef, IEnumerable<string> sources, bool shouldPropagate, FilthSourceFlags additionalFlags = FilthSourceFlags.None)
+		public static bool TryMakeFilth(IntVec3 c, Map map, ThingDef filthDef, out Filth outFilth, string source, FilthSourceFlags additionalFlags = FilthSourceFlags.None, bool shouldPropagate = true)
 		{
-			Filth filth = (Filth)(from t in c.GetThingList(map)
-				where t.def == filthDef
-				select t).FirstOrDefault();
-			if (!c.Walkable(map) || (filth != null && !filth.CanBeThickened))
+			outFilth = null;
+			return TryMakeFilth(c, map, filthDef, Gen.YieldSingle(source), shouldPropagate, out outFilth, additionalFlags);
+		}
+
+		private static bool TryMakeFilth(IntVec3 c, Map map, ThingDef filthDef, IEnumerable<string> sources, bool shouldPropagate, out Filth outFilth, FilthSourceFlags additionalFlags = FilthSourceFlags.None)
+		{
+			outFilth = (Filth)c.GetThingList(map).FirstOrDefault((Thing t) => t.def == filthDef);
+			if (c.GetTerrain(map).exposesToVacuum)
+			{
+				return false;
+			}
+			if (!c.WalkableByAny(map) || (outFilth != null && !outFilth.CanBeThickened))
 			{
 				if (shouldPropagate)
 				{
 					List<IntVec3> list = GenAdj.AdjacentCells8WayRandomized();
-					for (int i = 0; i < 8; i++)
+					for (int num = 0; num < 8; num++)
 					{
-						IntVec3 c2 = c + list[i];
-						if (c2.InBounds(map) && TryMakeFilth(c2, map, filthDef, sources, shouldPropagate: false))
+						IntVec3 c2 = c + list[num];
+						if (c2.InBounds(map) && TryMakeFilth(c2, map, filthDef, sources, shouldPropagate: false, out outFilth))
 						{
 							return true;
 						}
 					}
 				}
-				filth?.AddSources(sources);
+				if (outFilth != null)
+				{
+					outFilth.AddSources(sources);
+				}
 				return false;
 			}
-			if (filth != null)
+			if (outFilth != null)
 			{
-				filth.ThickenFilth();
-				filth.AddSources(sources);
+				outFilth.ThickenFilth();
+				outFilth.AddSources(sources);
 			}
 			else
 			{
@@ -81,9 +133,9 @@ namespace RimWorld
 				{
 					return false;
 				}
-				Filth obj = (Filth)ThingMaker.MakeThing(filthDef);
-				obj.AddSources(sources);
-				GenSpawn.Spawn(obj, c, map);
+				outFilth = (Filth)ThingMaker.MakeThing(filthDef);
+				outFilth.AddSources(sources);
+				GenSpawn.Spawn(outFilth, c, map);
 			}
 			FilthMonitor.Notify_FilthSpawned();
 			return true;
@@ -95,10 +147,9 @@ namespace RimWorld
 			List<Thing> thingList = c.GetThingList(map);
 			for (int i = 0; i < thingList.Count; i++)
 			{
-				Filth filth = thingList[i] as Filth;
-				if (filth != null)
+				if (thingList[i] is Filth item)
 				{
-					toBeRemoved.Add(filth);
+					toBeRemoved.Add(item);
 				}
 			}
 			for (int j = 0; j < toBeRemoved.Count; j++)

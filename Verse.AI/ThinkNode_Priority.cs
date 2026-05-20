@@ -16,7 +16,7 @@ namespace Verse.AI
 				}
 				catch (Exception ex)
 				{
-					Log.Error(string.Concat("Exception in ", GetType(), " TryIssueJobPackage: ", ex.ToString()));
+					Log.Error("Exception in " + GetType()?.ToString() + " TryIssueJobPackage: " + ex.ToString());
 				}
 				if (result.IsValid)
 				{

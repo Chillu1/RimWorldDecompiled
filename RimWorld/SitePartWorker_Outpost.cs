@@ -10,10 +10,18 @@ namespace RimWorld
 {
 	public class SitePartWorker_Outpost : SitePartWorker
 	{
+		public static readonly SimpleCurve ThreatPointsLootMarketValue = new SimpleCurve
+		{
+			new CurvePoint(100f, 200f),
+			new CurvePoint(250f, 450f),
+			new CurvePoint(800f, 1000f),
+			new CurvePoint(10000f, 2000f)
+		};
+
 		public override string GetArrivedLetterPart(Map map, out LetterDef preferredLetterDef, out LookTargets lookTargets)
 		{
 			string arrivedLetterPart = base.GetArrivedLetterPart(map, out preferredLetterDef, out lookTargets);
-			lookTargets = map.mapPawns.AllPawnsSpawned.Where((Pawn x) => x.RaceProps.Humanlike && x.HostileTo(Faction.OfPlayer)).FirstOrDefault();
+			lookTargets = new LookTargets(map.Parent);
 			return arrivedLetterPart;
 		}
 
@@ -27,13 +35,18 @@ namespace RimWorld
 
 		public override string GetPostProcessedThreatLabel(Site site, SitePart sitePart)
 		{
+			if (site.Faction.IsPlayer)
+			{
+				return null;
+			}
 			return base.GetPostProcessedThreatLabel(site, sitePart) + ": " + "KnownSiteThreatEnemyCountAppend".Translate(GetEnemiesCount(site, sitePart.parms), "Enemies".Translate());
 		}
 
-		public override SitePartParams GenerateDefaultParams(float myThreatPoints, int tile, Faction faction)
+		public override SitePartParams GenerateDefaultParams(float myThreatPoints, PlanetTile tile, Faction faction)
 		{
 			SitePartParams sitePartParams = base.GenerateDefaultParams(myThreatPoints, tile, faction);
 			sitePartParams.threatPoints = Mathf.Max(sitePartParams.threatPoints, faction.def.MinPointsToGeneratePawnGroup(PawnGroupKindDefOf.Settlement));
+			sitePartParams.lootMarketValue = ThreatPointsLootMarketValue.Evaluate(sitePartParams.threatPoints);
 			return sitePartParams;
 		}
 

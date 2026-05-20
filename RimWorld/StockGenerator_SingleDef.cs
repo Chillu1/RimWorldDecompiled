@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -7,9 +8,9 @@ namespace RimWorld
 	{
 		private ThingDef thingDef;
 
-		public override IEnumerable<Thing> GenerateThings(int forTile, Faction faction = null)
+		public override IEnumerable<Thing> GenerateThings(PlanetTile forTile, Faction faction = null)
 		{
-			foreach (Thing item in StockGeneratorUtility.TryMakeForStock(thingDef, RandomCountOf(thingDef)))
+			foreach (Thing item in StockGeneratorUtility.TryMakeForStock(thingDef, RandomCountOf(thingDef), faction))
 			{
 				yield return item;
 			}
@@ -28,7 +29,7 @@ namespace RimWorld
 			}
 			if (!thingDef.tradeability.TraderCanSell())
 			{
-				yield return string.Concat(thingDef, " tradeability doesn't allow traders to sell this thing");
+				yield return thingDef?.ToString() + " tradeability doesn't allow traders to sell this thing";
 			}
 		}
 	}

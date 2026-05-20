@@ -17,7 +17,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (Find.ResearchManager.currentProj != null)
+			if (Find.ResearchManager.GetProject() != null)
 			{
 				return false;
 			}
@@ -40,6 +40,12 @@ namespace RimWorld
 				return false;
 			}
 			return true;
+		}
+
+		protected override void OnClick()
+		{
+			Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Research);
+			((MainTabWindow_Research)MainButtonDefOf.Research.TabWindow).CurTab = ResearchTabDefOf.Main;
 		}
 	}
 }

@@ -15,6 +15,7 @@ namespace RimWorld
 		public MainTabWindow_Menu()
 		{
 			forcePause = true;
+			layer = WindowLayer.Super;
 		}
 
 		public override void PreOpen()
@@ -22,6 +23,10 @@ namespace RimWorld
 			base.PreOpen();
 			PlayerKnowledgeDatabase.Save();
 			ShipCountdown.CancelCountdown();
+			if (ModsConfig.IdeologyActive)
+			{
+				ArchonexusCountdown.CancelCountdown();
+			}
 			anyGameFiles = GenFilePaths.AllSavedGameFiles.Any();
 		}
 
@@ -33,7 +38,6 @@ namespace RimWorld
 
 		public override void DoWindowContents(Rect rect)
 		{
-			base.DoWindowContents(rect);
 			MainMenuDrawer.DoMainMenuControls(rect, anyGameFiles);
 		}
 	}

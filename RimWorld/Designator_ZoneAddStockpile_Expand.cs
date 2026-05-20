@@ -4,6 +4,8 @@ namespace RimWorld
 {
 	public class Designator_ZoneAddStockpile_Expand : Designator_ZoneAddStockpile_Resources
 	{
+		protected override bool ShowRightClickHideOptions => false;
+
 		public Designator_ZoneAddStockpile_Expand()
 		{
 			defaultLabel = "DesignatorZoneExpand".Translate();

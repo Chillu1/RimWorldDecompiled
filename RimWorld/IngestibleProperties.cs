@@ -9,7 +9,9 @@ namespace RimWorld
 		[Unsaved(false)]
 		public ThingDef parent;
 
-		public int maxNumToIngestAtOnce = 20;
+		public int maxNumToIngestAtOnce;
+
+		public int defaultNumToIngestAtOnce = 20;
 
 		public List<IngestionOutcomeDoer> outcomeDoers;
 
@@ -19,11 +21,19 @@ namespace RimWorld
 
 		public bool useEatingSpeedStat = true;
 
+		public bool babiesCanIngest;
+
+		public bool humanlikeOnly;
+
+		public bool nonDrugIngestibleWithoutFoodNeed;
+
 		public ThoughtDef tasteThought;
 
 		public ThoughtDef specialThoughtDirect;
 
 		public ThoughtDef specialThoughtAsIngredient;
+
+		public HistoryEventDef ateEvent;
 
 		public EffecterDef ingestEffect;
 
@@ -43,6 +53,10 @@ namespace RimWorld
 		public HoldOffsetSet ingestHoldOffsetStanding;
 
 		public bool ingestHoldUsesTable = true;
+
+		public bool tableDesired = true;
+
+		public bool showIngestFloatOption = true;
 
 		public FoodTypeFlags foodType;
 
@@ -64,20 +78,12 @@ namespace RimWorld
 
 		public bool canAutoSelectAsFoodForCaravan = true;
 
+		public bool lowPriorityCaravanFood;
+
 		[Unsaved(false)]
 		private float cachedNutrition = -1f;
 
-		public JoyKindDef JoyKind
-		{
-			get
-			{
-				if (joyKind == null)
-				{
-					return JoyKindDefOf.Gluttonous;
-				}
-				return joyKind;
-			}
-		}
+		public JoyKindDef JoyKind => joyKind ?? JoyKindDefOf.Gluttonous;
 
 		public bool HumanEdible => (FoodTypeFlags.OmnivoreHuman & foodType) != 0;
 
@@ -85,9 +91,9 @@ namespace RimWorld
 		{
 			get
 			{
-				if ((int)preferability >= 6)
+				if ((int)preferability >= 7)
 				{
-					return (int)preferability <= 9;
+					return (int)preferability <= 10;
 				}
 				return false;
 			}
@@ -117,7 +123,7 @@ namespace RimWorld
 			}
 			if (parent.GetStatValueAbstract(StatDefOf.Nutrition) == 0f && preferability != FoodPreferability.NeverForNutrition)
 			{
-				yield return string.Concat("Nutrition == 0 but preferability is ", preferability, " instead of ", FoodPreferability.NeverForNutrition);
+				yield return "Nutrition == 0 but preferability is " + preferability.ToString() + " instead of " + FoodPreferability.NeverForNutrition;
 			}
 			if (!parent.IsCorpse && (int)preferability > 3 && !parent.socialPropernessMatters && parent.EverHaulable)
 			{
@@ -145,16 +151,20 @@ namespace RimWorld
 		{
 			if (joy > 0f)
 			{
-				StatCategoryDef category = ((drugCategory != 0) ? StatCategoryDefOf.Drug : StatCategoryDefOf.Basics);
+				StatCategoryDef category = ((drugCategory != DrugCategory.None) ? StatCategoryDefOf.Drug : StatCategoryDefOf.Basics);
 				yield return new StatDrawEntry(category, "Joy".Translate(), joy.ToStringPercent("F0") + " (" + JoyKind.label + ")", "Stat_Thing_Ingestible_Joy_Desc".Translate(), 4751);
 			}
-			if (HumanEdible)
+			if (HumanEdible && parent.GetStatValueAbstract(StatDefOf.Nutrition) > 0f)
 			{
 				RoyalTitleDef royalTitleDef = MaxSatisfiedTitle();
 				if (royalTitleDef != null)
 				{
 					yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Stat_Thing_Ingestible_MaxSatisfiedTitle".Translate(), royalTitleDef.GetLabelCapForBothGenders(), "Stat_Thing_Ingestible_MaxSatisfiedTitle_Desc".Translate(), 4752);
 				}
+			}
+			if (drugCategory != DrugCategory.None)
+			{
+				yield return new StatDrawEntry(StatCategoryDefOf.Drug, "DrugCategory".Translate().CapitalizeFirst(), drugCategory.GetLabel().CapitalizeFirst(), "Stat_Thing_Drug_Category_Desc".Translate(), 2485);
 			}
 			if (outcomeDoers == null)
 			{
@@ -167,6 +177,24 @@ namespace RimWorld
 					yield return item;
 				}
 			}
+		}
+
+		private bool TryGetOutcomeDoer<T>(out T doer) where T : IngestionOutcomeDoer
+		{
+			doer = null;
+			if (outcomeDoers == null)
+			{
+				return false;
+			}
+			foreach (IngestionOutcomeDoer outcomeDoer in outcomeDoers)
+			{
+				if (outcomeDoer is T val)
+				{
+					doer = val;
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 }

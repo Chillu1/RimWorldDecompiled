@@ -10,11 +10,11 @@ namespace RimWorld
 	{
 		private Faction faction;
 
-		public override bool ValidateTarget(LocalTargetInfo target)
+		public override bool ValidateTarget(LocalTargetInfo target, bool showMessages = true)
 		{
 			if (!CanHitTarget(target))
 			{
-				if (target.IsValid)
+				if (target.IsValid && showMessages)
 				{
 					Messages.Message(def.LabelCap + ": " + "AbilityCannotHitTarget".Translate(), MessageTypeDefOf.RejectInput);
 				}
@@ -25,7 +25,7 @@ namespace RimWorld
 
 		public override void DrawHighlight(LocalTargetInfo target)
 		{
-			GenDraw.DrawRadiusRing(caller.Position, def.royalAid.targetingRange, Color.white);
+			GenDraw.DrawRadiusRing(caller.Position, base.RangeClamped, Color.white);
 			GenDraw.DrawRadiusRing(target.Cell, def.royalAid.radius + def.royalAid.explosionRadiusRange.max, Color.white);
 			if (target.IsValid)
 			{
@@ -40,6 +40,11 @@ namespace RimWorld
 
 		public override IEnumerable<FloatMenuOption> GetRoyalAidOptions(Map map, Pawn pawn, Faction faction)
 		{
+			if (AidDisabled_NewTemp(map, pawn, faction, out var reason, temperatureMatters: false))
+			{
+				yield return new FloatMenuOption(def.LabelCap + ": " + reason, null);
+				yield break;
+			}
 			if (faction.HostileTo(Faction.OfPlayer))
 			{
 				yield return new FloatMenuOption(def.LabelCap + ": " + "CommandCallRoyalAidFactionHostile".Translate(faction.Named("FACTION")), null);
@@ -68,13 +73,19 @@ namespace RimWorld
 			base.map = map;
 			this.faction = faction;
 			base.free = free;
+			float rangeActual = base.RangeClamped;
 			targetingParameters.validator = delegate(TargetInfo target)
 			{
-				if (def.royalAid.targetingRange > 0f && target.Cell.DistanceTo(caller.Position) > def.royalAid.targetingRange)
+				if (rangeActual > 0f && target.Cell.DistanceTo(caller.Position) > rangeActual)
 				{
 					return false;
 				}
-				return (!target.Cell.Fogged(map)) ? true : false;
+				if (target.Cell.Fogged(map))
+				{
+					return false;
+				}
+				RoofDef roof = target.Cell.GetRoof(map);
+				return (roof == null || !roof.isThickRoof) ? true : false;
 			};
 			Find.Targeter.BeginTargeting(this);
 		}

@@ -49,20 +49,37 @@ namespace RimWorld.QuestGen
 			public bool allowTemporaryFactions;
 
 			public bool allowHidden;
+
+			public bool mustBeCapableOfViolence;
+
+			public bool redressPawn;
+
+			public PawnGenerationRequest GenerationRequest(PawnKindDef pawnKind, Faction faction, RoyalTitleDef fixedTitle)
+			{
+				bool flag = mustBeCapableOfViolence;
+				return new PawnGenerationRequest(pawnKind, faction, PawnGenerationContext.NonPlayer, null, forceGenerateNewPawn: true, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, flag, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowPregnant: false, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, 0f, null, 1f, null, null, null, null, null, null, null, null, null, null, fixedTitle);
+			}
 		}
 
 		public const int MaxUsablePawnsToGenerate = 10;
 
-		public static Pawn GeneratePawn(this Quest quest, PawnKindDef kindDef, Faction faction, bool allowAddictions = true, IEnumerable<TraitDef> forcedTraits = null, float biocodeWeaponChance = 0f, bool mustBeCapableOfViolence = true, Pawn extraPawnForExtraRelationChance = null, float relationWithExtraPawnChanceFactor = 0f, float biocodeApparelChance = 0f, bool ensureNonNumericName = false, bool forceGenerateNewPawn = false)
+		public static Pawn GeneratePawn(this Quest quest, PawnKindDef kindDef, Faction faction, bool allowAddictions = true, IEnumerable<TraitDef> forcedTraits = null, float biocodeWeaponChance = 0f, bool mustBeCapableOfViolence = true, Pawn extraPawnForExtraRelationChance = null, float relationWithExtraPawnChanceFactor = 0f, float biocodeApparelChance = 0f, bool ensureNonNumericName = false, bool forceGenerateNewPawn = false, DevelopmentalStage developmentalStages = DevelopmentalStage.Adult, bool allowPregnant = false)
 		{
 			bool allowAddictions2 = allowAddictions;
 			bool mustBeCapableOfViolence2 = mustBeCapableOfViolence;
-			PawnGenerationRequest request = new PawnGenerationRequest(kindDef, faction, PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn, newborn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence2, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowFood: true, allowAddictions2, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, biocodeWeaponChance, extraPawnForExtraRelationChance, relationWithExtraPawnChanceFactor, null, null, forcedTraits);
+			bool forceGenerateNewPawn2 = forceGenerateNewPawn;
+			bool allowPregnant2 = allowPregnant;
+			PawnGenerationRequest request = new PawnGenerationRequest(kindDef, faction, PawnGenerationContext.NonPlayer, null, forceGenerateNewPawn2, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence2, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowPregnant2, allowFood: true, allowAddictions2, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, biocodeWeaponChance, 0f, extraPawnForExtraRelationChance, relationWithExtraPawnChanceFactor, null, null, forcedTraits, null, null, null, null, null, null, null, null, null, forceNoIdeo: false, forceNoBackstory: false, forbidAnyTitle: false, forceDead: false, null, null, null, null, null, 0f, developmentalStages);
 			request.BiocodeApparelChance = biocodeApparelChance;
+			return quest.GeneratePawn(request, ensureNonNumericName);
+		}
+
+		public static Pawn GeneratePawn(this Quest quest, PawnGenerationRequest request, bool ensureNonNumericName = false)
+		{
 			Pawn pawn = PawnGenerator.GeneratePawn(request);
 			if (ensureNonNumericName && (pawn.Name == null || pawn.Name.Numerical))
 			{
-				pawn.Name = PawnBioAndNameGenerator.GeneratePawnName(pawn);
+				pawn.Name = PawnBioAndNameGenerator.GeneratePawnName(pawn, NameStyle.Full, null, forceNoNick: false, pawn.genes?.Xenotype);
 			}
 			QuestGen.AddToGeneratedPawns(pawn);
 			if (!pawn.IsWorldPawn())
@@ -111,8 +128,19 @@ namespace RimWorld.QuestGen
 			_ = QuestGen.slate;
 			IEnumerable<Pawn> source = ExistingUsablePawns(parms);
 			int num = source.Count();
-			Faction faction;
-			Pawn pawn = ((!Rand.Chance(parms.canGeneratePawn ? Mathf.Clamp01(1f - (float)num / 10f) : 0f) || (!parms.mustHaveNoFaction && !TryFindFactionForPawnGeneration(parms, out faction))) ? source.RandomElement() : GeneratePawn(parms));
+			Pawn pawn;
+			if (Rand.Chance(parms.canGeneratePawn ? Mathf.Clamp01(1f - (float)num / 10f) : 0f) && (parms.mustHaveNoFaction || TryFindFactionForPawnGeneration(parms, out var _)))
+			{
+				pawn = GeneratePawn(parms);
+			}
+			else
+			{
+				pawn = source.RandomElement();
+				if (parms.redressPawn)
+				{
+					PawnGenerator.RedressPawn(pawn, parms.GenerationRequest(pawn.kindDef, pawn.Faction, null));
+				}
+			}
 			if (pawn.Faction != null && !pawn.Faction.Hidden)
 			{
 				QuestPart_InvolvedFactions questPart_InvolvedFactions = new QuestPart_InvolvedFactions();
@@ -130,7 +158,7 @@ namespace RimWorld.QuestGen
 
 		private static bool TryFindFactionForPawnGeneration(GetPawnParms parms, out Faction faction)
 		{
-			return Find.FactionManager.GetFactions_NewTemp(allowTemporary: parms.allowTemporaryFactions, allowHidden: parms.allowHidden, allowDefeated: false, allowNonHumanlike: false).Where(delegate(Faction x)
+			return Find.FactionManager.GetFactions(allowTemporary: parms.allowTemporaryFactions, allowHidden: parms.allowHidden, allowDefeated: false, allowNonHumanlike: false).Where(delegate(Faction x)
 			{
 				if (parms.mustBeOfFaction != null && x != parms.mustBeOfFaction)
 				{
@@ -148,7 +176,7 @@ namespace RimWorld.QuestGen
 				{
 					return false;
 				}
-				if (!(parms.allowPermanentEnemyFaction ?? false) && x.def.permanentEnemy)
+				if (parms.allowPermanentEnemyFaction != true && x.def.permanentEnemy)
 				{
 					return false;
 				}
@@ -193,7 +221,7 @@ namespace RimWorld.QuestGen
 			{
 				result = DefDatabase<PawnKindDef>.AllDefsListForReading.Where((PawnKindDef kind) => kind.race.race.Humanlike).RandomElement();
 			}
-			Pawn pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(result, faction, PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: true, newborn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: false, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, null, 1f, null, null, null, null, null, null, null, null, null, null, null, fixedTitle));
+			Pawn pawn = PawnGenerator.GeneratePawn(parms.GenerationRequest(result, faction, fixedTitle));
 			Find.WorldPawns.PassToWorld(pawn);
 			if (pawn.royalty != null && pawn.royalty.AllTitlesForReading.Any())
 			{
@@ -274,7 +302,8 @@ namespace RimWorld.QuestGen
 			{
 				return false;
 			}
-			if (!(parms.allowPermanentEnemyFaction ?? true) && pawn.Faction != null && pawn.Faction.def.permanentEnemy)
+			bool? allowPermanentEnemyFaction = parms.allowPermanentEnemyFaction;
+			if (allowPermanentEnemyFaction.HasValue && allowPermanentEnemyFaction != true && pawn.Faction != null && pawn.Faction.def.permanentEnemy)
 			{
 				return false;
 			}
@@ -285,6 +314,10 @@ namespace RimWorld.QuestGen
 				{
 					return false;
 				}
+			}
+			if (parms.mustBeCapableOfViolence && pawn.WorkTagIsDisabled(WorkTags.Violent))
+			{
+				return false;
 			}
 			return true;
 		}
@@ -297,7 +330,7 @@ namespace RimWorld.QuestGen
 			}
 			for (int i = 0; i < title.bedroomRequirements.Count; i++)
 			{
-				if (!title.bedroomRequirements[i].PlayerHasResearched())
+				if (!title.bedroomRequirements[i].PlayerCanBuildNow())
 				{
 					return false;
 				}
@@ -313,14 +346,66 @@ namespace RimWorld.QuestGen
 			return questPart_ReservePawns;
 		}
 
-		public static QuestPart_FeedPawns FeedPawns(this Quest quest, IEnumerable<Pawn> pawns = null, Thing pawnsInTransporter = null, string inSignal = null)
+		public static QuestPart_TransporterPawns_Feed FeedPawns(this Quest quest, IEnumerable<Pawn> pawns = null, Thing pawnsInTransporter = null, string inSignal = null)
 		{
-			QuestPart_FeedPawns questPart_FeedPawns = new QuestPart_FeedPawns();
-			questPart_FeedPawns.pawnsInTransporter = pawnsInTransporter;
-			questPart_FeedPawns.pawns = pawns?.ToList();
-			questPart_FeedPawns.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal) ?? QuestGen.slate.Get<string>("inSignal");
-			quest.AddPart(questPart_FeedPawns);
-			return questPart_FeedPawns;
+			QuestPart_TransporterPawns_Feed questPart_TransporterPawns_Feed = new QuestPart_TransporterPawns_Feed();
+			questPart_TransporterPawns_Feed.pawnsInTransporter = pawnsInTransporter;
+			questPart_TransporterPawns_Feed.pawns = pawns?.ToList();
+			questPart_TransporterPawns_Feed.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal) ?? QuestGen.slate.Get<string>("inSignal");
+			quest.AddPart(questPart_TransporterPawns_Feed);
+			return questPart_TransporterPawns_Feed;
+		}
+
+		public static QuestPart_TransporterPawns_Tend TendPawns(this Quest quest, IEnumerable<Pawn> pawns = null, Thing pawnsInTransporter = null, string inSignal = null)
+		{
+			QuestPart_TransporterPawns_Tend questPart_TransporterPawns_Tend = new QuestPart_TransporterPawns_Tend();
+			questPart_TransporterPawns_Tend.pawnsInTransporter = pawnsInTransporter;
+			questPart_TransporterPawns_Tend.pawns = pawns?.ToList();
+			questPart_TransporterPawns_Tend.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal) ?? QuestGen.slate.Get<string>("inSignal");
+			quest.AddPart(questPart_TransporterPawns_Tend);
+			return questPart_TransporterPawns_Tend;
+		}
+
+		public static QuestPart_TransporterPawns_TendWithMedicine TendPawnsWithMedicine(this Quest quest, ThingDef medicineDef, bool allowSelfTend = true, IEnumerable<Pawn> pawns = null, Thing pawnsInTransporter = null, string inSignal = null)
+		{
+			QuestPart_TransporterPawns_TendWithMedicine questPart_TransporterPawns_TendWithMedicine = new QuestPart_TransporterPawns_TendWithMedicine();
+			questPart_TransporterPawns_TendWithMedicine.pawnsInTransporter = pawnsInTransporter;
+			questPart_TransporterPawns_TendWithMedicine.pawns = pawns?.ToList();
+			questPart_TransporterPawns_TendWithMedicine.medicineDef = medicineDef;
+			questPart_TransporterPawns_TendWithMedicine.allowSelfTend = allowSelfTend;
+			questPart_TransporterPawns_TendWithMedicine.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal) ?? QuestGen.slate.Get<string>("inSignal");
+			quest.AddPart(questPart_TransporterPawns_TendWithMedicine);
+			return questPart_TransporterPawns_TendWithMedicine;
+		}
+
+		public static QuestPart_EnsureNotDowned EnsureNotDowned(this Quest quest, IEnumerable<Pawn> pawns, string inSignal = null)
+		{
+			QuestPart_EnsureNotDowned questPart_EnsureNotDowned = new QuestPart_EnsureNotDowned();
+			questPart_EnsureNotDowned.pawns = pawns?.ToList();
+			questPart_EnsureNotDowned.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal) ?? QuestGen.slate.Get<string>("inSignal");
+			quest.AddPart(questPart_EnsureNotDowned);
+			return questPart_EnsureNotDowned;
+		}
+
+		public static QuestPart_Bestowing_TargetChangedTitle Bestowing_TargetChangedTitle(this Quest quest, Pawn target, Pawn bestower, RoyalTitleDef currentTitle, string inSignal)
+		{
+			QuestPart_Bestowing_TargetChangedTitle questPart_Bestowing_TargetChangedTitle = new QuestPart_Bestowing_TargetChangedTitle();
+			questPart_Bestowing_TargetChangedTitle.pawn = target;
+			questPart_Bestowing_TargetChangedTitle.bestower = bestower;
+			questPart_Bestowing_TargetChangedTitle.currentTitle = currentTitle;
+			questPart_Bestowing_TargetChangedTitle.inSignal = inSignal;
+			questPart_Bestowing_TargetChangedTitle.signalListenMode = QuestPart.SignalListenMode.OngoingOrNotYetAccepted;
+			quest.AddPart(questPart_Bestowing_TargetChangedTitle);
+			return questPart_Bestowing_TargetChangedTitle;
+		}
+
+		public static QuestPart_SetAllApparelLocked SetAllApparelLocked(this Quest quest, IEnumerable<Pawn> pawns, string inSignal = null)
+		{
+			QuestPart_SetAllApparelLocked questPart_SetAllApparelLocked = new QuestPart_SetAllApparelLocked();
+			questPart_SetAllApparelLocked.pawns.AddRange(pawns);
+			questPart_SetAllApparelLocked.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal) ?? QuestGen.slate.Get<string>("inSignal");
+			quest.AddPart(questPart_SetAllApparelLocked);
+			return questPart_SetAllApparelLocked;
 		}
 	}
 }

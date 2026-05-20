@@ -24,13 +24,36 @@ namespace RimWorld
 
 		public override IEnumerable<Thing> PlayerStartingThings()
 		{
+			if (thingDef.stackLimit == 1)
+			{
+				for (int i = 0; i < count; i++)
+				{
+					yield return GenerateThing(1);
+				}
+			}
+			else
+			{
+				yield return GenerateThing(count);
+			}
+		}
+
+		private Thing GenerateThing(int num)
+		{
 			Thing thing = ThingMaker.MakeThing(thingDef, stuff);
+			if (thing.TryGetComp(out CompQuality comp))
+			{
+				comp.SetQuality(quality ?? QualityCategory.Normal, ArtGenerationContext.Outsider);
+			}
 			if (thingDef.Minifiable)
 			{
 				thing = thing.MakeMinified();
 			}
-			thing.stackCount = count;
-			yield return thing;
+			if (thingDef.IsIngestible && thingDef.ingestible.IsMeal)
+			{
+				FoodUtility.GenerateGoodIngredients(thing, Faction.OfPlayer.ideos.PrimaryIdeo);
+			}
+			thing.stackCount = num;
+			return thing;
 		}
 	}
 }

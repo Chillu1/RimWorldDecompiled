@@ -7,20 +7,18 @@ namespace RimWorld
 	{
 		protected override Job TryGiveJob(Pawn pawn)
 		{
-			MentalState_Tantrum mentalState_Tantrum = pawn.MentalState as MentalState_Tantrum;
-			if (mentalState_Tantrum == null || mentalState_Tantrum.target == null || !pawn.CanReach(mentalState_Tantrum.target, PathEndMode.Touch, Danger.Deadly))
+			if (!(pawn.MentalState is MentalState_Tantrum { target: not null } mentalState_Tantrum) || !mentalState_Tantrum.target.Spawned || !pawn.CanReach(mentalState_Tantrum.target, PathEndMode.Touch, Danger.Deadly))
 			{
 				return null;
 			}
 			Verb verb = null;
-			Pawn pawn2 = mentalState_Tantrum.target as Pawn;
-			if (pawn2 != null)
+			if (mentalState_Tantrum.target is Pawn pawn2)
 			{
 				if (pawn2.Downed)
 				{
 					return null;
 				}
-				if (!InteractionUtility.TryGetRandomVerbForSocialFight(pawn, out verb))
+				if (!SocialInteractionUtility.TryGetRandomVerbForSocialFight(pawn, out verb))
 				{
 					return null;
 				}

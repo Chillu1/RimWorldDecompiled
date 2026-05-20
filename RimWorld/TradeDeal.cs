@@ -82,28 +82,29 @@ namespace RimWorld
 
 		private bool InSellablePosition(Thing t, out string reason)
 		{
-			if (!t.Spawned)
+			if (!t.Spawned && (!ModsConfig.BiotechActive || t.def != ThingDefOf.Genepack || !(t.ParentHolder is CompGenepackContainer)) && (!(t is Book) || !(t.ParentHolder is Building_Bookcase)) && !(t.ParentHolder is Building_OutfitStand))
 			{
 				reason = null;
 				return false;
 			}
-			if (t.Position.Fogged(t.Map))
+			IntVec3 positionHeld = t.PositionHeld;
+			Room room = t.SpawnedParentOrMe.GetRoom();
+			if (positionHeld.Fogged(t.MapHeld))
 			{
 				reason = null;
 				return false;
 			}
-			Room room = t.GetRoom();
 			if (room != null)
 			{
 				int num = GenRadial.NumCellsInRadius(6.9f);
 				for (int i = 0; i < num; i++)
 				{
-					IntVec3 intVec = t.Position + GenRadial.RadialPattern[i];
-					if (!intVec.InBounds(t.Map) || intVec.GetRoom(t.Map) != room)
+					IntVec3 intVec = positionHeld + GenRadial.RadialPattern[i];
+					if (!intVec.InBounds(t.MapHeld) || intVec.GetRoom(t.MapHeld) != room)
 					{
 						continue;
 					}
-					List<Thing> thingList = intVec.GetThingList(t.Map);
+					List<Thing> thingList = intVec.GetThingList(t.MapHeld);
 					for (int j = 0; j < thingList.Count; j++)
 					{
 						if (thingList[j].PreventPlayerSellingThingsNearby(out reason))
@@ -164,13 +165,36 @@ namespace RimWorld
 				actuallyTraded = false;
 				return false;
 			}
+			if (ModsConfig.IdeologyActive)
+			{
+				if (tradeables.Any((Tradeable x) => x.ActionToDo != TradeAction.None && x.ThingDef != null && x.ThingDef.IsNaturalOrgan))
+				{
+					HistoryEvent historyEvent = new HistoryEvent(HistoryEventDefOf.TradedOrgan, TradeSession.playerNegotiator.Named(HistoryEventArgsNames.Doer));
+					if (!historyEvent.Notify_PawnAboutToDo())
+					{
+						actuallyTraded = false;
+						return false;
+					}
+					Find.HistoryEventsManager.RecordEvent(historyEvent);
+				}
+				if (tradeables.Any((Tradeable x) => x.ActionToDo == TradeAction.PlayerSells && x.ThingDef != null && x.ThingDef.IsNaturalOrgan))
+				{
+					HistoryEvent historyEvent2 = new HistoryEvent(HistoryEventDefOf.SoldOrgan, TradeSession.playerNegotiator.Named(HistoryEventArgsNames.Doer));
+					if (!historyEvent2.Notify_PawnAboutToDo())
+					{
+						actuallyTraded = false;
+						return false;
+					}
+					Find.HistoryEventsManager.RecordEvent(historyEvent2);
+				}
+			}
 			UpdateCurrencyCount();
 			LimitCurrencyCountToFunds();
 			actuallyTraded = false;
 			float num = 0f;
 			foreach (Tradeable tradeable in tradeables)
 			{
-				if (tradeable.ActionToDo != 0)
+				if (tradeable.ActionToDo != TradeAction.None)
 				{
 					actuallyTraded = true;
 				}
@@ -185,8 +209,7 @@ namespace RimWorld
 			{
 				TradeSession.trader.Faction.Notify_PlayerTraded(num, TradeSession.playerNegotiator);
 			}
-			Pawn pawn = TradeSession.trader as Pawn;
-			if (pawn != null)
+			if (TradeSession.trader is Pawn pawn)
 			{
 				TaleRecorder.RecordTale(TaleDefOf.TradedWith, TradeSession.playerNegotiator, pawn);
 			}

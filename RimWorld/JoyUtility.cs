@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Verse;
 using Verse.AI;
@@ -8,9 +9,9 @@ namespace RimWorld
 {
 	public static class JoyUtility
 	{
-		private static List<JoyKindDef> tempKindList = new List<JoyKindDef>();
+		private static readonly List<JoyKindDef> tempKindList = new List<JoyKindDef>();
 
-		private static List<JoyKindDef> listedJoyKinds = new List<JoyKindDef>();
+		private static readonly List<JoyKindDef> listedJoyKinds = new List<JoyKindDef>();
 
 		public static bool EnjoyableOutsideNow(Map map, StringBuilder outFailReason = null)
 		{
@@ -43,16 +44,21 @@ namespace RimWorld
 				outFailReason?.Append("NotEnjoyableOutsideTemperature".Translate());
 				return false;
 			}
+			if (mapHeld.Biome.inVacuum && pawn.ConcernedByVacuum)
+			{
+				outFailReason?.Append("Vacuum".Translate());
+				return false;
+			}
 			return true;
 		}
 
-		public static void JoyTickCheckEnd(Pawn pawn, JoyTickFullJoyAction fullJoyAction = JoyTickFullJoyAction.EndJob, float extraJoyGainFactor = 1f, Building joySource = null)
+		public static bool JoyTickCheckEnd(Pawn pawn, int delta, JoyTickFullJoyAction fullJoyAction = JoyTickFullJoyAction.EndJob, float extraJoyGainFactor = 1f, Building joySource = null)
 		{
 			Job curJob = pawn.CurJob;
 			if (curJob.def.joyKind == null)
 			{
 				Log.Warning("This method can only be called for jobs with joyKind.");
-				return;
+				return false;
 			}
 			if (joySource != null)
 			{
@@ -62,32 +68,35 @@ namespace RimWorld
 				}
 				extraJoyGainFactor *= joySource.GetStatValue(StatDefOf.JoyGainFactor);
 			}
-			if (pawn.needs.joy == null)
+			if (pawn.needs.joy == null && !curJob.doUntilGatheringEnded)
 			{
 				pawn.jobs.curDriver.EndJobWith(JobCondition.InterruptForced);
-				return;
+				return false;
 			}
-			pawn.needs.joy.GainJoy(extraJoyGainFactor * curJob.def.joyGainRate * 0.36f / 2500f, curJob.def.joyKind);
+			pawn.needs.joy?.GainJoy(extraJoyGainFactor * curJob.def.joyGainRate * 0.36f / 2500f * (float)delta, curJob.def.joyKind);
 			if (curJob.def.joySkill != null)
 			{
-				pawn.skills.GetSkill(curJob.def.joySkill).Learn(curJob.def.joyXpPerTick);
+				pawn.skills.GetSkill(curJob.def.joySkill).Learn(curJob.def.joyXpPerTick * (float)delta);
 			}
-			if (!curJob.ignoreJoyTimeAssignment && !pawn.GetTimeAssignment().allowJoy)
+			if (!curJob.ignoreJoyTimeAssignment && !pawn.GetTimeAssignment().allowJoy && !curJob.doUntilGatheringEnded)
 			{
 				pawn.jobs.curDriver.EndJobWith(JobCondition.InterruptForced);
+				return true;
 			}
-			if (pawn.needs.joy.CurLevel > 0.9999f)
+			Need_Joy joy = pawn.needs.joy;
+			if (joy != null && joy.CurLevel > 0.9999f && !curJob.doUntilGatheringEnded)
 			{
 				switch (fullJoyAction)
 				{
 				case JoyTickFullJoyAction.EndJob:
 					pawn.jobs.curDriver.EndJobWith(JobCondition.Succeeded);
-					break;
+					return true;
 				case JoyTickFullJoyAction.GoToNextToil:
 					pawn.jobs.curDriver.ReadyForNextToil();
-					break;
+					return true;
 				}
 			}
+			return false;
 		}
 
 		public static void TryGainRecRoomThought(Pawn pawn)
@@ -96,7 +105,7 @@ namespace RimWorld
 			if (room != null)
 			{
 				int scoreStageIndex = RoomStatDefOf.Impressiveness.GetScoreStageIndex(room.GetStat(RoomStatDefOf.Impressiveness));
-				if (pawn.needs.mood != null && ThoughtDefOf.AteInImpressiveDiningRoom.stages[scoreStageIndex] != null)
+				if (pawn.needs.mood != null && ThoughtDefOf.JoyActivityInImpressiveRecRoom.stages[scoreStageIndex] != null)
 				{
 					pawn.needs.mood.thoughts.memories.TryGainMemory(ThoughtMaker.MakeThought(ThoughtDefOf.JoyActivityInImpressiveRecRoom, scoreStageIndex));
 				}
@@ -161,7 +170,36 @@ namespace RimWorld
 					tempKindList.Add(item3.def.ingestible.joyKind);
 				}
 			}
+			CheckForReadingRecreation(map);
 			return tempKindList;
+		}
+
+		private static void CheckForReadingRecreation(Map map)
+		{
+			foreach (Thing item in map.listerThings.ThingsInGroup(ThingRequestGroup.Book))
+			{
+				if (!tempKindList.Contains(JoyKindDefOf.Reading) && !item.Position.Fogged(map))
+				{
+					tempKindList.Add(JoyKindDefOf.Reading);
+					return;
+				}
+			}
+			foreach (Pawn item2 in map.mapPawns.FreeColonistsSpawned)
+			{
+				if (item2.carryTracker?.CarriedThing is Book)
+				{
+					tempKindList.Add(JoyKindDefOf.Reading);
+					return;
+				}
+			}
+			foreach (Building_Bookcase item3 in map.listerThings.GetThingsOfType<Building_Bookcase>())
+			{
+				if (item3.HeldBooks.Any() && !tempKindList.Contains(JoyKindDefOf.Reading) && !item3.Position.Fogged(map))
+				{
+					tempKindList.Add(JoyKindDefOf.Reading);
+					break;
+				}
+			}
 		}
 
 		public static string JoyKindsOnMapString(Map map)
@@ -196,6 +234,39 @@ namespace RimWorld
 					CheckAppendJoyKind(stringBuilder, item3, item3.def.ingestible.joyKind, map);
 				}
 			}
+			bool flag = false;
+			using (List<Thing>.Enumerator enumerator2 = map.listerThings.ThingsInGroup(ThingRequestGroup.Book).GetEnumerator())
+			{
+				if (enumerator2.MoveNext())
+				{
+					_ = enumerator2.Current;
+					CheckAppendJoyKind(stringBuilder, null, JoyKindDefOf.Reading, map);
+					flag = true;
+				}
+			}
+			if (!flag)
+			{
+				foreach (Pawn item4 in map.mapPawns.FreeColonistsSpawned)
+				{
+					if (item4.carryTracker?.CarriedThing is Book)
+					{
+						CheckAppendJoyKind(stringBuilder, null, JoyKindDefOf.Reading, map);
+						flag = true;
+						break;
+					}
+				}
+			}
+			if (!flag)
+			{
+				foreach (Building_Bookcase item5 in map.listerBuildings.AllColonistBuildingsOfType<Building_Bookcase>())
+				{
+					if (item5.HeldBooks.Any())
+					{
+						CheckAppendJoyKind(stringBuilder, null, JoyKindDefOf.Reading, map);
+						break;
+					}
+				}
+			}
 			listedJoyKinds.Clear();
 			return stringBuilder.ToString().TrimEndNewlines();
 		}
@@ -206,9 +277,10 @@ namespace RimWorld
 			{
 				return;
 			}
+			sb.Append("  - ");
 			if (t == null)
 			{
-				sb.AppendLine("   " + kind.LabelCap);
+				sb.AppendLine(kind.LabelCap);
 			}
 			else
 			{
@@ -216,7 +288,7 @@ namespace RimWorld
 				{
 					return;
 				}
-				sb.AppendLine("   " + kind.LabelCap + " (" + t.def.label + ")");
+				sb.AppendLine(kind.LabelCap + " (" + t.def.label + ")");
 			}
 			listedJoyKinds.Add(kind);
 		}
@@ -235,7 +307,7 @@ namespace RimWorld
 				JoyKindDef joyKindDef = allDefsListForReading[i];
 				if (!list.Contains(joyKindDef))
 				{
-					text += "   " + joyKindDef.LabelCap + "\n";
+					text += "  - " + joyKindDef.LabelCap + "\n";
 				}
 			}
 			list.Clear();

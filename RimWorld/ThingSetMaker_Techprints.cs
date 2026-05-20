@@ -7,6 +7,8 @@ namespace RimWorld
 {
 	public class ThingSetMaker_Techprints : ThingSetMaker
 	{
+		public bool weightAccordingToPlayerNeeds = true;
+
 		private float marketValueFactor = 1f;
 
 		private static readonly SimpleCurve ResearchableProjectsCountToSelectionWeightCurve = new SimpleCurve
@@ -19,6 +21,10 @@ namespace RimWorld
 
 		public override float ExtraSelectionWeightFactor(ThingSetMakerParams parms)
 		{
+			if (!weightAccordingToPlayerNeeds)
+			{
+				return 1f;
+			}
 			int num = 0;
 			bool flag = false;
 			foreach (ResearchProjectDef allDef in DefDatabase<ResearchProjectDef>.AllDefs)
@@ -49,7 +55,7 @@ namespace RimWorld
 				return false;
 			}
 			ThingDef result;
-			return TechprintUtility.TryGetTechprintDefToGenerate(parms.makingFaction, out result, null, (!parms.totalMarketValueRange.HasValue) ? float.MaxValue : (parms.totalMarketValueRange.Value.max * marketValueFactor));
+			return TechprintUtility.TryGetTechprintDefToGenerate_NewTemp(parms.makingFaction, out result, null, (!parms.totalMarketValueRange.HasValue) ? float.MaxValue : (parms.totalMarketValueRange.Value.max * marketValueFactor));
 		}
 
 		protected override void Generate(ThingSetMakerParams parms, List<Thing> outThings)
@@ -61,7 +67,7 @@ namespace RimWorld
 				int num = Mathf.Max(parms.countRange.Value.RandomInRange, 1);
 				for (int i = 0; i < num; i++)
 				{
-					if (!TechprintUtility.TryGetTechprintDefToGenerate(parms.makingFaction, out var result, tmpGenerated))
+					if (!TechprintUtility.TryGetTechprintDefToGenerate_NewTemp(parms.makingFaction, out var result, tmpGenerated, float.MaxValue, weightAccordingToPlayerNeeds))
 					{
 						break;
 					}
@@ -73,13 +79,13 @@ namespace RimWorld
 			{
 				float num2 = parms.totalMarketValueRange.Value.RandomInRange * marketValueFactor;
 				ThingDef result2;
-				for (float num3 = 0f; TechprintUtility.TryGetTechprintDefToGenerate(parms.makingFaction, out result2, tmpGenerated, num2 - num3) || (!tmpGenerated.Any() && TechprintUtility.TryGetTechprintDefToGenerate(parms.makingFaction, out result2, tmpGenerated)); num3 += result2.BaseMarketValue)
+				for (float num3 = 0f; TechprintUtility.TryGetTechprintDefToGenerate_NewTemp(parms.makingFaction, out result2, tmpGenerated, num2 - num3, weightAccordingToPlayerNeeds) || (!tmpGenerated.Any() && TechprintUtility.TryGetTechprintDefToGenerate_NewTemp(parms.makingFaction, out result2, tmpGenerated, float.MaxValue, weightAccordingToPlayerNeeds)); num3 += result2.BaseMarketValue)
 				{
 					tmpGenerated.Add(result2);
 					outThings.Add(ThingMaker.MakeThing(result2));
 				}
 			}
-			else if (TechprintUtility.TryGetTechprintDefToGenerate(parms.makingFaction, out result3, tmpGenerated))
+			else if (TechprintUtility.TryGetTechprintDefToGenerate_NewTemp(parms.makingFaction, out result3, tmpGenerated, float.MaxValue, weightAccordingToPlayerNeeds))
 			{
 				tmpGenerated.Add(result3);
 				outThings.Add(ThingMaker.MakeThing(result3));

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Verse;
+using Verse.Grammar;
 
 namespace RimWorld
 {
@@ -8,6 +9,8 @@ namespace RimWorld
 	{
 		[MustTranslate]
 		public string skillLabel;
+
+		public RulePack generalRules;
 
 		public bool usuallyDefinedInBackstories = true;
 
@@ -19,6 +22,8 @@ namespace RimWorld
 
 		public bool neverDisabledBasedOnWorkTypes;
 
+		public InteractionDef lessonInteraction;
+
 		public override void PostLoad()
 		{
 			if (label == null)
@@ -27,9 +32,18 @@ namespace RimWorld
 			}
 		}
 
+		public override void ResolveReferences()
+		{
+			base.ResolveReferences();
+			if (lessonInteraction == null)
+			{
+				lessonInteraction = InteractionDefOf.LessonGeneric;
+			}
+		}
+
 		public bool IsDisabled(WorkTags combinedDisabledWorkTags, IEnumerable<WorkTypeDef> disabledWorkTypes)
 		{
-			if ((combinedDisabledWorkTags & disablingWorkTags) != 0)
+			if ((combinedDisabledWorkTags & disablingWorkTags) != WorkTags.None)
 			{
 				return true;
 			}

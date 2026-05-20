@@ -48,6 +48,10 @@ namespace RimWorld
 		{
 			get
 			{
+				if (base.State != QuestPartState.Enabled)
+				{
+					return AlertReport.Inactive;
+				}
 				if (resolvedLookTargets.IsValid())
 				{
 					return AlertReport.CulpritsAre(resolvedLookTargets.targets);
@@ -84,7 +88,7 @@ namespace RimWorld
 		public override void AssignDebugData()
 		{
 			base.AssignDebugData();
-			label = "Dev: Test";
+			label = "DEV: Test";
 			explanation = "Test text";
 		}
 	}

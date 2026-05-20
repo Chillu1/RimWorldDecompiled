@@ -18,17 +18,20 @@ namespace Verse.AI.Group
 
 		public float repeatAvoiderSeconds;
 
+		private Func<bool> canSendMessage;
+
 		public TransitionAction_Message(string message, string repeatAvoiderTag = null, float repeatAvoiderSeconds = 1f)
 			: this(message, MessageTypeDefOf.NeutralEvent, repeatAvoiderTag, repeatAvoiderSeconds)
 		{
 		}
 
-		public TransitionAction_Message(string message, MessageTypeDef messageType, string repeatAvoiderTag = null, float repeatAvoiderSeconds = 1f)
+		public TransitionAction_Message(string message, MessageTypeDef messageType, string repeatAvoiderTag = null, float repeatAvoiderSeconds = 1f, Func<bool> canSendMessage = null)
 		{
 			this.message = message;
 			type = messageType;
 			this.repeatAvoiderTag = repeatAvoiderTag;
 			this.repeatAvoiderSeconds = repeatAvoiderSeconds;
+			this.canSendMessage = canSendMessage;
 		}
 
 		public TransitionAction_Message(string message, MessageTypeDef messageType, TargetInfo lookTarget, string repeatAvoiderTag = null, float repeatAvoiderSeconds = 1f)
@@ -51,14 +54,14 @@ namespace Verse.AI.Group
 
 		public override void DoAction(Transition trans)
 		{
-			if (repeatAvoiderTag.NullOrEmpty() || MessagesRepeatAvoider.MessageShowAllowed(repeatAvoiderTag, repeatAvoiderSeconds))
+			if ((repeatAvoiderTag.NullOrEmpty() || MessagesRepeatAvoider.MessageShowAllowed(repeatAvoiderTag, repeatAvoiderSeconds)) && (canSendMessage == null || canSendMessage()))
 			{
-				TargetInfo target = ((lookTargetGetter != null) ? lookTargetGetter() : lookTarget);
-				if (!target.IsValid)
+				TargetInfo targetInfo = ((lookTargetGetter != null) ? lookTargetGetter() : lookTarget);
+				if (!targetInfo.IsValid)
 				{
-					target = trans.target.lord.ownedPawns.FirstOrDefault();
+					targetInfo = trans.target.lord.ownedPawns.FirstOrDefault();
 				}
-				Messages.Message(message, target, type);
+				Messages.Message(message, targetInfo, type);
 			}
 		}
 	}

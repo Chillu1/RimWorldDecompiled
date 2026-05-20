@@ -5,7 +5,7 @@ namespace RimWorld
 {
 	internal class WorkGiver_FightFires : WorkGiver_Scanner
 	{
-		private const int NearbyPawnRadius = 15;
+		public const int NearbyPawnRadius = 15;
 
 		private const int MaxReservationCheckDistance = 15;
 
@@ -22,19 +22,21 @@ namespace RimWorld
 
 		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			Fire fire = t as Fire;
-			if (fire == null)
+			if (!(t is Fire fire))
 			{
 				return false;
 			}
-			Pawn pawn2 = fire.parent as Pawn;
-			if (pawn2 != null)
+			if (fire.parent is Pawn pawn2)
 			{
 				if (pawn2 == pawn)
 				{
 					return false;
 				}
-				if ((pawn2.Faction == pawn.Faction || pawn2.HostFaction == pawn.Faction || pawn2.HostFaction == pawn.HostFaction) && !pawn.Map.areaManager.Home[fire.Position] && IntVec3Utility.ManhattanDistanceFlat(pawn.Position, pawn2.Position) > 15)
+				if ((pawn2.Faction == null || pawn2.Faction != pawn.Faction) && (pawn2.HostFaction == null || (pawn2.HostFaction != pawn.Faction && pawn2.HostFaction != pawn.HostFaction)))
+				{
+					return false;
+				}
+				if (!pawn.Map.areaManager.Home[fire.Position] && IntVec3Utility.ManhattanDistanceFlat(pawn.Position, pawn2.Position) > 15)
 				{
 					return false;
 				}
@@ -47,6 +49,7 @@ namespace RimWorld
 			{
 				if (pawn.WorkTagIsDisabled(WorkTags.Firefighting))
 				{
+					JobFailReason.Is("IncapableOfFirefighting".Translate());
 					return false;
 				}
 				if (!pawn.Map.areaManager.Home[fire.Position])
@@ -59,7 +62,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (FireIsBeingHandled(fire, pawn))
+			if (!forced && FireIsBeingHandled(fire, pawn))
 			{
 				return false;
 			}

@@ -11,12 +11,22 @@ namespace RimWorld
 			List<Thing> containedAndAdjacentThings = room.ContainedAndAdjacentThings;
 			for (int i = 0; i < containedAndAdjacentThings.Count; i++)
 			{
-				if (containedAndAdjacentThings[i] is Building_ResearchBench)
+				_ = containedAndAdjacentThings[i];
+				if (containedAndAdjacentThings[i].def.building?.workTableRoomRole == RoomRoleDefOf.Laboratory)
 				{
 					num++;
 				}
 			}
-			return 30f * (float)num;
+			return 60f * (float)num;
+		}
+
+		public override float GetScoreDeltaIfBuildingPlaced(Room room, ThingDef buildingDef)
+		{
+			if (buildingDef.building?.workTableRoomRole == RoomRoleDefOf.Laboratory)
+			{
+				return 60f;
+			}
+			return 0f;
 		}
 	}
 }

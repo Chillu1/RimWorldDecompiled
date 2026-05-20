@@ -12,11 +12,11 @@ namespace RimWorld
 
 		private static readonly SimpleCurve SeasonalAreaSeasons = new SimpleCurve
 		{
-			new CurvePoint(-0.0425000042f, 0f),
-			new CurvePoint(0.0425000042f, 1f),
+			new CurvePoint(-0.042500004f, 0f),
+			new CurvePoint(0.042500004f, 1f),
 			new CurvePoint(0.2075f, 1f),
-			new CurvePoint(0.292500019f, 2f),
-			new CurvePoint(0.457499981f, 2f),
+			new CurvePoint(0.29250002f, 2f),
+			new CurvePoint(0.45749998f, 2f),
 			new CurvePoint(0.5425f, 3f),
 			new CurvePoint(0.7075f, 3f),
 			new CurvePoint(0.7925f, 4f),
@@ -266,7 +266,7 @@ namespace RimWorld
 			{
 				if (!twelfths.Contains(twelfth))
 				{
-					Log.Error(string.Concat("Twelfths doesn't contain ", twelfth, " (", leftMostTwelfth, "..", rightMostTwelfth, ")"));
+					Log.Error("Twelfths doesn't contain " + twelfth.ToString() + " (" + leftMostTwelfth.ToString() + ".." + rightMostTwelfth.ToString() + ")");
 					break;
 				}
 				twelfths.Remove(twelfth);

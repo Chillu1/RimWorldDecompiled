@@ -56,10 +56,7 @@ namespace RimWorld
 
 		Thing IVerbOwner.ConstantCaster => pawn;
 
-		private Thing ConstantCaster
-		{
-			get;
-		}
+		private Thing ConstantCaster { get; }
 
 		string IVerbOwner.UniqueVerbOwnerID()
 		{
@@ -86,7 +83,7 @@ namespace RimWorld
 		{
 			if (IgniteVerb == null)
 			{
-				Log.ErrorOnce(string.Concat(pawn, " tried to ignite ", target, " but has no ignite verb."), 76453432);
+				Log.ErrorOnce(pawn?.ToString() + " tried to ignite " + target?.ToString() + " but has no ignite verb.", 76453432);
 				return false;
 			}
 			if (pawn.stances.FullBodyBusy)
@@ -100,7 +97,7 @@ namespace RimWorld
 		{
 			if (BeatFireVerb == null)
 			{
-				Log.ErrorOnce(string.Concat(pawn, " tried to beat fire ", targetFire, " but has no beat fire verb."), 935137531);
+				Log.ErrorOnce(pawn?.ToString() + " tried to beat fire " + targetFire?.ToString() + " but has no beat fire verb.", 935137531);
 				return false;
 			}
 			if (pawn.stances.FullBodyBusy)
@@ -118,11 +115,11 @@ namespace RimWorld
 
 		private void CheckCreateVerbProperties()
 		{
-			if (cachedVerbProperties == null && (int)pawn.RaceProps.intelligence >= 1)
+			if (cachedVerbProperties == null && ((int)pawn.RaceProps.intelligence >= 1 || pawn.RaceProps.giveNonToolUserBeatFireVerb))
 			{
 				cachedVerbProperties = new List<VerbProperties>();
 				cachedVerbProperties.Add(NativeVerbPropertiesDatabase.VerbWithCategory(VerbCategory.BeatFire));
-				if (!pawn.RaceProps.IsMechanoid)
+				if (!pawn.RaceProps.IsMechanoid && !pawn.RaceProps.disableIgniteVerb && (int)pawn.RaceProps.intelligence >= 1)
 				{
 					cachedVerbProperties.Add(NativeVerbPropertiesDatabase.VerbWithCategory(VerbCategory.Ignite));
 				}

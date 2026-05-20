@@ -7,6 +7,12 @@ namespace RimWorld
 
 		public static RaidStrategyDef ImmediateAttackFriendly;
 
+		[MayRequireAnomaly]
+		public static RaidStrategyDef PsychicRitualSiege;
+
+		[MayRequireAnomaly]
+		public static RaidStrategyDef ShamblerAssault;
+
 		static RaidStrategyDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(RaidStrategyDefOf));

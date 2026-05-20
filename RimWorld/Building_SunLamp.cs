@@ -29,7 +29,7 @@ namespace RimWorld
 
 		private void MakeMatchingGrowZone()
 		{
-			Designator designator = DesignatorUtility.FindAllowedDesignator<Designator_ZoneAdd_Growing>();
+			Designator_ZoneAdd_Growing designator = DesignatorUtility.FindAllowedDesignator<Designator_ZoneAdd_Growing>();
 			designator.DesignateMultiCell(GrowableCells.Where((IntVec3 tempCell) => designator.CanDesignateCell(tempCell).Accepted));
 		}
 	}

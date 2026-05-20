@@ -18,7 +18,7 @@ namespace RimWorld
 					relatedPawns.Add(relatedPawn);
 				}
 			}
-			Pawn pawn2 = GetClosestFamilyPawn(ignoreFaction: false);
+			Pawn pawn2 = GetClosestFamilyPawn();
 			if (pawn2 != null)
 			{
 				return pawn2;
@@ -34,7 +34,7 @@ namespace RimWorld
 				return pawn2;
 			}
 			return null;
-			Pawn GetClosestFamilyPawn(bool ignoreFaction)
+			Pawn GetClosestFamilyPawn(bool ignoreFaction = false)
 			{
 				foreach (PawnRelationDef royalTitleInheritanceRelation in faction.def.royalTitleInheritanceRelations)
 				{

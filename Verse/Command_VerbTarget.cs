@@ -11,7 +11,11 @@ namespace Verse
 
 		private List<Verb> groupedVerbs;
 
+		public Thing ownerThing;
+
 		public bool drawRadius = true;
+
+		public bool requiresAvailableVerb = true;
 
 		public override Color IconDrawColor
 		{
@@ -25,28 +29,55 @@ namespace Verse
 			}
 		}
 
+		public override void DrawIcon(Rect rect, Material buttonMat, GizmoRenderParms parms)
+		{
+			if (ownerThing != null)
+			{
+				Thing thing = ownerThing;
+				float scale = iconDrawScale * 0.85f;
+				bool lowLight = parms.lowLight;
+				Widgets.ThingIcon(rect, thing, 1f, null, stackOfOne: false, scale, lowLight);
+			}
+			else
+			{
+				base.DrawIcon(rect, buttonMat, parms);
+			}
+		}
+
 		public override void GizmoUpdateOnMouseover()
 		{
 			if (!drawRadius)
 			{
 				return;
 			}
-			verb.verbProps.DrawRadiusRing(verb.caster.Position);
+			verb.verbProps.DrawRadiusRing(verb.caster.Position, verb);
 			if (groupedVerbs.NullOrEmpty())
 			{
 				return;
 			}
 			foreach (Verb groupedVerb in groupedVerbs)
 			{
-				groupedVerb.verbProps.DrawRadiusRing(groupedVerb.caster.Position);
+				groupedVerb.verbProps.DrawRadiusRing(groupedVerb.caster.Position, groupedVerb);
 			}
+		}
+
+		public override bool GroupsWith(Gizmo other)
+		{
+			if (!(other is Command_VerbTarget command_VerbTarget))
+			{
+				return false;
+			}
+			if (ownerThing != null && command_VerbTarget.ownerThing != null)
+			{
+				return ownerThing.def == command_VerbTarget.ownerThing.def;
+			}
+			return base.GroupsWith(other);
 		}
 
 		public override void MergeWith(Gizmo other)
 		{
 			base.MergeWith(other);
-			Command_VerbTarget command_VerbTarget = other as Command_VerbTarget;
-			if (command_VerbTarget == null)
+			if (!(other is Command_VerbTarget command_VerbTarget))
 			{
 				Log.ErrorOnce("Tried to merge Command_VerbTarget with unexpected type", 73406263);
 				return;
@@ -77,7 +108,7 @@ namespace Verse
 			}
 			else
 			{
-				Find.Targeter.BeginTargeting(verb);
+				Find.Targeter.BeginTargeting(verb, null, allowNonSelectedTargetingSource: false, null, null, requiresAvailableVerb);
 			}
 		}
 	}

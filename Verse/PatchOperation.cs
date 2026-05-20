@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using System.Xml;
 
 namespace Verse
@@ -65,6 +67,11 @@ namespace Verse
 				}
 				Log.Error(text);
 			}
+		}
+
+		public virtual IEnumerable<string> ConfigErrors()
+		{
+			return Enumerable.Empty<string>();
 		}
 	}
 }

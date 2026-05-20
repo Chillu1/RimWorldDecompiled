@@ -7,8 +7,7 @@ namespace RimWorld
 	{
 		protected override Job TryGiveJob(Pawn pawn)
 		{
-			MentalState_Slaughterer mentalState_Slaughterer = pawn.MentalState as MentalState_Slaughterer;
-			if (mentalState_Slaughterer != null && mentalState_Slaughterer.SlaughteredRecently)
+			if (pawn.MentalState is MentalState_SlaughterThing { SlaughteredRecently: not false })
 			{
 				return null;
 			}

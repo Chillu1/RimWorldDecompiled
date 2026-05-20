@@ -39,19 +39,15 @@ namespace RimWorld
 			float maxQuality = medicine?.def.GetStatValueAbstract(StatDefOf.MedicalQualityMax) ?? 0.7f;
 			for (int i = 0; i < tmpHediffsToTend.Count; i++)
 			{
-				tmpHediffsToTend[i].Tended_NewTemp(quality, maxQuality, i);
+				tmpHediffsToTend[i].Tended(quality, maxQuality, i);
 			}
 			if (doctor != null && doctor.Faction == Faction.OfPlayer && patient.Faction != doctor.Faction && !patient.IsPrisoner && patient.Faction != null)
 			{
 				patient.mindState.timesGuestTendedToByPlayer++;
 			}
-			if (doctor != null && doctor.IsColonistPlayerControlled)
+			if (doctor != null && doctor.RaceProps.Humanlike && patient.RaceProps.Animal && patient.RaceProps.playerCanChangeMaster && RelationsUtility.TryDevelopBondRelation(doctor, patient, 0.004f) && doctor.Faction != null && doctor.Faction != patient.Faction)
 			{
-				patient.records.AccumulateStoryEvent(StoryEventDefOf.TendedByPlayer);
-			}
-			if (doctor != null && doctor.RaceProps.Humanlike && patient.RaceProps.Animal && RelationsUtility.TryDevelopBondRelation(doctor, patient, 0.004f) && doctor.Faction != null && doctor.Faction != patient.Faction)
-			{
-				InteractionWorker_RecruitAttempt.DoRecruit(doctor, patient, 1f, useAudiovisualEffects: false);
+				InteractionWorker_RecruitAttempt.DoRecruit(doctor, patient, useAudiovisualEffects: false);
 			}
 			patient.records.Increment(RecordDefOf.TimesTendedTo);
 			doctor?.records.Increment(RecordDefOf.TimesTendedOther);
@@ -61,7 +57,7 @@ namespace RimWorld
 			}
 			if (medicine != null)
 			{
-				if ((patient.Spawned || (doctor != null && doctor.Spawned)) && medicine != null && medicine.GetStatValue(StatDefOf.MedicalPotency) > ThingDefOf.MedicineIndustrial.GetStatValueAbstract(StatDefOf.MedicalPotency))
+				if ((patient.Spawned || (doctor != null && doctor.Spawned)) && medicine.GetStatValue(StatDefOf.MedicalPotency) > ThingDefOf.MedicineIndustrial.GetStatValueAbstract(StatDefOf.MedicalPotency))
 				{
 					SoundDefOf.TechMedicineUsed.PlayOneShot(new TargetInfo(patient.Position, patient.Map));
 				}
@@ -73,6 +69,21 @@ namespace RimWorld
 				{
 					medicine.Destroy();
 				}
+			}
+			if (ModsConfig.IdeologyActive && doctor?.Ideo != null)
+			{
+				Precept_Role role = doctor.Ideo.GetRole(doctor);
+				if (role?.def.roleEffects != null)
+				{
+					foreach (RoleEffect roleEffect in role.def.roleEffects)
+					{
+						roleEffect.Notify_Tended(doctor, patient);
+					}
+				}
+			}
+			if (doctor != null && doctor.Faction == Faction.OfPlayer && doctor != patient)
+			{
+				QuestUtility.SendQuestTargetSignals(patient.questTags, "PlayerTended", patient.Named("SUBJECT"));
 			}
 		}
 
@@ -141,19 +152,10 @@ namespace RimWorld
 				float num = hediff.Severity;
 				for (int k = 0; k < tmpHediffs.Count; k++)
 				{
-					if (tmpHediffs[k] == hediff)
+					if (tmpHediffs[k] != hediff && tmpHediffs[k] is Hediff_Injury { Severity: var severity } hediff_Injury && num + severity <= 20f)
 					{
-						continue;
-					}
-					Hediff_Injury hediff_Injury = tmpHediffs[k] as Hediff_Injury;
-					if (hediff_Injury != null)
-					{
-						float severity = hediff_Injury.Severity;
-						if (num + severity <= 20f)
-						{
-							num += severity;
-							outHediffsToTend.Add(hediff_Injury);
-						}
+						num += severity;
+						outHediffsToTend.Add(hediff_Injury);
 					}
 				}
 			}
@@ -171,9 +173,9 @@ namespace RimWorld
 				}
 				tmpHediffsWithTendPriority.SortByDescending((Pair<Hediff, float> x) => x.Second, (Pair<Hediff, float> x) => x.First.Severity);
 				hediffs.Clear();
-				for (int j = 0; j < tmpHediffsWithTendPriority.Count; j++)
+				for (int num = 0; num < tmpHediffsWithTendPriority.Count; num++)
 				{
-					hediffs.Add(tmpHediffsWithTendPriority[j].First);
+					hediffs.Add(tmpHediffsWithTendPriority[num].First);
 				}
 				tmpHediffsWithTendPriority.Clear();
 			}

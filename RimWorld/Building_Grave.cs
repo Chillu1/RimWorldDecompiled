@@ -4,10 +4,8 @@ using Verse;
 
 namespace RimWorld
 {
-	public class Building_Grave : Building_Casket, IStoreSettingsParent, IHaulDestination
+	public class Building_Grave : Building_CorpseCasket, INotifyHauledTo
 	{
-		private StorageSettings storageSettings;
-
 		private Graphic cachedGraphicFull;
 
 		public Pawn AssignedPawn
@@ -28,7 +26,7 @@ namespace RimWorld
 		{
 			get
 			{
-				if (HasCorpse)
+				if (base.HasCorpse)
 				{
 					if (def.building.fullGraveGraphicData == null)
 					{
@@ -44,60 +42,16 @@ namespace RimWorld
 			}
 		}
 
-		public bool HasCorpse => Corpse != null;
-
-		public Corpse Corpse
+		public override bool StorageTabVisible
 		{
 			get
 			{
-				for (int i = 0; i < innerContainer.Count; i++)
+				if (base.StorageTabVisible)
 				{
-					Corpse corpse = innerContainer[i] as Corpse;
-					if (corpse != null)
-					{
-						return corpse;
-					}
-				}
-				return null;
-			}
-		}
-
-		public bool StorageTabVisible
-		{
-			get
-			{
-				if (AssignedPawn == null)
-				{
-					return !HasCorpse;
+					return AssignedPawn == null;
 				}
 				return false;
 			}
-		}
-
-		public StorageSettings GetStoreSettings()
-		{
-			return storageSettings;
-		}
-
-		public StorageSettings GetParentStoreSettings()
-		{
-			return def.building.fixedStorageSettings;
-		}
-
-		public override void PostMake()
-		{
-			base.PostMake();
-			storageSettings = new StorageSettings(this);
-			if (def.building.defaultStorageSettings != null)
-			{
-				storageSettings.CopyFrom(def.building.defaultStorageSettings);
-			}
-		}
-
-		public override void ExposeData()
-		{
-			base.ExposeData();
-			Scribe_Deep.Look(ref storageSettings, "storageSettings", this);
 		}
 
 		public override void EjectContents()
@@ -105,21 +59,21 @@ namespace RimWorld
 			base.EjectContents();
 			if (base.Spawned)
 			{
-				base.Map.mapDrawer.MapMeshDirty(base.Position, MapMeshFlag.Things);
+				base.Map.mapDrawer.MapMeshDirty(base.Position, MapMeshFlagDefOf.Things);
 			}
 		}
 
-		public virtual void Notify_CorpseBuried(Pawn worker)
+		public virtual void Notify_HauledTo(Pawn hauler, Thing thing, int count)
 		{
 			CompArt comp = GetComp<CompArt>();
-			if (comp != null && !comp.Active)
+			if (comp != null && !comp.Active && hauler.RaceProps.Humanlike)
 			{
-				comp.JustCreatedBy(worker);
-				comp.InitializeArt(Corpse.InnerPawn);
+				comp.JustCreatedBy(hauler);
+				comp.InitializeArt(base.Corpse.InnerPawn);
 			}
-			base.Map.mapDrawer.MapMeshDirty(base.Position, MapMeshFlag.Things | MapMeshFlag.Buildings);
-			worker.records.Increment(RecordDefOf.CorpsesBuried);
-			TaleRecorder.RecordTale(TaleDefOf.BuriedCorpse, worker, (Corpse != null) ? Corpse.InnerPawn : null);
+			base.Map.mapDrawer.MapMeshDirty(base.Position, (ulong)MapMeshFlagDefOf.Buildings | (ulong)MapMeshFlagDefOf.Things);
+			hauler.records.Increment(RecordDefOf.CorpsesBuried);
+			TaleRecorder.RecordTale(TaleDefOf.BuriedCorpse, hauler, base.Corpse?.InnerPawn);
 		}
 
 		public override bool Accepts(Thing thing)
@@ -128,14 +82,13 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (HasCorpse)
+			if (base.HasCorpse)
 			{
 				return false;
 			}
 			if (AssignedPawn != null)
 			{
-				Corpse corpse = thing as Corpse;
-				if (corpse == null)
+				if (!(thing is Corpse corpse))
 				{
 					return false;
 				}
@@ -155,14 +108,13 @@ namespace RimWorld
 		{
 			if (base.TryAcceptThing(thing, allowSpecialEffects))
 			{
-				Corpse corpse = thing as Corpse;
-				if (corpse != null && corpse.InnerPawn.ownership != null && corpse.InnerPawn.ownership.AssignedGrave != this)
+				if (thing is Corpse corpse && corpse.InnerPawn.ownership != null && corpse.InnerPawn.ownership.AssignedGrave != this)
 				{
 					corpse.InnerPawn.ownership.UnclaimGrave();
 				}
 				if (base.Spawned)
 				{
-					base.Map.mapDrawer.MapMeshDirty(base.Position, MapMeshFlag.Things);
+					base.Map.mapDrawer.MapMeshDirty(base.Position, MapMeshFlagDefOf.Things);
 				}
 				return true;
 			}
@@ -185,17 +137,23 @@ namespace RimWorld
 			}
 		}
 
+		public override void Notify_ColorChanged()
+		{
+			base.Notify_ColorChanged();
+			cachedGraphicFull = null;
+		}
+
 		public override string GetInspectString()
 		{
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.Append(base.GetInspectString());
-			if (HasCorpse)
+			if (base.HasCorpse)
 			{
-				if (base.Tile != -1)
+				if (base.Tile.Valid)
 				{
-					string value = GenDate.DateFullStringAt(GenDate.TickGameToAbs(Corpse.timeOfDeath), Find.WorldGrid.LongLatOf(base.Tile));
+					string text = GenDate.DateFullStringAt(GenDate.TickGameToAbs(base.Corpse.timeOfDeath), Find.WorldGrid.LongLatOf(base.Tile));
 					stringBuilder.AppendLine();
-					stringBuilder.Append("DiedOn".Translate(value));
+					stringBuilder.Append("DiedOn".Translate(text));
 				}
 			}
 			else if (AssignedPawn != null)

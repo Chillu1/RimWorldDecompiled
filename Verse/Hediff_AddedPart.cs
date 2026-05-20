@@ -1,21 +1,9 @@
-using System.Text;
 using RimWorld;
 
 namespace Verse
 {
 	public class Hediff_AddedPart : Hediff_Implant
 	{
-		public override string TipStringExtra
-		{
-			get
-			{
-				StringBuilder stringBuilder = new StringBuilder();
-				stringBuilder.Append(base.TipStringExtra);
-				stringBuilder.AppendLine("Efficiency".Translate() + ": " + def.addedPartProps.partEfficiency.ToStringPercent());
-				return stringBuilder.ToString();
-			}
-		}
-
 		public override void PostAdd(DamageInfo? dinfo)
 		{
 			base.PostAdd(dinfo);

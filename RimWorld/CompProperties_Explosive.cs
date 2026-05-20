@@ -33,6 +33,24 @@ namespace RimWorld
 
 		public bool explodeOnKilled;
 
+		public bool explodeOnDestroyed;
+
+		public GasType? postExplosionGasType;
+
+		public float? postExplosionGasRadiusOverride;
+
+		public int postExplosionGasAmount = 255;
+
+		public bool doVisualEffects = true;
+
+		public bool doSoundEffects = true;
+
+		public float propagationSpeed = 1f;
+
+		public ThingDef postExplosionSpawnSingleThingDef;
+
+		public ThingDef preExplosionSpawnSingleThingDef;
+
 		public float explosiveExpandPerStackcount;
 
 		public float explosiveExpandPerFuel;
@@ -49,6 +67,10 @@ namespace RimWorld
 
 		public float wickScale = 1f;
 
+		public List<DamageDef> startWickOnInternalDamageTaken;
+
+		public bool drawWick = true;
+
 		public float chanceNeverExplodeFromDamage;
 
 		public float destroyThingOnExplosionSize;
@@ -58,6 +80,8 @@ namespace RimWorld
 		public IntRange? countdownTicks;
 
 		public string extraInspectStringKey;
+
+		public List<WickMessage> wickMessages;
 
 		public CompProperties_Explosive()
 		{

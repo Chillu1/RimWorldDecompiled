@@ -42,16 +42,9 @@ namespace RimWorld
 			return false;
 		}
 
-		[Obsolete("Only need this overload to not break mod compatibility.")]
-		public static bool IsViolatingRulesOfAnyFaction_NewTemp(Def implantOrWeapon, Pawn pawn, int implantLevel = 0, bool ignoreSilencer = false)
-		{
-			return IsViolatingRulesOfAnyFaction(implantOrWeapon, pawn, implantLevel);
-		}
-
 		public static RoyalTitleDef GetMinTitleToUse(Def implantOrWeapon, Faction faction, int implantLevel = 0)
 		{
-			HediffDef implantDef;
-			if ((implantDef = implantOrWeapon as HediffDef) != null)
+			if (implantOrWeapon is HediffDef implantDef)
 			{
 				return faction.GetMinTitleForImplant(implantDef, implantLevel);
 			}

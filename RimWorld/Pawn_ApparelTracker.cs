@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld.Planet;
@@ -16,6 +17,14 @@ namespace RimWorld
 
 		private int lastApparelWearoutTick = -1;
 
+		private List<ApparelRequirementWithSource> allRequirements = new List<ApparelRequirementWithSource>();
+
+		private List<ApparelRequirement> activeRequirements = new List<ApparelRequirement>();
+
+		private bool activeRequirementsDirty = true;
+
+		private bool allRequirementsDirty = true;
+
 		private const int RecordWalkedNakedTaleIntervalTicks = 60000;
 
 		private const float AutoUnlockHealthPctThreshold = 0.5f;
@@ -30,9 +39,88 @@ namespace RimWorld
 
 		public List<Apparel> WornApparel => wornApparel.InnerListForReading;
 
+		public List<ApparelRequirement> ActiveRequirementsForReading
+		{
+			get
+			{
+				if (activeRequirementsDirty)
+				{
+					activeRequirements.Clear();
+					foreach (ApparelRequirementWithSource allRequirement in AllRequirements)
+					{
+						if (ApparelUtility.IsRequirementActive(allRequirement.requirement, allRequirement.Source, pawn, out var _))
+						{
+							activeRequirements.Add(allRequirement.requirement);
+						}
+					}
+					activeRequirementsDirty = false;
+				}
+				return activeRequirements;
+			}
+		}
+
+		public List<ApparelRequirementWithSource> AllRequirements
+		{
+			get
+			{
+				if (allRequirementsDirty)
+				{
+					allRequirements.Clear();
+					if (ModsConfig.RoyaltyActive && pawn.royalty != null)
+					{
+						foreach (RoyalTitle item in pawn.royalty.AllTitlesForReading)
+						{
+							if (item.def.requiredApparel.NullOrEmpty())
+							{
+								continue;
+							}
+							foreach (ApparelRequirement item2 in item.def.requiredApparel)
+							{
+								if (item2.IsValid)
+								{
+									allRequirements.Add(new ApparelRequirementWithSource(item2, item));
+								}
+							}
+						}
+					}
+					if (ModsConfig.IdeologyActive && pawn.Ideo != null)
+					{
+						Precept_Role role = pawn.Ideo.GetRole(pawn);
+						if (role != null && !role.apparelRequirements.NullOrEmpty())
+						{
+							foreach (PreceptApparelRequirement apparelRequirement in role.apparelRequirements)
+							{
+								if (apparelRequirement.requirement.IsValid)
+								{
+									allRequirements.Add(new ApparelRequirementWithSource(apparelRequirement.requirement, role));
+								}
+							}
+						}
+					}
+					allRequirementsDirty = false;
+				}
+				return allRequirements;
+			}
+		}
+
 		public int WornApparelCount => wornApparel.Count;
 
 		public bool AnyApparel => wornApparel.Count != 0;
+
+		public bool AnyClothing
+		{
+			get
+			{
+				foreach (Apparel item in wornApparel)
+				{
+					if (item.def.apparel.countsAsClothingForNudity)
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+		}
 
 		public bool AnyApparelLocked => !lockedApparel.NullOrEmpty();
 
@@ -139,6 +227,21 @@ namespace RimWorld
 			}
 		}
 
+		public bool AnyApparelNeedsRecoloring
+		{
+			get
+			{
+				foreach (Apparel item in WornApparel)
+				{
+					if (item.DesiredColor.HasValue)
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+		}
+
 		public IEnumerable<Verb> AllApparelVerbs
 		{
 			get
@@ -147,7 +250,7 @@ namespace RimWorld
 				for (int i = 0; i < list.Count; i++)
 				{
 					Apparel apparel = list[i];
-					List<Verb> verbs = apparel.GetComp<CompReloadable>()?.AllVerbs;
+					List<Verb> verbs = apparel.GetComp<CompApparelVerbOwner>()?.AllVerbs;
 					if (verbs != null)
 					{
 						for (int j = 0; j < verbs.Count; j++)
@@ -156,6 +259,23 @@ namespace RimWorld
 						}
 					}
 				}
+			}
+		}
+
+		public Verb FirstApparelVerb
+		{
+			get
+			{
+				List<Apparel> list = WornApparel;
+				for (int i = 0; i < list.Count; i++)
+				{
+					List<Verb> list2 = list[i].GetComp<CompApparelVerbOwner>()?.AllVerbs;
+					if (list2 != null && list2.Count != 0)
+					{
+						return list2[0];
+					}
+				}
+				return null;
 			}
 		}
 
@@ -184,7 +304,7 @@ namespace RimWorld
 			}
 			foreach (Apparel item in WornApparel)
 			{
-				CompReloadable comp = item.GetComp<CompReloadable>();
+				CompApparelVerbOwner comp = item.GetComp<CompApparelVerbOwner>();
 				if (comp == null)
 				{
 					continue;
@@ -217,10 +337,9 @@ namespace RimWorld
 			lastApparelWearoutTick = ticksGame;
 		}
 
-		public void ApparelTrackerTick()
+		public void ApparelTrackerTickInterval(int delta)
 		{
-			wornApparel.ThingOwnerTick();
-			if (pawn.IsColonist && pawn.Spawned && !pawn.Dead && pawn.IsHashIntervalTick(60000) && PsychologicallyNude)
+			if (pawn.IsColonist && pawn.Spawned && !pawn.Dead && PsychologicallyNude && pawn.IsHashIntervalTick(60000, delta))
 			{
 				TaleRecorder.RecordTale(TaleDefOf.WalkedNaked, pawn);
 			}
@@ -274,6 +393,17 @@ namespace RimWorld
 			}
 		}
 
+		public void UnlockAll()
+		{
+			if (!lockedApparel.NullOrEmpty())
+			{
+				for (int num = lockedApparel.Count - 1; num >= 0; num--)
+				{
+					Unlock(lockedApparel[num]);
+				}
+			}
+		}
+
 		private void TakeWearoutDamageForDay(Thing ap)
 		{
 			int num = GenMath.RoundRandom(ap.def.apparel.wearPerDay);
@@ -301,19 +431,21 @@ namespace RimWorld
 
 		public void Wear(Apparel newApparel, bool dropReplacedApparel = true, bool locked = false)
 		{
-			if (newApparel.Spawned)
-			{
-				newApparel.DeSpawn();
-			}
+			newApparel.DeSpawnOrDeselect();
 			if (!ApparelUtility.HasPartsToWear(pawn, newApparel.def))
 			{
-				Log.Warning(string.Concat(pawn, " tried to wear ", newApparel, " but he has no body parts required to wear it."));
+				Log.Warning(pawn?.ToString() + " tried to wear " + newApparel?.ToString() + " but he has no body parts required to wear it.");
 				return;
 			}
-			if (EquipmentUtility.IsBiocoded(newApparel) && !EquipmentUtility.IsBiocodedFor(newApparel, pawn))
+			if (CompBiocodable.IsBiocoded(newApparel) && !CompBiocodable.IsBiocodedFor(newApparel, pawn))
 			{
 				CompBiocodable compBiocodable = newApparel.TryGetComp<CompBiocodable>();
-				Log.Warning(string.Concat(pawn, " tried to wear ", newApparel, " but it is biocoded for ", compBiocodable.CodedPawnLabel, " ."));
+				Log.Warning(pawn?.ToString() + " tried to wear " + newApparel?.ToString() + " but it is biocoded for " + compBiocodable.CodedPawnLabel + " .");
+				return;
+			}
+			if (!newApparel.PawnCanWear(pawn, ignoreGender: true))
+			{
+				Log.Warning(pawn?.ToString() + " tried to wear " + newApparel?.ToString() + " but is not allowed to.");
 				return;
 			}
 			for (int num = wornApparel.Count - 1; num >= 0; num--)
@@ -324,9 +456,14 @@ namespace RimWorld
 					if (dropReplacedApparel)
 					{
 						bool forbid = pawn.Faction != null && pawn.Faction.HostileTo(Faction.OfPlayer);
-						if (!TryDrop(apparel, out var _, pawn.PositionHeld, forbid))
+						Apparel resultingAp;
+						if (pawn.Map == null)
 						{
-							Log.Error(string.Concat(pawn, " could not drop ", apparel));
+							wornApparel.Remove(apparel);
+						}
+						else if (!TryDrop(apparel, out resultingAp, pawn.PositionHeld, forbid))
+						{
+							Log.Error(pawn?.ToString() + " could not drop " + apparel);
 							return;
 						}
 					}
@@ -338,7 +475,7 @@ namespace RimWorld
 			}
 			if (newApparel.Wearer != null)
 			{
-				Log.Warning(string.Concat(pawn, " is trying to wear ", newApparel, " but this apparel already has a wearer (", newApparel.Wearer, "). This may or may not cause bugs."));
+				Log.Warning(pawn?.ToString() + " is trying to wear " + newApparel?.ToString() + " but this apparel already has a wearer (" + newApparel.Wearer?.ToString() + "). This may or may not cause bugs.");
 			}
 			wornApparel.TryAdd(newApparel, canMergeWithExistingStacks: false);
 			if (locked)
@@ -376,12 +513,22 @@ namespace RimWorld
 			return false;
 		}
 
-		public void DropAll(IntVec3 pos, bool forbid = true, bool dropLocked = true)
+		public bool TryMoveToInventory(Apparel apparel)
+		{
+			if (!wornApparel.Contains(apparel))
+			{
+				return false;
+			}
+			Remove(apparel);
+			return pawn.inventory.innerContainer.TryAdd(apparel);
+		}
+
+		public void DropAll(IntVec3 pos, bool forbid = true, bool dropLocked = true, Predicate<Apparel> selector = null)
 		{
 			tmpApparelList.Clear();
 			for (int i = 0; i < wornApparel.Count; i++)
 			{
-				if (dropLocked || !IsLocked(wornApparel[i]))
+				if ((dropLocked || !IsLocked(wornApparel[i])) && (selector == null || selector(wornApparel[i])))
 				{
 					tmpApparelList.Add(wornApparel[i]);
 				}
@@ -389,6 +536,34 @@ namespace RimWorld
 			for (int j = 0; j < tmpApparelList.Count; j++)
 			{
 				TryDrop(tmpApparelList[j], out var _, pos, forbid);
+			}
+		}
+
+		public void MoveAllToInventory(bool moveLocked = true, Predicate<Apparel> selector = null)
+		{
+			tmpApparelList.Clear();
+			for (int i = 0; i < wornApparel.Count; i++)
+			{
+				if ((moveLocked || !IsLocked(wornApparel[i])) && (selector == null || selector(wornApparel[i])))
+				{
+					tmpApparelList.Add(wornApparel[i]);
+				}
+			}
+			for (int j = 0; j < tmpApparelList.Count; j++)
+			{
+				TryMoveToInventory(tmpApparelList[j]);
+			}
+		}
+
+		public void DropAllOrMoveAllToInventory(Predicate<Apparel> selector = null)
+		{
+			if (pawn.SpawnedOrAnyParentSpawned)
+			{
+				DropAll(pawn.PositionHeld, forbid: false, dropLocked: true, selector);
+			}
+			else
+			{
+				MoveAllToInventory(moveLocked: true, selector);
 			}
 		}
 
@@ -400,6 +575,18 @@ namespace RimWorld
 		public bool Contains(Thing apparel)
 		{
 			return wornApparel.Contains(apparel);
+		}
+
+		public bool Wearing(Thing apparel)
+		{
+			foreach (Apparel item in wornApparel)
+			{
+				if (item == apparel)
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 
 		public bool WouldReplaceLockedApparel(Apparel newApparel)
@@ -454,6 +641,24 @@ namespace RimWorld
 			}
 		}
 
+		public void Notify_TitleChanged()
+		{
+			activeRequirementsDirty = true;
+			allRequirementsDirty = true;
+		}
+
+		public void Notify_RoleChanged()
+		{
+			activeRequirementsDirty = true;
+			allRequirementsDirty = true;
+		}
+
+		public void Notify_IdeoChanged()
+		{
+			activeRequirementsDirty = true;
+			allRequirementsDirty = true;
+		}
+
 		private void SortWornApparelIntoDrawOrder()
 		{
 			wornApparel.InnerListForReading.Sort((Apparel a, Apparel b) => a.def.apparel.LastLayer.drawOrder.CompareTo(b.def.apparel.LastLayer.drawOrder));
@@ -491,7 +696,7 @@ namespace RimWorld
 				Apparel apparel = wornApparel[i];
 				for (int j = 0; j < apparel.def.apparel.bodyPartGroups.Count; j++)
 				{
-					if (apparel.def.apparel.bodyPartGroups[j] == BodyPartGroupDefOf.Torso)
+					if (apparel.def.apparel.bodyPartGroups[j] == g)
 					{
 						return apparel;
 					}
@@ -500,14 +705,33 @@ namespace RimWorld
 			return null;
 		}
 
-		public bool BodyPartGroupIsCovered(BodyPartGroupDef bp)
+		public bool TryGetFirstApparelOnBodyPart(BodyPartRecord record, out Apparel apparel, Predicate<Apparel> validator = null)
+		{
+			apparel = FirstApparelOnBodyPart(record, validator);
+			return apparel != null;
+		}
+
+		public Apparel FirstApparelOnBodyPart(BodyPartRecord record, Predicate<Apparel> validator = null)
+		{
+			for (int i = 0; i < wornApparel.Count; i++)
+			{
+				Apparel apparel = wornApparel[i];
+				if (apparel.def.apparel.CoversBodyPart(record) && (validator == null || validator(apparel)))
+				{
+					return apparel;
+				}
+			}
+			return null;
+		}
+
+		public bool BodyPartGroupIsCovered(BodyPartGroupDef bp, Predicate<Apparel> validator = null)
 		{
 			for (int i = 0; i < wornApparel.Count; i++)
 			{
 				Apparel apparel = wornApparel[i];
 				for (int j = 0; j < apparel.def.apparel.bodyPartGroups.Count; j++)
 				{
-					if (apparel.def.apparel.bodyPartGroups[j] == bp)
+					if (apparel.def.apparel.bodyPartGroups[j] == bp && (validator == null || validator(apparel)))
 					{
 						return true;
 					}
@@ -527,20 +751,21 @@ namespace RimWorld
 			}
 		}
 
-		private void ApparelChanged()
+		public void Notify_ApparelChanged()
 		{
-			LongEventHandler.ExecuteWhenFinished(delegate
+			pawn.Drawer.renderer.SetAllGraphicsDirty();
+			pawn.abilities?.Notify_TemporaryAbilitiesChanged();
+			if (ModsConfig.BiotechActive && pawn.mechanitor != null)
 			{
-				pawn.Drawer.renderer.graphics.SetApparelGraphicsDirty();
-				PortraitsCache.SetDirty(pawn);
-			});
+				pawn.mechanitor.Notify_ApparelChanged();
+			}
 		}
 
 		public void Notify_ApparelAdded(Apparel apparel)
 		{
 			SortWornApparelIntoDrawOrder();
-			ApparelChanged();
-			List<Verb> list = apparel.GetComp<CompReloadable>()?.AllVerbs;
+			Notify_ApparelChanged();
+			List<Verb> list = apparel.GetComp<CompApparelVerbOwner_Charged>()?.AllVerbs;
 			if (list != null)
 			{
 				foreach (Verb item in list)
@@ -553,11 +778,12 @@ namespace RimWorld
 			{
 				pawn.health.capacities.Notify_CapacityLevelsDirty();
 			}
+			apparel.Notify_Equipped(pawn);
 		}
 
 		public void Notify_ApparelRemoved(Apparel apparel)
 		{
-			ApparelChanged();
+			Notify_ApparelChanged();
 			if (pawn.outfits != null && pawn.outfits.forcedHandler != null)
 			{
 				pawn.outfits.forcedHandler.SetForced(apparel, forced: false);
@@ -570,6 +796,7 @@ namespace RimWorld
 			{
 				pawn.health.capacities.Notify_CapacityLevelsDirty();
 			}
+			apparel.Notify_Unequipped(pawn);
 		}
 
 		public void Notify_BulletImpactNearby(BulletImpactData impactData)

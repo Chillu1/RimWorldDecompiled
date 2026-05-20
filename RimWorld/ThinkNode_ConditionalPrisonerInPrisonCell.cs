@@ -11,7 +11,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			return pawn.GetRoom()?.isPrisonCell ?? false;
+			return pawn.GetRoom()?.IsPrisonCell ?? false;
 		}
 	}
 }

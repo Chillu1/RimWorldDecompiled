@@ -32,9 +32,9 @@ namespace RimWorld
 
 		public const int Range = 120000;
 
-		public override string ExpiryInfoPart => "QuestAveragePawnMood".Translate(120000.ToStringTicksToPeriod(), cachedMovingAverage.ToStringPercent());
+		public override string ExpiryInfoPart => "QuestAveragePawnMood".Translate(120000.ToStringTicksToPeriodVerbose(), cachedMovingAverage.ToStringPercent());
 
-		public override string ExpiryInfoPartTip => "QuestAveragePawnMoodTargets".Translate(pawns.Select((Pawn p) => p.LabelShort).ToCommaList(useAnd: true), 120000.ToStringTicksToPeriod());
+		public override string ExpiryInfoPartTip => "QuestAveragePawnMoodTargets".Translate(pawns.Select((Pawn p) => p.LabelShort).ToCommaList(useAnd: true), 120000.ToStringTicksToPeriodVerbose());
 
 		private float AveragePawnMoodPercent
 		{

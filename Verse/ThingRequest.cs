@@ -36,26 +36,29 @@ namespace Verse
 
 		public static ThingRequest ForUndefined()
 		{
-			ThingRequest result = default(ThingRequest);
-			result.singleDef = null;
-			result.group = ThingRequestGroup.Undefined;
-			return result;
+			return new ThingRequest
+			{
+				singleDef = null,
+				group = ThingRequestGroup.Undefined
+			};
 		}
 
 		public static ThingRequest ForDef(ThingDef singleDef)
 		{
-			ThingRequest result = default(ThingRequest);
-			result.singleDef = singleDef;
-			result.group = ThingRequestGroup.Undefined;
-			return result;
+			return new ThingRequest
+			{
+				singleDef = singleDef,
+				group = ThingRequestGroup.Undefined
+			};
 		}
 
 		public static ThingRequest ForGroup(ThingRequestGroup group)
 		{
-			ThingRequest result = default(ThingRequest);
-			result.singleDef = null;
-			result.group = group;
-			return result;
+			return new ThingRequest
+			{
+				singleDef = null,
+				group = group
+			};
 		}
 
 		public bool Accepts(Thing t)
@@ -73,8 +76,8 @@ namespace Verse
 
 		public override string ToString()
 		{
-			string str = ((singleDef == null) ? ("group " + group) : ("singleDef " + singleDef.defName));
-			return "ThingRequest(" + str + ")";
+			string text = ((singleDef == null) ? ("group " + group) : ("singleDef " + singleDef.defName));
+			return "ThingRequest(" + text + ")";
 		}
 	}
 }

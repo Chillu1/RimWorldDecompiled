@@ -77,8 +77,8 @@ namespace Verse
 			{
 				return;
 			}
-			Vector3 vector = NextExactPosition(deltaTime);
-			IntVec3 intVec = new IntVec3(vector);
+			Vector3 v = NextExactPosition(deltaTime);
+			IntVec3 intVec = new IntVec3(v);
 			if (intVec != base.Position)
 			{
 				if (!intVec.InBounds(base.Map))
@@ -93,7 +93,7 @@ namespace Verse
 				}
 			}
 			base.Position = intVec;
-			exactPosition = vector;
+			exactPosition = v;
 			if (def.mote.rotateTowardsMoveDirection && velocity != default(Vector3))
 			{
 				exactRotation = velocity.AngleFlat();

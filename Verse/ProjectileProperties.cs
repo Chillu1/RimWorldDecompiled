@@ -27,6 +27,12 @@ namespace Verse
 
 		public float shadowSize;
 
+		public EffecterDef landedEffecter;
+
+		public float spinRate;
+
+		public bool useGraphicClass;
+
 		public SoundDef soundHitThickRoof;
 
 		public SoundDef soundExplode;
@@ -35,9 +41,15 @@ namespace Verse
 
 		public SoundDef soundAmbient;
 
+		public SoundDef soundImpact;
+
 		public float explosionRadius;
 
+		public float explosionRadiusDisplayPadding;
+
 		public int explosionDelay;
+
+		public bool doExplosionVFX = true;
 
 		public ThingDef preExplosionSpawnThingDef;
 
@@ -47,9 +59,13 @@ namespace Verse
 
 		public ThingDef postExplosionSpawnThingDef;
 
+		public ThingDef postExplosionSpawnThingDefWater;
+
 		public float postExplosionSpawnChance = 1f;
 
 		public int postExplosionSpawnThingCount = 1;
+
+		public GasType? postExplosionGasType;
 
 		public bool applyDamageToExplosionCellsNeighbors;
 
@@ -57,41 +73,59 @@ namespace Verse
 
 		public bool explosionDamageFalloff;
 
+		public float screenShakeFactor = 1f;
+
+		public ThingDef preExplosionSpawnSingleThingDef;
+
+		public ThingDef postExplosionSpawnSingleThingDef;
+
+		public ThingDef filth;
+
+		public float filthChance = 1f;
+
+		public IntRange filthCount;
+
+		public int numExtraHitCells;
+
+		public bool explosionSpawnsSingleFilth;
+
+		public TerrainDef spawnTerrain;
+
+		public float terrainChance = 1f;
+
+		public bool terrainReplacesFloors;
+
 		public EffecterDef explosionEffect;
 
-		public bool ai_IsIncendiary;
+		public int explosionEffectLifetimeTicks;
 
-		public float StoppingPower
-		{
-			get
-			{
-				if (stoppingPower != 0f)
-				{
-					return stoppingPower;
-				}
-				if (damageDef != null)
-				{
-					return damageDef.defaultStoppingPower;
-				}
-				return 0f;
-			}
-		}
+		public ThingDef spawnsThingDef;
+
+		public bool tryAdjacentFreeSpaces;
+
+		public PawnKindDef spawnsPawnKind;
+
+		public ThingDef beamMoteDef;
+
+		public float beamStartOffset;
+
+		public bool ai_IsIncendiary;
 
 		public float SpeedTilesPerTick => speed / 100f;
 
 		public int GetDamageAmount(Thing weapon, StringBuilder explanation = null)
 		{
-			float weaponDamageMultiplier = weapon?.GetStatValue(StatDefOf.RangedWeapon_DamageMultiplier) ?? 1f;
-			return GetDamageAmount(weaponDamageMultiplier, explanation);
+			float damageMultiplier = weapon?.GetStatValue(StatDefOf.RangedWeapon_DamageMultiplier) ?? 1f;
+			return GetDamageAmount(damageMultiplier, weapon, explanation);
 		}
 
-		public int GetDamageAmount_NewTmp(ThingDef weapon, ThingDef weaponStuff, StringBuilder explanation = null)
+		public int GetDamageAmount(ThingDef weapon, ThingDef weaponStuff, StringBuilder explanation = null)
 		{
-			float weaponDamageMultiplier = weapon?.GetStatValueAbstract(StatDefOf.RangedWeapon_DamageMultiplier, weaponStuff) ?? 1f;
-			return GetDamageAmount(weaponDamageMultiplier, explanation);
+			float damageMultiplier = weapon?.GetStatValueAbstract(StatDefOf.RangedWeapon_DamageMultiplier, weaponStuff) ?? 1f;
+			return GetDamageAmount(damageMultiplier, null, explanation);
 		}
 
-		public int GetDamageAmount(float weaponDamageMultiplier, StringBuilder explanation = null)
+		public int GetDamageAmount(float damageMultiplier, Thing weapon, StringBuilder explanation = null)
 		{
 			int num = 0;
 			if (damageAmountBase != -1)
@@ -107,28 +141,23 @@ namespace Verse
 				}
 				num = damageDef.defaultDamage;
 			}
-			if (explanation != null)
+			explanation?.AppendLine(string.Concat("StatsReport_BaseValue".Translate() + ": ", num.ToString()));
+			num = Mathf.RoundToInt((float)num * damageMultiplier);
+			if (!Mathf.Approximately(damageMultiplier, 1f))
 			{
-				explanation.AppendLine((string)("StatsReport_BaseValue".Translate() + ": ") + num);
-				explanation.Append("StatsReport_QualityMultiplier".Translate() + ": " + weaponDamageMultiplier.ToStringPercent());
+				explanation?.AppendLine();
+				explanation?.AppendLine(StatDefOf.RangedWeapon_DamageMultiplier.LabelCap + ": " + damageMultiplier.ToStringPercent());
+				if (weapon != null)
+				{
+					explanation?.Append(StatUtility.GetOffsetsAndFactorsFor(StatDefOf.RangedWeapon_DamageMultiplier, weapon));
+				}
 			}
-			num = Mathf.RoundToInt((float)num * weaponDamageMultiplier);
-			if (explanation != null)
-			{
-				explanation.AppendLine();
-				explanation.AppendLine();
-				explanation.Append((string)("StatsReport_FinalValue".Translate() + ": ") + num);
-			}
+			explanation?.AppendLine();
+			explanation?.Append(string.Concat("StatsReport_FinalValue".Translate() + ": ", num.ToString()));
 			return num;
 		}
 
-		public float GetArmorPenetration(Thing weapon, StringBuilder explanation = null)
-		{
-			float weaponDamageMultiplier = weapon?.GetStatValue(StatDefOf.RangedWeapon_DamageMultiplier) ?? 1f;
-			return GetArmorPenetration(weaponDamageMultiplier, explanation);
-		}
-
-		public float GetArmorPenetration(float weaponDamageMultiplier, StringBuilder explanation = null)
+		public float GetArmorPenetration(Thing weapon = null, StringBuilder explanation = null)
 		{
 			if (damageDef.armorCategory == null)
 			{
@@ -151,19 +180,20 @@ namespace Verse
 			{
 				num = (float)GetDamageAmount(null) * 0.015f;
 			}
-			if (explanation != null)
+			explanation?.AppendLine("StatsReport_BaseValue".Translate() + ": " + num.ToStringPercent());
+			if (weapon != null)
 			{
-				explanation.AppendLine("StatsReport_BaseValue".Translate() + ": " + num.ToStringPercent());
-				explanation.AppendLine();
-				explanation.Append("StatsReport_QualityMultiplier".Translate() + ": " + weaponDamageMultiplier.ToStringPercent());
+				float statValue = weapon.GetStatValue(StatDefOf.RangedWeapon_ArmorPenetrationMultiplier);
+				num *= statValue;
+				if (!Mathf.Approximately(statValue, 1f))
+				{
+					explanation?.AppendLine();
+					explanation?.AppendLine(StatDefOf.RangedWeapon_ArmorPenetrationMultiplier.LabelCap + ": " + statValue.ToStringPercent());
+					explanation?.Append(StatUtility.GetOffsetsAndFactorsFor(StatDefOf.RangedWeapon_ArmorPenetrationMultiplier, weapon));
+				}
 			}
-			num *= weaponDamageMultiplier;
-			if (explanation != null)
-			{
-				explanation.AppendLine();
-				explanation.AppendLine();
-				explanation.Append("StatsReport_FinalValue".Translate() + ": " + num.ToStringPercent());
-			}
+			explanation?.AppendLine();
+			explanation?.AppendLine("StatsReport_FinalValue".Translate() + ": " + num.ToStringPercent());
 			return num;
 		}
 
@@ -176,6 +206,14 @@ namespace Verse
 			if (damageAmountBase == -1 && damageDef != null && damageDef.defaultDamage == -1)
 			{
 				yield return "no damage amount specified for projectile";
+			}
+			if (filth != null && filthCount.TrueMax <= 0)
+			{
+				yield return "has filth but filthCount <= 0.";
+			}
+			if (parent.thingClass == typeof(Projectile_SpawnsThing) && spawnsThingDef == null)
+			{
+				yield return "Projectile_SpawnsThing has no spawnsThingDef";
 			}
 		}
 	}

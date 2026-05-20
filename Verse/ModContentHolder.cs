@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using KTrie;
 using UnityEngine;
 
 namespace Verse
@@ -12,6 +13,8 @@ namespace Verse
 		public Dictionary<string, T> contentList = new Dictionary<string, T>();
 
 		public List<IDisposable> extraDisposables = new List<IDisposable>();
+
+		private StringTrieSet contentListTrie = new StringTrieSet();
 
 		public ModContentHolder(ModContentPack mod)
 		{
@@ -31,15 +34,16 @@ namespace Verse
 					});
 				}
 			}
-			for (int i = 0; i < extraDisposables.Count; i++)
+			for (int num = 0; num < extraDisposables.Count; num++)
 			{
-				extraDisposables[i].Dispose();
+				extraDisposables[num].Dispose();
 			}
 			extraDisposables.Clear();
 			contentList.Clear();
+			contentListTrie.Clear();
 		}
 
-		public void ReloadAll()
+		public void ReloadAll(bool hotReload = false)
 		{
 			foreach (Pair<string, LoadedContentItem<T>> item in ModContentLoader<T>.LoadAllForMod(mod))
 			{
@@ -56,11 +60,15 @@ namespace Verse
 				}
 				if (contentList.ContainsKey(first))
 				{
-					Log.Warning(string.Concat("Tried to load duplicate ", typeof(T), " with path: ", item.Second.internalFile, " and internal path: ", first));
+					if (!hotReload)
+					{
+						Log.Warning("Tried to load duplicate " + typeof(T)?.ToString() + " with path: " + item.Second.internalFile?.ToString() + " and internal path: " + first);
+					}
 				}
 				else
 				{
 					contentList.Add(first, item.Second.contentItem);
+					contentListTrie.Add(first);
 					if (item.Second.extraDisposable != null)
 					{
 						extraDisposables.Add(item.Second.extraDisposable);
@@ -80,12 +88,10 @@ namespace Verse
 
 		public IEnumerable<T> GetAllUnderPath(string pathRoot)
 		{
-			foreach (KeyValuePair<string, T> content in contentList)
+			string prefix = ((pathRoot.NullOrEmpty() || pathRoot[pathRoot.Length - 1] == '/') ? pathRoot : (pathRoot + "/"));
+			foreach (string item in contentListTrie.GetByPrefix(prefix))
 			{
-				if (content.Key.StartsWith(pathRoot))
-				{
-					yield return content.Value;
-				}
+				yield return contentList[item];
 			}
 		}
 	}

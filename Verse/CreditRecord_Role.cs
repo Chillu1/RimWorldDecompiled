@@ -14,6 +14,8 @@ namespace Verse
 
 		public bool compressed;
 
+		public bool smallFont;
+
 		public CreditRecord_Role()
 		{
 		}
@@ -31,16 +33,15 @@ namespace Verse
 			{
 				width *= 0.5f;
 			}
-			if (!compressed)
-			{
-				return 50f;
-			}
-			return Text.CalcHeight(creditee, width * 0.5f);
+			Text.Font = (smallFont ? GameFont.Small : GameFont.Medium);
+			float result = (compressed ? Text.CalcHeight(creditee, width * 0.5f) : 50f);
+			Text.Font = GameFont.Medium;
+			return result;
 		}
 
 		public override void Draw(Rect rect)
 		{
-			Text.Font = GameFont.Medium;
+			Text.Font = (smallFont ? GameFont.Small : GameFont.Medium);
 			Text.Anchor = TextAnchor.MiddleLeft;
 			Rect rect2 = rect;
 			rect2.width = 0f;
@@ -49,7 +50,7 @@ namespace Verse
 				rect2.width = rect.width / 2f;
 				if (displayKey)
 				{
-					Widgets.Label(rect2, roleKey.Translate());
+					Widgets.Label(rect2, roleKey);
 				}
 			}
 			Rect rect3 = rect;
@@ -69,6 +70,20 @@ namespace Verse
 				Widgets.Label(rect4, extra);
 				GUI.color = Color.white;
 			}
+			Text.Font = GameFont.Medium;
+			Text.Anchor = TextAnchor.UpperLeft;
+		}
+
+		public CreditRecord_Role Compress()
+		{
+			compressed = true;
+			return this;
+		}
+
+		public CreditRecord_Role WithSmallFont()
+		{
+			smallFont = true;
+			return this;
 		}
 	}
 }

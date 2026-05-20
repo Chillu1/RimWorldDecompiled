@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using RimWorld.QuestGen;
+using UnityEngine;
 using Verse;
 using Verse.AI;
 
@@ -10,40 +11,62 @@ namespace RimWorld
 {
 	public static class FactionDialogMaker
 	{
+		private static readonly FloatRange OrbitalTraderDelayHours = new FloatRange(1f, 2f);
+
 		public static DiaNode FactionDialogFor(Pawn negotiator, Faction faction)
 		{
 			Map map = negotiator.Map;
 			Pawn pawn;
-			string value;
+			string text;
 			if (faction.leader != null)
 			{
 				pawn = faction.leader;
-				value = faction.leader.Name.ToStringFull.Colorize(ColoredText.NameColor);
+				text = faction.leader.Name.ToStringFull.Colorize(ColoredText.NameColor);
 			}
 			else
 			{
-				Log.Error(string.Concat("Faction ", faction, " has no leader."));
+				Log.Error($"Faction {faction} has no leader.");
 				pawn = negotiator;
-				value = faction.Name;
+				text = faction.Name;
 			}
 			DiaNode root;
 			if (faction.PlayerRelationKind == FactionRelationKind.Hostile)
 			{
-				string key = ((faction.def.permanentEnemy || !"FactionGreetingHostileAppreciative".CanTranslate()) ? "FactionGreetingHostile" : "FactionGreetingHostileAppreciative");
-				root = new DiaNode(key.Translate(value).AdjustedFor(pawn));
+				string key = ((faction.def.permanentEnemy || !"FactionGreetingHostileAppreciative".CanTranslate()) ? ((!string.IsNullOrEmpty(faction.def.dialogFactionGreetingHostile)) ? faction.def.dialogFactionGreetingHostile : "FactionGreetingHostile") : ((!string.IsNullOrEmpty(faction.def.dialogFactionGreetingHostileAppreciative)) ? faction.def.dialogFactionGreetingHostileAppreciative : "FactionGreetingHostileAppreciative"));
+				root = new DiaNode(key.Translate(text).AdjustedFor(pawn));
 			}
 			else if (faction.PlayerRelationKind == FactionRelationKind.Neutral)
 			{
-				root = new DiaNode("FactionGreetingWary".Translate(value, negotiator.LabelShort, negotiator.Named("NEGOTIATOR"), pawn.Named("LEADER")).AdjustedFor(pawn));
+				string key2 = "FactionGreetingWary";
+				if (!string.IsNullOrEmpty(faction.def.dialogFactionGreetingWary))
+				{
+					key2 = faction.def.dialogFactionGreetingWary;
+				}
+				root = new DiaNode(key2.Translate(text, negotiator.LabelShort, negotiator.Named("NEGOTIATOR"), pawn.Named("LEADER")).AdjustedFor(pawn));
 			}
 			else
 			{
-				root = new DiaNode("FactionGreetingWarm".Translate(value, negotiator.LabelShort, negotiator.Named("NEGOTIATOR"), pawn.Named("LEADER")).AdjustedFor(pawn));
+				string key3 = "FactionGreetingWarm";
+				if (!string.IsNullOrEmpty(faction.def.dialogFactionGreetingWarm))
+				{
+					key3 = faction.def.dialogFactionGreetingWarm;
+				}
+				root = new DiaNode(key3.Translate(text, negotiator.LabelShort, negotiator.Named("NEGOTIATOR"), pawn.Named("LEADER")).AdjustedFor(pawn));
 			}
 			if (map != null && map.IsPlayerHome)
 			{
-				AddAndDecorateOption(RequestTraderOption(map, faction, negotiator), needsSocial: true);
-				AddAndDecorateOption(RequestMilitaryAidOption(map, faction, negotiator), needsSocial: true);
+				if (faction.def.canRequestTraders)
+				{
+					AddAndDecorateOption(RequestTraderOption(map, faction, negotiator), needsSocial: true);
+				}
+				if (faction.def.canRequestOrbitalTrader)
+				{
+					AddAndDecorateOption(RequestOrbitalTraderOption(map, faction, negotiator), needsSocial: true);
+				}
+				if (faction.def.canRequestMilitaryAid)
+				{
+					AddAndDecorateOption(RequestMilitaryAidOption(map, faction, negotiator), needsSocial: true);
+				}
 				Pawn_RoyaltyTracker royalty = negotiator.royalty;
 				if (royalty != null && royalty.HasAnyTitleIn(faction))
 				{
@@ -90,11 +113,14 @@ namespace RimWorld
 			return root;
 			void AddAndDecorateOption(DiaOption opt, bool needsSocial)
 			{
-				if (needsSocial && negotiator.skills.GetSkill(SkillDefOf.Social).TotallyDisabled)
+				if (opt != null)
 				{
-					opt.Disable("WorkTypeDisablesOption".Translate(SkillDefOf.Social.label));
+					if (needsSocial && negotiator.skills.GetSkill(SkillDefOf.Social).TotallyDisabled)
+					{
+						opt.Disable("WorkTypeDisablesOption".Translate(SkillDefOf.Social.label));
+					}
+					root.options.Add(opt);
 				}
-				root.options.Add(opt);
 			}
 		}
 
@@ -103,14 +129,14 @@ namespace RimWorld
 			DiaOption diaOption = new DiaOption("(Debug) Goodwill +10");
 			diaOption.action = delegate
 			{
-				faction.TryAffectGoodwillWith(Faction.OfPlayer, 10, canSendMessage: false);
+				faction.TryAffectGoodwillWith(Faction.OfPlayer, 10, canSendMessage: true, canSendHostilityLetter: true, HistoryEventDefOf.DebugGoodwill);
 			};
 			diaOption.linkLateBind = () => FactionDialogFor(negotiator, faction);
 			yield return diaOption;
 			DiaOption diaOption2 = new DiaOption("(Debug) Goodwill -10");
 			diaOption2.action = delegate
 			{
-				faction.TryAffectGoodwillWith(Faction.OfPlayer, -10, canSendMessage: false);
+				faction.TryAffectGoodwillWith(Faction.OfPlayer, -10, canSendMessage: true, canSendHostilityLetter: true, HistoryEventDefOf.DebugGoodwill);
 			};
 			diaOption2.linkLateBind = () => FactionDialogFor(negotiator, faction);
 			yield return diaOption2;
@@ -137,7 +163,7 @@ namespace RimWorld
 			slate.Set("points", StorytellerUtility.DefaultThreatPointsNow(Find.World));
 			slate.Set("asker", faction.leader);
 			slate.Set("itemStashSingleThing", ThingDefOf.AIPersonaCore);
-			bool flag = QuestScriptDefOf.OpportunitySite_ItemStash.CanRun(slate);
+			bool flag = QuestScriptDefOf.OpportunitySite_ItemStash.CanRun(slate, Find.World);
 			if (num || !flag)
 			{
 				DiaOption diaOption2 = new DiaOption(taggedString);
@@ -155,7 +181,7 @@ namespace RimWorld
 				action = delegate
 				{
 					Quest quest = QuestUtility.GenerateQuestAndMakeAvailable(QuestScriptDefOf.OpportunitySite_ItemStash, slate);
-					if (!quest.hidden)
+					if (!quest.hidden && quest.root.sendAvailableLetter)
 					{
 						QuestUtility.SendLetterQuestAvailable(quest);
 					}
@@ -164,17 +190,77 @@ namespace RimWorld
 				},
 				link = new DiaNode("RequestAICoreInformationResult".Translate(faction.leader).CapitalizeFirst())
 				{
-					options = 
-					{
-						OKToRoot(faction, negotiator)
-					}
+					options = { OKToRoot(faction, negotiator) }
 				}
 			};
 		}
 
+		private static DiaOption RequestOrbitalTraderOption(Map map, Faction faction, Pawn negotiator)
+		{
+			TaggedString taggedString = "RequestOrbitalTrader".Translate(-Faction.OfPlayer.CalculateAdjustedGoodwillChange(faction, -30));
+			if (faction.PlayerRelationKind != FactionRelationKind.Ally)
+			{
+				DiaOption diaOption = new DiaOption(taggedString);
+				diaOption.Disable("MustBeAlly".Translate());
+				return diaOption;
+			}
+			int num = faction.lastOrbitalTraderRequestTick + 900000 - Find.TickManager.TicksGame;
+			if (num > 0)
+			{
+				DiaOption diaOption2 = new DiaOption(taggedString);
+				diaOption2.Disable("WaitTime".Translate(num.ToStringTicksToPeriod()));
+				return diaOption2;
+			}
+			DiaOption diaOption3 = new DiaOption(taggedString);
+			DiaNode diaNode = new DiaNode("OrbitalTraderSent".Translate(faction.leader).CapitalizeFirst());
+			diaNode.options.Add(OKToRoot(faction, negotiator));
+			DiaNode diaNode2 = new DiaNode("ChooseOrbitalTraderKind".Translate(faction.leader));
+			foreach (TraderKindDef item in faction.def.orbitalTraderKinds.Where((TraderKindDef x) => x.requestable))
+			{
+				TraderKindDef localTk = item;
+				DiaOption diaOption4 = new DiaOption(localTk.LabelCap);
+				if (localTk.TitleRequiredToTrade != null && (negotiator.royalty == null || localTk.TitleRequiredToTrade.seniority > negotiator.GetCurrentTitleSeniorityIn(faction)))
+				{
+					DiaNode diaNode3 = new DiaNode("OrbitalTradeRequestDeniedDueTitle".Translate(negotiator.Named("NEGOTIATOR"), localTk.TitleRequiredToTrade.GetLabelCapFor(negotiator).Named("TITLE"), faction.Named("FACTION")));
+					DiaOption diaOption5 = new DiaOption("GoBack".Translate());
+					diaNode3.options.Add(diaOption5);
+					diaOption4.link = diaNode3;
+					diaOption5.link = diaNode2;
+				}
+				else
+				{
+					diaOption4.action = delegate
+					{
+						IncidentParms parms = new IncidentParms
+						{
+							target = map,
+							faction = faction,
+							traderKind = localTk,
+							forced = true
+						};
+						PassingShipManager passingShipManager = map.passingShipManager;
+						for (int num2 = passingShipManager.passingShips.Count - 1; num2 >= 0; num2--)
+						{
+							passingShipManager.passingShips[num2].Depart();
+						}
+						Find.Storyteller.incidentQueue.Add(IncidentDefOf.OrbitalTraderArrival, Find.TickManager.TicksGame + Mathf.RoundToInt(OrbitalTraderDelayHours.RandomInRange * 2500f), parms, (int)OrbitalTraderDelayHours.min);
+						faction.lastOrbitalTraderRequestTick = Find.TickManager.TicksGame;
+						Faction.OfPlayer.TryAffectGoodwillWith(faction, -30, canSendMessage: false, canSendHostilityLetter: true, HistoryEventDefOf.RequestedOrbitalTrader);
+					};
+					diaOption4.link = diaNode;
+				}
+				diaNode2.options.Add(diaOption4);
+			}
+			DiaOption diaOption6 = new DiaOption("GoBack".Translate());
+			diaOption6.linkLateBind = ResetToRoot(faction, negotiator);
+			diaNode2.options.Add(diaOption6);
+			diaOption3.link = diaNode2;
+			return diaOption3;
+		}
+
 		private static DiaOption RequestTraderOption(Map map, Faction faction, Pawn negotiator)
 		{
-			TaggedString taggedString = "RequestTrader".Translate(15);
+			TaggedString taggedString = "RequestTrader".Translate(-Faction.OfPlayer.CalculateAdjustedGoodwillChange(faction, -15));
 			if (faction.PlayerRelationKind != FactionRelationKind.Ally)
 			{
 				DiaOption diaOption = new DiaOption(taggedString);
@@ -223,7 +309,7 @@ namespace RimWorld
 						};
 						Find.Storyteller.incidentQueue.Add(IncidentDefOf.TraderCaravanArrival, Find.TickManager.TicksGame + 120000, parms, 240000);
 						faction.lastTraderRequestTick = Find.TickManager.TicksGame;
-						faction.TryAffectGoodwillWith(Faction.OfPlayer, -15, canSendMessage: false, canSendHostilityLetter: true, "GoodwillChangedReason_RequestedTrader".Translate());
+						Faction.OfPlayer.TryAffectGoodwillWith(faction, -15, canSendMessage: false, canSendHostilityLetter: true, HistoryEventDefOf.RequestedTrader);
 					};
 					diaOption5.link = diaNode;
 				}
@@ -238,7 +324,7 @@ namespace RimWorld
 
 		private static DiaOption RequestMilitaryAidOption(Map map, Faction faction, Pawn negotiator)
 		{
-			string text = "RequestMilitaryAid".Translate(25);
+			string text = "RequestMilitaryAid".Translate(-Faction.OfPlayer.CalculateAdjustedGoodwillChange(faction, -25));
 			if (faction.PlayerRelationKind != FactionRelationKind.Ally)
 			{
 				DiaOption diaOption = new DiaOption(text);
@@ -308,11 +394,7 @@ namespace RimWorld
 			RoyalTitleDef currentTitle = negotiator.royalty.GetCurrentTitle(faction);
 			Pawn heir = negotiator.royalty.GetHeir(faction);
 			DiaOption diaOption = new DiaOption((heir != null) ? "RequestChangeRoyalHeir".Translate(negotiator.Named("HOLDER"), currentTitle.GetLabelCapFor(negotiator).Named("TITLE"), heir.Named("HEIR")) : "RequestSetRoyalHeir".Translate(negotiator.Named("HOLDER"), currentTitle.GetLabelCapFor(negotiator).Named("TITLE")));
-			bool num = Find.QuestManager.QuestsListForReading.Any((Quest q) => q.root == QuestScriptDefOf.ChangeRoyalHeir && q.State == QuestState.Ongoing && q.PartsListForReading.Any(delegate(QuestPart p)
-			{
-				QuestPart_ChangeHeir questPart_ChangeHeir = p as QuestPart_ChangeHeir;
-				return questPart_ChangeHeir != null && !questPart_ChangeHeir.done && questPart_ChangeHeir.holder == negotiator;
-			}));
+			bool num = Find.QuestManager.QuestsListForReading.Any((Quest q) => q.root == QuestScriptDefOf.ChangeRoyalHeir && q.State == QuestState.Ongoing && q.PartsListForReading.Any((QuestPart p) => p is QuestPart_ChangeHeir { done: false } questPart_ChangeHeir && questPart_ChangeHeir.holder == negotiator));
 			diaOption.link = RoyalHeirChangeCandidates(faction, factionRepresentative, negotiator);
 			if (num)
 			{
@@ -325,11 +407,11 @@ namespace RimWorld
 		{
 			DiaNode diaNode = new DiaNode("ChooseHeir".Translate(negotiator.Named("HOLDER")));
 			RoyalTitleDef title = negotiator.royalty.GetCurrentTitle(faction);
-			Pawn heir2 = negotiator.royalty.GetHeir(faction);
+			Pawn heir = negotiator.royalty.GetHeir(faction);
 			foreach (Pawn item in PawnsFinder.AllMaps_FreeColonistsAndPrisonersSpawned)
 			{
 				DiaOption diaOption = new DiaOption(item.Name.ToStringFull);
-				if (item == negotiator || item == heir2)
+				if (item == negotiator || item == heir)
 				{
 					continue;
 				}
@@ -345,7 +427,7 @@ namespace RimWorld
 				{
 					continue;
 				}
-				Pawn heir = item;
+				Pawn heir2 = item;
 				Action confirmedAct = delegate
 				{
 					QuestScriptDef changeRoyalHeir = QuestScriptDefOf.ChangeRoyalHeir;
@@ -353,15 +435,15 @@ namespace RimWorld
 					slate.Set("points", title.changeHeirQuestPoints);
 					slate.Set("asker", factionRepresentative);
 					slate.Set("titleHolder", negotiator);
-					slate.Set("titleHeir", heir);
+					slate.Set("titleHeir", heir2);
 					slate.Set("titlePreviousHeir", negotiator.royalty.GetHeir(faction));
 					Quest quest = QuestUtility.GenerateQuestAndMakeAvailable(changeRoyalHeir, slate);
-					if (!quest.hidden)
+					if (!quest.hidden && quest.root.sendAvailableLetter)
 					{
 						QuestUtility.SendLetterQuestAvailable(quest);
 					}
 				};
-				diaOption.link = RoyalHeirChangeConfirm(faction, negotiator, heir2, confirmedAct);
+				diaOption.link = RoyalHeirChangeConfirm(faction, negotiator, heir, confirmedAct);
 				diaNode.options.Add(diaOption);
 			}
 			DiaOption diaOption2 = new DiaOption("GoBack".Translate());
@@ -398,27 +480,26 @@ namespace RimWorld
 		{
 			return new DiaNode("CantSendMilitaryAidInTime".Translate(faction.leader).CapitalizeFirst())
 			{
-				options = 
-				{
-					OKToRoot(faction, negotiator)
-				}
+				options = { OKToRoot(faction, negotiator) }
 			};
 		}
 
 		public static DiaNode FightersSent(Faction faction, Pawn negotiator)
 		{
-			return new DiaNode("MilitaryAidSent".Translate(faction.leader).CapitalizeFirst())
+			string key = "MilitaryAidSent";
+			if (faction.def.dialogMilitaryAidSent != null && faction.def.dialogMilitaryAidSent != "")
 			{
-				options = 
-				{
-					OKToRoot(faction, negotiator)
-				}
+				key = faction.def.dialogMilitaryAidSent;
+			}
+			return new DiaNode(key.Translate(faction.leader).CapitalizeFirst())
+			{
+				options = { OKToRoot(faction, negotiator) }
 			};
 		}
 
 		private static void CallForAid(Map map, Faction faction)
 		{
-			faction.TryAffectGoodwillWith(Faction.OfPlayer, -25, canSendMessage: false, canSendHostilityLetter: true, "GoodwillChangedReason_RequestedMilitaryAid".Translate());
+			Faction.OfPlayer.TryAffectGoodwillWith(faction, -25, canSendMessage: false, canSendHostilityLetter: true, HistoryEventDefOf.RequestedMilitaryAid);
 			IncidentParms incidentParms = new IncidentParms();
 			incidentParms.target = map;
 			incidentParms.faction = faction;

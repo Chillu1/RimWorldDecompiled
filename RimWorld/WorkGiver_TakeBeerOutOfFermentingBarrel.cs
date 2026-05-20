@@ -25,8 +25,7 @@ namespace RimWorld
 
 		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			Building_FermentingBarrel building_FermentingBarrel = t as Building_FermentingBarrel;
-			if (building_FermentingBarrel == null || !building_FermentingBarrel.Fermented)
+			if (!(t is Building_FermentingBarrel { Fermented: not false }))
 			{
 				return false;
 			}
@@ -34,7 +33,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (t.IsForbidden(pawn) || !pawn.CanReserve(t, 1, -1, null, forced))
+			if (!pawn.CanReserve(t, 1, -1, null, forced))
 			{
 				return false;
 			}

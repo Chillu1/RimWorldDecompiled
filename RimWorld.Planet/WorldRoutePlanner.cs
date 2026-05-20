@@ -4,6 +4,7 @@ using System.Text;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
+using Verse.Steam;
 
 namespace RimWorld.Planet
 {
@@ -12,17 +13,19 @@ namespace RimWorld.Planet
 	{
 		private bool active;
 
+		private PlanetLayer layer;
+
 		private CaravanTicksPerMoveUtility.CaravanInfo? caravanInfoFromFormCaravanDialog;
 
 		private Dialog_FormCaravan currentFormCaravanDialog;
 
-		private List<WorldPath> paths = new List<WorldPath>();
-
-		private List<int> cachedTicksToWaypoint = new List<int>();
-
-		public List<RoutePlannerWaypoint> waypoints = new List<RoutePlannerWaypoint>();
-
 		private bool cantRemoveFirstWaypoint;
+
+		private readonly List<WorldPath> paths = new List<WorldPath>();
+
+		private readonly List<int> cachedTicksToWaypoint = new List<int>();
+
+		public readonly List<RoutePlannerWaypoint> waypoints = new List<RoutePlannerWaypoint>();
 
 		private const int MaxCount = 25;
 
@@ -60,11 +63,11 @@ namespace RimWorld.Planet
 				{
 					return true;
 				}
-				if (!WorldRendererUtility.WorldRenderedNow)
+				if (!WorldRendererUtility.WorldSelected)
 				{
 					return true;
 				}
-				if (Current.ProgramState == ProgramState.Playing && Find.TickManager.CurTimeSpeed != 0)
+				if (Current.ProgramState == ProgramState.Playing && Find.TickManager.CurTimeSpeed != TimeSpeed.Paused)
 				{
 					return true;
 				}
@@ -114,15 +117,17 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public void Start()
+		public void Start(PlanetLayer planetLayer)
 		{
 			if (active)
 			{
 				Stop();
 			}
+			layer = planetLayer;
 			active = true;
 			if (Current.ProgramState == ProgramState.Playing)
 			{
+				AmbientSoundManager.EnsureWorldAmbientSoundCreated();
 				Find.World.renderer.wantedMode = WorldRenderMode.Planet;
 				Find.TickManager.Pause();
 			}
@@ -138,7 +143,7 @@ namespace RimWorld.Planet
 			caravanInfoFromFormCaravanDialog = new CaravanTicksPerMoveUtility.CaravanInfo(formCaravanDialog);
 			formCaravanDialog.choosingRoute = true;
 			Find.WindowStack.TryRemove(formCaravanDialog, doCloseSound: false);
-			Start();
+			Start(formCaravanDialog.CurrentTile.Layer);
 			TryAddWaypoint(formCaravanDialog.CurrentTile);
 			cantRemoveFirstWaypoint = true;
 		}
@@ -146,6 +151,7 @@ namespace RimWorld.Planet
 		public void Stop()
 		{
 			active = false;
+			layer = null;
 			for (int i = 0; i < waypoints.Count; i++)
 			{
 				waypoints[i].Destroy();
@@ -200,28 +206,30 @@ namespace RimWorld.Planet
 			GenUI.DrawMouseAttachment(MouseAttachment);
 			if (Event.current.type == EventType.MouseDown && Event.current.button == 1)
 			{
-				int tile = (Find.WorldSelector.SelectableObjectsUnderMouse().FirstOrDefault() as Caravan)?.Tile ?? GenWorld.MouseTile(snapToExpandableWorldObjects: true);
-				if (tile >= 0)
+				PlanetTile tile = (Find.WorldSelector.SelectableObjectsUnderMouse().FirstOrDefault() as Caravan)?.Tile ?? GenWorld.MouseTile(snapToExpandableWorldObjects: true);
+				if (tile.Valid)
 				{
 					RoutePlannerWaypoint waypoint = MostRecentWaypointAt(tile);
 					if (waypoint != null)
 					{
-						if (waypoint == waypoints[waypoints.Count - 1])
+						RoutePlannerWaypoint routePlannerWaypoint = waypoint;
+						List<RoutePlannerWaypoint> list = waypoints;
+						if (routePlannerWaypoint == list[list.Count - 1])
 						{
 							TryRemoveWaypoint(waypoint);
 						}
 						else
 						{
-							List<FloatMenuOption> list = new List<FloatMenuOption>();
-							list.Add(new FloatMenuOption("AddWaypoint".Translate(), delegate
+							List<FloatMenuOption> list2 = new List<FloatMenuOption>();
+							list2.Add(new FloatMenuOption("AddWaypoint".Translate(), delegate
 							{
 								TryAddWaypoint(tile);
 							}));
-							list.Add(new FloatMenuOption("RemoveWaypoint".Translate(), delegate
+							list2.Add(new FloatMenuOption("RemoveWaypoint".Translate(), delegate
 							{
 								TryRemoveWaypoint(waypoint);
 							}));
-							Find.WindowStack.Add(new FloatMenu(list));
+							Find.WindowStack.Add(new FloatMenu(list2));
 						}
 					}
 					else
@@ -278,15 +286,15 @@ namespace RimWorld.Planet
 					}
 					num += 20f;
 					GUI.color = Color.gray;
-					Widgets.Label(new Rect(0f, num, rect.width, 25f), "RoutePlannerPressRMBToAddAndRemoveWaypoints".Translate());
+					Widgets.Label(new Rect(0f, num, rect.width, 25f), SteamDeck.IsSteamDeckInNonKeyboardMode ? "RoutePlannerPressRMBToAddAndRemoveWaypointsController".Translate() : "RoutePlannerPressRMBToAddAndRemoveWaypoints".Translate());
 					num += 20f;
 					if (currentFormCaravanDialog != null)
 					{
-						Widgets.Label(new Rect(0f, num, rect.width, 25f), "RoutePlannerPressEscapeToReturnToCaravanFormationDialog".Translate());
+						Widgets.Label(new Rect(0f, num, rect.width, 25f), SteamDeck.IsSteamDeckInNonKeyboardMode ? "RoutePlannerPressEscapeToReturnToCaravanFormationDialogController".Translate().Resolve().AdjustedForKeys() : "RoutePlannerPressEscapeToReturnToCaravanFormationDialog".Translate().Resolve());
 					}
 					else
 					{
-						Widgets.Label(new Rect(0f, num, rect.width, 25f), "RoutePlannerPressEscapeToExit".Translate());
+						Widgets.Label(new Rect(0f, num, rect.width, 25f), SteamDeck.IsSteamDeckInNonKeyboardMode ? "RoutePlannerPressEscapeToExitController".Translate().Resolve().AdjustedForKeys() : "RoutePlannerPressEscapeToExit".Translate().Resolve());
 					}
 					num += 20f;
 					GUI.color = Color.white;
@@ -318,16 +326,16 @@ namespace RimWorld.Planet
 			{
 				return;
 			}
-			int num = GenWorld.MouseTile(snapToExpandableWorldObjects: true);
-			if (num == -1)
+			PlanetTile planetTile = GenWorld.MouseTile(snapToExpandableWorldObjects: true);
+			if (!planetTile.Valid)
 			{
 				return;
 			}
 			for (int i = 0; i < paths.Count; i++)
 			{
-				if (paths[i].NodesReversed.Contains(num))
+				if (paths[i].NodesReversed.Contains(planetTile))
 				{
-					string str = GetTileTip(num, i);
+					string str = GetTileTip(planetTile, i);
 					Text.Font = GameFont.Small;
 					Vector2 size = Text.CalcSize(str);
 					size.x += 20f;
@@ -344,30 +352,30 @@ namespace RimWorld.Planet
 			}
 		}
 
-		private string GetTileTip(int tile, int pathIndex)
+		private string GetTileTip(PlanetTile tile, int pathIndex)
 		{
 			int num = paths[pathIndex].NodesReversed.IndexOf(tile);
-			int num2 = ((num > 0) ? paths[pathIndex].NodesReversed[num - 1] : ((pathIndex >= paths.Count - 1 || paths[pathIndex + 1].NodesReversed.Count < 2) ? (-1) : paths[pathIndex + 1].NodesReversed[paths[pathIndex + 1].NodesReversed.Count - 2]));
-			int num3 = cachedTicksToWaypoint[pathIndex] + CaravanArrivalTimeEstimator.EstimatedTicksToArrive(paths[pathIndex].FirstNode, tile, paths[pathIndex], 0f, CaravanTicksPerMove, GenTicks.TicksAbs + cachedTicksToWaypoint[pathIndex]);
-			int num4 = GenTicks.TicksAbs + num3;
+			PlanetTile planetTile = ((num > 0) ? paths[pathIndex].NodesReversed[num - 1] : ((pathIndex >= paths.Count - 1 || paths[pathIndex + 1].NodeCount < 2) ? PlanetTile.Invalid : paths[pathIndex + 1].NodesReversed[paths[pathIndex + 1].NodeCount - 2]));
+			int num2 = cachedTicksToWaypoint[pathIndex] + CaravanArrivalTimeEstimator.EstimatedTicksToArrive(paths[pathIndex].FirstNode, tile, paths[pathIndex], 0f, CaravanTicksPerMove, GenTicks.TicksAbs + cachedTicksToWaypoint[pathIndex]);
+			int num3 = GenTicks.TicksAbs + num2;
 			StringBuilder stringBuilder = new StringBuilder();
-			if (num3 != 0)
+			if (num2 != 0)
 			{
-				stringBuilder.AppendLine("EstimatedTimeToTile".Translate(num3.ToStringTicksToDays("0.##")));
+				stringBuilder.AppendLine("EstimatedTimeToTile".Translate(num2.ToStringTicksToDays("0.##")));
 			}
-			stringBuilder.AppendLine("ForagedFoodAmount".Translate() + ": " + Find.WorldGrid[tile].biome.forageability.ToStringPercent());
-			stringBuilder.Append(VirtualPlantsUtility.GetVirtualPlantsStatusExplanationAt(tile, num4));
-			if (num2 != -1)
+			stringBuilder.AppendLine("ForagedFoodAmount".Translate() + ": " + Find.WorldGrid[tile].PrimaryBiome.forageability.ToStringPercent());
+			stringBuilder.Append(VirtualPlantsUtility.GetVirtualPlantsStatusExplanationAt(tile, num3));
+			if (planetTile.Valid)
 			{
 				stringBuilder.AppendLine();
 				stringBuilder.AppendLine();
 				StringBuilder stringBuilder2 = new StringBuilder();
-				float num5 = WorldPathGrid.CalculatedMovementDifficultyAt(num2, perceivedStatic: false, num4, stringBuilder2);
-				float roadMovementDifficultyMultiplier = Find.WorldGrid.GetRoadMovementDifficultyMultiplier(tile, num2, stringBuilder2);
+				float num4 = WorldPathGrid.CalculatedMovementDifficultyAt(planetTile, perceivedStatic: false, num3, stringBuilder2);
+				float roadMovementDifficultyMultiplier = Find.WorldGrid.GetRoadMovementDifficultyMultiplier(tile, planetTile, stringBuilder2);
 				stringBuilder.Append("TileMovementDifficulty".Translate() + ":\n" + stringBuilder2.ToString().Indented("  "));
 				stringBuilder.AppendLine();
 				stringBuilder.Append("  = ");
-				stringBuilder.Append((num5 * roadMovementDifficultyMultiplier).ToString("0.#"));
+				stringBuilder.Append((num4 * roadMovementDifficultyMultiplier).ToString("0.#"));
 			}
 			return stringBuilder.ToString();
 		}
@@ -386,7 +394,7 @@ namespace RimWorld.Planet
 				}
 				else
 				{
-					Start();
+					Start(Find.WorldSelector.SelectedLayer);
 					SoundDefOf.Tick_High.PlayOneShotOnCamera();
 				}
 			}
@@ -399,17 +407,27 @@ namespace RimWorld.Planet
 			return cachedTicksToWaypoint[index];
 		}
 
-		private void TryAddWaypoint(int tile, bool playSound = true)
+		public void TryAddWaypoint(PlanetTile tile, bool playSound = true)
 		{
+			if (tile.Layer != layer)
+			{
+				Messages.Message("MessageCantAddWaypointBecauseUnreachable".Translate(), MessageTypeDefOf.RejectInput, historical: false);
+				return;
+			}
 			if (Find.World.Impassable(tile))
 			{
 				Messages.Message("MessageCantAddWaypointBecauseImpassable".Translate(), MessageTypeDefOf.RejectInput, historical: false);
 				return;
 			}
-			if (waypoints.Any() && !Find.WorldReachability.CanReach(waypoints[waypoints.Count - 1].Tile, tile))
+			if (waypoints.Any())
 			{
-				Messages.Message("MessageCantAddWaypointBecauseUnreachable".Translate(), MessageTypeDefOf.RejectInput, historical: false);
-				return;
+				WorldReachability worldReachability = Find.WorldReachability;
+				List<RoutePlannerWaypoint> list = waypoints;
+				if (!worldReachability.CanReach(list[list.Count - 1].Tile, tile))
+				{
+					Messages.Message("MessageCantAddWaypointBecauseUnreachable".Translate(), MessageTypeDefOf.RejectInput, historical: false);
+					return;
+				}
 			}
 			if (waypoints.Count >= 25)
 			{
@@ -463,10 +481,14 @@ namespace RimWorld.Planet
 		private void RecreatePaths()
 		{
 			ReleasePaths();
-			WorldPathFinder worldPathFinder = Find.WorldPathFinder;
+			if (waypoints.NullOrEmpty())
+			{
+				return;
+			}
+			WorldPathing pather = waypoints[0].Tile.Layer.Pather;
 			for (int i = 1; i < waypoints.Count; i++)
 			{
-				paths.Add(worldPathFinder.FindPath(waypoints[i - 1].Tile, waypoints[i].Tile, null));
+				paths.Add(pather.FindPath(waypoints[i - 1].Tile, waypoints[i].Tile, null));
 			}
 			cachedTicksToWaypoint.Clear();
 			int num = 0;
@@ -483,7 +505,7 @@ namespace RimWorld.Planet
 			}
 		}
 
-		private RoutePlannerWaypoint MostRecentWaypointAt(int tile)
+		private RoutePlannerWaypoint MostRecentWaypointAt(PlanetTile tile)
 		{
 			for (int num = waypoints.Count - 1; num >= 0; num--)
 			{

@@ -22,25 +22,8 @@ namespace Ionic.Zlib
 
 		internal static readonly int[] border = new int[19]
 		{
-			16,
-			17,
-			18,
-			0,
-			8,
-			7,
-			9,
-			6,
-			10,
-			5,
-			11,
-			4,
-			12,
-			3,
-			13,
-			2,
-			14,
-			1,
-			15
+			16, 17, 18, 0, 8, 7, 9, 6, 10, 5,
+			11, 4, 12, 3, 13, 2, 14, 1, 15
 		};
 
 		private InflateBlockMode mode;
@@ -141,7 +124,7 @@ namespace Ionic.Zlib
 					}
 					int num6 = num3 & 7;
 					last = num6 & 1;
-					switch ((uint)num6 >> 1)
+					switch ((uint)(num6 >>> 1))
 					{
 					case 0u:
 						num3 >>= 3;
@@ -467,14 +450,8 @@ namespace Ionic.Zlib
 						index = num8;
 					}
 					tb[0] = -1;
-					int[] array5 = new int[1]
-					{
-						9
-					};
-					int[] array6 = new int[1]
-					{
-						6
-					};
+					int[] array5 = new int[1] { 9 };
+					int[] array6 = new int[1] { 6 };
 					int[] array7 = new int[1];
 					int[] array8 = new int[1];
 					num6 = table;

@@ -10,10 +10,13 @@ namespace RimWorld
 
 		public SoundDef spawnSound;
 
+		[NoTranslate]
 		public string spawnMessageKey;
 
+		[NoTranslate]
 		public string noPawnsLeftToSpawnKey;
 
+		[NoTranslate]
 		public string pawnsLeftToSpawnKey;
 
 		public bool showNextSpawnInInspect;
@@ -23,6 +26,8 @@ namespace RimWorld
 		public Type lordJob;
 
 		public float defendRadius = 21f;
+
+		public float lordJoinRadius = 2.1474836E+09f;
 
 		public int initialPawnsCount;
 
@@ -34,12 +39,14 @@ namespace RimWorld
 
 		public int pawnSpawnRadius = 2;
 
-		public IntRange maxPawnsToSpawn = IntRange.zero;
+		public IntRange maxPawnsToSpawn = IntRange.Zero;
 
 		public bool chooseSingleTypeToSpawn;
 
+		[NoTranslate]
 		public string nextSpawnInspectStringKey;
 
+		[NoTranslate]
 		public string nextSpawnInspectStringKeyDormant;
 
 		public CompProperties_SpawnerPawn()

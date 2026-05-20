@@ -30,6 +30,10 @@ namespace Verse
 
 		public const string AssetBundlesFolderName = "AssetBundles";
 
+		public const string AssetBundlesFolder = "AssetBundles/";
+
+		public const string MaterialsFolder = "Materials/";
+
 		public const string AssetsFolderName = "Assets";
 
 		public const string ResourcesFolderName = "Resources";
@@ -48,162 +52,42 @@ namespace Verse
 
 		public const string ScenarioExtension = ".rsc";
 
+		public const string ModListExtension = ".rml";
+
+		public const string IdeoExtension = ".rid";
+
+		public const string XenotypeExtension = ".xtp";
+
+		public const string XenogermExtension = ".xgm";
+
+		public const string CameraConfigExtension = ".ccg";
+
 		public const string ExternalHistoryFileExtension = ".rwh";
 
 		private const string SaveDataFolderCommand = "savedatafolder";
 
 		private static readonly string[] FilePathRaw = new string[73]
 		{
-			"Ž",
-			"ž",
-			"Ÿ",
-			"¡",
-			"¢",
-			"£",
-			"¤",
-			"¥",
-			"¦",
-			"§",
-			"\u00a8",
-			"©",
-			"ª",
-			"À",
-			"Á",
-			"Â",
-			"Ã",
-			"Ä",
-			"Å",
-			"Æ",
-			"Ç",
-			"È",
-			"É",
-			"Ê",
-			"Ë",
-			"Ì",
-			"Í",
-			"Î",
-			"Ï",
-			"Ð",
-			"Ñ",
-			"Ò",
-			"Ó",
-			"Ô",
-			"Õ",
-			"Ö",
-			"Ù",
-			"Ú",
-			"Û",
-			"Ü",
-			"Ý",
-			"Þ",
-			"ß",
-			"à",
-			"á",
-			"â",
-			"ã",
-			"ä",
-			"å",
-			"æ",
-			"ç",
-			"è",
-			"é",
-			"ê",
-			"ë",
-			"ì",
-			"í",
-			"î",
-			"ï",
-			"ð",
-			"ñ",
-			"ò",
-			"ó",
-			"ô",
-			"õ",
-			"ö",
-			"ù",
-			"ú",
-			"û",
-			"ü",
-			"ý",
-			"þ",
-			"ÿ"
+			"Ž", "ž", "Ÿ", "¡", "¢", "£", "¤", "¥", "¦", "§",
+			"\u00a8", "©", "ª", "À", "Á", "Â", "Ã", "Ä", "Å", "Æ",
+			"Ç", "È", "É", "Ê", "Ë", "Ì", "Í", "Î", "Ï", "Ð",
+			"Ñ", "Ò", "Ó", "Ô", "Õ", "Ö", "Ù", "Ú", "Û", "Ü",
+			"Ý", "Þ", "ß", "à", "á", "â", "ã", "ä", "å", "æ",
+			"ç", "è", "é", "ê", "ë", "ì", "í", "î", "ï", "ð",
+			"ñ", "ò", "ó", "ô", "õ", "ö", "ù", "ú", "û", "ü",
+			"ý", "þ", "ÿ"
 		};
 
 		private static readonly string[] FilePathSafe = new string[73]
 		{
-			"%8E",
-			"%9E",
-			"%9F",
-			"%A1",
-			"%A2",
-			"%A3",
-			"%A4",
-			"%A5",
-			"%A6",
-			"%A7",
-			"%A8",
-			"%A9",
-			"%AA",
-			"%C0",
-			"%C1",
-			"%C2",
-			"%C3",
-			"%C4",
-			"%C5",
-			"%C6",
-			"%C7",
-			"%C8",
-			"%C9",
-			"%CA",
-			"%CB",
-			"%CC",
-			"%CD",
-			"%CE",
-			"%CF",
-			"%D0",
-			"%D1",
-			"%D2",
-			"%D3",
-			"%D4",
-			"%D5",
-			"%D6",
-			"%D9",
-			"%DA",
-			"%DB",
-			"%DC",
-			"%DD",
-			"%DE",
-			"%DF",
-			"%E0",
-			"%E1",
-			"%E2",
-			"%E3",
-			"%E4",
-			"%E5",
-			"%E6",
-			"%E7",
-			"%E8",
-			"%E9",
-			"%EA",
-			"%EB",
-			"%EC",
-			"%ED",
-			"%EE",
-			"%EF",
-			"%F0",
-			"%F1",
-			"%F2",
-			"%F3",
-			"%F4",
-			"%F5",
-			"%F6",
-			"%F9",
-			"%FA",
-			"%FB",
-			"%FC",
-			"%FD",
-			"%FE",
-			"%FF"
+			"%8E", "%9E", "%9F", "%A1", "%A2", "%A3", "%A4", "%A5", "%A6", "%A7",
+			"%A8", "%A9", "%AA", "%C0", "%C1", "%C2", "%C3", "%C4", "%C5", "%C6",
+			"%C7", "%C8", "%C9", "%CA", "%CB", "%CC", "%CD", "%CE", "%CF", "%D0",
+			"%D1", "%D2", "%D3", "%D4", "%D5", "%D6", "%D9", "%DA", "%DB", "%DC",
+			"%DD", "%DE", "%DF", "%E0", "%E1", "%E2", "%E3", "%E4", "%E5", "%E6",
+			"%E7", "%E8", "%E9", "%EA", "%EB", "%EC", "%ED", "%EE", "%EF", "%F0",
+			"%F1", "%F2", "%F3", "%F4", "%F5", "%F6", "%F9", "%FA", "%FB", "%FC",
+			"%FD", "%FE", "%FF"
 		};
 
 		public static string SaveDataFolderPath
@@ -217,7 +101,8 @@ namespace Verse
 						value.TrimEnd('\\', '/');
 						if (value == "")
 						{
-							value = Path.DirectorySeparatorChar.ToString() ?? "";
+							char directorySeparatorChar = Path.DirectorySeparatorChar;
+							value = directorySeparatorChar.ToString() ?? "";
 						}
 						saveDataPath = value;
 						Log.Message("Save data folder overridden to " + saveDataPath);
@@ -293,9 +178,19 @@ namespace Verse
 
 		public static string ConfigFolderPath => FolderUnderSaveData("Config");
 
-		private static string SavedGamesFolderPath => FolderUnderSaveData("Saves");
+		public static string SavedGamesFolderPath => FolderUnderSaveData("Saves");
 
 		private static string ScenariosFolderPath => FolderUnderSaveData("Scenarios");
+
+		private static string ModListsFolderPath => FolderUnderSaveData("ModLists");
+
+		private static string IdeosFolderPath => FolderUnderSaveData("Ideos");
+
+		private static string XenotypesFolderPath => FolderUnderSaveData("Xenotypes");
+
+		private static string XenogermsFolderPath => FolderUnderSaveData("Xenogerms");
+
+		private static string CameraConfigsFolderPath => FolderUnderSaveData("CameraConfigs");
 
 		private static string ExternalHistoryFolderPath => FolderUnderSaveData("External");
 
@@ -351,6 +246,86 @@ namespace Verse
 			}
 		}
 
+		public static IEnumerable<FileInfo> AllModListFiles
+		{
+			get
+			{
+				DirectoryInfo directoryInfo = new DirectoryInfo(ModListsFolderPath);
+				if (!directoryInfo.Exists)
+				{
+					directoryInfo.Create();
+				}
+				return from f in directoryInfo.GetFiles()
+					where f.Extension == ".rml"
+					orderby f.LastWriteTime descending
+					select f;
+			}
+		}
+
+		public static IEnumerable<FileInfo> AllCustomIdeoFiles
+		{
+			get
+			{
+				DirectoryInfo directoryInfo = new DirectoryInfo(IdeosFolderPath);
+				if (!directoryInfo.Exists)
+				{
+					directoryInfo.Create();
+				}
+				return from f in directoryInfo.GetFiles()
+					where f.Extension == ".rid"
+					orderby f.LastWriteTime descending
+					select f;
+			}
+		}
+
+		public static IEnumerable<FileInfo> AllCustomXenotypeFiles
+		{
+			get
+			{
+				DirectoryInfo directoryInfo = new DirectoryInfo(XenotypesFolderPath);
+				if (!directoryInfo.Exists)
+				{
+					directoryInfo.Create();
+				}
+				return from f in directoryInfo.GetFiles()
+					where f.Extension == ".xtp"
+					orderby f.LastWriteTime descending
+					select f;
+			}
+		}
+
+		public static IEnumerable<FileInfo> AllCustomXenogermFiles
+		{
+			get
+			{
+				DirectoryInfo directoryInfo = new DirectoryInfo(XenogermsFolderPath);
+				if (!directoryInfo.Exists)
+				{
+					directoryInfo.Create();
+				}
+				return from f in directoryInfo.GetFiles()
+					where f.Extension == ".xgm"
+					orderby f.LastWriteTime descending
+					select f;
+			}
+		}
+
+		public static IEnumerable<FileInfo> AllCameraConfigFiles
+		{
+			get
+			{
+				DirectoryInfo directoryInfo = new DirectoryInfo(CameraConfigsFolderPath);
+				if (!directoryInfo.Exists)
+				{
+					directoryInfo.Create();
+				}
+				return from f in directoryInfo.GetFiles()
+					where f.Extension == ".ccg"
+					orderby f.LastWriteTime descending
+					select f;
+			}
+		}
+
 		public static IEnumerable<FileInfo> AllExternalHistoryFiles
 		{
 			get
@@ -388,6 +363,31 @@ namespace Verse
 			return Path.Combine(ScenariosFolderPath, scenarioName + ".rsc");
 		}
 
+		public static string AbsPathForIdeo(string ideoName)
+		{
+			return Path.Combine(IdeosFolderPath, ideoName + ".rid");
+		}
+
+		public static string AbsFilePathForXenotype(string xenotypeName)
+		{
+			return Path.Combine(XenotypesFolderPath, xenotypeName + ".xtp");
+		}
+
+		public static string AbsFilePathForModList(string modListName)
+		{
+			return Path.Combine(ModListsFolderPath, modListName + ".rml");
+		}
+
+		public static string AbsFilePathForXenogerm(string xenogermName)
+		{
+			return Path.Combine(XenogermsFolderPath, xenogermName + ".xgm");
+		}
+
+		public static string AbsFilePathForCameraConfig(string configName)
+		{
+			return Path.Combine(CameraConfigsFolderPath, configName + ".ccg");
+		}
+
 		public static string ContentPath<T>()
 		{
 			if (typeof(T) == typeof(AudioClip))
@@ -401,6 +401,14 @@ namespace Verse
 			if (typeof(T) == typeof(string))
 			{
 				return "Strings/";
+			}
+			if (typeof(T) == typeof(AssetBundle))
+			{
+				return "AssetBundles/";
+			}
+			if (typeof(T) == typeof(Shader))
+			{
+				return "Materials/";
 			}
 			throw new ArgumentException();
 		}
@@ -425,7 +433,7 @@ namespace Verse
 			{
 				text = text.Replace(FilePathRaw[i], FilePathSafe[i]);
 			}
-			return "file:///" + text;
+			return "file://" + text;
 		}
 	}
 }

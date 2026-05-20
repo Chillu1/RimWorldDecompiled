@@ -31,12 +31,14 @@ namespace RimWorld
 					Building edifice = intVec.GetEdifice(miner.Map);
 					if (edifice != null && edifice.def != justMinedDef && MineableIsValuable(edifice.def) && !AlreadyVisibleNearby(intVec, miner.Map, edifice.def) && !RecentlyStruck(intVec, edifice.def))
 					{
-						StrikeRecord item = default(StrikeRecord);
-						item.cell = intVec;
-						item.def = edifice.def;
-						item.ticksGame = Find.TickManager.TicksGame;
+						StrikeRecord item = new StrikeRecord
+						{
+							cell = intVec,
+							def = edifice.def,
+							ticksGame = Find.TickManager.TicksGame
+						};
 						strikeRecords.Add(item);
-						Messages.Message("StruckMineable".Translate(edifice.def.label), edifice, MessageTypeDefOf.PositiveEvent);
+						Messages.Message("StruckMineable".Translate(edifice.def.label), new LookTargets(edifice.Position, miner.Map), MessageTypeDefOf.PositiveEvent);
 						TaleRecorder.RecordTale(TaleDefOf.StruckMineable, miner, edifice);
 					}
 				}

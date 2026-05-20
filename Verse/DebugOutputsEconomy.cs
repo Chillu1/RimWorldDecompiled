@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using RimWorld;
 using UnityEngine;
 
@@ -90,6 +91,19 @@ namespace Verse
 					list.Add(new TableDataGetter<ThingDef>(stuffLocal.label.Shorten(), (ThingDef x) => (!stuffLocal.stuffProps.CanMake(x)) ? "" : (x.GetStatValueAbstract(StatDefOf.Insulation_Heat, stuffLocal).ToString("F1") + ", " + x.GetStatValueAbstract(StatDefOf.Insulation_Cold, stuffLocal).ToString("F1"))));
 				}
 			}
+			DebugTables.MakeTablesDialog(from x in DefDatabase<ThingDef>.AllDefs
+				where x.IsApparel
+				orderby x.BaseMarketValue
+				select x, list.ToArray());
+		}
+
+		[DebugOutput("Economy", false)]
+		public static void ApparelCountsForNudity()
+		{
+			List<TableDataGetter<ThingDef>> list = new List<TableDataGetter<ThingDef>>();
+			list.Add(new TableDataGetter<ThingDef>("defName", (ThingDef x) => x.defName));
+			list.Add(new TableDataGetter<ThingDef>("label", (ThingDef x) => x.LabelCap));
+			list.Add(new TableDataGetter<ThingDef>("countsAsClothingForNudity", (ThingDef x) => x.apparel.countsAsClothingForNudity));
 			DebugTables.MakeTablesDialog(from x in DefDatabase<ThingDef>.AllDefs
 				where x.IsApparel
 				orderby x.BaseMarketValue
@@ -203,68 +217,90 @@ namespace Verse
 		[DebugOutput("Economy", false)]
 		public static void Wool()
 		{
-			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.category == ThingCategory.Pawn && d.race.IsFlesh && d.GetCompProperties<CompProperties_Shearable>() != null), new TableDataGetter<ThingDef>("animal", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("woolDef", (ThingDef d) => d.GetCompProperties<CompProperties_Shearable>().woolDef.defName), new TableDataGetter<ThingDef>("woolAmount", (ThingDef d) => d.GetCompProperties<CompProperties_Shearable>().woolAmount.ToString()), new TableDataGetter<ThingDef>("woolValue", (ThingDef d) => d.GetCompProperties<CompProperties_Shearable>().woolDef.BaseMarketValue.ToString("F2")), new TableDataGetter<ThingDef>("shear interval", (ThingDef d) => d.GetCompProperties<CompProperties_Shearable>().shearIntervalDays.ToString("F1")), new TableDataGetter<ThingDef>("value per year", delegate(ThingDef d)
+			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.category == ThingCategory.Pawn && d.race.IsFlesh && d.GetCompProperties<CompProperties_Shearable>() != null), new TableDataGetter<ThingDef>("animal", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("woolDef", (ThingDef d) => d.GetCompProperties<CompProperties_Shearable>().woolDef.defName), new TableDataGetter<ThingDef>("woolAmount", (ThingDef d) => d.GetCompProperties<CompProperties_Shearable>().woolAmount.ToString()), new TableDataGetter<ThingDef>("woolValue", (ThingDef d) => d.GetCompProperties<CompProperties_Shearable>().woolDef.BaseMarketValue.ToString("F2")), new TableDataGetter<ThingDef>("shear interval", (ThingDef d) => d.GetCompProperties<CompProperties_Shearable>().shearIntervalDays.ToString("F1")), new TableDataGetter<ThingDef>("value yearly", delegate(ThingDef d)
 			{
 				CompProperties_Shearable compProperties = d.GetCompProperties<CompProperties_Shearable>();
 				return (compProperties.woolDef.BaseMarketValue * (float)compProperties.woolAmount * (60f / (float)compProperties.shearIntervalDays)).ToString("F0");
 			}));
 		}
 
+		private static float AdultAgeDays(ThingDef d)
+		{
+			return d.race.lifeStageAges[d.race.lifeStageAges.Count - 1].minAge * 60f;
+		}
+
+		private static float SlaughterValue(ThingDef d)
+		{
+			float num = 0f;
+			if (d.race.meatDef != null)
+			{
+				num = AnimalProductionUtility.AdultMeatAmount(d) * d.race.meatDef.BaseMarketValue;
+			}
+			float num2 = 0f;
+			if (d.race.leatherDef != null)
+			{
+				num2 = AnimalProductionUtility.AdultLeatherAmount(d) * d.race.leatherDef.BaseMarketValue;
+			}
+			return num + num2;
+		}
+
+		private static float SlaughterValuePerGrowthYear(ThingDef d)
+		{
+			float num = AdultAgeDays(d) / 60f;
+			return SlaughterValue(d) / num;
+		}
+
+		private static float TotalMarketValueOutputPerYear(ThingDef d)
+		{
+			return 0f + AnimalProductionUtility.MilkMarketValuePerYear(d) + AnimalProductionUtility.WoolMarketValuePerYear(d) + AnimalProductionUtility.EggMarketValuePerYear(d);
+		}
+
 		[DebugOutput("Economy", false)]
-		public static void AnimalGrowth()
+		public static void AnimalEconomy()
 		{
 			DebugTables.MakeTablesDialog(from d in DefDatabase<ThingDef>.AllDefs
-				where d.category == ThingCategory.Pawn && d.race.IsFlesh
-				orderby bestMeatPerInput(d) descending
-				select d, new TableDataGetter<ThingDef>("", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("hungerRate", (ThingDef d) => d.race.baseHungerRate.ToString("F2")), new TableDataGetter<ThingDef>("gestDaysEach", (ThingDef d) => gestDaysEach(d).ToString("F2")), new TableDataGetter<ThingDef>("herbiv", (ThingDef d) => ((d.race.foodType & FoodTypeFlags.Plant) == 0) ? "" : "Y"), new TableDataGetter<ThingDef>("|", (ThingDef d) => "|"), new TableDataGetter<ThingDef>("bodySize", (ThingDef d) => d.race.baseBodySize.ToString("F2")), new TableDataGetter<ThingDef>("age Adult", (ThingDef d) => d.race.lifeStageAges[d.race.lifeStageAges.Count - 1].minAge.ToString("F2")), new TableDataGetter<ThingDef>("nutrition to adulthood", (ThingDef d) => nutritionToAdulthood(d).ToString("F2")), new TableDataGetter<ThingDef>("adult meat-nut", (ThingDef d) => (d.GetStatValueAbstract(StatDefOf.MeatAmount) * 0.05f).ToString("F2")), new TableDataGetter<ThingDef>("adult meat-nut / input-nut", (ThingDef d) => adultMeatNutPerInput(d).ToString("F3")), new TableDataGetter<ThingDef>("|", (ThingDef d) => "|"), new TableDataGetter<ThingDef>("baby size", (ThingDef d) => (d.race.lifeStageAges[0].def.bodySizeFactor * d.race.baseBodySize).ToString("F2")), new TableDataGetter<ThingDef>("nutrition to gestate", (ThingDef d) => nutritionToGestate(d).ToString("F2")), new TableDataGetter<ThingDef>("egg nut", (ThingDef d) => eggNut(d)), new TableDataGetter<ThingDef>("baby meat-nut", (ThingDef d) => babyMeatNut(d).ToString("F2")), new TableDataGetter<ThingDef>("baby meat-nut / input-nut", (ThingDef d) => babyMeatNutPerInput(d).ToString("F2")), new TableDataGetter<ThingDef>("baby wins", (ThingDef d) => (!(babyMeatNutPerInput(d) > adultMeatNutPerInput(d))) ? "" : "B"));
-			static float adultMeatNutPerInput(ThingDef d)
+				where d.category == ThingCategory.Pawn && d.race.IsFlesh && !d.race.Humanlike
+				orderby d.devNote
+				select d, new TableDataGetter<ThingDef>("devNote", (ThingDef d) => d.devNote), new TableDataGetter<ThingDef>("", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("trainability", (ThingDef d) => (d.race.trainability != null) ? d.race.trainability.defName : ""), new TableDataGetter<ThingDef>("hunger\nrate\nadult", (ThingDef d) => d.race.baseHungerRate.ToString("F2")), new TableDataGetter<ThingDef>("eaten\nnutriton\nyearly", (ThingDef d) => EatenNutritionPerYear(d).ToString("F1")), new TableDataGetter<ThingDef>("gestation\ndays raw", (ThingDef d) => AnimalProductionUtility.GestationDaysLitter(d).ToString("F1")), new TableDataGetter<ThingDef>("litter size\naverage", (ThingDef d) => LitterSizeAverage(d).ToString("F1")), new TableDataGetter<ThingDef>("gestation\ndays each", (ThingDef d) => AnimalProductionUtility.GestationDaysEach(d).ToString("F1")), new TableDataGetter<ThingDef>("herbivore", (ThingDef d) => (!AnimalProductionUtility.Herbivore(d)) ? "" : "He"), new TableDataGetter<ThingDef>("grass to\nmaintain", (ThingDef d) => AnimalProductionUtility.Herbivore(d) ? AnimalProductionUtility.GrassToMaintain(d).ToString("F0") : ""), new TableDataGetter<ThingDef>("value output\nper nutrition", (ThingDef d) => TotalMarketValuePerNutritionEaten(d).ToStringMoney()), new TableDataGetter<ThingDef>("body\nsize", (ThingDef d) => d.race.baseBodySize.ToString("F2")), new TableDataGetter<ThingDef>("filth", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.FilthRate)), new TableDataGetter<ThingDef>("adult age\ndays", (ThingDef d) => AdultAgeDays(d).ToString("F1")), new TableDataGetter<ThingDef>("nutrition to\nadulthood", (ThingDef d) => AnimalProductionUtility.NutritionToAdulthood(d).ToString("F2")), new TableDataGetter<ThingDef>("adult meat\namount", (ThingDef d) => AnimalProductionUtility.AdultMeatAmount(d).ToString("F0")), new TableDataGetter<ThingDef>("adult meat\nnutrition", (ThingDef d) => AdultMeatNutrition(d).ToString("F2")), new TableDataGetter<ThingDef>("adult meat\nnutrition per\ninput nutrition", (ThingDef d) => AdultMeatNutritionPerInput(d).ToString("F3")), new TableDataGetter<ThingDef>("slaughter value", (ThingDef d) => SlaughterValue(d).ToStringMoney()), new TableDataGetter<ThingDef>("slaughter value\n/input nutrition", (ThingDef d) => SlaughterValuePerInputNutrition(d).ToStringMoney()), new TableDataGetter<ThingDef>("slaughter value\n/growth year", (ThingDef d) => SlaughterValuePerGrowthYear(d).ToStringMoney()), new TableDataGetter<ThingDef>("eggs\nyearly", (ThingDef d) => IsEggLayer(d) ? AnimalProductionUtility.EggsPerYear(d).ToString("F1") : ""), new TableDataGetter<ThingDef>("egg\nvalue", (ThingDef d) => IsEggLayer(d) ? AnimalProductionUtility.EggMarketValue(d).ToStringMoney() : ""), new TableDataGetter<ThingDef>("egg\nvalue\nyearly", (ThingDef d) => IsEggLayer(d) ? AnimalProductionUtility.EggMarketValuePerYear(d).ToStringMoney() : ""), new TableDataGetter<ThingDef>("egg\nnutrition", (ThingDef d) => IsEggLayer(d) ? AnimalProductionUtility.EggNutrition(d).ToString("F1") : ""), new TableDataGetter<ThingDef>("egg\nnutrition\nyearly", (ThingDef d) => IsEggLayer(d) ? AnimalProductionUtility.EggNutritionPerYear(d).ToString("F1") : ""), new TableDataGetter<ThingDef>("milk\nyearly", (ThingDef d) => IsMilkable(d) ? AnimalProductionUtility.MilkPerYear(d).ToString("F1") : ""), new TableDataGetter<ThingDef>("milk\nvalue", (ThingDef d) => IsMilkable(d) ? AnimalProductionUtility.MilkMarketValue(d).ToStringMoney() : ""), new TableDataGetter<ThingDef>("milk\nvalue\nyearly", (ThingDef d) => IsMilkable(d) ? AnimalProductionUtility.MilkMarketValuePerYear(d).ToStringMoney() : ""), new TableDataGetter<ThingDef>("milk nutrition\nyearly", (ThingDef d) => IsMilkable(d) ? AnimalProductionUtility.MilkNutritionPerYear(d).ToString("F1") : ""), new TableDataGetter<ThingDef>("wool\nyearly", (ThingDef d) => IsShearable(d) ? AnimalProductionUtility.WoolPerYear(d).ToString("F0") : ""), new TableDataGetter<ThingDef>("wool\nvalue", (ThingDef d) => IsShearable(d) ? AnimalProductionUtility.WoolMarketValue(d).ToStringMoney() : ""), new TableDataGetter<ThingDef>("wool value\nyearly", (ThingDef d) => IsShearable(d) ? AnimalProductionUtility.WoolMarketValuePerYear(d).ToStringMoney() : ""), new TableDataGetter<ThingDef>("temp\nmin", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.ComfyTemperatureMin).ToString("F0")), new TableDataGetter<ThingDef>("temp\nmax", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.ComfyTemperatureMax).ToString("F0")), new TableDataGetter<ThingDef>("temp\nwidth", (ThingDef d) => (d.GetStatValueAbstract(StatDefOf.ComfyTemperatureMax) - d.GetStatValueAbstract(StatDefOf.ComfyTemperatureMin)).ToString("F0")), new TableDataGetter<ThingDef>("move\nspeed", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.MoveSpeed).ToString()), new TableDataGetter<ThingDef>("wildness", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.Wildness).ToStringPercent()), new TableDataGetter<ThingDef>("roam\nMTB days", (ThingDef d) => d.race.roamMtbDays.HasValue ? d.race.roamMtbDays.Value.ToString("F1") : ""), new TableDataGetter<ThingDef>("petness", (ThingDef d) => (!(d.race.petness <= 0f)) ? d.race.petness.ToStringPercent() : ""), new TableDataGetter<ThingDef>("nuzzle\nMTB hours", (ThingDef d) => (!(d.race.nuzzleMtbHours < 0f)) ? d.race.nuzzleMtbHours.ToString("F0") : ""), new TableDataGetter<ThingDef>("baby\nsize", (ThingDef d) => (d.race.lifeStageAges[0].def.bodySizeFactor * d.race.baseBodySize).ToString("F2")), new TableDataGetter<ThingDef>("nutrition to\ngestate", (ThingDef d) => AnimalProductionUtility.NutritionToGestate(d).ToString("F2")), new TableDataGetter<ThingDef>("baby meat\nnutrition", (ThingDef d) => BabyMeatNutrition(d).ToString("F2")), new TableDataGetter<ThingDef>("baby meat\nnutrition per\ninput nutrition", (ThingDef d) => BabyMeatNutritionPerInputNutrition(d).ToString("F2")), new TableDataGetter<ThingDef>("should\neat babies", (ThingDef d) => (!(BabyMeatNutritionPerInputNutrition(d) > AdultMeatNutritionPerInput(d))) ? "" : "B"));
+			static float AdultMeatNutrition(ThingDef d)
 			{
-				return d.GetStatValueAbstract(StatDefOf.MeatAmount) * 0.05f / nutritionToAdulthood(d);
+				return AnimalProductionUtility.AdultMeatAmount(d) * 0.05f;
 			}
-			static float babyMeatNut(ThingDef d)
+			static float AdultMeatNutritionPerInput(ThingDef d)
 			{
-				LifeStageAge lifeStageAge3 = d.race.lifeStageAges[0];
-				return d.GetStatValueAbstract(StatDefOf.MeatAmount) * 0.05f * lifeStageAge3.def.bodySizeFactor;
+				return AdultMeatNutrition(d) / AnimalProductionUtility.NutritionToAdulthood(d);
 			}
-			static float babyMeatNutPerInput(ThingDef d)
+			static float BabyMeatNutrition(ThingDef d)
 			{
-				return babyMeatNut(d) / nutritionToGestate(d);
+				return AdultMeatNutrition(d) * d.race.lifeStageAges[0].def.bodySizeFactor;
 			}
-			static float bestMeatPerInput(ThingDef d)
+			static float BabyMeatNutritionPerInputNutrition(ThingDef d)
 			{
-				float a = babyMeatNutPerInput(d);
-				float b = adultMeatNutPerInput(d);
-				return Mathf.Max(a, b);
+				return BabyMeatNutrition(d) / AnimalProductionUtility.NutritionToGestate(d);
 			}
-			static string eggNut(ThingDef d)
+			static float EatenNutritionPerYear(ThingDef d)
 			{
-				CompProperties_EggLayer compProperties = d.GetCompProperties<CompProperties_EggLayer>();
-				if (compProperties == null)
-				{
-					return "";
-				}
-				return compProperties.eggFertilizedDef.GetStatValueAbstract(StatDefOf.Nutrition).ToString("F2");
+				return 2.6666667E-05f * d.race.baseHungerRate * 3600000f;
 			}
-			static float gestDaysEach(ThingDef d)
+			static bool IsEggLayer(ThingDef d)
 			{
-				return GestationDaysEach(d);
+				return d.HasComp(typeof(CompEggLayer));
 			}
-			static float nutritionToAdulthood(ThingDef d)
+			static bool IsMilkable(ThingDef d)
 			{
-				float num = 0f;
-				num += nutritionToGestate(d);
-				for (int i = 1; i < d.race.lifeStageAges.Count; i++)
-				{
-					LifeStageAge lifeStageAge = d.race.lifeStageAges[i];
-					float num2 = (lifeStageAge.minAge - d.race.lifeStageAges[i - 1].minAge) * 60f;
-					num += num2 * lifeStageAge.def.hungerRateFactor * d.race.baseHungerRate;
-				}
-				return num;
+				return d.HasComp(typeof(CompMilkable));
 			}
-			static float nutritionToGestate(ThingDef d)
+			static bool IsShearable(ThingDef d)
 			{
-				LifeStageAge lifeStageAge2 = d.race.lifeStageAges[d.race.lifeStageAges.Count - 1];
-				return 0f + gestDaysEach(d) * lifeStageAge2.def.hungerRateFactor * d.race.baseHungerRate;
+				return d.HasComp(typeof(CompShearable));
+			}
+			static float SlaughterValuePerInputNutrition(ThingDef d)
+			{
+				return SlaughterValue(d) / AnimalProductionUtility.NutritionToAdulthood(d);
+			}
+			static float TotalMarketValuePerNutritionEaten(ThingDef d)
+			{
+				return TotalMarketValueOutputPerYear(d) / EatenNutritionPerYear(d);
 			}
 		}
 
@@ -273,13 +309,13 @@ namespace Verse
 		{
 			DebugTables.MakeTablesDialog(from d in DefDatabase<ThingDef>.AllDefs
 				where d.category == ThingCategory.Pawn && d.race.IsFlesh
-				orderby GestationDaysEach(d) descending
-				select d, new TableDataGetter<ThingDef>("", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("gestDaysEach", (ThingDef d) => GestationDaysEach(d).ToString("F2")), new TableDataGetter<ThingDef>("avgOffspring", (ThingDef d) => (!d.HasComp(typeof(CompEggLayer))) ? ((d.race.litterSizeCurve != null) ? Rand.ByCurveAverage(d.race.litterSizeCurve) : 1f).ToString("F2") : d.GetCompProperties<CompProperties_EggLayer>().eggCountRange.Average.ToString("F2")), new TableDataGetter<ThingDef>("gestDaysRaw", (ThingDef d) => (!d.HasComp(typeof(CompEggLayer))) ? d.race.gestationPeriodDays.ToString("F1") : d.GetCompProperties<CompProperties_EggLayer>().eggLayIntervalDays.ToString("F1")), new TableDataGetter<ThingDef>("growth per 30d", delegate(ThingDef d)
+				orderby AnimalProductionUtility.GestationDaysEach(d) descending
+				select d, new TableDataGetter<ThingDef>("", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("gestation\ndays litter", (ThingDef d) => AnimalProductionUtility.GestationDaysEach(d).ToString("F1")), new TableDataGetter<ThingDef>("offspring\ncount range", (ThingDef d) => AnimalProductionUtility.OffspringRange(d).ToString()), new TableDataGetter<ThingDef>("gestation\ndays group", (ThingDef d) => AnimalProductionUtility.GestationDaysLitter(d).ToString("F1")), new TableDataGetter<ThingDef>("growth per 30d", delegate(ThingDef d)
 			{
-				float f2 = 1f + (d.HasComp(typeof(CompEggLayer)) ? d.GetCompProperties<CompProperties_EggLayer>().eggCountRange.Average : ((d.race.litterSizeCurve != null) ? Rand.ByCurveAverage(d.race.litterSizeCurve) : 1f));
-				float num2 = d.race.lifeStageAges[d.race.lifeStageAges.Count - 1].minAge * 60f + (d.HasComp(typeof(CompEggLayer)) ? d.GetCompProperties<CompProperties_EggLayer>().eggLayIntervalDays : d.race.gestationPeriodDays);
-				float p2 = 30f / num2;
-				return Mathf.Pow(f2, p2).ToString("F2");
+				float f = 1f + (d.HasComp(typeof(CompEggLayer)) ? d.GetCompProperties<CompProperties_EggLayer>().eggCountRange.Average : ((d.race.litterSizeCurve != null) ? Rand.ByCurveAverage(d.race.litterSizeCurve) : 1f));
+				float num = d.race.lifeStageAges[d.race.lifeStageAges.Count - 1].minAge * 60f + (d.HasComp(typeof(CompEggLayer)) ? d.GetCompProperties<CompProperties_EggLayer>().eggLayIntervalDays : d.race.gestationPeriodDays);
+				float p = 30f / num;
+				return Mathf.Pow(f, p).ToString("F2");
 			}), new TableDataGetter<ThingDef>("growth per 60d", delegate(ThingDef d)
 			{
 				float f = 1f + (d.HasComp(typeof(CompEggLayer)) ? d.GetCompProperties<CompProperties_EggLayer>().eggCountRange.Average : ((d.race.litterSizeCurve != null) ? Rand.ByCurveAverage(d.race.litterSizeCurve) : 1f));
@@ -289,22 +325,25 @@ namespace Verse
 			}));
 		}
 
-		private static float GestationDaysEach(ThingDef d)
+		private static float LitterSizeAverage(ThingDef d)
 		{
 			if (d.HasComp(typeof(CompEggLayer)))
 			{
-				CompProperties_EggLayer compProperties = d.GetCompProperties<CompProperties_EggLayer>();
-				return compProperties.eggLayIntervalDays / compProperties.eggCountRange.Average;
+				return d.GetCompProperties<CompProperties_EggLayer>().eggCountRange.Average;
 			}
-			return d.race.gestationPeriodDays / ((d.race.litterSizeCurve != null) ? Rand.ByCurveAverage(d.race.litterSizeCurve) : 1f);
+			if (d.race.litterSizeCurve == null)
+			{
+				return 1f;
+			}
+			return Rand.ByCurveAverage(d.race.litterSizeCurve);
 		}
 
 		[DebugOutput("Economy", false)]
-		public static void BuildingSkills()
+		public static void Buildings()
 		{
 			DebugTables.MakeTablesDialog(from d in DefDatabase<ThingDef>.AllDefs.Cast<BuildableDef>().Concat(DefDatabase<TerrainDef>.AllDefs.Cast<BuildableDef>())
 				where d.BuildableByPlayer
-				select d, new TableDataGetter<BuildableDef>("defName", (BuildableDef d) => d.defName), new TableDataGetter<BuildableDef>("construction skill prerequisite", (BuildableDef d) => d.constructionSkillPrerequisite), new TableDataGetter<BuildableDef>("artistic skill prerequisite", (BuildableDef d) => d.artisticSkillPrerequisite));
+				select d, new TableDataGetter<BuildableDef>("defName", (BuildableDef d) => d.defName), new TableDataGetter<BuildableDef>("max HP", (BuildableDef d) => d.GetStatValueAbstract(StatDefOf.MaxHitPoints)), new TableDataGetter<BuildableDef>("ingredients", (BuildableDef d) => string.Join(", ", d.CostListAdjusted(null, errorOnNullStuff: false))), new TableDataGetter<BuildableDef>("work to build", (BuildableDef d) => d.GetStatValueAbstract(StatDefOf.WorkToBuild)), new TableDataGetter<BuildableDef>("cover effectiveness", (BuildableDef d) => (!(d is ThingDef def)) ? "" : def.BaseBlockChance().ToStringPercent()), new TableDataGetter<BuildableDef>("flammability", (BuildableDef d) => d.GetStatValueAbstract(StatDefOf.Flammability)), new TableDataGetter<BuildableDef>("terrain requirement", (BuildableDef d) => (d.terrainAffordanceNeeded == null) ? "" : d.terrainAffordanceNeeded.defName), new TableDataGetter<BuildableDef>("construction skill required", (BuildableDef d) => d.constructionSkillPrerequisite), new TableDataGetter<BuildableDef>("artistic skill required", (BuildableDef d) => d.artisticSkillPrerequisite));
 		}
 
 		[DebugOutput("Economy", false)]
@@ -342,25 +381,25 @@ namespace Verse
 				select d, new TableDataGetter<ThingDef>("cat.", (ThingDef d) => d.category.ToString().Substring(0, 1).CapitalizeFirst()), new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("mobile", (ThingDef d) => (d.category == ThingCategory.Item || d.Minifiable).ToStringCheckBlank()), new TableDataGetter<ThingDef>("base\nmarket value", (ThingDef d) => d.BaseMarketValue.ToString("F1")), new TableDataGetter<ThingDef>("calculated\nmarket value", (ThingDef d) => calculatedMarketValue(d)), new TableDataGetter<ThingDef>("cost to make", (ThingDef d) => CostToMakeString(d)), new TableDataGetter<ThingDef>("work to produce", (ThingDef d) => (!(WorkToProduceBest(d) > 0f)) ? "-" : WorkToProduceBest(d).ToString("F1")), new TableDataGetter<ThingDef>("profit", (ThingDef d) => (d.BaseMarketValue - CostToMake(d)).ToString("F1")), new TableDataGetter<ThingDef>("profit\nrate", (ThingDef d) => (d.recipeMaker == null) ? "-" : ((d.BaseMarketValue - CostToMake(d)) / WorkToProduceBest(d) * 10000f).ToString("F0")), new TableDataGetter<ThingDef>("market value\ndefined", (ThingDef d) => d.statBases.Any((StatModifier st) => st.stat == StatDefOf.MarketValue).ToStringCheckBlank()), new TableDataGetter<ThingDef>("producible", (ThingDef d) => Producible(d).ToStringCheckBlank()), new TableDataGetter<ThingDef>("thing set\nmaker tags", (ThingDef d) => (!d.thingSetMakerTags.NullOrEmpty()) ? d.thingSetMakerTags.ToCommaList() : ""), new TableDataGetter<ThingDef>("made\nfrom\nstuff", (ThingDef d) => d.MadeFromStuff.ToStringCheckBlank()), new TableDataGetter<ThingDef>("cost list", (ThingDef d) => CostListString(d, divideByVolume: false, starIfOnlyBuyable: false)), new TableDataGetter<ThingDef>("recipes", (ThingDef d) => recipes(d)), new TableDataGetter<ThingDef>("work amount\nsources", (ThingDef d) => workAmountSources(d)));
 			static string recipes(ThingDef d)
 			{
-				List<string> list2 = new List<string>();
+				List<string> list = new List<string>();
 				foreach (RecipeDef allDef in DefDatabase<RecipeDef>.AllDefs)
 				{
 					if (!allDef.products.NullOrEmpty())
 					{
-						for (int j = 0; j < allDef.products.Count; j++)
+						for (int i = 0; i < allDef.products.Count; i++)
 						{
-							if (allDef.products[j].thingDef == d)
+							if (allDef.products[i].thingDef == d)
 							{
-								list2.Add(allDef.defName);
+								list.Add(allDef.defName);
 							}
 						}
 					}
 				}
-				if (list2.Count == 0)
+				if (list.Count == 0)
 				{
 					return "";
 				}
-				return list2.ToCommaList();
+				return list.ToCommaList();
 			}
 			static string workAmountSources(ThingDef d)
 			{
@@ -417,12 +456,7 @@ namespace Verse
 				orderby d.BaseMarketValue
 				select d, list.ToArray());
 			string text = "";
-			string[] array = new string[3]
-			{
-				"RewardStandardHighFreq",
-				"RewardStandardMidFreq",
-				"RewardStandardLowFreq"
-			};
+			string[] array = new string[3] { "RewardStandardHighFreq", "RewardStandardMidFreq", "RewardStandardLowFreq" };
 			foreach (ThingDef allDef in DefDatabase<ThingDef>.AllDefs)
 			{
 				if (allDef.thingSetMakerTags == null)
@@ -430,9 +464,9 @@ namespace Verse
 					continue;
 				}
 				int num = 0;
-				for (int i = 0; i < array.Length; i++)
+				for (int num2 = 0; num2 < array.Length; num2++)
 				{
-					if (allDef.thingSetMakerTags.Contains(array[i]))
+					if (allDef.thingSetMakerTags.Contains(array[num2]))
 					{
 						num++;
 					}
@@ -479,7 +513,7 @@ namespace Verse
 		[DebugOutput("Economy", false)]
 		public static void Floors()
 		{
-			DebugTables.MakeTablesDialog(DefDatabase<TerrainDef>.AllDefs.Where((TerrainDef d) => d.designationCategory == DesignationCategoryDefOf.Floors || d == TerrainDefOf.Soil).Concat(TerrainDefGenerator_Stone.ImpliedTerrainDefs()), new TableDataGetter<TerrainDef>("defName", (TerrainDef d) => d.defName), new TableDataGetter<TerrainDef>("stuff cost", (TerrainDef d) => d.costList.NullOrEmpty() ? "" : d.costList.First().Label), new TableDataGetter<TerrainDef>("work to build", (TerrainDef d) => d.GetStatValueAbstract(StatDefOf.WorkToBuild)), new TableDataGetter<TerrainDef>("beauty", (TerrainDef d) => d.GetStatValueAbstract(StatDefOf.Beauty)), new TableDataGetter<TerrainDef>("cleanliness", (TerrainDef d) => d.GetStatValueAbstract(StatDefOf.Cleanliness)));
+			DebugTables.MakeTablesDialog(DefDatabase<TerrainDef>.AllDefs.Where((TerrainDef d) => d.designationCategory == DesignationCategoryDefOf.Floors || d == TerrainDefOf.Soil).Concat(TerrainDefGenerator_Stone.ImpliedTerrainDefs()), new TableDataGetter<TerrainDef>("defName", (TerrainDef d) => d.defName), new TableDataGetter<TerrainDef>("stuff cost", (TerrainDef d) => d.CostList.NullOrEmpty() ? "" : d.CostList.First().Label), new TableDataGetter<TerrainDef>("work to build", (TerrainDef d) => d.GetStatValueAbstract(StatDefOf.WorkToBuild)), new TableDataGetter<TerrainDef>("beauty", (TerrainDef d) => d.GetStatValueAbstract(StatDefOf.Beauty)), new TableDataGetter<TerrainDef>("cleanliness", (TerrainDef d) => d.GetStatValueAbstract(StatDefOf.Cleanliness)));
 		}
 
 		private static bool Producible(BuildableDef b)
@@ -511,16 +545,16 @@ namespace Verse
 				return "";
 			}
 			List<string> list = new List<string>();
-			if (d.costList != null)
+			if (d.CostList != null)
 			{
-				foreach (ThingDefCountClass cost in d.costList)
+				foreach (ThingDefCountClass cost in d.CostList)
 				{
 					float num = cost.count;
 					if (divideByVolume)
 					{
 						num /= cost.thingDef.VolumePerUnit;
 					}
-					string text = string.Concat(cost.thingDef, " x", num);
+					string text = cost.thingDef?.ToString() + " x" + num;
 					if (starIfOnlyBuyable && RequiresBuying(cost.thingDef))
 					{
 						text += "*";
@@ -530,15 +564,15 @@ namespace Verse
 			}
 			if (d.MadeFromStuff)
 			{
-				list.Add("stuff x" + d.costStuffCount);
+				list.Add("stuff x" + d.CostStuffCount);
 			}
 			return list.ToCommaList();
 		}
 
 		private static float TrueWorkWithCarryTime(RecipeDef d)
 		{
-			ThingDef stuffDef = CheapestNonDerpStuff(d);
-			return (float)d.ingredients.Count * 90f + d.WorkAmountTotal(stuffDef) + 90f;
+			ThingDef stuff = CheapestNonDerpStuff(d);
+			return (float)d.ingredients.Count * 90f + d.WorkAmountForStuff(stuff) + 90f;
 		}
 
 		private static float CheapestIngredientValue(RecipeDef d)
@@ -601,9 +635,9 @@ namespace Verse
 				return d.BaseMarketValue;
 			}
 			float num = 0f;
-			if (d.costList != null)
+			if (d.CostList != null)
 			{
-				foreach (ThingDefCountClass cost in d.costList)
+				foreach (ThingDefCountClass cost in d.CostList)
 				{
 					float num2 = 1f;
 					if (real)
@@ -613,19 +647,19 @@ namespace Verse
 					num += (float)cost.count * CostToMake(cost.thingDef, real: true) * num2;
 				}
 			}
-			if (d.costStuffCount > 0)
+			if (d.CostStuffCount > 0)
 			{
 				ThingDef thingDef = GenStuff.DefaultStuffFor(d);
-				num += (float)d.costStuffCount * thingDef.BaseMarketValue;
+				num += (float)d.CostStuffCount * thingDef.BaseMarketValue;
 			}
 			return num;
 		}
 
 		private static bool RequiresBuying(ThingDef def)
 		{
-			if (def.costList != null)
+			if (def.CostList != null)
 			{
-				foreach (ThingDefCountClass cost in def.costList)
+				foreach (ThingDefCountClass cost in def.CostList)
 				{
 					if (RequiresBuying(cost.thingDef))
 					{
@@ -685,6 +719,54 @@ namespace Verse
 					return (h.spawnThingOnRemoved != null) ? h.spawnThingOnRemoved.BaseMarketValue.ToStringMoney() : "";
 				})
 			}.ToArray());
+		}
+
+		[DebugOutput("Economy", false)]
+		public static void RoamingVsEconomy()
+		{
+			float cowMarketValuePerRoam = MarketValuePerRoam(ThingDefOf.Cow);
+			float cowSlaughterValuePerRoam = SlaughterValuePerRoam(ThingDefOf.Cow);
+			DebugTables.MakeTablesDialog(from d in DefDatabase<ThingDef>.AllDefs
+				where d.category == ThingCategory.Pawn && d.race.Roamer
+				orderby d.devNote
+				select d, new TableDataGetter<ThingDef>("devNote", (ThingDef d) => d.devNote), new TableDataGetter<ThingDef>("", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("wildness", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.Wildness).ToStringPercent()), new TableDataGetter<ThingDef>("roam\nMTB days", (ThingDef d) => d.race.roamMtbDays.Value.ToString("F1")), new TableDataGetter<ThingDef>("roams\navg per year", (ThingDef d) => RoamsPerYear(d).ToString("F1")), new TableDataGetter<ThingDef>("trainability", (ThingDef d) => (d.race.trainability != null) ? d.race.trainability.defName : ""), new TableDataGetter<ThingDef>("grass to\nmaintain", (ThingDef d) => AnimalProductionUtility.Herbivore(d) ? AnimalProductionUtility.GrassToMaintain(d).ToString("F0") : ""), new TableDataGetter<ThingDef>("yearly market value", (ThingDef d) => TotalMarketValueOutputPerYear(d).ToStringMoney()), new TableDataGetter<ThingDef>("yearly market value\ndollars per roam", (ThingDef d) => MarketValuePerRoam(d).ToStringMoney()), new TableDataGetter<ThingDef>("yearly market value\ndollars per roam\ncow normalized", (ThingDef d) => (MarketValuePerRoam(d) / cowMarketValuePerRoam).ToString("F2")), new TableDataGetter<ThingDef>("yearly slaughter value", (ThingDef d) => SlaughterValuePerGrowthYear(d).ToStringMoney()), new TableDataGetter<ThingDef>("yearly slaughter value\ndollars per roam", (ThingDef d) => SlaughterValuePerRoam(d).ToStringMoney()), new TableDataGetter<ThingDef>("yearly slaughter value\ndollars per roam\ncow normalized", (ThingDef d) => (SlaughterValuePerRoam(d) / cowSlaughterValuePerRoam).ToString("F2")));
+			static float MarketValuePerRoam(ThingDef d)
+			{
+				return TotalMarketValueOutputPerYear(d) / RoamsPerYear(d);
+			}
+			static float RoamsPerYear(ThingDef d)
+			{
+				return 60f / d.race.roamMtbDays.Value;
+			}
+			static float SlaughterValuePerRoam(ThingDef d)
+			{
+				return SlaughterValuePerGrowthYear(d) / RoamsPerYear(d);
+			}
+		}
+
+		[DebugOutput("Economy", false)]
+		public static void ArchonexusAllowedItems()
+		{
+			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.ArchonexusMaxAllowedCount != 0), new TableDataGetter<ThingDef>("label", (ThingDef d) => d.LabelCap), new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("allowed count", (ThingDef d) => d.ArchonexusMaxAllowedCount), new TableDataGetter<ThingDef>("category", (ThingDef d) => string.Join(",", d.thingCategories)), new TableDataGetter<ThingDef>("sort prio", (ThingDef d) => TransferableUIUtility.DefaultArchonexusItemListOrderPriority(d)), new TableDataGetter<ThingDef>("max value", (ThingDef d) => d.BaseMarketValue * (float)d.ArchonexusMaxAllowedCount), new TableDataGetter<ThingDef>("x1 value", (ThingDef d) => d.BaseMarketValue), new TableDataGetter<ThingDef>("x1 weight", (ThingDef d) => d.BaseMass.ToString("0.###")), new TableDataGetter<ThingDef>("max stack", (ThingDef d) => d.stackLimit), new TableDataGetter<ThingDef>("weight limit", (ThingDef d) => (int)(5f / d.BaseMass)), new TableDataGetter<ThingDef>("value limit", (ThingDef d) => (int)(2000f / d.BaseMarketValue)), new TableDataGetter<ThingDef>("bringable", (ThingDef d) => MoveColonyUtility.IsBringableItem(ThingMaker.MakeThing(d, GenStuff.RandomStuffFor(d)))), new TableDataGetter<ThingDef>("show distinct", (ThingDef d) => MoveColonyUtility.IsDistinctArchonexusItem(d)), new TableDataGetter<ThingDef>("path", (ThingDef d) => d.fileName));
+		}
+
+		[DebugOutput("Economy", false)]
+		public static void RewardTags()
+		{
+			List<TableDataGetter<ThingDef>> list = new List<TableDataGetter<ThingDef>>
+			{
+				new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName)
+			};
+			foreach (string uniqueTag in (from x in DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.thingSetMakerTags != null).SelectMany((ThingDef d) => d.thingSetMakerTags)
+				where x.Contains("RewardStandard")
+				select x).Distinct())
+			{
+				list.Add(new TableDataGetter<ThingDef>(uniqueTag, (ThingDef d) => (d.thingSetMakerTags != null && d.thingSetMakerTags.Contains(uniqueTag)).ToStringCheckBlank()));
+			}
+			DebugTables.MakeTablesDialog(from d in DefDatabase<ThingDef>.AllDefs
+				where d.thingSetMakerTags != null && d.thingSetMakerTags.Any((string x) => x.Contains("RewardStandard"))
+				orderby d.BaseMarketValue
+				select d, list.ToArray());
 		}
 	}
 }

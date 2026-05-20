@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Verse;
 using Verse.Grammar;
 
@@ -7,13 +8,29 @@ namespace RimWorld
 	{
 		private const float TalelessChanceWithTales = 0.2f;
 
-		public static TaggedString GenerateTextFromTale(TextGenerationPurpose purpose, Tale tale, int seed, RulePackDef extraInclude)
+		public static TaggedString GenerateTextFromTale(TextGenerationPurpose purpose, Tale tale, int seed, RulePackDef extraInclude, List<Rule> extraRules = null, Dictionary<string, string> extraConstants = null)
+		{
+			return GenerateTextFromTale(purpose, tale, seed, new List<RulePackDef> { extraInclude }, extraRules, extraConstants);
+		}
+
+		public static TaggedString GenerateTextFromTale(TextGenerationPurpose purpose, Tale tale, int seed, List<RulePackDef> extraInclude = null, List<Rule> extraRules = null, Dictionary<string, string> extraConstants = null)
 		{
 			Rand.PushState();
 			Rand.Seed = seed;
 			string rootKeyword = null;
 			GrammarRequest request = default(GrammarRequest);
-			request.Includes.Add(extraInclude);
+			if (extraInclude != null)
+			{
+				request.Includes.AddRange(extraInclude);
+			}
+			if (extraRules != null)
+			{
+				request.Rules.AddRange(extraRules);
+			}
+			if (extraConstants != null)
+			{
+				request.Constants.AddRange(extraConstants);
+			}
 			switch (purpose)
 			{
 			case TextGenerationPurpose.ArtDescription:
@@ -22,7 +39,7 @@ namespace RimWorld
 				{
 					request.Includes.Add(RulePackDefOf.ArtDescriptionRoot_HasTale);
 					request.IncludesBare.AddRange(tale.GetTextGenerationIncludes());
-					request.Rules.AddRange(tale.GetTextGenerationRules());
+					request.Rules.AddRange(tale.GetTextGenerationRules(request.Constants));
 				}
 				else
 				{
@@ -36,13 +53,13 @@ namespace RimWorld
 				if (tale != null)
 				{
 					request.IncludesBare.AddRange(tale.GetTextGenerationIncludes());
-					request.Rules.AddRange(tale.GetTextGenerationRules());
+					request.Rules.AddRange(tale.GetTextGenerationRules(request.Constants));
 				}
 				break;
 			}
-			string str = GrammarResolver.Resolve(rootKeyword, request, (tale != null) ? tale.def.defName : "null_tale");
+			string text = GrammarResolver.Resolve(rootKeyword, request, (tale != null) ? tale.def.defName : "null_tale");
 			Rand.PopState();
-			return str;
+			return text;
 		}
 	}
 }

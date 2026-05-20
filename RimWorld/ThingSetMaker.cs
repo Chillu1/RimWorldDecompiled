@@ -31,9 +31,9 @@ namespace RimWorld
 				Generate(parms2, list);
 				PostProcess(list);
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Exception while generating thing set: " + arg);
+				Log.Error("Exception while generating thing set: " + ex);
 				for (int num = list.Count - 1; num >= 0; num--)
 				{
 					list[num].Destroy();
@@ -89,19 +89,19 @@ namespace RimWorld
 		{
 			if (things.RemoveAll((Thing x) => x == null) != 0)
 			{
-				Log.Error(string.Concat(GetType(), " generated null things."));
+				Log.Error(GetType()?.ToString() + " generated null things.");
 			}
 			ChangeDeadPawnsToTheirCorpses(things);
 			for (int num = things.Count - 1; num >= 0; num--)
 			{
 				if (things[num].Destroyed)
 				{
-					Log.Error(string.Concat(GetType(), " generated destroyed thing ", things[num].ToStringSafe()));
+					Log.Error(GetType()?.ToString() + " generated destroyed thing " + things[num].ToStringSafe());
 					things.RemoveAt(num);
 				}
 				else if (things[num].stackCount <= 0)
 				{
-					Log.Error(string.Concat(GetType(), " generated ", things[num].ToStringSafe(), " with stackCount=", things[num].stackCount));
+					Log.Error(GetType()?.ToString() + " generated " + things[num].ToStringSafe() + " with stackCount=" + things[num].stackCount);
 					things.RemoveAt(num);
 				}
 			}
@@ -147,6 +147,11 @@ namespace RimWorld
 			{
 				fixedParams.filter.ResolveReferences();
 			}
+		}
+
+		public virtual IEnumerable<string> ConfigErrors()
+		{
+			yield break;
 		}
 	}
 }

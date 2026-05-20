@@ -12,8 +12,7 @@ namespace RimWorld
 		{
 			get
 			{
-				Hive hive = parent as Hive;
-				if (hive != null && !hive.CompDormant.Awake)
+				if (parent is Hive hive && !hive.CompDormant.Awake)
 				{
 					return false;
 				}
@@ -42,19 +41,19 @@ namespace RimWorld
 			}
 		}
 
-		public override void CompTick()
+		public override void CompTickInterval(int delta)
 		{
-			base.CompTick();
-			TickInterval(1);
+			base.CompTickInterval(delta);
+			TickIntervalDelta(delta);
 		}
 
 		public override void CompTickRare()
 		{
 			base.CompTickRare();
-			TickInterval(250);
+			TickIntervalDelta(250);
 		}
 
-		private void TickInterval(int interval)
+		private void TickIntervalDelta(int interval)
 		{
 			if (!CanSpawnFilth)
 			{
@@ -76,7 +75,7 @@ namespace RimWorld
 
 		public void TrySpawnFilth()
 		{
-			if (parent.Map != null && CellFinder.TryFindRandomReachableCellNear(parent.Position, parent.Map, Props.spawnRadius, TraverseParms.For(TraverseMode.NoPassClosedDoors), (IntVec3 x) => x.Standable(parent.Map), (Region x) => true, out var result))
+			if (parent.Map != null && CellFinder.TryFindRandomReachableNearbyCell(parent.Position, parent.Map, Props.spawnRadius, TraverseParms.For(TraverseMode.NoPassClosedDoors), (IntVec3 x) => x.Standable(parent.Map), (Region x) => true, out var result))
 			{
 				FilthMaker.TryMakeFilth(result, parent.Map, Props.filthDef);
 			}

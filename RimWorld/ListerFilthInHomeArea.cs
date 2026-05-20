@@ -53,10 +53,9 @@ namespace RimWorld
 				List<Thing> thingList = c.GetThingList(map);
 				for (int i = 0; i < thingList.Count; i++)
 				{
-					Filth filth = thingList[i] as Filth;
-					if (filth != null)
+					if (thingList[i] is Filth item)
 					{
-						filthInHomeArea.Add(filth);
+						filthInHomeArea.Add(item);
 					}
 				}
 				return;
@@ -76,7 +75,7 @@ namespace RimWorld
 			stringBuilder.AppendLine("======= Filth in home area");
 			foreach (Thing item in filthInHomeArea)
 			{
-				stringBuilder.AppendLine(item.ThingID + " " + item.Position);
+				stringBuilder.AppendLine(item.ThingID + " " + item.Position.ToString());
 			}
 			return stringBuilder.ToString();
 		}

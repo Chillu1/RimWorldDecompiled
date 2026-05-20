@@ -29,11 +29,11 @@ namespace RimWorld
 					return false;
 				}
 			}
-			if (!p.RaceProps.EatsFood)
+			if (!p.RaceProps.EatsFood || p.needs?.food == null)
 			{
 				return false;
 			}
-			if (p.Spawned && p.Map.designationManager.DesignationOn(p, DesignationDefOf.Slaughter) != null)
+			if (p.Spawned && p.ShouldBeSlaughtered())
 			{
 				return false;
 			}

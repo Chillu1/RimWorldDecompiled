@@ -12,8 +12,6 @@ namespace Verse
 
 		private const float PulseAmplitude = 0.7f;
 
-		private static readonly Texture2D TutorHighlightAtlas = ContentFinder<Texture2D>.Get("UI/Widgets/TutorHighlightAtlas");
-
 		public static void HighlightTag(string tag)
 		{
 			if (Event.current.type != EventType.Repaint || tag.NullOrEmpty())
@@ -41,10 +39,7 @@ namespace Verse
 				Pair<string, int> pair = liveTags[i];
 				if (tag == pair.First && Time.frameCount == pair.Second + 1)
 				{
-					Rect rect2 = rect.ContractedBy(-10f);
-					GUI.color = new Color(1f, 1f, 1f, Pulser.PulseBrightness(1.2f, 0.7f));
-					Widgets.DrawAtlas(rect2, TutorHighlightAtlas);
-					GUI.color = Color.white;
+					Widgets.DrawTextHighlight(rect, 0f, Color.white.ToTransparent(Pulser.PulseBrightness(1.2f, 0.7f)));
 				}
 			}
 		}

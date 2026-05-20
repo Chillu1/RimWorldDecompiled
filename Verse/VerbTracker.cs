@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using RimWorld;
-using UnityEngine;
 
 namespace Verse
 {
@@ -43,6 +41,21 @@ namespace Verse
 			}
 		}
 
+		public bool AnyVerbBursting
+		{
+			get
+			{
+				for (int i = 0; i < verbs.Count; i++)
+				{
+					if (verbs[i].state == VerbState.Bursting)
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+		}
+
 		public VerbTracker(IVerbOwner directOwner)
 		{
 			this.directOwner = directOwner;
@@ -59,10 +72,10 @@ namespace Verse
 			}
 		}
 
-		public IEnumerable<Command> GetVerbsCommands(KeyCode hotKey = KeyCode.None)
+		public IEnumerable<Command> GetVerbsCommands()
 		{
-			CompEquippable ce = directOwner as CompEquippable;
-			if (ce == null)
+			IVerbOwner verbOwner = directOwner;
+			if (!(verbOwner is CompEquippable ce))
 			{
 				yield break;
 			}
@@ -78,7 +91,7 @@ namespace Verse
 			}
 			if (!directOwner.Tools.NullOrEmpty() && ce != null && ce.parent.def.IsMeleeWeapon)
 			{
-				yield return CreateVerbTargetCommand(ownerThing, verbs.Where((Verb v) => v.verbProps.IsMeleeAttack).FirstOrDefault());
+				yield return CreateVerbTargetCommand(ownerThing, verbs.FirstOrDefault((Verb v) => v.verbProps.IsMeleeAttack));
 			}
 		}
 
@@ -86,25 +99,44 @@ namespace Verse
 		{
 			Command_VerbTarget command_VerbTarget = new Command_VerbTarget();
 			command_VerbTarget.defaultDesc = ownerThing.LabelCap + ": " + ownerThing.def.description.CapitalizeFirst();
-			command_VerbTarget.icon = ownerThing.def.uiIcon;
-			command_VerbTarget.iconAngle = ownerThing.def.uiIconAngle;
-			command_VerbTarget.iconOffset = ownerThing.def.uiIconOffset;
+			command_VerbTarget.ownerThing = ownerThing;
 			command_VerbTarget.tutorTag = "VerbTarget";
 			command_VerbTarget.verb = verb;
-			if (verb.caster.Faction != Faction.OfPlayer)
+			if (verb.caster.Faction != Faction.OfPlayer && !DebugSettings.ShowDevGizmos)
 			{
 				command_VerbTarget.Disable("CannotOrderNonControlled".Translate());
 			}
 			else if (verb.CasterIsPawn)
 			{
-				if (verb.CasterPawn.WorkTagIsDisabled(WorkTags.Violent))
+				string reason;
+				if (verb.CasterPawn.RaceProps.IsMechanoid && !MechanitorUtility.EverControllable(verb.CasterPawn) && !DebugSettings.ShowDevGizmos)
+				{
+					command_VerbTarget.Disable("CannotOrderNonControlled".Translate());
+				}
+				else if (verb.CasterPawn.WorkTagIsDisabled(WorkTags.Violent))
 				{
 					command_VerbTarget.Disable("IsIncapableOfViolence".Translate(verb.CasterPawn.LabelShort, verb.CasterPawn));
 				}
-				else if (!verb.CasterPawn.drafter.Drafted)
+				else if (!verb.CasterPawn.Drafted && !DebugSettings.ShowDevGizmos)
 				{
 					command_VerbTarget.Disable("IsNotDrafted".Translate(verb.CasterPawn.LabelShort, verb.CasterPawn));
 				}
+				else if (verb is Verb_LaunchProjectile)
+				{
+					Apparel apparel = verb.FirstApparelPreventingShooting();
+					if (apparel != null)
+					{
+						command_VerbTarget.Disable("ApparelPreventsShooting".Translate(verb.CasterPawn.Named("PAWN"), apparel.Named("APPAREL")).CapitalizeFirst());
+					}
+				}
+				else if (EquipmentUtility.RolePreventsFromUsing(verb.CasterPawn, verb.EquipmentSource, out reason))
+				{
+					command_VerbTarget.Disable(reason);
+				}
+			}
+			if ((!verb.EquipmentSource.TryGetComp<CompUniqueWeapon>(out var comp) || !comp.IgnoreAccuracyMaluses) && verb.caster.Spawned && verb.caster.Map.weatherManager.CurWeatherMaxRangeCap >= 0f)
+			{
+				command_VerbTarget.defaultDescPostfix = "\n\n" + ("WeatherMaxRangeCap".Translate() + ": " + verb.caster.Map.weatherManager.curWeather.LabelCap).Colorize(ColoredText.WarningColor);
 			}
 			return command_VerbTarget;
 		}
@@ -151,7 +183,7 @@ namespace Verse
 			});
 		}
 
-		private void InitVerbsFromZero()
+		public void InitVerbsFromZero()
 		{
 			verbs = new List<Verb>();
 			InitVerbs(delegate(Type type, string id)

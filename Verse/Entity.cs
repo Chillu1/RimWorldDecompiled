@@ -4,15 +4,9 @@ namespace Verse
 {
 	public abstract class Entity
 	{
-		public abstract string LabelCap
-		{
-			get;
-		}
+		public abstract string LabelCap { get; }
 
-		public abstract string Label
-		{
-			get;
-		}
+		public abstract string Label { get; }
 
 		public virtual string LabelShort => LabelCap;
 
@@ -24,9 +18,12 @@ namespace Verse
 
 		public abstract void DeSpawn(DestroyMode mode = DestroyMode.Vanish);
 
-		public virtual void Tick()
+		protected virtual void Tick()
 		{
-			throw new NotImplementedException();
+		}
+
+		protected virtual void TickInterval(int delta)
+		{
 		}
 
 		public virtual void TickRare()

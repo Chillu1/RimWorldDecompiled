@@ -31,8 +31,8 @@ namespace Verse
 			base.PostLoad();
 			if (defName == "UnnamedDef")
 			{
-				string[] array = clipPath.Split('/', '\\');
-				defName = array[array.Length - 1];
+				defName = clipPath.Split('/', '\\')[^1];
+				ResolveDefNameHash();
 			}
 		}
 

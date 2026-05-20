@@ -28,14 +28,30 @@ namespace RimWorld
 			return null;
 		}
 
+		[Obsolete]
 		protected virtual bool AidDisabled(Map map, Pawn pawn, Faction faction, out string reason)
+		{
+			return AidDisabled_NewTemp(map, pawn, faction, out reason);
+		}
+
+		protected virtual bool AidDisabled_NewTemp(Map map, Pawn pawn, Faction faction, out string reason, bool temperatureMatters = true)
 		{
 			if (faction.HostileTo(Faction.OfPlayer))
 			{
 				reason = "CommandCallRoyalAidFactionHostile".Translate(faction.Named("FACTION"));
 				return true;
 			}
-			if (!faction.def.allowedArrivalTemperatureRange.ExpandedBy(-4f).Includes(pawn.MapHeld.mapTemperature.SeasonalTemp))
+			if (map.generatorDef.isUnderground)
+			{
+				reason = "CommandCallRoyalAidMapUnreachable".Translate(faction.Named("FACTION"));
+				return true;
+			}
+			if (def.layerBlacklist.Contains(pawn.MapHeld.Tile.LayerDef))
+			{
+				reason = "CommandCallRoyalAidMapUnreachable".Translate(faction.Named("FACTION"));
+				return true;
+			}
+			if (temperatureMatters && !TemperatureIsAcceptable(map, faction))
 			{
 				reason = "BadTemperature".Translate();
 				return true;
@@ -92,6 +108,11 @@ namespace RimWorld
 				}
 			}
 			return true;
+		}
+
+		protected virtual bool TemperatureIsAcceptable(Map map, Faction faction)
+		{
+			return faction.def.allowedArrivalTemperatureRange.ExpandedBy(-4f).Includes(map.mapTemperature.SeasonalTemp);
 		}
 	}
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using LudeonTK;
 using RimWorld;
 using RimWorld.Planet;
 
@@ -49,7 +50,7 @@ namespace Verse
 				new TableDataGetter<RecipeDef>("mass", (RecipeDef r) => getThingDef(r).BaseMass),
 				new TableDataGetter<RecipeDef>("work to\nmake", (RecipeDef r) => r.workAmount.ToString()),
 				new TableDataGetter<RecipeDef>("min skill\ncrft", (RecipeDef r) => getMinCraftingSkill(getThingDef(r))),
-				new TableDataGetter<RecipeDef>("stuff costs", (RecipeDef r) => (!getThingDef(r).costList.NullOrEmpty()) ? getThingDef(r).costList.Select((ThingDefCountClass x) => x.Summary).ToCommaList() : ""),
+				new TableDataGetter<RecipeDef>("stuff costs", (RecipeDef r) => (!getThingDef(r).CostList.NullOrEmpty()) ? getThingDef(r).CostList.Select((ThingDefCountClass x) => x.Summary).ToCommaList() : ""),
 				new TableDataGetter<RecipeDef>("tradeable", (RecipeDef r) => getThingDef(r).tradeability.ToString()),
 				new TableDataGetter<RecipeDef>("recipeDef", (RecipeDef r) => r.defName),
 				new TableDataGetter<RecipeDef>("death on\nfail %", (RecipeDef r) => r.deathOnFailedSurgeryChance.ToStringPercent()),
@@ -59,14 +60,14 @@ namespace Verse
 				new TableDataGetter<RecipeDef>("research\nprereqs", (RecipeDef r) => (recipeToMakeThing(getThingDef(r)) != null) ? ((!recipeToMakeThing(getThingDef(r)).researchPrerequisites.NullOrEmpty()) ? recipeToMakeThing(getThingDef(r)).researchPrerequisites.Select((ResearchProjectDef x) => x.defName).ToCommaList() : "") : ""),
 				new TableDataGetter<RecipeDef>("recipe\nusers", (RecipeDef r) => (recipeToMakeThing(getThingDef(r)) != null) ? recipeToMakeThing(getThingDef(r)).AllRecipeUsers.Select((ThingDef x) => x.defName).ToCommaList() : "")
 			};
-			foreach (string c2 in enumerable2)
+			foreach (string c in enumerable2)
 			{
-				TableDataGetter<RecipeDef> item = new TableDataGetter<RecipeDef>("techHediff\n" + c2.Shorten(), (RecipeDef r) => (!getThingDef(r).techHediffsTags.NullOrEmpty() && getThingDef(r).techHediffsTags.Contains(c2)).ToStringCheckBlank());
+				TableDataGetter<RecipeDef> item = new TableDataGetter<RecipeDef>("techHediff\n" + c.Shorten(), (RecipeDef r) => (!getThingDef(r).techHediffsTags.NullOrEmpty() && getThingDef(r).techHediffsTags.Contains(c)).ToStringCheckBlank());
 				list.Add(item);
 			}
-			foreach (string c in enumerable)
+			foreach (string c2 in enumerable)
 			{
-				TableDataGetter<RecipeDef> item2 = new TableDataGetter<RecipeDef>("trade\n" + c.Shorten(), (RecipeDef r) => (!getThingDef(r).tradeTags.NullOrEmpty() && getThingDef(r).tradeTags.Contains(c)).ToStringCheckBlank());
+				TableDataGetter<RecipeDef> item2 = new TableDataGetter<RecipeDef>("trade\n" + c2.Shorten(), (RecipeDef r) => (!getThingDef(r).tradeTags.NullOrEmpty() && getThingDef(r).tradeTags.Contains(c2)).ToStringCheckBlank());
 				list.Add(item2);
 			}
 			DebugTables.MakeTablesDialog(DefDatabase<RecipeDef>.AllDefs.Where((RecipeDef r) => getThingDef(r) != null && installsBodyPart(r)), list.ToArray());
@@ -96,7 +97,7 @@ namespace Verse
 				int num2 = 0;
 				for (int i = 0; i < 15; i++)
 				{
-					Pawn pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(x.race.AnyPawnKind, null, PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: true));
+					Pawn pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(x.race.AnyPawnKind, null, PawnGenerationContext.NonPlayer, null, forceGenerateNewPawn: true));
 					for (int j = 0; j < 1000; j++)
 					{
 						DamageInfo dinfo = new DamageInfo(DamageDefOf.Crush, 10f);
@@ -139,7 +140,7 @@ namespace Verse
 		[DebugOutput]
 		public static void Prosthetics()
 		{
-			PawnGenerationRequest request = new PawnGenerationRequest(PawnKindDefOf.Colonist, Faction.OfPlayer, PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: false, newborn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: false, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, null, 1f, (Pawn p) => p.health.hediffSet.hediffs.Count == 0);
+			PawnGenerationRequest request = new PawnGenerationRequest(PawnKindDefOf.Colonist, Faction.OfPlayer, PawnGenerationContext.NonPlayer, null, forceGenerateNewPawn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: false, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowPregnant: false, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, 0f, null, 1f, (Pawn p) => p.health.hediffSet.hediffs.Count == 0);
 			Pawn pawn = PawnGenerator.GeneratePawn(request);
 			Action refreshPawn = delegate
 			{
@@ -156,9 +157,9 @@ namespace Verse
 			list.Add(new TableDataGetter<RecipeDef>("install time", (RecipeDef r) => r.workAmount));
 			list.Add(new TableDataGetter<RecipeDef>("install total cost", delegate(RecipeDef r)
 			{
-				float num2 = r.ingredients.Sum((IngredientCount ic) => ic.filter.AnyAllowedDef.BaseMarketValue * ic.GetBaseCount());
-				float num3 = r.workAmount * 0.0036f;
-				return num2 + num3;
+				float num = r.ingredients.Sum((IngredientCount ic) => ic.filter.AnyAllowedDef.BaseMarketValue * ic.GetBaseCount());
+				float num2 = r.workAmount * 0.0036f;
+				return num + num2;
 			}));
 			list.Add(new TableDataGetter<RecipeDef>("install skill", (RecipeDef r) => r.skillRequirements.Select((SkillRequirement sr) => sr.minLevel).Max()));
 			foreach (PawnCapacityDef cap in DefDatabase<PawnCapacityDef>.AllDefs.OrderBy((PawnCapacityDef pc) => pc.listOrder))

@@ -14,5 +14,7 @@ namespace Verse
 		public List<CreditsEntry> credits = new List<CreditsEntry>();
 
 		public Type languageWorkerClass = typeof(LanguageWorker_Default);
+
+		public int? totalNumCaseCount;
 	}
 }

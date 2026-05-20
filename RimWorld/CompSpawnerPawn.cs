@@ -22,11 +22,17 @@ namespace RimWorld
 
 		private PawnKindDef chosenKind;
 
+		private static readonly SimpleCurve RateFactorForBugCount = new SimpleCurve
+		{
+			{ 0f, 1f },
+			{ 5f, 0.5f }
+		};
+
 		private CompCanBeDormant dormancyCompCached;
 
 		private CompProperties_SpawnerPawn Props => (CompProperties_SpawnerPawn)props;
 
-		public Lord Lord => FindLordToJoin(parent, Props.lordJob, Props.shouldJoinParentLord);
+		public Lord Lord => FindLordToJoin(parent, Props.lordJob, Props.shouldJoinParentLord, null, Props.lordJoinRadius);
 
 		private float SpawnedPawnsPoints
 		{
@@ -75,13 +81,13 @@ namespace RimWorld
 			{
 				chosenKind = RandomPawnKindDef();
 			}
-			if (Props.maxPawnsToSpawn != IntRange.zero)
+			if (Props.maxPawnsToSpawn != IntRange.Zero)
 			{
 				pawnsLeftToSpawn = Props.maxPawnsToSpawn.RandomInRange;
 			}
 		}
 
-		public static Lord FindLordToJoin(Thing spawner, Type lordJobType, bool shouldTryJoinParentLord, Func<Thing, List<Pawn>> spawnedPawnSelector = null)
+		public static Lord FindLordToJoin(Thing spawner, Type lordJobType, bool shouldTryJoinParentLord, Func<Thing, List<Pawn>> spawnedPawnSelector = null, float lordJoinRadius = 2.1474836E+09f)
 		{
 			if (spawner.Spawned)
 			{
@@ -115,7 +121,7 @@ namespace RimWorld
 							{
 								foundPawn = list2.Find(hasJob);
 							}
-							if (foundPawn != null)
+							if (foundPawn != null && foundPawn.Position.InHorDistOf(spawner.Position, lordJoinRadius))
 							{
 								return true;
 							}
@@ -135,7 +141,7 @@ namespace RimWorld
 		{
 			if (!CellFinder.TryFindRandomCellNear(byThing.Position, byThing.Map, 5, (IntVec3 c) => c.Standable(byThing.Map) && byThing.Map.reachability.CanReach(c, byThing, PathEndMode.Touch, TraverseParms.For(TraverseMode.PassDoors)), out var result))
 			{
-				Log.Error("Found no place for mechanoids to defend " + byThing);
+				Log.Error("Found no place for pawns to defend " + byThing);
 				result = IntVec3.Invalid;
 			}
 			return LordMaker.MakeNewLord(byThing.Faction, Activator.CreateInstance(lordJobType, new SpawnedPawnParams
@@ -186,10 +192,9 @@ namespace RimWorld
 
 		public void CalculateNextPawnSpawnTick(float delayTicks)
 		{
-			float num = GenMath.LerpDouble(0f, 5f, 1f, 0.5f, spawnedPawns.Count);
-			if (Find.Storyteller.difficultyValues.enemyReproductionRateFactor > 0f)
+			if (Find.Storyteller.difficulty.enemyReproductionRateFactor > 0f)
 			{
-				nextPawnSpawnTick = Find.TickManager.TicksGame + (int)(delayTicks / (num * Find.Storyteller.difficultyValues.enemyReproductionRateFactor));
+				nextPawnSpawnTick = Find.TickManager.TicksGame + (int)(delayTicks / (RateFactorForBugCount.Evaluate(spawnedPawns.Count) * Find.Storyteller.difficulty.enemyReproductionRateFactor));
 			}
 			else
 			{
@@ -239,20 +244,21 @@ namespace RimWorld
 				pawn = null;
 				return false;
 			}
-			int index = chosenKind.lifeStages.Count - 1;
-			pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(chosenKind, parent.Faction, PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: false, newborn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: false, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, null, 1f, null, null, null, null, null, chosenKind.race.race.lifeStageAges[index].minAge));
+			PawnGenerationRequest request = new PawnGenerationRequest(chosenKind, parent.Faction);
+			if (chosenKind.RaceProps.IsMechanoid)
+			{
+				request.AllowedDevelopmentalStages = DevelopmentalStage.Newborn;
+			}
+			else
+			{
+				int index = chosenKind.lifeStages.Count - 1;
+				request.FixedBiologicalAge = chosenKind.race.race.lifeStageAges[index].minAge;
+			}
+			pawn = PawnGenerator.GeneratePawn(request);
 			spawnedPawns.Add(pawn);
 			GenSpawn.Spawn(pawn, CellFinder.RandomClosewalkCellNear(parent.Position, parent.Map, Props.pawnSpawnRadius), parent.Map);
-			Lord lord = Lord;
-			if (lord == null)
-			{
-				lord = CreateNewLord(parent, aggressive, Props.defendRadius, Props.lordJob);
-			}
-			lord.AddPawn(pawn);
-			if (Props.spawnSound != null)
-			{
-				Props.spawnSound.PlayOneShot(parent);
-			}
+			(Lord ?? CreateNewLord(parent, aggressive, Props.defendRadius, Props.lordJob)).AddPawn(pawn);
+			Props.spawnSound?.PlayOneShot(parent);
 			if (pawnsLeftToSpawn > 0)
 			{
 				pawnsLeftToSpawn--;
@@ -283,7 +289,7 @@ namespace RimWorld
 			FilterOutUnspawnedPawns();
 			if (Active && Find.TickManager.TicksGame >= nextPawnSpawnTick)
 			{
-				if ((Props.maxSpawnedPawnsPoints < 0f || SpawnedPawnsPoints < Props.maxSpawnedPawnsPoints) && Find.Storyteller.difficultyValues.enemyReproductionRateFactor > 0f && TrySpawnPawn(out var pawn) && pawn.caller != null)
+				if ((Props.maxSpawnedPawnsPoints < 0f || SpawnedPawnsPoints < Props.maxSpawnedPawnsPoints) && Find.Storyteller.difficulty.enemyReproductionRateFactor > 0f && TrySpawnPawn(out var pawn) && pawn.caller != null)
 				{
 					pawn.caller.DoCall();
 				}
@@ -301,10 +307,10 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (Prefs.DevMode)
+			if (DebugSettings.ShowDevGizmos)
 			{
 				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "DEBUG: Spawn pawn";
+				command_Action.defaultLabel = "DEV: Spawn pawn";
 				command_Action.icon = TexCommand.ReleaseAnimals;
 				command_Action.action = delegate
 				{
@@ -339,7 +345,7 @@ namespace RimWorld
 			}
 			if (pawnsLeftToSpawn > 0 && !Props.pawnsLeftToSpawnKey.NullOrEmpty())
 			{
-				text = text + (string)("\n" + Props.pawnsLeftToSpawnKey.Translate() + ": ") + pawnsLeftToSpawn;
+				text = string.Concat(text, "\n" + Props.pawnsLeftToSpawnKey.Translate() + ": ", pawnsLeftToSpawn.ToString());
 			}
 			return text;
 		}
@@ -356,7 +362,7 @@ namespace RimWorld
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				spawnedPawns.RemoveAll((Pawn x) => x == null);
-				if (pawnsLeftToSpawn == -1 && Props.maxPawnsToSpawn != IntRange.zero)
+				if (pawnsLeftToSpawn == -1 && Props.maxPawnsToSpawn != IntRange.Zero)
 				{
 					pawnsLeftToSpawn = Props.maxPawnsToSpawn.RandomInRange;
 				}

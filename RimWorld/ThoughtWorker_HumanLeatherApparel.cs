@@ -5,7 +5,7 @@ namespace RimWorld
 {
 	public class ThoughtWorker_HumanLeatherApparel : ThoughtWorker
 	{
-		protected override ThoughtState CurrentStateInternal(Pawn p)
+		public static ThoughtState CurrentThoughtState(Pawn p)
 		{
 			string text = null;
 			int num = 0;
@@ -30,6 +30,11 @@ namespace RimWorld
 				return ThoughtState.ActiveAtStage(4, text);
 			}
 			return ThoughtState.ActiveAtStage(num - 1, text);
+		}
+
+		protected override ThoughtState CurrentStateInternal(Pawn p)
+		{
+			return CurrentThoughtState(p);
 		}
 	}
 }

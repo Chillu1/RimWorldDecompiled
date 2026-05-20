@@ -36,10 +36,10 @@ namespace RimWorld.Planet
 			}
 			MeshUtility.RemoveVertices(outVerts, tris, (Vector3 x) => !MeshUtility.Visible(x, radius, viewCenter, viewAngle));
 			outIndices = new List<int>();
-			int k = 0;
-			for (int count2 = tris.Count; k < count2; k++)
+			int num = 0;
+			for (int count2 = tris.Count; num < count2; num++)
 			{
-				TriangleIndices triangleIndices2 = tris[k];
+				TriangleIndices triangleIndices2 = tris[num];
 				outIndices.Add(triangleIndices2.v1);
 				outIndices.Add(triangleIndices2.v2);
 				outIndices.Add(triangleIndices2.v3);

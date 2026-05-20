@@ -23,15 +23,15 @@ namespace RimWorld
 			Thing thing = currentTarget.Thing;
 			if (!CanHitTarget(thing))
 			{
-				Log.Warning(string.Concat(casterPawn, " meleed ", thing, " from out of melee position."));
+				Log.Warning(casterPawn?.ToString() + " meleed " + thing?.ToString() + " from out of melee position.");
 			}
 			casterPawn.rotationTracker.Face(thing.DrawPos);
-			if (!IsTargetImmobile(currentTarget) && casterPawn.skills != null)
+			if (!IsTargetImmobile(currentTarget) && casterPawn.skills != null && (currentTarget.Pawn == null || !currentTarget.Pawn.IsColonyMech))
 			{
 				casterPawn.skills.Learn(SkillDefOf.Melee, 200f * verbProps.AdjustedFullCycleTime(this, casterPawn));
 			}
 			Pawn pawn = thing as Pawn;
-			if (pawn != null && !pawn.Dead && (casterPawn.MentalStateDef != MentalStateDefOf.SocialFighting || pawn.MentalStateDef != MentalStateDefOf.SocialFighting))
+			if (pawn != null && !pawn.Dead && (casterPawn.MentalStateDef != MentalStateDefOf.SocialFighting || pawn.MentalStateDef != MentalStateDefOf.SocialFighting) && (casterPawn.story == null || !casterPawn.story.traits.DisableHostilityFrom(pawn)))
 			{
 				pawn.mindState.meleeThreat = casterPawn;
 				pawn.mindState.lastMeleeThreatHarmTick = Find.TickManager.TicksGame;
@@ -49,9 +49,17 @@ namespace RimWorld
 					{
 						MoteMaker.MakeStaticMote(drawPos, map, verbProps.impactMote);
 					}
+					if (verbProps.impactFleck != null)
+					{
+						FleckMaker.Static(drawPos, map, verbProps.impactFleck);
+					}
 					BattleLogEntry_MeleeCombat battleLogEntry_MeleeCombat = CreateCombatLog((ManeuverDef maneuver) => maneuver.combatLogRulesHit, alwaysShow: true);
 					result = true;
 					DamageWorker.DamageResult damageResult = ApplyMeleeDamageToTarget(currentTarget);
+					if (pawn != null && damageResult.totalDamageDealt > 0f)
+					{
+						ApplyMeleeSlaveSuppression(pawn, damageResult.totalDamageDealt);
+					}
 					if (damageResult.stunned && damageResult.parts.NullOrEmpty())
 					{
 						Find.BattleLog.RemoveEntry(battleLogEntry_MeleeCombat);
@@ -80,14 +88,14 @@ namespace RimWorld
 				soundDef = SoundMiss();
 				CreateCombatLog((ManeuverDef maneuver) => maneuver.combatLogRulesMiss, alwaysShow: false);
 			}
-			soundDef.PlayOneShot(new TargetInfo(thing.Position, map));
+			soundDef?.PlayOneShot(new TargetInfo(thing.Position, map));
 			if (casterPawn.Spawned)
 			{
 				casterPawn.Drawer.Notify_MeleeAttackOn(thing);
 			}
 			if (pawn != null && !pawn.Dead && pawn.Spawned)
 			{
-				pawn.stances.StaggerFor(95);
+				pawn.stances.stagger.StaggerFor(95);
 			}
 			if (casterPawn.Spawned)
 			{
@@ -125,7 +133,27 @@ namespace RimWorld
 			{
 				return 1f;
 			}
-			return CasterPawn.GetStatValue(StatDefOf.MeleeHitChance);
+			float num = CasterPawn.GetStatValue(StatDefOf.MeleeHitChance);
+			if (ModsConfig.IdeologyActive && target.HasThing)
+			{
+				if (DarknessCombatUtility.IsOutdoorsAndLit(target.Thing))
+				{
+					num += caster.GetStatValue(StatDefOf.MeleeHitChanceOutdoorsLitOffset);
+				}
+				else if (DarknessCombatUtility.IsOutdoorsAndDark(target.Thing))
+				{
+					num += caster.GetStatValue(StatDefOf.MeleeHitChanceOutdoorsDarkOffset);
+				}
+				else if (DarknessCombatUtility.IsIndoorsAndDark(target.Thing))
+				{
+					num += caster.GetStatValue(StatDefOf.MeleeHitChanceIndoorsDarkOffset);
+				}
+				else if (DarknessCombatUtility.IsIndoorsAndLit(target.Thing))
+				{
+					num += caster.GetStatValue(StatDefOf.MeleeHitChanceIndoorsLitOffset);
+				}
+			}
+			return num;
 		}
 
 		private float GetDodgeChance(LocalTargetInfo target)
@@ -138,17 +166,35 @@ namespace RimWorld
 			{
 				return 0f;
 			}
-			Pawn pawn = target.Thing as Pawn;
-			if (pawn == null)
+			if (!(target.Thing is Pawn pawn))
 			{
 				return 0f;
 			}
-			Stance_Busy stance_Busy = pawn.stances.curStance as Stance_Busy;
-			if (stance_Busy != null && stance_Busy.verb != null && !stance_Busy.verb.verbProps.IsMeleeAttack)
+			if (pawn.stances.curStance is Stance_Busy { verb: not null } stance_Busy && !stance_Busy.verb.verbProps.IsMeleeAttack)
 			{
 				return 0f;
 			}
-			return pawn.GetStatValue(StatDefOf.MeleeDodgeChance);
+			float num = pawn.GetStatValue(StatDefOf.MeleeDodgeChance);
+			if (ModsConfig.IdeologyActive)
+			{
+				if (DarknessCombatUtility.IsOutdoorsAndLit(target.Thing))
+				{
+					num += pawn.GetStatValue(StatDefOf.MeleeDodgeChanceOutdoorsLitOffset);
+				}
+				else if (DarknessCombatUtility.IsOutdoorsAndDark(target.Thing))
+				{
+					num += pawn.GetStatValue(StatDefOf.MeleeDodgeChanceOutdoorsDarkOffset);
+				}
+				else if (DarknessCombatUtility.IsIndoorsAndDark(target.Thing))
+				{
+					num += pawn.GetStatValue(StatDefOf.MeleeDodgeChanceIndoorsDarkOffset);
+				}
+				else if (DarknessCombatUtility.IsIndoorsAndLit(target.Thing))
+				{
+					num += pawn.GetStatValue(StatDefOf.MeleeDodgeChanceIndoorsLitOffset);
+				}
+			}
+			return num;
 		}
 
 		private bool IsTargetImmobile(LocalTargetInfo target)
@@ -163,6 +209,23 @@ namespace RimWorld
 		}
 
 		protected abstract DamageWorker.DamageResult ApplyMeleeDamageToTarget(LocalTargetInfo target);
+
+		private bool CanApplyMeleeSlaveSuppression(Pawn targetPawn)
+		{
+			if (CasterPawn != null && CasterPawn.IsColonist && !CasterPawn.IsSlave && targetPawn != null && targetPawn.IsSlaveOfColony && targetPawn.health.capacities.CanBeAwake)
+			{
+				return !SlaveRebellionUtility.IsRebelling(targetPawn);
+			}
+			return false;
+		}
+
+		private void ApplyMeleeSlaveSuppression(Pawn targetPawn, float damageDealt)
+		{
+			if (CanApplyMeleeSlaveSuppression(targetPawn))
+			{
+				SlaveRebellionUtility.IncrementMeleeSuppression(CasterPawn, targetPawn, damageDealt);
+			}
+		}
 
 		private SoundDef SoundHitPawn()
 		{
@@ -197,6 +260,10 @@ namespace RimWorld
 
 		private SoundDef SoundHitBuilding()
 		{
+			if (currentTarget.Thing is Building building && !building.def.building.soundMeleeHitOverride.NullOrUndefined())
+			{
+				return building.def.building.soundMeleeHitOverride;
+			}
 			if (base.EquipmentSource != null && !base.EquipmentSource.def.meleeHitSound.NullOrUndefined())
 			{
 				return base.EquipmentSource.def.meleeHitSound;
@@ -223,7 +290,7 @@ namespace RimWorld
 			{
 				return CasterPawn.def.race.soundMeleeHitBuilding;
 			}
-			return SoundDefOf.Pawn_Melee_Punch_HitBuilding;
+			return SoundDefOf.MeleeHit_Unarmed;
 		}
 
 		private SoundDef SoundMiss()

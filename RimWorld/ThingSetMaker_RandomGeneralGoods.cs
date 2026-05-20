@@ -31,11 +31,11 @@ namespace RimWorld
 		protected override void Generate(ThingSetMakerParams parms, List<Thing> outThings)
 		{
 			IntRange intRange = parms.countRange ?? new IntRange(10, 20);
-			TechLevel techLevel = parms.techLevel ?? TechLevel.Undefined;
+			TechLevel valueOrDefault = parms.techLevel.GetValueOrDefault();
 			int num = Mathf.Max(intRange.RandomInRange, 1);
 			for (int i = 0; i < num; i++)
 			{
-				outThings.Add(GenerateSingle(techLevel));
+				outThings.Add(GenerateSingle(valueOrDefault));
 			}
 		}
 
@@ -84,14 +84,14 @@ namespace RimWorld
 				return null;
 			}
 			Thing thing = ThingMaker.MakeThing(result);
-			int max = Mathf.Min(result.stackLimit, 75);
-			thing.stackCount = Rand.RangeInclusive(1, max);
+			int maxInclusive = Mathf.Min(result.stackLimit, 75);
+			thing.stackCount = Rand.RangeInclusive(1, maxInclusive);
 			return thing;
 		}
 
 		private IEnumerable<ThingDef> PossibleRawFood(TechLevel techLevel)
 		{
-			return ThingSetMakerUtility.allGeneratableItems.Where((ThingDef x) => x.IsNutritionGivingIngestible && !x.IsCorpse && x.ingestible.HumanEdible && !x.HasComp(typeof(CompHatcher)) && (int)x.techLevel <= (int)techLevel && (int)x.ingestible.preferability < 6);
+			return ThingSetMakerUtility.allGeneratableItems.Where((ThingDef x) => x.IsNutritionGivingIngestible && !x.IsCorpse && x.ingestible.HumanEdible && !x.HasComp(typeof(CompHatcher)) && (int)x.techLevel <= (int)techLevel && (int)x.ingestible.preferability < 7);
 		}
 
 		private Thing RandomMedicine(TechLevel techLevel)
@@ -110,8 +110,8 @@ namespace RimWorld
 				result = ThingDefOf.MedicineHerbal;
 			}
 			Thing thing = ThingMaker.MakeThing(result);
-			int max = Mathf.Min(result.stackLimit, 20);
-			thing.stackCount = Rand.RangeInclusive(1, max);
+			int maxInclusive = Mathf.Min(result.stackLimit, 20);
+			thing.stackCount = Rand.RangeInclusive(1, maxInclusive);
 			return thing;
 		}
 
@@ -122,8 +122,8 @@ namespace RimWorld
 				return null;
 			}
 			Thing thing = ThingMaker.MakeThing(result);
-			int max = Mathf.Min(result.stackLimit, 25);
-			thing.stackCount = Rand.RangeInclusive(1, max);
+			int maxInclusive = Mathf.Min(result.stackLimit, 25);
+			thing.stackCount = Rand.RangeInclusive(1, maxInclusive);
 			return thing;
 		}
 
@@ -138,7 +138,7 @@ namespace RimWorld
 
 		protected override IEnumerable<ThingDef> AllGeneratableThingsDebugSub(ThingSetMakerParams parms)
 		{
-			TechLevel techLevel = parms.techLevel ?? TechLevel.Undefined;
+			TechLevel techLevel = parms.techLevel.GetValueOrDefault();
 			if (techLevel.IsNeolithicOrWorse())
 			{
 				yield return ThingDefOf.Pemmican;
@@ -166,7 +166,9 @@ namespace RimWorld
 				yield return ThingDefOf.WoodLog;
 				yield break;
 			}
-			foreach (ThingDef item4 in DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef d) => BaseGenUtility.IsCheapWallStuff(d)))
+			foreach (ThingDef item4 in from d in GenStuff.AllowedStuffsFor(ThingDefOf.Wall, techLevel)
+				where d.BaseMarketValue / d.VolumePerUnit < 5f
+				select d)
 			{
 				yield return item4;
 			}

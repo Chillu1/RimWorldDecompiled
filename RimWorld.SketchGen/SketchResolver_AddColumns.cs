@@ -12,11 +12,11 @@ namespace RimWorld.SketchGen
 
 		private const float Chance = 0.8f;
 
-		protected override void ResolveInt(ResolveParams parms)
+		protected override void ResolveInt(SketchResolveParams parms)
 		{
 			CellRect outerRect = parms.rect ?? parms.sketch.OccupiedRect;
 			bool allowWood = parms.allowWood ?? true;
-			bool flag = parms.requireFloor ?? false;
+			bool valueOrDefault = parms.requireFloor == true;
 			rects.Clear();
 			processed.Clear();
 			foreach (IntVec3 item2 in outerRect.Cells.InRandomOrder())
@@ -28,46 +28,46 @@ namespace RimWorld.SketchGen
 				}
 			}
 			ThingDef stuff = GenStuff.RandomStuffInexpensiveFor(ThingDefOf.Column, null, (ThingDef x) => SketchGenUtility.IsStuffAllowed(x, allowWood, parms.useOnlyStonesAvailableOnMap, allowFlammableWalls: true, ThingDefOf.Column));
-			for (int i = 0; i < rects.Count; i++)
+			for (int num = 0; num < rects.Count; num++)
 			{
-				if (rects[i].Width < 3 || rects[i].Height < 3 || !Rand.Chance(0.8f))
+				if (rects[num].Width < 3 || rects[num].Height < 3 || !Rand.Chance(0.8f))
 				{
 					continue;
 				}
-				CellRect cellRect = rects[i].ContractedBy(1);
+				CellRect cellRect = rects[num].ContractedBy(1);
 				Sketch sketch = new Sketch();
 				if (Rand.Bool)
 				{
 					int newZ = Rand.RangeInclusive(cellRect.minZ, cellRect.CenterCell.z);
-					int num = ((cellRect.Width >= 4) ? Rand.Element(2, 3) : 2);
-					for (int j = cellRect.minX; j <= cellRect.maxX; j += num)
+					int num2 = ((cellRect.Width >= 4) ? Rand.Element(2, 3) : 2);
+					for (int num3 = cellRect.minX; num3 <= cellRect.maxX; num3 += num2)
 					{
-						if (!flag || parms.sketch.AnyTerrainAt(new IntVec3(j, 0, newZ)))
+						if (!valueOrDefault || parms.sketch.AnyTerrainAt(new IntVec3(num3, 0, newZ)))
 						{
-							sketch.AddThing(ThingDefOf.Column, new IntVec3(j, 0, newZ), Rot4.North, stuff);
+							sketch.AddThing(ThingDefOf.Column, new IntVec3(num3, 0, newZ), Rot4.North, stuff);
 						}
 					}
-					ResolveParams parms2 = parms;
+					SketchResolveParams parms2 = parms;
 					parms2.sketch = sketch;
-					parms2.symmetryOrigin = rects[i].minZ + rects[i].Height / 2;
-					parms2.symmetryOriginIncluded = rects[i].Height % 2 == 1;
+					parms2.symmetryOrigin = rects[num].minZ + rects[num].Height / 2;
+					parms2.symmetryOriginIncluded = rects[num].Height % 2 == 1;
 					SketchResolverDefOf.Symmetry.Resolve(parms2);
 				}
 				else
 				{
 					int newX = Rand.RangeInclusive(cellRect.minX, cellRect.CenterCell.x);
-					int num2 = ((cellRect.Height >= 4) ? Rand.Element(2, 3) : 2);
-					for (int k = cellRect.minZ; k <= cellRect.maxZ; k += num2)
+					int num4 = ((cellRect.Height >= 4) ? Rand.Element(2, 3) : 2);
+					for (int num5 = cellRect.minZ; num5 <= cellRect.maxZ; num5 += num4)
 					{
-						if (!flag || parms.sketch.AnyTerrainAt(new IntVec3(newX, 0, k)))
+						if (!valueOrDefault || parms.sketch.AnyTerrainAt(new IntVec3(newX, 0, num5)))
 						{
-							sketch.AddThing(ThingDefOf.Column, new IntVec3(newX, 0, k), Rot4.North, stuff);
+							sketch.AddThing(ThingDefOf.Column, new IntVec3(newX, 0, num5), Rot4.North, stuff);
 						}
 					}
-					ResolveParams parms3 = parms;
+					SketchResolveParams parms3 = parms;
 					parms3.sketch = sketch;
-					parms3.symmetryOrigin = rects[i].minX + rects[i].Width / 2;
-					parms3.symmetryOriginIncluded = rects[i].Width % 2 == 1;
+					parms3.symmetryOrigin = rects[num].minX + rects[num].Width / 2;
+					parms3.symmetryOriginIncluded = rects[num].Width % 2 == 1;
 					SketchResolverDefOf.Symmetry.Resolve(parms3);
 				}
 				parms.sketch.Merge(sketch, wipeIfCollides: false);
@@ -76,7 +76,7 @@ namespace RimWorld.SketchGen
 			processed.Clear();
 		}
 
-		protected override bool CanResolveInt(ResolveParams parms)
+		protected override bool CanResolveInt(SketchResolveParams parms)
 		{
 			return true;
 		}

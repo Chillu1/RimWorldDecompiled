@@ -9,6 +9,8 @@ namespace RimWorld
 	{
 		private List<Pawn> targetsResult = new List<Pawn>();
 
+		private StringBuilder sb = new StringBuilder();
+
 		public List<Pawn> Targets
 		{
 			get
@@ -17,11 +19,11 @@ namespace RimWorld
 				List<Map> maps = Find.Maps;
 				for (int i = 0; i < maps.Count; i++)
 				{
-					foreach (Pawn freeColonist in maps[i].mapPawns.FreeColonists)
+					foreach (Pawn item in maps[i].mapPawns.FreeColonistsSpawned)
 					{
-						if (freeColonist.royalty != null && !freeColonist.Suspended && freeColonist.royalty.GetUnmetThroneroomRequirements().Any())
+						if (item.royalty != null && !item.Suspended && item.royalty.AnyUnmetThroneroomRequirements())
 						{
-							targetsResult.Add(freeColonist);
+							targetsResult.Add(item);
 						}
 					}
 				}
@@ -33,6 +35,7 @@ namespace RimWorld
 		{
 			defaultLabel = "UndignifiedThroneroom".Translate();
 			defaultExplanation = "UndignifiedThroneroomDesc".Translate();
+			requireRoyalty = true;
 		}
 
 		public override AlertReport GetReport()
@@ -42,26 +45,26 @@ namespace RimWorld
 
 		public override TaggedString GetExplanation()
 		{
-			return defaultExplanation + "\n" + Targets.Select(delegate(Pawn t)
+			return defaultExplanation + "\n" + targetsResult.Select(delegate(Pawn t)
 			{
 				RoyalTitle royalTitle = t.royalty.HighestTitleWithThroneRoomRequirements();
 				RoyalTitleDef royalTitleDef = (royalTitle.RoomRequirementGracePeriodActive(t) ? royalTitle.def.GetPreviousTitle(royalTitle.faction) : royalTitle.def);
 				string[] array = t.royalty.GetUnmetThroneroomRequirements(includeOnGracePeriod: false).ToArray();
 				string[] array2 = t.royalty.GetUnmetThroneroomRequirements(includeOnGracePeriod: true, onlyOnGracePeriod: true).ToArray();
-				StringBuilder stringBuilder = new StringBuilder();
+				sb.Length = 0;
 				if (array.Length != 0)
 				{
-					stringBuilder.Append(t.LabelShort + " (" + royalTitleDef.GetLabelFor(t.gender) + "):\n" + array.ToLineList("- "));
+					sb.Append(t.LabelShort + " (" + royalTitleDef.GetLabelFor(t.gender) + "):\n" + array.ToLineList("  - "));
 				}
 				if (array2.Length != 0)
 				{
 					if (array.Length != 0)
 					{
-						stringBuilder.Append("\n\n");
+						sb.Append("\n\n");
 					}
-					stringBuilder.Append(t.LabelShort + " (" + royalTitle.def.GetLabelFor(t.gender) + ", " + "RoomRequirementGracePeriodDesc".Translate(royalTitle.RoomRequirementGracePeriodDaysLeft.ToString("0.0")) + ")" + ":\n" + array2.ToLineList("- "));
+					sb.Append(t.LabelShort + " (" + royalTitle.def.GetLabelFor(t.gender) + ", " + "RoomRequirementGracePeriodDesc".Translate(royalTitle.RoomRequirementGracePeriodDaysLeft.ToString("0.0")) + ")" + ":\n" + array2.ToLineList("  - "));
 				}
-				return stringBuilder.ToString();
+				return sb.ToString();
 			}).ToLineList("\n");
 		}
 	}

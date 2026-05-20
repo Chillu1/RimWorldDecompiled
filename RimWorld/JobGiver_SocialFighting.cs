@@ -12,7 +12,11 @@ namespace RimWorld
 				return null;
 			}
 			Pawn otherPawn = ((MentalState_SocialFighting)pawn.MentalState).otherPawn;
-			if (!InteractionUtility.TryGetRandomVerbForSocialFight(pawn, out var verb))
+			if (!otherPawn.Spawned || otherPawn.Map != pawn.Map)
+			{
+				return null;
+			}
+			if (!SocialInteractionUtility.TryGetRandomVerbForSocialFight(pawn, out var verb))
 			{
 				return null;
 			}

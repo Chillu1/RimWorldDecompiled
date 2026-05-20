@@ -18,9 +18,9 @@ namespace Verse
 			Scribe_Values.Look(ref immunity, "immunity", 0f);
 		}
 
-		public void ImmunityTick(Pawn pawn, bool sick, Hediff diseaseInstance)
+		public void ImmunityTickInterval(Pawn pawn, bool sick, Hediff diseaseInstance, int delta)
 		{
-			immunity += ImmunityChangePerTick(pawn, sick, diseaseInstance);
+			immunity += ImmunityChangePerTick(pawn, sick, diseaseInstance) * (float)delta;
 			immunity = Mathf.Clamp01(immunity);
 		}
 

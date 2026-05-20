@@ -12,6 +12,10 @@ namespace Verse
 		{
 		}
 
+		public virtual void ResolveReferences(HediffDef parent)
+		{
+		}
+
 		public virtual IEnumerable<string> ConfigErrors(HediffDef parentDef)
 		{
 			if (compClass == null)

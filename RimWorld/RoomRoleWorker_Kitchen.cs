@@ -36,7 +36,28 @@ namespace RimWorld
 					break;
 				}
 			}
-			return (float)num * 14f;
+			return (float)num * 28f;
+		}
+
+		public override float GetScoreDeltaIfBuildingPlaced(Room room, ThingDef buildingDef)
+		{
+			if (buildingDef.designationCategory != DesignationCategoryDefOf.Production)
+			{
+				return 0f;
+			}
+			for (int i = 0; i < buildingDef.AllRecipes.Count; i++)
+			{
+				RecipeDef recipeDef = buildingDef.AllRecipes[i];
+				for (int j = 0; j < recipeDef.products.Count; j++)
+				{
+					ThingDef thingDef = recipeDef.products[j].thingDef;
+					if (thingDef.IsNutritionGivingIngestible && thingDef.ingestible.HumanEdible)
+					{
+						return 28f;
+					}
+				}
+			}
+			return 0f;
 		}
 	}
 }

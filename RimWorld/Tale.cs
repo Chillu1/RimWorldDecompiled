@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Verse;
 using Verse.Grammar;
@@ -18,6 +19,8 @@ namespace RimWorld
 		public TaleData_Surroundings surroundings;
 
 		public string customLabel;
+
+		public bool hidden;
 
 		public int AgeTicks => Find.TickManager.TicksAbs - date;
 
@@ -107,6 +110,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref date, "date", 0);
 			Scribe_Deep.Look(ref surroundings, "surroundings");
 			Scribe_Values.Look(ref customLabel, "customLabel");
+			Scribe_Values.Look(ref hidden, "hidden", defaultValue: false);
 		}
 
 		public void Notify_NewlyUsed()
@@ -118,7 +122,7 @@ namespace RimWorld
 		{
 			if (uses == 0)
 			{
-				Log.Warning(string.Concat("Called reference destroyed method on tale ", this, " but uses count is 0."));
+				Log.Warning("Called reference destroyed method on tale " + this?.ToString() + " but uses count is 0.");
 			}
 			else
 			{
@@ -138,10 +142,10 @@ namespace RimWorld
 			}
 		}
 
-		public IEnumerable<Rule> GetTextGenerationRules()
+		public IEnumerable<Rule> GetTextGenerationRules(Dictionary<string, string> outConstants = null)
 		{
 			Vector2 location = Vector2.zero;
-			if (surroundings != null && surroundings.tile >= 0)
+			if (surroundings != null && surroundings.tile.Valid)
 			{
 				location = Find.WorldGrid.LongLatOf(surroundings.tile);
 			}
@@ -153,15 +157,15 @@ namespace RimWorld
 					yield return rule;
 				}
 			}
-			foreach (Rule item in SpecialTextGenerationRules())
+			foreach (Rule item in SpecialTextGenerationRules(outConstants))
 			{
 				yield return item;
 			}
 		}
 
-		protected virtual IEnumerable<Rule> SpecialTextGenerationRules()
+		protected virtual IEnumerable<Rule> SpecialTextGenerationRules(Dictionary<string, string> outConstants)
 		{
-			yield break;
+			return Enumerable.Empty<Rule>();
 		}
 
 		public string GetUniqueLoadID()
@@ -176,12 +180,12 @@ namespace RimWorld
 
 		public override string ToString()
 		{
-			string str = "(#" + id + ": " + ShortSummary + "(age=" + ((float)AgeTicks / 60000f).ToString("F2") + " interest=" + InterestLevel;
+			string text = "(#" + id + ": " + ShortSummary + "(age=" + ((float)AgeTicks / 60000f).ToString("F2") + " interest=" + InterestLevel;
 			if (Unused && def.type == TaleType.Expirable)
 			{
-				str = str + ", expireDays=" + def.expireDays.ToString("F2");
+				text = text + ", expireDays=" + def.expireDays.ToString("F2");
 			}
-			return str + ")";
+			return text + ")";
 		}
 	}
 }

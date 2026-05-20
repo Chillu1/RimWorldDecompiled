@@ -20,29 +20,6 @@ namespace Verse
 			this.map = map;
 		}
 
-		public void TryGenerateAreaOnImpassable(IntVec3 c)
-		{
-			if (c.Roofed(map) || !c.Impassable(map) || !RoofCollapseUtility.WithinRangeOfRoofHolder(c, map))
-			{
-				return;
-			}
-			bool flag = false;
-			for (int i = 0; i < 9; i++)
-			{
-				Room room = (c + GenRadial.RadialPattern[i]).GetRoom(map);
-				if (room != null && !room.TouchesMapEdge)
-				{
-					flag = true;
-					break;
-				}
-			}
-			if (flag)
-			{
-				map.areaManager.BuildRoof[c] = true;
-				MoteMaker.PlaceTempRoof(c, map);
-			}
-		}
-
 		public void TryGenerateAreaFor(Room room)
 		{
 			queuedGenerateRooms.Add(room);
@@ -64,7 +41,8 @@ namespace Verse
 
 		private void TryGenerateAreaNow(Room room)
 		{
-			if (room.Dereferenced || room.TouchesMapEdge || room.RegionCount > 26 || room.CellCount > 320 || room.RegionType == RegionType.Portal)
+			map.regionAndRoomUpdater.TryRebuildDirtyRegionsAndRooms();
+			if (room.Dereferenced || room.TouchesMapEdge || room.RegionCount > 26 || room.CellCount > 320 || room.IsDoorway)
 			{
 				return;
 			}

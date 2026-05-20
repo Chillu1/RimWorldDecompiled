@@ -42,6 +42,22 @@ namespace Verse
 			}
 		}
 
+		public bool HasValue
+		{
+			get
+			{
+				if (owningField != null)
+				{
+					return true;
+				}
+				if (IsListItem)
+				{
+					return true;
+				}
+				return false;
+			}
+		}
+
 		public object Value
 		{
 			get
@@ -52,10 +68,7 @@ namespace Verse
 				}
 				if (IsListItem)
 				{
-					return ListRootObject.GetType().GetProperty("Item").GetValue(ListRootObject, new object[1]
-					{
-						owningIndex
-					});
+					return ListRootObject.GetType().GetProperty("Item").GetValue(ListRootObject, new object[1] { owningIndex });
 				}
 				throw new InvalidOperationException();
 			}
@@ -67,10 +80,7 @@ namespace Verse
 				}
 				if (IsListItem)
 				{
-					ListRootObject.GetType().GetProperty("Item").SetValue(ListRootObject, value, new object[1]
-					{
-						owningIndex
-					});
+					ListRootObject.GetType().GetProperty("Item").SetValue(ListRootObject, value, new object[1] { owningIndex });
 				}
 			}
 		}
@@ -214,10 +224,8 @@ namespace Verse
 			Type type = obj.GetType();
 			if (!type.GetGenericArguments()[0].IsValueEditable())
 			{
-				object obj2 = (treeNode_Editor.obj = type.GetProperty("Item").GetValue(obj, new object[1]
-				{
-					listIndex
-				}));
+				object value = type.GetProperty("Item").GetValue(obj, new object[1] { listIndex });
+				treeNode_Editor.obj = value;
 				treeNode_Editor.RebuildChildNodes();
 			}
 			treeNode_Editor.InitiallyCacheData();
@@ -266,7 +274,7 @@ namespace Verse
 				orderby InheritanceDistanceBetween(objType, f.DeclaringType) descending
 				select f)
 			{
-				if (item3.GetCustomAttributes(typeof(UnsavedAttribute), inherit: true).Length == 0 && item3.GetCustomAttributes(typeof(EditorHiddenAttribute), inherit: true).Length == 0)
+				if (item3.GetCustomAttributes(typeof(UnsavedAttribute), inherit: true).Length == 0 && item3.GetCustomAttributes(typeof(EditorHiddenAttribute), inherit: true).Length == 0 && !item3.IsNotSerialized)
 				{
 					TreeNode_Editor item2 = NewChildNodeFromField(this, item3);
 					children.Add(item2);
@@ -288,7 +296,7 @@ namespace Verse
 				num++;
 			}
 			while (!(type == null));
-			Log.Error(string.Concat(childType, " is not a subclass of ", parentType));
+			Log.Error(childType?.ToString() + " is not a subclass of " + parentType);
 			return -1;
 		}
 
@@ -296,10 +304,7 @@ namespace Verse
 		{
 			if (indexToDelete >= 0)
 			{
-				obj.GetType().GetMethod("RemoveAt").Invoke(obj, new object[1]
-				{
-					indexToDelete
-				});
+				obj.GetType().GetMethod("RemoveAt").Invoke(obj, new object[1] { indexToDelete });
 				RebuildChildNodes();
 				indexToDelete = -1;
 			}
@@ -329,13 +334,9 @@ namespace Verse
 			if (editWidgetsMethod != null)
 			{
 				WidgetRow widgetRow = listing.StartWidgetsRow(nestDepth);
-				editWidgetsMethod.Invoke(obj, new object[1]
-				{
-					widgetRow
-				});
+				editWidgetsMethod.Invoke(obj, new object[1] { widgetRow });
 			}
-			Editable editable = obj as Editable;
-			if (editable == null)
+			if (!(obj is Editable editable))
 			{
 				return;
 			}

@@ -1,5 +1,3 @@
-using System;
-
 namespace Verse
 {
 	public static class ShootTuning
@@ -20,7 +18,7 @@ namespace Verse
 
 		public const float LayingDownHitChanceFactorMinDistance = 4.5f;
 
-		public const float HitChanceFactorIfLayingDown = 0.2f;
+		public const float HitChanceFactorIfLayingDown = 0.5f;
 
 		public const float ExecutionMaxDistance = 3.9f;
 
@@ -77,9 +75,6 @@ namespace Verse
 		public const float Intercept_Pawn_HitChancePerBodySize = 0.4f;
 
 		public const float Intercept_Pawn_HitChanceFactor_LayingDown = 0.1f;
-
-		[Obsolete]
-		public const float Intercept_Pawn_HitChanceFactor_NonWildNonEnemy = 0.4f;
 
 		public const float Intercept_Object_HitChancePerFillPercent = 0.15f;
 

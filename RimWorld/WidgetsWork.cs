@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using Verse;
@@ -30,9 +31,25 @@ namespace RimWorld
 
 		public static readonly Texture2D WorkBoxOverlay_Warning = ContentFinder<Texture2D>.Get("UI/Widgets/WorkBoxOverlay_Warning");
 
+		public static readonly Texture2D WorkBoxOverlay_PreceptWarning = ContentFinder<Texture2D>.Get("UI/Widgets/WorkBoxOverlay_PreceptWarning");
+
 		private const int WarnIfSelectedMax = 2;
 
+		private static Texture2D workBoxBGTex_AgeDisabled;
+
 		private const float PassionOpacity = 0.4f;
+
+		private static Texture2D WorkBoxBGTex_AgeDisabled
+		{
+			get
+			{
+				if (workBoxBGTex_AgeDisabled == null)
+				{
+					workBoxBGTex_AgeDisabled = ContentFinder<Texture2D>.Get("UI/Widgets/WorkBoxBG_AgeDisabled");
+				}
+				return workBoxBGTex_AgeDisabled;
+			}
+		}
 
 		public static Color ColorOfPriority(int prio)
 		{
@@ -50,14 +67,24 @@ namespace RimWorld
 		{
 			if (p.WorkTypeIsDisabled(wType))
 			{
+				if (p.IsWorkTypeDisabledByAge(wType, out var minAgeRequired))
+				{
+					Rect rect = new Rect(x, y, 25f, 25f);
+					if (Event.current.type == EventType.MouseDown && Mouse.IsOver(rect))
+					{
+						Messages.Message("MessageWorkTypeDisabledAge".Translate(p, p.ageTracker.AgeBiologicalYears, wType.labelShort, minAgeRequired), p, MessageTypeDefOf.RejectInput, historical: false);
+						SoundDefOf.ClickReject.PlayOneShotOnCamera();
+					}
+					GUI.DrawTexture(rect, WorkBoxBGTex_AgeDisabled);
+				}
 				return;
 			}
-			Rect rect = new Rect(x, y, 25f, 25f);
+			Rect rect2 = new Rect(x, y, 25f, 25f);
 			if (incapableBecauseOfCapacities)
 			{
 				GUI.color = new Color(1f, 0.3f, 0.3f);
 			}
-			DrawWorkBoxBackground(rect, p, wType);
+			DrawWorkBoxBackground(rect2, p, wType);
 			GUI.color = Color.white;
 			if (Find.PlaySettings.useWorkPriorities)
 			{
@@ -66,11 +93,11 @@ namespace RimWorld
 				{
 					Text.Anchor = TextAnchor.MiddleCenter;
 					GUI.color = ColorOfPriority(priority);
-					Widgets.Label(rect.ContractedBy(-3f), priority.ToStringCached());
+					Widgets.Label(rect2.ContractedBy(-3f), priority.ToStringCached());
 					GUI.color = Color.white;
 					Text.Anchor = TextAnchor.UpperLeft;
 				}
-				if (Event.current.type != 0 || !Mouse.IsOver(rect))
+				if (Event.current.type != EventType.MouseDown || !Mouse.IsOver(rect2))
 				{
 					return;
 				}
@@ -99,6 +126,11 @@ namespace RimWorld
 				{
 					SoundDefOf.Crunch.PlayOneShotOnCamera();
 				}
+				if (!num && p.workSettings.WorkIsActive(wType) && p.Ideo != null && p.Ideo.IsWorkTypeConsideredDangerous(wType))
+				{
+					Messages.Message("MessageIdeoOpposedWorkTypeSelected".Translate(p, wType.gerundLabel), p, MessageTypeDefOf.CautionInput, historical: false);
+					SoundDefOf.DislikedWorkTypeActivated.PlayOneShotOnCamera();
+				}
 				Event.current.Use();
 				PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.WorkTab, KnowledgeAmount.SpecificInteraction);
 				PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.ManualWorkPriorities, KnowledgeAmount.SmallInteraction);
@@ -106,9 +138,9 @@ namespace RimWorld
 			}
 			if (p.workSettings.GetPriority(wType) > 0)
 			{
-				GUI.DrawTexture(rect, WorkBoxCheckTex);
+				GUI.DrawTexture(rect2, WorkBoxCheckTex);
 			}
-			if (!Widgets.ButtonInvisible(rect))
+			if (!Widgets.ButtonInvisible(rect2))
 			{
 				return;
 			}
@@ -125,6 +157,11 @@ namespace RimWorld
 				{
 					SoundDefOf.Crunch.PlayOneShotOnCamera();
 				}
+				if (p.Ideo != null && p.Ideo.IsWorkTypeConsideredDangerous(wType))
+				{
+					Messages.Message("MessageIdeoOpposedWorkTypeSelected".Translate(p, wType.gerundLabel), p, MessageTypeDefOf.CautionInput, historical: false);
+					SoundDefOf.DislikedWorkTypeActivated.PlayOneShotOnCamera();
+				}
 			}
 			PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.WorkTab, KnowledgeAmount.SpecificInteraction);
 		}
@@ -132,26 +169,47 @@ namespace RimWorld
 		public static string TipForPawnWorker(Pawn p, WorkTypeDef wDef, bool incapableBecauseOfCapacities)
 		{
 			StringBuilder stringBuilder = new StringBuilder();
-			string str = wDef.gerundLabel.CapitalizeFirst();
+			string text = wDef.gerundLabel.CapitalizeFirst().Colorize(ColoredText.TipSectionTitleColor);
 			int priority = p.workSettings.GetPriority(wDef);
-			str = str + ": " + ColoredText.Colorize(("Priority" + priority).Translate(), ColorOfPriority(priority));
-			stringBuilder.AppendLine(str);
+			text = text + ": " + ((string)("Priority" + priority).Translate()).Colorize(ColorOfPriority(priority));
+			stringBuilder.AppendLine(text);
 			if (p.WorkTypeIsDisabled(wDef))
 			{
-				stringBuilder.Append("CannotDoThisWork".Translate(p.LabelShort, p));
+				string text2 = "CannotDoThisWork".Translate(p.LabelShort, p);
+				List<string> reasonsForDisabledWorkType = p.GetReasonsForDisabledWorkType(wDef);
+				if (!reasonsForDisabledWorkType.NullOrEmpty())
+				{
+					string text3 = "\n\n" + string.Join(". ", reasonsForDisabledWorkType);
+					if (reasonsForDisabledWorkType.Count == 1)
+					{
+						text3 += ".";
+					}
+					text2 += text3.Colorize(ColorLibrary.RedReadable);
+				}
+				stringBuilder.Append(text2);
 			}
 			else
 			{
 				float num = p.skills.AverageOfRelevantSkillsFor(wDef);
 				if (wDef.relevantSkills.Any())
 				{
-					string text = "";
+					string text4 = "";
 					foreach (SkillDef relevantSkill in wDef.relevantSkills)
 					{
-						text = text + relevantSkill.skillLabel.CapitalizeFirst() + ", ";
+						text4 = text4 + relevantSkill.skillLabel.CapitalizeFirst() + ", ";
 					}
-					text = text.Substring(0, text.Length - 2);
-					stringBuilder.AppendLine("RelevantSkills".Translate(text, num.ToString("0.#"), 20));
+					text4 = text4.Substring(0, text4.Length - 2);
+					stringBuilder.AppendLine("RelevantSkills".Translate(text4, num.ToString("0.#"), 20));
+				}
+				if (p.Ideo != null && p.Ideo.IsWorkTypeConsideredDangerous(wDef))
+				{
+					stringBuilder.AppendLine();
+					stringBuilder.AppendLine(((string)"SelectedWorkTypeOpposedByIdeo".Translate(p)).Colorize(ColorOfPriority(2)));
+				}
+				if (wDef.relevantSkills.Any() && num <= 2f && p.workSettings.WorkIsActive(wDef))
+				{
+					stringBuilder.AppendLine();
+					stringBuilder.AppendLine(((string)"SelectedWorkTypeWithVeryBadSkill".Translate()).Colorize(ColorOfPriority(2)));
 				}
 				stringBuilder.AppendLine();
 				stringBuilder.Append(wDef.description);
@@ -160,12 +218,6 @@ namespace RimWorld
 					stringBuilder.AppendLine();
 					stringBuilder.AppendLine();
 					stringBuilder.Append("IncapableOfWorkTypeBecauseOfCapacities".Translate());
-				}
-				if (wDef.relevantSkills.Any() && num <= 2f && p.workSettings.WorkIsActive(wDef))
-				{
-					stringBuilder.AppendLine();
-					stringBuilder.AppendLine();
-					stringBuilder.Append("SelectedWorkTypeWithVeryBadSkill".Translate());
 				}
 			}
 			return stringBuilder.ToString();
@@ -198,6 +250,11 @@ namespace RimWorld
 			GUI.DrawTexture(rect, image);
 			GUI.color = new Color(GUI.color.r, GUI.color.g, GUI.color.b, a);
 			GUI.DrawTexture(rect, image2);
+			if (p.Ideo != null && p.Ideo.IsWorkTypeConsideredDangerous(workDef))
+			{
+				GUI.color = Color.white;
+				GUI.DrawTexture(rect, WorkBoxOverlay_PreceptWarning);
+			}
 			if (workDef.relevantSkills.Any() && num <= 2f && p.workSettings.WorkIsActive(workDef))
 			{
 				GUI.color = Color.white;

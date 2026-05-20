@@ -6,8 +6,7 @@ namespace Verse
 	{
 		public static void SetColor(this Thing t, Color newColor, bool reportFailure = true)
 		{
-			ThingWithComps thingWithComps = t as ThingWithComps;
-			if (thingWithComps == null)
+			if (!(t is ThingWithComps thingWithComps))
 			{
 				if (reportFailure)
 				{
@@ -23,9 +22,9 @@ namespace Verse
 					Log.Error("SetColor on Thing without CompColorable " + t);
 				}
 			}
-			else if (comp.Color != newColor)
+			else if (!comp.Color.IndistinguishableFrom(newColor))
 			{
-				comp.Color = newColor;
+				comp.SetColor(newColor);
 			}
 		}
 	}

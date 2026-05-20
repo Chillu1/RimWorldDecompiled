@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 using Verse.AI;
+using Verse.AI.Group;
 
 namespace RimWorld
 {
@@ -16,6 +17,14 @@ namespace RimWorld
 				return null;
 			}
 			if (PawnUtility.PlayerForcedJobNowOrSoon(pawn))
+			{
+				return null;
+			}
+			if (pawn.Downed)
+			{
+				return null;
+			}
+			if (ModsConfig.AnomalyActive && pawn.GetLord()?.LordJob is LordJob_PsychicRitual)
 			{
 				return null;
 			}
@@ -38,7 +47,7 @@ namespace RimWorld
 			float maxDist = 8f;
 			if (!isMeleeAttack)
 			{
-				maxDist = Mathf.Clamp(pawn.CurrentEffectiveVerb.verbProps.range * 0.66f, 2f, 20f);
+				maxDist = Mathf.Clamp(pawn.CurrentEffectiveVerb.EffectiveRange * 0.66f, 2f, 20f);
 			}
 			Thing thing = (Thing)AttackTargetFinder.BestAttackTarget(pawn, TargetScanFlags.NeedLOSToAll | TargetScanFlags.NeedReachableIfCantHitFromMyPos | TargetScanFlags.NeedThreat | TargetScanFlags.NeedAutoTargetable, null, 0f, maxDist);
 			if (thing == null)
@@ -50,7 +59,7 @@ namespace RimWorld
 				return JobMaker.MakeJob(JobDefOf.AttackMelee, thing);
 			}
 			Verb verb = pawn.TryGetAttackVerb(thing, !pawn.IsColonist);
-			if (verb == null || verb.ApparelPreventsShooting(pawn.Position, thing))
+			if (verb == null || verb.ApparelPreventsShooting())
 			{
 				return null;
 			}
@@ -67,10 +76,10 @@ namespace RimWorld
 			{
 				return null;
 			}
-			IntVec3 c;
+			IntVec3 intVec;
 			if (pawn.CurJob != null && pawn.CurJob.def == JobDefOf.FleeAndCower)
 			{
-				c = pawn.CurJob.targetA.Cell;
+				intVec = pawn.CurJob.targetA.Cell;
 			}
 			else
 			{
@@ -79,7 +88,7 @@ namespace RimWorld
 				for (int i = 0; i < potentialTargetsFor.Count; i++)
 				{
 					Thing thing = potentialTargetsFor[i].Thing;
-					if (SelfDefenseUtility.ShouldFleeFrom(thing, pawn, checkDistance: false, checkLOS: false))
+					if (FleeUtility.ShouldFleeFrom(thing, pawn, checkDistance: false, checkLOS: false))
 					{
 						tmpThreats.Add(thing);
 					}
@@ -88,7 +97,7 @@ namespace RimWorld
 				for (int j = 0; j < list.Count; j++)
 				{
 					Thing thing2 = list[j];
-					if (SelfDefenseUtility.ShouldFleeFrom(thing2, pawn, checkDistance: false, checkLOS: false))
+					if (FleeUtility.ShouldFleeFrom(thing2, pawn, checkDistance: false, checkLOS: false))
 					{
 						tmpThreats.Add(thing2);
 					}
@@ -107,7 +116,7 @@ namespace RimWorld
 						for (int k = 0; k < list2.Count; k++)
 						{
 							Thing thing3 = list2[k];
-							if (SelfDefenseUtility.ShouldFleeFrom(thing3, pawn, checkDistance: false, checkLOS: false))
+							if (FleeUtility.ShouldFleeFrom(thing3, pawn, checkDistance: false, checkLOS: false))
 							{
 								tmpThreats.Add(thing3);
 								Log.Warning($"  Found a viable threat {thing3.LabelShort}; tests are {thing3.Map.attackTargetsCache.Debug_CheckIfInAllTargets(thing3 as IAttackTarget)}, {thing3.Map.attackTargetsCache.Debug_CheckIfHostileToFaction(pawn.Faction, thing3 as IAttackTarget)}, {thing3 is IAttackTarget}");
@@ -120,10 +129,10 @@ namespace RimWorld
 						return null;
 					}
 				}
-				c = CellFinderLoose.GetFleeDest(pawn, tmpThreats);
+				intVec = CellFinderLoose.GetFleeDest(pawn, tmpThreats);
 				tmpThreats.Clear();
 			}
-			return JobMaker.MakeJob(JobDefOf.FleeAndCower, c);
+			return JobMaker.MakeJob(JobDefOf.FleeAndCower, intVec);
 		}
 	}
 }

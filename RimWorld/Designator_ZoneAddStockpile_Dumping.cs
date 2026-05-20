@@ -10,7 +10,8 @@ namespace RimWorld
 			preset = StorageSettingsPreset.DumpingStockpile;
 			defaultLabel = preset.PresetName();
 			defaultDesc = "DesignatorZoneCreateStorageDumpingDesc".Translate();
-			icon = ContentFinder<Texture2D>.Get("UI/Designators/ZoneCreate_Stockpile");
+			icon = ContentFinder<Texture2D>.Get("UI/Designators/ZoneCreate_DumpingStockpile");
+			soundSucceeded = SoundDefOf.Designate_ZoneAdd_Dumping;
 		}
 
 		protected override void FinalizeDesignationSucceeded()

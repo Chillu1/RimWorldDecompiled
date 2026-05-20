@@ -25,6 +25,8 @@ namespace RimWorld
 
 		public Vector2 uiPosition;
 
+		public List<PlanetLayerDef> layerBlacklist = new List<PlanetLayerDef>();
+
 		private RoyalTitlePermitWorker worker;
 
 		public int CooldownTicks => (int)(cooldownDays * 60000f);

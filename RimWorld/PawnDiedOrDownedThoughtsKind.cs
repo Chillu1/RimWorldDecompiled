@@ -6,6 +6,8 @@ namespace RimWorld
 		Banished,
 		BanishedToDie,
 		Downed,
-		Lost
+		Lost,
+		DeniedJoining,
+		ReleasedToWild
 	}
 }

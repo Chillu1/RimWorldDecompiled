@@ -12,7 +12,7 @@ namespace RimWorld
 			float num = 1f;
 			if (Props.acceptFractionByDaysPassedCurve != null)
 			{
-				num *= Props.acceptFractionByDaysPassedCurve.Evaluate(GenDate.DaysPassedFloat);
+				num *= Props.acceptFractionByDaysPassedCurve.Evaluate(GenDate.DaysPassedSinceSettleFloat);
 			}
 			if (Props.acceptPercentFactorPerThreatPointsCurve != null)
 			{
@@ -22,7 +22,32 @@ namespace RimWorld
 			{
 				num *= Props.acceptPercentFactorPerProgressScoreCurve.Evaluate(StorytellerUtility.GetProgressScore(target));
 			}
-			int incCount = IncidentCycleUtility.IncidentCountThisInterval(target, Find.Storyteller.storytellerComps.IndexOf(this), Props.minDaysPassed, Props.onDays, Props.offDays, Props.minSpacingDays, Props.numIncidentsRange.min, Props.numIncidentsRange.max, num);
+			float onDays = Props.onDays;
+			float offDays = Props.offDays;
+			if ((Props.onDaysNoTreeConnectors != 0f || Props.offDaysNoTreeConnectors != 0f) && Faction.OfPlayer.ideos != null)
+			{
+				bool flag = false;
+				foreach (Ideo allIdeo in Faction.OfPlayer.ideos.AllIdeos)
+				{
+					if (allIdeo.HasMeme(MemeDefOf.TreeConnection))
+					{
+						flag = true;
+						break;
+					}
+				}
+				if (!flag)
+				{
+					if (Props.onDaysNoTreeConnectors != 0f)
+					{
+						onDays = Props.onDaysNoTreeConnectors;
+					}
+					if (Props.offDaysNoTreeConnectors != 0f)
+					{
+						offDays = Props.offDaysNoTreeConnectors;
+					}
+				}
+			}
+			int incCount = IncidentCycleUtility.IncidentCountThisInterval(target, Find.Storyteller.storytellerComps.IndexOf(this), Props.minDaysPassed, onDays, offDays, Props.minSpacingDays, Props.numIncidentsRange.min, Props.numIncidentsRange.max, num);
 			for (int i = 0; i < incCount; i++)
 			{
 				FiringIncident firingIncident = GenerateIncident(target);
@@ -41,7 +66,7 @@ namespace RimWorld
 			}
 			IncidentParms parms = GenerateParms(Props.IncidentCategory, target);
 			IncidentDef result;
-			if ((float)GenDate.DaysPassed < Props.forceRaidEnemyBeforeDaysPassed)
+			if ((float)GenDate.DaysPassedSinceSettle < Props.forceRaidEnemyBeforeDaysPassed)
 			{
 				if (!IncidentDefOf.RaidEnemy.Worker.CanFireNow(parms))
 				{
@@ -57,14 +82,11 @@ namespace RimWorld
 				}
 				result = Props.incident;
 			}
-			else if (!UsableIncidentsInCategory(Props.IncidentCategory, parms).TryRandomElementByWeight(base.IncidentChanceFinal, out result))
+			else if (!UsableIncidentsInCategory(Props.IncidentCategory, parms).TryRandomElementByWeight((IncidentDef def) => IncidentChanceFinal(def, target), out result))
 			{
 				return null;
 			}
-			return new FiringIncident(result, this)
-			{
-				parms = parms
-			};
+			return new FiringIncident(result, this, parms);
 		}
 
 		public override string ToString()

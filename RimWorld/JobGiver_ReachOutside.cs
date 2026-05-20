@@ -7,8 +7,8 @@ namespace RimWorld
 	{
 		protected override Job TryGiveJob(Pawn pawn)
 		{
-			Room room = pawn.GetRoom();
-			if (room.PsychologicallyOutdoors && room.TouchesMapEdge)
+			District district = pawn.GetDistrict();
+			if (district.Room.PsychologicallyOutdoors && district.TouchesMapEdge)
 			{
 				return null;
 			}

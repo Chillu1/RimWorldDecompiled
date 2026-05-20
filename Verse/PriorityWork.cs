@@ -74,7 +74,7 @@ namespace Verse
 
 		public IEnumerable<Gizmo> GetGizmos()
 		{
-			if ((!IsPrioritized && (pawn.CurJob == null || !pawn.CurJob.playerForced || !pawn.CurJob.def.playerInterruptible) && !pawn.jobs.jobQueue.AnyPlayerForced) || pawn.Drafted)
+			if ((!IsPrioritized && (pawn.CurJob == null || !pawn.CurJob.playerForced || !pawn.jobs.IsCurrentJobPlayerInterruptible()) && !pawn.jobs.jobQueue.AnyPlayerForced) || pawn.Drafted || pawn.Deathresting)
 			{
 				yield break;
 			}
@@ -86,13 +86,13 @@ namespace Verse
 			command_Action.action = delegate
 			{
 				ClearPrioritizedWorkAndJobQueue();
-				if (pawn.CurJob.playerForced)
+				if (pawn.CurJob.playerForced && pawn.jobs.IsCurrentJobPlayerInterruptible())
 				{
 					pawn.jobs.EndCurrentJob(JobCondition.InterruptForced);
 				}
 			};
 			command_Action.hotKey = KeyBindingDefOf.Designator_Cancel;
-			command_Action.groupKey = 6165612;
+			command_Action.groupKeyIgnoreContent = 6165612;
 			yield return command_Action;
 		}
 	}

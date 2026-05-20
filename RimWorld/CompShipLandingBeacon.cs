@@ -119,7 +119,7 @@ namespace RimWorld
 			CompGlower compGlower = parent.TryGetComp<CompGlower>();
 			if (compGlower != null)
 			{
-				fieldColor = compGlower.Props.glowColor.ToColor.ToOpaque();
+				fieldColor = compGlower.GlowColor.ToColor.ToOpaque();
 			}
 			EstablishConnections();
 			foreach (ShipLandingArea landingArea in landingAreas)
@@ -128,7 +128,7 @@ namespace RimWorld
 			}
 		}
 
-		public override void PostDeSpawn(Map map)
+		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
 		{
 			for (int num = landingAreas.Count - 1; num >= 0; num--)
 			{
@@ -188,7 +188,7 @@ namespace RimWorld
 						text += "\n";
 					}
 					text += "NotUsable".Translate() + ": ";
-					text = ((!landingAreas[i].BlockedByRoof) ? ((string)(text + "BlockedBy".Translate(landingAreas[i].FirstBlockingThing).CapitalizeFirst())) : ((string)(text + "BlockedByRoof".Translate().CapitalizeFirst())));
+					text = ((!landingAreas[i].BlockedByRoof) ? ((!landingAreas[i].BlockedByTerrainAffordance) ? ((string)(text + "BlockedBy".Translate(landingAreas[i].FirstBlockingThing).CapitalizeFirst())) : ((string)(text + "BlockedByTerrain".Translate(Props.landingAreaTerrainSupport)))) : ((string)(text + "BlockedByRoof".Translate().CapitalizeFirst())));
 					break;
 				}
 			}
@@ -200,7 +200,8 @@ namespace RimWorld
 					{
 						text += "\n";
 					}
-					return text + ("NotUsable".Translate() + ": " + "TooCloseToOtherBeacon".Translate().CapitalizeFirst());
+					text += "NotUsable".Translate() + ": " + "TooCloseToOtherBeacon".Translate().CapitalizeFirst();
+					break;
 				}
 			}
 			return text;

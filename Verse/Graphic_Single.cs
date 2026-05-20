@@ -30,23 +30,32 @@ namespace Verse
 			}
 		}
 
+		public override void TryInsertIntoAtlas(TextureAtlasGroup groupKey)
+		{
+			Texture2D mask = null;
+			if (mat.HasProperty(ShaderPropertyIDs.MaskTex))
+			{
+				mask = (Texture2D)mat.GetTexture(ShaderPropertyIDs.MaskTex);
+			}
+			GlobalTextureAtlasManager.TryInsertStatic(groupKey, (Texture2D)mat.mainTexture, mask);
+		}
+
 		public override void Init(GraphicRequest req)
 		{
 			data = req.graphicData;
 			path = req.path;
+			maskPath = req.maskPath;
 			color = req.color;
 			colorTwo = req.colorTwo;
 			drawSize = req.drawSize;
-			MaterialRequest req2 = default(MaterialRequest);
-			req2.mainTex = ContentFinder<Texture2D>.Get(req.path);
-			req2.shader = req.shader;
-			req2.color = color;
-			req2.colorTwo = colorTwo;
-			req2.renderQueue = req.renderQueue;
-			req2.shaderParameters = req.shaderParameters;
+			MaterialRequest materialRequest = new MaterialRequest(req.texture ?? ContentFinder<Texture2D>.Get(req.path), req.shader, color);
+			materialRequest.colorTwo = colorTwo;
+			materialRequest.renderQueue = req.renderQueue;
+			materialRequest.shaderParameters = req.shaderParameters;
+			MaterialRequest req2 = materialRequest;
 			if (req.shader.SupportsMaskTex())
 			{
-				req2.maskTex = ContentFinder<Texture2D>.Get(req.path + MaskSuffix, reportFailure: false);
+				req2.maskTex = ContentFinder<Texture2D>.Get(maskPath.NullOrEmpty() ? (path + MaskSuffix) : maskPath, reportFailure: false);
 			}
 			mat = MaterialPool.MatFrom(req2);
 		}
@@ -63,7 +72,14 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return string.Concat("Single(path=", path, ", color=", color, ", colorTwo=", colorTwo, ")");
+			string[] obj = new string[7] { "Single(path=", path, ", color=", null, null, null, null };
+			Color color = base.color;
+			obj[3] = color.ToString();
+			obj[4] = ", colorTwo=";
+			color = colorTwo;
+			obj[5] = color.ToString();
+			obj[6] = ")";
+			return string.Concat(obj);
 		}
 	}
 }

@@ -19,7 +19,7 @@ namespace RimWorld
 				List<Thing> list = map.thingGrid.ThingsListAt(item);
 				for (int i = 0; i < list.Count; i++)
 				{
-					if (list[i] != thingToIgnore && list[i].def.passability != 0)
+					if (list[i] != thingToIgnore && list[i].def.passability != Traversability.Standable)
 					{
 						return "MustPlaceAdjacentStandable".Translate();
 					}

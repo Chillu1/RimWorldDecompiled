@@ -46,6 +46,16 @@ namespace Verse
 			}
 		}
 
+		public class CapacityImpactorGene : CapacityImpactor
+		{
+			public Gene gene;
+
+			public override string Readable(Pawn pawn)
+			{
+				return $"{gene.LabelCap}";
+			}
+		}
+
 		public class CapacityImpactorPain : CapacityImpactor
 		{
 			public override bool IsDirect => false;
@@ -112,6 +122,40 @@ namespace Verse
 						}
 					}
 				}
+				if (ModsConfig.BiotechActive && diffSet.pawn.genes != null)
+				{
+					for (int k = 0; k < diffSet.pawn.genes.GenesListForReading.Count; k++)
+					{
+						Gene gene = diffSet.pawn.genes.GenesListForReading[k];
+						if (!gene.Active)
+						{
+							continue;
+						}
+						List<PawnCapacityModifier> capMods2 = gene.def.capMods;
+						if (capMods2.NullOrEmpty())
+						{
+							continue;
+						}
+						for (int l = 0; l < capMods2.Count; l++)
+						{
+							PawnCapacityModifier pawnCapacityModifier2 = capMods2[l];
+							if (pawnCapacityModifier2.capacity == capacity)
+							{
+								num += pawnCapacityModifier2.offset;
+								num3 *= pawnCapacityModifier2.postFactor;
+								float num6 = pawnCapacityModifier2.EvaluateSetMax(diffSet.pawn);
+								if (num6 < num2)
+								{
+									num2 = num6;
+								}
+								impactors?.Add(new CapacityImpactorGene
+								{
+									gene = gene
+								});
+							}
+						}
+					}
+				}
 				num *= num3;
 				num = Mathf.Min(num, num2);
 			}
@@ -121,19 +165,16 @@ namespace Verse
 
 		public static float CalculatePartEfficiency(HediffSet diffSet, BodyPartRecord part, bool ignoreAddedParts = false, List<CapacityImpactor> impactors = null)
 		{
-			BodyPartRecord rec;
-			for (rec = part.parent; rec != null; rec = rec.parent)
+			for (BodyPartRecord parent = part.parent; parent != null; parent = parent.parent)
 			{
-				if (diffSet.HasDirectlyAddedPartFor(rec))
+				if (diffSet.HasDirectlyAddedPartFor(parent))
 				{
-					Hediff_AddedPart hediff_AddedPart = (from x in diffSet.GetHediffs<Hediff_AddedPart>()
-						where x.Part == rec
-						select x).First();
+					Hediff_AddedPart firstHediffMatchingPart = diffSet.GetFirstHediffMatchingPart<Hediff_AddedPart>(parent);
 					impactors?.Add(new CapacityImpactorHediff
 					{
-						hediff = hediff_AddedPart
+						hediff = firstHediffMatchingPart
 					});
-					return hediff_AddedPart.def.addedPartProps.partEfficiency;
+					return firstHediffMatchingPart.def.addedPartProps.partEfficiency;
 				}
 			}
 			if (part.parent != null && diffSet.PartIsMissing(part.parent))
@@ -145,15 +186,14 @@ namespace Verse
 			{
 				for (int i = 0; i < diffSet.hediffs.Count; i++)
 				{
-					Hediff_AddedPart hediff_AddedPart2 = diffSet.hediffs[i] as Hediff_AddedPart;
-					if (hediff_AddedPart2 != null && hediff_AddedPart2.Part == part)
+					if (diffSet.hediffs[i] is Hediff_AddedPart hediff_AddedPart && hediff_AddedPart.Part == part)
 					{
-						num *= hediff_AddedPart2.def.addedPartProps.partEfficiency;
-						if (hediff_AddedPart2.def.addedPartProps.partEfficiency != 1f)
+						num *= hediff_AddedPart.def.addedPartProps.partEfficiency;
+						if (hediff_AddedPart.def.addedPartProps.partEfficiency != 1f)
 						{
 							impactors?.Add(new CapacityImpactorHediff
 							{
-								hediff = hediff_AddedPart2
+								hediff = hediff_AddedPart
 							});
 						}
 					}
@@ -164,7 +204,7 @@ namespace Verse
 			bool flag = false;
 			for (int j = 0; j < diffSet.hediffs.Count; j++)
 			{
-				if (diffSet.hediffs[j].Part == part && diffSet.hediffs[j].CurStage != null)
+				if (diffSet.hediffs[j].Part == part && diffSet.hediffs[j].CurStage != null && diffSet.hediffs[j].CurStage != null)
 				{
 					HediffStage curStage = diffSet.hediffs[j].CurStage;
 					num2 += curStage.partEfficiencyOffset;

@@ -13,6 +13,8 @@ namespace RimWorld
 
 		private CompBreakdownable breakdownableComp;
 
+		private CompMoteEmitter moteEmitterComp;
+
 		public bool CanWorkWithoutPower
 		{
 			get
@@ -54,6 +56,11 @@ namespace RimWorld
 			powerComp = GetComp<CompPowerTrader>();
 			refuelableComp = GetComp<CompRefuelable>();
 			breakdownableComp = GetComp<CompBreakdownable>();
+			moteEmitterComp = GetComp<CompMoteEmitter>();
+			if (base.BeingTransportedOnGravship)
+			{
+				return;
+			}
 			foreach (Bill item in billStack)
 			{
 				item.ValidateSettings();
@@ -65,6 +72,14 @@ namespace RimWorld
 			if (refuelableComp != null)
 			{
 				refuelableComp.Notify_UsedThisTick();
+			}
+			if (moteEmitterComp != null)
+			{
+				if (!moteEmitterComp.MoteLive)
+				{
+					moteEmitterComp.Emit();
+				}
+				moteEmitterComp.Maintain();
 			}
 		}
 
@@ -96,6 +111,10 @@ namespace RimWorld
 				return false;
 			}
 			return true;
+		}
+
+		public virtual void Notify_BillDeleted(Bill bill)
+		{
 		}
 	}
 }

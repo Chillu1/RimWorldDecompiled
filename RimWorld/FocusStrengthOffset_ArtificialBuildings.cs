@@ -33,9 +33,9 @@ namespace RimWorld
 				List<Thing> forCell = parent.Map.listerArtificialBuildingsForMeditation.GetForCell(parent.Position, radius);
 				if (forCell.Count > 0)
 				{
-					TaggedString taggedString = "MeditationFocusImpacted".Translate() + ": " + (from c in forCell.Take(3)
-						select c.LabelShort).ToCommaList().CapitalizeFirst();
-					if (forCell.Count > 3)
+					IEnumerable<string> source = forCell.Select((Thing c) => GenLabel.ThingLabel(c, 1, includeHp: false)).Distinct();
+					TaggedString taggedString = "MeditationFocusImpacted".Translate() + ": " + source.Take(3).ToCommaList().CapitalizeFirst();
+					if (source.Count() > 3)
 					{
 						taggedString += " " + "Etc".Translate();
 					}

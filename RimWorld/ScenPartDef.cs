@@ -16,6 +16,10 @@ namespace RimWorld
 
 		public int maxUses = 999999;
 
+		public bool canBeRandomlyAdded = true;
+
+		public bool canBePlayerAddedRemoved = true;
+
 		public Type pageClass;
 
 		public GameConditionDef gameCondition;
@@ -26,7 +30,21 @@ namespace RimWorld
 
 		public Type designatorType;
 
-		public bool PlayerAddRemovable => category != ScenPartCategory.Fixed;
+		public GenStepDef genStep;
+
+		public FactionDef preventRemovalOfFaction;
+
+		public bool PlayerAddRemovable
+		{
+			get
+			{
+				if (category != ScenPartCategory.Fixed)
+				{
+					return canBePlayerAddedRemoved;
+				}
+				return false;
+			}
+		}
 
 		public override IEnumerable<string> ConfigErrors()
 		{

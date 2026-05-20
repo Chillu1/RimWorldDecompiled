@@ -7,57 +7,65 @@ namespace RimWorld
 {
 	public class Bullet : Projectile
 	{
-		protected override void Impact(Thing hitThing)
+		public override bool AnimalsFleeImpact => true;
+
+		protected override void Impact(Thing hitThing, bool blockedByShield = false)
 		{
 			Map map = base.Map;
 			IntVec3 position = base.Position;
-			base.Impact(hitThing);
+			base.Impact(hitThing, blockedByShield);
 			BattleLogEntry_RangedImpact battleLogEntry_RangedImpact = new BattleLogEntry_RangedImpact(launcher, hitThing, intendedTarget.Thing, equipmentDef, def, targetCoverDef);
 			Find.BattleLog.Add(battleLogEntry_RangedImpact);
 			NotifyImpact(hitThing, map, position);
 			if (hitThing != null)
 			{
-				DamageInfo dinfo = new DamageInfo(def.projectile.damageDef, base.DamageAmount, base.ArmorPenetration, ExactRotation.eulerAngles.y, launcher, null, equipmentDef, DamageInfo.SourceCategory.ThingOrUnknown, intendedTarget.Thing);
+				bool instigatorGuilty = !(launcher is Pawn pawn) || !pawn.Drafted;
+				DamageInfo dinfo = new DamageInfo(base.DamageDef, DamageAmount, ArmorPenetration, ExactRotation.eulerAngles.y, launcher, null, equipmentDef, DamageInfo.SourceCategory.ThingOrUnknown, intendedTarget.Thing, instigatorGuilty);
+				dinfo.SetWeaponQuality(equipmentQuality);
 				hitThing.TakeDamage(dinfo).AssociateWithLog(battleLogEntry_RangedImpact);
-				Pawn pawn = hitThing as Pawn;
-				if (pawn != null && pawn.stances != null && pawn.BodySize <= def.projectile.StoppingPower + 0.001f)
-				{
-					pawn.stances.StaggerFor(95);
-				}
-				if (def.projectile.extraDamages == null)
+				(hitThing as Pawn)?.stances?.stagger.Notify_BulletImpact(this);
+				if (base.ExtraDamages == null)
 				{
 					return;
 				}
-				foreach (ExtraDamage extraDamage in def.projectile.extraDamages)
 				{
-					if (Rand.Chance(extraDamage.chance))
+					foreach (ExtraDamage extraDamage in base.ExtraDamages)
 					{
-						DamageInfo dinfo2 = new DamageInfo(extraDamage.def, extraDamage.amount, extraDamage.AdjustedArmorPenetration(), ExactRotation.eulerAngles.y, launcher, null, equipmentDef, DamageInfo.SourceCategory.ThingOrUnknown, intendedTarget.Thing);
-						hitThing.TakeDamage(dinfo2).AssociateWithLog(battleLogEntry_RangedImpact);
+						if (Rand.Chance(extraDamage.chance))
+						{
+							DamageInfo dinfo2 = new DamageInfo(extraDamage.def, extraDamage.amount, extraDamage.AdjustedArmorPenetration(), ExactRotation.eulerAngles.y, launcher, null, equipmentDef, DamageInfo.SourceCategory.ThingOrUnknown, intendedTarget.Thing, instigatorGuilty);
+							hitThing.TakeDamage(dinfo2).AssociateWithLog(battleLogEntry_RangedImpact);
+						}
 					}
+					return;
 				}
 			}
-			else
+			if (!blockedByShield)
 			{
 				SoundDefOf.BulletImpact_Ground.PlayOneShot(new TargetInfo(base.Position, map));
 				if (base.Position.GetTerrain(map).takeSplashes)
 				{
-					MoteMaker.MakeWaterSplash(ExactPosition, map, Mathf.Sqrt(base.DamageAmount) * 1f, 4f);
+					FleckMaker.WaterSplash(ExactPosition, map, Mathf.Sqrt(DamageAmount) * 1f, 4f);
 				}
 				else
 				{
-					MoteMaker.MakeStaticMote(ExactPosition, map, ThingDefOf.Mote_ShotHit_Dirt);
+					FleckMaker.Static(ExactPosition, map, FleckDefOf.ShotHit_Dirt);
 				}
+			}
+			if (Rand.Chance(base.DamageDef.igniteCellChance))
+			{
+				FireUtility.TryStartFireIn(base.Position, map, Rand.Range(0.55f, 0.85f), launcher);
 			}
 		}
 
 		private void NotifyImpact(Thing hitThing, Map map, IntVec3 position)
 		{
-			BulletImpactData bulletImpactData = default(BulletImpactData);
-			bulletImpactData.bullet = this;
-			bulletImpactData.hitThing = hitThing;
-			bulletImpactData.impactPosition = position;
-			BulletImpactData impactData = bulletImpactData;
+			BulletImpactData impactData = new BulletImpactData
+			{
+				bullet = this,
+				hitThing = hitThing,
+				impactPosition = position
+			};
 			hitThing?.Notify_BulletImpactNearby(impactData);
 			int num = 9;
 			for (int i = 0; i < num; i++)

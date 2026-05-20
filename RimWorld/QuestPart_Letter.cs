@@ -21,6 +21,10 @@ namespace RimWorld
 
 		public string chosenPawnSignal;
 
+		public string acceptedVisitorsSignal;
+
+		public List<Pawn> visitors;
+
 		public bool filterDeadPawnsFromLookTargets;
 
 		private List<Pawn> colonistsFromSignal = new List<Pawn>();
@@ -56,6 +60,14 @@ namespace RimWorld
 			}
 		}
 
+		public override void Notify_FactionRemoved(Faction faction)
+		{
+			if (letter.relatedFaction == faction)
+			{
+				letter.relatedFaction = null;
+			}
+		}
+
 		public override void Notify_QuestSignalReceived(Signal signal)
 		{
 			base.Notify_QuestSignalReceived(signal);
@@ -76,13 +88,11 @@ namespace RimWorld
 			}
 			Letter letter = Gen.MemberwiseClone(this.letter);
 			letter.ID = Find.UniqueIDsManager.GetNextLetterID();
-			ChoiceLetter choiceLetter = letter as ChoiceLetter;
-			if (choiceLetter != null)
+			if (letter is ChoiceLetter choiceLetter)
 			{
 				choiceLetter.quest = quest;
 			}
-			ChoiceLetter_ChoosePawn choiceLetter_ChoosePawn = letter as ChoiceLetter_ChoosePawn;
-			if (choiceLetter_ChoosePawn != null)
+			if (letter is ChoiceLetter_ChoosePawn choiceLetter_ChoosePawn)
 			{
 				if (useColonistsOnMap != null && useColonistsOnMap.HasMap)
 				{
@@ -104,18 +114,26 @@ namespace RimWorld
 					choiceLetter_ChoosePawn.chosenPawnSignal = chosenPawnSignal;
 				}
 			}
+			if (letter is ChoiceLetter_AcceptVisitors choiceLetter_AcceptVisitors)
+			{
+				choiceLetter_AcceptVisitors.acceptedSignal = acceptedVisitorsSignal;
+				if (visitors != null)
+				{
+					choiceLetter_AcceptVisitors.pawns.AddRange(visitors);
+				}
+			}
 			if (getLookTargetsFromSignal && !letter.lookTargets.IsValid() && SignalArgsUtility.TryGetLookTargets(signal.args, "SUBJECT", out var lookTargets))
 			{
 				letter.lookTargets = lookTargets;
 			}
-			letter.label = signal.args.GetFormattedText(letter.label);
+			letter.Label = signal.args.GetFormattedText(letter.Label);
 			ChoiceLetter choiceLetter2 = letter as ChoiceLetter;
 			bool flag = true;
 			if (choiceLetter2 != null)
 			{
 				choiceLetter2.title = signal.args.GetFormattedText(choiceLetter2.title);
-				choiceLetter2.text = signal.args.GetFormattedText(choiceLetter2.text);
-				if (choiceLetter2.text.NullOrEmpty())
+				choiceLetter2.Text = signal.args.GetFormattedText(choiceLetter2.Text);
+				if (choiceLetter2.Text.NullOrEmpty())
 				{
 					flag = false;
 				}
@@ -125,8 +143,7 @@ namespace RimWorld
 				for (int num = letter.lookTargets.targets.Count - 1; num >= 0; num--)
 				{
 					Thing thing = letter.lookTargets.targets[num].Thing;
-					Pawn pawn = thing as Pawn;
-					if (pawn != null && pawn.Dead)
+					if (thing is Pawn { Dead: not false })
 					{
 						letter.lookTargets.targets.Remove(thing);
 					}
@@ -138,18 +155,15 @@ namespace RimWorld
 			}
 			void ReadPawns(object obj)
 			{
-				Pawn item;
-				if ((item = obj as Pawn) != null && !colonistsFromSignal.Contains(item))
+				if (obj is Pawn item && !colonistsFromSignal.Contains(item))
 				{
 					colonistsFromSignal.Add(item);
 				}
-				List<Pawn> source;
-				if ((source = obj as List<Pawn>) != null)
+				if (obj is List<Pawn> source)
 				{
 					colonistsFromSignal.AddRange(source.Where((Pawn p) => !colonistsFromSignal.Contains(p)));
 				}
-				List<Thing> source2;
-				if ((source2 = obj as List<Thing>) != null)
+				if (obj is List<Thing> source2)
 				{
 					colonistsFromSignal.AddRange(from Pawn p in source2.Where((Thing t) => t is Pawn)
 						where !colonistsFromSignal.Contains(p)
@@ -174,13 +188,19 @@ namespace RimWorld
 			{
 				colonistsFromSignal.RemoveAll((Pawn x) => x == null);
 			}
+			Scribe_Values.Look(ref acceptedVisitorsSignal, "acceptedVisitorsSignal");
+			Scribe_Collections.Look(ref visitors, "visitors", LookMode.Reference);
+			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			{
+				visitors?.RemoveAll((Pawn x) => x == null);
+			}
 		}
 
 		public override void AssignDebugData()
 		{
 			base.AssignDebugData();
 			inSignal = "DebugSignal" + Rand.Int;
-			letter = LetterMaker.MakeLetter("Dev: Test", "Test text", LetterDefOf.PositiveEvent);
+			letter = LetterMaker.MakeLetter("DEV: Test", "Test text", LetterDefOf.PositiveEvent);
 		}
 	}
 }

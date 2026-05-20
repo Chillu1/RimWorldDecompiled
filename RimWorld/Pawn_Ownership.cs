@@ -25,23 +25,13 @@ namespace RimWorld
 			}
 		}
 
-		public Building_Grave AssignedGrave
-		{
-			get;
-			private set;
-		}
+		public Building_Grave AssignedGrave { get; private set; }
 
-		public Building_Throne AssignedThrone
-		{
-			get;
-			private set;
-		}
+		public Building_Throne AssignedThrone { get; private set; }
 
-		public Building AssignedMeditationSpot
-		{
-			get;
-			private set;
-		}
+		public Building AssignedMeditationSpot { get; private set; }
+
+		public Building_Bed AssignedDeathrestCasket { get; private set; }
 
 		public Room OwnedRoom
 		{
@@ -64,6 +54,18 @@ namespace RimWorld
 			}
 		}
 
+		public Room Bedroom
+		{
+			get
+			{
+				if (OwnedBed == null)
+				{
+					return null;
+				}
+				return OwnedBed.GetRoom();
+			}
+		}
+
 		public Pawn_Ownership(Pawn pawn)
 		{
 			this.pawn = pawn;
@@ -74,13 +76,16 @@ namespace RimWorld
 			Building_Grave refee = AssignedGrave;
 			Building_Throne refee2 = AssignedThrone;
 			Building refee3 = AssignedMeditationSpot;
+			Building_Bed refee4 = AssignedDeathrestCasket;
 			Scribe_References.Look(ref intOwnedBed, "ownedBed");
 			Scribe_References.Look(ref refee3, "assignedMeditationSpot");
 			Scribe_References.Look(ref refee, "assignedGrave");
 			Scribe_References.Look(ref refee2, "assignedThrone");
+			Scribe_References.Look(ref refee4, "assignedDeathrestCasket");
 			AssignedGrave = refee;
 			AssignedThrone = refee2;
 			AssignedMeditationSpot = refee3;
+			AssignedDeathrestCasket = refee4;
 			if (Scribe.mode != LoadSaveMode.PostLoadInit)
 			{
 				return;
@@ -119,9 +124,16 @@ namespace RimWorld
 
 		public bool ClaimBedIfNonMedical(Building_Bed newBed)
 		{
-			if (newBed.OwnersForReading.Contains(pawn) || newBed.Medical)
+			if (newBed.IsOwner(pawn) || newBed.Medical)
 			{
 				return false;
+			}
+			if (ModsConfig.BiotechActive && newBed.def == ThingDefOf.DeathrestCasket)
+			{
+				UnclaimDeathrestCasket();
+				newBed.CompAssignableToPawn.ForceAddPawn(pawn);
+				AssignedDeathrestCasket = newBed;
+				return true;
 			}
 			UnclaimBed();
 			if (newBed.OwnersForReading.Count == newBed.SleepingSlotsCount)
@@ -130,6 +142,10 @@ namespace RimWorld
 			}
 			newBed.CompAssignableToPawn.ForceAddPawn(pawn);
 			OwnedBed = newBed;
+			if (pawn.IsFreeman && newBed.CompAssignableToPawn.IdeoligionForbids(pawn))
+			{
+				Log.Error("Assigned " + pawn.GetUniqueLoadID() + " to a bed against their or occupants' ideo.");
+			}
 			if (newBed.Medical)
 			{
 				Log.Warning(pawn.LabelCap + " claimed medical bed.");
@@ -232,18 +248,58 @@ namespace RimWorld
 			return true;
 		}
 
+		public bool ClaimDeathrestCasket(Building_Bed deathrestCasket)
+		{
+			if (!ModsConfig.BiotechActive)
+			{
+				return false;
+			}
+			if (deathrestCasket.CompAssignableToPawn.AssignedPawns.Contains(pawn))
+			{
+				return false;
+			}
+			UnclaimDeathrestCasket();
+			if (deathrestCasket.GetAssignedPawn() != null)
+			{
+				deathrestCasket.GetAssignedPawn().ownership.UnclaimDeathrestCasket();
+			}
+			deathrestCasket.CompAssignableToPawn.ForceAddPawn(pawn);
+			AssignedDeathrestCasket = deathrestCasket;
+			return true;
+		}
+
+		public bool UnclaimDeathrestCasket()
+		{
+			if (!ModsConfig.BiotechActive)
+			{
+				return false;
+			}
+			if (AssignedDeathrestCasket == null)
+			{
+				return false;
+			}
+			AssignedDeathrestCasket.CompAssignableToPawn.ForceRemovePawn(pawn);
+			AssignedDeathrestCasket = null;
+			return true;
+		}
+
 		public void UnclaimAll()
 		{
 			UnclaimBed();
 			UnclaimGrave();
 			UnclaimThrone();
+			UnclaimDeathrestCasket();
 		}
 
 		public void Notify_ChangedGuestStatus()
 		{
-			if (OwnedBed != null && ((OwnedBed.ForPrisoners && !pawn.IsPrisoner) || (!OwnedBed.ForPrisoners && pawn.IsPrisoner)))
+			if (OwnedBed != null && ((OwnedBed.ForPrisoners && !pawn.IsPrisoner && !PawnUtility.IsBeingArrested(pawn)) || (!OwnedBed.ForPrisoners && pawn.IsPrisoner) || (OwnedBed.ForColonists && pawn.HostFaction == null)))
 			{
 				UnclaimBed();
+			}
+			if (AssignedDeathrestCasket != null && ((AssignedDeathrestCasket.ForPrisoners && !pawn.IsPrisoner && !PawnUtility.IsBeingArrested(pawn)) || (!AssignedDeathrestCasket.ForPrisoners && pawn.IsPrisoner) || (AssignedDeathrestCasket.ForColonists && pawn.HostFaction == null)))
+			{
+				UnclaimDeathrestCasket();
 			}
 		}
 	}

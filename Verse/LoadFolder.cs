@@ -7,9 +7,11 @@ namespace Verse
 	{
 		public string folderName;
 
-		public List<string> requiredPackageIds;
+		public List<string> requiredAnyOfPackageIds;
 
-		public List<string> disallowedPackageIds;
+		public List<string> requiredAllOfPackageIds;
+
+		public List<string> disallowedAnyOfPackageIds;
 
 		private readonly int hashCodeCached;
 
@@ -17,11 +19,11 @@ namespace Verse
 		{
 			get
 			{
-				if (requiredPackageIds.NullOrEmpty() || ModLister.AnyFromListActive(requiredPackageIds))
+				if ((requiredAnyOfPackageIds.NullOrEmpty() || ModLister.AnyModActiveNoSuffix(requiredAnyOfPackageIds)) && (requiredAllOfPackageIds.NullOrEmpty() || ModLister.AllModsActiveNoSuffix(requiredAllOfPackageIds)))
 				{
-					if (!disallowedPackageIds.NullOrEmpty())
+					if (!disallowedAnyOfPackageIds.NullOrEmpty())
 					{
-						return !ModLister.AnyFromListActive(disallowedPackageIds);
+						return !ModLister.AnyModActiveNoSuffix(disallowedAnyOfPackageIds);
 					}
 					return true;
 				}
@@ -29,14 +31,16 @@ namespace Verse
 			}
 		}
 
-		public LoadFolder(string folderName, List<string> requiredPackageIds, List<string> disallowedPackageIds)
+		public LoadFolder(string folderName, List<string> requiredAnyOfPackageIds, List<string> requiredAllOfPackageIds, List<string> disallowedAnyOfPackageIds)
 		{
 			this.folderName = folderName;
-			this.requiredPackageIds = requiredPackageIds;
-			this.disallowedPackageIds = disallowedPackageIds;
+			this.requiredAnyOfPackageIds = requiredAnyOfPackageIds;
+			this.requiredAllOfPackageIds = requiredAllOfPackageIds;
+			this.disallowedAnyOfPackageIds = disallowedAnyOfPackageIds;
 			hashCodeCached = folderName?.GetHashCode() ?? 0;
-			hashCodeCached = Gen.HashCombine(hashCodeCached, requiredPackageIds?.GetHashCode() ?? 0);
-			hashCodeCached = Gen.HashCombine(hashCodeCached, disallowedPackageIds?.GetHashCode() ?? 0);
+			hashCodeCached = Gen.HashCombine(hashCodeCached, requiredAnyOfPackageIds?.GetHashCode() ?? 0);
+			hashCodeCached = Gen.HashCombine(hashCodeCached, requiredAllOfPackageIds?.GetHashCode() ?? 0);
+			hashCodeCached = Gen.HashCombine(hashCodeCached, disallowedAnyOfPackageIds?.GetHashCode() ?? 0);
 		}
 
 		public bool Equals(LoadFolder other)
@@ -50,8 +54,7 @@ namespace Verse
 
 		public override bool Equals(object obj)
 		{
-			LoadFolder other;
-			if ((other = obj as LoadFolder) != null)
+			if (obj is LoadFolder other)
 			{
 				return Equals(other);
 			}

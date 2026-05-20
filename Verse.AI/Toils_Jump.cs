@@ -6,7 +6,7 @@ namespace Verse.AI
 	{
 		public static Toil Jump(Toil jumpTarget)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("Jump");
 			toil.initAction = delegate
 			{
 				toil.actor.jobs.curDriver.JumpToToil(jumpTarget);
@@ -16,7 +16,7 @@ namespace Verse.AI
 
 		public static Toil JumpIf(Toil jumpTarget, Func<bool> condition)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("JumpIf");
 			toil.initAction = delegate
 			{
 				if (condition())
@@ -29,7 +29,7 @@ namespace Verse.AI
 
 		public static Toil JumpIfTargetDespawnedOrNull(TargetIndex ind, Toil jumpToil)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("JumpIfTargetDespawnedOrNull");
 			toil.initAction = delegate
 			{
 				Thing thing = toil.actor.jobs.curJob.GetTarget(ind).Thing;
@@ -43,7 +43,7 @@ namespace Verse.AI
 
 		public static Toil JumpIfTargetInvalid(TargetIndex ind, Toil jumpToil)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("JumpIfTargetInvalid");
 			toil.initAction = delegate
 			{
 				if (!toil.actor.jobs.curJob.GetTarget(ind).IsValid)
@@ -56,7 +56,7 @@ namespace Verse.AI
 
 		public static Toil JumpIfTargetNotHittable(TargetIndex ind, Toil jumpToil)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("JumpIfTargetNotHittable");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;
@@ -72,12 +72,11 @@ namespace Verse.AI
 
 		public static Toil JumpIfTargetDowned(TargetIndex ind, Toil jumpToil)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("JumpIfTargetDowned");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;
-				Pawn pawn = actor.jobs.curJob.GetTarget(ind).Thing as Pawn;
-				if (pawn != null && pawn.Downed)
+				if (actor.jobs.curJob.GetTarget(ind).Thing is Pawn { Downed: not false })
 				{
 					actor.jobs.curDriver.JumpToToil(jumpToil);
 				}
@@ -87,7 +86,7 @@ namespace Verse.AI
 
 		public static Toil JumpIfHaveTargetInQueue(TargetIndex ind, Toil jumpToil)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("JumpIfHaveTargetInQueue");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;
@@ -101,7 +100,7 @@ namespace Verse.AI
 
 		public static Toil JumpIfCannotTouch(TargetIndex ind, PathEndMode peMode, Toil jumpToil)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("JumpIfCannotTouch");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;

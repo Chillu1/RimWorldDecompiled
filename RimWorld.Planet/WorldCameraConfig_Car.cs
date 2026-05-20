@@ -25,7 +25,7 @@ namespace RimWorld.Planet
 		public override void ConfigFixedUpdate_60(ref Vector2 rotationVelocity)
 		{
 			base.ConfigFixedUpdate_60(ref rotationVelocity);
-			float num = 0.0166666675f;
+			float num = 1f / 60f;
 			if (KeyBindingDefOf.MapDolly_Left.IsDown)
 			{
 				targetAngle += 0.72f * num;

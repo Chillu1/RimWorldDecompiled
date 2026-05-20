@@ -16,30 +16,24 @@ namespace Verse
 			subcameras = new Camera[DefDatabase<SubcameraDef>.DefCount];
 			foreach (SubcameraDef item in DefDatabase<SubcameraDef>.AllDefsListForReading)
 			{
-				GameObject gameObject = new GameObject();
-				gameObject.name = item.defName;
-				gameObject.transform.parent = base.transform;
-				gameObject.transform.localPosition = Vector3.zero;
-				gameObject.transform.localScale = Vector3.one;
-				gameObject.transform.localRotation = Quaternion.identity;
-				Camera camera2 = gameObject.AddComponent<Camera>();
+				GameObject obj = new GameObject();
+				obj.name = item.defName;
+				obj.transform.parent = base.transform;
+				obj.transform.localPosition = Vector3.zero;
+				obj.transform.localScale = Vector3.one;
+				obj.transform.localRotation = Quaternion.identity;
+				Camera camera2 = obj.AddComponent<Camera>();
 				camera2.orthographic = camera.orthographic;
 				camera2.orthographicSize = camera.orthographicSize;
-				if (item.layer.NullOrEmpty())
-				{
-					camera2.cullingMask = 0;
-				}
-				else
-				{
-					camera2.cullingMask = LayerMask.GetMask(item.layer);
-				}
+				camera2.cullingMask = ((!item.layer.NullOrEmpty()) ? LayerMask.GetMask(item.layer) : 0);
 				camera2.nearClipPlane = camera.nearClipPlane;
 				camera2.farClipPlane = camera.farClipPlane;
 				camera2.useOcclusionCulling = camera.useOcclusionCulling;
 				camera2.allowHDR = camera.allowHDR;
 				camera2.renderingPath = camera.renderingPath;
+				camera2.enabled = item.startEnabled;
 				camera2.clearFlags = CameraClearFlags.Color;
-				camera2.backgroundColor = new Color(0f, 0f, 0f, 0f);
+				camera2.backgroundColor = item.backgroundColor;
 				camera2.depth = item.depth;
 				subcameras[item.index] = camera2;
 			}
@@ -53,22 +47,27 @@ namespace Verse
 			}
 			for (int i = 0; i < subcameras.Length; i++)
 			{
-				subcameras[i].orthographicSize = camera.orthographicSize;
-				RenderTexture renderTexture = subcameras[i].targetTexture;
-				if (renderTexture != null && (renderTexture.width != Screen.width || renderTexture.height != Screen.height))
+				SubcameraDef subcameraDef = DefDatabase<SubcameraDef>.AllDefsListForReading[i];
+				if (!subcameraDef.doNotUpdate)
 				{
-					Object.Destroy(renderTexture);
-					renderTexture = null;
+					Camera obj = subcameras[i];
+					obj.orthographicSize = camera.orthographicSize;
+					RenderTexture renderTexture = obj.targetTexture;
+					if (renderTexture != null && (renderTexture.width != Screen.width || renderTexture.height != Screen.height))
+					{
+						Object.Destroy(renderTexture);
+						renderTexture = null;
+					}
+					if (renderTexture == null)
+					{
+						renderTexture = new RenderTexture(Screen.width, Screen.height, 0, subcameraDef.BestFormat);
+					}
+					if (!renderTexture.IsCreated())
+					{
+						renderTexture.Create();
+					}
+					obj.targetTexture = renderTexture;
 				}
-				if (renderTexture == null)
-				{
-					renderTexture = new RenderTexture(Screen.width, Screen.height, 0, DefDatabase<SubcameraDef>.AllDefsListForReading[i].BestFormat);
-				}
-				if (!renderTexture.IsCreated())
-				{
-					renderTexture.Create();
-				}
-				subcameras[i].targetTexture = renderTexture;
 			}
 		}
 

@@ -7,11 +7,19 @@ namespace RimWorld
 	{
 		public override float CalculateCapacityLevel(HediffSet diffSet, List<PawnCapacityUtility.CapacityImpactor> impactors = null)
 		{
+			List<PawnCapacityUtility.CapacityImpactor> impactors2;
 			if (diffSet.pawn.RaceProps.body.HasPartWithTag(BodyPartTagDefOf.BloodFiltrationKidney))
 			{
-				return PawnCapacityUtility.CalculateTagEfficiency(diffSet, BodyPartTagDefOf.BloodFiltrationKidney, float.MaxValue, default(FloatRange), impactors) * PawnCapacityUtility.CalculateTagEfficiency(diffSet, BodyPartTagDefOf.BloodFiltrationLiver, float.MaxValue, default(FloatRange), impactors);
+				BodyPartTagDef bloodFiltrationKidney = BodyPartTagDefOf.BloodFiltrationKidney;
+				impactors2 = impactors;
+				float num = PawnCapacityUtility.CalculateTagEfficiency(diffSet, bloodFiltrationKidney, float.MaxValue, default(FloatRange), impactors2);
+				BodyPartTagDef bloodFiltrationLiver = BodyPartTagDefOf.BloodFiltrationLiver;
+				impactors2 = impactors;
+				return num * PawnCapacityUtility.CalculateTagEfficiency(diffSet, bloodFiltrationLiver, float.MaxValue, default(FloatRange), impactors2);
 			}
-			return PawnCapacityUtility.CalculateTagEfficiency(diffSet, BodyPartTagDefOf.BloodFiltrationSource, float.MaxValue, default(FloatRange), impactors);
+			BodyPartTagDef bloodFiltrationSource = BodyPartTagDefOf.BloodFiltrationSource;
+			impactors2 = impactors;
+			return PawnCapacityUtility.CalculateTagEfficiency(diffSet, bloodFiltrationSource, float.MaxValue, default(FloatRange), impactors2);
 		}
 
 		public override bool CanHaveCapacity(BodyDef body)

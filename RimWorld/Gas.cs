@@ -22,20 +22,20 @@ namespace RimWorld
 				gas.Destroy();
 			}
 			base.SpawnSetup(map, respawningAfterLoad);
-			if (!respawningAfterLoad)
+			if (!respawningAfterLoad && !base.BeingTransportedOnGravship)
 			{
 				destroyTick = Find.TickManager.TicksGame + def.gas.expireSeconds.RandomInRange.SecondsToTicks();
 			}
 			graphicRotationSpeed = Rand.Range(0f - def.gas.rotationSpeed, def.gas.rotationSpeed) / 60f;
 		}
 
-		public override void Tick()
+		protected override void TickInterval(int delta)
 		{
 			if (destroyTick <= Find.TickManager.TicksGame)
 			{
 				Destroy();
 			}
-			graphicRotation += graphicRotationSpeed;
+			graphicRotation += graphicRotationSpeed * (float)delta;
 		}
 
 		public override void ExposeData()

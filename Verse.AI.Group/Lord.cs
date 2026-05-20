@@ -1,13 +1,15 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse.AI.Group
 {
 	[StaticConstructorOnStartup]
-	public class Lord : IExposable, ILoadReferenceable, ISignalReceiver
+	public class Lord : IExposable, ILoadReferenceable, ISignalReceiver, IDisposable
 	{
 		public LordManager lordManager;
 
@@ -24,6 +26,8 @@ namespace Verse.AI.Group
 		public List<Pawn> ownedPawns = new List<Pawn>();
 
 		public List<Building> ownedBuildings = new List<Building>();
+
+		public List<Corpse> ownedCorpses = new List<Corpse>();
 
 		public List<Thing> extraForbiddenThings = new List<Thing>();
 
@@ -43,8 +47,6 @@ namespace Verse.AI.Group
 
 		public int lastPawnHarmTick = -99999;
 
-		private const int AttackTargetCacheInterval = 60;
-
 		private static readonly Material FlagTex = MaterialPool.MatFrom("UI/Overlays/SquadFlag");
 
 		private int tmpCurLordToilIdx = -1;
@@ -61,7 +63,17 @@ namespace Verse.AI.Group
 
 		public LordJob LordJob => curJob;
 
-		private bool CanExistWithoutPawns => curJob is LordJob_VoluntarilyJoinable;
+		private bool CanExistWithoutPawns
+		{
+			get
+			{
+				if (!curJob.ShouldExistWithoutPawns)
+				{
+					return Map.deferredSpawner.GetRequestByLord(this) != null;
+				}
+				return true;
+			}
+		}
 
 		private bool ShouldExist
 		{
@@ -107,11 +119,19 @@ namespace Verse.AI.Group
 
 		public void ExposeData()
 		{
+			if (Scribe.mode == LoadSaveMode.Saving)
+			{
+				extraForbiddenThings.RemoveAll((Thing x) => x.DestroyedOrNull());
+				ownedPawns.RemoveAll((Pawn x) => x.DestroyedOrNull());
+				ownedBuildings.RemoveAll((Building x) => x.DestroyedOrNull());
+				ownedCorpses.RemoveAll((Corpse x) => x.DestroyedOrNull());
+			}
 			Scribe_Values.Look(ref loadID, "loadID", 0);
 			Scribe_References.Look(ref faction, "faction");
 			Scribe_Collections.Look(ref extraForbiddenThings, "extraForbiddenThings", LookMode.Reference);
 			Scribe_Collections.Look(ref ownedPawns, "ownedPawns", LookMode.Reference);
 			Scribe_Collections.Look(ref ownedBuildings, "ownedBuildings", LookMode.Reference);
+			Scribe_Collections.Look(ref ownedCorpses, "ownedCorpses", LookMode.Reference);
 			Scribe_Deep.Look(ref curJob, "lordJob");
 			Scribe_Values.Look(ref initialized, "initialized", defaultValue: true);
 			Scribe_Values.Look(ref ticksInToil, "ticksInToil", 0);
@@ -126,8 +146,68 @@ namespace Verse.AI.Group
 				extraForbiddenThings.RemoveAll((Thing x) => x == null);
 				ownedPawns.RemoveAll((Pawn x) => x == null);
 				ownedBuildings.RemoveAll((Building x) => x == null);
+				ownedCorpses.RemoveAll((Corpse x) => x == null);
+				ownedPawns.ForEach(delegate(Pawn p)
+				{
+					p.lord = this;
+				});
 			}
 			ExposeData_StateGraph();
+		}
+
+		public AcceptanceReport AllowsDrafting(Pawn pawn)
+		{
+			if (curJob == null)
+			{
+				return false;
+			}
+			return curJob.AllowsDrafting(pawn);
+		}
+
+		public AcceptanceReport AllowsFloatMenu(Pawn pawn)
+		{
+			if (curJob == null)
+			{
+				return true;
+			}
+			return curJob.AllowsFloatMenu(pawn);
+		}
+
+		public bool BlocksSocialInteraction(Pawn pawn)
+		{
+			return curJob?.BlocksSocialInteraction(pawn) ?? false;
+		}
+
+		public bool PrisonerSecure(Pawn pawn)
+		{
+			return curJob?.PrisonerSecure(pawn) ?? false;
+		}
+
+		public AcceptanceReport AbilityAllowed(Ability ability)
+		{
+			if (curJob == null)
+			{
+				return true;
+			}
+			return curJob.AbilityAllowed(ability);
+		}
+
+		public ThinkResult Notify_DutyConstantResult(ThinkResult result, Pawn pawn, JobIssueParams issueParams)
+		{
+			if (curJob == null)
+			{
+				return result;
+			}
+			return curJob.Notify_DutyConstantResult(result, pawn, issueParams);
+		}
+
+		public ThinkResult Notify_DutyResult(ThinkResult result, Pawn pawn, JobIssueParams issueParams)
+		{
+			if (curJob == null)
+			{
+				return result;
+			}
+			return curJob.Notify_DutyResult(result, pawn, issueParams);
 		}
 
 		private void ExposeData_StateGraph()
@@ -169,14 +249,14 @@ namespace Verse.AI.Group
 				lordManager.RemoveLord(this);
 				return;
 			}
-			LordJob job = curJob;
+			LordJob lordJob = curJob;
 			curJob = null;
-			SetJob(job);
+			SetJob(lordJob, loading: true);
 			foreach (KeyValuePair<int, LordToilData> tmpLordToilDatum in tmpLordToilData)
 			{
 				if (tmpLordToilDatum.Key < 0 || tmpLordToilDatum.Key >= graph.lordToils.Count)
 				{
-					Log.Error(string.Concat("Could not find lord toil for lord toil data of type \"", tmpLordToilDatum.Value.GetType(), "\" (lord job: \"", curJob.GetType(), "\"), because lord toil index is out of bounds: ", tmpLordToilDatum.Key));
+					Log.Error("Could not find lord toil for lord toil data of type \"" + tmpLordToilDatum.Value.GetType()?.ToString() + "\" (lord job: \"" + curJob.GetType()?.ToString() + "\"), because lord toil index is out of bounds: " + tmpLordToilDatum.Key);
 				}
 				else
 				{
@@ -189,7 +269,7 @@ namespace Verse.AI.Group
 				Trigger triggerByIndex = GetTriggerByIndex(tmpTriggerDatum.Key);
 				if (triggerByIndex == null)
 				{
-					Log.Error(string.Concat("Could not find trigger for trigger data of type \"", tmpTriggerDatum.Value.GetType(), "\" (lord job: \"", curJob.GetType(), "\"), because trigger index is out of bounds: ", tmpTriggerDatum.Key));
+					Log.Error("Could not find trigger for trigger data of type \"" + tmpTriggerDatum.Value.GetType()?.ToString() + "\" (lord job: \"" + curJob.GetType()?.ToString() + "\"), because trigger index is out of bounds: " + tmpTriggerDatum.Key);
 				}
 				else
 				{
@@ -199,7 +279,7 @@ namespace Verse.AI.Group
 			tmpTriggerData.Clear();
 			if (tmpCurLordToilIdx < 0 || tmpCurLordToilIdx >= graph.lordToils.Count)
 			{
-				Log.Error(string.Concat("Current lord toil index out of bounds (lord job: \"", curJob.GetType(), "\"): ", tmpCurLordToilIdx));
+				Log.Error("Current lord toil index out of bounds (lord job: \"" + curJob.GetType()?.ToString() + "\"): " + tmpCurLordToilIdx);
 			}
 			else
 			{
@@ -207,7 +287,7 @@ namespace Verse.AI.Group
 			}
 		}
 
-		public void SetJob(LordJob lordJob)
+		public void SetJob(LordJob lordJob, bool loading = false)
 		{
 			if (curJob != null)
 			{
@@ -216,12 +296,16 @@ namespace Verse.AI.Group
 			curJob = lordJob;
 			curLordToil = null;
 			lordJob.lord = this;
+			if (!loading)
+			{
+				lordJob.Notify_AddedToLord();
+			}
 			Rand.PushState();
 			Rand.Seed = loadID * 193;
 			graph = lordJob.CreateGraph();
 			Rand.PopState();
 			graph.ErrorCheck();
-			if (faction != null && !faction.IsPlayer && faction.def.autoFlee && lordJob.AddFleeToil)
+			if (faction != null && !faction.IsPlayer && faction.def.autoFlee && !faction.neverFlee && lordJob.AddFleeToil && lordJob.lord.Map.CanEverExit)
 			{
 				LordToil_PanicFlee lordToil_PanicFlee = new LordToil_PanicFlee();
 				lordToil_PanicFlee.useAvoidGrid = true;
@@ -230,26 +314,44 @@ namespace Verse.AI.Group
 					Transition transition = new Transition(graph.lordToils[i], lordToil_PanicFlee);
 					transition.AddPreAction(new TransitionAction_Message("MessageFightersFleeing".Translate(faction.def.pawnsPlural.CapitalizeFirst(), faction.Name)));
 					transition.AddTrigger(new Trigger_FractionPawnsLost(faction.def.attackersDownPercentageRangeForAutoFlee.RandomInRangeSeeded(loadID)));
+					transition.AddPostAction(new TransitionAction_Custom((Action)delegate
+					{
+						QuestUtility.SendQuestTargetSignals(lordJob.lord.questTags, "Fleeing", lordJob.lord.Named("SUBJECT"));
+					}));
 					graph.AddTransition(transition, highPriority: true);
 				}
 				graph.AddToil(lordToil_PanicFlee);
 			}
-			for (int j = 0; j < graph.lordToils.Count; j++)
+			for (int num = 0; num < graph.lordToils.Count; num++)
 			{
-				graph.lordToils[j].lord = this;
+				graph.lordToils[num].lord = this;
 			}
-			for (int k = 0; k < ownedPawns.Count; k++)
+			for (int num2 = 0; num2 < ownedPawns.Count; num2++)
 			{
-				Map.attackTargetsCache.UpdateTarget(ownedPawns[k]);
+				Map.attackTargetsCache.UpdateTarget(ownedPawns[num2]);
 			}
 		}
 
 		public void Cleanup()
 		{
-			curJob.Cleanup();
+			try
+			{
+				curJob.Cleanup();
+			}
+			catch (Exception ex)
+			{
+				Log.Error("Error in LordJob.Cleanup(): " + ex);
+			}
 			if (curLordToil != null)
 			{
-				curLordToil.Cleanup();
+				try
+				{
+					curLordToil.Cleanup();
+				}
+				catch (Exception ex2)
+				{
+					Log.Error("Error in LordToil.Cleanup(): " + ex2);
+				}
 			}
 			for (int i = 0; i < ownedPawns.Count; i++)
 			{
@@ -257,31 +359,96 @@ namespace Verse.AI.Group
 				{
 					ownedPawns[i].mindState.duty = null;
 				}
+				if (ownedPawns[i].lord == this)
+				{
+					ownedPawns[i].lord = null;
+				}
 				Map.attackTargetsCache.UpdateTarget(ownedPawns[i]);
-				if (ownedPawns[i].Spawned && ownedPawns[i].CurJob != null)
+				if (curJob.EndPawnJobOnCleanup(ownedPawns[i]) && ownedPawns[i].Spawned && ownedPawns[i].CurJob != null && (!curJob.DontInterruptLayingPawnsOnCleanup || !RestUtility.IsLayingForJobCleanup(ownedPawns[i])))
 				{
 					ownedPawns[i].jobs.EndCurrentJob(JobCondition.InterruptForced);
+				}
+			}
+			try
+			{
+				curJob.PostCleanup();
+			}
+			catch (Exception ex3)
+			{
+				Log.Error("Error in LordJob.PostCleanup(): " + ex3);
+			}
+		}
+
+		public bool CanAddPawn(Pawn p)
+		{
+			return curLordToil.CanAddPawn(p);
+		}
+
+		public void AddPawns(IEnumerable<Pawn> pawns, bool updateDuties = true)
+		{
+			foreach (Pawn pawn in pawns)
+			{
+				AddPawnInternal(pawn, updateDuties: false);
+			}
+			if (updateDuties)
+			{
+				try
+				{
+					curLordToil.UpdateAllDuties();
+				}
+				catch (Exception ex)
+				{
+					Log.Error("Error in LordToil.UpdateAllDuties(): " + ex);
 				}
 			}
 		}
 
 		public void AddPawn(Pawn p)
 		{
-			if (ownedPawns.Contains(p))
+			if (!CanAddPawn(p))
 			{
-				Log.Error(string.Concat("Lord for ", faction.ToStringSafe(), " tried to add ", p, " whom it already controls."));
-			}
-			else if (p.GetLord() != null)
-			{
-				Log.Error(string.Concat("Tried to add pawn ", p, " to lord ", this, " but this pawn is already a member of lord ", p.GetLord(), ". Pawns can't be members of more than one lord at the same time."));
+				Log.Error("Tried to add pawn " + p?.ToString() + " to lord " + this?.ToString() + " but this pawn can't be added to this lord.");
 			}
 			else
 			{
-				ownedPawns.Add(p);
-				numPawnsEverGained++;
-				Map.attackTargetsCache.UpdateTarget(p);
-				curLordToil.UpdateAllDuties();
-				curJob.Notify_PawnAdded(p);
+				AddPawnInternal(p, updateDuties: true);
+			}
+		}
+
+		private void AddPawnInternal(Pawn p, bool updateDuties)
+		{
+			if (ownedPawns.Contains(p))
+			{
+				Log.Error("Lord for " + faction.ToStringSafe() + " tried to add " + p?.ToString() + " whom it already controls.");
+				return;
+			}
+			if (p.GetLord() != null)
+			{
+				Log.Error("Tried to add pawn " + p?.ToString() + " to lord with lord job" + LordJob?.ToString() + " but this pawn is already a member of lord with lord job" + p.GetLord().LordJob?.ToString() + ". Pawns can't be members of more than one lord at the same time.");
+				return;
+			}
+			ownedPawns.Add(p);
+			p.lord = this;
+			numPawnsEverGained++;
+			Map.attackTargetsCache.UpdateTarget(p);
+			if (updateDuties)
+			{
+				try
+				{
+					curLordToil.UpdateAllDuties();
+				}
+				catch (Exception ex)
+				{
+					Log.Error("Error in LordToil.UpdateAllDuties(): " + ex);
+				}
+			}
+			try
+			{
+				curJob?.Notify_PawnAdded(p);
+			}
+			catch (Exception ex2)
+			{
+				Log.Error("Error in LordJob.Notify_PawnAdded(): " + ex2);
 			}
 		}
 
@@ -289,24 +456,92 @@ namespace Verse.AI.Group
 		{
 			if (ownedBuildings.Contains(b))
 			{
-				Log.Error(string.Concat("Lord for ", faction.ToStringSafe(), " tried to add ", b, " which it already controls."));
+				Log.Error("Lord for " + faction.ToStringSafe() + " tried to add " + b?.ToString() + " which it already controls.");
+				return;
 			}
-			else
+			ownedBuildings.Add(b);
+			try
 			{
-				ownedBuildings.Add(b);
 				curLordToil.UpdateAllDuties();
+			}
+			catch (Exception ex)
+			{
+				Log.Error("Error in LordToil.UpdateAllDuties(): " + ex);
+			}
+			try
+			{
 				curJob.Notify_BuildingAdded(b);
+			}
+			catch (Exception ex2)
+			{
+				Log.Error("Error in LordJob.Notify_BuildingAdded(): " + ex2);
 			}
 		}
 
-		private void RemovePawn(Pawn p)
+		public void AddCorpse(Corpse c)
+		{
+			if (ownedCorpses.Contains(c))
+			{
+				Log.Error("Lord for " + faction.ToStringSafe() + " tried to add " + c?.ToString() + " which it already controls.");
+				return;
+			}
+			ownedCorpses.Add(c);
+			try
+			{
+				curJob.Notify_CorpseAdded(c);
+			}
+			catch (Exception ex)
+			{
+				Log.Error("Error in LordJob.Notify_CorpseAdded(): " + ex);
+			}
+		}
+
+		public void RemovePawn(Pawn p)
 		{
 			ownedPawns.Remove(p);
 			if (p.mindState != null)
 			{
 				p.mindState.duty = null;
 			}
+			if (p.lord == this)
+			{
+				p.lord = null;
+			}
 			Map.attackTargetsCache.UpdateTarget(p);
+		}
+
+		public void RemovePawns(List<Pawn> pawns)
+		{
+			foreach (Pawn pawn in pawns)
+			{
+				RemovePawn(pawn);
+			}
+		}
+
+		public void RemoveAllPawns(bool interruptPawnJobs = true)
+		{
+			foreach (Pawn ownedPawn in ownedPawns)
+			{
+				if (ownedPawn.mindState != null)
+				{
+					ownedPawn.mindState.duty = null;
+					if (interruptPawnJobs && ownedPawn.jobs?.curJob?.lord == this)
+					{
+						ownedPawn.jobs.EndCurrentJob(JobCondition.InterruptForced, startNewJob: false);
+					}
+				}
+				Map.attackTargetsCache.UpdateTarget(ownedPawn);
+				if (ownedPawn.lord == this)
+				{
+					ownedPawn.lord = null;
+				}
+			}
+			ownedPawns.Clear();
+		}
+
+		public void RemoveAllBuildings()
+		{
+			ownedBuildings.Clear();
 		}
 
 		public void GotoToil(LordToil newLordToil)
@@ -314,7 +549,14 @@ namespace Verse.AI.Group
 			LordToil previousToil = curLordToil;
 			if (curLordToil != null)
 			{
-				curLordToil.Cleanup();
+				try
+				{
+					curLordToil.Cleanup();
+				}
+				catch (Exception ex)
+				{
+					Log.Error("Error in LordToil.Cleanup(): " + ex);
+				}
 			}
 			curLordToil = newLordToil;
 			ticksInToil = 0;
@@ -323,7 +565,14 @@ namespace Verse.AI.Group
 				Log.Error("curLordToil lord is " + ((curLordToil.lord == null) ? "null (forgot to add toil to graph?)" : curLordToil.lord.ToString()));
 				curLordToil.lord = this;
 			}
-			curLordToil.Init();
+			try
+			{
+				curLordToil.Init();
+			}
+			catch (Exception ex2)
+			{
+				Log.Error("Error in LordToil.Init(): " + ex2);
+			}
 			for (int i = 0; i < graph.transitions.Count; i++)
 			{
 				if (graph.transitions[i].sources.Contains(curLordToil))
@@ -331,11 +580,29 @@ namespace Verse.AI.Group
 					graph.transitions[i].SourceToilBecameActive(graph.transitions[i], previousToil);
 				}
 			}
-			curLordToil.UpdateAllDuties();
+			try
+			{
+				curLordToil.UpdateAllDuties();
+			}
+			catch (Exception ex3)
+			{
+				Log.Error("Error in LordToil.UpdateAllDuties(): " + ex3);
+			}
 		}
 
 		public void LordTick()
 		{
+			if (ticksInToil % 60 == 0)
+			{
+				for (int i = 0; i < ownedPawns.Count; i++)
+				{
+					Pawn pawn = ownedPawns[i];
+					if (Find.WorldPawns.GetSituation(pawn) == WorldPawnSituation.Free)
+					{
+						Log.ErrorOnce($"Lord {this} ({curJob}) owns a free world pawn {pawn.LabelShort}. Is there WorldPawnSituation to be defined?", loadID ^ 0x50E9382F);
+					}
+				}
+			}
 			if (!initialized)
 			{
 				Init();
@@ -370,11 +637,12 @@ namespace Verse.AI.Group
 
 		public void Notify_FactionRelationsChanged(Faction otherFaction, FactionRelationKind previousRelationKind)
 		{
-			TriggerSignal signal = default(TriggerSignal);
-			signal.type = TriggerSignalType.FactionRelationsChanged;
-			signal.faction = otherFaction;
-			signal.previousRelationKind = previousRelationKind;
-			CheckTransitionOnSignal(signal);
+			CheckTransitionOnSignal(new TriggerSignal
+			{
+				type = TriggerSignalType.FactionRelationsChanged,
+				faction = otherFaction,
+				previousRelationKind = previousRelationKind
+			});
 			for (int i = 0; i < ownedPawns.Count; i++)
 			{
 				if (ownedPawns[i].Spawned)
@@ -394,16 +662,47 @@ namespace Verse.AI.Group
 			}
 		}
 
+		public void Notify_PawnJobDone(Pawn pawn, JobCondition condition)
+		{
+			try
+			{
+				curJob.Notify_PawnJobDone(pawn, condition);
+			}
+			catch (Exception ex)
+			{
+				Log.Error("Error in LordJob.Notify_PawnJobDone(): " + ex);
+			}
+			try
+			{
+				curLordToil.Notify_PawnJobDone(pawn, condition);
+			}
+			catch (Exception ex2)
+			{
+				Log.Error("Error in LordToil.Notify_PawnJobDone(): " + ex2);
+			}
+		}
+
 		public void Notify_PawnLost(Pawn pawn, PawnLostCondition cond, DamageInfo? dinfo = null)
 		{
+			if (!curJob.ShouldRemovePawn(pawn, cond))
+			{
+				return;
+			}
 			if (ownedPawns.Contains(pawn))
 			{
 				RemovePawn(pawn);
-				if (cond == PawnLostCondition.IncappedOrKilled || cond == PawnLostCondition.MadePrisoner)
+				if (cond == PawnLostCondition.Incapped || cond == PawnLostCondition.Killed || cond == PawnLostCondition.MadePrisoner)
 				{
 					numPawnsLostViolently++;
 				}
-				curJob.Notify_PawnLost(pawn, cond);
+				try
+				{
+					curJob.Notify_PawnLost(pawn, cond);
+				}
+				catch (Exception ex)
+				{
+					Log.Error("Error in LordJob.Notify_PawnLost(): " + ex);
+				}
 				if (!lordManager.lords.Contains(this))
 				{
 					return;
@@ -413,11 +712,20 @@ namespace Verse.AI.Group
 					Destroy();
 					return;
 				}
-				curLordToil.Notify_PawnLost(pawn, cond);
-				TriggerSignal signal = default(TriggerSignal);
-				signal.type = TriggerSignalType.PawnLost;
-				signal.thing = pawn;
-				signal.condition = cond;
+				try
+				{
+					curLordToil.Notify_PawnLost(pawn, cond);
+				}
+				catch (Exception ex2)
+				{
+					Log.Error("Error in LordToil.Notify_PawnLost(): " + ex2);
+				}
+				TriggerSignal signal = new TriggerSignal
+				{
+					type = TriggerSignalType.PawnLost,
+					thing = pawn,
+					condition = cond
+				};
 				if (dinfo.HasValue)
 				{
 					signal.dinfo = dinfo.Value;
@@ -426,8 +734,13 @@ namespace Verse.AI.Group
 			}
 			else
 			{
-				Log.Error(string.Concat("Lord lost pawn ", pawn, " it didn't have. Condition=", cond));
+				Log.Error("Lord lost pawn " + pawn?.ToString() + " it didn't have. Condition=" + cond);
 			}
+		}
+
+		public void Notify_InMentalState(Pawn pawn, MentalStateDef def)
+		{
+			curJob.Notify_InMentalState(pawn, def);
 		}
 
 		public void Notify_BuildingLost(Building building, DamageInfo? dinfo = null)
@@ -446,9 +759,11 @@ namespace Verse.AI.Group
 					return;
 				}
 				curLordToil.Notify_BuildingLost(building);
-				TriggerSignal signal = default(TriggerSignal);
-				signal.type = TriggerSignalType.BuildingLost;
-				signal.thing = building;
+				TriggerSignal signal = new TriggerSignal
+				{
+					type = TriggerSignalType.BuildingLost,
+					thing = building
+				};
 				if (dinfo.HasValue)
 				{
 					signal.dinfo = dinfo.Value;
@@ -457,47 +772,102 @@ namespace Verse.AI.Group
 			}
 			else
 			{
-				Log.Error(string.Concat("Lord lost building ", building, " it didn't have."));
+				Log.Error("Lord lost building " + building?.ToString() + " it didn't have.");
+			}
+		}
+
+		public void Notify_CorpseLost(Corpse corpse, DamageInfo? dinfo = null)
+		{
+			if (ownedCorpses.Contains(corpse))
+			{
+				ownedCorpses.Remove(corpse);
+				curJob.Notify_CorpseLost(corpse);
+				if (!lordManager.lords.Contains(this))
+				{
+					return;
+				}
+				if (!ShouldExist)
+				{
+					Destroy();
+					return;
+				}
+				curLordToil.Notify_CorpseLost(corpse);
+				TriggerSignal signal = new TriggerSignal
+				{
+					type = TriggerSignalType.CorpseLost,
+					thing = corpse
+				};
+				if (dinfo.HasValue)
+				{
+					signal.dinfo = dinfo.Value;
+				}
+				CheckTransitionOnSignal(signal);
+			}
+			else
+			{
+				Log.Error("Lord lost corpse " + corpse?.ToString() + " it didn't have.");
 			}
 		}
 
 		public void Notify_BuildingDamaged(Building building, DamageInfo dinfo)
 		{
-			TriggerSignal signal = default(TriggerSignal);
-			signal.type = TriggerSignalType.BuildingDamaged;
-			signal.thing = building;
-			signal.dinfo = dinfo;
-			CheckTransitionOnSignal(signal);
+			CheckTransitionOnSignal(new TriggerSignal
+			{
+				type = TriggerSignalType.BuildingDamaged,
+				thing = building,
+				dinfo = dinfo
+			});
 		}
 
 		public void Notify_PawnDamaged(Pawn victim, DamageInfo dinfo)
 		{
-			TriggerSignal signal = default(TriggerSignal);
-			signal.type = TriggerSignalType.PawnDamaged;
-			signal.thing = victim;
-			signal.dinfo = dinfo;
-			CheckTransitionOnSignal(signal);
+			curLordToil?.Notify_PawnDamaged(victim, dinfo);
+			CheckTransitionOnSignal(new TriggerSignal
+			{
+				type = TriggerSignalType.PawnDamaged,
+				thing = victim,
+				dinfo = dinfo
+			});
 		}
 
 		public void Notify_PawnAttemptArrested(Pawn victim)
 		{
-			TriggerSignal signal = default(TriggerSignal);
-			signal.type = TriggerSignalType.PawnArrestAttempted;
-			signal.thing = victim;
-			CheckTransitionOnSignal(signal);
+			CheckTransitionOnSignal(new TriggerSignal
+			{
+				type = TriggerSignalType.PawnArrestAttempted,
+				thing = victim
+			});
 		}
 
 		public void Notify_Clamor(Thing source, ClamorDef clamorType)
 		{
-			TriggerSignal signal = default(TriggerSignal);
-			signal.type = TriggerSignalType.Clamor;
-			signal.thing = source;
-			signal.clamorType = clamorType;
-			CheckTransitionOnSignal(signal);
+			CheckTransitionOnSignal(new TriggerSignal
+			{
+				type = TriggerSignalType.Clamor,
+				thing = source,
+				clamorType = clamorType
+			});
 		}
 
 		public void Notify_PawnAcquiredTarget(Pawn detector, Thing newTarg)
 		{
+			curLordToil?.Notify_PawnAcquiredTarget(detector, newTarg);
+			CheckTransitionOnSignal(new TriggerSignal
+			{
+				type = TriggerSignalType.AcquiredTarget,
+				thing = detector,
+				otherThing = newTarg
+			});
+		}
+
+		public void Notify_BuildingSpawnedOnMap(Building b)
+		{
+			curLordToil?.Notify_BuildingSpawnedOnMap(b);
+		}
+
+		public void Notify_BuildingDespawnedOnMap(Building b)
+		{
+			curLordToil?.Notify_BuildingDespawnedOnMap(b);
 		}
 
 		public void Notify_ReachedDutyLocation(Pawn pawn)
@@ -505,9 +875,19 @@ namespace Verse.AI.Group
 			curLordToil.Notify_ReachedDutyLocation(pawn);
 		}
 
+		public void Notify_MapRemoved()
+		{
+			curJob?.Notify_MapRemoved();
+		}
+
 		public void Notify_ConstructionFailed(Pawn pawn, Frame frame, Blueprint_Build newBlueprint)
 		{
 			curLordToil.Notify_ConstructionFailed(pawn, frame, newBlueprint);
+		}
+
+		public void Notify_ConstructionCompleted(Pawn pawn, Building building)
+		{
+			curLordToil.Notify_ConstructionCompleted(pawn, building);
 		}
 
 		public void Notify_SignalReceived(Signal signal)
@@ -533,16 +913,28 @@ namespace Verse.AI.Group
 
 		public void Notify_DormancyWakeup()
 		{
-			TriggerSignal signal = default(TriggerSignal);
-			signal.type = TriggerSignalType.DormancyWakeup;
-			CheckTransitionOnSignal(signal);
+			CheckTransitionOnSignal(new TriggerSignal
+			{
+				type = TriggerSignalType.DormancyWakeup
+			});
 		}
 
 		public void Notify_MechClusterDefeated()
 		{
-			TriggerSignal signal = default(TriggerSignal);
-			signal.type = TriggerSignalType.MechClusterDefeated;
-			CheckTransitionOnSignal(signal);
+			CheckTransitionOnSignal(new TriggerSignal
+			{
+				type = TriggerSignalType.MechClusterDefeated
+			});
+		}
+
+		public void Notify_PawnUndowned(Pawn pawn)
+		{
+			curJob.Notify_PawnUndowned(pawn);
+		}
+
+		public void Notify_PawnDowned(Pawn pawn)
+		{
+			curJob.Notify_PawnDowned(pawn);
 		}
 
 		private bool CheckTransitionOnSignal(TriggerSignal signal)
@@ -564,7 +956,7 @@ namespace Verse.AI.Group
 		private Vector3 DebugCenter()
 		{
 			Vector3 result = Map.Center.ToVector3ShiftedWithAltitude(AltitudeLayer.MetaOverlays);
-			if (ownedPawns.Where((Pawn p) => p.Spawned).Any())
+			if (ownedPawns.Any((Pawn p) => p.Spawned))
 			{
 				result.x = ownedPawns.Where((Pawn p) => p.Spawned).Average((Pawn p) => p.DrawPos.x);
 				result.z = ownedPawns.Where((Pawn p) => p.Spawned).Average((Pawn p) => p.DrawPos.z);
@@ -592,7 +984,7 @@ namespace Verse.AI.Group
 		{
 			Text.Anchor = TextAnchor.MiddleCenter;
 			Text.Font = GameFont.Tiny;
-			string label = ((CurLordToil == null) ? "toil=NULL" : ("toil " + graph.lordToils.IndexOf(CurLordToil) + "\n" + CurLordToil.ToString()));
+			string label = ((CurLordToil == null) ? "toil=NULL" : ("toil " + graph.lordToils.IndexOf(CurLordToil) + "\n" + CurLordToil));
 			Vector2 vector = DebugCenter().MapToUIPosition();
 			Widgets.Label(new Rect(vector.x - 100f, vector.y - 100f, 200f, 200f), label);
 			Text.Anchor = TextAnchor.UpperLeft;
@@ -614,20 +1006,26 @@ namespace Verse.AI.Group
 
 		private bool ShouldDoDebugOutput()
 		{
-			IntVec3 a = UI.MouseCell();
+			IntVec3 intVec = UI.MouseCell();
 			IntVec3 flagLoc = curLordToil.FlagLoc;
-			if (flagLoc.IsValid && a == flagLoc)
+			if (flagLoc.IsValid && intVec == flagLoc)
 			{
 				return true;
 			}
 			for (int i = 0; i < ownedPawns.Count; i++)
 			{
-				if (a == ownedPawns[i].Position)
+				if (intVec == ownedPawns[i].Position)
 				{
 					return true;
 				}
 			}
 			return false;
+		}
+
+		public void Dispose()
+		{
+			graph?.Dispose();
+			curJob?.Dispose();
 		}
 	}
 }

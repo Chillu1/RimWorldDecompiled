@@ -13,7 +13,7 @@ namespace RimWorld.Planet
 
 		private WorldObject worldObjectInt;
 
-		private int tileInt;
+		private PlanetTile tileInt;
 
 		public const char WorldObjectLoadIDMarker = '@';
 
@@ -21,10 +21,20 @@ namespace RimWorld.Planet
 		{
 			get
 			{
-				if (thingInt == null && !cellInt.IsValid && worldObjectInt == null)
+				if (thingInt != null)
 				{
-					return tileInt >= 0;
+					Pawn pawn = Pawn;
+					if (pawn == null || !pawn.IsHiddenFromPlayer())
+					{
+						goto IL_0040;
+					}
 				}
+				if (!cellInt.IsValid && worldObjectInt == null)
+				{
+					return tileInt.Valid;
+				}
+				goto IL_0040;
+				IL_0040:
 				return true;
 			}
 		}
@@ -47,7 +57,7 @@ namespace RimWorld.Planet
 			{
 				if (!HasWorldObject)
 				{
-					return tileInt >= 0;
+					return tileInt.Valid;
 				}
 				return true;
 			}
@@ -56,6 +66,8 @@ namespace RimWorld.Planet
 		public bool HasThing => Thing != null;
 
 		public Thing Thing => thingInt;
+
+		public Pawn Pawn => thingInt as Pawn;
 
 		public bool ThingDestroyed
 		{
@@ -115,7 +127,7 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public int Tile
+		public PlanetTile Tile
 		{
 			get
 			{
@@ -123,11 +135,11 @@ namespace RimWorld.Planet
 				{
 					return worldObjectInt.Tile;
 				}
-				if (tileInt >= 0)
+				if (tileInt.Valid)
 				{
 					return tileInt;
 				}
-				if (thingInt != null && thingInt.Tile >= 0)
+				if (thingInt != null && thingInt.Tile.Valid)
 				{
 					return thingInt.Tile;
 				}
@@ -135,7 +147,7 @@ namespace RimWorld.Planet
 				{
 					return mapInt.Tile;
 				}
-				return -1;
+				return PlanetTile.Invalid;
 			}
 		}
 
@@ -145,20 +157,21 @@ namespace RimWorld.Planet
 			cellInt = IntVec3.Invalid;
 			mapInt = null;
 			worldObjectInt = null;
-			tileInt = -1;
+			tileInt = PlanetTile.Invalid;
 		}
 
 		public GlobalTargetInfo(IntVec3 cell, Map map, bool allowNullMap = false)
 		{
 			if (!allowNullMap && cell.IsValid && map == null)
 			{
-				Log.Warning(string.Concat("Constructed GlobalTargetInfo with cell=", cell, " and a null map."));
+				IntVec3 intVec = cell;
+				Log.Warning("Constructed GlobalTargetInfo with cell=" + intVec.ToString() + " and a null map.");
 			}
 			thingInt = null;
 			cellInt = cell;
 			mapInt = map;
 			worldObjectInt = null;
-			tileInt = -1;
+			tileInt = PlanetTile.Invalid;
 		}
 
 		public GlobalTargetInfo(WorldObject worldObject)
@@ -167,10 +180,10 @@ namespace RimWorld.Planet
 			cellInt = IntVec3.Invalid;
 			mapInt = null;
 			worldObjectInt = worldObject;
-			tileInt = -1;
+			tileInt = PlanetTile.Invalid;
 		}
 
-		public GlobalTargetInfo(int tile)
+		public GlobalTargetInfo(PlanetTile tile)
 		{
 			thingInt = null;
 			cellInt = IntVec3.Invalid;
@@ -205,7 +218,7 @@ namespace RimWorld.Planet
 				Log.ErrorOnce("Casted GlobalTargetInfo to LocalTargetInfo but it had WorldObject " + targ.worldObjectInt, 134566);
 				return LocalTargetInfo.Invalid;
 			}
-			if (targ.tileInt >= 0)
+			if (targ.tileInt.Valid)
 			{
 				Log.ErrorOnce("Casted GlobalTargetInfo to LocalTargetInfo but it had tile " + targ.tileInt, 7833122);
 				return LocalTargetInfo.Invalid;
@@ -228,7 +241,7 @@ namespace RimWorld.Planet
 				Log.ErrorOnce("Casted GlobalTargetInfo to TargetInfo but it had WorldObject " + targ.worldObjectInt, 134566);
 				return TargetInfo.Invalid;
 			}
-			if (targ.tileInt >= 0)
+			if (targ.tileInt.Valid)
 			{
 				Log.ErrorOnce("Casted GlobalTargetInfo to TargetInfo but it had tile " + targ.tileInt, 7833122);
 				return TargetInfo.Invalid;
@@ -254,7 +267,7 @@ namespace RimWorld.Planet
 			{
 				Log.ErrorOnce("Casted GlobalTargetInfo to IntVec3 but it had WorldObject " + targ.worldObjectInt, 134566);
 			}
-			if (targ.tileInt >= 0)
+			if (targ.tileInt.Valid)
 			{
 				Log.ErrorOnce("Casted GlobalTargetInfo to IntVec3 but it had tile " + targ.tileInt, 7833122);
 			}
@@ -265,13 +278,14 @@ namespace RimWorld.Planet
 		{
 			if (targ.cellInt.IsValid)
 			{
-				Log.ErrorOnce("Casted GlobalTargetInfo to Thing but it had cell " + targ.cellInt, 631672);
+				IntVec3 intVec = targ.cellInt;
+				Log.ErrorOnce("Casted GlobalTargetInfo to Thing but it had cell " + intVec.ToString(), 631672);
 			}
 			if (targ.worldObjectInt != null)
 			{
 				Log.ErrorOnce("Casted GlobalTargetInfo to Thing but it had WorldObject " + targ.worldObjectInt, 134566);
 			}
-			if (targ.tileInt >= 0)
+			if (targ.tileInt.Valid)
 			{
 				Log.ErrorOnce("Casted GlobalTargetInfo to Thing but it had tile " + targ.tileInt, 7833122);
 			}
@@ -286,9 +300,10 @@ namespace RimWorld.Planet
 			}
 			if (targ.cellInt.IsValid)
 			{
-				Log.ErrorOnce("Casted GlobalTargetInfo to WorldObject but it had cell " + targ.cellInt, 631672);
+				IntVec3 intVec = targ.cellInt;
+				Log.ErrorOnce("Casted GlobalTargetInfo to WorldObject but it had cell " + intVec.ToString(), 631672);
 			}
-			if (targ.tileInt >= 0)
+			if (targ.tileInt.Valid)
 			{
 				Log.ErrorOnce("Casted GlobalTargetInfo to WorldObject but it had tile " + targ.tileInt, 7833122);
 			}
@@ -313,7 +328,7 @@ namespace RimWorld.Planet
 			{
 				return a.WorldObject == b.WorldObject;
 			}
-			if (a.tileInt >= 0 || b.tileInt >= 0)
+			if (a.tileInt.Valid || b.tileInt.Valid)
 			{
 				return a.tileInt == b.tileInt;
 			}
@@ -327,11 +342,11 @@ namespace RimWorld.Planet
 
 		public override bool Equals(object obj)
 		{
-			if (!(obj is GlobalTargetInfo))
+			if (!(obj is GlobalTargetInfo other))
 			{
 				return false;
 			}
-			return Equals((GlobalTargetInfo)obj);
+			return Equals(other);
 		}
 
 		public bool Equals(GlobalTargetInfo other)
@@ -353,9 +368,9 @@ namespace RimWorld.Planet
 			{
 				return worldObjectInt.GetHashCode();
 			}
-			if (tileInt >= 0)
+			if (tileInt.Valid)
 			{
-				return tileInt;
+				return tileInt.GetHashCode();
 			}
 			return -1;
 		}
@@ -374,7 +389,7 @@ namespace RimWorld.Planet
 			{
 				return "@" + worldObjectInt.GetUniqueLoadID();
 			}
-			if (tileInt >= 0)
+			if (tileInt.Valid)
 			{
 				return tileInt.ToString();
 			}

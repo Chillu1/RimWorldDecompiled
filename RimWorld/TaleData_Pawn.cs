@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Verse;
 using Verse.Grammar;
 
@@ -59,9 +60,9 @@ namespace RimWorld
 			Scribe_Defs.Look(ref notableApparel, "app");
 		}
 
-		public override IEnumerable<Rule> GetRules(string prefix)
+		public override IEnumerable<Rule> GetRules(string prefix, Dictionary<string, string> constants = null)
 		{
-			return GrammarUtility.RulesForPawn(prefix, name, title, kind, gender, faction, age, chronologicalAge, relationInfo, everBeenColonistOrTameAnimal, everBeenQuestLodger, isFactionLeader, royalTitles);
+			return GrammarUtility.RulesForPawn(prefix, name, title, kind, gender, faction, age, chronologicalAge, relationInfo, everBeenColonistOrTameAnimal, everBeenQuestLodger, isFactionLeader, royalTitles, cubeInterest: false, string.Empty, constants);
 		}
 
 		public static TaleData_Pawn GenerateFrom(Pawn pawn)
@@ -106,11 +107,11 @@ namespace RimWorld
 			return taleData_Pawn;
 		}
 
-		public static TaleData_Pawn GenerateRandom()
+		public static TaleData_Pawn GenerateRandom(bool humanLike = false)
 		{
-			PawnKindDef random = DefDatabase<PawnKindDef>.GetRandom();
-			Faction faction = FactionUtility.DefaultFactionFrom(random.defaultFactionType);
-			return GenerateFrom(PawnGenerator.GeneratePawn(random, faction));
+			PawnKindDef obj = (humanLike ? PawnKindDefOf.Drifter : DefDatabase<PawnKindDef>.AllDefsListForReading.Where((PawnKindDef x) => x.Isnt<CreepJoinerFormKindDef>()).RandomElement());
+			Faction faction = FactionUtility.DefaultFactionFrom(obj.defaultFactionDef);
+			return GenerateFrom(PawnGenerator.GeneratePawn(obj, faction));
 		}
 	}
 }

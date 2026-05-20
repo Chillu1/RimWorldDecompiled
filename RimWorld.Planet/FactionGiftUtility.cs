@@ -36,13 +36,14 @@ namespace RimWorld.Planet
 					tradeables[i].ResolveTrade();
 				}
 			}
-			if (!giveTo.TryAffectGoodwillWith(Faction.OfPlayer, goodwillChange, canSendMessage: true, canSendHostilityLetter: true, "GoodwillChangedReason_ReceivedGift".Translate(), lookTarget))
+			if (giveTo.PlayerGoodwill == 100)
 			{
 				SendGiftNotAppreciatedMessage(giveTo, lookTarget);
 			}
+			Faction.OfPlayer.TryAffectGoodwillWith(giveTo, goodwillChange, canSendMessage: true, canSendHostilityLetter: true, HistoryEventDefOf.GaveGift);
 		}
 
-		public static void GiveGift(List<ActiveDropPodInfo> pods, Settlement giveTo)
+		public static void GiveGift(List<ActiveTransporterInfo> pods, Settlement giveTo)
 		{
 			int goodwillChange = GetGoodwillChange(pods.Cast<IThingHolder>(), giveTo);
 			for (int i = 0; i < pods.Count; i++)
@@ -57,28 +58,26 @@ namespace RimWorld.Planet
 					}
 				}
 			}
-			if (!giveTo.Faction.TryAffectGoodwillWith(Faction.OfPlayer, goodwillChange, canSendMessage: true, canSendHostilityLetter: true, "GoodwillChangedReason_ReceivedGift".Translate(), giveTo))
+			if (giveTo.Faction.PlayerGoodwill == 100)
 			{
 				SendGiftNotAppreciatedMessage(giveTo.Faction, giveTo);
 			}
+			Faction.OfPlayer.TryAffectGoodwillWith(giveTo.Faction, goodwillChange, canSendMessage: true, canSendHostilityLetter: true, HistoryEventDefOf.GaveGift);
 		}
 
 		private static void GiveGiftInternal(Thing thing, int count, Faction giveTo)
 		{
 			Thing thing2 = thing.SplitOff(count);
-			Pawn pawn;
-			if ((pawn = thing2 as Pawn) != null)
+			if (thing2 is Pawn pawn)
 			{
 				pawn.SetFaction(giveTo);
-				pawn.guest.SetGuestStatus(null);
 			}
 			thing2.DestroyOrPassToWorld();
 		}
 
 		public static bool CheckCanCarryGift(List<Tradeable> tradeables, ITrader trader)
 		{
-			Pawn pawn = trader as Pawn;
-			if (pawn == null)
+			if (!(trader is Pawn pawn))
 			{
 				return true;
 			}
@@ -147,8 +146,7 @@ namespace RimWorld.Planet
 					else
 					{
 						float priceFactorSell_TraderPriceType = ((giveTo.TraderKind != null) ? giveTo.TraderKind.PriceTypeFor(directlyHeldThings[i].def, TradeAction.PlayerSells).PriceMultiplier() : 1f);
-						float tradePriceImprovementOffsetForPlayer = giveTo.TradePriceImprovementOffsetForPlayer;
-						singlePrice = TradeUtility.GetPricePlayerSell(directlyHeldThings[i], priceFactorSell_TraderPriceType, 1f, tradePriceImprovementOffsetForPlayer);
+						singlePrice = TradeUtility.GetPricePlayerSell(directlyHeldThings[i], priceFactorSell_TraderPriceType, 1f, 0f, giveTo.TradePriceImprovementOffsetForPlayer, 0f, 0f);
 					}
 					num += GetBaseGoodwillChange(directlyHeldThings[i], directlyHeldThings[i].stackCount, singlePrice, giveTo.Faction);
 				}
@@ -177,8 +175,7 @@ namespace RimWorld.Planet
 				return 0f;
 			}
 			float num = singlePrice * (float)count;
-			Pawn pawn = anyThing as Pawn;
-			if (pawn != null && pawn.IsPrisoner && pawn.Faction == theirFaction)
+			if (anyThing is Pawn { IsPrisoner: not false } pawn && pawn.Faction == theirFaction)
 			{
 				num *= 2f;
 			}

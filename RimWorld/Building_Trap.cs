@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using RimWorld.Planet;
 using UnityEngine;
@@ -5,11 +6,15 @@ using Verse;
 
 namespace RimWorld
 {
-	public abstract class Building_Trap : Building
+	public abstract class Building_Trap : Building, IPathFindCostProvider
 	{
 		private bool autoRearm;
 
 		private List<Pawn> touchingPawns = new List<Pawn>();
+
+		private StunHandler stunner;
+
+		private bool triedGettingStunner;
 
 		private const float KnowerSpringChanceFactorSameFaction = 0.005f;
 
@@ -35,40 +40,58 @@ namespace RimWorld
 			}
 		}
 
+		public virtual bool ShouldShowTrapDamageStat { get; } = true;
+
+		protected bool IsStunned
+		{
+			get
+			{
+				if (!triedGettingStunner)
+				{
+					stunner = GetComp<CompStunnable>()?.StunHandler;
+					triedGettingStunner = true;
+				}
+				return stunner?.Stunned ?? false;
+			}
+		}
+
 		public override void ExposeData()
 		{
 			base.ExposeData();
 			Scribe_Values.Look(ref autoRearm, "autoRearm", defaultValue: false);
 			Scribe_Collections.Look(ref touchingPawns, "testees", LookMode.Reference);
+			if (Scribe.mode == LoadSaveMode.PostLoadInit && touchingPawns.RemoveAll((Pawn x) => x == null) != 0)
+			{
+				Log.Error("Removed null pawns from touchingPawns.");
+			}
 		}
 
 		public override void SpawnSetup(Map map, bool respawningAfterLoad)
 		{
 			base.SpawnSetup(map, respawningAfterLoad);
-			if (!respawningAfterLoad)
+			if (!respawningAfterLoad && !base.BeingTransportedOnGravship)
 			{
 				autoRearm = CanSetAutoRearm && map.areaManager.Home[base.Position];
 			}
 		}
 
-		public override void Tick()
+		protected override void Tick()
 		{
-			if (base.Spawned)
+			if (base.Spawned && !IsStunned)
 			{
 				List<Thing> thingList = base.Position.GetThingList(base.Map);
 				for (int i = 0; i < thingList.Count; i++)
 				{
-					Pawn pawn = thingList[i] as Pawn;
-					if (pawn != null && !touchingPawns.Contains(pawn))
+					if (thingList[i] is Pawn { Flying: false } pawn && !touchingPawns.Contains(pawn))
 					{
 						touchingPawns.Add(pawn);
 						CheckSpring(pawn);
 					}
 				}
-				for (int j = 0; j < touchingPawns.Count; j++)
+				for (int num = touchingPawns.Count - 1; num >= 0; num--)
 				{
-					Pawn pawn2 = touchingPawns[j];
-					if (!pawn2.Spawned || pawn2.Position != base.Position)
+					Pawn pawn2 = touchingPawns[num];
+					if (pawn2 == null || !pawn2.Spawned || pawn2.Flying || pawn2.Position != base.Position)
 					{
 						touchingPawns.Remove(pawn2);
 					}
@@ -93,13 +116,17 @@ namespace RimWorld
 		protected virtual float SpringChance(Pawn p)
 		{
 			float num = 1f;
+			if (p.kindDef.immuneToTraps)
+			{
+				return 0f;
+			}
 			if (KnowsOfTrap(p))
 			{
 				if (p.Faction != null)
 				{
 					num = ((p.Faction != base.Faction) ? 0f : 0.005f);
 				}
-				else if (p.RaceProps.Animal)
+				else if (p.IsAnimal)
 				{
 					num = 0.2f;
 					num *= def.building.trapPeacefulWildAnimalsSpringChanceFactor;
@@ -119,7 +146,7 @@ namespace RimWorld
 			{
 				return true;
 			}
-			if (p.Faction == null && p.RaceProps.Animal && !p.InAggroMentalState)
+			if (p.Faction == null && p.IsAnimal && !p.InAggroMentalState)
 			{
 				return true;
 			}
@@ -135,7 +162,7 @@ namespace RimWorld
 			{
 				return true;
 			}
-			if (p.IsPrisoner && p.guest.ShouldWaitInsteadOfEscaping && base.Faction == p.HostFaction)
+			if (p.pather.cachedReturningToCell && base.Faction == p.HostFaction)
 			{
 				return true;
 			}
@@ -143,10 +170,19 @@ namespace RimWorld
 			{
 				return true;
 			}
+			if (p.lord?.LordJob is ILordAvoidTraps lordAvoidTraps && Rand.ValueAsync(HashCode.Combine(p.Faction?.loadID ?? p.lord.loadID, thingIDNumber)) < lordAvoidTraps.AvoidTrapRatio)
+			{
+				return true;
+			}
 			return false;
 		}
 
-		public override ushort PathFindCostFor(Pawn p)
+		public CellRect GetOccupiedRect()
+		{
+			return this.OccupiedRect();
+		}
+
+		public ushort PathFindCostFor(Pawn p)
 		{
 			if (!KnowsOfTrap(p))
 			{

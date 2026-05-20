@@ -1,21 +1,24 @@
+using System.Runtime.CompilerServices;
+
 namespace Verse
 {
 	public static class CellIndicesUtility
 	{
-		public static int CellToIndex(IntVec3 c, int mapSizeX)
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static int CellToIndex(IntVec3 c, int sizeX)
 		{
-			return c.z * mapSizeX + c.x;
+			return c.z * sizeX + c.x;
 		}
 
-		public static int CellToIndex(int x, int z, int mapSizeX)
+		public static int CellToIndex(int x, int z, int sizeX)
 		{
-			return z * mapSizeX + x;
+			return z * sizeX + x;
 		}
 
-		public static IntVec3 IndexToCell(int ind, int mapSizeX)
+		public static IntVec3 IndexToCell(int ind, int sizeX)
 		{
-			int newX = ind % mapSizeX;
-			int newZ = ind / mapSizeX;
+			int newX = ind % sizeX;
+			int newZ = ind / sizeX;
 			return new IntVec3(newX, 0, newZ);
 		}
 	}

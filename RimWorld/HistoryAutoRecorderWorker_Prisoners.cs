@@ -6,7 +6,7 @@ namespace RimWorld
 	{
 		public override float PullRecord()
 		{
-			return PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_PrisonersOfColony.Count();
+			return PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_PrisonersOfColony.Count();
 		}
 	}
 }

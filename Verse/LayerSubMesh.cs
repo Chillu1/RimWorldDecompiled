@@ -11,6 +11,8 @@ namespace Verse
 
 		public Material material;
 
+		public int renderLayer;
+
 		public Mesh mesh;
 
 		public List<Vector3> verts = new List<Vector3>();
@@ -19,9 +21,15 @@ namespace Verse
 
 		public List<Color32> colors = new List<Color32>();
 
+		public List<Vector3> pollution = new List<Vector3>();
+
 		public List<Vector3> uvs = new List<Vector3>();
 
-		public LayerSubMesh(Mesh mesh, Material material)
+		public List<Vector3> uvsChannelTwo = new List<Vector3>();
+
+		public List<Vector3> normals = new List<Vector3>();
+
+		public LayerSubMesh(Mesh mesh, Material material, Bounds? bounds = null)
 		{
 			this.mesh = mesh;
 			this.material = material;
@@ -29,21 +37,29 @@ namespace Verse
 
 		public void Clear(MeshParts parts)
 		{
-			if ((parts & MeshParts.Verts) != 0)
+			if ((parts & MeshParts.Verts) != MeshParts.None)
 			{
 				verts.Clear();
 			}
-			if ((parts & MeshParts.Tris) != 0)
+			if ((parts & MeshParts.Tris) != MeshParts.None)
 			{
 				tris.Clear();
 			}
-			if ((parts & MeshParts.Colors) != 0)
+			if ((parts & MeshParts.Colors) != MeshParts.None)
 			{
 				colors.Clear();
 			}
-			if ((parts & MeshParts.UVs) != 0)
+			if ((parts & MeshParts.UVs1) != MeshParts.None)
 			{
 				uvs.Clear();
+			}
+			if ((parts & MeshParts.UVs2) != MeshParts.None)
+			{
+				uvsChannelTwo.Clear();
+			}
+			if ((parts & MeshParts.Normals) != MeshParts.None)
+			{
+				normals.Clear();
 			}
 			finalized = false;
 		}
@@ -54,11 +70,11 @@ namespace Verse
 			{
 				Log.Warning("Finalizing mesh which is already finalized. Did you forget to call Clear()?");
 			}
-			if ((parts & MeshParts.Verts) != 0 || (parts & MeshParts.Tris) != 0)
+			if ((parts & MeshParts.Verts) != MeshParts.None || (parts & MeshParts.Tris) != MeshParts.None)
 			{
 				mesh.Clear();
 			}
-			if ((parts & MeshParts.Verts) != 0)
+			if ((parts & MeshParts.Verts) != MeshParts.None)
 			{
 				if (verts.Count > 0)
 				{
@@ -66,10 +82,10 @@ namespace Verse
 				}
 				else
 				{
-					Log.Error("Cannot cook Verts for " + material.ToString() + ": no ingredients data. If you want to not render this submesh, disable it.");
+					Log.Error($"Cannot cook Verts for {material}: no ingredients data. If you want to not render this submesh, disable it.");
 				}
 			}
-			if ((parts & MeshParts.Tris) != 0)
+			if ((parts & MeshParts.Tris) != MeshParts.None)
 			{
 				if (tris.Count > 0)
 				{
@@ -77,23 +93,31 @@ namespace Verse
 				}
 				else
 				{
-					Log.Error("Cannot cook Tris for " + material.ToString() + ": no ingredients data.");
+					Log.Error($"Cannot cook Tris for {material}: no ingredients data.");
 				}
 			}
-			if ((parts & MeshParts.Colors) != 0 && colors.Count > 0)
+			if ((parts & MeshParts.Colors) != MeshParts.None && colors.Count > 0)
 			{
 				mesh.SetColors(colors);
 			}
-			if ((parts & MeshParts.UVs) != 0 && uvs.Count > 0)
+			if ((parts & MeshParts.UVs1) != MeshParts.None && uvs.Count > 0)
 			{
 				mesh.SetUVs(0, uvs);
+			}
+			if ((parts & MeshParts.UVs2) != MeshParts.None && uvsChannelTwo.Count > 0)
+			{
+				mesh.SetUVs(1, uvsChannelTwo);
+			}
+			if ((parts & MeshParts.Normals) != MeshParts.None && normals.Count > 0)
+			{
+				mesh.SetNormals(normals);
 			}
 			finalized = true;
 		}
 
 		public override string ToString()
 		{
-			return "LayerSubMesh(" + material.ToString() + ")";
+			return $"LayerSubMesh({material})";
 		}
 	}
 }

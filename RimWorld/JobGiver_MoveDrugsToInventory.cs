@@ -1,3 +1,4 @@
+using UnityEngine;
 using Verse;
 using Verse.AI;
 
@@ -7,10 +8,14 @@ namespace RimWorld
 	{
 		public override float GetPriority(Pawn pawn)
 		{
-			DrugPolicy currentPolicy = pawn.drugs.CurrentPolicy;
-			for (int i = 0; i < currentPolicy.Count; i++)
+			DrugPolicy drugPolicy = pawn.drugs?.CurrentPolicy;
+			if (drugPolicy == null)
 			{
-				if (pawn.drugs.AllowedToTakeToInventory(currentPolicy[i].drug))
+				return 0f;
+			}
+			for (int i = 0; i < drugPolicy.Count; i++)
+			{
+				if (pawn.drugs.AllowedToTakeToInventory(drugPolicy[i].drug))
 				{
 					return 7.5f;
 				}
@@ -20,16 +25,21 @@ namespace RimWorld
 
 		protected override Job TryGiveJob(Pawn pawn)
 		{
-			DrugPolicy currentPolicy = pawn.drugs.CurrentPolicy;
-			for (int i = 0; i < currentPolicy.Count; i++)
+			DrugPolicy drugPolicy = pawn.drugs?.CurrentPolicy;
+			if (drugPolicy == null)
 			{
-				if (pawn.drugs.AllowedToTakeToInventory(currentPolicy[i].drug))
+				return null;
+			}
+			for (int i = 0; i < drugPolicy.Count; i++)
+			{
+				if (pawn.drugs.AllowedToTakeToInventory(drugPolicy[i].drug))
 				{
-					Thing thing = FindDrugFor(pawn, currentPolicy[i].drug);
+					int num = drugPolicy[i].takeToInventory - pawn.inventory.innerContainer.TotalStackCountOfDef(drugPolicy[i].drug);
+					Thing thing = FindDrugFor(pawn, drugPolicy[i].drug, num);
 					if (thing != null)
 					{
 						Job job = JobMaker.MakeJob(JobDefOf.TakeInventory, thing);
-						job.count = currentPolicy[i].takeToInventory - pawn.inventory.innerContainer.TotalStackCountOfDef(thing.def);
+						job.count = Mathf.Min(num, thing.stackCount);
 						return job;
 					}
 				}
@@ -37,12 +47,12 @@ namespace RimWorld
 			return null;
 		}
 
-		private Thing FindDrugFor(Pawn pawn, ThingDef drugDef)
+		private Thing FindDrugFor(Pawn pawn, ThingDef drugDef, int desired)
 		{
-			return GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(drugDef), PathEndMode.ClosestTouch, TraverseParms.For(pawn), 9999f, (Thing x) => DrugValidator(pawn, x));
+			return GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(drugDef), PathEndMode.ClosestTouch, TraverseParms.For(pawn), 9999f, (Thing x) => DrugValidator(pawn, x, desired));
 		}
 
-		private bool DrugValidator(Pawn pawn, Thing drug)
+		private bool DrugValidator(Pawn pawn, Thing drug, int desired)
 		{
 			if (!drug.def.IsDrug)
 			{
@@ -54,7 +64,7 @@ namespace RimWorld
 				{
 					return false;
 				}
-				if (!pawn.CanReserve(drug, 10, 1))
+				if (!pawn.CanReserve(drug, 10, Mathf.Min(drug.stackCount, desired)))
 				{
 					return false;
 				}

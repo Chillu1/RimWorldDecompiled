@@ -9,7 +9,7 @@ namespace RimWorld
 		{
 			get
 			{
-				if (Find.ResearchManager.currentProj == null)
+				if (Find.ResearchManager.GetProject() == null)
 				{
 					return ThingRequest.ForGroup(ThingRequestGroup.Nothing);
 				}
@@ -21,7 +21,7 @@ namespace RimWorld
 
 		public override bool ShouldSkip(Pawn pawn, bool forced = false)
 		{
-			if (Find.ResearchManager.currentProj == null)
+			if (Find.ResearchManager.GetProject() == null)
 			{
 				return true;
 			}
@@ -30,21 +30,24 @@ namespace RimWorld
 
 		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			ResearchProjectDef currentProj = Find.ResearchManager.currentProj;
-			if (currentProj == null)
+			ResearchProjectDef project = Find.ResearchManager.GetProject();
+			if (project == null)
 			{
 				return false;
 			}
-			Building_ResearchBench building_ResearchBench = t as Building_ResearchBench;
-			if (building_ResearchBench == null)
+			if (!(t is Building_ResearchBench bench))
 			{
 				return false;
 			}
-			if (!currentProj.CanBeResearchedAt(building_ResearchBench, ignoreResearchBenchPowerStatus: false))
+			if (!project.CanBeResearchedAt(bench, ignoreResearchBenchPowerStatus: false))
 			{
 				return false;
 			}
-			if (!pawn.CanReserve(t, 1, -1, null, forced))
+			if (!pawn.CanReserve(t, 1, -1, null, forced) || (t.def.hasInteractionCell && !pawn.CanReserveSittableOrSpot(t.InteractionCell, forced)))
+			{
+				return false;
+			}
+			if (!new HistoryEvent(HistoryEventDefOf.Researching, pawn.Named(HistoryEventArgsNames.Doer)).Notify_PawnAboutToDo_Job())
 			{
 				return false;
 			}

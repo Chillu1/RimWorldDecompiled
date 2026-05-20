@@ -45,6 +45,10 @@ namespace RimWorld
 
 		public ThingDef forceMote;
 
+		public FleckDef forceFleck;
+
+		public bool canBeDoneByMechs = true;
+
 		public List<ThingDef> fixedBillGiverDefs;
 
 		public bool billGiversAllHumanlikes;
@@ -59,13 +63,11 @@ namespace RimWorld
 
 		public bool billGiversAllAnimalsCorpses;
 
-		public bool tendToHumanlikesOnly;
-
-		public bool tendToAnimalsOnly;
-
 		public bool feedHumanlikesOnly;
 
 		public bool feedAnimalsOnly;
+
+		public bool doesSmoothing;
 
 		public ThingDef scannerDef;
 

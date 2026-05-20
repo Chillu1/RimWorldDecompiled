@@ -22,7 +22,7 @@ namespace Verse
 					{
 						return false;
 					}
-					if (affordance != null && !c2.GetTerrain(map).affordances.Contains(affordance))
+					if (affordance != null && !c2.GetAffordances(map).Contains(affordance))
 					{
 						return false;
 					}

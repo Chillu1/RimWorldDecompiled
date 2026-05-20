@@ -7,11 +7,11 @@ namespace RimWorld
 {
 	public class Designator_Slaughter : Designator
 	{
-		private List<Pawn> justDesignated = new List<Pawn>();
-
-		public override int DraggableDimensions => 2;
+		private readonly List<Pawn> justDesignated = new List<Pawn>();
 
 		protected override DesignationDef Designation => DesignationDefOf.Slaughter;
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
 
 		public Designator_Slaughter()
 		{
@@ -21,7 +21,7 @@ namespace RimWorld
 			soundDragSustain = SoundDefOf.Designate_DragStandard;
 			soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
 			useMouseIcon = true;
-			soundSucceeded = SoundDefOf.Designate_Hunt;
+			soundSucceeded = SoundDefOf.Designate_Slaughter;
 			hotKey = KeyBindingDefOf.Misc7;
 		}
 
@@ -48,8 +48,7 @@ namespace RimWorld
 
 		public override AcceptanceReport CanDesignateThing(Thing t)
 		{
-			Pawn pawn = t as Pawn;
-			if (pawn != null && pawn.def.race.Animal && pawn.Faction == Faction.OfPlayer && base.Map.designationManager.DesignationOn(pawn, Designation) == null && !pawn.InAggroMentalState)
+			if (t is Pawn { IsAnimal: not false } pawn && pawn.Faction == Faction.OfPlayer && base.Map.designationManager.DesignationOn(pawn, Designation) == null && !pawn.InAggroMentalState)
 			{
 				return true;
 			}
@@ -60,6 +59,11 @@ namespace RimWorld
 		{
 			base.Map.designationManager.AddDesignation(new Designation(t, Designation));
 			justDesignated.Add((Pawn)t);
+			Designation designation = base.Map.designationManager.DesignationOn(t, DesignationDefOf.ReleaseAnimalToWild);
+			if (designation != null)
+			{
+				base.Map.designationManager.RemoveDesignation(designation);
+			}
 		}
 
 		protected override void FinalizeDesignationSucceeded()
@@ -67,7 +71,7 @@ namespace RimWorld
 			base.FinalizeDesignationSucceeded();
 			for (int i = 0; i < justDesignated.Count; i++)
 			{
-				SlaughterDesignatorUtility.CheckWarnAboutBondedAnimal(justDesignated[i]);
+				ShowDesignationWarnings(justDesignated[i]);
 			}
 			justDesignated.Clear();
 		}
@@ -86,6 +90,12 @@ namespace RimWorld
 					yield return (Pawn)thingList[i];
 				}
 			}
+		}
+
+		private void ShowDesignationWarnings(Pawn pawn)
+		{
+			SlaughterDesignatorUtility.CheckWarnAboutBondedAnimal(pawn);
+			SlaughterDesignatorUtility.CheckWarnAboutVeneratedAnimal(pawn);
 		}
 	}
 }

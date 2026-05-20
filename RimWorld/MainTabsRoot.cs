@@ -2,6 +2,7 @@ using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
+using Verse.Steam;
 
 namespace RimWorld
 {
@@ -12,7 +13,7 @@ namespace RimWorld
 		public void HandleLowPriorityShortcuts()
 		{
 			AutoCloseInspectionTabIfNothingSelected(playSound: true);
-			if (Find.Selector.NumSelected == 0 && Event.current.type == EventType.MouseDown && Event.current.button == 1 && !WorldRendererUtility.WorldRenderedNow)
+			if (Find.Selector.NumSelected == 0 && Event.current.type == EventType.MouseDown && Event.current.button == 1 && !WorldRendererUtility.WorldSelected && (!SteamDeck.IsSteamDeck || !Input.GetMouseButton(2)))
 			{
 				Event.current.Use();
 				MainButtonDefOf.Architect.Worker.InterfaceTryActivate();
@@ -77,7 +78,7 @@ namespace RimWorld
 			}
 			if (TutorSystem.TutorialMode && newTab != null)
 			{
-				TutorSystem.Notify_Event("Open-MainTab-" + newTab.defName);
+				TutorSystem.Notify_Event("MainTab-" + newTab.defName + "-Open");
 			}
 		}
 
@@ -88,7 +89,7 @@ namespace RimWorld
 
 		private void AutoCloseInspectionTabIfNothingSelected(bool playSound)
 		{
-			if (OpenTab == MainButtonDefOf.Inspect && (Find.Selector.NumSelected == 0 || WorldRendererUtility.WorldRenderedNow))
+			if (OpenTab == MainButtonDefOf.Inspect && (Find.Selector.NumSelected == 0 || WorldRendererUtility.WorldSelected))
 			{
 				EscapeCurrentTab(playSound);
 			}

@@ -24,7 +24,7 @@ namespace RimWorld
 
 		public override bool AlertCritical => base.TicksLeft < 60000;
 
-		public override string AlertLabel => "QuestPartShuttleLeaveDelay".Translate(base.TicksLeft.ToStringTicksToPeriod());
+		public override string AlertLabel => "QuestPartShuttleLeaveDelay".Translate(base.TicksLeft.ToStringTicksToPeriodVerbose());
 
 		public override string AlertExplanation
 		{
@@ -32,9 +32,9 @@ namespace RimWorld
 			{
 				if (quest.hidden)
 				{
-					return "QuestPartShuttleLeaveDelayDescHidden".Translate(base.TicksLeft.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor));
+					return "QuestPartShuttleLeaveDelayDescHidden".Translate(base.TicksLeft.ToStringTicksToPeriodVerbose().Colorize(ColoredText.DateTimeColor));
 				}
-				return "QuestPartShuttleLeaveDelayDesc".Translate(quest.name, base.TicksLeft.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor), shuttle.TryGetComp<CompShuttle>().RequiredThingsLabel);
+				return "QuestPartShuttleLeaveDelayDesc".Translate(quest.name, base.TicksLeft.ToStringTicksToPeriodVerbose().Colorize(ColoredText.DateTimeColor), shuttle.TryGetComp<CompShuttle>().RequiredThingsLabel);
 			}
 		}
 

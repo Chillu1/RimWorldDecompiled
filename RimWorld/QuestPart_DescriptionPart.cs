@@ -6,14 +6,14 @@ namespace RimWorld
 	{
 		public string descriptionPart;
 
-		private string resolvedDescriptionPart;
+		protected string resolvedDescriptionPart;
 
 		public override string DescriptionPart => resolvedDescriptionPart;
 
 		protected override void Enable(SignalArgs receivedArgs)
 		{
 			base.Enable(receivedArgs);
-			resolvedDescriptionPart = receivedArgs.GetFormattedText(descriptionPart);
+			resolvedDescriptionPart = receivedArgs.GetFormattedText(descriptionPart).Resolve();
 		}
 
 		public override void ExposeData()

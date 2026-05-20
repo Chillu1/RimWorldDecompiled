@@ -6,10 +6,10 @@ namespace Verse.AI
 	{
 		private const int NoPrisonerToFreeCheckInterval = 500;
 
-		public override void MentalStateTick()
+		public override void MentalStateTick(int delta)
 		{
-			base.MentalStateTick();
-			if (pawn.IsHashIntervalTick(500) && pawn.CurJobDef != JobDefOf.InducePrisonerToEscape && JailbreakerMentalStateUtility.FindPrisoner(pawn) == null)
+			base.MentalStateTick(delta);
+			if (pawn.IsHashIntervalTick(500, delta) && pawn.CurJobDef != JobDefOf.InducePrisonerToEscape && JailbreakerMentalStateUtility.FindPrisoner(pawn) == null)
 			{
 				RecoverFromState();
 			}
@@ -17,18 +17,7 @@ namespace Verse.AI
 
 		public void Notify_InducedPrisonerToEscape()
 		{
-			if (MentalStateDefOf.Wander_OwnRoom.Worker.StateCanOccur(pawn))
-			{
-				pawn.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Wander_OwnRoom, null, forceWake: false, causedByMood, null, transitionSilently: true);
-			}
-			else if (MentalStateDefOf.Wander_Sad.Worker.StateCanOccur(pawn))
-			{
-				pawn.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Wander_Sad, null, forceWake: false, causedByMood, null, transitionSilently: true);
-			}
-			else
-			{
-				RecoverFromState();
-			}
+			MentalStateUtility.TryTransitionToWanderOwnRoom(this);
 		}
 	}
 }

@@ -21,9 +21,15 @@ namespace Verse
 
 		protected bool destroyed;
 
+		private static readonly SimpleMovingAverage rawAverageDeltaTime = new SimpleMovingAverage(200);
+
+		private static readonly ExponentialMovingAverage smoothedAverageDeltaTime = new ExponentialMovingAverage(0.1f);
+
 		public SoundRoot soundRoot;
 
 		public UIRoot uiRoot;
+
+		public static float AverageFrameTime => smoothedAverageDeltaTime.GetAverage();
 
 		public virtual void Start()
 		{
@@ -31,6 +37,7 @@ namespace Verse
 			{
 				CultureInfoUtility.EnsureEnglish();
 				Current.Notify_LoadedSceneChanged();
+				GlobalTextureAtlasManager.FreeAllRuntimeAtlases();
 				CheckGlobalInit();
 				Action action = delegate
 				{
@@ -38,6 +45,7 @@ namespace Verse
 					try
 					{
 						soundRoot = new SoundRoot();
+						DeepProfiler.Start("Instantiate UIRoot");
 						if (GenScene.InPlayScene)
 						{
 							uiRoot = new UIRoot_Play();
@@ -46,6 +54,7 @@ namespace Verse
 						{
 							uiRoot = new UIRoot_Entry();
 						}
+						DeepProfiler.End();
 						uiRoot.Init();
 						Messages.Notify_LoadedLevelChanged();
 						if (Current.SubcameraDriver != null)
@@ -72,9 +81,9 @@ namespace Verse
 					action();
 				}
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Critical error in root Start(): " + arg);
+				Log.Error("Critical error in root Start(): " + ex);
 			}
 		}
 
@@ -88,7 +97,7 @@ namespace Verse
 					Log.Message("Command line arguments: " + GenText.ToSpaceList(commandLineArgs.Skip(1)));
 				}
 				PerformanceReporting.enabled = false;
-				Application.targetFrameRate = 60;
+				Application.targetFrameRate = Mathf.RoundToInt((float)Screen.currentResolution.refreshRateRatio.value);
 				UnityDataInitializer.CopyUnityData();
 				SteamManager.InitIfNeeded();
 				VersionControl.LogVersionNumber();
@@ -109,6 +118,8 @@ namespace Verse
 			{
 				ResolutionUtility.Update();
 				RealTime.Update();
+				rawAverageDeltaTime.AddValue(RealTime.deltaTime * 1000f);
+				smoothedAverageDeltaTime.AddValue(rawAverageDeltaTime.GetAverage());
 				LongEventHandler.LongEventsUpdate(out var sceneChanged);
 				if (sceneChanged)
 				{
@@ -133,9 +144,9 @@ namespace Verse
 					soundRoot.Update();
 				}
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Root level exception in Update(): " + arg);
+				Log.Error("Root level exception in Update(): " + ex);
 			}
 		}
 
@@ -166,9 +177,9 @@ namespace Verse
 					Find.WorldCameraDriver.WorldCameraDriverOnGUI();
 				}
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Root level exception in OnGUI(): " + arg);
+				Log.Error("Root level exception in OnGUI(): " + ex);
 			}
 		}
 
@@ -178,9 +189,9 @@ namespace Verse
 			{
 				SteamManager.ShutdownSteam();
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Error in ShutdownSteam(): " + arg);
+				Log.Error("Error in ShutdownSteam(): " + ex);
 			}
 			try
 			{
@@ -196,9 +207,9 @@ namespace Verse
 					directories[i].Delete(recursive: true);
 				}
 			}
-			catch (Exception arg2)
+			catch (Exception ex2)
 			{
-				Log.Error("Could not delete temporary files: " + arg2);
+				Log.Error("Could not delete temporary files: " + ex2);
 			}
 			Application.Quit();
 		}

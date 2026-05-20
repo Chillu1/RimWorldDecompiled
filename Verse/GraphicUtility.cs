@@ -5,19 +5,41 @@ namespace Verse
 {
 	public static class GraphicUtility
 	{
-		public static Graphic ExtractInnerGraphicFor(this Graphic outerGraphic, Thing thing)
+		public static Graphic ExtractInnerGraphicFor(this Graphic outerGraphic, Thing thing, int? indexOverride = null)
 		{
-			Graphic_Random graphic_Random = outerGraphic as Graphic_Random;
-			if (graphic_Random != null)
+			if (outerGraphic is Graphic_RandomRotated graphic_RandomRotated)
 			{
-				return graphic_Random.SubGraphicFor(thing);
+				return ResolveGraphicInner(graphic_RandomRotated.SubGraphic);
 			}
-			Graphic_Appearances graphic_Appearances = outerGraphic as Graphic_Appearances;
-			if (graphic_Appearances != null)
+			return ResolveGraphicInner(outerGraphic);
+			Graphic ResolveGraphicInner(Graphic g)
 			{
-				return graphic_Appearances.SubGraphicFor(thing);
+				if (g is Graphic_Random graphic_Random)
+				{
+					if (indexOverride.HasValue)
+					{
+						return graphic_Random.SubGraphicAtIndex(indexOverride.Value);
+					}
+					return graphic_Random.SubGraphicFor(thing);
+				}
+				if (g is Graphic_Cluster graphic_Cluster)
+				{
+					return graphic_Cluster.SubGraphicFor(thing);
+				}
+				if (g is Graphic_Appearances graphic_Appearances)
+				{
+					return graphic_Appearances.SubGraphicFor(thing);
+				}
+				if (g is Graphic_Genepack graphic_Genepack)
+				{
+					return graphic_Genepack.SubGraphicFor(thing);
+				}
+				if (g is Graphic_MealVariants graphic_MealVariants)
+				{
+					return graphic_MealVariants.SubGraphicFor(thing);
+				}
+				return g;
 			}
-			return outerGraphic;
 		}
 
 		public static Graphic_Linked WrapLinked(Graphic subGraphic, LinkDrawerType linkDrawerType)
@@ -27,8 +49,10 @@ namespace Verse
 				LinkDrawerType.None => null, 
 				LinkDrawerType.Basic => new Graphic_Linked(subGraphic), 
 				LinkDrawerType.CornerFiller => new Graphic_LinkedCornerFiller(subGraphic), 
+				LinkDrawerType.CornerOverlay => new Graphic_LinkedCornerOverlay(subGraphic), 
 				LinkDrawerType.Transmitter => new Graphic_LinkedTransmitter(subGraphic), 
 				LinkDrawerType.TransmitterOverlay => new Graphic_LinkedTransmitterOverlay(subGraphic), 
+				LinkDrawerType.Asymmetric => new Graphic_LinkedAsymmetric(subGraphic), 
 				_ => throw new ArgumentException(), 
 			};
 		}

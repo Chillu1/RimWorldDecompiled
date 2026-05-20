@@ -9,10 +9,10 @@ namespace RimWorld
 		{
 			if (IsViolationOnPawn(pawn, part, Faction.OfPlayer))
 			{
-				ReportViolation(pawn, billDoer, pawn.FactionOrExtraMiniOrHomeFaction, -100, "GoodwillChangedReason_EuthanizedPawn".Translate(pawn.Named("PAWN")));
+				ReportViolation(pawn, billDoer, pawn.HomeFaction, -100);
 			}
 			ExecutionUtility.DoExecutionByCut(billDoer, pawn);
-			ThoughtUtility.GiveThoughtsForPawnExecuted(pawn, PawnExecutionKind.GenericHumane);
+			ThoughtUtility.GiveThoughtsForPawnExecuted(pawn, billDoer, PawnExecutionKind.GenericHumane);
 		}
 	}
 }

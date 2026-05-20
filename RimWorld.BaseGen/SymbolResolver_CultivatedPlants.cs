@@ -32,13 +32,20 @@ namespace RimWorld.BaseGen
 			{
 				return;
 			}
-			float growth = Rand.Range(0.2f, 1f);
+			float growth = rp.fixedCulativedPlantGrowth ?? Rand.Range(0.2f, 1f);
 			int age = (thingDef.plant.LimitedLifespan ? Rand.Range(0, Mathf.Max(thingDef.plant.LifespanTicks - 2500, 0)) : 0);
-			foreach (IntVec3 item in rp.rect)
+			List<Thing> list = new List<Thing>();
+			foreach (IntVec3 c in rp.rect)
 			{
-				if (!(map.fertilityGrid.FertilityAt(item) < thingDef.plant.fertilityMin) && TryDestroyBlockingThingsAt(item))
+				if (!c.InBounds(map) || list.Any((Thing p) => p.def.plant.blockAdjacentSow && c.IsAdjacentToCardinalOrInside(p.OccupiedRect())))
 				{
-					Plant plant = (Plant)GenSpawn.Spawn(thingDef, item, map);
+					continue;
+				}
+				float num = map.fertilityGrid.FertilityAt(c);
+				if ((thingDef.plant.completelyIgnoreFertility || !(num < thingDef.plant.fertilityMin)) && TryDestroyBlockingThingsAt(c))
+				{
+					Plant plant = (Plant)GenSpawn.Spawn(thingDef, c, map);
+					list.Add(plant);
 					plant.Growth = growth;
 					if (plant.def.plant.LimitedLifespan)
 					{
@@ -51,10 +58,6 @@ namespace RimWorld.BaseGen
 		public static ThingDef DeterminePlantDef(CellRect rect)
 		{
 			Map map = BaseGen.globalSettings.map;
-			if (map.mapTemperature.OutdoorTemp < 0f || map.mapTemperature.OutdoorTemp > 58f)
-			{
-				return null;
-			}
 			float minFertility = float.MaxValue;
 			bool flag = false;
 			foreach (IntVec3 item in rect)
@@ -70,7 +73,7 @@ namespace RimWorld.BaseGen
 			{
 				return null;
 			}
-			if (DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef x) => x.category == ThingCategory.Plant && x.plant.Sowable && !x.plant.IsTree && !x.plant.cavePlant && x.plant.fertilityMin <= minFertility && x.plant.Harvestable).TryRandomElement(out var result))
+			if (DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef x) => x.category == ThingCategory.Plant && x.plant.Sowable && !x.plant.IsTree && !x.plant.cavePlant && !x.plant.diesToLight && (x.plant.completelyIgnoreFertility || x.plant.fertilityMin <= minFertility) && x.plant.minGrowthTemperature <= map.mapTemperature.OutdoorTemp && x.plant.maxGrowthTemperature >= map.mapTemperature.OutdoorTemp && x.plant.Harvestable).TryRandomElement(out var result))
 			{
 				return result;
 			}

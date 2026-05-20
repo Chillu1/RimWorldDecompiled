@@ -19,6 +19,16 @@ namespace RimWorld
 
 		public bool isBad;
 
+		public bool waitUntilPlayerHasHomeMap;
+
+		public string alertLabel;
+
+		public string alertExplanation;
+
+		public List<GlobalTargetInfo> alertCulprits = new List<GlobalTargetInfo>();
+
+		public int ticksLeftAlertCritical;
+
 		public int TicksLeft
 		{
 			get
@@ -44,6 +54,46 @@ namespace RimWorld
 		}
 
 		public override string ExpiryInfoPartTip => expiryInfoPartTip.Formatted(GenDate.DateFullStringWithHourAt(GenDate.TickGameToAbs(enableTick + delayTicks), QuestUtility.GetLocForDates()));
+
+		public override string AlertLabel
+		{
+			get
+			{
+				TaggedString? taggedString = alertLabel?.Formatted(TicksLeft.ToStringTicksToPeriodVerbose());
+				if (!taggedString.HasValue)
+				{
+					return null;
+				}
+				return taggedString.GetValueOrDefault();
+			}
+		}
+
+		public override string AlertExplanation
+		{
+			get
+			{
+				TaggedString? taggedString = alertExplanation?.Formatted(TicksLeft.ToStringTicksToPeriodVerbose());
+				if (!taggedString.HasValue)
+				{
+					return null;
+				}
+				return taggedString.GetValueOrDefault();
+			}
+		}
+
+		public override AlertReport AlertReport
+		{
+			get
+			{
+				if (alertCulprits.Count <= 0)
+				{
+					return AlertReport.Inactive;
+				}
+				return AlertReport.CulpritsAre(alertCulprits);
+			}
+		}
+
+		public override bool AlertCritical => TicksLeft < ticksLeftAlertCritical;
 
 		public override IEnumerable<GlobalTargetInfo> QuestLookTargets
 		{
@@ -75,7 +125,7 @@ namespace RimWorld
 		public override void QuestPartTick()
 		{
 			base.QuestPartTick();
-			if (Find.TickManager.TicksGame >= enableTick + delayTicks)
+			if ((!waitUntilPlayerHasHomeMap || Find.AnyPlayerHomeMap != null) && Find.TickManager.TicksGame >= enableTick + delayTicks)
 			{
 				DelayFinished();
 			}
@@ -90,7 +140,7 @@ namespace RimWorld
 		{
 			if (inspectStringTargets != null && inspectStringTargets.Contains(target))
 			{
-				return inspectString.Formatted(TicksLeft.ToStringTicksToPeriod());
+				return inspectString.Formatted(TicksLeft.ToStringTicksToPeriod()).Resolve();
 			}
 			return null;
 		}
@@ -104,6 +154,19 @@ namespace RimWorld
 			Scribe_Values.Look(ref inspectString, "inspectString");
 			Scribe_Collections.Look(ref inspectStringTargets, "inspectStringTargets", LookMode.Reference);
 			Scribe_Values.Look(ref isBad, "isBad", defaultValue: false);
+			Scribe_Values.Look(ref alertLabel, "alertLabel");
+			Scribe_Values.Look(ref alertExplanation, "alertExplanation");
+			Scribe_Values.Look(ref ticksLeftAlertCritical, "ticksLeftAlertCritical", 0);
+			Scribe_Values.Look(ref waitUntilPlayerHasHomeMap, "waitUntilPlayerHasHomeMap", defaultValue: false);
+			Scribe_Collections.Look(ref alertCulprits, "alertCulprits", LookMode.GlobalTargetInfo);
+			if (alertCulprits == null)
+			{
+				alertCulprits = new List<GlobalTargetInfo>();
+			}
+			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			{
+				alertCulprits.RemoveAll((GlobalTargetInfo x) => !x.IsValid);
+			}
 		}
 
 		public override void DoDebugWindowContents(Rect innerRect, ref float curY)

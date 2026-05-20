@@ -1,11 +1,17 @@
+using System;
 using System.Collections.Generic;
 using Verse;
 
 namespace RimWorld
 {
+	[Obsolete("Betray visitors is now a subquest of refugee quest.")]
 	public class ChoiceLetter_BetrayVisitors : ChoiceLetter
 	{
 		public List<Pawn> pawns = new List<Pawn>();
+
+		public Pawn asker;
+
+		public bool requiresAliveAsker;
 
 		public override bool CanDismissWithRightClick => false;
 
@@ -18,6 +24,10 @@ namespace RimWorld
 					return false;
 				}
 				if (quest == null || quest.State != QuestState.Ongoing)
+				{
+					return false;
+				}
+				if (requiresAliveAsker && (asker == null || asker.Dead))
 				{
 					return false;
 				}
@@ -36,7 +46,6 @@ namespace RimWorld
 		{
 			get
 			{
-				yield return base.Option_Close;
 				if (lookTargets.IsValid())
 				{
 					yield return base.Option_JumpToLocationAndPostpone;
@@ -45,6 +54,7 @@ namespace RimWorld
 				{
 					yield return Option_ViewInQuestsTab("ViewRelatedQuest", postpone: true);
 				}
+				yield return base.Option_Close;
 			}
 		}
 
@@ -52,6 +62,8 @@ namespace RimWorld
 		{
 			base.ExposeData();
 			Scribe_Collections.Look(ref pawns, "pawns", LookMode.Reference);
+			Scribe_References.Look(ref asker, "asker");
+			Scribe_Values.Look(ref requiresAliveAsker, "requiresAliveAsker", defaultValue: false);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				pawns.RemoveAll((Pawn x) => x == null);

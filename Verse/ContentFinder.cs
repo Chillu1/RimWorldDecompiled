@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -15,13 +16,16 @@ namespace Verse
 				return null;
 			}
 			T val = null;
-			List<ModContentPack> runningModsListForReading = LoadedModManager.RunningModsListForReading;
-			for (int num = runningModsListForReading.Count - 1; num >= 0; num--)
+			if (typeof(T) != typeof(Shader))
 			{
-				val = runningModsListForReading[num].GetContentHolder<T>().Get(itemPath);
-				if (val != null)
+				List<ModContentPack> runningModsListForReading = LoadedModManager.RunningModsListForReading;
+				for (int num = runningModsListForReading.Count - 1; num >= 0; num--)
 				{
-					return val;
+					val = runningModsListForReading[num].GetContentHolder<T>().Get(itemPath);
+					if (val != null)
+					{
+						return val;
+					}
 				}
 			}
 			if (typeof(T) == typeof(Texture2D))
@@ -36,43 +40,65 @@ namespace Verse
 			{
 				return val;
 			}
-			for (int num2 = runningModsListForReading.Count - 1; num2 >= 0; num2--)
+			if (typeof(T) == typeof(Texture2D) || typeof(T) == typeof(AudioClip) || typeof(T) == typeof(Shader))
 			{
-				for (int i = 0; i < runningModsListForReading[num2].assetBundles.loadedAssetBundles.Count; i++)
+				T val2 = TryFindAssetInModBundles(itemPath);
+				if (val2 != null)
 				{
-					AssetBundle assetBundle = runningModsListForReading[num2].assetBundles.loadedAssetBundles[i];
-					string path = Path.Combine("Assets", "Data");
-					path = Path.Combine(path, runningModsListForReading[num2].FolderName);
-					if (typeof(T) == typeof(Texture2D))
-					{
-						string str = Path.Combine(Path.Combine(path, GenFilePaths.ContentPath<Texture2D>()), itemPath);
-						for (int j = 0; j < ModAssetBundlesHandler.TextureExtensions.Length; j++)
-						{
-							val = (T)(object)assetBundle.LoadAsset<Texture2D>(str + ModAssetBundlesHandler.TextureExtensions[j]);
-							if (val != null)
-							{
-								return val;
-							}
-						}
-					}
-					if (!(typeof(T) == typeof(AudioClip)))
-					{
-						continue;
-					}
-					string str2 = Path.Combine(Path.Combine(path, GenFilePaths.ContentPath<AudioClip>()), itemPath);
-					for (int k = 0; k < ModAssetBundlesHandler.AudioClipExtensions.Length; k++)
-					{
-						val = (T)(object)assetBundle.LoadAsset<AudioClip>(str2 + ModAssetBundlesHandler.AudioClipExtensions[k]);
-						if (val != null)
-						{
-							return val;
-						}
-					}
+					return val2;
 				}
 			}
 			if (reportFailure)
 			{
-				Log.Error(string.Concat("Could not load ", typeof(T), " at ", itemPath, " in any active mod or in base resources."));
+				string text = ((ContentFinderRequester.requester != null) ? (" for def '" + ContentFinderRequester.requester.defName + "'") : "");
+				Log.Error("Could not load " + typeof(T).Name + " at '" + itemPath + "'" + text + " in any active mod or in base resources.");
+			}
+			return null;
+		}
+
+		public static T TryFindAssetInModBundles(string itemPath)
+		{
+			string[] array;
+			if (typeof(T) == typeof(Texture2D))
+			{
+				array = ModAssetBundlesHandler.TextureExtensions;
+			}
+			else if (typeof(T) == typeof(AudioClip))
+			{
+				array = ModAssetBundlesHandler.AudioClipExtensions;
+			}
+			else
+			{
+				if (!(typeof(T) == typeof(Shader)))
+				{
+					throw new NotSupportedException($"Unsupported type {typeof(T)} for asset bundle loading. Did you forget to add a new type?");
+				}
+				array = ModAssetBundlesHandler.ShaderExtensions;
+			}
+			List<ModContentPack> runningModsListForReading = LoadedModManager.RunningModsListForReading;
+			string path = Path.Combine("Assets", "Data");
+			for (int num = runningModsListForReading.Count - 1; num >= 0; num--)
+			{
+				string path2 = Path.Combine(path, runningModsListForReading[num].FolderName);
+				string path3 = Path.Combine(path, runningModsListForReading[num].PackageIdPlayerFacing);
+				bool flag = !runningModsListForReading[num].IsOfficialMod;
+				foreach (AssetBundle loadedAssetBundle in runningModsListForReading[num].assetBundles.loadedAssetBundles)
+				{
+					string text = Path.Combine(Path.Combine(path2, GenFilePaths.ContentPath<T>()), itemPath);
+					string text2 = Path.Combine(Path.Combine(path3, GenFilePaths.ContentPath<T>()), itemPath);
+					string[] array2 = array;
+					foreach (string text3 in array2)
+					{
+						if (loadedAssetBundle.LoadAsset(text + text3, typeof(T)) is T result)
+						{
+							return result;
+						}
+						if (flag && loadedAssetBundle.LoadAsset(text2 + text3, typeof(T)) is T result2)
+						{
+							return result2;
+						}
+					}
+				}
 			}
 			return null;
 		}
@@ -84,11 +110,11 @@ namespace Verse
 				Log.Error("Tried to get all resources in a folder \"" + folderPath + "\" from a different thread. All resources must be loaded in the main thread.");
 				yield break;
 			}
-			foreach (ModContentPack runningMod in LoadedModManager.RunningMods)
+			foreach (ModContentPack item in LoadedModManager.RunningModsListForReading)
 			{
-				foreach (T item in runningMod.GetContentHolder<T>().GetAllUnderPath(folderPath))
+				foreach (T item2 in item.GetContentHolder<T>().GetAllUnderPath(folderPath))
 				{
-					yield return item;
+					yield return item2;
 				}
 			}
 			T[] array = null;
@@ -103,46 +129,68 @@ namespace Verse
 			if (array != null)
 			{
 				T[] array2 = array;
-				for (int j = 0; j < array2.Length; j++)
+				for (int i = 0; i < array2.Length; i++)
 				{
-					yield return array2[j];
+					yield return array2[i];
 				}
 			}
 			List<ModContentPack> mods = LoadedModManager.RunningModsListForReading;
-			for (int j = mods.Count - 1; j >= 0; j--)
+			string modsDir = Path.Combine("Assets", "Data");
+			if (!(typeof(T) == typeof(Texture2D)) && !(typeof(T) == typeof(AudioClip)))
 			{
-				for (int i = 0; i < mods[j].assetBundles.loadedAssetBundles.Count; i++)
+				yield break;
+			}
+			for (int i = mods.Count - 1; i >= 0; i--)
+			{
+				string dirForBundleWithFolderName = Path.Combine(modsDir, mods[i].FolderName);
+				string dirForBundleWithPackageId = Path.Combine(modsDir, mods[i].PackageIdPlayerFacing);
+				bool canLoadViaPackageId = !mods[i].IsOfficialMod;
+				string[] validExtensions;
+				if (typeof(T) == typeof(Texture2D))
 				{
-					AssetBundle assetBundle = mods[j].assetBundles.loadedAssetBundles[i];
-					string dirForBundle2 = Path.Combine("Assets", "Data");
-					dirForBundle2 = Path.Combine(dirForBundle2, mods[j].FolderName);
-					if (typeof(T) == typeof(Texture2D))
+					validExtensions = ModAssetBundlesHandler.TextureExtensions;
+				}
+				else
+				{
+					if (!(typeof(T) == typeof(AudioClip)))
 					{
-						string fullPath = Path.Combine(Path.Combine(dirForBundle2, GenFilePaths.ContentPath<Texture2D>()).Replace('\\', '/'), folderPath).ToLower();
-						IEnumerable<string> enumerable = from p in mods[j].AllAssetNamesInBundle(i)
-							where p.StartsWith(fullPath)
-							select p;
-						foreach (string item2 in enumerable)
+						throw new NotSupportedException($"Unsupported type {typeof(T)} for asset bundle loading. Did you forget to add a new type?");
+					}
+					validExtensions = ModAssetBundlesHandler.AudioClipExtensions;
+				}
+				for (int j = 0; j < mods[i].assetBundles.loadedAssetBundles.Count; j++)
+				{
+					AssetBundle assetBundle = mods[i].assetBundles.loadedAssetBundles[j];
+					string text = Path.Combine(Path.Combine(dirForBundleWithFolderName, GenFilePaths.ContentPath<T>()).Replace('\\', '/'), folderPath).ToLower();
+					string pathWithoutExtWithPackageId = Path.Combine(Path.Combine(dirForBundleWithPackageId, GenFilePaths.ContentPath<T>()).Replace('\\', '/'), folderPath).ToLower();
+					string text2 = text;
+					if (text2[text2.Length - 1] != '/')
+					{
+						text += "/";
+					}
+					string text3 = pathWithoutExtWithPackageId;
+					if (text3[text3.Length - 1] != '/')
+					{
+						pathWithoutExtWithPackageId += "/";
+					}
+					IEnumerable<string> byPrefix = mods[i].AllAssetNamesInBundleTrie(j).GetByPrefix(text);
+					foreach (string item3 in byPrefix)
+					{
+						if (validExtensions.Contains(Path.GetExtension(item3)))
 						{
-							if (ModAssetBundlesHandler.TextureExtensions.Contains(Path.GetExtension(item2)))
-							{
-								yield return (T)(object)assetBundle.LoadAsset<Texture2D>(item2);
-							}
+							yield return (T)(object)assetBundle.LoadAsset(item3, typeof(T));
 						}
 					}
-					if (!(typeof(T) == typeof(AudioClip)))
+					if (!canLoadViaPackageId)
 					{
 						continue;
 					}
-					string fullPath2 = Path.Combine(Path.Combine(dirForBundle2, GenFilePaths.ContentPath<AudioClip>()).Replace('\\', '/'), folderPath).ToLower();
-					IEnumerable<string> enumerable2 = from p in mods[j].AllAssetNamesInBundle(i)
-						where p.StartsWith(fullPath2)
-						select p;
-					foreach (string item3 in enumerable2)
+					IEnumerable<string> byPrefix2 = mods[i].AllAssetNamesInBundleTrie(j).GetByPrefix(pathWithoutExtWithPackageId);
+					foreach (string item4 in byPrefix2)
 					{
-						if (ModAssetBundlesHandler.AudioClipExtensions.Contains(Path.GetExtension(item3)))
+						if (validExtensions.Contains(Path.GetExtension(item4)))
 						{
-							yield return (T)(object)assetBundle.LoadAsset<AudioClip>(item3);
+							yield return (T)(object)assetBundle.LoadAsset(item4, typeof(T));
 						}
 					}
 				}

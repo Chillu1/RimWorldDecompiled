@@ -19,22 +19,24 @@ namespace RimWorld.QuestGen
 			slate.Set("rewardDelayTicks", num);
 			quest.Delay(num, delegate
 			{
-				ThingSetMakerParams parms = default(ThingSetMakerParams);
-				parms.totalMarketValueRange = marketValueRange;
-				parms.qualityGenerator = QualityGenerator.Reward;
-				parms.makingFaction = faction;
+				ThingSetMakerParams parms = new ThingSetMakerParams
+				{
+					totalMarketValueRange = marketValueRange,
+					qualityGenerator = QualityGenerator.Reward,
+					makingFaction = faction
+				};
 				List<Thing> list = ThingSetMakerDefOf.Reward_ItemsStandard.root.Generate(parms);
 				slate.Set("listOfRewards", GenLabel.ThingsLabel(list));
-				quest.DropPods(map.Parent, list, null, null, "[rewardLetterText]", null, true);
+				quest.DropPods(map.Parent, list, null, null, "[rewardLetterText]", null, true, useTradeDropSpot: true, joinPlayer: false, makePrisoners: false, null, null, QuestPart.SignalListenMode.OngoingOnly, null, destroyItemsOnCleanup: true, dropAllInSamePod: false, allowFogged: false, canRetargetAnyMap: true);
 				QuestGen_End.End(quest, QuestEndOutcome.Unknown);
-			}, null, null, null, reactivatable: false, null, null, isQuestTimeout: false, null, null, "RewardDelay");
+			}, null, null, null, reactivatable: false, null, null, isQuestTimeout: false, null, null, "RewardDelay", tickHistorically: false, QuestPart.SignalListenMode.OngoingOnly, waitUntilPlayerHasHomeMap: true);
 		}
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			if (slate.Get<Pawn>("rewardGiver") != null && slate.TryGet<FloatRange>("marketValueRange", out var _))
+			if (slate.Get<Pawn>("rewardGiver") != null && slate.TryGet<FloatRange>("marketValueRange", out var _) && slate.Get<Faction>("faction") != null)
 			{
-				return slate.Get<Faction>("faction") != null;
+				return QuestGen_Get.GetMap() != null;
 			}
 			return false;
 		}

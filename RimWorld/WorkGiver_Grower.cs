@@ -19,10 +19,9 @@ namespace RimWorld
 		{
 			Danger maxDanger = pawn.NormalMaxDanger();
 			List<Building> bList = pawn.Map.listerBuildings.allBuildingsColonist;
-			for (int j = 0; j < bList.Count; j++)
+			for (int i = 0; i < bList.Count; i++)
 			{
-				Building_PlantGrower building_PlantGrower = bList[j] as Building_PlantGrower;
-				if (building_PlantGrower == null || !ExtraRequirements(building_PlantGrower, pawn) || building_PlantGrower.IsForbidden(pawn) || !pawn.CanReach(building_PlantGrower, PathEndMode.OnCell, maxDanger) || building_PlantGrower.IsBurning())
+				if (!(bList[i] is Building_PlantGrower building_PlantGrower) || !ExtraRequirements(building_PlantGrower, pawn) || building_PlantGrower.IsForbidden(pawn) || !pawn.CanReach(building_PlantGrower, PathEndMode.OnCell, maxDanger) || building_PlantGrower.IsBurning())
 				{
 					continue;
 				}
@@ -34,10 +33,9 @@ namespace RimWorld
 			}
 			wantedPlantDef = null;
 			List<Zone> zonesList = pawn.Map.zoneManager.AllZones;
-			for (int j = 0; j < zonesList.Count; j++)
+			for (int i = 0; i < zonesList.Count; i++)
 			{
-				Zone_Growing growZone = zonesList[j] as Zone_Growing;
-				if (growZone == null)
+				if (!(zonesList[i] is Zone_Growing growZone))
 				{
 					continue;
 				}
@@ -47,9 +45,9 @@ namespace RimWorld
 				}
 				else if (ExtraRequirements(growZone, pawn) && !growZone.ContainsStaticFire && pawn.CanReach(growZone.Cells[0], PathEndMode.OnCell, maxDanger))
 				{
-					for (int k = 0; k < growZone.cells.Count; k++)
+					for (int j = 0; j < growZone.cells.Count; j++)
 					{
-						yield return growZone.cells[k];
+						yield return growZone.cells[j];
 					}
 					wantedPlantDef = null;
 				}

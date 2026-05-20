@@ -32,7 +32,7 @@ namespace RimWorld
 		{
 			if (!Data.sapperDest.IsValid && lord.ownedPawns.Any())
 			{
-				Data.sapperDest = GenAI.RandomRaidDest(lord.ownedPawns[0].Position, base.Map);
+				Data.sapperDest = GenAI.RandomRaidDest(lord.ownedPawns[0].PositionHeld, base.Map);
 			}
 			List<Pawn> list = null;
 			if (Data.sapperDest.IsValid)

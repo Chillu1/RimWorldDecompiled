@@ -16,9 +16,9 @@ namespace RimWorld
 				obj.date = Find.TickManager.TicksAbs;
 				return obj;
 			}
-			catch (Exception arg2)
+			catch (Exception arg)
 			{
-				Log.Error($"Failed to create tale object {def} with parameters {args.Select((object arg) => arg.ToStringSafe()).ToCommaList()}: {arg2}");
+				Log.Error($"Failed to create tale object {def} with parameters {args.Select((object obj2) => obj2.ToStringSafe()).ToCommaList()}: {arg}");
 				return null;
 			}
 		}

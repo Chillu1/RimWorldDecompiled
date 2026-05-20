@@ -29,7 +29,7 @@ namespace RimWorld
 
 		public static ConceptDef AnimalTraining;
 
-		public static ConceptDef InspectRoomStats;
+		public static ConceptDef TileInspector;
 
 		public static ConceptDef TimeAssignments;
 
@@ -53,8 +53,6 @@ namespace RimWorld
 
 		public static ConceptDef AllowedAreas;
 
-		public static ConceptDef ShotAccuracyTooltip;
-
 		public static ConceptDef ManualWorkPriorities;
 
 		public static ConceptDef SpoilageAndFreezers;
@@ -68,6 +66,8 @@ namespace RimWorld
 		public static ConceptDef Rescuing;
 
 		public static ConceptDef Drafting;
+
+		public static ConceptDef GroupGotoHereDragging;
 
 		public static ConceptDef HomeArea;
 
@@ -97,11 +97,69 @@ namespace RimWorld
 
 		public static ConceptDef QueueOrders;
 
+		public static ConceptDef Shelves;
+
+		public static ConceptDef Books;
+
 		[MayRequireRoyalty]
 		public static ConceptDef MeditationSchedule;
 
 		[MayRequireRoyalty]
 		public static ConceptDef MeditationDesiredPsyfocus;
+
+		[MayRequireIdeology]
+		public static ConceptDef EditingMemes;
+
+		[MayRequireIdeology]
+		public static ConceptDef EditingPrecepts;
+
+		[MayRequireBiotech]
+		public static ConceptDef PollutedTerrain;
+
+		[MayRequireBiotech]
+		public static ConceptDef Babies;
+
+		[MayRequireBiotech]
+		public static ConceptDef Children;
+
+		[MayRequireBiotech]
+		public static ConceptDef Deathrest;
+
+		[MayRequireBiotech]
+		public static ConceptDef GenesAndXenotypes;
+
+		[MayRequireBiotech]
+		public static ConceptDef Mechanitors;
+
+		[MayRequireBiotech]
+		public static ConceptDef MechsInCaravans;
+
+		[MayRequireAnomaly]
+		public static ConceptDef CapturingEntities;
+
+		[MayRequireAnomaly]
+		public static ConceptDef ContainingEntities;
+
+		[MayRequireAnomaly]
+		public static ConceptDef StudyingEntities;
+
+		[MayRequireAnomaly]
+		public static ConceptDef EntityCodex;
+
+		[MayRequireAnomaly]
+		public static ConceptDef SuppressingEntities;
+
+		[MayRequireAnomaly]
+		public static ConceptDef AnomalyResearch;
+
+		[MayRequireAnomaly]
+		public static ConceptDef ColonyGhouls;
+
+		[MayRequireOdyssey]
+		public static ConceptDef Gravship;
+
+		[MayRequireOdyssey]
+		public static ConceptDef Orbit;
 
 		public static ConceptDef ArrestingCreatesEnemies;
 
@@ -112,6 +170,10 @@ namespace RimWorld
 		public static ConceptDef MaxNumberOfPlayerSettlements;
 
 		public static ConceptDef TradingRequiresPermit;
+
+		public static ConceptDef SteamDeckControlsMainMenu;
+
+		public static ConceptDef SteamDeckControlsGame;
 
 		static ConceptDefOf()
 		{

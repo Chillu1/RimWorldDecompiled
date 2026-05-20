@@ -1,4 +1,5 @@
 using System;
+using LudeonTK;
 using UnityEngine;
 
 namespace Verse
@@ -13,6 +14,8 @@ namespace Verse
 		public bool selected;
 
 		public Func<bool> selectedGetter;
+
+		public Color? labelColor;
 
 		private const float TabEndWidth = 30f;
 
@@ -32,6 +35,8 @@ namespace Verse
 			}
 		}
 
+		public virtual string TutorTag => null;
+
 		public TabRecord(string label, Action clickedAction, bool selected)
 		{
 			this.label = label;
@@ -46,11 +51,15 @@ namespace Verse
 			selectedGetter = selected;
 		}
 
+		public virtual string GetTip()
+		{
+			return null;
+		}
+
 		public void Draw(Rect rect)
 		{
 			Rect drawRect = new Rect(rect);
 			drawRect.width = 30f;
-			drawRect.xMax = Widgets.AdjustCoordToUIScalingCeil(drawRect.xMax);
 			Rect drawRect2 = new Rect(rect);
 			drawRect2.width = 30f;
 			drawRect2.x = rect.x + rect.width - 30f;
@@ -58,12 +67,13 @@ namespace Verse
 			Rect drawRect3 = new Rect(rect);
 			drawRect3.x += drawRect.width;
 			drawRect3.width -= 60f;
-			drawRect3.xMin = Widgets.AdjustCoordToUIScalingFloor(drawRect3.xMin);
-			drawRect3.xMax = Widgets.AdjustCoordToUIScalingCeil(drawRect3.xMax);
+			drawRect3.xMin = UIScaling.AdjustCoordToUIScalingFloor(drawRect3.xMin);
+			drawRect3.xMax = UIScaling.AdjustCoordToUIScalingCeil(drawRect3.xMax);
 			Rect uvRect2 = new Rect(30f, 0f, 4f, TabAtlas.height).ToUVRect(new Vector2(TabAtlas.width, TabAtlas.height));
 			Widgets.DrawTexturePart(drawRect, new Rect(0f, 0f, 15f / 32f, 1f), TabAtlas);
 			Widgets.DrawTexturePart(drawRect3, uvRect2, TabAtlas);
 			Widgets.DrawTexturePart(drawRect2, uvRect, TabAtlas);
+			GUI.color = labelColor ?? Color.white;
 			Rect rect2 = rect;
 			rect2.width -= 10f;
 			if (Mouse.IsOver(rect2))
@@ -72,8 +82,12 @@ namespace Verse
 				rect2.x += 2f;
 				rect2.y -= 2f;
 			}
+			if (!TutorTag.NullOrEmpty())
+			{
+				UIHighlighter.HighlightOpportunity(rect2, TutorTag);
+			}
 			Text.WordWrap = false;
-			Widgets.Label(rect2, label);
+			Widgets.Label(rect, label);
 			Text.WordWrap = true;
 			GUI.color = Color.white;
 			if (!Selected)

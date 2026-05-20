@@ -38,10 +38,16 @@ namespace RimWorld
 
 		public bool DesignatorAllowed(Designator d)
 		{
-			Designator_Place designator_Place = d as Designator_Place;
-			if (designator_Place != null)
+			if (d is Designator_Place designator_Place)
 			{
 				return !disallowedBuildings.Contains(designator_Place.PlacingDef);
+			}
+			foreach (Type disallowedDesignatorType in disallowedDesignatorTypes)
+			{
+				if (disallowedDesignatorType.IsAssignableFrom(d.GetType()))
+				{
+					return false;
+				}
 			}
 			return !disallowedDesignatorTypes.Contains(d.GetType());
 		}

@@ -20,19 +20,31 @@ namespace RimWorld
 
 		private const float ThreshBeautiful = 0.99f;
 
+		private int lastInstantBeautyCheckTick = -9999;
+
+		private float lastInstantBeauty = -1f;
+
 		public override float CurInstantLevel
 		{
 			get
 			{
-				if (!pawn.health.capacities.CapableOf(PawnCapacityDefOf.Sight))
+				if (lastInstantBeautyCheckTick != Find.TickManager.TicksGame)
 				{
-					return 0.5f;
+					if (!pawn.Spawned)
+					{
+						lastInstantBeauty = 0.5f;
+					}
+					else if (PawnUtility.IsBiologicallyOrArtificiallyBlind(pawn))
+					{
+						lastInstantBeauty = 0.5f;
+					}
+					else
+					{
+						lastInstantBeauty = LevelFromBeauty(CurrentInstantBeauty());
+					}
+					lastInstantBeautyCheckTick = Find.TickManager.TicksGame;
 				}
-				if (!pawn.Spawned)
-				{
-					return 0.5f;
-				}
-				return LevelFromBeauty(CurrentInstantBeauty());
+				return lastInstantBeauty;
 			}
 		}
 

@@ -1,4 +1,3 @@
-using System;
 using Verse;
 using Verse.AI;
 
@@ -19,17 +18,12 @@ namespace RimWorld
 
 		protected override Job TryGiveJob(Pawn pawn)
 		{
-			Predicate<Thing> validator = delegate(Thing t)
-			{
-				Pawn pawn3 = (Pawn)t;
-				return (pawn3.Downed && pawn3.Faction == pawn.Faction && !pawn3.InBed() && pawn.CanReserve(pawn3) && !pawn3.IsForbidden(pawn) && !GenAI.EnemyIsNear(pawn3, 25f)) ? true : false;
-			};
-			Pawn pawn2 = (Pawn)GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.Pawn), PathEndMode.OnCell, TraverseParms.For(pawn), radius, validator);
+			Pawn pawn2 = (Pawn)GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.Pawn), PathEndMode.OnCell, TraverseParms.For(pawn), radius, Validator);
 			if (pawn2 == null)
 			{
 				return null;
 			}
-			Building_Bed building_Bed = RestUtility.FindBedFor(pawn2, pawn, pawn2.HostFaction == pawn.Faction, checkSocialProperness: false);
+			Building_Bed building_Bed = RestUtility.FindBedFor(pawn2, pawn, checkSocialProperness: false, ignoreOtherReservations: false, pawn2.GuestStatus);
 			if (building_Bed == null || !pawn2.CanReserve(building_Bed))
 			{
 				return null;
@@ -37,6 +31,15 @@ namespace RimWorld
 			Job job = JobMaker.MakeJob(JobDefOf.Rescue, pawn2, building_Bed);
 			job.count = 1;
 			return job;
+			bool Validator(Thing t)
+			{
+				Pawn patient = (Pawn)t;
+				if (!HealthAIUtility.CanRescueNow(pawn, patient))
+				{
+					return false;
+				}
+				return true;
+			}
 		}
 	}
 }

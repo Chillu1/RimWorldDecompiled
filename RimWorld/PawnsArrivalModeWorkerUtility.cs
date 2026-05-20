@@ -13,7 +13,7 @@ namespace RimWorld
 		{
 			Map map = (Map)parms.target;
 			bool flag = parms.faction != null && parms.faction.HostileTo(Faction.OfPlayer);
-			DropPodUtility.DropThingsNear(parms.spawnCenter, map, pawns.Cast<Thing>(), parms.podOpenDelay, canInstaDropDuringInit: false, leaveSlag: true, flag || parms.raidArrivalModeForQuickMilitaryAid);
+			DropPodUtility.DropThingsNear(parms.spawnCenter, map, pawns.Cast<Thing>(), parms.podOpenDelay, canInstaDropDuringInit: false, leaveSlag: true, flag || parms.raidArrivalModeForQuickMilitaryAid, forbid: true, allowFogged: true, parms.faction);
 		}
 
 		public static List<Pair<List<Pawn>, IntVec3>> SplitIntoRandomGroupsNearMapEdge(List<Pawn> pawns, Map map, bool arriveInPods)
@@ -39,7 +39,7 @@ namespace RimWorld
 			return list;
 		}
 
-		private static IntVec3 FindNewMapEdgeGroupCenter(Map map, List<Pair<List<Pawn>, IntVec3>> groups, bool arriveInPods)
+		public static IntVec3 FindNewMapEdgeGroupCenter(Map map, List<Pair<List<Pawn>, IntVec3>> groups, bool arriveInPods)
 		{
 			IntVec3 result = IntVec3.Invalid;
 			float num = 0f;
@@ -48,11 +48,11 @@ namespace RimWorld
 				IntVec3 result2;
 				if (arriveInPods)
 				{
-					result2 = DropCellFinder.FindRaidDropCenterDistant_NewTemp(map);
+					result2 = DropCellFinder.FindRaidDropCenterDistant(map);
 				}
 				else if (!RCellFinder.TryFindRandomPawnEntryCell(out result2, map, CellFinder.EdgeRoadChance_Hostile))
 				{
-					result2 = DropCellFinder.FindRaidDropCenterDistant_NewTemp(map);
+					result2 = DropCellFinder.FindRaidDropCenterDistant(map);
 				}
 				if (!groups.Any())
 				{

@@ -14,6 +14,8 @@ namespace RimWorld
 
 		public string inSignalRemovePawn;
 
+		public override QuestScriptDef QuestDef => QuestScriptDefOf.RefugeeDelayedReward;
+
 		public override Slate GetSlate()
 		{
 			Slate slate = new Slate();

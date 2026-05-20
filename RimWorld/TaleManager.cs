@@ -198,11 +198,11 @@ namespace RimWorld
 				{
 					if (!silentlyRemoveReferences)
 					{
-						Log.Warning(string.Concat("Discarding pawn ", p, ", but he is referenced by a tale ", tales[num], "."));
+						Log.Warning("Discarding pawn " + p?.ToString() + ", but he is referenced by a tale " + tales[num]?.ToString() + ".");
 					}
 					else if (!tales[num].Unused)
 					{
-						Log.Warning(string.Concat("Discarding pawn ", p, ", but he is referenced by an active tale ", tales[num], "."));
+						Log.Warning("Discarding pawn " + p?.ToString() + ", but he is referenced by an active tale " + tales[num]?.ToString() + ".");
 					}
 					RemoveTale(tales[num]);
 				}
@@ -299,13 +299,13 @@ namespace RimWorld
 		{
 			StringBuilder stringBuilder = new StringBuilder();
 			float num = tales.Where((Tale t) => t.def.usableForArt).Sum((Tale t) => t.InterestLevel);
-			Func<TaleDef, float> defInterest = (TaleDef def) => tales.Where((Tale t) => t.def == def).Sum((Tale t) => t.InterestLevel);
-			foreach (TaleDef def2 in from def in DefDatabase<TaleDef>.AllDefs
-				where def.usableForArt
-				orderby defInterest(def) descending
-				select def)
+			Func<TaleDef, float> defInterest = (TaleDef taleDef) => tales.Where((Tale t) => t.def == taleDef).Sum((Tale t) => t.InterestLevel);
+			foreach (TaleDef def in from arg in DefDatabase<TaleDef>.AllDefs
+				where arg.usableForArt
+				orderby defInterest(arg) descending
+				select arg)
 			{
-				stringBuilder.AppendLine(def2.defName + ":   [" + tales.Where((Tale t) => t.def == def2).Count() + "]   " + (defInterest(def2) / num).ToStringPercent("F2"));
+				stringBuilder.AppendLine(def.defName + ":   [" + tales.Where((Tale t) => t.def == def).Count() + "]   " + (defInterest(def) / num).ToStringPercent("F2"));
 			}
 			Log.Message(stringBuilder.ToString());
 		}

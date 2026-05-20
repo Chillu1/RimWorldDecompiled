@@ -6,13 +6,19 @@ namespace RimWorld.Planet
 {
 	public class TimedDetectionRaids : WorldObjectComp
 	{
-		public const float RaidThreatPointsMultiplier = 2.5f;
+		public bool alertRaidsArrivingIn;
+
+		public const float RaidThreatPointsMultiplier = 1.5f;
+
+		private static readonly FloatRange DefaultDelayRangeHours = new FloatRange(18f, 24f);
 
 		private int ticksLeftToSendRaid = -1;
 
 		private int ticksLeftTillNotifyPlayer = -1;
 
-		private static List<Pawn> tmpPawns = new List<Pawn>();
+		private int raidsSentCount;
+
+		public FloatRange delayRangeHours = DefaultDelayRangeHours;
 
 		public bool NextRaidCountdownActiveAndVisible
 		{
@@ -38,7 +44,23 @@ namespace RimWorld.Planet
 			}
 		}
 
-		private Faction RaidFaction => parent.Faction ?? Faction.OfMechanoids;
+		private Faction RaidFaction
+		{
+			get
+			{
+				if (parent.Faction != null && !parent.Faction.IsPlayer && !parent.Faction.def.raidsForbidden)
+				{
+					return parent.Faction;
+				}
+				return Faction.OfMechanoids;
+			}
+		}
+
+		public int TicksLeftToSendRaids => ticksLeftToSendRaid;
+
+		public int RaidsSentCount => raidsSentCount;
+
+		public bool DetectionCountdownStarted => ticksLeftToSendRaid >= 0;
 
 		public void StartDetectionCountdown(int ticks, int notifyTicks = -1)
 		{
@@ -61,6 +83,9 @@ namespace RimWorld.Planet
 			base.PostExposeData();
 			Scribe_Values.Look(ref ticksLeftToSendRaid, "ticksLeftToForceExitAndRemoveMap", -1);
 			Scribe_Values.Look(ref ticksLeftTillNotifyPlayer, "ticksLeftTillNotifyPlayer", -1);
+			Scribe_Values.Look(ref alertRaidsArrivingIn, "alertRaidsArrivingIn", defaultValue: false);
+			Scribe_Values.Look(ref raidsSentCount, "raidsSentCount", 0);
+			Scribe_Values.Look(ref delayRangeHours, "delayRangeHours", DefaultDelayRangeHours);
 		}
 
 		public override string CompInspectStringExtra()
@@ -88,27 +113,35 @@ namespace RimWorld.Planet
 			return text;
 		}
 
-		public override void CompTick()
+		public override void CompTickInterval(int delta)
 		{
 			MapParent mapParent = (MapParent)parent;
 			if (mapParent.HasMap)
 			{
-				if (ticksLeftTillNotifyPlayer > 0 && --ticksLeftTillNotifyPlayer == 0)
+				if (ticksLeftTillNotifyPlayer > 0)
 				{
-					NotifyPlayer();
-				}
-				if (ticksLeftToSendRaid > 0)
-				{
-					ticksLeftToSendRaid--;
-					if (ticksLeftToSendRaid == 0)
+					ticksLeftTillNotifyPlayer -= delta;
+					if (ticksLeftTillNotifyPlayer <= 0)
 					{
-						IncidentParms incidentParms = new IncidentParms();
-						incidentParms.target = mapParent.Map;
-						incidentParms.points = StorytellerUtility.DefaultThreatPointsNow(incidentParms.target) * 2.5f;
-						incidentParms.faction = RaidFaction;
-						IncidentDefOf.RaidEnemy.Worker.TryExecute(incidentParms);
-						ticksLeftToSendRaid = (int)(Rand.Range(18f, 24f) * 2500f);
+						NotifyPlayer();
+					}
+				}
+				if (ticksLeftToSendRaid <= 0)
+				{
+					return;
+				}
+				ticksLeftToSendRaid -= delta;
+				if (ticksLeftToSendRaid <= 0)
+				{
+					IncidentParms incidentParms = new IncidentParms();
+					incidentParms.target = mapParent.Map;
+					incidentParms.points = StorytellerUtility.DefaultThreatPointsNow(incidentParms.target) * 1.5f;
+					incidentParms.faction = RaidFaction;
+					ticksLeftToSendRaid = (int)(delayRangeHours.RandomInRange * 2500f);
+					if (IncidentDefOf.RaidEnemy.Worker.TryExecute(incidentParms))
+					{
 						Messages.Message("MessageCaravanDetectedRaidArrived".Translate(incidentParms.faction.def.pawnsPlural, incidentParms.faction, ticksLeftToSendRaid.ToStringTicksToDays()), MessageTypeDefOf.ThreatBig);
+						raidsSentCount++;
 					}
 				}
 			}
@@ -121,6 +154,7 @@ namespace RimWorld.Planet
 		private void NotifyPlayer()
 		{
 			Find.LetterStack.ReceiveLetter("LetterLabelSiteCountdownStarted".Translate(), "LetterTextSiteCountdownStarted".Translate(ticksLeftToSendRaid.ToStringTicksToDays(), RaidFaction.def.pawnsPlural, RaidFaction), LetterDefOf.ThreatBig, parent);
+			alertRaidsArrivingIn = true;
 		}
 
 		public static string GetDetectionCountdownTimeLeftString(int ticksLeft)
@@ -134,22 +168,29 @@ namespace RimWorld.Planet
 
 		public override IEnumerable<Gizmo> GetGizmos()
 		{
-			if (Prefs.DevMode)
+			if (DebugSettings.ShowDevGizmos)
 			{
 				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "Dev: Set raid timer to 1 hour";
+				command_Action.defaultLabel = "DEV: Set raid timer to 1 hour";
 				command_Action.action = delegate
 				{
 					ticksLeftToSendRaid = 2500;
 				};
 				yield return command_Action;
 				Command_Action command_Action2 = new Command_Action();
-				command_Action2.defaultLabel = "Dev: Set notify raid timer to 1 hour";
+				command_Action2.defaultLabel = "DEV: Disable raid timer";
 				command_Action2.action = delegate
+				{
+					ticksLeftToSendRaid = -1;
+				};
+				yield return command_Action2;
+				Command_Action command_Action3 = new Command_Action();
+				command_Action3.defaultLabel = "DEV: Set notify raid timer to 1 hour";
+				command_Action3.action = delegate
 				{
 					ticksLeftTillNotifyPlayer = 2500;
 				};
-				yield return command_Action2;
+				yield return command_Action3;
 			}
 		}
 
@@ -157,6 +198,7 @@ namespace RimWorld.Planet
 		{
 			ticksLeftToSendRaid = other.ticksLeftToSendRaid;
 			ticksLeftTillNotifyPlayer = other.ticksLeftTillNotifyPlayer;
+			delayRangeHours = other.delayRangeHours;
 		}
 	}
 }

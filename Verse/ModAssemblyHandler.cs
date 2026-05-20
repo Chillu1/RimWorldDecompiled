@@ -24,35 +24,26 @@ namespace Verse
 		{
 			if (!globalResolverIsSet)
 			{
-				ResolveEventHandler @object = (object obj, ResolveEventArgs args) => Assembly.GetExecutingAssembly();
-				AppDomain.CurrentDomain.AssemblyResolve += @object.Invoke;
+				ResolveEventHandler resolveEventHandler = (object obj, ResolveEventArgs args) => Assembly.GetExecutingAssembly();
+				AppDomain.CurrentDomain.AssemblyResolve += resolveEventHandler.Invoke;
 				globalResolverIsSet = true;
 			}
 			foreach (FileInfo item in from f in ModContentPack.GetAllFilesForModPreserveOrder(mod, "Assemblies/", (string e) => e.ToLower() == ".dll")
 				select f.Item2)
 			{
-				Assembly assembly = null;
+				Assembly assembly;
 				try
 				{
-					byte[] rawAssembly = File.ReadAllBytes(item.FullName);
-					FileInfo fileInfo = new FileInfo(Path.Combine(item.DirectoryName, Path.GetFileNameWithoutExtension(item.FullName)) + ".pdb");
-					if (fileInfo.Exists)
-					{
-						byte[] rawSymbolStore = File.ReadAllBytes(fileInfo.FullName);
-						assembly = AppDomain.CurrentDomain.Load(rawAssembly, rawSymbolStore);
-					}
-					else
-					{
-						assembly = AppDomain.CurrentDomain.Load(rawAssembly);
-					}
+					assembly = Assembly.LoadFrom(item.FullName);
 				}
-				catch (Exception ex)
+				catch (Exception arg)
 				{
-					Log.Error("Exception loading " + item.Name + ": " + ex.ToString());
-					return;
+					Log.Error($"Exception loading {item.Name}: {arg}");
+					break;
 				}
-				if (!(assembly == null) && AssemblyIsUsable(assembly))
+				if (AssemblyIsUsable(assembly))
 				{
+					GenTypes.ClearCache();
 					loadedAssemblies.Add(assembly);
 				}
 			}
@@ -67,23 +58,23 @@ namespace Verse
 			catch (ReflectionTypeLoadException ex)
 			{
 				StringBuilder stringBuilder = new StringBuilder();
-				stringBuilder.AppendLine("ReflectionTypeLoadException getting types in assembly " + asm.GetName().Name + ": " + ex);
+				stringBuilder.AppendLine($"ReflectionTypeLoadException getting types in assembly {asm.GetName().Name}: {ex}");
 				stringBuilder.AppendLine();
 				stringBuilder.AppendLine("Loader exceptions:");
 				if (ex.LoaderExceptions != null)
 				{
 					Exception[] loaderExceptions = ex.LoaderExceptions;
-					foreach (Exception ex2 in loaderExceptions)
+					foreach (Exception arg in loaderExceptions)
 					{
-						stringBuilder.AppendLine("   => " + ex2.ToString());
+						stringBuilder.AppendLine($"   => {arg}");
 					}
 				}
 				Log.Error(stringBuilder.ToString());
 				return false;
 			}
-			catch (Exception ex3)
+			catch (Exception ex2)
 			{
-				Log.Error("Exception getting types in assembly " + asm.GetName().Name + ": " + ex3);
+				Log.Error("Exception getting types in assembly " + asm.GetName().Name + ": " + ex2);
 				return false;
 			}
 			return true;

@@ -12,9 +12,9 @@ namespace RimWorld
 			new CurvePoint(100000f, 100000f)
 		};
 
-		private static List<Thing> countedThings = new List<Thing>();
+		private static HashSet<Thing> countedThings = new HashSet<Thing>();
 
-		private static List<IntVec3> countedAdjCells = new List<IntVec3>();
+		private static HashSet<IntVec3> countedAdjCells = new HashSet<IntVec3>();
 
 		public override float GetScore(Room room)
 		{

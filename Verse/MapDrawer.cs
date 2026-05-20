@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
 
@@ -5,30 +7,27 @@ namespace Verse
 {
 	public sealed class MapDrawer
 	{
-		private Map map;
+		private readonly Map map;
 
 		private Section[,] sections;
 
-		private IntVec2 SectionCount
+		private List<MapDrawLayer> global;
+
+		private ulong globalDirtyFlags;
+
+		private IntVec2 SectionCount => new IntVec2
 		{
-			get
-			{
-				IntVec2 result = default(IntVec2);
-				result.x = Mathf.CeilToInt((float)map.Size.x / 17f);
-				result.z = Mathf.CeilToInt((float)map.Size.z / 17f);
-				return result;
-			}
-		}
+			x = Mathf.CeilToInt((float)map.Size.x / 17f),
+			z = Mathf.CeilToInt((float)map.Size.z / 17f)
+		};
 
 		private CellRect VisibleSections
 		{
 			get
 			{
-				CellRect currentViewRect = Find.CameraDriver.CurrentViewRect;
-				CellRect sunShadowsViewRect = GetSunShadowsViewRect(currentViewRect);
-				sunShadowsViewRect.ClipInsideMap(map);
-				IntVec2 intVec = SectionCoordsAt(sunShadowsViewRect.BottomLeft);
-				IntVec2 intVec2 = SectionCoordsAt(sunShadowsViewRect.TopRight);
+				CellRect viewRect = ViewRect;
+				IntVec2 intVec = SectionCoordsAt(viewRect.Min);
+				IntVec2 intVec2 = SectionCoordsAt(viewRect.Max);
 				if (intVec2.x < intVec.x || intVec2.z < intVec.z)
 				{
 					return CellRect.Empty;
@@ -37,25 +36,41 @@ namespace Verse
 			}
 		}
 
+		private CellRect ViewRect => Find.CameraDriver.CurrentViewRect.ExpandedBy(1).ClipInsideMap(map);
+
+		public List<MapDrawLayer> GlobalLayers => global;
+
 		public MapDrawer(Map map)
 		{
 			this.map = map;
 		}
 
-		public void MapMeshDirty(IntVec3 loc, MapMeshFlag dirtyFlags)
+		public T GetGlobalLayer<T>() where T : MapDrawLayer
 		{
-			bool regenAdjacentCells = (dirtyFlags & (MapMeshFlag.FogOfWar | MapMeshFlag.Buildings)) != 0;
-			bool regenAdjacentSections = (dirtyFlags & MapMeshFlag.GroundGlow) != 0;
-			MapMeshDirty(loc, dirtyFlags, regenAdjacentCells, regenAdjacentSections);
+			for (int i = 0; i < global.Count; i++)
+			{
+				if (global[i] is T result)
+				{
+					return result;
+				}
+			}
+			return null;
 		}
 
-		public void MapMeshDirty(IntVec3 loc, MapMeshFlag dirtyFlags, bool regenAdjacentCells, bool regenAdjacentSections)
+		public void MapMeshDirty(IntVec3 loc, ulong dirtyFlags)
 		{
-			if (Current.ProgramState != ProgramState.Playing)
+			bool regenAdjacentCells = (dirtyFlags & ((ulong)MapMeshFlagDefOf.FogOfWar | (ulong)MapMeshFlagDefOf.Buildings | (ulong)MapMeshFlagDefOf.Roofs)) != 0;
+			MapMeshDirty(loc, dirtyFlags, regenAdjacentCells, regenAdjacentSections: false);
+		}
+
+		public void MapMeshDirty(IntVec3 loc, ulong dirtyFlags, bool regenAdjacentCells, bool regenAdjacentSections)
+		{
+			if (Current.ProgramState != ProgramState.Playing || sections == null)
 			{
 				return;
 			}
 			SectionAt(loc).dirtyFlags |= dirtyFlags;
+			globalDirtyFlags |= dirtyFlags;
 			if (regenAdjacentCells)
 			{
 				for (int i = 0; i < 8; i++)
@@ -71,40 +86,57 @@ namespace Verse
 			{
 				return;
 			}
-			IntVec2 a = SectionCoordsAt(loc);
+			IntVec2 intVec2 = SectionCoordsAt(loc);
 			for (int j = 0; j < 8; j++)
 			{
-				IntVec3 intVec2 = GenAdj.AdjacentCells[j];
-				IntVec2 intVec3 = a + new IntVec2(intVec2.x, intVec2.z);
+				IntVec3 intVec3 = GenAdj.AdjacentCells[j];
+				IntVec2 intVec4 = intVec2 + new IntVec2(intVec3.x, intVec3.z);
 				IntVec2 sectionCount = SectionCount;
-				if (intVec3.x >= 0 && intVec3.z >= 0 && intVec3.x <= sectionCount.x - 1 && intVec3.z <= sectionCount.z - 1)
+				if (intVec4.x >= 0 && intVec4.z >= 0 && intVec4.x <= sectionCount.x - 1 && intVec4.z <= sectionCount.z - 1)
 				{
-					sections[intVec3.x, intVec3.z].dirtyFlags |= dirtyFlags;
+					sections[intVec4.x, intVec4.z].dirtyFlags |= dirtyFlags;
 				}
 			}
 		}
 
 		public void MapMeshDrawerUpdate_First()
 		{
-			CellRect visibleSections = VisibleSections;
-			bool flag = false;
-			foreach (IntVec3 item in visibleSections)
+			if (globalDirtyFlags != 0L)
 			{
-				Section sect = sections[item.x, item.z];
-				if (TryUpdateSection(sect))
+				for (int i = 0; i < global.Count; i++)
 				{
-					flag = true;
+					MapDrawLayer mapDrawLayer = global[i];
+					mapDrawLayer.Dirty = mapDrawLayer.Dirty || (globalDirtyFlags & mapDrawLayer.relevantChangeTypes) != 0;
+					if (mapDrawLayer.Dirty)
+					{
+						mapDrawLayer.Regenerate();
+					}
+				}
+			}
+			CellRect viewRect = ViewRect;
+			bool flag = false;
+			Section[,] array = sections;
+			int upperBound = array.GetUpperBound(0);
+			int upperBound2 = array.GetUpperBound(1);
+			for (int j = array.GetLowerBound(0); j <= upperBound; j++)
+			{
+				for (int k = array.GetLowerBound(1); k <= upperBound2; k++)
+				{
+					if (array[j, k].TryUpdate(viewRect))
+					{
+						flag = true;
+					}
 				}
 			}
 			if (flag)
 			{
 				return;
 			}
-			for (int i = 0; i < SectionCount.x; i++)
+			for (int l = 0; l < SectionCount.x; l++)
 			{
-				for (int j = 0; j < SectionCount.z; j++)
+				for (int m = 0; m < SectionCount.z; m++)
 				{
-					if (TryUpdateSection(sections[i, j]))
+					if (sections[l, m].TryUpdate(viewRect))
 					{
 						return;
 					}
@@ -112,33 +144,40 @@ namespace Verse
 			}
 		}
 
-		private bool TryUpdateSection(Section sect)
-		{
-			if (sect.dirtyFlags == MapMeshFlag.None)
-			{
-				return false;
-			}
-			for (int i = 0; i < MapMeshFlagUtility.allFlags.Count; i++)
-			{
-				MapMeshFlag mapMeshFlag = MapMeshFlagUtility.allFlags[i];
-				if ((sect.dirtyFlags & mapMeshFlag) != 0)
-				{
-					sect.RegenerateLayers(mapMeshFlag);
-				}
-			}
-			sect.dirtyFlags = MapMeshFlag.None;
-			return true;
-		}
-
 		public void DrawMapMesh()
 		{
-			CellRect currentViewRect = Find.CameraDriver.CurrentViewRect;
-			currentViewRect.minX -= 17;
-			currentViewRect.minZ -= 17;
-			foreach (IntVec3 visibleSection in VisibleSections)
+			CellRect view = ViewRect;
+			if (WorldComponent_GravshipController.GravshipRenderInProgess)
 			{
-				Section section = sections[visibleSection.x, visibleSection.z];
-				section.DrawSection(!currentViewRect.Contains(section.botLeft));
+				view = view.Encapsulate(WorldComponent_GravshipController.GravshipRenderBounds);
+			}
+			for (int i = 0; i < global.Count; i++)
+			{
+				MapDrawLayer mapDrawLayer = global[i];
+				if (mapDrawLayer.Visible)
+				{
+					if (mapDrawLayer.Dirty)
+					{
+						mapDrawLayer.Regenerate();
+						mapDrawLayer.RefreshSubMeshBounds();
+					}
+					mapDrawLayer.DrawLayer();
+				}
+			}
+			for (int j = 0; j < SectionCount.x; j++)
+			{
+				for (int k = 0; k < SectionCount.z; k++)
+				{
+					Section section = sections[j, k];
+					if (view.Overlaps(section.Bounds))
+					{
+						section.DrawSection();
+					}
+					else
+					{
+						section.DrawDynamicSections(view);
+					}
+				}
 			}
 		}
 
@@ -153,27 +192,89 @@ namespace Verse
 			return sections[intVec.x, intVec.z];
 		}
 
-		public void RegenerateEverythingNow()
+		public void RegenerateLayerNow(Type type)
 		{
+			EnsureGlobalLayersInitialized();
 			if (sections == null)
 			{
 				sections = new Section[SectionCount.x, SectionCount.z];
 			}
-			for (int i = 0; i < SectionCount.x; i++)
+			for (int i = 0; i < global.Count; i++)
 			{
-				for (int j = 0; j < SectionCount.z; j++)
+				MapDrawLayer mapDrawLayer = global[i];
+				if (mapDrawLayer.GetType() == type && mapDrawLayer.Visible)
 				{
-					if (sections[i, j] == null)
+					global[i].Regenerate();
+					mapDrawLayer.RefreshSubMeshBounds();
+				}
+			}
+			for (int j = 0; j < SectionCount.x; j++)
+			{
+				for (int k = 0; k < SectionCount.z; k++)
+				{
+					Section[,] array = sections;
+					int num = j;
+					int num2 = k;
+					if (array[num, num2] == null)
 					{
-						sections[i, j] = new Section(new IntVec3(i, 0, j), map);
+						array[num, num2] = new Section(new IntVec3(j, 0, k), map);
 					}
-					sections[i, j].RegenerateAllLayers();
+					sections[j, k].RegenerateSingleLayer(sections[j, k].GetLayer(type));
 				}
 			}
 		}
 
-		public void WholeMapChanged(MapMeshFlag change)
+		public void RegenerateEverythingNow()
 		{
+			EnsureGlobalLayersInitialized();
+			if (sections == null)
+			{
+				sections = new Section[SectionCount.x, SectionCount.z];
+			}
+			for (int i = 0; i < global.Count; i++)
+			{
+				MapDrawLayer mapDrawLayer = global[i];
+				if (mapDrawLayer.Visible)
+				{
+					mapDrawLayer.Regenerate();
+					mapDrawLayer.RefreshSubMeshBounds();
+				}
+			}
+			for (int j = 0; j < SectionCount.x; j++)
+			{
+				for (int k = 0; k < SectionCount.z; k++)
+				{
+					Section[,] array = sections;
+					int num = j;
+					int num2 = k;
+					if (array[num, num2] == null)
+					{
+						array[num, num2] = new Section(new IntVec3(j, 0, k), map);
+					}
+					sections[j, k].RegenerateAllLayers();
+				}
+			}
+		}
+
+		private void EnsureGlobalLayersInitialized()
+		{
+			if (global != null)
+			{
+				return;
+			}
+			global = new List<MapDrawLayer>();
+			foreach (Type item in typeof(MapDrawLayer).AllSubclassesNonAbstract())
+			{
+				if (!typeof(SectionLayer).IsAssignableFrom(item))
+				{
+					global.Add((MapDrawLayer)Activator.CreateInstance(item, map));
+				}
+			}
+		}
+
+		public void WholeMapChanged(ulong change)
+		{
+			globalDirtyFlags |= change;
 			for (int i = 0; i < SectionCount.x; i++)
 			{
 				for (int j = 0; j < SectionCount.z; j++)
@@ -183,26 +284,20 @@ namespace Verse
 			}
 		}
 
-		private CellRect GetSunShadowsViewRect(CellRect rect)
+		public void Dispose()
 		{
-			GenCelestial.LightInfo lightSourceInfo = GenCelestial.GetLightSourceInfo(map, GenCelestial.LightType.Shadow);
-			if (lightSourceInfo.vector.x < 0f)
+			for (int i = 0; i < SectionCount.x; i++)
 			{
-				rect.maxX -= Mathf.FloorToInt(lightSourceInfo.vector.x);
+				for (int j = 0; j < SectionCount.z; j++)
+				{
+					sections[i, j].Dispose();
+				}
 			}
-			else
+			sections = null;
+			foreach (MapDrawLayer item in global)
 			{
-				rect.minX -= Mathf.CeilToInt(lightSourceInfo.vector.x);
+				item.Dispose();
 			}
-			if (lightSourceInfo.vector.y < 0f)
-			{
-				rect.maxZ -= Mathf.FloorToInt(lightSourceInfo.vector.y);
-			}
-			else
-			{
-				rect.minZ -= Mathf.CeilToInt(lightSourceInfo.vector.y);
-			}
-			return rect;
 		}
 	}
 }

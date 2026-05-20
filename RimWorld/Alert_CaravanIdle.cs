@@ -9,6 +9,8 @@ namespace RimWorld
 	{
 		private List<Caravan> idleCaravansResult = new List<Caravan>();
 
+		private StringBuilder sb = new StringBuilder();
+
 		private List<Caravan> IdleCaravans
 		{
 			get
@@ -25,19 +27,19 @@ namespace RimWorld
 			}
 		}
 
-		public override string GetLabel()
+		public Alert_CaravanIdle()
 		{
-			return "CaravanIdle".Translate();
+			defaultLabel = "CaravanIdle".Translate();
 		}
 
 		public override TaggedString GetExplanation()
 		{
-			StringBuilder stringBuilder = new StringBuilder();
-			foreach (Caravan idleCaravan in IdleCaravans)
+			sb.Length = 0;
+			foreach (Caravan item in idleCaravansResult)
 			{
-				stringBuilder.AppendLine("  - " + idleCaravan.Label);
+				sb.AppendLine("  - " + item.Label);
 			}
-			return "CaravanIdleDesc".Translate(stringBuilder.ToString());
+			return "CaravanIdleDesc".Translate(sb.ToString().TrimEndNewlines());
 		}
 
 		public override AlertReport GetReport()

@@ -22,22 +22,24 @@ namespace Verse
 
 		public static SkyTarget Lerp(SkyTarget A, SkyTarget B, float t)
 		{
-			SkyTarget result = default(SkyTarget);
-			result.colors = SkyColorSet.Lerp(A.colors, B.colors, t);
-			result.glow = Mathf.Lerp(A.glow, B.glow, t);
-			result.lightsourceShineSize = Mathf.Lerp(A.lightsourceShineSize, B.lightsourceShineSize, t);
-			result.lightsourceShineIntensity = Mathf.Lerp(A.lightsourceShineIntensity, B.lightsourceShineIntensity, t);
-			return result;
+			return new SkyTarget
+			{
+				colors = SkyColorSet.Lerp(A.colors, B.colors, t),
+				glow = Mathf.Lerp(A.glow, B.glow, t),
+				lightsourceShineSize = Mathf.Lerp(A.lightsourceShineSize, B.lightsourceShineSize, t),
+				lightsourceShineIntensity = Mathf.Lerp(A.lightsourceShineIntensity, B.lightsourceShineIntensity, t)
+			};
 		}
 
 		public static SkyTarget LerpDarken(SkyTarget A, SkyTarget B, float t)
 		{
-			SkyTarget result = default(SkyTarget);
-			result.colors = SkyColorSet.Lerp(A.colors, B.colors, t);
-			result.glow = Mathf.Lerp(A.glow, Mathf.Min(A.glow, B.glow), t);
-			result.lightsourceShineSize = Mathf.Lerp(A.lightsourceShineSize, Mathf.Min(A.lightsourceShineSize, B.lightsourceShineSize), t);
-			result.lightsourceShineIntensity = Mathf.Lerp(A.lightsourceShineIntensity, Mathf.Min(A.lightsourceShineIntensity, B.lightsourceShineIntensity), t);
-			return result;
+			return new SkyTarget
+			{
+				colors = SkyColorSet.LerpDarken(A.colors, B.colors, t),
+				glow = Mathf.Lerp(A.glow, Mathf.Min(A.glow, B.glow), t),
+				lightsourceShineSize = Mathf.Lerp(A.lightsourceShineSize, Mathf.Min(A.lightsourceShineSize, B.lightsourceShineSize), t),
+				lightsourceShineIntensity = Mathf.Lerp(A.lightsourceShineIntensity, Mathf.Min(A.lightsourceShineIntensity, B.lightsourceShineIntensity), t)
+			};
 		}
 
 		public override string ToString()

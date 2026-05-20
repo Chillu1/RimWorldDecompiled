@@ -18,14 +18,13 @@ namespace RimWorld
 			this.FailOnBurningImmobile(TargetIndex.A);
 			this.FailOn(() => !scannerComp.CanUseNow);
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.InteractionCell);
-			Toil work = new Toil();
+			Toil work = ToilMaker.MakeToil("MakeNewToils");
 			work.tickAction = delegate
 			{
 				Pawn actor = work.actor;
-				_ = (Building)actor.CurJob.targetA.Thing;
 				scannerComp.Used(actor);
 				actor.skills.Learn(SkillDefOf.Intellectual, 0.035f);
-				actor.GainComfortFromCellIfPossible(chairsOnly: true);
+				actor.GainComfortFromCellIfPossible(1, chairsOnly: true);
 			};
 			work.PlaySustainerOrSound(scannerComp.Props.soundWorking);
 			work.AddFailCondition(() => !scannerComp.CanUseNow);

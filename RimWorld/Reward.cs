@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Verse;
 using Verse.Grammar;
 
@@ -10,13 +11,7 @@ namespace RimWorld
 
 		public virtual bool MakesUseOfChosenPawnSignal => false;
 
-		public virtual IEnumerable<GenUI.AnonymousStackElement> StackElements
-		{
-			get
-			{
-				yield break;
-			}
-		}
+		public virtual IEnumerable<GenUI.AnonymousStackElement> StackElements => Enumerable.Empty<GenUI.AnonymousStackElement>();
 
 		public virtual float TotalMarketValue => 0f;
 

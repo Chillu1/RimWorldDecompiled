@@ -1,6 +1,7 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
+using LudeonTK;
+using UnityEngine;
 using Verse;
 
 namespace RimWorld
@@ -9,13 +10,33 @@ namespace RimWorld
 	{
 		private static float PopulationValue_Prisoner = 0.5f;
 
+		private static float PopulationValue_PrisonerUnrecruitable = 0.25f;
+
+		private static float PopulationValue_Slave = 0.75f;
+
+		private static float PopulationValue_Child = 0.3f;
+
 		private static StorytellerDef StorytellerDef => Find.Storyteller.def;
 
 		public static float PopulationIntent => CalculatePopulationIntent(StorytellerDef, AdjustedPopulation, Find.StoryWatcher.watcherPopAdaptation.AdaptDays);
 
 		public static float PopulationIntentForQuest => CalculatePopulationIntent(StorytellerDef, AdjustedPopulationIncludingQuests, Find.StoryWatcher.watcherPopAdaptation.AdaptDays);
 
-		public static float AdjustedPopulation => 0f + (float)PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_Colonists.Count() + (float)PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_PrisonersOfColony.Count() * PopulationValue_Prisoner + (float)QuestUtility.TotalBorrowedColonistCount();
+		public static float AdjustedPopulation
+		{
+			get
+			{
+				float num = 0f;
+				foreach (Pawn item in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive)
+				{
+					if (item.IsColonist || item.IsPrisonerOfColony || item.IsSlaveOfColony)
+					{
+						num += AdjustedPopulationValue(item);
+					}
+				}
+				return num + (float)QuestUtility.TotalBorrowedColonistCount();
+			}
+		}
 
 		public static float AdjustedPopulationIncludingQuests
 		{
@@ -32,6 +53,24 @@ namespace RimWorld
 				}
 				return num;
 			}
+		}
+
+		private static float AdjustedPopulationValue(Pawn pawn)
+		{
+			if (pawn.DevelopmentalStage.Baby())
+			{
+				return 0f;
+			}
+			float num = (pawn.DevelopmentalStage.Adult() ? 1f : Mathf.Lerp(PopulationValue_Child, 1f, (float)pawn.ageTracker.AgeBiologicalYears / pawn.ageTracker.AdultMinAge));
+			if (pawn.IsPrisonerOfColony)
+			{
+				num = ((!pawn.guest.Recruitable) ? (num * PopulationValue_PrisonerUnrecruitable) : (num * PopulationValue_Prisoner));
+			}
+			else if (pawn.IsSlaveOfColony)
+			{
+				num *= PopulationValue_Slave;
+			}
+			return num;
 		}
 
 		private static float CalculatePopulationIntent(StorytellerDef def, float curPop, float popAdaptation)

@@ -8,13 +8,13 @@ namespace Verse.AI
 	{
 		private struct RegionLinkQueueEntry
 		{
-			private Region from;
+			private readonly Region from;
 
-			private RegionLink link;
+			private readonly RegionLink link;
 
-			private int cost;
+			private readonly int cost;
 
-			private int estimatedPathCost;
+			private readonly int estimatedPathCost;
 
 			public Region From => from;
 
@@ -41,17 +41,19 @@ namespace Verse.AI
 			}
 		}
 
-		private Map map;
+		private readonly Map map;
 
 		private Region[] regionGrid;
 
 		private TraverseParms traverseParms;
 
+		private PathingContext pathingContext;
+
 		private IntVec3 destinationCell;
 
-		private int moveTicksCardinal;
+		private float moveTicksCardinal;
 
-		private int moveTicksDiagonal;
+		private float moveTicksDiagonal;
 
 		private ByteGrid avoidGrid;
 
@@ -59,29 +61,29 @@ namespace Verse.AI
 
 		private bool drafted;
 
-		private Func<int, int, float> preciseRegionLinkDistancesDistanceGetter;
+		private readonly Func<int, int, float> preciseRegionLinkDistancesDistanceGetter;
 
-		private Dictionary<int, RegionLink> regionMinLink = new Dictionary<int, RegionLink>();
+		private readonly Dictionary<int, RegionLink> regionMinLink = new Dictionary<int, RegionLink>();
 
-		private Dictionary<RegionLink, int> distances = new Dictionary<RegionLink, int>();
+		private readonly Dictionary<RegionLink, int> distances = new Dictionary<RegionLink, int>();
 
-		private FastPriorityQueue<RegionLinkQueueEntry> queue = new FastPriorityQueue<RegionLinkQueueEntry>(new DistanceComparer());
+		private readonly FastPriorityQueue<RegionLinkQueueEntry> queue = new FastPriorityQueue<RegionLinkQueueEntry>(new DistanceComparer());
 
-		private Dictionary<Region, int> minPathCosts = new Dictionary<Region, int>();
+		private readonly Dictionary<Region, int> minPathCosts = new Dictionary<Region, int>();
 
-		private List<Pair<RegionLink, int>> preciseRegionLinkDistances = new List<Pair<RegionLink, int>>();
+		private readonly List<Pair<RegionLink, int>> preciseRegionLinkDistances = new List<Pair<RegionLink, int>>();
 
-		private Dictionary<RegionLink, IntVec3> linkTargetCells = new Dictionary<RegionLink, IntVec3>();
+		private readonly Dictionary<RegionLink, IntVec3> linkTargetCells = new Dictionary<RegionLink, IntVec3>();
 
 		private const int SampleCount = 11;
 
-		private static int[] pathCostSamples = new int[11];
+		private static readonly int[] pathCostSamples = new int[11];
 
-		private static List<int> tmpCellIndices = new List<int>();
+		private static readonly List<int> tmpCellIndices = new List<int>();
 
-		private static Dictionary<int, float> tmpDistances = new Dictionary<int, float>();
+		private static readonly Dictionary<int, float> tmpDistances = new Dictionary<int, float>();
 
-		private static List<int> tmpPathableNeighborIndices = new List<int>();
+		private static readonly List<int> tmpPathableNeighborIndices = new List<int>();
 
 		public RegionCostCalculator(Map map)
 		{
@@ -89,10 +91,11 @@ namespace Verse.AI
 			preciseRegionLinkDistancesDistanceGetter = PreciseRegionLinkDistancesDistanceGetter;
 		}
 
-		public void Init(CellRect destination, HashSet<Region> destRegions, TraverseParms parms, int moveTicksCardinal, int moveTicksDiagonal, ByteGrid avoidGrid, Area allowedArea, bool drafted)
+		public void Init(CellRect destination, HashSet<Region> destRegions, TraverseParms parms, float moveTicksCardinal, float moveTicksDiagonal, ByteGrid avoidGrid, Area allowedArea, bool drafted)
 		{
 			regionGrid = map.regionGrid.DirectGrid;
 			traverseParms = parms;
+			pathingContext = map.pathing.For(parms);
 			destinationCell = destination.CenterCell;
 			this.moveTicksCardinal = moveTicksCardinal;
 			this.moveTicksDiagonal = moveTicksDiagonal;
@@ -172,8 +175,8 @@ namespace Verse.AI
 				int num2 = 0;
 				if (otherRegion.door != null)
 				{
-					num2 = PathFinder.GetBuildingCost(otherRegion.door, traverseParms, traverseParms.pawn);
-					if (num2 == int.MaxValue)
+					num2 = PathUtility.GetBuildingCost(otherRegion.door, traverseParms, traverseParms.pawn, null);
+					if (num2 == 65535)
 					{
 						continue;
 					}
@@ -183,7 +186,7 @@ namespace Verse.AI
 				for (int i = 0; i < otherRegion.links.Count; i++)
 				{
 					RegionLink regionLink = otherRegion.links[i];
-					if (regionLink == regionLinkQueueEntry.Link || !regionLink.GetOtherRegion(otherRegion).type.Passable())
+					if (regionLink == regionLinkQueueEntry.Link || !regionLink.GetOtherRegion(otherRegion).Allows(traverseParms, isDestination: false))
 					{
 						continue;
 					}
@@ -226,7 +229,7 @@ namespace Verse.AI
 			for (int i = 0; i < region.links.Count; i++)
 			{
 				RegionLink regionLink = region.links[i];
-				if (regionLink != bestLink && regionLink.GetOtherRegion(region).type.Passable() && distances.TryGetValue(regionLink, out var value) && value < secondBestCost)
+				if (regionLink != bestLink && regionLink.GetOtherRegion(region).Allows(traverseParms, isDestination: false) && distances.TryGetValue(regionLink, out var value) && value < secondBestCost)
 				{
 					secondBestCost = value;
 					secondBestLink = regionLink;
@@ -256,7 +259,7 @@ namespace Verse.AI
 
 		private int GetCellCostFast(int index, bool ignoreAllowedAreaCost = false)
 		{
-			int num = map.pathGrid.pathGrid[index];
+			int num = pathingContext.pathGrid.Grid_Unsafe[index];
 			if (avoidGrid != null)
 			{
 				num += avoidGrid[index] * 8;
@@ -274,11 +277,13 @@ namespace Verse.AI
 
 		private int RegionLinkDistance(RegionLink a, RegionLink b, int minPathCost)
 		{
-			IntVec3 a2 = (linkTargetCells.ContainsKey(a) ? linkTargetCells[a] : RegionLinkCenter(a));
-			IntVec3 b2 = (linkTargetCells.ContainsKey(b) ? linkTargetCells[b] : RegionLinkCenter(b));
-			IntVec3 intVec = a2 - b2;
-			int num = Math.Abs(intVec.x);
-			int num2 = Math.Abs(intVec.z);
+			IntVec3 value;
+			IntVec3 obj = (linkTargetCells.TryGetValue(a, out value) ? value : RegionLinkCenter(a));
+			IntVec3 value2;
+			IntVec3 intVec = (linkTargetCells.TryGetValue(b, out value2) ? value2 : RegionLinkCenter(b));
+			IntVec3 intVec2 = obj - intVec;
+			int num = Math.Abs(intVec2.x);
+			int num2 = Math.Abs(intVec2.z);
 			return OctileDistance(num, num2) + minPathCost * Math.Max(num, num2) + minPathCost * Math.Min(num, num2);
 		}
 
@@ -314,7 +319,7 @@ namespace Verse.AI
 
 		private int OctileDistance(int dx, int dz)
 		{
-			return GenMath.OctileDistance(dx, dz, moveTicksCardinal, moveTicksDiagonal);
+			return GenMath.OctileDistance(dx, dz, Mathf.RoundToInt(moveTicksCardinal), Mathf.RoundToInt(moveTicksDiagonal));
 		}
 
 		private IntVec3 GetLinkTargetCell(IntVec3 cell, RegionLink link)
@@ -358,9 +363,9 @@ namespace Verse.AI
 				}
 			}
 			Dijkstra<int>.Run(tmpCellIndices, (int x) => PreciseRegionLinkDistancesNeighborsGetter(x, region), preciseRegionLinkDistancesDistanceGetter, tmpDistances);
-			for (int i = 0; i < region.links.Count; i++)
+			for (int num = 0; num < region.links.Count; num++)
 			{
-				RegionLink regionLink = region.links[i];
+				RegionLink regionLink = region.links[num];
 				if (regionLink.GetOtherRegion(region).Allows(traverseParms, isDestination: false))
 				{
 					if (!tmpDistances.TryGetValue(map.cellIndices.CellToIndex(linkTargetCells[regionLink]), out var value))
@@ -384,7 +389,7 @@ namespace Verse.AI
 
 		private float PreciseRegionLinkDistancesDistanceGetter(int a, int b)
 		{
-			return GetCellCostFast(b) + (AreCellsDiagonal(a, b) ? moveTicksDiagonal : moveTicksCardinal);
+			return (float)GetCellCostFast(b) + (AreCellsDiagonal(a, b) ? moveTicksDiagonal : moveTicksCardinal);
 		}
 
 		private bool AreCellsDiagonal(int a, int b)
@@ -400,7 +405,7 @@ namespace Verse.AI
 		private List<int> PathableNeighborIndices(int index)
 		{
 			tmpPathableNeighborIndices.Clear();
-			PathGrid pathGrid = map.pathGrid;
+			PathGrid pathGrid = pathingContext.pathGrid;
 			int x = map.Size.x;
 			bool num = index % x > 0;
 			bool flag = index % x < x - 1;
@@ -422,9 +427,10 @@ namespace Verse.AI
 			{
 				tmpPathableNeighborIndices.Add(index + x);
 			}
-			bool flag4 = !num || PathFinder.BlocksDiagonalMovement(index - 1, map);
-			bool flag5 = !flag || PathFinder.BlocksDiagonalMovement(index + 1, map);
-			if (flag2 && !PathFinder.BlocksDiagonalMovement(index - x, map))
+			bool canBashFences = traverseParms.canBashFences;
+			bool flag4 = !num || PathUtility.BlocksDiagonalMovement(index - 1, pathingContext, canBashFences);
+			bool flag5 = !flag || PathUtility.BlocksDiagonalMovement(index + 1, pathingContext, canBashFences);
+			if (flag2 && !PathUtility.BlocksDiagonalMovement(index - x, pathingContext, canBashFences))
 			{
 				if (!flag5 && pathGrid.WalkableFast(index - x + 1))
 				{
@@ -435,7 +441,7 @@ namespace Verse.AI
 					tmpPathableNeighborIndices.Add(index - x - 1);
 				}
 			}
-			if (flag3 && !PathFinder.BlocksDiagonalMovement(index + x, map))
+			if (flag3 && !PathUtility.BlocksDiagonalMovement(index + x, pathingContext, canBashFences))
 			{
 				if (!flag5 && pathGrid.WalkableFast(index + x + 1))
 				{

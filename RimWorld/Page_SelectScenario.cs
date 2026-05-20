@@ -15,9 +15,11 @@ namespace RimWorld
 
 		private Vector2 infoScrollPosition = Vector2.zero;
 
-		private const float ScenarioEntryHeight = 62f;
+		private const float ScenarioEntryHeight = 68f;
 
 		private static readonly Texture2D CanUploadIcon = ContentFinder<Texture2D>.Get("UI/Icons/ContentSources/CanUpload");
+
+		private static readonly Texture2D WarningIcon = Resources.Load<Texture2D>("Textures/UI/Widgets/YellowWarning");
 
 		private Vector2 scenariosScrollPosition = Vector2.zero;
 
@@ -37,11 +39,11 @@ namespace RimWorld
 		{
 			DrawPageTitle(rect);
 			Rect mainRect = GetMainRect(rect);
-			GUI.BeginGroup(mainRect);
+			Widgets.BeginGroup(mainRect);
 			Rect rect2 = new Rect(0f, 0f, mainRect.width * 0.35f, mainRect.height).Rounded();
 			DoScenarioSelectionList(rect2);
 			ScenarioUI.DrawScenarioInfo(new Rect(rect2.xMax + 17f, 0f, mainRect.width - rect2.width - 17f, mainRect.height).Rounded(), curScen, ref infoScrollPosition);
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			DoBottomButtons(rect, null, "ScenarioEditor".Translate(), GoToScenarioEditor);
 		}
 
@@ -104,10 +106,10 @@ namespace RimWorld
 				{
 					if (flag)
 					{
-						listing.Gap();
+						listing.Gap(6f);
 					}
 					Scenario scen = scenario;
-					Rect rect = listing.GetRect(62f);
+					Rect rect = listing.GetRect(68f).ContractedBy(4f);
 					DoScenarioListEntry(rect, scen);
 					flag = true;
 				}
@@ -123,6 +125,10 @@ namespace RimWorld
 		private void DoScenarioListEntry(Rect rect, Scenario scen)
 		{
 			bool flag = curScen == scen;
+			if (!scen.valid)
+			{
+				TooltipHandler.TipRegion(rect, "ScenPart_Error".Translate().Colorize(ColorLibrary.RedReadable));
+			}
 			Widgets.DrawOptionBackground(rect, flag);
 			MouseoverSounds.DoRegion(rect);
 			Rect rect2 = rect.ContractedBy(4f);
@@ -133,13 +139,18 @@ namespace RimWorld
 			Text.Font = GameFont.Tiny;
 			Rect rect4 = rect2;
 			rect4.yMin = rect3.yMax;
+			if (!Text.TinyFontSupported)
+			{
+				rect4.yMin -= 6f;
+				rect4.height += 6f;
+			}
 			Widgets.Label(rect4, scen.GetSummary());
 			if (!scen.enabled)
 			{
 				return;
 			}
 			WidgetRow widgetRow = new WidgetRow(rect.xMax, rect.y, UIDirection.LeftThenDown);
-			if (scen.Category == ScenarioCategory.CustomLocal && widgetRow.ButtonIcon(TexButton.DeleteX, "Delete".Translate(), GenUI.SubtleMouseoverColor))
+			if (scen.Category == ScenarioCategory.CustomLocal && widgetRow.ButtonIcon(TexButton.Delete, "Delete".Translate(), GenUI.SubtleMouseoverColor))
 			{
 				Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("ConfirmDelete".Translate(scen.File.Name), delegate
 				{
@@ -147,9 +158,9 @@ namespace RimWorld
 					ScenarioLister.MarkDirty();
 				}, destructive: true));
 			}
-			if (scen.Category == ScenarioCategory.SteamWorkshop && widgetRow.ButtonIcon(TexButton.DeleteX, "Unsubscribe".Translate(), GenUI.SubtleMouseoverColor))
+			if (scen.Category == ScenarioCategory.SteamWorkshop && widgetRow.ButtonIcon(TexButton.Delete, "Unsubscribe".Translate(), GenUI.SubtleMouseoverColor))
 			{
-				Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("ConfirmUnsubscribe".Translate(scen.File.Name), delegate
+				Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("ConfirmUnsubscribeFrom".Translate(scen.File.Name), delegate
 				{
 					scen.enabled = false;
 					if (curScen == scen)
@@ -171,10 +182,25 @@ namespace RimWorld
 					widgetRow.Icon(CanUploadIcon, "CanBeUpdatedOnWorkshop".Translate());
 				}
 			}
-			if (!flag && Widgets.ButtonInvisible(rect))
+			if (!scen.valid)
+			{
+				widgetRow.Icon(WarningIcon, null, 3f);
+			}
+			if (flag || !Widgets.ButtonInvisible(rect))
+			{
+				return;
+			}
+			SoundDefOf.Click.PlayOneShotOnCamera();
+			if (!scen.valid)
+			{
+				PreLoadUtility.CheckVersionAndLoad(scen.File.FullName, ScribeMetaHeaderUtility.ScribeHeaderMode.Scenario, delegate
+				{
+					curScen = scen;
+				});
+			}
+			else
 			{
 				curScen = scen;
-				SoundDefOf.Click.PlayOneShotOnCamera();
 			}
 		}
 
@@ -194,10 +220,12 @@ namespace RimWorld
 
 		public static void BeginScenarioConfiguration(Scenario scen, Page originPage)
 		{
+			Game.ClearCaches();
 			Current.Game = new Game();
 			Current.Game.InitData = new GameInitData();
 			Current.Game.Scenario = scen;
 			Current.Game.Scenario.PreConfigure();
+			Find.GameInitData.startedFromEntry = true;
 			Page firstConfigPage = Current.Game.Scenario.GetFirstConfigPage();
 			if (firstConfigPage == null)
 			{

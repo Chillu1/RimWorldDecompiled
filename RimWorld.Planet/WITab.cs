@@ -7,9 +7,9 @@ namespace RimWorld.Planet
 	{
 		protected WorldObject SelObject => Find.WorldSelector.SingleSelectedObject;
 
-		protected int SelTileID => Find.WorldSelector.selectedTile;
+		protected PlanetTile SelPlanetTile => SelObject?.Tile ?? Find.WorldSelector.SelectedTile;
 
-		protected Tile SelTile => Find.WorldGrid[SelTileID];
+		protected Tile SelTile => Find.WorldGrid[SelPlanetTile];
 
 		protected Caravan SelCaravan => SelObject as Caravan;
 
@@ -19,7 +19,7 @@ namespace RimWorld.Planet
 		{
 			get
 			{
-				if (!WorldRendererUtility.WorldRenderedNow)
+				if (!WorldRendererUtility.WorldSelected)
 				{
 					return false;
 				}

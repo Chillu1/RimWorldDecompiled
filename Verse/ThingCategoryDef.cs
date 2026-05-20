@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Verse
@@ -25,10 +26,15 @@ namespace Verse
 		private HashSet<ThingDef> allChildThingDefsCached;
 
 		[Unsaved(false)]
+		private List<ThingDef> sortedChildThingDefsCached;
+
+		[Unsaved(false)]
 		public List<SpecialThingFilterDef> childSpecialFilters = new List<SpecialThingFilterDef>();
 
 		[Unsaved(false)]
 		public Texture2D icon = BaseContent.BadTex;
+
+		public List<ThingDef> SortedChildThingDefs => sortedChildThingDefsCached;
 
 		public IEnumerable<ThingCategoryDef> Parents
 		{
@@ -39,9 +45,9 @@ namespace Verse
 					yield break;
 				}
 				yield return parent;
-				foreach (ThingCategoryDef parent2 in parent.Parents)
+				foreach (ThingCategoryDef parent in parent.Parents)
 				{
-					yield return parent2;
+					yield return parent;
 				}
 			}
 		}
@@ -93,9 +99,9 @@ namespace Verse
 		{
 			get
 			{
-				foreach (ThingCategoryDef parent2 in Parents)
+				foreach (ThingCategoryDef parent in Parents)
 				{
-					foreach (SpecialThingFilterDef childSpecialFilter in parent2.childSpecialFilters)
+					foreach (SpecialThingFilterDef childSpecialFilter in parent.childSpecialFilters)
 					{
 						yield return childSpecialFilter;
 					}
@@ -110,6 +116,7 @@ namespace Verse
 
 		public override void ResolveReferences()
 		{
+			base.ResolveReferences();
 			allChildThingDefsCached = new HashSet<ThingDef>();
 			foreach (ThingCategoryDef thisAndChildCategoryDef in ThisAndChildCategoryDefs)
 			{
@@ -118,6 +125,7 @@ namespace Verse
 					allChildThingDefsCached.Add(childThingDef);
 				}
 			}
+			sortedChildThingDefsCached = childThingDefs.OrderBy((ThingDef n) => n.label).ToList();
 		}
 
 		public override void PostLoad()
@@ -135,11 +143,6 @@ namespace Verse
 		public static ThingCategoryDef Named(string defName)
 		{
 			return DefDatabase<ThingCategoryDef>.GetNamed(defName);
-		}
-
-		public override int GetHashCode()
-		{
-			return defName.GetHashCode();
 		}
 	}
 }

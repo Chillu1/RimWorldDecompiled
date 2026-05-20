@@ -38,14 +38,11 @@ namespace RimWorld
 		{
 			defaultLabel = "MonumentMarkerMissingBlueprints".Translate();
 			defaultExplanation = "MonumentMarkerMissingBlueprintsDesc".Translate();
+			requireRoyalty = true;
 		}
 
 		public override AlertReport GetReport()
 		{
-			if (!ModsConfig.RoyaltyActive)
-			{
-				return false;
-			}
 			return AlertReport.CulpritsAre(Targets);
 		}
 	}

@@ -12,8 +12,7 @@ namespace RimWorld
 		private float GetValueFor(Transferable t)
 		{
 			Thing anyThing = t.AnyThing;
-			Pawn pawn = anyThing as Pawn;
-			if (pawn != null)
+			if (anyThing is Pawn pawn)
 			{
 				return pawn.health.summaryHealth.SummaryHealthPercent;
 			}

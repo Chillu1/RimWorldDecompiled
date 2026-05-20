@@ -8,6 +8,10 @@ namespace Verse
 			{
 				return str;
 			}
+			if (plural)
+			{
+				return ((gender == Gender.Female) ? "unas " : "unos ") + str;
+			}
 			return ((gender == Gender.Female) ? "una " : "un ") + str;
 		}
 
@@ -16,6 +20,10 @@ namespace Verse
 			if (name)
 			{
 				return str;
+			}
+			if (plural)
+			{
+				return ((gender == Gender.Female) ? "las " : "los ") + str;
 			}
 			return ((gender == Gender.Female) ? "la " : "el ") + str;
 		}
@@ -28,6 +36,14 @@ namespace Verse
 		public override string Pluralize(string str, Gender gender, int count = -1)
 		{
 			if (str.NullOrEmpty())
+			{
+				return str;
+			}
+			if (TryLookupPluralForm(str, gender, out var plural, count))
+			{
+				return plural;
+			}
+			if (count != -1 && count < 2)
 			{
 				return str;
 			}
@@ -49,9 +65,13 @@ namespace Verse
 			{
 				return str + "es";
 			}
-			if ("lrndzjsxLRNDZJSX".IndexOf(c) >= 0 || (c == 'h' && c2 == 'c'))
+			if ("lrndjsxLRNDJSX".IndexOf(c) >= 0 || (c == 'h' && c2 == 'c'))
 			{
 				return str + "es";
+			}
+			if (c == 'z' || c == 'Z')
+			{
+				return str.Substring(0, str.Length - 1) + ((c == 'z') ? 'c' : 'C') + "es";
 			}
 			return str + "s";
 		}

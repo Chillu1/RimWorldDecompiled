@@ -37,8 +37,8 @@ namespace RimWorld
 				Room room = req.Thing.GetRoom();
 				if (room != null)
 				{
-					string str = (customLabel.NullOrEmpty() ? ((string)roomStat.LabelCap) : customLabel);
-					return str + ": x" + room.GetStat(roomStat).ToStringPercent();
+					string text = (customLabel.NullOrEmpty() ? ((string)roomStat.LabelCap) : customLabel);
+					return text + ": x" + room.GetStat(roomStat).ToStringPercent();
 				}
 			}
 			return null;

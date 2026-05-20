@@ -13,7 +13,7 @@ namespace RimWorld.Planet
 
 		public ThingOwner rewards;
 
-		private static List<Thing> tmpRewards = new List<Thing>();
+		private static readonly List<Thing> tmpRewards = new List<Thing>();
 
 		public bool Active => active;
 
@@ -39,16 +39,12 @@ namespace RimWorld.Planet
 			rewards.ClearAndDestroyContents();
 		}
 
-		public override void CompTick()
+		public override void CompTickInterval(int delta)
 		{
-			base.CompTick();
-			if (active)
+			base.CompTickInterval(delta);
+			if (active && parent is MapParent mapParent)
 			{
-				MapParent mapParent = parent as MapParent;
-				if (mapParent != null)
-				{
-					CheckAllEnemiesDefeated(mapParent);
-				}
+				CheckAllEnemiesDefeated(mapParent);
 			}
 		}
 
@@ -80,7 +76,7 @@ namespace RimWorld.Planet
 			tmpRewards.Clear();
 			FactionRelationKind playerRelationKind = requestingFaction.PlayerRelationKind;
 			TaggedString text = "LetterDefeatAllEnemiesQuestCompleted".Translate(requestingFaction.Name, relationsImprovement.ToString());
-			requestingFaction.TryAffectGoodwillWith(Faction.OfPlayer, relationsImprovement, canSendMessage: false, canSendHostilityLetter: false);
+			Faction.OfPlayer.TryAffectGoodwillWith(requestingFaction, relationsImprovement, canSendMessage: false, canSendHostilityLetter: false, HistoryEventDefOf.QuestGoodwillReward);
 			requestingFaction.TryAppendRelationKindChangedInfo(ref text, playerRelationKind, requestingFaction.PlayerRelationKind);
 			Find.LetterStack.ReceiveLetter("LetterLabelDefeatAllEnemiesQuestCompleted".Translate(), text, LetterDefOf.PositiveEvent, new GlobalTargetInfo(intVec, map), requestingFaction);
 		}
@@ -105,8 +101,8 @@ namespace RimWorld.Planet
 		{
 			if (active)
 			{
-				string value = GenThing.ThingsToCommaList(rewards, useAnd: true, aggregate: true, 5).CapitalizeFirst();
-				return "QuestTargetDestroyInspectString".Translate(requestingFaction.Name, value, GenThing.GetMarketValue(rewards).ToStringMoney()).CapitalizeFirst();
+				string text = GenThing.ThingsToCommaList(rewards, useAnd: true, aggregate: true, 5).CapitalizeFirst();
+				return "QuestTargetDestroyInspectString".Translate(requestingFaction.Name, text, GenThing.GetMarketValue(rewards).ToStringMoney()).CapitalizeFirst();
 			}
 			return null;
 		}

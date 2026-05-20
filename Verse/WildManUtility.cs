@@ -6,12 +6,16 @@ namespace Verse
 	{
 		public static bool IsWildMan(this Pawn p)
 		{
-			return p.kindDef == PawnKindDefOf.WildMan;
+			if (p.kindDef == PawnKindDefOf.WildMan)
+			{
+				return !p.IsSubhuman;
+			}
+			return false;
 		}
 
 		public static bool AnimalOrWildMan(this Pawn p)
 		{
-			if (!p.RaceProps.Animal)
+			if (!p.IsAnimal)
 			{
 				return p.IsWildMan();
 			}

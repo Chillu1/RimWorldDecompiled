@@ -17,11 +17,11 @@ namespace RimWorld
 		{
 			this.FailOnAggroMentalState(TargetIndex.A);
 			yield return Toils_Interpersonal.GotoPrisoner(pawn, Victim, PrisonerInteractionModeDefOf.Execution).FailOn(() => !Victim.IsPrisonerOfColony || !Victim.guest.PrisonerIsSecure);
-			Toil execute = new Toil();
+			Toil execute = ToilMaker.MakeToil("MakeNewToils");
 			execute.initAction = delegate
 			{
 				ExecutionUtility.DoExecutionByCut(execute.actor, Victim);
-				ThoughtUtility.GiveThoughtsForPawnExecuted(Victim, PawnExecutionKind.GenericBrutal);
+				ThoughtUtility.GiveThoughtsForPawnExecuted(Victim, execute.actor, PawnExecutionKind.GenericBrutal);
 				TaleRecorder.RecordTale(TaleDefOf.ExecutedPrisoner, pawn, Victim);
 			};
 			execute.defaultCompleteMode = ToilCompleteMode.Instant;

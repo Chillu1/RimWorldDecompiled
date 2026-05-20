@@ -78,5 +78,10 @@ namespace RimWorld
 				allowedAgeRange.min = allowedAgeRange.max - 4;
 			}
 		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode() ^ allowedAgeRange.GetHashCode();
+		}
 	}
 }

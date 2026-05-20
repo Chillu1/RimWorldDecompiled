@@ -40,7 +40,7 @@ namespace Verse.Sound
 				}
 				if (subDef.startDelayRange.TrueMax < 0.001f)
 				{
-					StartSample();
+					StartSample(subDef.randomStartPoint ? Rand.Value : 0f);
 				}
 				else
 				{
@@ -49,18 +49,24 @@ namespace Verse.Sound
 			});
 		}
 
-		private void StartSample()
+		private void StartSample(float startPct = 0f)
 		{
 			ResolvedGrain resolvedGrain = subDef.RandomizedResolvedGrain();
 			if (resolvedGrain == null)
 			{
-				Log.Error(string.Concat("SubSustainer for ", subDef, " of ", parent.def, " could not resolve any grains."));
+				Log.Error("SubSustainer for " + subDef?.ToString() + " of " + parent.def?.ToString() + " could not resolve any grains.");
 				parent.End();
 				return;
 			}
 			float num = ((!subDef.sustainLoop) ? resolvedGrain.duration : subDef.sustainLoopDurationRange.RandomInRange);
-			float num2 = Time.realtimeSinceStartup + num;
-			nextSampleStartTime = num2 + subDef.sustainIntervalRange.RandomInRange;
+			float num2 = resolvedGrain.duration * startPct;
+			float num3 = 1f;
+			if (subDef.sustainIntervalFactorByAggregateSize != null)
+			{
+				num3 = subDef.sustainIntervalFactorByAggregateSize.Evaluate(ExternalParams?.sizeAggregator?.AggregateSize ?? 1f);
+			}
+			float num4 = Time.realtimeSinceStartup + num - num2;
+			nextSampleStartTime = num4 + subDef.sustainIntervalRange.RandomInRange * num3;
 			if (nextSampleStartTime < Time.realtimeSinceStartup + 0.01f)
 			{
 				nextSampleStartTime = Time.realtimeSinceStartup + 0.01f;
@@ -69,7 +75,8 @@ namespace Verse.Sound
 			{
 				return;
 			}
-			SampleSustainer sampleSustainer = SampleSustainer.TryMakeAndPlay(this, ((ResolvedGrain_Clip)resolvedGrain).clip, num2);
+			SampleSustainer sampleSustainer = SampleSustainer.TryMakeAndPlay(this, ((ResolvedGrain_Clip)resolvedGrain).clip, num4, num2);
+			subDef.Notify_GrainPlayed(resolvedGrain);
 			if (sampleSustainer != null)
 			{
 				if (subDef.sustainSkipFirstAttack && Time.frameCount == creationFrame)

@@ -7,7 +7,7 @@ using Verse;
 namespace RimWorld.Planet
 {
 	[StaticConstructorOnStartup]
-	public class Settlement : MapParent, ITrader, ITraderRestockingInfoProvider
+	public class Settlement : MapParent, ITrader, ITraderRestockingInfoProvider, INameableWorldObject
 	{
 		public Settlement_TraderTracker trader;
 
@@ -39,17 +39,7 @@ namespace RimWorld.Planet
 
 		public override Texture2D ExpandingIcon => base.Faction.def.FactionIcon;
 
-		public override string Label
-		{
-			get
-			{
-				if (nameInt == null)
-				{
-					return base.Label;
-				}
-				return nameInt;
-			}
-		}
+		public override string Label => nameInt ?? base.Label;
 
 		public override bool HasName => !nameInt.NullOrEmpty();
 
@@ -59,13 +49,9 @@ namespace RimWorld.Planet
 		{
 			get
 			{
-				if (base.Faction != Faction.OfPlayer)
+				if (base.Faction != Faction.OfPlayer && (base.Faction == null || !base.Faction.HostileTo(Faction.OfPlayer)))
 				{
-					if (base.Faction != null)
-					{
-						return !base.Faction.HostileTo(Faction.OfPlayer);
-					}
-					return true;
+					return !base.Tile.LayerDef.isSpace;
 				}
 				return false;
 			}
@@ -75,13 +61,17 @@ namespace RimWorld.Planet
 
 		public override bool ShowRelatedQuests => base.Faction != Faction.OfPlayer;
 
+		public override bool GravShipCanLandOn => base.Faction != Faction.OfPlayer;
+
+		public override AcceptanceReport CanBeSettled => false;
+
 		public override Material Material
 		{
 			get
 			{
 				if (cachedMat == null)
 				{
-					cachedMat = MaterialPool.MatFrom(base.Faction.def.settlementTexturePath, ShaderDatabase.WorldOverlayTransparentLit, base.Faction.Color, WorldMaterials.WorldObjectRenderQueue);
+					cachedMat = MaterialPool.MatFrom(base.Faction.def.settlementTexturePath, ShaderDatabase.WorldOverlayTransparentLit, base.Faction.Color, 3550);
 				}
 				return cachedMat;
 			}
@@ -91,6 +81,10 @@ namespace RimWorld.Planet
 		{
 			get
 			{
+				if (def.mapGenerator != null)
+				{
+					return def.mapGenerator;
+				}
 				if (base.Faction == Faction.OfPlayer)
 				{
 					return MapGeneratorDefOf.Base_Player;
@@ -99,77 +93,27 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public TraderKindDef TraderKind
-		{
-			get
-			{
-				if (trader == null)
-				{
-					return null;
-				}
-				return trader.TraderKind;
-			}
-		}
+		public TraderKindDef TraderKind => trader?.TraderKind;
 
-		public IEnumerable<Thing> Goods
-		{
-			get
-			{
-				if (trader == null)
-				{
-					return null;
-				}
-				return trader.StockListForReading;
-			}
-		}
+		public IEnumerable<Thing> Goods => trader?.StockListForReading;
 
-		public int RandomPriceFactorSeed
-		{
-			get
-			{
-				if (trader == null)
-				{
-					return 0;
-				}
-				return trader.RandomPriceFactorSeed;
-			}
-		}
+		public int RandomPriceFactorSeed => trader?.RandomPriceFactorSeed ?? 0;
 
-		public string TraderName
-		{
-			get
-			{
-				if (trader == null)
-				{
-					return null;
-				}
-				return trader.TraderName;
-			}
-		}
+		public string TraderName => trader?.TraderName;
 
 		public bool CanTradeNow
 		{
 			get
 			{
-				if (trader == null)
+				if (trader != null)
 				{
-					return false;
+					return trader.CanTradeNow;
 				}
-				return trader.CanTradeNow;
+				return false;
 			}
 		}
 
-		public float TradePriceImprovementOffsetForPlayer
-		{
-			get
-			{
-				if (trader == null)
-				{
-					return 0f;
-				}
-				return trader.TradePriceImprovementOffsetForPlayer;
-			}
-		}
+		public float TradePriceImprovementOffsetForPlayer => trader?.TradePriceImprovementOffsetForPlayer ?? 0f;
 
 		public TradeCurrency TradeCurrency => TraderKind.tradeCurrency;
 
@@ -181,11 +125,7 @@ namespace RimWorld.Planet
 
 		public IEnumerable<Thing> ColonyThingsWillingToBuy(Pawn playerNegotiator)
 		{
-			if (trader == null)
-			{
-				return null;
-			}
-			return trader.ColonyThingsWillingToBuy(playerNegotiator);
+			return trader?.ColonyThingsWillingToBuy(playerNegotiator);
 		}
 
 		public void GiveSoldThingToTrader(Thing toGive, int countToGive, Pawn playerNegotiator)
@@ -209,7 +149,7 @@ namespace RimWorld.Planet
 			{
 				yield return item;
 			}
-			if (base.Faction == Faction.OfPlayer)
+			if (base.Faction == null || base.Faction == Faction.OfPlayer || SettlementDefeatUtility.IsDefeated(base.Map, base.Faction))
 			{
 				yield return IncidentTargetTagDefOf.Map_PlayerHome;
 			}
@@ -229,21 +169,26 @@ namespace RimWorld.Planet
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				previouslyGeneratedInhabitants.RemoveAll((Pawn x) => x == null);
+				if (base.Faction == null)
+				{
+					Log.Warning("Settlement '" + Name + "' had null faction on load - destroying.");
+					Destroy();
+				}
 			}
 		}
 
 		public override void PostMapGenerate()
 		{
 			base.PostMapGenerate();
-			if (!base.Map.IsPlayerHome)
+			if (!base.Map.IsPlayerHome && TryGetComponent<TimedDetectionRaids>(out var comp))
 			{
-				GetComponent<TimedDetectionRaids>().StartDetectionCountdown(240000);
+				comp.StartDetectionCountdown(240000);
 			}
 		}
 
-		public override void Tick()
+		protected override void TickInterval(int delta)
 		{
-			base.Tick();
+			base.TickInterval(delta);
 			if (trader != null)
 			{
 				trader.TraderTrackerTick();
@@ -267,11 +212,19 @@ namespace RimWorld.Planet
 		public override bool ShouldRemoveMapNow(out bool alsoRemoveWorldObject)
 		{
 			alsoRemoveWorldObject = false;
-			if (!base.Map.IsPlayerHome)
+			if (base.Map.AnyBuildingBlockingMapRemoval)
 			{
-				return !base.Map.mapPawns.AnyPawnBlockingMapRemoval;
+				return false;
 			}
-			return false;
+			if (base.Map.IsPlayerHome || base.Map.mapPawns.AnyPawnBlockingMapRemoval)
+			{
+				return false;
+			}
+			if (TransporterUtility.IncomingTransporterPreventingMapRemoval(base.Map))
+			{
+				return false;
+			}
+			return true;
 		}
 
 		public override void PostRemove()
@@ -292,7 +245,7 @@ namespace RimWorld.Planet
 				{
 					text += "\n";
 				}
-				text += base.Faction.PlayerRelationKind.GetLabel();
+				text += base.Faction.PlayerRelationKind.GetLabelCap();
 				if (!base.Faction.Hidden)
 				{
 					text = text + " (" + base.Faction.PlayerGoodwill.ToStringWithSign() + ")";
@@ -303,6 +256,17 @@ namespace RimWorld.Planet
 					text += "\n" + "RequiresTradePermission".Translate(royalTitleDef.GetLabelCapForBothGenders());
 				}
 			}
+			else
+			{
+				if (!text.NullOrEmpty())
+				{
+					text += "\n";
+				}
+				text += "Settled".Translate() + ": " + GenDate.DateShortStringAt(GenDate.TickGameToAbs(creationGameTicks), Find.WorldGrid.LongLatOf(base.Tile));
+				text += " (";
+				text += "TimeAgo".Translate((Find.TickManager.TicksGame - creationGameTicks).ToStringTicksToPeriodVague());
+				text += ")";
+			}
 			return text;
 		}
 
@@ -312,35 +276,37 @@ namespace RimWorld.Planet
 			{
 				yield return gizmo;
 			}
-			if (TraderKind != null)
+			if (TraderKind != null && !base.Faction.def.permanentEnemy)
 			{
-				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "CommandShowSellableItems".Translate();
-				command_Action.defaultDesc = "CommandShowSellableItemsDesc".Translate();
-				command_Action.icon = ShowSellableItemsCommand;
-				command_Action.action = delegate
+				yield return new Command_Action
 				{
-					Find.WindowStack.Add(new Dialog_SellableItems(this));
-					RoyalTitleDef titleRequiredToTrade = TraderKind.TitleRequiredToTrade;
-					if (titleRequiredToTrade != null)
+					defaultLabel = "CommandShowSellableItems".Translate(),
+					defaultDesc = "CommandShowSellableItemsDesc".Translate(),
+					icon = ShowSellableItemsCommand,
+					action = delegate
 					{
-						TutorUtility.DoModalDialogIfNotKnown(ConceptDefOf.TradingRequiresPermit, titleRequiredToTrade.GetLabelCapForBothGenders());
+						Find.WindowStack.Add(new Dialog_SellableItems(this));
+						RoyalTitleDef titleRequiredToTrade = TraderKind.TitleRequiredToTrade;
+						if (titleRequiredToTrade != null)
+						{
+							TutorUtility.DoModalDialogIfNotKnown(ConceptDefOf.TradingRequiresPermit, titleRequiredToTrade.GetLabelCapForBothGenders());
+						}
 					}
 				};
-				yield return command_Action;
 			}
-			if (base.Faction != Faction.OfPlayer && !PlayerKnowledgeDatabase.IsComplete(ConceptDefOf.FormCaravan))
+			if (base.Faction != Faction.OfPlayer && !PlayerKnowledgeDatabase.IsComplete(ConceptDefOf.FormCaravan) && base.Tile.LayerDef.canFormCaravans)
 			{
-				Command_Action command_Action2 = new Command_Action();
-				command_Action2.defaultLabel = "CommandFormCaravan".Translate();
-				command_Action2.defaultDesc = "CommandFormCaravanDesc".Translate();
-				command_Action2.icon = FormCaravanCommand;
-				command_Action2.action = delegate
+				yield return new Command_Action
 				{
-					Find.Tutor.learningReadout.TryActivateConcept(ConceptDefOf.FormCaravan);
-					Messages.Message("MessageSelectOwnBaseToFormCaravan".Translate(), MessageTypeDefOf.RejectInput, historical: false);
+					defaultLabel = "CommandFormCaravan".Translate(),
+					defaultDesc = "CommandFormCaravanDesc".Translate(),
+					icon = FormCaravanCommand,
+					action = delegate
+					{
+						Find.Tutor.learningReadout.TryActivateConcept(ConceptDefOf.FormCaravan);
+						Messages.Message("MessageSelectOwnBaseToFormCaravan".Translate(), MessageTypeDefOf.RejectInput, historical: false);
+					}
 				};
-				yield return command_Action2;
 			}
 		}
 
@@ -360,15 +326,16 @@ namespace RimWorld.Planet
 			}
 			if (Attackable)
 			{
-				Command_Action command_Action = new Command_Action();
-				command_Action.icon = AttackCommand;
-				command_Action.defaultLabel = "CommandAttackSettlement".Translate();
-				command_Action.defaultDesc = "CommandAttackSettlementDesc".Translate();
-				command_Action.action = delegate
+				yield return new Command_Action
 				{
-					SettlementUtility.Attack(caravan, this);
+					icon = AttackCommand,
+					defaultLabel = "CommandAttackSettlement".Translate(),
+					defaultDesc = "CommandAttackSettlementDesc".Translate(),
+					action = delegate
+					{
+						SettlementUtility.Attack(caravan, this);
+					}
 				};
-				yield return command_Action;
 			}
 		}
 
@@ -399,17 +366,17 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public override IEnumerable<FloatMenuOption> GetTransportPodsFloatMenuOptions(IEnumerable<IThingHolder> pods, CompLaunchable representative)
+		public override IEnumerable<FloatMenuOption> GetTransportersFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<PlanetTile, TransportersArrivalAction> launchAction)
 		{
-			foreach (FloatMenuOption transportPodsFloatMenuOption in base.GetTransportPodsFloatMenuOptions(pods, representative))
+			foreach (FloatMenuOption transportersFloatMenuOption in base.GetTransportersFloatMenuOptions(pods, launchAction))
 			{
-				yield return transportPodsFloatMenuOption;
+				yield return transportersFloatMenuOption;
 			}
-			foreach (FloatMenuOption floatMenuOption in TransportPodsArrivalAction_VisitSettlement.GetFloatMenuOptions(representative, pods, this))
+			foreach (FloatMenuOption floatMenuOption in TransportersArrivalAction_VisitSettlement.GetFloatMenuOptions(launchAction, pods, this, isShuttle: false))
 			{
 				yield return floatMenuOption;
 			}
-			foreach (FloatMenuOption floatMenuOption2 in TransportPodsArrivalAction_GiveGift.GetFloatMenuOptions(representative, pods, this))
+			foreach (FloatMenuOption floatMenuOption2 in TransportersArrivalAction_GiveGift.GetFloatMenuOptions(launchAction, pods, this))
 			{
 				yield return floatMenuOption2;
 			}
@@ -417,41 +384,50 @@ namespace RimWorld.Planet
 			{
 				yield break;
 			}
-			foreach (FloatMenuOption floatMenuOption3 in TransportPodsArrivalAction_AttackSettlement.GetFloatMenuOptions(representative, pods, this))
+			foreach (FloatMenuOption floatMenuOption3 in TransportersArrivalAction_AttackSettlement.GetFloatMenuOptions(launchAction, pods, this))
 			{
 				yield return floatMenuOption3;
 			}
 		}
 
-		public override IEnumerable<FloatMenuOption> GetShuttleFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<int, TransportPodsArrivalAction> launchAction)
+		public override IEnumerable<FloatMenuOption> GetShuttleFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<PlanetTile, TransportersArrivalAction> launchAction)
 		{
 			foreach (FloatMenuOption shuttleFloatMenuOption in base.GetShuttleFloatMenuOptions(pods, launchAction))
 			{
 				yield return shuttleFloatMenuOption;
 			}
-			if ((bool)TransportPodsArrivalAction_GiveGift.CanGiveGiftTo(pods, this))
+			if ((bool)TransportersArrivalAction_VisitSettlement.CanVisit(pods, this))
 			{
-				yield return new FloatMenuOption("GiveGiftViaTransportPods".Translate(base.Faction.Name, FactionGiftUtility.GetGoodwillChange(pods, this).ToStringWithSign()), delegate
+				yield return new FloatMenuOption("VisitSettlement".Translate(Label), delegate
 				{
-					TradeRequestComp tradeReqComp = GetComponent<TradeRequestComp>();
-					if (tradeReqComp.ActiveRequest && pods.Any((IThingHolder p) => p.GetDirectlyHeldThings().Contains(tradeReqComp.requestThingDef)))
-					{
-						Find.WindowStack.Add(new Dialog_MessageBox("GiveGiftViaTransportPodsTradeRequestWarning".Translate(), "Yes".Translate(), delegate
-						{
-							launchAction(base.Tile, new TransportPodsArrivalAction_GiveGift(this));
-						}, "No".Translate()));
-					}
-					else
-					{
-						launchAction(base.Tile, new TransportPodsArrivalAction_GiveGift(this));
-					}
+					launchAction(base.Tile, new TransportersArrivalAction_VisitSettlement(this, "MessageShuttleArrived"));
+				});
+			}
+			if ((bool)TransportersArrivalAction_Trade.CanTradeWith(pods, this))
+			{
+				yield return new FloatMenuOption("TradeWithSettlement".Translate(Label), delegate
+				{
+					launchAction(base.Tile, new TransportersArrivalAction_Trade(this, "MessageShuttleArrived"));
 				});
 			}
 			if (base.HasMap)
 			{
 				yield break;
 			}
-			foreach (FloatMenuOption floatMenuOption in TransportPodsArrivalActionUtility.GetFloatMenuOptions(() => TransportPodsArrivalAction_AttackSettlement.CanAttack(pods, this), () => new TransportPodsArrivalAction_Shuttle(this), "AttackShuttle".Translate(Label), launchAction, base.Tile))
+			IThingHolder thingHolder = pods.FirstOrDefault();
+			CompTransporter firstPod = thingHolder as CompTransporter;
+			if (firstPod == null || firstPod.Shuttle.shipParent == null)
+			{
+				yield break;
+			}
+			TaggedString message = (base.Faction.HostileTo(Faction.OfPlayer) ? "ConfirmLandOnHostileFactionBase".Translate(base.Faction) : "ConfirmLandOnNeutralFactionBase".Translate(base.Faction));
+			foreach (FloatMenuOption floatMenuOption in TransportersArrivalActionUtility.GetFloatMenuOptions(() => TransportersArrivalAction_AttackSettlement.CanAttack(pods, this), () => new TransportersArrivalAction_TransportShip(this, firstPod.Shuttle.shipParent), "AttackShuttle".Translate(Label), delegate(PlanetTile t, TransportersArrivalAction s)
+			{
+				Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation(message, delegate
+				{
+					launchAction(t, s);
+				}));
+			}, base.Tile))
 			{
 				yield return floatMenuOption;
 			}
@@ -463,6 +439,18 @@ namespace RimWorld.Planet
 			if (trader != null)
 			{
 				outChildren.Add(trader);
+			}
+		}
+
+		public override void Abandon(bool wasGravshipLaunch)
+		{
+			base.Abandon(wasGravshipLaunch);
+			if (!wasGravshipLaunch && base.Tile.LayerDef == PlanetLayerDefOf.Surface)
+			{
+				WorldObject worldObject = WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.AbandonedSettlement);
+				worldObject.Tile = base.Tile;
+				worldObject.SetFaction(base.Faction);
+				Find.WorldObjects.Add(worldObject);
 			}
 		}
 	}

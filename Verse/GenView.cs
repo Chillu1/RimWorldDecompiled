@@ -8,12 +8,12 @@ namespace Verse
 
 		private const int ViewRectMargin = 5;
 
-		public static bool ShouldSpawnMotesAt(this Vector3 loc, Map map)
+		public static bool ShouldSpawnMotesAt(this Vector3 loc, Map map, bool drawOffscreen = true)
 		{
-			return loc.ToIntVec3().ShouldSpawnMotesAt(map);
+			return loc.ToIntVec3().ShouldSpawnMotesAt(map, drawOffscreen);
 		}
 
-		public static bool ShouldSpawnMotesAt(this IntVec3 loc, Map map)
+		public static bool ShouldSpawnMotesAt(this IntVec3 loc, Map map, bool drawOffscreen = true)
 		{
 			if (map != Find.CurrentMap)
 			{
@@ -22,6 +22,10 @@ namespace Verse
 			if (!loc.InBounds(map))
 			{
 				return false;
+			}
+			if (drawOffscreen)
+			{
+				return true;
 			}
 			viewRect = Find.CameraDriver.CurrentViewRect;
 			viewRect = viewRect.ExpandedBy(5);

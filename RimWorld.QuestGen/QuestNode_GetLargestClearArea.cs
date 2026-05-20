@@ -43,7 +43,7 @@ namespace RimWorld.QuestGen
 
 		private bool IsClear(IntVec3 c, Map map)
 		{
-			if (!c.GetTerrain(map).affordances.Contains(TerrainAffordanceDefOf.Heavy))
+			if (!c.GetAffordances(map).Contains(TerrainAffordanceDefOf.Heavy))
 			{
 				return false;
 			}

@@ -17,8 +17,8 @@ namespace Verse
 
 		public static Vector2 RotatedBy(this Vector2 v, float degrees)
 		{
-			float num = Mathf.Sin(degrees * ((float)Math.PI / 180f));
-			float num2 = Mathf.Cos(degrees * ((float)Math.PI / 180f));
+			float num = Mathf.Sin(degrees * (MathF.PI / 180f));
+			float num2 = Mathf.Cos(degrees * (MathF.PI / 180f));
 			return new Vector2(num2 * v.x - num * v.y, num * v.x + num2 * v.y);
 		}
 
@@ -27,19 +27,34 @@ namespace Verse
 			return Mathf.Atan2(0f - (b.y - a.y), b.x - a.x) * 57.29578f;
 		}
 
+		public static Vector3 ScaledBy(this Vector3 a, Vector3 b)
+		{
+			return new Vector3(a.x * b.x, a.y * b.y, a.z * b.z);
+		}
+
 		public static Vector2 Moved(this Vector2 v, float angle, float distance)
 		{
-			return new Vector2(v.x + Mathf.Cos(angle * ((float)Math.PI / 180f)) * distance, v.y - Mathf.Sin(angle * ((float)Math.PI / 180f)) * distance);
+			return new Vector2(v.x + Mathf.Cos(angle * (MathF.PI / 180f)) * distance, v.y - Mathf.Sin(angle * (MathF.PI / 180f)) * distance);
 		}
 
 		public static Vector2 FromAngle(float angle)
 		{
-			return new Vector2(Mathf.Cos(angle * ((float)Math.PI / 180f)), 0f - Mathf.Sin(angle * ((float)Math.PI / 180f)));
+			return new Vector2(Mathf.Cos(angle * (MathF.PI / 180f)), 0f - Mathf.Sin(angle * (MathF.PI / 180f)));
 		}
 
 		public static float ToAngle(this Vector2 v)
 		{
 			return Mathf.Atan2(0f - v.y, v.x) * 57.29578f;
+		}
+
+		public static Vector3 ToVector3(this Vector2 v)
+		{
+			return new Vector3(v.x, 0f, v.y);
+		}
+
+		public static Vector2 ToVector2(this Vector3 v)
+		{
+			return new Vector2(v.x, v.z);
 		}
 
 		public static float Cross(this Vector2 u, Vector2 v)
@@ -82,6 +97,40 @@ namespace Verse
 				return rect.yMin - u.y;
 			}
 			return u.y - rect.yMax;
+		}
+
+		public static Vector3 MultipliedBy(this Vector3 a, Vector3 b)
+		{
+			return new Vector3(a.x * b.x, a.y * b.y, a.z * b.z);
+		}
+
+		public static Vector2 Cardinalize(this Vector2 vec)
+		{
+			return vec.Cardinalize(Vector2.zero);
+		}
+
+		public static Vector2 Cardinalize(this Vector2 vec, Vector2 bias)
+		{
+			if (vec.sqrMagnitude == 0f)
+			{
+				return vec;
+			}
+			Vector2 normalized = (vec + bias).normalized;
+			float num = Mathf.Abs(normalized.x);
+			float num2 = Mathf.Abs(normalized.y);
+			if (num > num2)
+			{
+				if (normalized.x > 0f)
+				{
+					return Vector2.right;
+				}
+				return Vector2.left;
+			}
+			if (normalized.y > 0f)
+			{
+				return Vector2.up;
+			}
+			return Vector2.down;
 		}
 	}
 }

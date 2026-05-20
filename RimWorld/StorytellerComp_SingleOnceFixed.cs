@@ -14,7 +14,7 @@ namespace RimWorld
 			int num = IntervalsPassed;
 			if (Props.minColonistCount > 0)
 			{
-				if (target.StoryState.lastFireTicks.ContainsKey(Props.incident) || PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists.Count < Props.minColonistCount)
+				if (target.StoryState.lastFireTicks.ContainsKey(Props.incident) || PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists.Count < Props.minColonistCount)
 				{
 					yield break;
 				}
@@ -26,10 +26,10 @@ namespace RimWorld
 			}
 			if (Props.skipIfColonistHasMinTitle != null)
 			{
-				List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists = PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists;
-				for (int i = 0; i < allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists.Count; i++)
+				List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_FreeColonists = PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists;
+				for (int i = 0; i < allMapsCaravansAndTravellingTransporters_Alive_FreeColonists.Count; i++)
 				{
-					if (allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists[i].royalty != null && allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists[i].royalty.AllTitlesForReading.Any() && allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists[i].royalty.MainTitle().seniority >= Props.skipIfColonistHasMinTitle.seniority)
+					if (allMapsCaravansAndTravellingTransporters_Alive_FreeColonists[i].royalty != null && allMapsCaravansAndTravellingTransporters_Alive_FreeColonists[i].royalty.AllTitlesForReading.Any() && allMapsCaravansAndTravellingTransporters_Alive_FreeColonists[i].royalty.MainTitle().seniority >= Props.skipIfColonistHasMinTitle.seniority)
 					{
 						yield break;
 					}

@@ -6,6 +6,7 @@ namespace Verse
 		PassDoors,
 		NoPassClosedDoors,
 		PassAllDestroyableThings,
+		PassAllDestroyablePlayerOwnedThings,
 		NoPassClosedDoorsOrWater,
 		PassAllDestroyableThingsNotWater
 	}

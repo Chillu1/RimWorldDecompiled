@@ -38,11 +38,11 @@ namespace Verse
 					{
 						if (expected)
 						{
-							Log.Error(string.Concat("Region error: thing ", lister[i], " is expected to be registered twice in ", region, "? This should never happen."));
+							Log.Error("Region error: thing " + lister[i]?.ToString() + " is expected to be registered twice in " + region?.ToString() + "? This should never happen.");
 						}
 						else
 						{
-							Log.Error(string.Concat("Region error: thing ", lister[i], " is registered twice in ", region));
+							Log.Error("Region error: thing " + lister[i]?.ToString() + " is registered twice in " + region);
 						}
 					}
 				}
@@ -59,7 +59,7 @@ namespace Verse
 				{
 					if (!allThings.Contains(value[i]))
 					{
-						Log.Error(string.Concat("Region error: thing ", value[i], " at ", value[i].Position, " should be registered in ", expectedLister.Key, " but it's not."));
+						Log.Error("Region error: thing " + value[i]?.ToString() + " at " + value[i].Position.ToString() + " should be registered in " + expectedLister.Key?.ToString() + " but it's not.");
 					}
 				}
 			}
@@ -78,7 +78,7 @@ namespace Verse
 				{
 					if (value == null || !value.Contains(allThings[i]))
 					{
-						Log.Error(string.Concat("Region error: thing ", allThings[i], " at ", allThings[i].Position, " is registered in ", allRegion, " but it shouldn't be."));
+						Log.Error("Region error: thing " + allThings[i]?.ToString() + " at " + allThings[i].Position.ToString() + " is registered in " + allRegion?.ToString() + " but it shouldn't be.");
 					}
 				}
 			}

@@ -11,11 +11,11 @@ namespace RimWorld
 
 		protected CompInitiatable initiatableComp;
 
-		protected CompProperties_PlantHarmRadius PropsPlantHarmRadius => (CompProperties_PlantHarmRadius)props;
+		protected CompProperties_PlantHarmRadius Props => (CompProperties_PlantHarmRadius)props;
 
 		public float AgeDays => (float)plantHarmAge / 60000f;
 
-		public float CurrentRadius => PropsPlantHarmRadius.radiusPerDayCurve.Evaluate(AgeDays);
+		public float CurrentRadius => Props.radiusPerDayCurve.Evaluate(AgeDays);
 
 		public override void PostExposeData()
 		{
@@ -31,7 +31,7 @@ namespace RimWorld
 
 		public override string CompInspectStringExtra()
 		{
-			return (string)("FoliageKillRadius".Translate() + ": " + CurrentRadius.ToString("0.0") + "\n" + "RadiusExpandRate".Translate() + ": ") + Math.Round(PropsPlantHarmRadius.radiusPerDayCurve.Evaluate(AgeDays + 1f) - PropsPlantHarmRadius.radiusPerDayCurve.Evaluate(AgeDays)) + "/" + "day".Translate();
+			return "FoliageKillRadius".Translate() + ": " + CurrentRadius.ToString("0.0") + " (+" + "PerDay".Translate((Props.radiusPerDayCurve.Evaluate(AgeDays + 1f) - Props.radiusPerDayCurve.Evaluate(AgeDays)).ToString("0.0")) + ")";
 		}
 
 		public override void CompTick()
@@ -45,7 +45,7 @@ namespace RimWorld
 			if (ticksToPlantHarm <= 0)
 			{
 				float currentRadius = CurrentRadius;
-				float num = (float)Math.PI * currentRadius * currentRadius * PropsPlantHarmRadius.harmFrequencyPerArea;
+				float num = MathF.PI * currentRadius * currentRadius * Props.harmFrequencyPerArea;
 				float num2 = 60f / num;
 				int num3;
 				if (num2 >= 1f)
@@ -73,20 +73,20 @@ namespace RimWorld
 				return;
 			}
 			Plant plant = c.GetPlant(parent.Map);
-			if (plant == null)
+			if (plant == null || (Props.ignoreSpecialTrees && plant.def.plant.treeCategory == TreeCategory.Super))
 			{
 				return;
 			}
 			if (plant.LeaflessNow)
 			{
-				if (Rand.Value < PropsPlantHarmRadius.leaflessPlantKillChance)
+				if (Rand.Value < Props.leaflessPlantKillChance)
 				{
 					plant.Kill();
 				}
 			}
 			else
 			{
-				plant.MakeLeafless(Plant.LeaflessCause.Poison);
+				plant.MakeLeafless(Plant.LeaflessCause.Poison, Props.messageOnCropDeath);
 			}
 		}
 	}

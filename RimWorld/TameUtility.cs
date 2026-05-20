@@ -12,20 +12,29 @@ namespace RimWorld
 		{
 			if (showManhunterOnTameFailWarning)
 			{
-				float manhunterOnTameFailChance = pawn.RaceProps.manhunterOnTameFailChance;
+				float manhunterOnTameFailChance = PawnUtility.GetManhunterOnTameFailChance(pawn);
 				if (manhunterOnTameFailChance >= 0.015f)
 				{
 					Messages.Message("MessageAnimalManhuntsOnTameFailed".Translate(pawn.kindDef.GetLabelPlural().CapitalizeFirst(), manhunterOnTameFailChance.ToStringPercent(), pawn.Named("ANIMAL")), pawn, MessageTypeDefOf.CautionInput, historical: false);
 				}
+			}
+			if (pawn.RaceProps.Insect && pawn.HostileTo(Faction.OfPlayer))
+			{
+				Messages.Message("MessageInsectsHostileOnTaming".Translate(pawn.Named("PAWN")), pawn, MessageTypeDefOf.CautionInput, historical: false);
 			}
 			IEnumerable<Pawn> source = pawn.Map.mapPawns.FreeColonistsSpawned.Where((Pawn c) => c.workSettings.WorkIsActive(WorkTypeDefOf.Handling));
 			if (!source.Any())
 			{
 				source = pawn.Map.mapPawns.FreeColonistsSpawned;
 			}
-			if (source.Any())
+			if (!source.Any())
 			{
-				Pawn pawn2 = source.MaxBy((Pawn c) => c.skills.GetSkill(SkillDefOf.Animals).Level);
+				return;
+			}
+			IEnumerable<Pawn> source2 = source.Where((Pawn p) => p.health.capacities.CapableOf(PawnCapacityDefOf.Talking) && p.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation));
+			if (source2.Any())
+			{
+				Pawn pawn2 = source2.MaxBy((Pawn p) => p.skills.GetSkill(SkillDefOf.Animals).Level);
 				int level = pawn2.skills.GetSkill(SkillDefOf.Animals).Level;
 				int num = TrainableUtility.MinimumHandlingSkill(pawn);
 				if (num > level)
@@ -37,9 +46,9 @@ namespace RimWorld
 
 		public static bool CanTame(Pawn pawn)
 		{
-			if (pawn.AnimalOrWildMan() && (pawn.Faction == null || !pawn.Faction.def.humanlikeFaction))
+			if (pawn.AnimalOrWildMan() && (pawn.Faction == null || !pawn.Faction.def.humanlikeFaction) && pawn.GetStatValue(StatDefOf.Wildness) < 1f && pawn.RaceProps.animalType != AnimalType.Dryad)
 			{
-				return pawn.RaceProps.wildness < 1f;
+				return !pawn.health.hediffSet.HasHediff(HediffDefOf.Scaria);
 			}
 			return false;
 		}

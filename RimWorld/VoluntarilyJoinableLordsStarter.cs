@@ -33,17 +33,6 @@ namespace RimWorld
 			return true;
 		}
 
-		public bool TryStartReigningSpeech(Pawn pawn)
-		{
-			if (!GatheringDefOf.ThroneSpeech.CanExecute(pawn.Map, pawn, ignoreGameConditions: true))
-			{
-				return false;
-			}
-			GatheringDefOf.ThroneSpeech.Worker.TryExecute(pawn.Map, pawn);
-			lastLordStartTick = Find.TickManager.TicksGame;
-			return true;
-		}
-
 		public bool TryStartRandomGathering(bool forceStart = false)
 		{
 			tmpGatherings.Clear();

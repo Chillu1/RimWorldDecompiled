@@ -106,7 +106,7 @@ namespace RimWorld
 				{
 					continue;
 				}
-				stringBuilder.AppendLine(string.Concat("=======", allFaction.Name, " (", allFaction.def, ")"));
+				stringBuilder.AppendLine("=======" + allFaction.Name + " (" + allFaction.def?.ToString() + ")");
 				foreach (Thing item in list)
 				{
 					stringBuilder.AppendLine(item.ThingID);

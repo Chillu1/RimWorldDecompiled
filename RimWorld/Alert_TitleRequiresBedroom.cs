@@ -15,11 +15,15 @@ namespace RimWorld
 				List<Map> maps = Find.Maps;
 				for (int i = 0; i < maps.Count; i++)
 				{
-					foreach (Pawn freeColonist in maps[i].mapPawns.FreeColonists)
+					if (!maps[i].IsPlayerHome)
 					{
-						if (freeColonist.royalty != null && freeColonist.royalty.CanRequireBedroom() && freeColonist.royalty.HighestTitleWithBedroomRequirements() != null && !freeColonist.Suspended && !freeColonist.royalty.HasPersonalBedroom())
+						continue;
+					}
+					foreach (Pawn item in maps[i].mapPawns.FreeColonistsSpawned)
+					{
+						if (item.royalty != null && item.royalty.CanRequireBedroom() && item.royalty.HighestTitleWithBedroomRequirements() != null && !item.Suspended && !item.royalty.HasPersonalBedroom())
 						{
-							targetsResult.Add(freeColonist);
+							targetsResult.Add(item);
 						}
 					}
 				}
@@ -31,11 +35,22 @@ namespace RimWorld
 		{
 			defaultLabel = "NeedBedroomAssigned".Translate();
 			defaultExplanation = "NeedBedroomAssignedDesc".Translate();
+			requireRoyalty = true;
 		}
 
 		public override AlertReport GetReport()
 		{
 			return AlertReport.CulpritsAre(Targets);
+		}
+
+		public override TaggedString GetExplanation()
+		{
+			string text = defaultExplanation;
+			if (MoveColonyUtility.TitleAndRoleRequirementsGracePeriodActive)
+			{
+				text += "\n\n" + "RoomRequirementGracePeriodDesc".Translate(MoveColonyUtility.TitleAndRoleRequirementGracePeriodTicksLeft.TicksToDays().ToString("0.0"));
+			}
+			return text;
 		}
 	}
 }

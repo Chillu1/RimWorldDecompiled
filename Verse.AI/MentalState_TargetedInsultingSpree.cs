@@ -11,26 +11,26 @@ namespace Verse.AI
 
 		protected override bool CanEndBeforeMaxDurationNow => insultedTargetAtLeastOnce;
 
-		public override void MentalStateTick()
+		public override void MentalStateTick(int delta)
 		{
-			if (base.target != null && (!base.target.Spawned || !pawn.CanReach(base.target, PathEndMode.Touch, Danger.Deadly) || !base.target.Awake()))
+			if (target != null && (!target.Spawned || !base.pawn.CanReach(target, PathEndMode.Touch, Danger.Deadly) || !target.Awake()))
 			{
-				Pawn target = base.target;
+				Pawn pawn = target;
 				if (!TryFindNewTarget())
 				{
 					RecoverFromState();
 					return;
 				}
-				Messages.Message("MessageTargetedInsultingSpreeChangedTarget".Translate(pawn.LabelShort, target.Label, base.target.Label, pawn.Named("PAWN"), target.Named("OLDTARGET"), base.target.Named("TARGET")).AdjustedFor(pawn), pawn, MessageTypeDefOf.NegativeEvent);
-				base.MentalStateTick();
+				Messages.Message("MessageTargetedInsultingSpreeChangedTarget".Translate(base.pawn.LabelShort, pawn.Label, target.Label, base.pawn.Named("PAWN"), pawn.Named("OLDTARGET"), target.Named("TARGET")).AdjustedFor(base.pawn), base.pawn, MessageTypeDefOf.NegativeEvent);
+				base.MentalStateTick(delta);
 			}
-			else if (base.target == null || !InsultingSpreeMentalStateUtility.CanChaseAndInsult(pawn, base.target, skipReachabilityCheck: false, allowPrisoners: false))
+			else if (target == null || !InsultingSpreeMentalStateUtility.CanChaseAndInsult(base.pawn, target, skipReachabilityCheck: false, allowPrisoners: false))
 			{
 				RecoverFromState();
 			}
 			else
 			{
-				base.MentalStateTick();
+				base.MentalStateTick(delta);
 			}
 		}
 
@@ -57,7 +57,7 @@ namespace Verse.AI
 			}
 		}
 
-		public override string GetBeginLetterText()
+		public override TaggedString GetBeginLetterText()
 		{
 			if (target == null)
 			{

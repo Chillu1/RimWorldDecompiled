@@ -6,10 +6,7 @@ namespace RimWorld
 {
 	public abstract class WorkGiver_ConstructAffectFloor : WorkGiver_Scanner
 	{
-		protected abstract DesignationDef DesDef
-		{
-			get;
-		}
+		protected abstract DesignationDef DesDef { get; }
 
 		public override PathEndMode PathEndMode => PathEndMode.Touch;
 
@@ -28,7 +25,7 @@ namespace RimWorld
 
 		public override bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false)
 		{
-			if (c.IsForbidden(pawn) || pawn.Map.designationManager.DesignationAt(c, DesDef) == null || !pawn.CanReserve(c, 1, -1, ReservationLayerDefOf.Floor, forced))
+			if (pawn.Map.designationManager.DesignationAt(c, DesDef) == null || !pawn.CanReserve(c, 1, -1, ReservationLayerDefOf.Floor, forced))
 			{
 				return false;
 			}

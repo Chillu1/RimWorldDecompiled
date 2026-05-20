@@ -14,6 +14,8 @@ namespace RimWorld
 
 		private int randomPriceFactorSeed = -1;
 
+		private bool wasAnnounced;
+
 		private static List<string> tmpExtantNames = new List<string>();
 
 		public override string FullTitle => name + " (" + def.label + ")";
@@ -34,14 +36,25 @@ namespace RimWorld
 
 		public float TradePriceImprovementOffsetForPlayer => 0f;
 
+		public bool WasAnnounced
+		{
+			get
+			{
+				return wasAnnounced;
+			}
+			set
+			{
+				wasAnnounced = value;
+			}
+		}
+
 		public IEnumerable<Thing> Goods
 		{
 			get
 			{
 				for (int i = 0; i < things.Count; i++)
 				{
-					Pawn pawn = things[i] as Pawn;
-					if (pawn == null || !soldPrisoners.Contains(pawn))
+					if (!(things[i] is Pawn item) || !soldPrisoners.Contains(item))
 					{
 						yield return things[i];
 					}
@@ -67,7 +80,7 @@ namespace RimWorld
 			name = NameGenerator.GenerateName(RulePackDefOf.NamerTraderGeneral, tmpExtantNames);
 			if (faction != null)
 			{
-				name = string.Format("{0} {1} {2}", name, "OfLower".Translate(), faction.Name);
+				name = "GuildTradeShipName".Translate(name, faction.Name);
 			}
 			randomPriceFactorSeed = Rand.RangeInclusive(1, 10000000);
 			loadID = Find.UniqueIDsManager.GetNextPassingShipID();
@@ -79,7 +92,7 @@ namespace RimWorld
 			{
 				yield return item;
 			}
-			foreach (Pawn item2 in TradeUtility.AllSellableColonyPawns(base.Map))
+			foreach (Pawn item2 in TradeUtility.AllSellableColonyPawns(base.Map, checkAcceptableTemperatureOfAnimals: false))
 			{
 				yield return item2;
 			}
@@ -87,9 +100,11 @@ namespace RimWorld
 
 		public void GenerateThings()
 		{
-			ThingSetMakerParams parms = default(ThingSetMakerParams);
-			parms.traderDef = def;
-			parms.tile = base.Map.Tile;
+			ThingSetMakerParams parms = new ThingSetMakerParams
+			{
+				traderDef = def,
+				tile = base.Map.Tile
+			};
 			things.TryAddRangeOrTransfer(ThingSetMakerDefOf.TraderStock.root.Generate(parms));
 		}
 
@@ -98,10 +113,9 @@ namespace RimWorld
 			base.PassingShipTick();
 			for (int num = things.Count - 1; num >= 0; num--)
 			{
-				Pawn pawn = things[num] as Pawn;
-				if (pawn != null)
+				if (things[num] is Pawn pawn)
 				{
-					pawn.Tick();
+					pawn.DoTick();
 					if (pawn.Dead)
 					{
 						things.Remove(pawn);
@@ -117,6 +131,7 @@ namespace RimWorld
 			Scribe_Deep.Look(ref things, "things", this);
 			Scribe_Collections.Look(ref soldPrisoners, "soldPrisoners", LookMode.Reference);
 			Scribe_Values.Look(ref randomPriceFactorSeed, "randomPriceFactorSeed", 0);
+			Scribe_Values.Look(ref wasAnnounced, "wasAnnounced", defaultValue: true);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				soldPrisoners.RemoveAll((Pawn x) => x == null);
@@ -146,23 +161,14 @@ namespace RimWorld
 			return name + " (" + def.label + ")";
 		}
 
-		protected override AcceptanceReport CanCommunicateWith_NewTemp(Pawn negotiator)
+		protected override AcceptanceReport CanCommunicateWith(Pawn negotiator)
 		{
-			AcceptanceReport result = base.CanCommunicateWith_NewTemp(negotiator);
+			AcceptanceReport result = base.CanCommunicateWith(negotiator);
 			if (!result.Accepted)
 			{
 				return result;
 			}
-			return negotiator.CanTradeWith_NewTemp(base.Faction, TraderKind);
-		}
-
-		protected override bool CanCommunicateWith(Pawn negotiator)
-		{
-			if (base.CanCommunicateWith(negotiator))
-			{
-				return negotiator.CanTradeWith(base.Faction, TraderKind);
-			}
-			return false;
+			return negotiator.CanTradeWith(base.Faction, TraderKind);
 		}
 
 		public int CountHeldOf(ThingDef thingDef, ThingDef stuffDef = null)
@@ -183,8 +189,7 @@ namespace RimWorld
 				}
 				return;
 			}
-			Pawn pawn = thing as Pawn;
-			if (pawn != null && pawn.RaceProps.Humanlike)
+			if (thing is Pawn pawn && pawn.RaceProps.Humanlike)
 			{
 				soldPrisoners.Add(pawn);
 			}
@@ -195,10 +200,9 @@ namespace RimWorld
 		{
 			Thing thing = toGive.SplitOff(countToGive);
 			thing.PreTraded(TradeAction.PlayerBuys, playerNegotiator, this);
-			Pawn pawn = thing as Pawn;
-			if (pawn != null)
+			if (thing is Pawn item)
 			{
-				soldPrisoners.Remove(pawn);
+				soldPrisoners.Remove(item);
 			}
 			TradeUtility.SpawnDropPod(DropCellFinder.TradeDropSpot(base.Map), base.Map, thing);
 		}

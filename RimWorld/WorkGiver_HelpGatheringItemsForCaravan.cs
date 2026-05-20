@@ -12,8 +12,7 @@ namespace RimWorld
 			List<Lord> lords = pawn.Map.lordManager.lords;
 			for (int i = 0; i < lords.Count; i++)
 			{
-				LordJob_FormAndSendCaravan lordJob_FormAndSendCaravan = lords[i].LordJob as LordJob_FormAndSendCaravan;
-				if (lordJob_FormAndSendCaravan != null && lordJob_FormAndSendCaravan.GatheringItemsNow)
+				if (lords[i].LordJob is LordJob_FormAndSendCaravan { GatheringItemsNow: not false })
 				{
 					Thing thing = GatherItemsForCaravanUtility.FindThingToHaul(pawn, lords[i]);
 					if (thing != null && AnyReachableCarrierOrColonist(pawn, lords[i]))

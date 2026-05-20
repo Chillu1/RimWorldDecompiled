@@ -24,5 +24,15 @@ namespace RimWorld
 		{
 			SlaughterDesignatorUtility.CheckWarnAboutBondedAnimal(pawn);
 		}
+
+		protected override bool ShouldConfirmDesignation(Pawn pawn, out string title)
+		{
+			if (pawn.HomeFaction == Faction.OfPlayer || pawn.HomeFaction == null)
+			{
+				return base.ShouldConfirmDesignation(pawn, out title);
+			}
+			title = "AnimalSlaughterConfirm".Translate(pawn.Named("PAWN"), pawn.HomeFaction.Named("FACTION"));
+			return true;
+		}
 	}
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -39,15 +40,9 @@ namespace RimWorld
 
 		public string OutSignalCompleted => "Quest" + quest.id + ".Part" + base.Index + ".Completed";
 
-		public virtual string ExpiryInfoPart
-		{
-			get;
-		}
+		public virtual string ExpiryInfoPart { get; }
 
-		public virtual string ExpiryInfoPartTip
-		{
-			get;
-		}
+		public virtual string ExpiryInfoPartTip { get; }
 
 		public virtual AlertReport AlertReport => AlertReport.Inactive;
 
@@ -56,6 +51,8 @@ namespace RimWorld
 		public virtual string AlertExplanation => null;
 
 		public virtual bool AlertCritical => false;
+
+		public virtual GlobalTargetInfo? AlertCulpritTarget => null;
 
 		public bool AlertDirty
 		{
@@ -97,18 +94,17 @@ namespace RimWorld
 						cachedAlert = new Alert_Custom();
 					}
 				}
-				Alert_Custom alert_Custom = cachedAlert as Alert_Custom;
-				if (alert_Custom != null)
+				if (cachedAlert is Alert_Custom alert_Custom)
 				{
 					if (alertReport.active)
 					{
 						alert_Custom.label = AlertLabel;
 						alert_Custom.explanation = AlertExplanation;
+						alertReport.culpritTarget = AlertCulpritTarget;
 					}
 					alert_Custom.report = alertReport;
 				}
-				Alert_CustomCritical alert_CustomCritical = cachedAlert as Alert_CustomCritical;
-				if (alert_CustomCritical != null)
+				if (cachedAlert is Alert_CustomCritical alert_CustomCritical)
 				{
 					if (alertReport.active)
 					{
@@ -126,6 +122,11 @@ namespace RimWorld
 		}
 
 		public virtual string ExtraInspectString(ISelectable target)
+		{
+			return null;
+		}
+
+		public virtual IEnumerable<Gizmo> ExtraGizmos(ISelectable target)
 		{
 			return null;
 		}
@@ -185,7 +186,7 @@ namespace RimWorld
 				return;
 			}
 			state = QuestPartState.Disabled;
-			if (outcomeCompletedSignalArg != 0)
+			if (outcomeCompletedSignalArg != QuestEndOutcome.Unknown)
 			{
 				signalArgs.Add(outcomeCompletedSignalArg.Named("OUTCOME"));
 			}
@@ -242,6 +243,11 @@ namespace RimWorld
 		{
 			base.AssignDebugData();
 			inSignalEnable = quest.InitiateSignal;
+		}
+
+		public void DebugForceComplete()
+		{
+			Complete();
 		}
 
 		public override void ExposeData()

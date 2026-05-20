@@ -7,17 +7,19 @@ namespace RimWorld.Planet
 {
 	public static class TilesPerDayCalculator
 	{
-		private static List<Pawn> tmpPawns = new List<Pawn>();
+		private static readonly List<Pawn> tmpPawns = new List<Pawn>();
 
-		private static List<ThingCount> tmpThingCounts = new List<ThingCount>();
+		private static readonly List<ThingCount> tmpThingCounts = new List<ThingCount>();
 
-		public static float ApproxTilesPerDay(int caravanTicksPerMove, int tile, int nextTile, StringBuilder explanation = null, string caravanTicksPerMoveExplanation = null)
+		public static float ApproxTilesPerDay(int caravanTicksPerMove, PlanetTile tile, PlanetTile nextTile, StringBuilder explanation = null, string caravanTicksPerMoveExplanation = null, bool immobile = false)
 		{
-			if (nextTile == -1)
+			if (!nextTile.Valid)
 			{
 				nextTile = Find.WorldGrid.FindMostReasonableAdjacentTileForDisplayedPathCost(tile);
 			}
-			int num = Mathf.CeilToInt((float)Caravan_PathFollower.CostToMove(caravanTicksPerMove, tile, nextTile, null, perceivedStatic: false, explanation, caravanTicksPerMoveExplanation) / 1f);
+			PlanetTile end = nextTile;
+			bool immobile2 = immobile;
+			int num = Mathf.CeilToInt((float)Caravan_PathFollower.CostToMove(caravanTicksPerMove, tile, end, null, perceivedStatic: false, explanation, caravanTicksPerMoveExplanation, immobile2) / 1f);
 			if (num == 0)
 			{
 				return 0f;
@@ -27,10 +29,10 @@ namespace RimWorld.Planet
 
 		public static float ApproxTilesPerDay(Caravan caravan, StringBuilder explanation = null)
 		{
-			return ApproxTilesPerDay(caravan.TicksPerMove, caravan.Tile, caravan.pather.Moving ? caravan.pather.nextTile : (-1), explanation, (explanation != null) ? caravan.TicksPerMoveExplanation : null);
+			return ApproxTilesPerDay(caravan.TicksPerMove, caravan.Tile, caravan.pather.Moving ? caravan.pather.nextTile : PlanetTile.Invalid, explanation, (explanation != null) ? caravan.TicksPerMoveExplanation : null, caravan.ImmobilizedByMass || caravan.Shuttle != null);
 		}
 
-		public static float ApproxTilesPerDay(List<TransferableOneWay> transferables, float massUsage, float massCapacity, int tile, int nextTile, StringBuilder explanation = null)
+		public static float ApproxTilesPerDay(List<TransferableOneWay> transferables, float massUsage, float massCapacity, PlanetTile tile, PlanetTile nextTile, bool isShuttle, StringBuilder explanation = null)
 		{
 			tmpPawns.Clear();
 			for (int i = 0; i < transferables.Count; i++)
@@ -49,12 +51,12 @@ namespace RimWorld.Planet
 				return 0f;
 			}
 			StringBuilder stringBuilder = ((explanation != null) ? new StringBuilder() : null);
-			float result = ApproxTilesPerDay(CaravanTicksPerMoveUtility.GetTicksPerMove(tmpPawns, massUsage, massCapacity, stringBuilder), tile, nextTile, explanation, stringBuilder?.ToString());
+			float result = ApproxTilesPerDay(CaravanTicksPerMoveUtility.GetTicksPerMove(tmpPawns, massUsage, massCapacity, isShuttle, stringBuilder), tile, nextTile, explanation, stringBuilder?.ToString(), massUsage > massCapacity);
 			tmpPawns.Clear();
 			return result;
 		}
 
-		public static float ApproxTilesPerDayLeftAfterTransfer(List<TransferableOneWay> transferables, float massUsageLeftAfterTransfer, float massCapacityLeftAfterTransfer, int tile, int nextTile, StringBuilder explanation = null)
+		public static float ApproxTilesPerDayLeftAfterTransfer(List<TransferableOneWay> transferables, float massUsageLeftAfterTransfer, float massCapacityLeftAfterTransfer, PlanetTile tile, PlanetTile nextTile, bool isShuttle, StringBuilder explanation = null)
 		{
 			tmpPawns.Clear();
 			for (int i = 0; i < transferables.Count; i++)
@@ -73,32 +75,28 @@ namespace RimWorld.Planet
 				return 0f;
 			}
 			StringBuilder stringBuilder = ((explanation != null) ? new StringBuilder() : null);
-			float result = ApproxTilesPerDay(CaravanTicksPerMoveUtility.GetTicksPerMove(tmpPawns, massUsageLeftAfterTransfer, massCapacityLeftAfterTransfer, stringBuilder), tile, nextTile, explanation, stringBuilder?.ToString());
+			float result = ApproxTilesPerDay(CaravanTicksPerMoveUtility.GetTicksPerMove(tmpPawns, massUsageLeftAfterTransfer, massCapacityLeftAfterTransfer, isShuttle, stringBuilder), tile, nextTile, explanation, stringBuilder?.ToString(), massUsageLeftAfterTransfer > massCapacityLeftAfterTransfer);
 			tmpPawns.Clear();
 			return result;
 		}
 
-		public static float ApproxTilesPerDayLeftAfterTradeableTransfer(List<Thing> allCurrentThings, List<Tradeable> tradeables, float massUsageLeftAfterTradeableTransfer, float massCapacityLeftAfterTradeableTransfer, int tile, int nextTile, StringBuilder explanation = null)
+		public static float ApproxTilesPerDayLeftAfterTradeableTransfer(List<Thing> allCurrentThings, List<Tradeable> tradeables, float massUsageLeftAfterTradeableTransfer, float massCapacityLeftAfterTradeableTransfer, PlanetTile tile, PlanetTile nextTile, bool isShuttle, StringBuilder explanation = null)
 		{
 			tmpThingCounts.Clear();
 			TransferableUtility.SimulateTradeableTransfer(allCurrentThings, tradeables, tmpThingCounts);
-			float result = ApproxTilesPerDay(tmpThingCounts, massUsageLeftAfterTradeableTransfer, massCapacityLeftAfterTradeableTransfer, tile, nextTile, explanation);
+			float result = ApproxTilesPerDay(tmpThingCounts, massUsageLeftAfterTradeableTransfer, massCapacityLeftAfterTradeableTransfer, tile, nextTile, isShuttle, explanation);
 			tmpThingCounts.Clear();
 			return result;
 		}
 
-		public static float ApproxTilesPerDay(List<ThingCount> thingCounts, float massUsage, float massCapacity, int tile, int nextTile, StringBuilder explanation = null)
+		public static float ApproxTilesPerDay(List<ThingCount> thingCounts, float massUsage, float massCapacity, PlanetTile tile, PlanetTile nextTile, bool isShuttle, StringBuilder explanation = null)
 		{
 			tmpPawns.Clear();
 			for (int i = 0; i < thingCounts.Count; i++)
 			{
-				if (thingCounts[i].Count > 0)
+				if (thingCounts[i].Count > 0 && thingCounts[i].Thing is Pawn item)
 				{
-					Pawn pawn = thingCounts[i].Thing as Pawn;
-					if (pawn != null)
-					{
-						tmpPawns.Add(pawn);
-					}
+					tmpPawns.Add(item);
 				}
 			}
 			if (!tmpPawns.Any())
@@ -106,7 +104,7 @@ namespace RimWorld.Planet
 				return 0f;
 			}
 			StringBuilder stringBuilder = ((explanation != null) ? new StringBuilder() : null);
-			float result = ApproxTilesPerDay(CaravanTicksPerMoveUtility.GetTicksPerMove(tmpPawns, massUsage, massCapacity, stringBuilder), tile, nextTile, explanation, stringBuilder?.ToString());
+			float result = ApproxTilesPerDay(CaravanTicksPerMoveUtility.GetTicksPerMove(tmpPawns, massUsage, massCapacity, isShuttle, stringBuilder), tile, nextTile, explanation, stringBuilder?.ToString(), massUsage > massCapacity);
 			tmpPawns.Clear();
 			return result;
 		}

@@ -30,7 +30,7 @@ namespace Verse
 			{
 				return;
 			}
-			if (ambientTemperature > floatRange.min)
+			if (ambientTemperature > floatRange.min || !pawn.SpawnedOrAnyParentSpawned || pawn.PositionHeld.GetTerrain(pawn.MapHeld).heatPerTick > 0f)
 			{
 				float value = firstHediffOfDef.Severity * 0.027f;
 				value = Mathf.Clamp(value, 0.0015f, 0.015f);

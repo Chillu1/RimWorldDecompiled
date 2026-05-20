@@ -38,5 +38,14 @@ namespace RimWorld
 			Scribe_Values.Look(ref timesTakenThisDayInt, "timesTakenThisDay", 0);
 			Scribe_Values.Look(ref thisDay, "thisDay", 0);
 		}
+
+		public void Notify_LeftSuspension(int suspendedTicks)
+		{
+			lastTakenTicks += suspendedTicks;
+			if (GenDate.DaysPassedAt(Find.TickManager.TicksGame - suspendedTicks) == thisDay)
+			{
+				thisDay = GenDate.DaysPassed;
+			}
+		}
 	}
 }

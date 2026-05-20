@@ -4,7 +4,7 @@ namespace Verse
 {
 	public class PawnLeaner
 	{
-		private Pawn pawn;
+		private readonly Pawn pawn;
 
 		private IntVec3 shootSourceOffset = new IntVec3(0, 0, 0);
 
@@ -21,11 +21,11 @@ namespace Verse
 			this.pawn = pawn;
 		}
 
-		public void LeanerTick()
+		public void ProcessPostTickVisuals(int ticksPassed)
 		{
 			if (ShouldLean())
 			{
-				leanOffsetCurPct += 0.075f;
+				leanOffsetCurPct += 0.075f * (float)ticksPassed;
 				if (leanOffsetCurPct > 1f)
 				{
 					leanOffsetCurPct = 1f;
@@ -33,7 +33,7 @@ namespace Verse
 			}
 			else
 			{
-				leanOffsetCurPct -= 0.075f;
+				leanOffsetCurPct -= 0.075f * (float)ticksPassed;
 				if (leanOffsetCurPct < 0f)
 				{
 					leanOffsetCurPct = 0f;
@@ -43,18 +43,18 @@ namespace Verse
 
 		public bool ShouldLean()
 		{
-			if (pawn.stances.curStance is Stance_Busy)
+			if (!(pawn.stances.curStance is Stance_Busy))
 			{
-				if (shootSourceOffset == new IntVec3(0, 0, 0))
-				{
-					return false;
-				}
-				return true;
+				return false;
 			}
-			return false;
+			if (shootSourceOffset == new IntVec3(0, 0, 0))
+			{
+				return false;
+			}
+			return true;
 		}
 
-		public void Notify_WarmingCastAlongLine(ShootLine newShootLine, IntVec3 ShootPosition)
+		public void Notify_WarmingCastAlongLine(ShootLine newShootLine, IntVec3 shootPosition)
 		{
 			shootSourceOffset = newShootLine.Source - pawn.Position;
 		}

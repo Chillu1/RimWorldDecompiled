@@ -28,7 +28,7 @@ namespace RimWorld
 
 		public override void DoWindowContents(Rect rect)
 		{
-			rect.height -= CloseButSize.y;
+			rect.height -= Window.CloseButSize.y;
 			float num = 0f;
 			if (Widgets.ButtonText(new Rect(rect.width - 354f - 16f, num, 354f, 32f), "ManageDrugPolicies".Translate()))
 			{
@@ -39,13 +39,13 @@ namespace RimWorld
 			Rect viewRect = new Rect(0f, 0f, rect.width - 16f, lastHeight);
 			Widgets.BeginScrollView(outRect, ref scrollPos, viewRect);
 			float num2 = 0f;
-			for (int i = 0; i < caravan.pawns.Count; i++)
+			foreach (Pawn pawn in caravan.pawns)
 			{
-				if (caravan.pawns[i].drugs != null)
+				if (pawn.drugs != null && !pawn.DevelopmentalStage.Baby())
 				{
 					if (num2 + 30f >= scrollPos.y && num2 <= scrollPos.y + outRect.height)
 					{
-						DoRow(new Rect(0f, num2, viewRect.width, 30f), caravan.pawns[i]);
+						DoRow(new Rect(0f, num2, viewRect.width, 30f), pawn);
 					}
 					num2 += 30f;
 				}

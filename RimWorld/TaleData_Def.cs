@@ -28,7 +28,7 @@ namespace RimWorld
 			}
 		}
 
-		public override IEnumerable<Rule> GetRules(string prefix)
+		public override IEnumerable<Rule> GetRules(string prefix, Dictionary<string, string> constants = null)
 		{
 			if (def != null)
 			{

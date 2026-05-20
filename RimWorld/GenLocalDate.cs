@@ -1,3 +1,4 @@
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -149,7 +150,7 @@ namespace RimWorld
 			return GenDate.HourFloat(TicksAbs, LongitudeForDate(thing));
 		}
 
-		public static int DayOfYear(int tile)
+		public static int DayOfYear(PlanetTile tile)
 		{
 			if (Current.ProgramState == ProgramState.Playing)
 			{
@@ -158,27 +159,27 @@ namespace RimWorld
 			return 0;
 		}
 
-		public static int HourOfDay(int tile)
+		public static int HourOfDay(PlanetTile tile)
 		{
 			return GenDate.HourOfDay(TicksAbs, Find.WorldGrid.LongLatOf(tile).x);
 		}
 
-		public static int DayOfTwelfth(int tile)
+		public static int DayOfTwelfth(PlanetTile tile)
 		{
 			return GenDate.DayOfTwelfth(TicksAbs, Find.WorldGrid.LongLatOf(tile).x);
 		}
 
-		public static Twelfth Twelfth(int tile)
+		public static Twelfth Twelfth(PlanetTile tile)
 		{
 			return GenDate.Twelfth(TicksAbs, Find.WorldGrid.LongLatOf(tile).x);
 		}
 
-		public static Season Season(int tile)
+		public static Season Season(PlanetTile tile)
 		{
 			return GenDate.Season(TicksAbs, Find.WorldGrid.LongLatOf(tile));
 		}
 
-		public static int Year(int tile)
+		public static int Year(PlanetTile tile)
 		{
 			if (Current.ProgramState != ProgramState.Playing)
 			{
@@ -187,37 +188,37 @@ namespace RimWorld
 			return GenDate.Year(TicksAbs, Find.WorldGrid.LongLatOf(tile).x);
 		}
 
-		public static int DayOfSeason(int tile)
+		public static int DayOfSeason(PlanetTile tile)
 		{
 			return GenDate.DayOfSeason(TicksAbs, Find.WorldGrid.LongLatOf(tile).x);
 		}
 
-		public static int DayOfQuadrum(int tile)
+		public static int DayOfQuadrum(PlanetTile tile)
 		{
 			return GenDate.DayOfQuadrum(TicksAbs, Find.WorldGrid.LongLatOf(tile).x);
 		}
 
-		public static int DayTick(int tile)
+		public static int DayTick(PlanetTile tile)
 		{
 			return GenDate.DayTick(TicksAbs, Find.WorldGrid.LongLatOf(tile).x);
 		}
 
-		public static float DayPercent(int tile)
+		public static float DayPercent(PlanetTile tile)
 		{
 			return GenDate.DayPercent(TicksAbs, Find.WorldGrid.LongLatOf(tile).x);
 		}
 
-		public static float YearPercent(int tile)
+		public static float YearPercent(PlanetTile tile)
 		{
 			return GenDate.YearPercent(TicksAbs, Find.WorldGrid.LongLatOf(tile).x);
 		}
 
-		public static int HourInteger(int tile)
+		public static int HourInteger(PlanetTile tile)
 		{
 			return GenDate.HourInteger(TicksAbs, Find.WorldGrid.LongLatOf(tile).x);
 		}
 
-		public static float HourFloat(int tile)
+		public static float HourFloat(PlanetTile tile)
 		{
 			return GenDate.HourFloat(TicksAbs, Find.WorldGrid.LongLatOf(tile).x);
 		}
@@ -229,8 +230,8 @@ namespace RimWorld
 
 		private static Vector2 LocationForDate(Thing thing)
 		{
-			int tile = thing.Tile;
-			if (tile >= 0)
+			PlanetTile tile = thing.Tile;
+			if (tile.Valid)
 			{
 				return Find.WorldGrid.LongLatOf(tile);
 			}

@@ -14,25 +14,15 @@ namespace RimWorld
 
 		public string FailReason => failReasonInt;
 
-		public static FloatMenuAcceptanceReport WasAccepted
+		public static FloatMenuAcceptanceReport WasAccepted => new FloatMenuAcceptanceReport
 		{
-			get
-			{
-				FloatMenuAcceptanceReport result = default(FloatMenuAcceptanceReport);
-				result.acceptedInt = true;
-				return result;
-			}
-		}
+			acceptedInt = true
+		};
 
-		public static FloatMenuAcceptanceReport WasRejected
+		public static FloatMenuAcceptanceReport WasRejected => new FloatMenuAcceptanceReport
 		{
-			get
-			{
-				FloatMenuAcceptanceReport result = default(FloatMenuAcceptanceReport);
-				result.acceptedInt = false;
-				return result;
-			}
-		}
+			acceptedInt = false
+		};
 
 		public static implicit operator FloatMenuAcceptanceReport(bool value)
 		{
@@ -50,27 +40,30 @@ namespace RimWorld
 
 		public static FloatMenuAcceptanceReport WithFailReason(string failReason)
 		{
-			FloatMenuAcceptanceReport result = default(FloatMenuAcceptanceReport);
-			result.acceptedInt = false;
-			result.failReasonInt = failReason;
-			return result;
+			return new FloatMenuAcceptanceReport
+			{
+				acceptedInt = false,
+				failReasonInt = failReason
+			};
 		}
 
 		public static FloatMenuAcceptanceReport WithFailMessage(string failMessage)
 		{
-			FloatMenuAcceptanceReport result = default(FloatMenuAcceptanceReport);
-			result.acceptedInt = false;
-			result.failMessageInt = failMessage;
-			return result;
+			return new FloatMenuAcceptanceReport
+			{
+				acceptedInt = false,
+				failMessageInt = failMessage
+			};
 		}
 
 		public static FloatMenuAcceptanceReport WithFailReasonAndMessage(string failReason, string failMessage)
 		{
-			FloatMenuAcceptanceReport result = default(FloatMenuAcceptanceReport);
-			result.acceptedInt = false;
-			result.failReasonInt = failReason;
-			result.failMessageInt = failMessage;
-			return result;
+			return new FloatMenuAcceptanceReport
+			{
+				acceptedInt = false,
+				failReasonInt = failReason,
+				failMessageInt = failMessage
+			};
 		}
 	}
 }

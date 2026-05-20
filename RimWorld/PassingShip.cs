@@ -20,17 +20,7 @@ namespace RimWorld
 
 		public bool Departed => ticksUntilDeparture <= 0;
 
-		public Map Map
-		{
-			get
-			{
-				if (passingShipManager == null)
-				{
-					return null;
-				}
-				return passingShipManager.map;
-			}
-		}
+		public Map Map => passingShipManager?.map;
 
 		public Faction Faction => faction;
 
@@ -89,21 +79,16 @@ namespace RimWorld
 			return null;
 		}
 
-		protected virtual AcceptanceReport CanCommunicateWith_NewTemp(Pawn negotiator)
+		protected virtual AcceptanceReport CanCommunicateWith(Pawn negotiator)
 		{
 			return AcceptanceReport.WasAccepted;
-		}
-
-		protected virtual bool CanCommunicateWith(Pawn negotiator)
-		{
-			return CanCommunicateWith_NewTemp(negotiator).Accepted;
 		}
 
 		public FloatMenuOption CommFloatMenuOption(Building_CommsConsole console, Pawn negotiator)
 		{
 			string label = "CallOnRadio".Translate(GetCallLabel());
 			Action action = null;
-			AcceptanceReport canCommunicate = CanCommunicateWith_NewTemp(negotiator);
+			AcceptanceReport canCommunicate = CanCommunicateWith(negotiator);
 			if (!canCommunicate.Accepted)
 			{
 				if (!canCommunicate.Reason.NullOrEmpty())

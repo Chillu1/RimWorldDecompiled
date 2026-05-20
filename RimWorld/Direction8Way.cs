@@ -9,6 +9,7 @@ namespace RimWorld
 		South,
 		SouthWest,
 		West,
-		NorthWest
+		NorthWest,
+		Invalid
 	}
 }

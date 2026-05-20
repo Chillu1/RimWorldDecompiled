@@ -5,12 +5,26 @@ namespace Verse
 {
 	internal class SectionLayer_Zones : SectionLayer
 	{
-		public override bool Visible => DebugViewSettings.drawWorldOverlays;
+		public override bool Visible
+		{
+			get
+			{
+				if (DebugViewSettings.drawWorldOverlays)
+				{
+					if (!WorldComponent_GravshipController.CutsceneInProgress)
+					{
+						return !WorldComponent_GravshipController.GravshipRenderInProgess;
+					}
+					return false;
+				}
+				return false;
+			}
+		}
 
 		public SectionLayer_Zones(Section section)
 			: base(section)
 		{
-			relevantChangeTypes = MapMeshFlag.Zone;
+			relevantChangeTypes = MapMeshFlagDefOf.Zone;
 		}
 
 		public override void DrawLayer()
@@ -33,7 +47,7 @@ namespace Verse
 				for (int j = cellRect.minZ; j <= cellRect.maxZ; j++)
 				{
 					Zone zone = zoneManager.ZoneAt(new IntVec3(i, 0, j));
-					if (zone != null && !zone.hidden)
+					if (zone != null && !zone.Hidden)
 					{
 						LayerSubMesh subMesh = GetSubMesh(zone.Material);
 						int count = subMesh.verts.Count;

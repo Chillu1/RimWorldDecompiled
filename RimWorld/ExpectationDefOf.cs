@@ -13,8 +13,6 @@ namespace RimWorld
 
 		public static ExpectationDef High;
 
-		public static ExpectationDef SkyHigh;
-
 		static ExpectationDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(ExpectationDefOf));

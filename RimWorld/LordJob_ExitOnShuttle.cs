@@ -12,8 +12,6 @@ namespace RimWorld
 
 		public override bool AddFleeToil => addFleeToil;
 
-		public override bool RemoveDownedPawns => false;
-
 		public LordJob_ExitOnShuttle()
 		{
 		}
@@ -24,12 +22,20 @@ namespace RimWorld
 			this.addFleeToil = addFleeToil;
 		}
 
+		public override bool ShouldRemovePawn(Pawn p, PawnLostCondition reason)
+		{
+			if (reason == PawnLostCondition.Incapped)
+			{
+				return false;
+			}
+			return true;
+		}
+
 		public override StateGraph CreateGraph()
 		{
 			StateGraph stateGraph = new StateGraph();
-			if (!ModLister.RoyaltyInstalled)
+			if (!ModLister.CheckRoyalty("Shuttle crash rescue"))
 			{
-				Log.ErrorOnce("Shuttle crash rescue is a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 3454535);
 				return stateGraph;
 			}
 			LordToil_Wait lordToil_Wait = new LordToil_Wait();

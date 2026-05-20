@@ -6,7 +6,7 @@ namespace Verse.AI
 	{
 		public static Toil MakeSound(SoundDef soundDef)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeSound");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;

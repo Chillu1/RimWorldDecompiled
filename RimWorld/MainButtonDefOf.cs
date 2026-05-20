@@ -17,6 +17,9 @@ namespace RimWorld
 
 		public static MainButtonDef Factions;
 
+		[MayRequireIdeology]
+		public static MainButtonDef Ideos;
+
 		static MainButtonDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(MainButtonDefOf));

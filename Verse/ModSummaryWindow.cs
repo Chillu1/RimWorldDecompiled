@@ -93,25 +93,25 @@ namespace Verse
 						}
 						GUI.color = (flag ? Color.white : DisabledIconTint);
 						Material material = (flag ? null : TexUI.GrayscaleGUI);
-						Rect rect9 = new Rect(r.x + itemListInnerMargin, r.y + 2f, 32f, 32f);
+						Rect rect8 = new Rect(r.x + itemListInnerMargin, r.y + 2f, 32f, 32f);
 						float num4 = 42f;
-						GenUI.DrawTextureWithMaterial(rect9, exp.Icon, material);
+						GenUI.DrawTextureWithMaterial(rect8, exp.IconFromStatus, material);
 						GUI.color = (flag ? Color.white : Color.grey);
-						Rect rect10 = new Rect(r.x + itemListInnerMargin + num4, r.y, r.width - num4, r.height);
-						if (exp.Status != 0)
+						Rect rect9 = new Rect(r.x + itemListInnerMargin + num4, r.y, r.width - num4, r.height);
+						if (exp.Status != ExpansionStatus.Active)
 						{
-							TaggedString t = ((exp.Status == ExpansionStatus.Installed) ? "DisabledLower" : "ContentNotInstalled").Translate().ToLower();
-							Widgets.Label(rect10, exp.label + " (" + t + ")");
+							TaggedString taggedString = ((exp.Status == ExpansionStatus.Installed) ? "DisabledLower" : "ContentNotInstalled").Translate().ToLower();
+							Widgets.Label(rect9, exp.label + " (" + taggedString + ")");
 						}
 						else
 						{
-							Widgets.Label(rect10, exp.label);
+							Widgets.Label(rect9, exp.label);
 						}
 						GUI.color = Color.white;
 						if (Mouse.IsOver(r))
 						{
-							string description2 = exp.label + "\n" + exp.StatusDescription + "\n\n" + exp.description.StripTags();
-							TooltipHandler.TipRegion(tip: new TipSignal(() => description2, exp.GetHashCode() * 37), rect: r);
+							string description = exp.label + "\n" + exp.StatusDescription + "\n\n" + exp.description.StripTags();
+							TooltipHandler.TipRegion(tip: new TipSignal(() => description, exp.GetHashCode() * 37), rect: r);
 						}
 					}
 				});
@@ -146,7 +146,13 @@ namespace Verse
 							{
 								SteamUtility.OpenWorkshopPage(mod.GetPublishedFileId());
 							}
-							Rect rect8 = new Rect(r.x + itemListInnerMargin, r.y, r.width, r.height);
+							Rect position = new Rect(r.x + itemListInnerMargin, r.y + 2f, 32f, 32f);
+							float num4 = 42f;
+							if (!mod.Icon.NullOrBad())
+							{
+								GUI.DrawTexture(position, mod.Icon);
+							}
+							Rect rect8 = new Rect(r.x + itemListInnerMargin + num4, r.y, r.width - num4, r.height);
 							string label = mod.Name.Truncate(rect8.width - itemListInnerMargin - 4f);
 							Widgets.Label(rect8, label);
 							if (Mouse.IsOver(r))
@@ -154,7 +160,7 @@ namespace Verse
 								string description = mod.Name + "\n\n" + mod.Description.StripTags();
 								if (!mod.VersionCompatible)
 								{
-									description = description + "\n\n" + "ModNotMadeForThisVersionShort".Translate().RawText.Colorize(Color.yellow);
+									description = description + "\n\n" + "ModNotMadeForThisVersionShort".Translate().Colorize(Color.yellow);
 								}
 								TooltipHandler.TipRegion(tip: new TipSignal(() => description, mod.GetHashCode() * 37), rect: r);
 							}

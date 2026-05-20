@@ -6,47 +6,47 @@ namespace RimWorld.Planet
 {
 	public static class DaysUntilRotCalculator
 	{
-		private static List<ThingCount> tmpThingCounts = new List<ThingCount>();
+		private static readonly List<ThingCount> TmpThingCounts = new List<ThingCount>();
 
-		private static List<ThingCount> tmpThingCountsFromTradeables = new List<ThingCount>();
+		private static readonly List<ThingCount> TmpThingCountsFromTradeables = new List<ThingCount>();
 
-		private static List<Pair<float, float>> tmpNutritions = new List<Pair<float, float>>();
+		private static readonly List<Pair<float, float>> TmpNutritions = new List<Pair<float, float>>();
 
-		private static List<Thing> thingsInReverse = new List<Thing>();
+		private static readonly List<Thing> ThingsInReverse = new List<Thing>();
 
-		private static List<Pair<int, int>> tmpTicksToArrive = new List<Pair<int, int>>();
+		private static readonly List<(PlanetTile tile, int ticks)> TmpTicksToArrive = new List<(PlanetTile, int)>();
 
 		public const float InfiniteDaysUntilRot = 600f;
 
-		public static float ApproxDaysUntilRot(List<ThingCount> potentiallyFood, int tile, WorldPath path = null, float nextTileCostLeft = 0f, int caravanTicksPerMove = 3300)
+		public static float ApproxDaysUntilRot(List<ThingCount> potentiallyFood, PlanetTile tile, WorldPath path = null, float nextTileCostLeft = 0f, int caravanTicksPerMove = 3300)
 		{
-			tmpTicksToArrive.Clear();
+			TmpTicksToArrive.Clear();
 			if (path != null && path.Found)
 			{
-				CaravanArrivalTimeEstimator.EstimatedTicksToArriveToEvery(tile, path.LastNode, path, nextTileCostLeft, caravanTicksPerMove, Find.TickManager.TicksAbs, tmpTicksToArrive);
+				CaravanArrivalTimeEstimator.EstimatedTicksToArriveToEvery(tile, path.LastNode, path, nextTileCostLeft, caravanTicksPerMove, Find.TickManager.TicksAbs, TmpTicksToArrive);
 			}
-			tmpNutritions.Clear();
+			TmpNutritions.Clear();
 			for (int i = 0; i < potentiallyFood.Count; i++)
 			{
 				ThingCount thingCount = potentiallyFood[i];
 				if (thingCount.Count > 0 && thingCount.Thing.def.IsNutritionGivingIngestible)
 				{
 					CompRottable compRottable = thingCount.Thing.TryGetComp<CompRottable>();
-					float first = ((compRottable == null || !compRottable.Active) ? 600f : ((float)ApproxTicksUntilRot_AssumeTimePassesBy(compRottable, tile, tmpTicksToArrive) / 60000f));
+					float first = ((compRottable == null || !compRottable.Active) ? 600f : ((float)ApproxTicksUntilRot_AssumeTimePassesBy(compRottable, tile, TmpTicksToArrive) / 60000f));
 					float second = thingCount.Thing.GetStatValue(StatDefOf.Nutrition) * (float)thingCount.Count;
-					tmpNutritions.Add(new Pair<float, float>(first, second));
+					TmpNutritions.Add(new Pair<float, float>(first, second));
 				}
 			}
-			return GenMath.WeightedMedian(tmpNutritions, 600f);
+			return GenMath.WeightedMedian(TmpNutritions, 600f);
 		}
 
-		public static int ApproxTicksUntilRot_AssumeTimePassesBy(CompRottable rot, int tile, List<Pair<int, int>> ticksToArrive = null)
+		public static int ApproxTicksUntilRot_AssumeTimePassesBy(CompRottable rot, PlanetTile tile, List<(PlanetTile tile, int ticks)> ticksToArrive = null)
 		{
 			float num = 0f;
 			int num2 = Find.TickManager.TicksAbs;
-			while (num < 1f && (float)num2 < (float)Find.TickManager.TicksAbs + 3.606E+07f)
+			while (num < 1f && (float)num2 < (float)Find.TickManager.TicksAbs + 36060000f)
 			{
-				int tile2 = (ticksToArrive.NullOrEmpty() ? tile : CaravanArrivalTimeEstimator.TileIllBeInAt(num2, ticksToArrive, Find.TickManager.TicksAbs));
+				PlanetTile tile2 = (ticksToArrive.NullOrEmpty() ? tile : CaravanArrivalTimeEstimator.TileIllBeInAt(num2, ticksToArrive, Find.TickManager.TicksAbs));
 				int num3 = Mathf.FloorToInt((float)rot.ApproxTicksUntilRotWhenAtTempOfTile(tile2, num2) * (1f - num));
 				if (num3 <= 0)
 				{
@@ -65,21 +65,21 @@ namespace RimWorld.Planet
 			return ApproxDaysUntilRot(CaravanInventoryUtility.AllInventoryItems(caravan), caravan.Tile, caravan.pather.curPath, caravan.pather.nextTileCostLeft, caravan.TicksPerMove);
 		}
 
-		public static float ApproxDaysUntilRot(List<Thing> potentiallyFood, int tile, WorldPath path = null, float nextTileCostLeft = 0f, int caravanTicksPerMove = 3300)
+		public static float ApproxDaysUntilRot(List<Thing> potentiallyFood, PlanetTile tile, WorldPath path = null, float nextTileCostLeft = 0f, int caravanTicksPerMove = 3300)
 		{
-			tmpThingCounts.Clear();
+			TmpThingCounts.Clear();
 			for (int i = 0; i < potentiallyFood.Count; i++)
 			{
-				tmpThingCounts.Add(new ThingCount(potentiallyFood[i], potentiallyFood[i].stackCount));
+				TmpThingCounts.Add(new ThingCount(potentiallyFood[i], potentiallyFood[i].stackCount));
 			}
-			float result = ApproxDaysUntilRot(tmpThingCounts, tile, path, nextTileCostLeft, caravanTicksPerMove);
-			tmpThingCounts.Clear();
+			float result = ApproxDaysUntilRot(TmpThingCounts, tile, path, nextTileCostLeft, caravanTicksPerMove);
+			TmpThingCounts.Clear();
 			return result;
 		}
 
-		public static float ApproxDaysUntilRot(List<TransferableOneWay> transferables, int tile, IgnorePawnsInventoryMode ignoreInventory, WorldPath path = null, float nextTileCostLeft = 0f, int caravanTicksPerMove = 3300)
+		public static float ApproxDaysUntilRot(List<TransferableOneWay> transferables, PlanetTile tile, IgnorePawnsInventoryMode ignoreInventory, WorldPath path = null, float nextTileCostLeft = 0f, int caravanTicksPerMove = 3300)
 		{
-			tmpThingCounts.Clear();
+			TmpThingCounts.Clear();
 			for (int i = 0; i < transferables.Count; i++)
 			{
 				TransferableOneWay transferableOneWay = transferables[i];
@@ -97,7 +97,7 @@ namespace RimWorld.Planet
 							ThingOwner<Thing> innerContainer = pawn.inventory.innerContainer;
 							for (int k = 0; k < innerContainer.Count; k++)
 							{
-								tmpThingCounts.Add(new ThingCount(innerContainer[k], innerContainer[k].stackCount));
+								TmpThingCounts.Add(new ThingCount(innerContainer[k], innerContainer[k].stackCount));
 							}
 						}
 					}
@@ -106,18 +106,18 @@ namespace RimWorld.Planet
 				{
 					TransferableUtility.TransferNoSplit(transferableOneWay.things, transferableOneWay.CountToTransfer, delegate(Thing thing, int count)
 					{
-						tmpThingCounts.Add(new ThingCount(thing, count));
+						TmpThingCounts.Add(new ThingCount(thing, count));
 					}, removeIfTakingEntireThing: false, errorIfNotEnoughThings: false);
 				}
 			}
-			float result = ApproxDaysUntilRot(tmpThingCounts, tile, path, nextTileCostLeft, caravanTicksPerMove);
-			tmpThingCounts.Clear();
+			float result = ApproxDaysUntilRot(TmpThingCounts, tile, path, nextTileCostLeft, caravanTicksPerMove);
+			TmpThingCounts.Clear();
 			return result;
 		}
 
-		public static float ApproxDaysUntilRotLeftAfterTransfer(List<TransferableOneWay> transferables, int tile, IgnorePawnsInventoryMode ignoreInventory, WorldPath path = null, float nextTileCostLeft = 0f, int caravanTicksPerMove = 3300)
+		public static float ApproxDaysUntilRotLeftAfterTransfer(List<TransferableOneWay> transferables, PlanetTile tile, IgnorePawnsInventoryMode ignoreInventory, WorldPath path = null, float nextTileCostLeft = 0f, int caravanTicksPerMove = 3300)
 		{
-			tmpThingCounts.Clear();
+			TmpThingCounts.Clear();
 			for (int i = 0; i < transferables.Count; i++)
 			{
 				TransferableOneWay transferableOneWay = transferables[i];
@@ -135,58 +135,57 @@ namespace RimWorld.Planet
 							ThingOwner<Thing> innerContainer = pawn.inventory.innerContainer;
 							for (int j = 0; j < innerContainer.Count; j++)
 							{
-								tmpThingCounts.Add(new ThingCount(innerContainer[j], innerContainer[j].stackCount));
+								TmpThingCounts.Add(new ThingCount(innerContainer[j], innerContainer[j].stackCount));
 							}
 						}
 					}
 				}
 				else if (transferableOneWay.MaxCount - transferableOneWay.CountToTransfer > 0)
 				{
-					thingsInReverse.Clear();
-					thingsInReverse.AddRange(transferableOneWay.things);
-					thingsInReverse.Reverse();
-					TransferableUtility.TransferNoSplit(thingsInReverse, transferableOneWay.MaxCount - transferableOneWay.CountToTransfer, delegate(Thing thing, int count)
+					ThingsInReverse.Clear();
+					ThingsInReverse.AddRange(transferableOneWay.things);
+					ThingsInReverse.Reverse();
+					TransferableUtility.TransferNoSplit(ThingsInReverse, transferableOneWay.MaxCount - transferableOneWay.CountToTransfer, delegate(Thing thing, int count)
 					{
-						tmpThingCounts.Add(new ThingCount(thing, count));
+						TmpThingCounts.Add(new ThingCount(thing, count));
 					}, removeIfTakingEntireThing: false, errorIfNotEnoughThings: false);
 				}
 			}
-			thingsInReverse.Clear();
-			float result = ApproxDaysUntilRot(tmpThingCounts, tile, path, nextTileCostLeft, caravanTicksPerMove);
-			tmpThingCounts.Clear();
+			ThingsInReverse.Clear();
+			float result = ApproxDaysUntilRot(TmpThingCounts, tile, path, nextTileCostLeft, caravanTicksPerMove);
+			TmpThingCounts.Clear();
 			return result;
 		}
 
-		public static float ApproxDaysUntilRotLeftAfterTradeableTransfer(List<Thing> allCurrentThings, List<Tradeable> tradeables, int tile, IgnorePawnsInventoryMode ignoreInventory)
+		public static float ApproxDaysUntilRotLeftAfterTradeableTransfer(List<Thing> allCurrentThings, List<Tradeable> tradeables, PlanetTile tile, IgnorePawnsInventoryMode ignoreInventory)
 		{
-			tmpThingCountsFromTradeables.Clear();
-			TransferableUtility.SimulateTradeableTransfer(allCurrentThings, tradeables, tmpThingCountsFromTradeables);
-			tmpThingCounts.Clear();
-			for (int num = tmpThingCountsFromTradeables.Count - 1; num >= 0; num--)
+			TmpThingCountsFromTradeables.Clear();
+			TransferableUtility.SimulateTradeableTransfer(allCurrentThings, tradeables, TmpThingCountsFromTradeables);
+			TmpThingCounts.Clear();
+			for (int num = TmpThingCountsFromTradeables.Count - 1; num >= 0; num--)
 			{
-				if (tmpThingCountsFromTradeables[num].Count > 0)
+				if (TmpThingCountsFromTradeables[num].Count > 0)
 				{
-					Pawn pawn = tmpThingCountsFromTradeables[num].Thing as Pawn;
-					if (pawn != null)
+					if (TmpThingCountsFromTradeables[num].Thing is Pawn pawn)
 					{
 						if (!InventoryCalculatorsUtility.ShouldIgnoreInventoryOf(pawn, ignoreInventory))
 						{
 							ThingOwner<Thing> innerContainer = pawn.inventory.innerContainer;
 							for (int i = 0; i < innerContainer.Count; i++)
 							{
-								tmpThingCounts.Add(new ThingCount(innerContainer[i], innerContainer[i].stackCount));
+								TmpThingCounts.Add(new ThingCount(innerContainer[i], innerContainer[i].stackCount));
 							}
 						}
 					}
 					else
 					{
-						tmpThingCounts.Add(tmpThingCountsFromTradeables[num]);
+						TmpThingCounts.Add(TmpThingCountsFromTradeables[num]);
 					}
 				}
 			}
-			tmpThingCountsFromTradeables.Clear();
-			float result = ApproxDaysUntilRot(tmpThingCounts, tile);
-			tmpThingCounts.Clear();
+			TmpThingCountsFromTradeables.Clear();
+			float result = ApproxDaysUntilRot(TmpThingCounts, tile);
+			TmpThingCounts.Clear();
 			return result;
 		}
 	}

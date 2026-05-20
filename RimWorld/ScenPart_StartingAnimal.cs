@@ -33,6 +33,8 @@ namespace RimWorld
 			new Pair<int, float>(14, 0.1f)
 		};
 
+		public const float VeneratedAnimalWeight = 8f;
+
 		public override void ExposeData()
 		{
 			base.ExposeData();
@@ -43,7 +45,7 @@ namespace RimWorld
 
 		public override void DoEditInterface(Listing_ScenEdit listing)
 		{
-			Rect scenPartRect = listing.GetScenPartRect(this, ScenPart.RowHeight * 2f);
+			Rect scenPartRect = listing.GetScenPartRect(this, ScenPart.RowHeight * 2f + 1f);
 			Listing_Standard listing_Standard = new Listing_Standard();
 			listing_Standard.Begin(scenPartRect.TopHalf());
 			listing_Standard.ColumnWidth = scenPartRect.width;
@@ -83,9 +85,16 @@ namespace RimWorld
 
 		private IEnumerable<PawnKindDef> RandomPets()
 		{
-			return from td in PossibleAnimals()
+			IEnumerable<PawnKindDef> enumerable = from td in PossibleAnimals()
 				where td.RaceProps.petness > 0f
 				select td;
+			if (enumerable.EnumerableNullOrEmpty())
+			{
+				enumerable = from td in PossibleAnimals(checkForTamer: false)
+					where td.RaceProps.petness > 0f
+					select td;
+			}
+			return enumerable;
 		}
 
 		private string CurrentAnimalLabel()
@@ -126,8 +135,7 @@ namespace RimWorld
 
 		public override bool TryMerge(ScenPart other)
 		{
-			ScenPart_StartingAnimal scenPart_StartingAnimal = other as ScenPart_StartingAnimal;
-			if (scenPart_StartingAnimal != null && scenPart_StartingAnimal.animalKind == animalKind)
+			if (other is ScenPart_StartingAnimal scenPart_StartingAnimal && scenPart_StartingAnimal.animalKind == animalKind)
 			{
 				count += scenPart_StartingAnimal.count;
 				return true;
@@ -135,11 +143,27 @@ namespace RimWorld
 			return false;
 		}
 
+		private float PetWeight(PawnKindDef animal)
+		{
+			Ideo ideo = Find.GameInitData.playerFaction.ideos?.PrimaryIdeo;
+			if (ideo != null)
+			{
+				foreach (ThingDef veneratedAnimal in ideo.VeneratedAnimals)
+				{
+					if (veneratedAnimal == animal.race)
+					{
+						return 8f;
+					}
+				}
+			}
+			return animal.RaceProps.petness;
+		}
+
 		public override IEnumerable<Thing> PlayerStartingThings()
 		{
 			for (int i = 0; i < count; i++)
 			{
-				PawnKindDef kindDef = ((animalKind == null) ? RandomPets().RandomElementByWeight((PawnKindDef td) => td.RaceProps.petness) : animalKind);
+				PawnKindDef kindDef = ((animalKind == null) ? RandomPets().RandomElementByWeightWithFallback((PawnKindDef td) => PetWeight(td)) : animalKind);
 				Pawn animal = PawnGenerator.GeneratePawn(kindDef, Faction.OfPlayer);
 				if (animal.Name == null || animal.Name.Numerical)
 				{
@@ -148,18 +172,26 @@ namespace RimWorld
 				if (Rand.Value < bondToRandomPlayerPawnChance && animal.training.CanAssignToTrain(TrainableDefOf.Obedience).Accepted)
 				{
 					Pawn pawn = (from p in Find.GameInitData.startingAndOptionalPawns.Take(Find.GameInitData.startingPawnCount)
-						where TrainableUtility.CanBeMaster(p, animal, checkSpawned: false) && !p.story.traits.HasTrait(TraitDefOf.Psychopath)
+						where TrainableUtility.CanBeMaster(p, animal, checkSpawned: false) && !p.story.traits.HasTrait(TraitDefOf.Psychopath) && !p.Inhumanized()
 						select p).RandomElementWithFallback();
 					if (pawn != null)
 					{
 						animal.training.Train(TrainableDefOf.Obedience, null, complete: true);
 						animal.training.SetWantedRecursive(TrainableDefOf.Obedience, checkOn: true);
-						pawn.relations.AddDirectRelation(PawnRelationDefOf.Bond, animal);
 						animal.playerSettings.Master = pawn;
+						if (pawn.Ideo == null || pawn.Ideo.MemberWillingToDo(new HistoryEvent(HistoryEventDefOf.Bonded, pawn.Named(HistoryEventArgsNames.Doer))))
+						{
+							pawn.relations.AddDirectRelation(PawnRelationDefOf.Bond, animal);
+						}
 					}
 				}
 				yield return animal;
 			}
+		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode() ^ ((animalKind != null) ? animalKind.GetHashCode() : 0) ^ count ^ bondToRandomPlayerPawnChance.GetHashCode();
 		}
 	}
 }

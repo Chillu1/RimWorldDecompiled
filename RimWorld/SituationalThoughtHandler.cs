@@ -8,9 +8,9 @@ namespace RimWorld
 	{
 		private class CachedSocialThoughts
 		{
-			public List<Thought_SituationalSocial> thoughts = new List<Thought_SituationalSocial>();
+			public readonly List<Thought_SituationalSocial> thoughts = new List<Thought_SituationalSocial>();
 
-			public List<Thought_SituationalSocial> activeThoughts = new List<Thought_SituationalSocial>();
+			public readonly List<Thought_SituationalSocial> activeThoughts = new List<Thought_SituationalSocial>();
 
 			public int lastRecalculationTick = -99999;
 
@@ -25,17 +25,15 @@ namespace RimWorld
 
 		public Pawn pawn;
 
-		private List<Thought_Situational> cachedThoughts = new List<Thought_Situational>();
+		private readonly List<Thought_Situational> cachedThoughts = new List<Thought_Situational>();
 
-		private int lastMoodThoughtsRecalculationTick = -99999;
+		private readonly Dictionary<Pawn, CachedSocialThoughts> cachedSocialThoughts = new Dictionary<Pawn, CachedSocialThoughts>();
 
-		private Dictionary<Pawn, CachedSocialThoughts> cachedSocialThoughts = new Dictionary<Pawn, CachedSocialThoughts>();
+		private bool thoughtsDirty = true;
 
 		private const int RecalculateStateEveryTicks = 100;
 
-		private HashSet<ThoughtDef> tmpCachedThoughts = new HashSet<ThoughtDef>();
-
-		private HashSet<ThoughtDef> tmpCachedSocialThoughts = new HashSet<ThoughtDef>();
+		private readonly HashSet<ThoughtDef> tmpCachedSocialThoughts = new HashSet<ThoughtDef>();
 
 		public SituationalThoughtHandler(Pawn pawn)
 		{
@@ -44,18 +42,47 @@ namespace RimWorld
 
 		public void SituationalThoughtInterval()
 		{
+			UpdateAllMoodThoughts();
 			RemoveExpiredThoughtsFromCache();
 		}
 
 		public void AppendMoodThoughts(List<Thought> outThoughts)
 		{
-			CheckRecalculateMoodThoughts();
-			for (int i = 0; i < cachedThoughts.Count; i++)
+			if (thoughtsDirty)
 			{
-				Thought_Situational thought_Situational = cachedThoughts[i];
-				if (thought_Situational.Active)
+				UpdateAllMoodThoughts();
+			}
+			foreach (Thought_Situational cachedThought in cachedThoughts)
+			{
+				if (cachedThought.Active)
 				{
-					outThoughts.Add(thought_Situational);
+					outThoughts.Add(cachedThought);
+				}
+			}
+		}
+
+		public void AppendMoodThoughts(ThoughtDef def, List<Thought> thoughts)
+		{
+			bool flag = false;
+			foreach (Thought_Situational cachedThought in cachedThoughts)
+			{
+				if (cachedThought.def == def && cachedThought.Active)
+				{
+					cachedThought.RecalculateState();
+					if (cachedThought.Active)
+					{
+						flag = true;
+						thoughts.Add(cachedThought);
+					}
+				}
+			}
+			if (!flag)
+			{
+				Thought_Situational thought_Situational = TryCreateThought(def);
+				if (thought_Situational != null)
+				{
+					cachedThoughts.Add(thought_Situational);
+					thoughts.Add(thought_Situational);
 				}
 			}
 		}
@@ -72,38 +99,43 @@ namespace RimWorld
 			}
 		}
 
-		private void CheckRecalculateMoodThoughts()
+		private void UpdateAllMoodThoughts()
 		{
-			int ticksGame = Find.TickManager.TicksGame;
-			if (ticksGame - lastMoodThoughtsRecalculationTick < 100)
+			thoughtsDirty = false;
+			List<ThoughtDef> situationalNonSocialThoughtDefs = ThoughtUtility.situationalNonSocialThoughtDefs;
+			foreach (Thought_Situational cachedThought in cachedThoughts)
 			{
-				return;
+				cachedThought.RecalculateState();
 			}
-			lastMoodThoughtsRecalculationTick = ticksGame;
-			try
+			foreach (ThoughtDef item in situationalNonSocialThoughtDefs)
 			{
-				tmpCachedThoughts.Clear();
-				for (int i = 0; i < cachedThoughts.Count; i++)
+				bool flag = false;
+				foreach (Thought_Situational cachedThought2 in cachedThoughts)
 				{
-					cachedThoughts[i].RecalculateState();
-					tmpCachedThoughts.Add(cachedThoughts[i].def);
-				}
-				List<ThoughtDef> situationalNonSocialThoughtDefs = ThoughtUtility.situationalNonSocialThoughtDefs;
-				int j = 0;
-				for (int count = situationalNonSocialThoughtDefs.Count; j < count; j++)
-				{
-					if (!tmpCachedThoughts.Contains(situationalNonSocialThoughtDefs[j]))
+					if (cachedThought2.def == item)
 					{
-						Thought_Situational thought_Situational = TryCreateThought(situationalNonSocialThoughtDefs[j]);
-						if (thought_Situational != null)
-						{
-							cachedThoughts.Add(thought_Situational);
-						}
+						flag = true;
+					}
+				}
+				if (!flag)
+				{
+					Thought_Situational thought_Situational = TryCreateThought(item);
+					if (thought_Situational != null)
+					{
+						cachedThoughts.Add(thought_Situational);
 					}
 				}
 			}
-			finally
+			if (!ModsConfig.IdeologyActive || pawn.Ideo == null)
 			{
+				return;
+			}
+			foreach (Precept item2 in pawn.Ideo.PreceptsListForReading)
+			{
+				foreach (Thought_Situational item3 in item2.SituationThoughtsToAdd(pawn, cachedThoughts))
+				{
+					cachedThoughts.Add(item3);
+				}
 			}
 		}
 
@@ -151,6 +183,10 @@ namespace RimWorld
 					}
 				}
 			}
+			catch (Exception arg)
+			{
+				Log.Error($"Exception when recalculating social thoughts for pawn {pawn}: {arg}");
+			}
 			finally
 			{
 			}
@@ -161,7 +197,7 @@ namespace RimWorld
 			Thought_Situational thought_Situational = null;
 			try
 			{
-				if (!ThoughtUtility.CanGetThought_NewTemp(pawn, def))
+				if (!ThoughtUtility.CanGetThought(pawn, def))
 				{
 					return null;
 				}
@@ -171,14 +207,17 @@ namespace RimWorld
 				}
 				thought_Situational = (Thought_Situational)ThoughtMaker.MakeThought(def);
 				thought_Situational.pawn = pawn;
+				if (def.Worker is ThoughtWorker_Precept)
+				{
+					thought_Situational.sourcePrecept = pawn.Ideo.GetFirstPreceptAllowingSituationalThought(def);
+				}
 				thought_Situational.RecalculateState();
-				return thought_Situational;
 			}
 			catch (Exception ex)
 			{
-				Log.Error(string.Concat("Exception while recalculating ", def, " thought state for pawn ", pawn, ": ", ex));
-				return thought_Situational;
+				Log.Error("Exception while recalculating " + def?.ToString() + " thought state for pawn " + pawn?.ToString() + ": " + ex);
 			}
+			return thought_Situational;
 		}
 
 		private Thought_SituationalSocial TryCreateSocialThought(ThoughtDef def, Pawn otherPawn)
@@ -186,7 +225,7 @@ namespace RimWorld
 			Thought_SituationalSocial thought_SituationalSocial = null;
 			try
 			{
-				if (!ThoughtUtility.CanGetThought_NewTemp(pawn, def))
+				if (!ThoughtUtility.CanGetThought(pawn, def))
 				{
 					return null;
 				}
@@ -194,24 +233,35 @@ namespace RimWorld
 				{
 					return null;
 				}
+				if (!def.socialTargetDevelopmentalStageFilter.HasAny(otherPawn.DevelopmentalStage))
+				{
+					return null;
+				}
+				if (def.ignoreSubhumans && otherPawn.IsSubhuman)
+				{
+					return null;
+				}
 				thought_SituationalSocial = (Thought_SituationalSocial)ThoughtMaker.MakeThought(def);
 				thought_SituationalSocial.pawn = pawn;
 				thought_SituationalSocial.otherPawn = otherPawn;
+				if (def.Worker is ThoughtWorker_Precept_Social)
+				{
+					thought_SituationalSocial.sourcePrecept = pawn.Ideo.GetFirstPreceptAllowingSituationalThought(def);
+				}
 				thought_SituationalSocial.RecalculateState();
-				return thought_SituationalSocial;
 			}
 			catch (Exception ex)
 			{
-				Log.Error(string.Concat("Exception while recalculating ", def, " thought state for pawn ", pawn, ": ", ex));
-				return thought_SituationalSocial;
+				Log.Error("Exception while recalculating " + def?.ToString() + " thought state for pawn " + pawn?.ToString() + ": " + ex);
 			}
+			return thought_SituationalSocial;
 		}
 
 		public void Notify_SituationalThoughtsDirty()
 		{
 			cachedThoughts.Clear();
 			cachedSocialThoughts.Clear();
-			lastMoodThoughtsRecalculationTick = -99999;
+			thoughtsDirty = true;
 		}
 
 		private void RemoveExpiredThoughtsFromCache()

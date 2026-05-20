@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine;
 using Verse;
 
 namespace RimWorld
@@ -14,6 +15,14 @@ namespace RimWorld
 			return PotentialVictimCandidates(target).Where(delegate(Pawn p)
 			{
 				if (p.ParentHolder is Building_CryptosleepCasket)
+				{
+					return false;
+				}
+				if (p.RaceProps.Dryad)
+				{
+					return false;
+				}
+				if (!def.diseaseDevelopmentStage.Has(p.DevelopmentalStage))
 				{
 					return false;
 				}
@@ -42,6 +51,14 @@ namespace RimWorld
 		private static bool CanAddHediffToAnyPartOfDef(Pawn pawn, HediffDef hediffDef, BodyPartDef partDef)
 		{
 			List<BodyPartRecord> allParts = pawn.def.race.body.AllParts;
+			if (pawn.ageTracker.CurLifeStage == LifeStageDefOf.HumanlikeBaby && Find.Storyteller.difficulty.babiesAreHealthy)
+			{
+				return false;
+			}
+			if (!hediffDef.canAffectBionicOrImplant && pawn.health.hediffSet.IsBionicOrImplant(partDef))
+			{
+				return false;
+			}
 			for (int i = 0; i < allParts.Count; i++)
 			{
 				BodyPartRecord bodyPartRecord = allParts[i];
@@ -70,25 +87,62 @@ namespace RimWorld
 			{
 				return false;
 			}
-			StringBuilder stringBuilder = new StringBuilder();
-			for (int i = 0; i < list.Count; i++)
+			TaggedString baseLetterLabel = def.letterLabel;
+			TaggedString baseLetterText;
+			if (list.Any())
 			{
-				if (stringBuilder.Length != 0)
+				if (def.letterSingularForm)
 				{
-					stringBuilder.AppendLine();
+					if (list.Count > 1)
+					{
+						Log.Error("Incident " + def.defName + " is marked to only generate a letter in a singular format, but multiple victims were provided.");
+					}
+					Pawn pawn = list[0];
+					Hediff mostRecentHediff = pawn.health.hediffSet.GetMostRecentHediff(def.diseaseIncident);
+					baseLetterLabel = def.letterLabel.Formatted(pawn.Named("PAWN"));
+					HediffComp_SeverityPerDay hediffComp_SeverityPerDay = mostRecentHediff.TryGetComp<HediffComp_SeverityPerDay>();
+					if (hediffComp_SeverityPerDay != null)
+					{
+						float num = hediffComp_SeverityPerDay.SeverityChangePerDay();
+						int num2 = Mathf.RoundToInt(mostRecentHediff.def.maxSeverity / num);
+						baseLetterText = def.letterText.Formatted(pawn.Named("PAWN"), def.diseaseIncident.label, mostRecentHediff.Part.Label, num2).Resolve();
+					}
+					else
+					{
+						baseLetterText = def.letterText.Formatted(pawn.Named("PAWN"), def.diseaseIncident.label, mostRecentHediff.Part.Label).Resolve();
+					}
+					if (mostRecentHediff.IsAnyStageLifeThreatening() && !string.IsNullOrEmpty(def.diseaseLethalLetterText))
+					{
+						baseLetterText += "\n\n" + def.diseaseLethalLetterText.Formatted(pawn.Named("PAWN"));
+					}
 				}
-				stringBuilder.Append("  - " + list[i].LabelNoCountColored.Resolve());
+				else
+				{
+					StringBuilder stringBuilder = new StringBuilder();
+					for (int i = 0; i < list.Count; i++)
+					{
+						if (stringBuilder.Length != 0)
+						{
+							stringBuilder.AppendLine();
+						}
+						stringBuilder.AppendTagged("  - " + list[i].LabelNoCountColored.Resolve());
+					}
+					baseLetterText = def.letterText.Formatted(list.Count.ToString(), Faction.OfPlayer.def.pawnsPlural, def.diseaseIncident.label).Resolve() + ":\n\n" + stringBuilder;
+				}
 			}
-			string text = ((!list.Any()) ? "" : string.Format(def.letterText, list.Count.ToString(), Faction.OfPlayer.def.pawnsPlural, def.diseaseIncident.label, stringBuilder.ToString()));
+			else
+			{
+				baseLetterText = "";
+			}
 			if (!blockedInfo.NullOrEmpty())
 			{
-				if (!text.NullOrEmpty())
+				if (!baseLetterText.NullOrEmpty())
 				{
-					text += "\n\n";
+					baseLetterText += "\n\n";
 				}
-				text += blockedInfo;
+				baseLetterText += blockedInfo;
 			}
-			SendStandardLetter(def.letterLabel, text, def.letterDef, parms, list);
+			SendStandardLetter(baseLetterLabel, baseLetterText, def.letterDef, parms, list);
 			return true;
 		}
 
@@ -123,7 +177,7 @@ namespace RimWorld
 					{
 						blockedInfo += "\n\n";
 					}
-					blockedInfo += "LetterDisease_Blocked".Translate(item.Key.LabelCap, def.diseaseIncident.label, item.Value.Select((Pawn victim) => victim.LabelShort).ToLineList("  - "));
+					blockedInfo = blockedInfo + "LetterDisease_Blocked".Translate(item.Key.LabelCap, def.diseaseIncident.label).Resolve() + ":\n" + item.Value.Select((Pawn victim) => victim.LabelNoCountColored.Resolve()).ToLineList("  - ");
 				}
 			}
 			return list;

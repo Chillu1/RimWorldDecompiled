@@ -36,9 +36,7 @@ namespace Verse.Steam
 
 		private void LoadScenario()
 		{
-			if (GameDataSaveLoader.TryLoadScenario((from fi in base.Directory.GetFiles("*.rsc")
-				where fi.Extension == ".rsc"
-				select fi).First().FullName, ScenarioCategory.SteamWorkshop, out cachedScenario))
+			if (GameDataSaveLoader.TryLoadScenario(base.Directory.GetFiles("*.rsc").First((FileInfo fi) => fi.Extension == ".rsc").FullName, ScenarioCategory.SteamWorkshop, out cachedScenario))
 			{
 				cachedScenario.SetPublishedFileId(PublishedFileId);
 			}

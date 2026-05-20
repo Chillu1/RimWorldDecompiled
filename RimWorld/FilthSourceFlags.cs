@@ -5,10 +5,11 @@ namespace RimWorld
 	[Flags]
 	public enum FilthSourceFlags
 	{
-		None = 0x0,
-		Terrain = 0x1,
-		Natural = 0x2,
-		Unnatural = 0x4,
-		Any = 0x7
+		None = 0,
+		Terrain = 1,
+		Natural = 2,
+		Unnatural = 4,
+		Pawn = 8,
+		Any = 0xF
 	}
 }

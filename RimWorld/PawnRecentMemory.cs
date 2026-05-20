@@ -29,7 +29,7 @@ namespace RimWorld
 		{
 			if (pawn.Spawned)
 			{
-				if (pawn.Map.glowGrid.PsychGlowAt(pawn.Position) != 0)
+				if (pawn.Map.glowGrid.PsychGlowAt(pawn.Position) != PsychGlow.Dark)
 				{
 					lastLightTick = Find.TickManager.TicksGame;
 				}

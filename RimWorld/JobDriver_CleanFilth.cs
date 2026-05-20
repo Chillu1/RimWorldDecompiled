@@ -29,18 +29,24 @@ namespace RimWorld
 			yield return Toils_JobTransforms.SucceedOnNoTargetInQueue(TargetIndex.A);
 			yield return Toils_JobTransforms.ExtractNextTargetFromQueue(TargetIndex.A);
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch).JumpIfDespawnedOrNullOrForbidden(TargetIndex.A, initExtractTargetFromQueue).JumpIfOutsideHomeArea(TargetIndex.A, initExtractTargetFromQueue);
-			Toil clean = new Toil();
+			Toil clean = ToilMaker.MakeToil("MakeNewToils");
 			clean.initAction = delegate
 			{
 				cleaningWorkDone = 0f;
 				totalCleaningWorkDone = 0f;
 				totalCleaningWorkRequired = Filth.def.filth.cleaningWorkToReduceThickness * (float)Filth.thickness;
 			};
-			clean.tickAction = delegate
+			clean.tickIntervalAction = delegate(int delta)
 			{
 				Filth filth = Filth;
-				cleaningWorkDone += 1f;
-				totalCleaningWorkDone += 1f;
+				float statValueAbstract = filth.Position.GetTerrain(filth.Map).GetStatValueAbstract(StatDefOf.CleaningTimeFactor);
+				float num = pawn.GetStatValue(StatDefOf.CleaningSpeed) * (float)delta;
+				if (statValueAbstract != 0f)
+				{
+					num /= statValueAbstract;
+				}
+				cleaningWorkDone += num;
+				totalCleaningWorkDone += num;
 				if (cleaningWorkDone > filth.def.filth.cleaningWorkToReduceThickness)
 				{
 					filth.ThinFilth();
@@ -62,6 +68,7 @@ namespace RimWorld
 			});
 			clean.JumpIfDespawnedOrNullOrForbidden(TargetIndex.A, initExtractTargetFromQueue);
 			clean.JumpIfOutsideHomeArea(TargetIndex.A, initExtractTargetFromQueue);
+			clean.JumpIf(() => clean.actor.jobs.curJob.GetTarget(TargetIndex.A).Thing?.Destroyed ?? false, initExtractTargetFromQueue);
 			yield return clean;
 			yield return Toils_Jump.Jump(initExtractTargetFromQueue);
 		}

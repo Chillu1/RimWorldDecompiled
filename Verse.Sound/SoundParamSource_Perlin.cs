@@ -14,22 +14,22 @@ namespace Verse.Sound
 		[Description("Whether to synchronize the Perlin output across different samples. If set to desync, each playing sample will get a separate Perlin output.")]
 		public PerlinMappingSyncType syncType;
 
-		private static Perlin perlin = new Perlin(0.0099999997764825821, 2.0, 0.5, 4, Rand.Range(0, int.MaxValue), QualityMode.Medium);
+		private static Perlin perlin = new Perlin(0.009999999776482582, 2.0, 0.5, 4, Rand.Range(0, int.MaxValue), QualityMode.Medium);
 
 		public override string Label => "Perlin noise";
 
 		public override float ValueFor(Sample samp)
 		{
-			float num = ((syncType != 0) ? ((float)(samp.GetHashCode() % 100)) : (samp.ParentHashCode % 100f));
+			float num = ((syncType != PerlinMappingSyncType.Sync) ? ((float)(samp.GetHashCode() % 100)) : (samp.ParentHashCode % 100f));
 			if (timeType == TimeType.Ticks && Current.ProgramState == ProgramState.Playing)
 			{
-				float num2 = ((syncType != 0) ? ((float)(Find.TickManager.TicksGame - samp.startTick)) : ((float)Find.TickManager.TicksGame - samp.ParentStartTick));
+				float num2 = ((syncType != PerlinMappingSyncType.Sync) ? ((float)(Find.TickManager.TicksGame - samp.startTick)) : ((float)Find.TickManager.TicksGame - samp.ParentStartTick));
 				num2 /= 60f;
 				num += num2;
 			}
 			else
 			{
-				float num3 = ((syncType != 0) ? (Time.realtimeSinceStartup - samp.startRealTime) : (Time.realtimeSinceStartup - samp.ParentStartRealTime));
+				float num3 = ((syncType != PerlinMappingSyncType.Sync) ? (Time.realtimeSinceStartup - samp.startRealTime) : (Time.realtimeSinceStartup - samp.ParentStartRealTime));
 				num += num3;
 			}
 			num *= perlinFrequency;

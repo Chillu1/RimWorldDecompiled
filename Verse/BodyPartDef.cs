@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -26,6 +27,8 @@ namespace Verse
 
 		public bool delicate;
 
+		public bool canScarify;
+
 		public bool beautyRelated;
 
 		public bool conceptual;
@@ -38,9 +41,18 @@ namespace Verse
 
 		public bool canSuggestAmputation = true;
 
+		public bool forceAlwaysRemovable;
+
 		public Dictionary<DamageDef, float> hitChanceFactors;
 
 		public bool destroyableByDamage = true;
+
+		public bool canBeVacuumBurnt = true;
+
+		[MustTranslate]
+		public string removeRecipeLabelOverride;
+
+		public float executionPartPriority;
 
 		[Unsaved(false)]
 		private string cachedLabelShortCap;
@@ -48,6 +60,8 @@ namespace Verse
 		public bool IsSolidInDefinition_Debug => solid;
 
 		public bool IsSkinCoveredInDefinition_Debug => skinCovered;
+
+		public bool IsMirroredPart => tags.Contains(BodyPartTagDefOf.Mirrored);
 
 		public string LabelShort
 		{
@@ -67,7 +81,7 @@ namespace Verse
 			{
 				if (labelShort.NullOrEmpty())
 				{
-					return base.LabelCap;
+					return LabelCap;
 				}
 				if (cachedLabelShortCap == null)
 				{
@@ -101,7 +115,11 @@ namespace Verse
 				{
 					if (hediffs[i].Part == bodyPartRecord && hediffs[i] is Hediff_AddedPart)
 					{
-						return hediffs[i].def.addedPartProps.solid;
+						if (hediffs[i].def.addedPartProps.solid)
+						{
+							return !hediffs[i].def.organicAddedBodypart;
+						}
+						return false;
 					}
 				}
 			}

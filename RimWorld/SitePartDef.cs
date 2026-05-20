@@ -7,6 +7,13 @@ namespace RimWorld
 {
 	public class SitePartDef : Def
 	{
+		public class WorkSiteLootThing
+		{
+			public ThingDef thing;
+
+			public float weight;
+		}
+
 		public ThingDef conditionCauserDef;
 
 		public float activeThreatDisturbanceFactor = 1f;
@@ -21,11 +28,15 @@ namespace RimWorld
 		[NoTranslate]
 		public string expandingIconTexture;
 
+		public List<TileMutatorDef> forceMutators = new List<TileMutatorDef>();
+
 		public bool applyFactionColorToSiteTexture;
 
 		public bool showFactionInInspectString;
 
 		public bool requiresFaction;
+
+		public bool disallowsAutomaticDetectionTimerStart;
 
 		public TechLevel minFactionTechLevel;
 
@@ -64,6 +75,22 @@ namespace RimWorld
 		public bool handlesWorldObjectTimeoutInspectString;
 
 		public string mainPartAllThreatsLabel;
+
+		public IntVec3? minMapSize;
+
+		public float selectionWeight;
+
+		public bool considerEnteringAsAttack = true;
+
+		public bool gravShipsCanLandOn;
+
+		public bool copyQuestName;
+
+		public bool leaveAbandonedSettlement;
+
+		public bool displayOnInspectPane = true;
+
+		public List<WorkSiteLootThing> lootTable;
 
 		[Unsaved(false)]
 		private SitePartWorker workerInt;
@@ -137,7 +164,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (minFactionTechLevel != 0 && (faction == null || (int)faction.def.techLevel < (int)minFactionTechLevel))
+			if (minFactionTechLevel != TechLevel.Undefined && (faction == null || (int)faction.def.techLevel < (int)minFactionTechLevel))
 			{
 				return false;
 			}

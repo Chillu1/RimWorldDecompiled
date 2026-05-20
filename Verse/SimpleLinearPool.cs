@@ -4,7 +4,7 @@ namespace Verse
 {
 	public class SimpleLinearPool<T> where T : new()
 	{
-		private List<T> items = new List<T>();
+		private readonly List<T> items = new List<T>();
 
 		private int readIndex;
 

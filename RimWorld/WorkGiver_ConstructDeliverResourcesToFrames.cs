@@ -13,8 +13,11 @@ namespace RimWorld
 			{
 				return null;
 			}
-			Frame frame = t as Frame;
-			if (frame == null)
+			if (!(t is Frame frame))
+			{
+				return null;
+			}
+			if (!GenConstruct.CanTouchTargetFromValidCell(frame, pawn))
 			{
 				return null;
 			}
@@ -22,12 +25,11 @@ namespace RimWorld
 			{
 				return GenConstruct.HandleBlockingThingJob(frame, pawn, forced);
 			}
-			bool checkSkills = def.workType == WorkTypeDefOf.Construction;
-			if (!GenConstruct.CanConstruct(frame, pawn, checkSkills, forced))
+			if (!GenConstruct.CanConstruct(frame, pawn, def.workType, forced, JobDefOf.HaulToContainer))
 			{
 				return null;
 			}
-			return ResourceDeliverJobFor(pawn, frame);
+			return ResourceDeliverJobFor(pawn, frame, canRemoveExistingFloorUnderNearbyNeeders: true, forced);
 		}
 	}
 }

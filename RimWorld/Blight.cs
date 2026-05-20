@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -78,7 +77,7 @@ namespace RimWorld
 		public override void SpawnSetup(Map map, bool respawningAfterLoad)
 		{
 			base.SpawnSetup(map, respawningAfterLoad);
-			if (!respawningAfterLoad)
+			if (!respawningAfterLoad && !base.BeingTransportedOnGravship)
 			{
 				lastPlantHarmTick = Find.TickManager.TicksGame;
 			}
@@ -90,7 +89,7 @@ namespace RimWorld
 			CheckHarmPlant();
 			if (!DestroyIfNoPlantHere())
 			{
-				Severity += 71f / (678f * (float)Math.PI);
+				Severity += 1f / 30f;
 				float reproduceMTBHours = ReproduceMTBHours;
 				if (reproduceMTBHours > 0f && Rand.MTBEventOccurs(reproduceMTBHours, 2500f, 2000f))
 				{
@@ -98,7 +97,7 @@ namespace RimWorld
 				}
 				if (Mathf.Abs(Severity - lastMapMeshUpdateSeverity) >= 0.05f)
 				{
-					base.Map.mapDrawer.MapMeshDirty(base.Position, MapMeshFlag.Things);
+					base.Map.mapDrawer.MapMeshDirty(base.Position, MapMeshFlagDefOf.Things);
 					lastMapMeshUpdateSeverity = Severity;
 				}
 			}
@@ -133,8 +132,7 @@ namespace RimWorld
 			List<Thing> thingList = base.Position.GetThingList(base.Map);
 			for (int i = 0; i < thingList.Count; i++)
 			{
-				Plant plant = thingList[i] as Plant;
-				if (plant != null)
+				if (thingList[i] is Plant plant)
 				{
 					HarmPlant(plant);
 				}

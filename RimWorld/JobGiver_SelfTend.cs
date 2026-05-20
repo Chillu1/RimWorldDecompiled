@@ -15,6 +15,10 @@ namespace RimWorld
 			{
 				return null;
 			}
+			if (!pawn.Map.reservationManager.CanReserve(pawn, pawn))
+			{
+				return null;
+			}
 			Job job = JobMaker.MakeJob(JobDefOf.TendPatient, pawn);
 			job.endAfterTendedOnce = true;
 			return job;

@@ -17,13 +17,13 @@ namespace RimWorld
 
 		public float AdaptDays => adaptDays;
 
-		private int Population => PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists.Count();
+		private int Population => PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists.Count();
 
 		private StorytellerDef StorytellerDef => Find.Storyteller.def;
 
 		public void Notify_PawnEvent(Pawn p, AdaptationEvent ev, DamageInfo? dinfo = null)
 		{
-			if (!p.RaceProps.Humanlike || !p.IsColonist)
+			if (!p.RaceProps.Humanlike || !p.IsColonist || p.IsPrisoner)
 			{
 				return;
 			}
@@ -58,7 +58,7 @@ namespace RimWorld
 			}
 			if (DebugViewSettings.writeStoryteller)
 			{
-				Log.Message(string.Concat("Adaptation event: ", p, " ", ev, ". Loss: ", num.ToString("F1"), " from ", adaptDays.ToString("F1")));
+				Log.Message("Adaptation event: " + p?.ToString() + " " + ev.ToString() + ". Loss: " + num.ToString("F1") + " from " + adaptDays.ToString("F1"));
 			}
 			adaptDays = Mathf.Max(StorytellerDef.adaptDaysMin, adaptDays - num);
 		}
@@ -70,12 +70,12 @@ namespace RimWorld
 				ResolvePawnEvent(pawnsJustDownedThisTick[i], AdaptationEvent.Downed);
 			}
 			pawnsJustDownedThisTick.Clear();
-			if (Find.TickManager.TicksGame % 30000 == 0 && (!(adaptDays >= 0f) || !((float)GenDate.DaysPassed < StorytellerDef.adaptDaysGameStartGraceDays)))
+			if (Find.TickManager.TicksGame % 30000 == 0 && (!(adaptDays >= 0f) || !((float)GenDate.DaysPassedSinceSettle < StorytellerDef.adaptDaysGameStartGraceDays)))
 			{
 				float num = 0.5f * StorytellerDef.adaptDaysGrowthRateCurve.Evaluate(adaptDays);
 				if (adaptDays > 0f)
 				{
-					num *= Find.Storyteller.difficultyValues.adaptationGrowthRateFactorOverZero;
+					num *= Find.Storyteller.difficulty.adaptationGrowthRateFactorOverZero;
 				}
 				adaptDays += num;
 				adaptDays = Mathf.Min(adaptDays, StorytellerDef.adaptDaysMax);
@@ -90,6 +90,11 @@ namespace RimWorld
 		public void Debug_OffsetAdaptDays(float days)
 		{
 			adaptDays += days;
+		}
+
+		public void ResetAdaptDays()
+		{
+			adaptDays = 0f;
 		}
 	}
 }

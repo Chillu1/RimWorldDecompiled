@@ -27,21 +27,13 @@ namespace Verse
 
 		public override void PostExposeData(object obj)
 		{
-			if (Scribe.mode == LoadSaveMode.LoadingVars)
+			if (Scribe.mode == LoadSaveMode.LoadingVars && obj is Game { foodRestrictionDatabase: null } game)
 			{
-				Game game = obj as Game;
-				if (game != null && game.foodRestrictionDatabase == null)
-				{
-					game.foodRestrictionDatabase = new FoodRestrictionDatabase();
-				}
+				game.foodRestrictionDatabase = new FoodRestrictionDatabase();
 			}
-			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			if (Scribe.mode == LoadSaveMode.PostLoadInit && obj is Pawn { foodRestriction: null } pawn && pawn.RaceProps.Humanlike && ((pawn.Faction != null && pawn.Faction.IsPlayer) || (pawn.HostFaction != null && pawn.HostFaction.IsPlayer)))
 			{
-				Pawn pawn = obj as Pawn;
-				if (pawn != null && pawn.foodRestriction == null && pawn.RaceProps.Humanlike && ((pawn.Faction != null && pawn.Faction.IsPlayer) || (pawn.HostFaction != null && pawn.HostFaction.IsPlayer)))
-				{
-					pawn.foodRestriction = new Pawn_FoodRestrictionTracker(pawn);
-				}
+				pawn.foodRestriction = new Pawn_FoodRestrictionTracker(pawn);
 			}
 		}
 	}

@@ -69,9 +69,12 @@ namespace Verse.Steam
 
 		private void SendSteamDetailsQuery()
 		{
-			SteamAPICall_t hAPICall = SteamUGC.RequestUGCDetails(PublishedFileId, 999999u);
-			queryResult = CallResult<SteamUGCRequestUGCDetailsResult_t>.Create(OnDetailsQueryReturned);
-			queryResult.Set(hAPICall);
+			if (SteamManager.Initialized)
+			{
+				SteamAPICall_t hAPICall = SteamUGC.RequestUGCDetails(PublishedFileId, 999999u);
+				queryResult = CallResult<SteamUGCRequestUGCDetailsResult_t>.Create(OnDetailsQueryReturned);
+				queryResult.Set(hAPICall);
+			}
 		}
 
 		private void OnDetailsQueryReturned(SteamUGCRequestUGCDetailsResult_t result, bool IOFailure)

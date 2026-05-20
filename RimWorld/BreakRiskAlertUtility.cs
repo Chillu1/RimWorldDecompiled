@@ -18,7 +18,7 @@ namespace RimWorld
 			get
 			{
 				pawnsAtRiskExtremeResult.Clear();
-				foreach (Pawn item in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep)
+				foreach (Pawn item in PawnsFinder.AllMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists_NoSuspended)
 				{
 					if (!item.Downed && item.mindState.mentalBreaker.BreakExtremeIsImminent)
 					{
@@ -34,7 +34,7 @@ namespace RimWorld
 			get
 			{
 				pawnsAtRiskMajorResult.Clear();
-				foreach (Pawn item in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep)
+				foreach (Pawn item in PawnsFinder.AllMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists_NoSuspended)
 				{
 					if (!item.Downed && item.mindState.mentalBreaker.BreakMajorIsImminent)
 					{
@@ -50,7 +50,7 @@ namespace RimWorld
 			get
 			{
 				pawnsAtRiskMinorResult.Clear();
-				foreach (Pawn item in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep)
+				foreach (Pawn item in PawnsFinder.AllMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists_NoSuspended)
 				{
 					if (!item.Downed && item.mindState.mentalBreaker.BreakMinorIsImminent)
 					{

@@ -7,7 +7,7 @@ namespace RimWorld
 	{
 		public override Job TryGiveJob(Pawn pawn)
 		{
-			if (!InteractionUtility.CanInitiateInteraction(pawn))
+			if (!SocialInteractionUtility.CanInitiateInteraction(pawn))
 			{
 				return null;
 			}

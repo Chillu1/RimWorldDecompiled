@@ -18,7 +18,7 @@ namespace RimWorld
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			this.FailOnAggroMentalState(TargetIndex.A);
-			this.FailOnThingMissingDesignation(TargetIndex.A, DesignationDefOf.Slaughter);
+			this.FailOn(() => !job.ignoreDesignations && !Victim.ShouldBeSlaughtered());
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
 			yield return Toils_General.WaitWith(TargetIndex.A, 180, useProgressBar: true);
 			yield return Toils_General.Do(delegate
@@ -27,7 +27,7 @@ namespace RimWorld
 				pawn.records.Increment(RecordDefOf.AnimalsSlaughtered);
 				if (pawn.InMentalState)
 				{
-					pawn.MentalState.Notify_SlaughteredAnimal();
+					pawn.MentalState.Notify_SlaughteredTarget();
 				}
 			});
 		}

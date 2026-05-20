@@ -46,7 +46,7 @@ namespace RimWorld
 			{
 				if (mapOfPawn != null)
 				{
-					return mapOfPawn.Map;
+					return mapOfPawn.MapHeld;
 				}
 				if (mapParent != null)
 				{
@@ -61,19 +61,27 @@ namespace RimWorld
 		public override void Notify_QuestSignalReceived(Signal signal)
 		{
 			base.Notify_QuestSignalReceived(signal);
-			if (signal.tag == inSignal && Map != null)
+			if (signal.tag == inSignal)
 			{
-				pawns.RemoveAll((Pawn x) => x.MapHeld != Map);
-				for (int i = 0; i < pawns.Count; i++)
+				if (Map == null)
 				{
-					pawns[i].GetLord()?.Notify_PawnLost(pawns[i], PawnLostCondition.ForcedByQuest);
+					mapOfPawn = null;
+					mapParent = quest.TryFindNewSuitableMapParentForRetarget();
 				}
-				Lord lord = MakeLord();
-				for (int j = 0; j < pawns.Count; j++)
+				if (Map != null)
 				{
-					if (!pawns[j].Dead)
+					pawns.RemoveAll((Pawn x) => x.MapHeld != Map);
+					for (int num = 0; num < pawns.Count; num++)
 					{
-						lord.AddPawn(pawns[j]);
+						pawns[num].GetLord()?.Notify_PawnLost(pawns[num], PawnLostCondition.ForcedByQuest);
+					}
+					Lord lord = MakeLord();
+					for (int num2 = 0; num2 < pawns.Count; num2++)
+					{
+						if (!pawns[num2].Dead)
+						{
+							lord.AddPawn(pawns[num2]);
+						}
 					}
 				}
 			}

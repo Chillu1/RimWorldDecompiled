@@ -26,6 +26,24 @@ namespace Verse
 
 		public float Span => TrueMax - TrueMin;
 
+		public bool IsZeros
+		{
+			get
+			{
+				if (min == 0f)
+				{
+					return max == 0f;
+				}
+				return false;
+			}
+		}
+
+		public FloatRange(float value)
+		{
+			min = value;
+			max = value;
+		}
+
 		public FloatRange(float min, float max)
 		{
 			this.min = min;
@@ -117,7 +135,12 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return min + "~" + max;
+			return min.ToString("G9") + "~" + max.ToString("G9");
+		}
+
+		public string ToString(string format)
+		{
+			return min.ToString(format) + "~" + max.ToString(format);
 		}
 
 		public override int GetHashCode()
@@ -127,11 +150,11 @@ namespace Verse
 
 		public override bool Equals(object obj)
 		{
-			if (!(obj is FloatRange))
+			if (!(obj is FloatRange other))
 			{
 				return false;
 			}
-			return Equals((FloatRange)obj);
+			return Equals(other);
 		}
 
 		public bool Equals(FloatRange other)

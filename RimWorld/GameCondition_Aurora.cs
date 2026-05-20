@@ -69,6 +69,22 @@ namespace RimWorld
 			}
 		}
 
+		public bool AlwaysDarkInAllMaps
+		{
+			get
+			{
+				List<Map> maps = Find.Maps;
+				for (int i = 0; i < maps.Count; i++)
+				{
+					if (!maps[i].GameConditionManager.IsAlwaysDarkOutside)
+					{
+						return false;
+					}
+				}
+				return true;
+			}
+		}
+
 		public override int TransitionTicks => 200;
 
 		public override void ExposeData()
@@ -89,21 +105,37 @@ namespace RimWorld
 
 		public override float SkyGazeChanceFactor(Map map)
 		{
+			if (map.GameConditionManager.IsAlwaysDarkOutside)
+			{
+				return 0f;
+			}
 			return 8f;
 		}
 
 		public override float SkyGazeJoyGainFactor(Map map)
 		{
+			if (map.GameConditionManager.IsAlwaysDarkOutside)
+			{
+				return 0f;
+			}
 			return 5f;
 		}
 
 		public override float SkyTargetLerpFactor(Map map)
 		{
+			if (map.GameConditionManager.IsAlwaysDarkOutside)
+			{
+				return 0f;
+			}
 			return GameConditionUtility.LerpInOutValue(this, TransitionTicks);
 		}
 
 		public override SkyTarget? SkyTarget(Map map)
 		{
+			if (map.GameConditionManager.IsAlwaysDarkOutside)
+			{
+				return null;
+			}
 			Color currentColor = CurrentColor;
 			return new SkyTarget(colorSet: new SkyColorSet(Color.Lerp(Color.white, currentColor, 0.075f) * Brightness(map), new Color(0.92f, 0.92f, 0.92f), Color.Lerp(Color.white, currentColor, 0.025f) * Brightness(map), 1f), glow: Mathf.Max(GenCelestial.CurCelestialSunGlow(map), 0.25f), lightsourceShineSize: 1f, lightsourceShineIntensity: 1f);
 		}
@@ -122,9 +154,16 @@ namespace RimWorld
 				curColorIndex = GetNewColorIndex();
 				curColorTransition = 0f;
 			}
-			if (!base.Permanent && base.TicksLeft > TransitionTicks && BrightInAllMaps)
+			if (!base.Permanent && base.TicksLeft > TransitionTicks)
 			{
-				base.TicksLeft = TransitionTicks;
+				if (BrightInAllMaps)
+				{
+					base.TicksLeft = TransitionTicks;
+				}
+				if (AlwaysDarkInAllMaps)
+				{
+					base.TicksLeft = TransitionTicks;
+				}
 			}
 		}
 

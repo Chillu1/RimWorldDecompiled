@@ -12,6 +12,10 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<IEnumerable<Thing>> contents;
 
+		public SlateRef<IEnumerable<ThingDefCountClass>> contentsDefs;
+
+		public SlateRef<IntVec3?> dropSpot;
+
 		public SlateRef<bool> useTradeDropSpot;
 
 		public SlateRef<bool> joinPlayer;
@@ -30,6 +34,8 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<IEnumerable<Thing>> thingsToExcludeFromHyperlinks;
 
+		public SlateRef<bool> canRetargetAnyMap;
+
 		private const string RootSymbol = "root";
 
 		protected override bool TestRunInt(Slate slate)
@@ -40,7 +46,7 @@ namespace RimWorld.QuestGen
 		protected override void RunInt()
 		{
 			Slate slate = QuestGen.slate;
-			if (contents.GetValue(slate) == null)
+			if (contents.GetValue(slate).EnumerableNullOrEmpty() && contentsDefs.GetValue(slate).EnumerableNullOrEmpty())
 			{
 				return;
 			}
@@ -62,10 +68,16 @@ namespace RimWorld.QuestGen
 			}
 			dropPods.sendStandardLetter = sendStandardLetter.GetValue(slate) ?? dropPods.sendStandardLetter;
 			dropPods.useTradeDropSpot = useTradeDropSpot.GetValue(slate);
+			dropPods.dropSpot = dropSpot.GetValue(slate) ?? IntVec3.Invalid;
 			dropPods.joinPlayer = joinPlayer.GetValue(slate);
 			dropPods.makePrisoners = makePrisoners.GetValue(slate);
 			dropPods.mapParent = QuestGen.slate.Get<Map>("map").Parent;
 			dropPods.Things = contents.GetValue(slate);
+			dropPods.canRetargetAnyMap = canRetargetAnyMap.GetValue(slate);
+			if (contentsDefs.GetValue(slate) != null)
+			{
+				dropPods.thingDefs.AddRange(contentsDefs.GetValue(slate));
+			}
 			if (thingsToExcludeFromHyperlinks.GetValue(slate) != null)
 			{
 				dropPods.thingsToExcludeFromHyperlinks.AddRange(from t in thingsToExcludeFromHyperlinks.GetValue(slate)

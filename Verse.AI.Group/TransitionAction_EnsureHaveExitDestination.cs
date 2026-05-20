@@ -1,3 +1,4 @@
+using System.Linq;
 using RimWorld;
 
 namespace Verse.AI.Group
@@ -7,14 +8,13 @@ namespace Verse.AI.Group
 		public override void DoAction(Transition trans)
 		{
 			LordToil_Travel lordToil_Travel = (LordToil_Travel)trans.target;
-			if (!lordToil_Travel.HasDestination())
+			if (!lordToil_Travel.HasDestination() && lordToil_Travel.lord.ownedPawns.Where((Pawn x) => x.Spawned).TryRandomElement(out var result))
 			{
-				Pawn pawn = lordToil_Travel.lord.ownedPawns.RandomElement();
-				if (!CellFinder.TryFindRandomPawnExitCell(pawn, out var result))
+				if (!CellFinder.TryFindRandomPawnExitCell(result, out var result2))
 				{
-					RCellFinder.TryFindRandomPawnEntryCell(out result, pawn.Map, 0f);
+					RCellFinder.TryFindRandomPawnEntryCell(out result2, result.Map, 0f);
 				}
-				lordToil_Travel.SetDestination(result);
+				lordToil_Travel.SetDestination(result2);
 			}
 		}
 	}

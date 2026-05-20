@@ -5,6 +5,15 @@ namespace RimWorld
 {
 	public class Thought_Tale : Thought_SituationalSocial
 	{
+		protected override ThoughtState CurrentStateInternal()
+		{
+			if (ThoughtUtility.ThoughtNullified(pawn, def))
+			{
+				return false;
+			}
+			return def.Worker.CurrentSocialState(pawn, otherPawn);
+		}
+
 		public override float OpinionOffset()
 		{
 			if (ThoughtUtility.ThoughtNullified(pawn, def))

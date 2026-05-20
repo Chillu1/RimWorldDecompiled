@@ -41,8 +41,8 @@ namespace Verse
 			for (int i = 0; i < elements; i++)
 			{
 				ushort num = reader(i);
-				array[i * 2] = (byte)(num & 0xFFu);
-				array[i * 2 + 1] = (byte)((uint)(num >> 8) & 0xFFu);
+				array[i * 2] = (byte)(num & 0xFF);
+				array[i * 2 + 1] = (byte)((num >> 8) & 0xFF);
 			}
 			return array;
 		}
@@ -79,10 +79,10 @@ namespace Verse
 			for (int i = 0; i < elements; i++)
 			{
 				int num = reader(i);
-				array[i * 4] = (byte)((uint)num & 0xFFu);
-				array[i * 4 + 1] = (byte)((uint)(num >> 8) & 0xFFu);
-				array[i * 4 + 2] = (byte)((uint)(num >> 16) & 0xFFu);
-				array[i * 4 + 3] = (byte)((uint)(num >> 24) & 0xFFu);
+				array[i * 4] = (byte)(num & 0xFF);
+				array[i * 4 + 1] = (byte)((num >> 8) & 0xFF);
+				array[i * 4 + 2] = (byte)((num >> 16) & 0xFF);
+				array[i * 4 + 3] = (byte)((num >> 24) & 0xFF);
 			}
 			return array;
 		}
@@ -109,6 +109,31 @@ namespace Verse
 				for (int i = 0; i < elements; i++)
 				{
 					writer(i, arr[i * 4] | (arr[i * 4 + 1] << 8) | (arr[i * 4 + 2] << 16) | (arr[i * 4 + 3] << 24));
+				}
+			}
+		}
+
+		public static byte[] SerializeUint(int elements, Func<int, uint> reader)
+		{
+			byte[] array = new byte[elements * 4];
+			for (int i = 0; i < elements; i++)
+			{
+				uint num = reader(i);
+				array[i * 4] = (byte)(num & 0xFF);
+				array[i * 4 + 1] = (byte)((num >> 8) & 0xFF);
+				array[i * 4 + 2] = (byte)((num >> 16) & 0xFF);
+				array[i * 4 + 3] = (byte)((num >> 24) & 0xFF);
+			}
+			return array;
+		}
+
+		public static void LoadUint(byte[] arr, int elements, Action<int, uint> writer)
+		{
+			if (arr != null && arr.Length != 0)
+			{
+				for (int i = 0; i < elements; i++)
+				{
+					writer(i, (uint)(arr[i * 4] | (arr[i * 4 + 1] << 8) | (arr[i * 4 + 2] << 16) | (arr[i * 4 + 3] << 24)));
 				}
 			}
 		}

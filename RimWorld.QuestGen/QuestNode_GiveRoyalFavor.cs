@@ -47,7 +47,12 @@ namespace RimWorld.QuestGen
 				});
 				questPart_Choice.choices.Add(choice);
 				QuestGen.quest.AddPart(questPart_Choice);
+				PostProcessRewardChoice(questPart_Choice);
 			}
+		}
+
+		protected virtual void PostProcessRewardChoice(QuestPart_Choice rewardChoice)
+		{
 		}
 	}
 }

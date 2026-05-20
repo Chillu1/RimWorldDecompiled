@@ -8,15 +8,15 @@ namespace RimWorld
 	{
 		public abstract void ExposeData();
 
-		public virtual IEnumerable<Rule> GetRules(string prefix)
+		public virtual IEnumerable<Rule> GetRules(string prefix, Dictionary<string, string> constants = null)
 		{
-			Log.Error(string.Concat(GetType(), " cannot do GetRules with a prefix."));
+			Log.Error(GetType()?.ToString() + " cannot do GetRules with a prefix.");
 			yield break;
 		}
 
-		public virtual IEnumerable<Rule> GetRules()
+		public virtual IEnumerable<Rule> GetRules(Dictionary<string, string> constants = null)
 		{
-			Log.Error(string.Concat(GetType(), " cannot do GetRules without a prefix."));
+			Log.Error(GetType()?.ToString() + " cannot do GetRules without a prefix.");
 			yield break;
 		}
 	}

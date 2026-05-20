@@ -18,6 +18,10 @@ namespace RimWorld
 
 		public SoundDef pawnExitSound;
 
+		public bool shouldTickContents = true;
+
+		public bool showMassInInspectString;
+
 		public CompProperties_Transporter()
 		{
 			compClass = typeof(CompTransporter);

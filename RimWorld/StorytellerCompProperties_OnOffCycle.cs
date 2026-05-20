@@ -9,6 +9,10 @@ namespace RimWorld
 
 		public float offDays;
 
+		public float onDaysNoTreeConnectors;
+
+		public float offDaysNoTreeConnectors;
+
 		public float minSpacingDays;
 
 		public FloatRange numIncidentsRange = FloatRange.Zero;

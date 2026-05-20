@@ -9,5 +9,15 @@ namespace RimWorld
 		public MentalStateDef stateDefForMechs;
 
 		public StatDef durationMultiplier;
+
+		public bool applyToSelf;
+
+		public EffecterDef casterEffect;
+
+		public EffecterDef targetEffect;
+
+		public bool excludeNPCFactions;
+
+		public bool forced;
 	}
 }

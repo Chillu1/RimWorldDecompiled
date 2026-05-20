@@ -42,6 +42,10 @@ namespace RimWorld
 
 		public override Vector2 InitialSize => new Vector2(640f, Height);
 
+		protected virtual int FirstCharLimit => 64;
+
+		protected virtual int SecondCharLimit => 64;
+
 		public Dialog_GiveName()
 		{
 			if (Find.AnyPlayerHomeMap != null && Find.AnyPlayerHomeMap.mapPawns.FreeColonistsCount != 0)
@@ -57,7 +61,7 @@ namespace RimWorld
 			}
 			else
 			{
-				suggestingPawn = PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep.RandomElement();
+				suggestingPawn = PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoSuspended.RandomElement();
 			}
 			forcePause = true;
 			closeOnAccept = false;
@@ -69,7 +73,7 @@ namespace RimWorld
 		{
 			Text.Font = GameFont.Small;
 			bool flag = false;
-			if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Return)
+			if (Event.current.type == EventType.KeyDown && (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter))
 			{
 				flag = true;
 				Event.current.Use();
@@ -82,7 +86,7 @@ namespace RimWorld
 				{
 					curName = nameGenerator();
 				}
-				curName = Widgets.TextField(new Rect(0f, 80f, rect.width / 2f + 70f, 35f), curName);
+				curName = Widgets.TextField(new Rect(0f, 80f, rect.width / 2f + 70f, 35f), curName, FirstCharLimit);
 				rect2 = new Rect(rect.width / 2f + 90f, rect.height - 35f, rect.width / 2f - 90f, 35f);
 			}
 			else
@@ -95,7 +99,7 @@ namespace RimWorld
 				{
 					curName = nameGenerator();
 				}
-				curName = Widgets.TextField(new Rect(0f, num, rect.width / 2f + 70f, 35f), curName);
+				curName = Widgets.TextField(new Rect(0f, num, rect.width / 2f + 70f, 35f), curName, FirstCharLimit);
 				num += 60f;
 				text = secondNameMessageKey.Translate(suggestingPawn.LabelShort, suggestingPawn);
 				Widgets.Label(new Rect(0f, num, rect.width, rect.height), text);
@@ -104,7 +108,7 @@ namespace RimWorld
 				{
 					curSecondName = secondNameGenerator();
 				}
-				curSecondName = Widgets.TextField(new Rect(0f, num, rect.width / 2f + 70f, 35f), curSecondName);
+				curSecondName = Widgets.TextField(new Rect(0f, num, rect.width / 2f + 70f, 35f), curSecondName, SecondCharLimit);
 				num += 45f;
 				float num2 = rect.width / 2f - 90f;
 				rect2 = new Rect(rect.width / 2f - num2 / 2f, rect.height - 35f, num2, 35f);
@@ -113,18 +117,20 @@ namespace RimWorld
 			{
 				return;
 			}
-			if (IsValidName(curName) && (!useSecondName || IsValidSecondName(curSecondName)))
+			string text2 = curName?.Trim();
+			string text3 = curSecondName?.Trim();
+			if (IsValidName(text2) && (!useSecondName || IsValidSecondName(text3)))
 			{
 				if (useSecondName)
 				{
-					Named(curName);
-					NamedSecond(curSecondName);
-					Messages.Message(gainedNameMessageKey.Translate(curName, curSecondName), MessageTypeDefOf.TaskCompletion, historical: false);
+					Named(text2);
+					NamedSecond(text3);
+					Messages.Message(gainedNameMessageKey.Translate(text2, text3), MessageTypeDefOf.TaskCompletion, historical: false);
 				}
 				else
 				{
-					Named(curName);
-					Messages.Message(gainedNameMessageKey.Translate(curName), MessageTypeDefOf.TaskCompletion, historical: false);
+					Named(text2);
+					Messages.Message(gainedNameMessageKey.Translate(text2), MessageTypeDefOf.TaskCompletion, historical: false);
 				}
 				Find.WindowStack.TryRemove(this);
 			}

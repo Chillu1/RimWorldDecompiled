@@ -44,14 +44,10 @@ namespace RimWorld
 			bool fullPodFound = false;
 			foreach (Building item in shipParts)
 			{
-				if (item.def == ThingDefOf.Ship_CryptosleepCasket)
+				if (item.def == ThingDefOf.Ship_CryptosleepCasket && item is Building_CryptosleepCasket { HasAnyContents: not false })
 				{
-					Building_CryptosleepCasket building_CryptosleepCasket = item as Building_CryptosleepCasket;
-					if (building_CryptosleepCasket != null && building_CryptosleepCasket.HasAnyContents)
-					{
-						fullPodFound = true;
-						break;
-					}
+					fullPodFound = true;
+					break;
 				}
 			}
 			foreach (Building item2 in shipParts)
@@ -138,7 +134,7 @@ namespace RimWorld
 				{
 					text += "Standalone";
 				}
-				if (!Find.Storyteller.difficultyValues.allowBigThreats)
+				if (!Find.Storyteller.difficulty.allowBigThreats)
 				{
 					text += "Pacifist";
 				}

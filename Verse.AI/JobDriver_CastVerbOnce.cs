@@ -6,7 +6,12 @@ namespace Verse.AI
 	{
 		public override string GetReport()
 		{
-			return TranslatorFormattedStringExtensions.Translate(arg2: (!base.TargetA.HasThing) ? ((string)"AreaLower".Translate()) : base.TargetThingA.LabelCap, key: "UsingVerb", arg1: job.verbToUse.ReportLabel);
+			string text = ((!base.TargetA.HasThing) ? ((string)"AreaLower".Translate()) : base.TargetThingA.LabelCap);
+			if (job.verbToUse == null)
+			{
+				return null;
+			}
+			return "UsingVerb".Translate(job.verbToUse.ReportLabel, text);
 		}
 
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
@@ -17,7 +22,7 @@ namespace Verse.AI
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			this.FailOnDespawnedOrNull(TargetIndex.A);
-			yield return Toils_Combat.GotoCastPosition(TargetIndex.A);
+			yield return Toils_Combat.GotoCastPosition(TargetIndex.A, TargetIndex.B);
 			yield return Toils_Combat.CastVerb(TargetIndex.A);
 		}
 	}

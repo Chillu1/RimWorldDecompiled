@@ -103,5 +103,10 @@ namespace RimWorld
 		protected virtual void ModifyHideOffMapStartingPawnPostMapGenerate(Pawn p)
 		{
 		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode() ^ context.GetHashCode() ^ chance.GetHashCode() ^ (hideOffMap ? 1 : 0);
+		}
 	}
 }

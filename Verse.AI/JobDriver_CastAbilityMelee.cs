@@ -8,6 +8,7 @@ namespace Verse.AI
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			this.FailOnDespawnedOrNull(TargetIndex.A);
+			this.FailOn(() => !job.ability.CanCast && !job.ability.Casting);
 			Ability ability = ((Verb_CastAbility)job.verbToUse).ability;
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch).FailOn(() => !ability.CanApplyOn(job.targetA));
 			yield return Toils_Combat.CastVerb(TargetIndex.A, TargetIndex.B, canHitNonTargetPawns: false);

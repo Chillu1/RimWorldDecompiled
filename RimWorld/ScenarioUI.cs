@@ -40,7 +40,7 @@ namespace RimWorld
 			Listing_ScenEdit listing_ScenEdit = new Listing_ScenEdit(scen);
 			listing_ScenEdit.ColumnWidth = rect2.width;
 			listing_ScenEdit.Begin(rect2);
-			listing_ScenEdit.Label("Title".Translate());
+			listing_ScenEdit.Label("ScenarioTitle".Translate());
 			scen.name = listing_ScenEdit.TextEntry(scen.name).TrimmedToLength(55);
 			listing_ScenEdit.Label("Summary".Translate());
 			scen.summary = listing_ScenEdit.TextEntry(scen.summary, 2).TrimmedToLength(300);

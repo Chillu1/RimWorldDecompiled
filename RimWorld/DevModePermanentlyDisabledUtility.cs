@@ -29,9 +29,9 @@ namespace RimWorld
 			{
 				File.Create(GenFilePaths.DevModePermanentlyDisabledFilePath).Dispose();
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Could not permanently disable dev mode: " + arg);
+				Log.Error("Could not permanently disable dev mode: " + ex);
 				return;
 			}
 			disabled = true;

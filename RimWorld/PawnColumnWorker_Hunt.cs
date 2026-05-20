@@ -23,6 +23,7 @@ namespace RimWorld
 		protected override void Notify_DesignationAdded(Pawn pawn)
 		{
 			pawn.MapHeld.designationManager.TryRemoveDesignationOn(pawn, DesignationDefOf.Tame);
+			Designator_Hunt.ShowDesignationWarnings(pawn);
 		}
 	}
 }

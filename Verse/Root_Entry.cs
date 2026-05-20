@@ -22,9 +22,9 @@ namespace Verse
 					GameDataSaveLoader.LoadGame(fileInfo);
 				}
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Critical error in root Start(): " + arg);
+				Log.Error("Critical error in root Start(): " + ex);
 			}
 		}
 
@@ -47,9 +47,9 @@ namespace Verse
 					Current.Game.UpdateEntry();
 				}
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Root level exception in Update(): " + arg);
+				Log.Error("Root level exception in Update(): " + ex);
 			}
 		}
 	}

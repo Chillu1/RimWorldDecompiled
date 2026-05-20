@@ -27,6 +27,21 @@ namespace RimWorld
 					{
 						return false;
 					}
+					if (pawn.needs?.rest != null)
+					{
+						if (pawn.needs.rest.CurLevel > 0.14f && ChildcareUtility.ShouldWakeUpToAutofeedUrgent(pawn))
+						{
+							return false;
+						}
+						if (pawn.needs.rest.CurLevel > 0.14f)
+						{
+							Need_Food food = pawn.needs.food;
+							if (food != null && (int)food.CurCategory >= 2 && FoodUtility.TryFindBestFoodSourceFor(pawn, pawn, desperate: false, out var _, out var _))
+							{
+								return false;
+							}
+						}
+					}
 				}
 			}
 			return true;

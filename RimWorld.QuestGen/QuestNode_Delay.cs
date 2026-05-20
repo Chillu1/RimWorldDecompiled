@@ -30,6 +30,10 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<bool> reactivatable;
 
+		public SlateRef<bool> waitUntilPlayerHasHomeMap;
+
+		public SlateRef<bool> useAcceptanceExpiry;
+
 		public QuestNode node;
 
 		protected override bool TestRunInt(Slate slate)
@@ -45,7 +49,12 @@ namespace RimWorld.QuestGen
 		{
 			Slate slate = QuestGen.slate;
 			QuestPart_Delay questPart_Delay;
-			if (delayTicksRange.GetValue(slate).HasValue)
+			if (useAcceptanceExpiry.GetValue(slate))
+			{
+				questPart_Delay = MakeDelayQuestPart();
+				questPart_Delay.delayTicks = QuestGen.quest.TicksUntilExpiry;
+			}
+			else if (delayTicksRange.GetValue(slate).HasValue)
 			{
 				questPart_Delay = new QuestPart_DelayRandom();
 				((QuestPart_DelayRandom)questPart_Delay).delayTicksRange = delayTicksRange.GetValue(slate).Value;
@@ -58,6 +67,7 @@ namespace RimWorld.QuestGen
 			questPart_Delay.inSignalEnable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalEnable.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			questPart_Delay.inSignalDisable = QuestGenUtility.HardcodedSignalWithQuestID(inSignalDisable.GetValue(slate));
 			questPart_Delay.reactivatable = reactivatable.GetValue(slate);
+			questPart_Delay.waitUntilPlayerHasHomeMap = waitUntilPlayerHasHomeMap.GetValue(slate);
 			if (!inspectStringTargets.GetValue(slate).EnumerableNullOrEmpty())
 			{
 				questPart_Delay.inspectString = inspectString.GetValue(slate);

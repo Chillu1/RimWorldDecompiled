@@ -6,7 +6,7 @@ namespace RimWorld
 	{
 		private TaggedString authorNameInt = null;
 
-		private TaggedString titleInt = null;
+		protected TaggedString titleInt = null;
 
 		private TaleReference taleRef;
 
@@ -26,12 +26,20 @@ namespace RimWorld
 		{
 			get
 			{
+				if (parent.StyleSourcePrecept != null)
+				{
+					return parent.StyleSourcePrecept.LabelCap;
+				}
 				if (titleInt.NullOrEmpty())
 				{
 					Log.Error("CompArt got title but it wasn't configured.");
 					titleInt = "Error";
 				}
 				return titleInt;
+			}
+			set
+			{
+				titleInt = value;
 			}
 		}
 
@@ -41,13 +49,9 @@ namespace RimWorld
 		{
 			get
 			{
-				if (Props.mustBeFullGrave)
+				if (Props.mustBeFullGrave && !(parent is Building_Grave { HasCorpse: not false }))
 				{
-					Building_Grave building_Grave = parent as Building_Grave;
-					if (building_Grave == null || !building_Grave.HasCorpse)
-					{
-						return false;
-					}
+					return false;
 				}
 				if (!parent.TryGetQuality(out var qc))
 				{
@@ -57,22 +61,35 @@ namespace RimWorld
 			}
 		}
 
-		public bool Active => taleRef != null;
+		public virtual bool Active => taleRef != null;
 
 		public CompProperties_Art Props => (CompProperties_Art)props;
 
+		public override string TransformLabel(string label)
+		{
+			if (Active && parent.StyleSourcePrecept != null)
+			{
+				return Title;
+			}
+			return base.TransformLabel(label);
+		}
+
 		public void InitializeArt(ArtGenerationContext source)
 		{
-			InitializeArt(null, source);
+			InitializeArtInternal(null, source);
 		}
 
 		public void InitializeArt(Thing relatedThing)
 		{
-			InitializeArt(relatedThing, ArtGenerationContext.Colony);
+			InitializeArtInternal(relatedThing, ArtGenerationContext.Colony);
 		}
 
-		private void InitializeArt(Thing relatedThing, ArtGenerationContext source)
+		protected virtual void InitializeArtInternal(Thing relatedThing, ArtGenerationContext source)
 		{
+			if (!titleInt.NullOrEmpty())
+			{
+				return;
+			}
 			if (taleRef != null)
 			{
 				taleRef.ReferenceDestroyed();
@@ -95,7 +112,7 @@ namespace RimWorld
 				{
 					taleRef = TaleReference.Taleless;
 				}
-				titleInt = GenerateTitle();
+				titleInt = GenerateTitle(source);
 			}
 			else
 			{
@@ -104,7 +121,7 @@ namespace RimWorld
 			}
 		}
 
-		public void JustCreatedBy(Pawn pawn)
+		public virtual void JustCreatedBy(Pawn pawn)
 		{
 			if (CanShowArt)
 			{
@@ -168,7 +185,7 @@ namespace RimWorld
 			return true;
 		}
 
-		public TaggedString GenerateImageDescription()
+		public virtual TaggedString GenerateImageDescription()
 		{
 			if (taleRef == null)
 			{
@@ -178,7 +195,7 @@ namespace RimWorld
 			return taleRef.GenerateText(TextGenerationPurpose.ArtDescription, Props.descriptionMaker);
 		}
 
-		private string GenerateTitle()
+		protected virtual string GenerateTitle(ArtGenerationContext context)
 		{
 			if (taleRef == null)
 			{

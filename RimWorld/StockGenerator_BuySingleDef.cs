@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -7,14 +9,23 @@ namespace RimWorld
 	{
 		public ThingDef thingDef;
 
-		public override IEnumerable<Thing> GenerateThings(int forTile, Faction faction = null)
+		public override IEnumerable<Thing> GenerateThings(PlanetTile forTile, Faction faction = null)
 		{
-			yield break;
+			return Enumerable.Empty<Thing>();
 		}
 
 		public override bool HandlesThingDef(ThingDef thingDef)
 		{
 			return thingDef == this.thingDef;
+		}
+
+		public override Tradeability TradeabilityFor(ThingDef thingDef)
+		{
+			if (thingDef.tradeability == Tradeability.None || !HandlesThingDef(thingDef))
+			{
+				return Tradeability.None;
+			}
+			return Tradeability.Sellable;
 		}
 	}
 }

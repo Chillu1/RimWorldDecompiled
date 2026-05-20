@@ -32,32 +32,92 @@ namespace Verse
 
 			public Faction faction;
 
+			public Quest quest;
+
+			public Ideo ideo;
+
+			public ResearchProjectDef researchProject;
+
 			public int selectedStatIndex;
+
+			public bool thingIsGeneOwner;
+
+			public bool HasGeneOwnerThing
+			{
+				get
+				{
+					if (thingIsGeneOwner)
+					{
+						return thing != null;
+					}
+					return false;
+				}
+			}
+
+			public bool IsHidden
+			{
+				get
+				{
+					if (thing != null && Find.HiddenItemsManager.Hidden(thing.def))
+					{
+						return true;
+					}
+					if (def is ThingDef thingDef && Find.HiddenItemsManager.Hidden(thingDef))
+					{
+						return true;
+					}
+					return false;
+				}
+			}
 
 			public string Label
 			{
 				get
 				{
 					string result = null;
-					if (worldObject != null)
+					if (IsHidden)
+					{
+						result = string.Format("({0})", "NotYetDiscovered".Translate());
+					}
+					else if (worldObject != null)
 					{
 						result = worldObject.Label;
 					}
-					else if (def != null && def is ThingDef && stuff != null)
+					else if (def != null && def is ThingDef thingDef && stuff != null)
 					{
-						result = (def as ThingDef).label;
+						result = thingDef.label;
 					}
 					else if (def != null)
 					{
 						result = def.label;
 					}
-					else if (thing != null)
+					else if (thing != null && !thingIsGeneOwner)
 					{
 						result = thing.Label;
 					}
 					else if (titleDef != null)
 					{
 						result = titleDef.GetLabelCapForBothGenders();
+					}
+					else if (quest != null)
+					{
+						result = quest.name;
+					}
+					else if (ideo != null)
+					{
+						result = ideo.name;
+					}
+					else if (researchProject != null)
+					{
+						result = researchProject.label;
+					}
+					else if (faction != null)
+					{
+						result = faction.Name;
+					}
+					else if (HasGeneOwnerThing)
+					{
+						result = "InspectGenes".Translate();
 					}
 					return result;
 				}
@@ -72,6 +132,10 @@ namespace Verse
 				titleDef = infoCard.titleDef;
 				faction = infoCard.faction;
 				selectedStatIndex = statIndex;
+				quest = null;
+				ideo = null;
+				researchProject = null;
+				thingIsGeneOwner = false;
 			}
 
 			public Hyperlink(Def def, int statIndex = -1)
@@ -83,6 +147,10 @@ namespace Verse
 				titleDef = null;
 				faction = null;
 				selectedStatIndex = statIndex;
+				quest = null;
+				ideo = null;
+				researchProject = null;
+				thingIsGeneOwner = false;
 			}
 
 			public Hyperlink(RoyalTitleDef titleDef, Faction faction, int statIndex = -1)
@@ -94,9 +162,13 @@ namespace Verse
 				this.titleDef = titleDef;
 				this.faction = faction;
 				selectedStatIndex = statIndex;
+				quest = null;
+				ideo = null;
+				researchProject = null;
+				thingIsGeneOwner = false;
 			}
 
-			public Hyperlink(Thing thing, int statIndex = -1)
+			public Hyperlink(Thing thing, int statIndex = -1, bool thingIsGeneOwner = false)
 			{
 				this.thing = thing;
 				stuff = null;
@@ -105,12 +177,108 @@ namespace Verse
 				titleDef = null;
 				faction = null;
 				selectedStatIndex = statIndex;
+				quest = null;
+				ideo = null;
+				researchProject = null;
+				this.thingIsGeneOwner = thingIsGeneOwner;
 			}
 
-			public void OpenDialog()
+			public Hyperlink(Faction faction, int statIndex = -1, bool thingIsGeneOwner = false)
 			{
+				thing = null;
+				stuff = null;
+				def = null;
+				worldObject = null;
+				titleDef = null;
+				this.faction = faction;
+				selectedStatIndex = statIndex;
+				quest = null;
+				ideo = null;
+				researchProject = null;
+				this.thingIsGeneOwner = thingIsGeneOwner;
+			}
+
+			public Hyperlink(Quest quest, int statIndex = -1)
+			{
+				def = null;
+				thing = null;
+				stuff = null;
+				worldObject = null;
+				titleDef = null;
+				faction = null;
+				selectedStatIndex = statIndex;
+				this.quest = quest;
+				ideo = null;
+				researchProject = null;
+				thingIsGeneOwner = false;
+			}
+
+			public Hyperlink(Ideo ideo)
+			{
+				def = null;
+				thing = null;
+				stuff = null;
+				worldObject = null;
+				titleDef = null;
+				faction = null;
+				selectedStatIndex = 0;
+				quest = null;
+				this.ideo = ideo;
+				researchProject = null;
+				thingIsGeneOwner = false;
+			}
+
+			public Hyperlink(ResearchProjectDef researchProject)
+			{
+				def = null;
+				thing = null;
+				stuff = null;
+				worldObject = null;
+				titleDef = null;
+				faction = null;
+				selectedStatIndex = 0;
+				quest = null;
+				ideo = null;
+				this.researchProject = researchProject;
+				thingIsGeneOwner = false;
+			}
+
+			public void ActivateHyperlink()
+			{
+				if (IsHidden)
+				{
+					return;
+				}
+				if (ideo != null)
+				{
+					Find.WindowStack.WindowOfType<Dialog_InfoCard>()?.Close();
+					Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Ideos);
+					IdeoUIUtility.SetSelected(ideo);
+					return;
+				}
+				if (quest != null)
+				{
+					Find.WindowStack.WindowOfType<Dialog_InfoCard>()?.Close();
+					Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Quests);
+					((MainTabWindow_Quests)MainButtonDefOf.Quests.TabWindow).Select(quest);
+					return;
+				}
+				if (researchProject != null)
+				{
+					Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Research);
+					((MainTabWindow_Research)MainButtonDefOf.Research.TabWindow).Select(researchProject);
+				}
+				if (HasGeneOwnerThing)
+				{
+					if (ThingSelectionUtility.SelectableByMapClick(thing))
+					{
+						Find.Selector.Select(thing);
+						InspectPaneUtility.OpenTab(typeof(ITab_Genes));
+					}
+					return;
+				}
 				Dialog_InfoCard dialog_InfoCard = null;
-				if (def == null && thing == null && worldObject == null && titleDef == null)
+				if (def == null && thing == null && worldObject == null && titleDef == null && faction == null)
 				{
 					dialog_InfoCard = Find.WindowStack.WindowOfType<Dialog_InfoCard>();
 				}
@@ -136,6 +304,12 @@ namespace Verse
 					else if (titleDef != null)
 					{
 						dialog_InfoCard = new Dialog_InfoCard(titleDef, faction);
+					}
+					else if (faction != null)
+					{
+						Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Factions);
+						((MainTabWindow_Factions)Find.MainTabsRoot.OpenTab.TabWindow).ScrollToFaction(faction);
+						dialog_InfoCard = new Dialog_InfoCard(faction);
 					}
 				}
 				if (dialog_InfoCard == null)
@@ -168,6 +342,8 @@ namespace Verse
 
 		private ThingDef stuff;
 
+		private Precept_ThingStyle precept;
+
 		private Def def;
 
 		private WorldObject worldObject;
@@ -175,6 +351,10 @@ namespace Verse
 		private RoyalTitleDef titleDef;
 
 		private Faction faction;
+
+		private Pawn pawn;
+
+		private Hediff hediff;
 
 		private InfoCardTab tab;
 
@@ -199,6 +379,18 @@ namespace Verse
 		public override Vector2 InitialSize => new Vector2(950f, 760f);
 
 		protected override float Margin => 0f;
+
+		public override QuickSearchWidget CommonSearchWidget
+		{
+			get
+			{
+				if (tab != InfoCardTab.Stats)
+				{
+					return null;
+				}
+				return StatsReportUtility.QuickSearchWidget;
+			}
+		}
 
 		public static IEnumerable<Hyperlink> DefsToHyperlinks(IEnumerable<ThingDef> defs)
 		{
@@ -225,30 +417,40 @@ namespace Verse
 			}
 		}
 
-		public Dialog_InfoCard(Thing thing)
+		public Dialog_InfoCard(Thing thing, Precept_ThingStyle precept = null)
 		{
 			this.thing = thing;
+			this.precept = precept;
 			tab = InfoCardTab.Stats;
 			Setup();
 		}
 
-		public Dialog_InfoCard(Def onlyDef)
+		public Dialog_InfoCard(Def onlyDef, Precept_ThingStyle precept = null)
 		{
 			def = onlyDef;
+			this.precept = precept;
 			Setup();
 		}
 
-		public Dialog_InfoCard(ThingDef thingDef, ThingDef stuff)
+		public Dialog_InfoCard(ThingDef thingDef, ThingDef stuff, Precept_ThingStyle precept = null)
 		{
 			def = thingDef;
 			this.stuff = stuff;
+			this.precept = precept;
 			Setup();
 		}
 
-		public Dialog_InfoCard(RoyalTitleDef titleDef, Faction faction)
+		public Dialog_InfoCard(RoyalTitleDef titleDef, Faction faction, Pawn pawn = null)
 		{
 			this.titleDef = titleDef;
 			this.faction = faction;
+			this.pawn = pawn;
+			Setup();
+		}
+
+		public Dialog_InfoCard(Hediff hediff)
+		{
+			this.hediff = hediff;
 			Setup();
 		}
 
@@ -262,6 +464,11 @@ namespace Verse
 		{
 			this.worldObject = worldObject;
 			Setup();
+		}
+
+		public override void Notify_CommonSearchChanged()
+		{
+			StatsReportUtility.Notify_QuickSearchChanged();
 		}
 
 		public override void Close(bool doCloseSound = true)
@@ -313,7 +520,7 @@ namespace Verse
 			}
 			else
 			{
-				Widgets.DefIcon(rect2, def, stuff, 1f, drawPlaceholder: true);
+				Widgets.DefIcon(rect2, def, stuff, 1f, null, drawPlaceholder: true);
 			}
 			Rect rect3 = new Rect(inRect);
 			rect3.yMin = rect.yMax;
@@ -383,7 +590,7 @@ namespace Verse
 				Hyperlink hyperlink = history[history.Count - 1];
 				history.RemoveAt(history.Count - 1);
 				Find.WindowStack.TryRemove(typeof(Dialog_InfoCard), doCloseSound: false);
-				hyperlink.OpenDialog();
+				hyperlink.ActivateHyperlink();
 			}
 		}
 
@@ -394,8 +601,7 @@ namespace Verse
 				if (thing != null)
 				{
 					Thing innerThing = thing;
-					MinifiedThing minifiedThing = thing as MinifiedThing;
-					if (minifiedThing != null)
+					if (thing is MinifiedThing minifiedThing)
 					{
 						innerThing = minifiedThing.InnerThing;
 					}
@@ -403,7 +609,11 @@ namespace Verse
 				}
 				else if (titleDef != null)
 				{
-					StatsReportUtility.DrawStatsReport(cardRect, titleDef, faction);
+					StatsReportUtility.DrawStatsReport(cardRect, titleDef, faction, pawn);
+				}
+				else if (hediff != null)
+				{
+					StatsReportUtility.DrawStatsReport(cardRect, hediff);
 				}
 				else if (faction != null)
 				{
@@ -428,8 +638,7 @@ namespace Verse
 			}
 			else if (tab == InfoCardTab.Health)
 			{
-				cardRect.yMin += 8f;
-				HealthCardUtility.DrawPawnHealthCard(cardRect, (Pawn)thing, allowOperations: false, showBloodLoss: false, null);
+				HealthCardUtility.DrawPawnHealthCard(cardRect, (Pawn)thing, allowOperations: false, HealthCardUtility.ShowBloodLoss(thing), null);
 			}
 			else if (tab == InfoCardTab.Records)
 			{
@@ -450,19 +659,29 @@ namespace Verse
 		{
 			if (thing != null)
 			{
-				return thing.LabelCapNoCount;
+				if (precept == null)
+				{
+					return thing.LabelCapNoCount;
+				}
+				return precept.LabelCap;
 			}
 			if (worldObject != null)
 			{
 				return worldObject.LabelCap;
 			}
-			ThingDef thingDef = Def as ThingDef;
-			if (thingDef != null)
+			if (hediff != null)
 			{
-				return GenLabel.ThingLabel(thingDef, stuff).CapitalizeFirst();
+				return hediff.def.LabelCap;
 			}
-			AbilityDef abilityDef = Def as AbilityDef;
-			if (abilityDef != null)
+			if (Def is ThingDef entDef)
+			{
+				if (precept == null)
+				{
+					return GenLabel.ThingLabel(entDef, stuff).CapitalizeFirst();
+				}
+				return precept.LabelCap;
+			}
+			if (Def is AbilityDef abilityDef)
 			{
 				return abilityDef.LabelCap;
 			}
@@ -474,7 +693,11 @@ namespace Verse
 			{
 				return faction.Name;
 			}
-			return Def.LabelCap;
+			if (precept == null)
+			{
+				return Def.LabelCap;
+			}
+			return precept.LabelCap;
 		}
 	}
 }

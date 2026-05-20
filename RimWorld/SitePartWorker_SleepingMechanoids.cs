@@ -4,23 +4,25 @@ using RimWorld.Planet;
 using RimWorld.QuestGen;
 using UnityEngine;
 using Verse;
-using Verse.AI.Group;
 using Verse.Grammar;
 
 namespace RimWorld
 {
 	public class SitePartWorker_SleepingMechanoids : SitePartWorker
 	{
+		public override bool IsAvailable()
+		{
+			if (base.IsAvailable())
+			{
+				return Faction.OfMechanoids != null;
+			}
+			return false;
+		}
+
 		public override string GetArrivedLetterPart(Map map, out LetterDef preferredLetterDef, out LookTargets lookTargets)
 		{
 			string arrivedLetterPart = base.GetArrivedLetterPart(map, out preferredLetterDef, out lookTargets);
-			IEnumerable<Pawn> source = map.mapPawns.AllPawnsSpawned.Where((Pawn x) => x.RaceProps.IsMechanoid);
-			Pawn pawn = source.Where((Pawn x) => x.GetLord() != null && x.GetLord().LordJob is LordJob_SleepThenAssaultColony).FirstOrDefault();
-			if (pawn == null)
-			{
-				pawn = source.FirstOrDefault();
-			}
-			lookTargets = pawn;
+			lookTargets = new LookTargets(map.Parent);
 			return arrivedLetterPart;
 		}
 
@@ -37,7 +39,7 @@ namespace RimWorld
 			return base.GetPostProcessedThreatLabel(site, sitePart) + ": " + "KnownSiteThreatEnemyCountAppend".Translate(GetMechanoidsCount(site, sitePart.parms), "Enemies".Translate());
 		}
 
-		public override SitePartParams GenerateDefaultParams(float myThreatPoints, int tile, Faction faction)
+		public override SitePartParams GenerateDefaultParams(float myThreatPoints, PlanetTile tile, Faction faction)
 		{
 			SitePartParams sitePartParams = base.GenerateDefaultParams(myThreatPoints, tile, faction);
 			sitePartParams.threatPoints = Mathf.Max(sitePartParams.threatPoints, FactionDefOf.Mechanoid.MinPointsToGeneratePawnGroup(PawnGroupKindDefOf.Combat));

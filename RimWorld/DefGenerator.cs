@@ -5,52 +5,77 @@ namespace RimWorld
 {
 	public static class DefGenerator
 	{
-		public static int StandardItemPathCost = 14;
+		public const int StandardItemPathCost = 14;
 
-		public static void GenerateImpliedDefs_PreResolve()
+		public static void GenerateImpliedDefs_PreResolve(bool hotReload = false)
 		{
-			foreach (ThingDef item in ThingDefGenerator_Buildings.ImpliedBlueprintAndFrameDefs().Concat(ThingDefGenerator_Meat.ImpliedMeatDefs()).Concat(ThingDefGenerator_Techprints.ImpliedTechprintDefs())
-				.Concat(ThingDefGenerator_Corpses.ImpliedCorpseDefs()))
+			foreach (TerrainDef item in TerrainDefGenerator_Carpet.ImpliedTerrainDefs(hotReload))
 			{
-				AddImpliedDef(item);
+				AddImpliedDef(item, hotReload);
+			}
+			foreach (ThingDef item2 in ThingDefGenerator_Buildings.ImpliedBlueprintAndFrameDefs(hotReload).Concat(ThingDefGenerator_Meat.ImpliedMeatDefs(hotReload)).Concat(ThingDefGenerator_Techprints.ImpliedTechprintDefs(hotReload))
+				.Concat(ThingDefGenerator_Corpses.ImpliedCorpseDefs(hotReload)))
+			{
+				AddImpliedDef(item2, hotReload);
 			}
 			DirectXmlCrossRefLoader.ResolveAllWantedCrossReferences(FailMode.Silent);
-			foreach (TerrainDef item2 in TerrainDefGenerator_Stone.ImpliedTerrainDefs())
+			foreach (TerrainDef item3 in TerrainDefGenerator_Stone.ImpliedTerrainDefs(hotReload))
 			{
-				AddImpliedDef(item2);
+				AddImpliedDef(item3, hotReload);
 			}
-			foreach (RecipeDef item3 in RecipeDefGenerator.ImpliedRecipeDefs())
+			foreach (RecipeDef item4 in RecipeDefGenerator.ImpliedRecipeDefs(hotReload))
 			{
-				AddImpliedDef(item3);
+				AddImpliedDef(item4, hotReload);
 			}
-			foreach (PawnColumnDef item4 in PawnColumnDefgenerator.ImpliedPawnColumnDefs())
+			foreach (PawnColumnDef item5 in PawnColumnDefGenerator.ImpliedPawnColumnDefs(hotReload))
 			{
-				AddImpliedDef(item4);
+				AddImpliedDef(item5, hotReload);
 			}
-			foreach (ThingDef item5 in NeurotrainerDefGenerator.ImpliedThingDefs())
+			foreach (ThingDef item6 in ThingDefGenerator_Neurotrainer.ImpliedThingDefs(hotReload))
 			{
-				AddImpliedDef(item5);
+				AddImpliedDef(item6, hotReload);
+			}
+			foreach (GeneDef item7 in GeneDefGenerator.ImpliedGeneDefs(hotReload))
+			{
+				AddImpliedDef(item7, hotReload);
+			}
+			foreach (ThoughtDef item8 in GeneDefGenerator.ImpliedThoughtDefs(hotReload))
+			{
+				AddImpliedDef(item8, hotReload);
+			}
+			AnimationDefGenerator_Flying.InitializeNeededDefs(hotReload);
+			foreach (GraphicStateDef item9 in AnimationDefGenerator_Flying.ImpliedGraphicStateDefs())
+			{
+				AddImpliedDef(item9, hotReload);
+			}
+			foreach (AnimationDef item10 in AnimationDefGenerator_Flying.ImpliedAnimationDefs())
+			{
+				AddImpliedDef(item10, hotReload);
 			}
 		}
 
-		public static void GenerateImpliedDefs_PostResolve()
+		public static void GenerateImpliedDefs_PostResolve(bool hotReload = false)
 		{
-			foreach (KeyBindingCategoryDef item in KeyBindingDefGenerator.ImpliedKeyBindingCategoryDefs())
+			foreach (KeyBindingCategoryDef item in KeyBindingDefGenerator.ImpliedKeyBindingCategoryDefs(hotReload))
 			{
-				AddImpliedDef(item);
+				AddImpliedDef(item, hotReload);
 			}
-			foreach (KeyBindingDef item2 in KeyBindingDefGenerator.ImpliedKeyBindingDefs())
+			foreach (KeyBindingDef item2 in KeyBindingDefGenerator.ImpliedKeyBindingDefs(hotReload))
 			{
-				AddImpliedDef(item2);
+				AddImpliedDef(item2, hotReload);
 			}
 		}
 
-		public static void AddImpliedDef<T>(T def) where T : Def, new()
+		public static void AddImpliedDef<T>(T def, bool hotReload = false) where T : Def, new()
 		{
 			def.generated = true;
+			def.ResolveDefNameHash();
 			def.modContentPack?.AddDef(def, "ImpliedDefs");
 			def.PostLoad();
-			DefDatabase<T>.Add(def);
+			if (!hotReload || DefDatabase<T>.GetNamed(def.defName, errorOnFail: false) == null)
+			{
+				DefDatabase<T>.Add(def);
+			}
 		}
 	}
 }

@@ -9,6 +9,8 @@ namespace RimWorld
 
 		public static ReservationLayerDef Ceiling;
 
+		public static ReservationLayerDef Empty;
+
 		static ReservationLayerDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(ReservationLayerDefOf));

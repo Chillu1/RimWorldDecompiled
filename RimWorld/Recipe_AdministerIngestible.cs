@@ -8,20 +8,38 @@ namespace RimWorld
 	{
 		public override void ApplyOnPawn(Pawn pawn, BodyPartRecord part, Pawn billDoer, List<Thing> ingredients, Bill bill)
 		{
-			float num = ingredients[0].Ingested(pawn, (pawn.needs != null && pawn.needs.food != null) ? pawn.needs.food.NutritionWanted : 0f);
+			float num = ingredients[0].Ingested(pawn, (pawn.needs?.food?.NutritionWanted).GetValueOrDefault());
 			if (!pawn.Dead)
 			{
-				pawn.needs.food.CurLevel += num;
-			}
-			if (pawn.needs.mood != null)
-			{
-				if (pawn.IsTeetotaler() && ingredients[0].def.IsNonMedicalDrug)
+				if (pawn.needs?.food != null)
 				{
-					pawn.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.ForcedMeToTakeDrugs, billDoer);
+					pawn.needs.food.CurLevel += num;
 				}
-				else if (pawn.IsProsthophobe() && ingredients[0].def == ThingDefOf.Luciferium)
+				if (pawn.needs.mood != null)
 				{
-					pawn.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.ForcedMeToTakeLuciferium, billDoer);
+					if (pawn.IsTeetotaler() && ingredients[0].def.IsNonMedicalDrug)
+					{
+						pawn.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.ForcedMeToTakeDrugs, billDoer);
+					}
+					else if (pawn.IsProsthophobe() && ingredients[0].def == ThingDefOf.Luciferium)
+					{
+						pawn.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.ForcedMeToTakeLuciferium, billDoer);
+					}
+				}
+			}
+			if (billDoer != null)
+			{
+				if (ingredients[0].def.IsDrug)
+				{
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AdministeredDrug, billDoer.Named(HistoryEventArgsNames.Doer)));
+				}
+				if (ingredients[0].def.IsDrug && ingredients[0].def.ingestible.drugCategory == DrugCategory.Hard)
+				{
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AdministeredHardDrug, billDoer.Named(HistoryEventArgsNames.Doer)));
+				}
+				if (ingredients[0].def.IsNonMedicalDrug)
+				{
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AdministeredRecreationalDrug, billDoer.Named(HistoryEventArgsNames.Doer)));
 				}
 			}
 		}
@@ -39,10 +57,13 @@ namespace RimWorld
 			ThingDef thingDef = recipe.ingredients[0].filter.AllowedThingDefs.First();
 			if (thingDef.IsNonMedicalDrug)
 			{
+				if (AddictionUtility.HasChemicalDependency(pawn, thingDef))
+				{
+					return false;
+				}
 				foreach (CompProperties comp in thingDef.comps)
 				{
-					CompProperties_Drug compProperties_Drug = comp as CompProperties_Drug;
-					if (compProperties_Drug != null && compProperties_Drug.chemical != null && compProperties_Drug.chemical.addictionHediff != null && pawn.health.hediffSet.HasHediff(compProperties_Drug.chemical.addictionHediff))
+					if (comp is CompProperties_Drug compProperties_Drug && compProperties_Drug.chemical?.addictionHediff != null && pawn.health.hediffSet.HasHediff(compProperties_Drug.chemical.addictionHediff))
 					{
 						return false;
 					}
@@ -51,13 +72,36 @@ namespace RimWorld
 			return thingDef.IsNonMedicalDrug;
 		}
 
+		public override bool AvailableOnNow(Thing thing, BodyPartRecord part = null)
+		{
+			if (!base.AvailableOnNow(thing, part))
+			{
+				return false;
+			}
+			Pawn pawn = thing as Pawn;
+			if (pawn.IsMutant)
+			{
+				if (!pawn.mutant.Def.canUseDrugs)
+				{
+					return false;
+				}
+				ThingDef item = recipe.ingredients[0].filter.AllowedThingDefs.First();
+				if (!pawn.mutant.Def.drugWhitelist.Contains(item))
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
 		public override string GetLabelWhenUsedOn(Pawn pawn, BodyPartRecord part)
 		{
-			if (pawn.IsTeetotaler() && recipe.ingredients[0].filter.BestThingRequest.singleDef.IsNonMedicalDrug)
+			ThingDef singleDef = recipe.ingredients[0].filter.BestThingRequest.singleDef;
+			if (singleDef.IsNonMedicalDrug && pawn.PawnWouldBeUnhappyTakingDrug(singleDef))
 			{
 				return base.GetLabelWhenUsedOn(pawn, part) + " (" + "TeetotalerUnhappy".Translate() + ")";
 			}
-			if (pawn.IsProsthophobe() && recipe.ingredients[0].filter.BestThingRequest.singleDef == ThingDefOf.Luciferium)
+			if (pawn.IsProsthophobe() && singleDef == ThingDefOf.Luciferium)
 			{
 				return base.GetLabelWhenUsedOn(pawn, part) + " (" + "ProsthophobeUnhappy".Translate() + ")";
 			}

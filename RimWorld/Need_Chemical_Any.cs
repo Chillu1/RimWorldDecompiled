@@ -57,9 +57,23 @@ namespace RimWorld
 			new CurvePoint(1f, 1.15f)
 		};
 
-		private static readonly LevelThresholds FascinationDegreeLevelThresholdsForMood;
+		private static readonly LevelThresholds FascinationDegreeLevelThresholdsForMood = new LevelThresholds
+		{
+			extremelyNegative = 0.1f,
+			veryNegative = 0.25f,
+			negative = 0.4f,
+			positive = 0.7f,
+			veryPositive = 0.85f
+		};
 
-		private static readonly LevelThresholds InterestDegreeLevelThresholdsForMood;
+		private static readonly LevelThresholds InterestDegreeLevelThresholdsForMood = new LevelThresholds
+		{
+			extremelyNegative = 0.01f,
+			veryNegative = 0.15f,
+			negative = 0.3f,
+			positive = 0.6f,
+			veryPositive = 0.75f
+		};
 
 		private Trait lastThresholdUpdateTraitRef;
 
@@ -180,7 +194,7 @@ namespace RimWorld
 			CurLevel = 0.5f;
 		}
 
-		public override void DrawOnGUI(Rect rect, int maxThresholdMarkers = int.MaxValue, float customMargin = -1f, bool drawArrows = true, bool doTooltip = true)
+		public override void DrawOnGUI(Rect rect, int maxThresholdMarkers = int.MaxValue, float customMargin = -1f, bool drawArrows = true, bool doTooltip = true, Rect? rectForTooltip = null, bool drawLabel = true)
 		{
 			Trait traitDrugDesire = TraitDrugDesire;
 			if (traitDrugDesire != null && lastThresholdUpdateTraitRef != traitDrugDesire)
@@ -194,7 +208,7 @@ namespace RimWorld
 				threshPercents.Add(currentLevelThresholds.positive);
 				threshPercents.Add(currentLevelThresholds.veryPositive);
 			}
-			base.DrawOnGUI(rect, maxThresholdMarkers, customMargin, drawArrows, doTooltip);
+			base.DrawOnGUI(rect, maxThresholdMarkers, customMargin, drawArrows, doTooltip, rectForTooltip, drawLabel);
 		}
 
 		public override void NeedInterval()
@@ -207,28 +221,6 @@ namespace RimWorld
 			{
 				CurLevel -= FallPerNeedIntervalTick;
 			}
-		}
-
-		static Need_Chemical_Any()
-		{
-			LevelThresholds levelThresholds = new LevelThresholds
-			{
-				extremelyNegative = 0.1f,
-				veryNegative = 0.25f,
-				negative = 0.4f,
-				positive = 0.7f,
-				veryPositive = 0.85f
-			};
-			FascinationDegreeLevelThresholdsForMood = levelThresholds;
-			levelThresholds = new LevelThresholds
-			{
-				extremelyNegative = 0.01f,
-				veryNegative = 0.15f,
-				negative = 0.3f,
-				positive = 0.6f,
-				veryPositive = 0.75f
-			};
-			InterestDegreeLevelThresholdsForMood = levelThresholds;
 		}
 	}
 }

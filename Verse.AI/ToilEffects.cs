@@ -25,20 +25,20 @@ namespace Verse.AI
 			return toil;
 		}
 
-		public static Toil PlaySustainerOrSound(this Toil toil, SoundDef soundDef)
+		public static Toil PlaySustainerOrSound(this Toil toil, SoundDef soundDef, float pitchFactor = 1f)
 		{
-			return toil.PlaySustainerOrSound(() => soundDef);
+			return toil.PlaySustainerOrSound(() => soundDef, pitchFactor);
 		}
 
-		public static Toil PlaySustainerOrSound(this Toil toil, Func<SoundDef> soundDefGetter)
+		public static Toil PlaySustainerOrSound(this Toil toil, Func<SoundDef> soundDefGetter, float pitchFactor = 1f)
 		{
 			Sustainer sustainer = null;
 			toil.AddPreInitAction(delegate
 			{
-				SoundDef soundDef2 = soundDefGetter();
-				if (soundDef2 != null && !soundDef2.sustain)
+				SoundDef soundDef = soundDefGetter();
+				if (soundDef != null && !soundDef.sustain)
 				{
-					soundDef2.PlayOneShot(new TargetInfo(toil.GetActor().Position, toil.GetActor().Map));
+					soundDef.PlayOneShot(new TargetInfo(toil.GetActor().Position, toil.GetActor().Map));
 				}
 			});
 			toil.AddPreTickAction(delegate
@@ -49,6 +49,7 @@ namespace Verse.AI
 					if (soundDef != null && soundDef.sustain)
 					{
 						SoundInfo info = SoundInfo.InMap(toil.actor, MaintenanceType.PerTick);
+						info.pitchFactor = pitchFactor;
 						sustainer = soundDef.TrySpawnSustainer(info);
 					}
 				}
@@ -60,22 +61,27 @@ namespace Verse.AI
 			return toil;
 		}
 
-		public static Toil WithEffect(this Toil toil, EffecterDef effectDef, TargetIndex ind)
+		public static Toil WithEffect(this Toil toil, EffecterDef effectDef, TargetIndex ind, Color? overrideColor = null)
 		{
-			return toil.WithEffect(() => effectDef, ind);
+			return toil.WithEffect(() => effectDef, ind, overrideColor);
 		}
 
-		public static Toil WithEffect(this Toil toil, Func<EffecterDef> effecterDefGetter, TargetIndex ind)
+		public static Toil WithEffect(this Toil toil, EffecterDef effectDef, Func<LocalTargetInfo> effectTargetGetter, Color? overrideColor = null)
 		{
-			return toil.WithEffect(effecterDefGetter, () => toil.actor.CurJob.GetTarget(ind));
+			return toil.WithEffect(() => effectDef, effectTargetGetter, overrideColor);
 		}
 
-		public static Toil WithEffect(this Toil toil, Func<EffecterDef> effecterDefGetter, Thing thing)
+		public static Toil WithEffect(this Toil toil, Func<EffecterDef> effecterDefGetter, TargetIndex ind, Color? overrideColor = null)
 		{
-			return toil.WithEffect(effecterDefGetter, () => thing);
+			return toil.WithEffect(effecterDefGetter, () => toil.actor.CurJob.GetTarget(ind), overrideColor);
 		}
 
-		public static Toil WithEffect(this Toil toil, Func<EffecterDef> effecterDefGetter, Func<LocalTargetInfo> effectTargetGetter)
+		public static Toil WithEffect(this Toil toil, Func<EffecterDef> effecterDefGetter, Thing thing, Color? overrideColor = null)
+		{
+			return toil.WithEffect(effecterDefGetter, () => thing, overrideColor);
+		}
+
+		public static Toil WithEffect(this Toil toil, Func<EffecterDef> effecterDefGetter, Func<LocalTargetInfo> effectTargetGetter, Color? overrideColor = null)
 		{
 			Effecter effecter = null;
 			toil.AddPreTickAction(delegate
@@ -85,7 +91,19 @@ namespace Verse.AI
 					EffecterDef effecterDef = effecterDefGetter();
 					if (effecterDef != null)
 					{
+						toil.actor.rotationTracker.FaceTarget(effectTargetGetter());
 						effecter = effecterDef.Spawn();
+						effecter.Trigger(toil.actor, effectTargetGetter().ToTargetInfo(toil.actor.Map));
+						if (overrideColor.HasValue)
+						{
+							foreach (SubEffecter child in effecter.children)
+							{
+								if (child is SubEffecter_Sprayer subEffecter_Sprayer)
+								{
+									subEffecter_Sprayer.colorOverride = overrideColor;
+								}
+							}
+						}
 					}
 				}
 				else
@@ -104,10 +122,10 @@ namespace Verse.AI
 			return toil;
 		}
 
-		public static Toil WithProgressBar(this Toil toil, TargetIndex ind, Func<float> progressGetter, bool interpolateBetweenActorAndTarget = false, float offsetZ = -0.5f)
+		public static Toil WithProgressBar(this Toil toil, TargetIndex ind, Func<float> progressGetter, bool interpolateBetweenActorAndTarget = false, float offsetZ = -0.5f, bool alwaysShow = false)
 		{
 			Effecter effecter = null;
-			toil.AddPreTickAction(delegate
+			toil.AddPreTickIntervalAction(delegate
 			{
 				if (toil.actor.Faction == Faction.OfPlayer)
 				{
@@ -118,8 +136,8 @@ namespace Verse.AI
 					}
 					else
 					{
-						LocalTargetInfo target = toil.actor.CurJob.GetTarget(ind);
-						if (!target.IsValid || (target.HasThing && !target.Thing.Spawned))
+						LocalTargetInfo localTargetInfo = ((ind == TargetIndex.None) ? LocalTargetInfo.Invalid : toil.actor.CurJob.GetTarget(ind));
+						if (!localTargetInfo.IsValid || (localTargetInfo.HasThing && !localTargetInfo.Thing.Spawned))
 						{
 							effecter.EffectTick(toil.actor, TargetInfo.Invalid);
 						}
@@ -136,6 +154,7 @@ namespace Verse.AI
 						{
 							mote.progress = Mathf.Clamp01(progressGetter());
 							mote.offsetZ = offsetZ;
+							mote.alwaysShow = alwaysShow;
 						}
 					}
 				}

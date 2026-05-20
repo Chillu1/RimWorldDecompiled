@@ -41,6 +41,12 @@ namespace RimWorld
 
 		public static PawnRelationDef Bond;
 
+		[MayRequireBiotech]
+		public static PawnRelationDef Overseer;
+
+		[MayRequireBiotech]
+		public static PawnRelationDef ParentBirth;
+
 		static PawnRelationDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(PawnRelationDefOf));

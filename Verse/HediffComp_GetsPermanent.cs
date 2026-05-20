@@ -27,8 +27,8 @@ namespace Verse
 				isPermanentInt = value;
 				if (isPermanentInt)
 				{
-					painCategory = HealthTuning.InjuryPainCategories.RandomElementByWeight((HealthTuning.PainCategoryWeighted cat) => cat.weight).category;
 					permanentDamageThreshold = 9999f;
+					SetPainCategory(HealthTuning.InjuryPainCategories.RandomElementByWeight((HealthTuning.PainCategoryWeighted cat) => cat.weight).category);
 				}
 			}
 		}
@@ -36,6 +36,15 @@ namespace Verse
 		public PainCategory PainCategory => painCategory;
 
 		public float PainFactor => (float)painCategory;
+
+		public void SetPainCategory(PainCategory category)
+		{
+			painCategory = category;
+			if (base.Pawn != null)
+			{
+				base.Pawn.health.Notify_HediffChanged(parent);
+			}
+		}
 
 		public override void CompExposeData()
 		{
@@ -47,7 +56,7 @@ namespace Verse
 
 		public void PreFinalizeInjury()
 		{
-			if (base.Pawn.health.hediffSet.PartOrAnyAncestorHasDirectlyAddedParts(parent.Part))
+			if (base.Pawn.health.hediffSet.PartOrAnyAncestorHasDirectlyAddedParts(parent.Part) || (ModsConfig.BiotechActive && parent.pawn.genes != null && parent.pawn.genes.GenesListForReading.Any((Gene x) => x.def.preventPermanentWounds)))
 			{
 				return;
 			}
@@ -79,9 +88,18 @@ namespace Verse
 			}
 		}
 
+		public override void CopyFrom(HediffComp other)
+		{
+			if (other is HediffComp_GetsPermanent hediffComp_GetsPermanent)
+			{
+				isPermanentInt = hediffComp_GetsPermanent.isPermanentInt;
+				painCategory = hediffComp_GetsPermanent.painCategory;
+			}
+		}
+
 		public override string CompDebugString()
 		{
-			return "isPermanent: " + isPermanentInt.ToString() + "\npermanentDamageThreshold: " + permanentDamageThreshold + "\npainCategory: " + painCategory;
+			return "isPermanent: " + isPermanentInt + "\npermanentDamageThreshold: " + permanentDamageThreshold + "\npainCategory: " + painCategory;
 		}
 	}
 }

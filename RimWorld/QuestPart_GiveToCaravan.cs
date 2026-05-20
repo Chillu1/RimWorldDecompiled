@@ -29,16 +29,15 @@ namespace RimWorld
 				{
 					return;
 				}
-				foreach (Thing item in value)
+				foreach (Thing item2 in value)
 				{
-					Pawn pawn = item as Pawn;
-					if (pawn != null)
+					if (item2 is Pawn item)
 					{
-						pawns.Add(pawn);
+						pawns.Add(item);
 					}
 					else
 					{
-						items.Add(item);
+						items.Add(item2);
 					}
 				}
 			}
@@ -82,17 +81,17 @@ namespace RimWorld
 			{
 				return;
 			}
-			for (int i = 0; i < pawns.Count; i++)
+			for (int num = 0; num < pawns.Count; num++)
 			{
-				if (pawns[i].Faction != Faction.OfPlayer)
+				if (pawns[num].Faction != Faction.OfPlayer)
 				{
-					pawns[i].SetFaction(Faction.OfPlayer);
+					pawns[num].SetFaction(Faction.OfPlayer);
 				}
-				arg.AddPawn(pawns[i], addCarriedPawnToWorldPawnsIfAny: true);
+				arg.AddPawn(pawns[num], addCarriedPawnToWorldPawnsIfAny: true);
 			}
-			for (int j = 0; j < items.Count; j++)
+			for (int num2 = 0; num2 < items.Count; num2++)
 			{
-				CaravanInventoryUtility.GiveThing(arg, items[j]);
+				CaravanInventoryUtility.GiveThing(arg, items[num2]);
 			}
 			items.Clear();
 		}

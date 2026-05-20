@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using UnityEngine;
 using Verse;
 
@@ -16,26 +17,28 @@ namespace RimWorld
 			new CurvePoint(0.5f, 1f)
 		};
 
+		private const float FactionSelectionWeightFactor_RecentlyRaided = 0.4f;
+
 		public static IEnumerable<Pawn> GeneratePawns(PawnGroupMakerParms parms, bool warnOnZeroResults = true)
 		{
 			if (parms.groupKind == null)
 			{
-				Log.Error("Tried to generate pawns with null pawn group kind def. parms=" + parms);
+				Log.Error($"Tried to generate pawns with null pawn group kind def. parms={parms}");
 				yield break;
 			}
 			if (parms.faction == null)
 			{
-				Log.Error("Tried to generate pawn kinds with null faction. parms=" + parms);
+				Log.Error($"Tried to generate pawn kinds with null faction. parms={parms}");
 				yield break;
 			}
 			if (parms.faction.def.pawnGroupMakers.NullOrEmpty())
 			{
-				Log.Error(string.Concat("Faction ", parms.faction, " of def ", parms.faction.def, " has no any PawnGroupMakers."));
+				Log.Error($"Faction {parms.faction} of def {parms.faction.def} has no PawnGroupMakers.");
 				yield break;
 			}
-			if (!TryGetRandomPawnGroupMaker(parms, out var pawnGroupMaker))
+			if (!TryGetRandomPawnGroupMaker(parms, out var pawnGroupMaker, parms.ignoreGroupCommonality))
 			{
-				Log.Error(string.Concat("Faction ", parms.faction, " of def ", parms.faction.def, " has no usable PawnGroupMakers for parms ", parms));
+				Log.Error($"Faction {parms.faction} of def {parms.faction.def} has no usable PawnGroupMakers for parms {parms}");
 				yield break;
 			}
 			foreach (Pawn item in pawnGroupMaker.GeneratePawns(parms, warnOnZeroResults))
@@ -48,22 +51,22 @@ namespace RimWorld
 		{
 			if (parms.groupKind == null)
 			{
-				Log.Error("Tried to generate pawn kinds with null pawn group kind def. parms=" + parms);
+				Log.Error($"Tried to generate pawn kinds with null pawn group kind def. parms={parms}");
 				yield break;
 			}
 			if (parms.faction == null)
 			{
-				Log.Error("Tried to generate pawn kinds with null faction. parms=" + parms);
+				Log.Error($"Tried to generate pawn kinds with null faction. parms={parms}");
 				yield break;
 			}
 			if (parms.faction.def.pawnGroupMakers.NullOrEmpty())
 			{
-				Log.Error(string.Concat("Faction ", parms.faction, " of def ", parms.faction.def, " has no any PawnGroupMakers."));
+				Log.Error($"Faction {parms.faction} of def {parms.faction.def} has no PawnGroupMakers.");
 				yield break;
 			}
 			if (!TryGetRandomPawnGroupMaker(parms, out var pawnGroupMaker))
 			{
-				Log.Error(string.Concat("Faction ", parms.faction, " of def ", parms.faction.def, " has no usable PawnGroupMakers for parms ", parms));
+				Log.Error($"Faction {parms.faction} of def {parms.faction.def} has no usable PawnGroupMakers for parms {parms}");
 				yield break;
 			}
 			foreach (PawnKindDef item in pawnGroupMaker.GeneratePawnKindsExample(parms))
@@ -72,13 +75,14 @@ namespace RimWorld
 			}
 		}
 
-		private static bool TryGetRandomPawnGroupMaker(PawnGroupMakerParms parms, out PawnGroupMaker pawnGroupMaker)
+		public static bool TryGetRandomPawnGroupMaker(PawnGroupMakerParms parms, out PawnGroupMaker pawnGroupMaker, bool ignoreCommonality = false)
 		{
 			if (parms.seed.HasValue)
 			{
 				Rand.PushState(parms.seed.Value);
 			}
-			bool result = parms.faction.def.pawnGroupMakers.Where((PawnGroupMaker gm) => gm.kindDef == parms.groupKind && gm.CanGenerateFrom(parms)).TryRandomElementByWeight((PawnGroupMaker gm) => gm.commonality, out pawnGroupMaker);
+			IEnumerable<PawnGroupMaker> source = parms.faction.def.pawnGroupMakers.Where((PawnGroupMaker gm) => gm.kindDef == parms.groupKind && gm.CanGenerateFrom(parms));
+			bool result = ((!ignoreCommonality) ? source.TryRandomElementByWeight((PawnGroupMaker gm) => gm.commonality, out pawnGroupMaker) : source.TryRandomElement(out pawnGroupMaker));
 			if (parms.seed.HasValue)
 			{
 				Rand.PopState();
@@ -86,59 +90,193 @@ namespace RimWorld
 			return result;
 		}
 
-		public static IEnumerable<PawnGenOption> ChoosePawnGenOptionsByPoints(float pointsTotal, List<PawnGenOption> options, PawnGroupMakerParms groupParms)
+		public static bool PawnGenOptionValid(PawnGenOption o, PawnGroupMakerParms groupParms, List<PawnGenOptionWithXenotype> chosenOptions = null)
+		{
+			if (groupParms != null)
+			{
+				if (groupParms.generateFightersOnly && !o.kind.isFighter)
+				{
+					return false;
+				}
+				if (groupParms.dontUseSingleUseRocketLaunchers && o.kind.weaponTags != null && o.kind.weaponTags.Contains("GunSingleUse"))
+				{
+					return false;
+				}
+				if (groupParms.raidStrategy != null && !groupParms.raidStrategy.Worker.CanUsePawnGenOption(groupParms.points, o, chosenOptions, groupParms.faction))
+				{
+					return false;
+				}
+				if (groupParms.raidAgeRestriction != null && groupParms.raidAgeRestriction.Worker.ShouldApplyToKind(o.kind) && !groupParms.raidAgeRestriction.Worker.CanUseKind(o.kind))
+				{
+					return false;
+				}
+			}
+			if (ModsConfig.BiotechActive && Find.BossgroupManager.ReservedByBossgroup(o.kind))
+			{
+				return false;
+			}
+			if (ModsConfig.AnomalyActive && o.kind is CreepJoinerFormKindDef)
+			{
+				return false;
+			}
+			if (o.kind.maxPerGroup < int.MaxValue && ChosenKindCount(o.kind) >= o.kind.maxPerGroup)
+			{
+				return false;
+			}
+			return true;
+			int ChosenKindCount(PawnKindDef d)
+			{
+				int num = 0;
+				if (chosenOptions.NullOrEmpty())
+				{
+					return num;
+				}
+				for (int i = 0; i < chosenOptions.Count; i++)
+				{
+					if (chosenOptions[i].Option.kind == d)
+					{
+						num++;
+					}
+				}
+				return num;
+			}
+		}
+
+		public static List<PawnGenOptionWithXenotype> GetOptions(PawnGroupMakerParms groupParms, FactionDef faction, List<PawnGenOption> options, float pointsTotal, float pointsLeft, float? maxCost, List<PawnGenOptionWithXenotype> chosenOptions = null, bool leaderChosen = false)
+		{
+			List<PawnGenOptionWithXenotype> list = new List<PawnGenOptionWithXenotype>();
+			bool flag = ModsConfig.BiotechActive && (faction?.humanlikeFaction ?? true);
+			float num = maxCost ?? MaxPawnCost(groupParms?.faction, pointsTotal, groupParms?.raidStrategy, groupParms?.groupKind);
+			for (int i = 0; i < options.Count; i++)
+			{
+				PawnGenOption pawnGenOption = options[i];
+				if (flag)
+				{
+					foreach (KeyValuePair<XenotypeDef, float> item in PawnGenerator.XenotypesAvailableFor(pawnGenOption.kind, faction, groupParms?.faction))
+					{
+						if (CanUseOption(pawnGenOption, item.Key, groupParms, chosenOptions, pointsLeft, num * item.Key.combatPowerFactor, leaderChosen))
+						{
+							list.Add(new PawnGenOptionWithXenotype(pawnGenOption, item.Key, pawnGenOption.selectionWeight * item.Value));
+						}
+					}
+				}
+				else if (CanUseOption(pawnGenOption, null, groupParms, chosenOptions, pointsLeft, num, leaderChosen))
+				{
+					list.Add(new PawnGenOptionWithXenotype(pawnGenOption, null, pawnGenOption.selectionWeight));
+				}
+			}
+			return list;
+		}
+
+		public static bool AnyOptions(PawnGroupMakerParms groupParms, FactionDef faction, List<PawnGenOption> options, float points)
+		{
+			bool flag = ModsConfig.BiotechActive && (faction?.humanlikeFaction ?? true);
+			for (int i = 0; i < options.Count; i++)
+			{
+				PawnGenOption pawnGenOption = options[i];
+				if (flag)
+				{
+					foreach (KeyValuePair<XenotypeDef, float> item in PawnGenerator.XenotypesAvailableFor(pawnGenOption.kind, faction, groupParms?.faction))
+					{
+						if (CanUseOption(pawnGenOption, item.Key, groupParms, null, points, points, leaderChosen: false))
+						{
+							return true;
+						}
+					}
+				}
+				else if (CanUseOption(pawnGenOption, null, groupParms, null, points, points, leaderChosen: false))
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		private static bool CanUseOption(PawnGenOption o, XenotypeDef xenotype, PawnGroupMakerParms groupParms, List<PawnGenOptionWithXenotype> chosenOptions, float pointsLeft, float maxOptionCost, bool leaderChosen)
+		{
+			float num = o.Cost;
+			if (xenotype != null)
+			{
+				num *= xenotype.combatPowerFactor;
+			}
+			if (num > pointsLeft)
+			{
+				return false;
+			}
+			if (num > maxOptionCost)
+			{
+				return false;
+			}
+			if (leaderChosen && o.kind.factionLeader)
+			{
+				return false;
+			}
+			if (!PawnGenOptionValid(o, groupParms, chosenOptions))
+			{
+				return false;
+			}
+			if (!Find.Storyteller.difficulty.ChildRaidersAllowed && o.kind.pawnGroupDevelopmentStage.HasValue && o.kind.pawnGroupDevelopmentStage.Value != DevelopmentalStage.Adult)
+			{
+				return false;
+			}
+			return true;
+		}
+
+		public static IEnumerable<PawnGenOptionWithXenotype> ChoosePawnGenOptionsByPoints(float pointsTotal, List<PawnGenOption> options, PawnGroupMakerParms groupParms)
 		{
 			if (groupParms.seed.HasValue)
 			{
 				Rand.PushState(groupParms.seed.Value);
 			}
-			float num = MaxPawnCost(groupParms.faction, pointsTotal, groupParms.raidStrategy, groupParms.groupKind);
-			List<PawnGenOption> list = new List<PawnGenOption>();
-			List<PawnGenOption> list2 = new List<PawnGenOption>();
-			float num2 = pointsTotal;
-			bool flag = false;
+			List<PawnGenOptionWithXenotype> list = new List<PawnGenOptionWithXenotype>();
+			List<PawnGenOptionWithXenotype> chosenOptions = new List<PawnGenOptionWithXenotype>();
+			float num = pointsTotal;
+			bool leaderChosen = false;
 			float highestCost = -1f;
 			while (true)
 			{
 				list.Clear();
-				for (int i = 0; i < options.Count; i++)
+				foreach (PawnGenOptionWithXenotype option in GetOptions(groupParms, groupParms.faction.def, options, pointsTotal, num, null, chosenOptions, leaderChosen))
 				{
-					PawnGenOption pawnGenOption = options[i];
-					if (!(pawnGenOption.Cost > num2) && !(pawnGenOption.Cost > num) && (!groupParms.generateFightersOnly || pawnGenOption.kind.isFighter) && (groupParms.raidStrategy == null || groupParms.raidStrategy.Worker.CanUsePawnGenOption(pawnGenOption, list2)) && (!groupParms.dontUseSingleUseRocketLaunchers || pawnGenOption.kind.weaponTags == null || !pawnGenOption.kind.weaponTags.Contains("GunSingleUse")) && (!flag || !pawnGenOption.kind.factionLeader))
+					if (!(option.Cost > num))
 					{
-						if (pawnGenOption.Cost > highestCost)
+						if (option.Cost > highestCost)
 						{
-							highestCost = pawnGenOption.Cost;
+							highestCost = option.Cost;
 						}
-						list.Add(pawnGenOption);
+						list.Add(option);
 					}
 				}
-				if (list.Count == 0)
+				Func<PawnGenOptionWithXenotype, float> weightSelector = (PawnGenOptionWithXenotype gr) => (!PawnGenOptionValid(gr.Option, groupParms, chosenOptions)) ? 0f : (gr.SelectionWeight * PawnWeightFactorByMostExpensivePawnCostFractionCurve.Evaluate(gr.Cost / highestCost));
+				if (!list.TryRandomElementByWeight(weightSelector, out var result))
 				{
 					break;
 				}
-				Func<PawnGenOption, float> weightSelector = (PawnGenOption gr) => gr.selectionWeight * PawnWeightFactorByMostExpensivePawnCostFractionCurve.Evaluate(gr.Cost / highestCost);
-				PawnGenOption pawnGenOption2 = list.RandomElementByWeight(weightSelector);
-				list2.Add(pawnGenOption2);
-				num2 -= pawnGenOption2.Cost;
-				if (pawnGenOption2.kind.factionLeader)
+				chosenOptions.Add(result);
+				num -= result.Cost;
+				if (result.Option.kind.factionLeader)
 				{
-					flag = true;
+					leaderChosen = true;
 				}
 			}
-			if (list2.Count == 1 && num2 > pointsTotal / 2f)
+			list.Clear();
+			if (chosenOptions.Count == 1 && num > pointsTotal / 2f)
 			{
-				Log.Warning("Used only " + (pointsTotal - num2) + " / " + pointsTotal + " points generating for " + groupParms.faction);
+				Log.Warning($"Used only {pointsTotal - num} / {pointsTotal} points generating for {groupParms.faction}");
 			}
 			if (groupParms.seed.HasValue)
 			{
 				Rand.PopState();
 			}
-			return list2;
+			return chosenOptions;
 		}
 
 		public static float MaxPawnCost(Faction faction, float totalPoints, RaidStrategyDef raidStrategy, PawnGroupKindDef groupKind)
 		{
+			if (faction == null)
+			{
+				return totalPoints;
+			}
 			float a = faction.def.maxPawnCostPerTotalPointsCurve.Evaluate(totalPoints);
 			if (raidStrategy != null)
 			{
@@ -178,7 +316,7 @@ namespace RimWorld
 			Dialog_DebugOptionListLister.ShowSimpleDebugMenu(Find.FactionManager.AllFactions.Where((Faction fac) => !fac.def.pawnGroupMakers.NullOrEmpty()), (Faction fac) => fac.Name + " (" + fac.def.defName + ")", delegate(Faction fac)
 			{
 				StringBuilder sb = new StringBuilder();
-				sb.AppendLine("FACTION: " + fac.Name + " (" + fac.def.defName + ") min=" + fac.def.MinPointsToGeneratePawnGroup(PawnGroupKindDefOf.Combat));
+				sb.AppendLine($"FACTION: {fac.Name} ({fac.def.defName}) min={fac.def.MinPointsToGeneratePawnGroup(PawnGroupKindDefOf.Combat)}");
 				Action<float> action = delegate(float points)
 				{
 					if (!(points < fac.def.MinPointsToGeneratePawnGroup(PawnGroupKindDefOf.Combat)))
@@ -190,7 +328,7 @@ namespace RimWorld
 							points = points,
 							faction = fac
 						};
-						sb.AppendLine("Group with " + pawnGroupMakerParms.points + " points (max option cost: " + MaxPawnCost(fac, points, RaidStrategyDefOf.ImmediateAttack, PawnGroupKindDefOf.Combat) + ")");
+						sb.AppendLine($"Group with {pawnGroupMakerParms.points} points (max option cost: {MaxPawnCost(fac, points, RaidStrategyDefOf.ImmediateAttack, PawnGroupKindDefOf.Combat)})");
 						float num = 0f;
 						foreach (Pawn item in from pa in GeneratePawns(pawnGroupMakerParms, warnOnZeroResults: false)
 							orderby pa.kindDef.combatPower
@@ -202,7 +340,7 @@ namespace RimWorld
 							sb.AppendLine("  " + item.kindDef.combatPower.ToString("F0").PadRight(6) + item.kindDef.defName + ", " + text + ", " + text2);
 							num += item.kindDef.combatPower;
 						}
-						sb.AppendLine("         totalCost " + num);
+						sb.AppendLine($"         totalCost {num}");
 						sb.AppendLine();
 					}
 				};
@@ -214,9 +352,32 @@ namespace RimWorld
 			});
 		}
 
+		private static List<Faction> UsableFactions(float points, Predicate<Faction> validator = null, bool allowNonHostileToPlayer = false, bool allowHidden = false, bool allowDefeated = false, bool allowNonHumanlike = true)
+		{
+			return Find.FactionManager.AllFactions.Where((Faction f) => (allowHidden || !f.Hidden) && !f.temporary && (allowDefeated || !f.defeated) && (allowNonHumanlike || f.def.humanlikeFaction) && (allowNonHostileToPlayer || f.HostileTo(Faction.OfPlayer)) && f.def.pawnGroupMakers != null && f.def.pawnGroupMakers.Any((PawnGroupMaker x) => x.kindDef == PawnGroupKindDefOf.Combat) && !f.def.raidsForbidden && (validator == null || validator(f)) && points >= f.def.MinPointsToGeneratePawnGroup(PawnGroupKindDefOf.Combat)).ToList();
+		}
+
 		public static bool TryGetRandomFactionForCombatPawnGroup(float points, out Faction faction, Predicate<Faction> validator = null, bool allowNonHostileToPlayer = false, bool allowHidden = false, bool allowDefeated = false, bool allowNonHumanlike = true)
 		{
-			return Find.FactionManager.AllFactions.Where((Faction f) => (allowHidden || !f.Hidden) && !f.temporary && (allowDefeated || !f.defeated) && (allowNonHumanlike || f.def.humanlikeFaction) && (allowNonHostileToPlayer || f.HostileTo(Faction.OfPlayer)) && f.def.pawnGroupMakers != null && f.def.pawnGroupMakers.Any((PawnGroupMaker x) => x.kindDef == PawnGroupKindDefOf.Combat) && (validator == null || validator(f)) && points >= f.def.MinPointsToGeneratePawnGroup(PawnGroupKindDefOf.Combat)).ToList().TryRandomElementByWeight((Faction f) => f.def.RaidCommonalityFromPoints(points), out faction);
+			return UsableFactions(points, validator, allowNonHostileToPlayer, allowHidden, allowDefeated, allowNonHumanlike).TryRandomElementByWeight((Faction f) => f.def.RaidCommonalityFromPoints(points), out faction);
+		}
+
+		public static bool TryGetRandomFactionForCombatPawnGroupWeighted(IncidentParms parms, out Faction faction, Predicate<Faction> validator = null, bool allowNonHostileToPlayer = false, bool allowHidden = false, bool allowDefeated = false, bool allowNonHumanlike = true)
+		{
+			float maxPoints = parms.points;
+			if (maxPoints <= 0f)
+			{
+				maxPoints = 999999f;
+			}
+			return UsableFactions(maxPoints, validator, allowNonHostileToPlayer, allowHidden, allowDefeated, allowNonHumanlike).TryRandomElementByWeight(delegate(Faction f)
+			{
+				float num = 1f;
+				if (parms.target != null && f == parms.target.StoryState.lastRaidFaction)
+				{
+					num = 0.4f;
+				}
+				return f.def.RaidCommonalityFromPoints(maxPoints) * num;
+			}, out faction);
 		}
 	}
 }

@@ -10,7 +10,10 @@ namespace RimWorld.BaseGen
 			ThingDef wallStuff = rp.wallStuff ?? BaseGenUtility.RandomCheapWallStuff(rp.faction);
 			foreach (IntVec3 edgeCell in rp.rect.EdgeCells)
 			{
-				TrySpawnWall(edgeCell, rp, wallStuff);
+				if (edgeCell.InBounds(BaseGen.globalSettings.map))
+				{
+					TrySpawnWall(edgeCell, rp, wallStuff);
+				}
 			}
 		}
 
@@ -37,7 +40,8 @@ namespace RimWorld.BaseGen
 			{
 				return null;
 			}
-			Thing thing = ThingMaker.MakeThing(ThingDefOf.Wall, wallStuff);
+			ThingDef obj = rp.wallThingDef ?? ThingDefOf.Wall;
+			Thing thing = ThingMaker.MakeThing(obj, obj.MadeFromStuff ? wallStuff : null);
 			thing.SetFaction(rp.faction);
 			return GenSpawn.Spawn(thing, c, map);
 		}

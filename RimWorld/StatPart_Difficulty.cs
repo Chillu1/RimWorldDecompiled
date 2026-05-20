@@ -11,12 +11,12 @@ namespace RimWorld
 
 		public override void TransformValue(StatRequest req, ref float val)
 		{
-			val *= Multiplier(Find.Storyteller.difficulty);
+			val *= Multiplier(Find.Storyteller.difficultyDef);
 		}
 
 		public override string ExplanationPart(StatRequest req)
 		{
-			return "StatsReport_DifficultyMultiplier".Translate() + ": x" + Multiplier(Find.Storyteller.difficulty).ToStringPercent();
+			return "StatsReport_DifficultyMultiplier".Translate() + ": x" + Multiplier(Find.Storyteller.difficultyDef).ToStringPercent();
 		}
 
 		private float Multiplier(DifficultyDef d)

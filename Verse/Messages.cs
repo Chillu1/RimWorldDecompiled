@@ -131,8 +131,15 @@ namespace Verse
 			}
 			for (int i = 0; i < liveMessages.Count; i++)
 			{
-				if (liveMessages[i].text == text && liveMessages[i].startingFrame == RealTime.frameCount && LookTargets.SameTargets(liveMessages[i].lookTargets, lookTargets))
+				if (liveMessages[i].text == text && LookTargets.SameTargets(liveMessages[i].lookTargets, lookTargets))
 				{
+					if (liveMessages[i].startingFrame == RealTime.frameCount)
+					{
+						return false;
+					}
+					liveMessages[i].ResetTimer();
+					liveMessages[i].Flash();
+					liveMessages[i].def.sound.PlayOneShotOnCamera();
 					return false;
 				}
 			}

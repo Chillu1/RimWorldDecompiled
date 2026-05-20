@@ -10,8 +10,9 @@ namespace RimWorld
 
 		public override void Activate()
 		{
-			if (Find.World.renderer.wantedMode == WorldRenderMode.None)
+			if (Find.World.renderer.wantedMode != WorldRenderMode.Planet)
 			{
+				AmbientSoundManager.EnsureWorldAmbientSoundCreated();
 				Find.World.renderer.wantedMode = WorldRenderMode.Planet;
 				if (resetViewNextTime)
 				{

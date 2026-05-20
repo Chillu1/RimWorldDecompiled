@@ -57,7 +57,7 @@ namespace Verse
 						{
 							if (childNode.Name == "skill")
 							{
-								return NeurotrainerDefGenerator.NeurotrainerDefPrefix + "_" + childNode.InnerText;
+								return ThingDefGenerator_Neurotrainer.NeurotrainerDefPrefix + "_" + childNode.InnerText;
 							}
 						}
 					}
@@ -117,13 +117,11 @@ namespace Verse
 		{
 			if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
-				Game game = obj as Game;
-				if (game != null && game.questManager == null)
+				if (obj is Game { questManager: null } game)
 				{
 					game.questManager = new QuestManager();
 				}
-				Zone zone = obj as Zone;
-				if (zone != null && zone.ID == -1)
+				if (obj is Zone { ID: -1 } zone)
 				{
 					zone.ID = Find.UniqueIDsManager.GetNextZoneID();
 				}
@@ -132,18 +130,15 @@ namespace Verse
 			{
 				return;
 			}
-			Pawn pawn = obj as Pawn;
-			if (pawn != null && pawn.royalty == null)
+			if (obj is Pawn { royalty: null } pawn)
 			{
 				pawn.royalty = new Pawn_RoyaltyTracker(pawn);
 			}
-			Pawn_NativeVerbs pawn_NativeVerbs = obj as Pawn_NativeVerbs;
-			if (pawn_NativeVerbs != null && pawn_NativeVerbs.verbTracker == null)
+			if (obj is Pawn_NativeVerbs { verbTracker: null } pawn_NativeVerbs)
 			{
 				pawn_NativeVerbs.verbTracker = new VerbTracker(pawn_NativeVerbs);
 			}
-			Thing thing = obj as Thing;
-			if (thing != null)
+			if (obj is Thing thing)
 			{
 				if (thing.def.defName == "Sandbags" && thing.Stuff == null)
 				{
@@ -166,8 +161,7 @@ namespace Verse
 					}
 				}
 			}
-			StoryWatcher storyWatcher = obj as StoryWatcher;
-			if (storyWatcher != null)
+			if (obj is StoryWatcher storyWatcher)
 			{
 				if (storyWatcher.watcherAdaptation == null)
 				{
@@ -178,18 +172,16 @@ namespace Verse
 					storyWatcher.watcherPopAdaptation = new StoryWatcher_PopAdaptation();
 				}
 			}
-			FoodRestrictionDatabase foodRestrictionDatabase = obj as FoodRestrictionDatabase;
-			if (foodRestrictionDatabase != null && VersionControl.BuildFromVersionString(ScribeMetaHeaderUtility.loadedGameVersion) < 2057)
+			if (obj is FoodRestrictionDatabase foodRestrictionDatabase && ScribeMetaHeaderUtility.loadedGameVersionBuild < 2057)
 			{
-				List<FoodRestriction> allFoodRestrictions = foodRestrictionDatabase.AllFoodRestrictions;
+				List<FoodPolicy> allFoodRestrictions = foodRestrictionDatabase.AllFoodRestrictions;
 				for (int i = 0; i < allFoodRestrictions.Count; i++)
 				{
 					allFoodRestrictions[i].filter.SetAllow(ThingCategoryDefOf.CorpsesHumanlike, allow: true);
 					allFoodRestrictions[i].filter.SetAllow(ThingCategoryDefOf.CorpsesAnimal, allow: true);
 				}
 			}
-			SitePart sitePart = obj as SitePart;
-			if (sitePart != null)
+			if (obj is SitePart sitePart)
 			{
 				sitePart.hidden = sitePart.def.defaultHidden;
 			}
@@ -272,74 +264,74 @@ namespace Verse
 					{
 						item = ThingMaker.MakeThing(ThingDefOf.PsychicDronerShipPart);
 					}
-					ActiveDropPodInfo activeDropPodInfo = new ActiveDropPodInfo();
-					activeDropPodInfo.innerContainer.TryAdd(item, 1);
-					activeDropPodInfo.openDelay = 60;
-					activeDropPodInfo.leaveSlag = false;
-					activeDropPodInfo.despawnPodBeforeSpawningThing = true;
-					activeDropPodInfo.spawnWipeMode = WipeMode.Vanish;
-					DropPodUtility.MakeDropPodAt(invalid, map, activeDropPodInfo);
+					ActiveTransporterInfo activeTransporterInfo = new ActiveTransporterInfo();
+					activeTransporterInfo.innerContainer.TryAdd(item, 1);
+					activeTransporterInfo.openDelay = 60;
+					activeTransporterInfo.leaveSlag = false;
+					activeTransporterInfo.despawnPodBeforeSpawningThing = true;
+					activeTransporterInfo.spawnWipeMode = WipeMode.Vanish;
+					DropPodUtility.MakeDropPodAt(invalid, map, activeTransporterInfo);
 				}
 			}
 			upgradedCrashedShipParts.Clear();
 			List<Site> sites = Find.WorldObjects.Sites;
-			int l;
-			for (l = 0; l < sites.Count; l++)
+			int i;
+			for (i = 0; i < sites.Count; i++)
 			{
-				if (!Find.QuestManager.QuestsListForReading.Any((Quest x) => x.QuestLookTargets.Contains(sites[l])))
+				if (!Find.QuestManager.QuestsListForReading.Any((Quest x) => x.QuestLookTargets.Contains(sites[i])))
 				{
 					Quest quest = Quest.MakeRaw();
 					QuestUtility.GenerateBackCompatibilityNameFor(quest);
 					quest.SetInitiallyAccepted();
-					quest.appearanceTick = sites[l].creationGameTicks;
-					TimeoutComp component = sites[l].GetComponent<TimeoutComp>();
-					if (component != null && component.Active && !sites[l].HasMap)
+					quest.appearanceTick = sites[i].creationGameTicks;
+					TimeoutComp component = sites[i].GetComponent<TimeoutComp>();
+					if (component != null && component.Active && !sites[i].HasMap)
 					{
-						QuestPartUtility.MakeAndAddQuestTimeoutDelay(quest, component.TicksLeft, sites[l]);
+						QuestPartUtility.MakeAndAddQuestTimeoutDelay(quest, component.TicksLeft, sites[i]);
 						component.StopTimeout();
 					}
-					QuestPartUtility.MakeAndAddEndCondition<QuestPart_NoWorldObject>(quest, quest.InitiateSignal, QuestEndOutcome.Unknown).worldObject = sites[l];
-					ChoiceLetter choiceLetter = Find.Archive.ArchivablesListForReading.OfType<ChoiceLetter>().FirstOrDefault((ChoiceLetter x) => x.lookTargets != null && x.lookTargets.targets.Contains(sites[l]));
+					QuestPartUtility.MakeAndAddEndCondition<QuestPart_NoWorldObject>(quest, quest.InitiateSignal, QuestEndOutcome.Unknown).worldObject = sites[i];
+					ChoiceLetter choiceLetter = Find.Archive.ArchivablesListForReading.OfType<ChoiceLetter>().FirstOrDefault((ChoiceLetter x) => x.lookTargets != null && x.lookTargets.targets.Contains(sites[i]));
 					if (choiceLetter != null)
 					{
-						quest.description = choiceLetter.text;
+						quest.description = choiceLetter.Text;
 					}
 					Find.QuestManager.Add(quest);
 				}
 			}
 			List<WorldObject> worldObjects = Find.WorldObjects.AllWorldObjects;
-			int k;
-			for (k = 0; k < worldObjects.Count; k++)
+			int i2;
+			for (i2 = 0; i2 < worldObjects.Count; i2++)
 			{
-				if (worldObjects[k].def == WorldObjectDefOf.EscapeShip && !Find.QuestManager.QuestsListForReading.Any((Quest x) => x.PartsListForReading.Any((QuestPart y) => y is QuestPart_NoWorldObject && ((QuestPart_NoWorldObject)y).worldObject == worldObjects[k])))
+				if (worldObjects[i2].def == WorldObjectDefOf.EscapeShip && !Find.QuestManager.QuestsListForReading.Any((Quest x) => x.PartsListForReading.Any((QuestPart y) => y is QuestPart_NoWorldObject && ((QuestPart_NoWorldObject)y).worldObject == worldObjects[i2])))
 				{
-					MakeAndAddWorldObjectQuest(worldObjects[k], null);
+					MakeAndAddWorldObjectQuest(worldObjects[i2], null);
 				}
 			}
-			int j;
-			for (j = 0; j < worldObjects.Count; j++)
+			int i3;
+			for (i3 = 0; i3 < worldObjects.Count; i3++)
 			{
-				if (worldObjects[j] is PeaceTalks && !Find.QuestManager.QuestsListForReading.Any((Quest x) => x.PartsListForReading.Any((QuestPart y) => y is QuestPart_NoWorldObject && ((QuestPart_NoWorldObject)y).worldObject == worldObjects[j])))
+				if (worldObjects[i3] is PeaceTalks && !Find.QuestManager.QuestsListForReading.Any((Quest x) => x.PartsListForReading.Any((QuestPart y) => y is QuestPart_NoWorldObject && ((QuestPart_NoWorldObject)y).worldObject == worldObjects[i3])))
 				{
-					Quest quest2 = MakeAndAddWorldObjectQuest(worldObjects[j], null);
-					ChoiceLetter choiceLetter2 = Find.Archive.ArchivablesListForReading.OfType<ChoiceLetter>().FirstOrDefault((ChoiceLetter x) => x.lookTargets != null && x.lookTargets.targets.Contains(worldObjects[j]));
+					Quest quest2 = MakeAndAddWorldObjectQuest(worldObjects[i3], null);
+					ChoiceLetter choiceLetter2 = Find.Archive.ArchivablesListForReading.OfType<ChoiceLetter>().FirstOrDefault((ChoiceLetter x) => x.lookTargets != null && x.lookTargets.targets.Contains(worldObjects[i3]));
 					if (choiceLetter2 != null)
 					{
-						quest2.description = choiceLetter2.text;
+						quest2.description = choiceLetter2.Text;
 					}
 				}
 			}
-			int i;
-			for (i = 0; i < worldObjects.Count; i++)
+			int i4;
+			for (i4 = 0; i4 < worldObjects.Count; i4++)
 			{
-				TradeRequestComp component2 = worldObjects[i].GetComponent<TradeRequestComp>();
-				if (component2 != null && component2.ActiveRequest && !Find.QuestManager.QuestsListForReading.Any((Quest x) => x.PartsListForReading.Any((QuestPart y) => y is QuestPart_NoWorldObject && ((QuestPart_NoWorldObject)y).worldObject == worldObjects[i])))
+				TradeRequestComp component2 = worldObjects[i4].GetComponent<TradeRequestComp>();
+				if (component2 != null && component2.ActiveRequest && !Find.QuestManager.QuestsListForReading.Any((Quest x) => x.PartsListForReading.Any((QuestPart y) => y is QuestPart_NoWorldObject && ((QuestPart_NoWorldObject)y).worldObject == worldObjects[i4])))
 				{
-					Quest quest3 = MakeAndAddTradeRequestQuest(worldObjects[i], null, component2);
-					ChoiceLetter choiceLetter3 = Find.Archive.ArchivablesListForReading.OfType<ChoiceLetter>().FirstOrDefault((ChoiceLetter x) => x.lookTargets != null && x.lookTargets.targets.Contains(worldObjects[i]));
+					Quest quest3 = MakeAndAddTradeRequestQuest(worldObjects[i4], null, component2);
+					ChoiceLetter choiceLetter3 = Find.Archive.ArchivablesListForReading.OfType<ChoiceLetter>().FirstOrDefault((ChoiceLetter x) => x.lookTargets != null && x.lookTargets.targets.Contains(worldObjects[i4]));
 					if (choiceLetter3 != null)
 					{
-						quest3.description = choiceLetter3.text;
+						quest3.description = choiceLetter3.Text;
 					}
 				}
 			}

@@ -10,7 +10,7 @@ namespace RimWorld
 
 		public override IntVec3 FlagLoc => Data.dest;
 
-		private LordToilData_Travel Data => (LordToilData_Travel)data;
+		private new LordToilData_Travel Data => (LordToilData_Travel)data;
 
 		public override bool AllowSatisfyLongNeeds => false;
 
@@ -24,18 +24,18 @@ namespace RimWorld
 
 		public override void UpdateAllDuties()
 		{
-			LordToilData_Travel data = Data;
+			LordToilData_Travel lordToilData_Travel = Data;
 			Pawn leader = GetLeader();
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
 				Pawn pawn = lord.ownedPawns[i];
 				if (IsSapper(pawn))
 				{
-					pawn.mindState.duty = new PawnDuty(DutyDefOf.PrisonerEscapeSapper, data.dest);
+					pawn.mindState.duty = new PawnDuty(DutyDefOf.PrisonerEscapeSapper, lordToilData_Travel.dest);
 				}
 				else if (leader == null || pawn == leader)
 				{
-					pawn.mindState.duty = new PawnDuty(DutyDefOf.PrisonerEscape, data.dest);
+					pawn.mindState.duty = new PawnDuty(DutyDefOf.PrisonerEscape, lordToilData_Travel.dest);
 				}
 				else
 				{

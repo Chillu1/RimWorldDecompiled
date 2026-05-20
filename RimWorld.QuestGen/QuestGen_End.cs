@@ -4,7 +4,7 @@ namespace RimWorld.QuestGen
 {
 	public static class QuestGen_End
 	{
-		public static QuestPart_QuestEnd End(this Quest quest, QuestEndOutcome outcome, int goodwillChangeAmount = 0, Faction goodwillChangeFactionOf = null, string inSignal = null, QuestPart.SignalListenMode signalListenMode = QuestPart.SignalListenMode.OngoingOnly, bool sendStandardLetter = false)
+		public static QuestPart_QuestEnd End(this Quest quest, QuestEndOutcome outcome, int goodwillChangeAmount = 0, Faction goodwillChangeFactionOf = null, string inSignal = null, QuestPart.SignalListenMode signalListenMode = QuestPart.SignalListenMode.OngoingOnly, bool sendStandardLetter = false, bool playSound = false)
 		{
 			Slate slate = QuestGen.slate;
 			if (goodwillChangeAmount != 0 && goodwillChangeFactionOf != null && goodwillChangeFactionOf != null)
@@ -21,6 +21,7 @@ namespace RimWorld.QuestGen
 			questPart_QuestEnd.outcome = outcome;
 			questPart_QuestEnd.signalListenMode = signalListenMode;
 			questPart_QuestEnd.sendLetter = sendStandardLetter;
+			questPart_QuestEnd.playSound = playSound;
 			QuestGen.quest.AddPart(questPart_QuestEnd);
 			return questPart_QuestEnd;
 		}

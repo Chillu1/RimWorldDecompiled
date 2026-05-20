@@ -14,7 +14,7 @@ namespace RimWorld
 
 		private static HashSet<ThingDef> cachedMakeableItemDefs = new HashSet<ThingDef>();
 
-		private static int cachedAccessibleThingsForTile = -1;
+		private static PlanetTile cachedAccessibleThingsForTile = PlanetTile.Invalid;
 
 		private static int cachedAccessibleThingsForFrame = -1;
 
@@ -62,7 +62,7 @@ namespace RimWorld
 			return cachedMakeableItemDefs.Contains(thing);
 		}
 
-		private static void CacheAccessibleThings(int nearTile)
+		private static void CacheAccessibleThings(PlanetTile nearTile)
 		{
 			if (nearTile == cachedAccessibleThingsForTile && RealTime.frameCount == cachedAccessibleThingsForFrame)
 			{
@@ -75,7 +75,7 @@ namespace RimWorld
 			List<Map> maps = Find.Maps;
 			for (int i = 0; i < maps.Count; i++)
 			{
-				if (!(worldGrid.ApproxDistanceInTiles(nearTile, maps[i].Tile) > 5f))
+				if (maps[i].Tile.Valid && !(worldGrid.ApproxDistanceInTiles(nearTile, maps[i].Tile) > 5f))
 				{
 					ThingOwnerUtility.GetAllThingsRecursively(maps[i], tmpThings, allowUnreal: false);
 					cachedAccessibleThings.AddRange(tmpThings);
@@ -107,10 +107,9 @@ namespace RimWorld
 						}
 					}
 				}
-				Plant plant = thing as Plant;
-				if (plant != null && (plant.HarvestableNow || plant.HarvestableSoon))
+				if (thing is Plant plant && (plant.HarvestableNow || plant.HarvestableSoon))
 				{
-					int num2 = Mathf.RoundToInt(plant.def.plant.harvestYield * Find.Storyteller.difficultyValues.cropYieldFactor);
+					int num2 = Mathf.RoundToInt(plant.def.plant.harvestYield * Find.Storyteller.difficulty.cropYieldFactor);
 					if (num2 > 0)
 					{
 						cachedPossiblyAccessibleThings.Add(new ThingDefCount(plant.def.plant.harvestedThingDef, num2));
@@ -125,8 +124,7 @@ namespace RimWorld
 						cachedMakeableItemDefs.Add(thing.def.butcherProducts[m].thingDef);
 					}
 				}
-				Pawn pawn = thing as Pawn;
-				if (pawn != null)
+				if (thing is Pawn pawn)
 				{
 					if (pawn.RaceProps.meatDef != null)
 					{
@@ -184,8 +182,7 @@ namespace RimWorld
 			int num7 = 0;
 			for (int num8 = 0; num8 < cachedAccessibleThings.Count; num8++)
 			{
-				Pawn pawn2 = cachedAccessibleThings[num8] as Pawn;
-				if (pawn2 != null && pawn2.IsFreeColonist && !pawn2.Dead && !pawn2.Downed && pawn2.workSettings.WorkIsActive(WorkTypeDefOf.Crafting))
+				if (cachedAccessibleThings[num8] is Pawn { IsFreeColonist: not false, Dead: false, Downed: false } pawn2 && pawn2.workSettings.WorkIsActive(WorkTypeDefOf.Crafting))
 				{
 					num7++;
 				}
@@ -195,8 +192,7 @@ namespace RimWorld
 				tmpWorkTables.Clear();
 				for (int num9 = 0; num9 < cachedAccessibleThings.Count; num9++)
 				{
-					Building_WorkTable building_WorkTable = cachedAccessibleThings[num9] as Building_WorkTable;
-					if (building_WorkTable == null || !building_WorkTable.Spawned || !tmpWorkTables.Add(building_WorkTable.def))
+					if (!(cachedAccessibleThings[num9] is Building_WorkTable { Spawned: not false } building_WorkTable) || !tmpWorkTables.Add(building_WorkTable.def))
 					{
 						continue;
 					}
@@ -207,8 +203,8 @@ namespace RimWorld
 						{
 							continue;
 						}
-						ThingDef stuffDef = (allRecipes[num10].products[0].thingDef.MadeFromStuff ? GenStuff.DefaultStuffFor(allRecipes[num10].products[0].thingDef) : null);
-						float num11 = allRecipes[num10].WorkAmountTotal(stuffDef);
+						ThingDef stuff = (allRecipes[num10].products[0].thingDef.MadeFromStuff ? GenStuff.DefaultStuffFor(allRecipes[num10].products[0].thingDef) : null);
+						float num11 = allRecipes[num10].WorkAmountForStuff(stuff);
 						if (num11 <= 0f)
 						{
 							continue;

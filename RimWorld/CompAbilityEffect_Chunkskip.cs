@@ -28,8 +28,9 @@ namespace RimWorld
 					AbilityUtility.DoClamor(result, Props.clamorRadius, parent.pawn, Props.clamorType);
 					parent.AddEffecterToMaintain(EffecterDefOf.Skip_Entry.Spawn(item.Position, map, 0.72f), item.Position, 60);
 					parent.AddEffecterToMaintain(EffecterDefOf.Skip_ExitNoDelay.Spawn(result, map, 0.72f), result, 60);
-					MoteMaker.ThrowDustPuffThick(result.ToVector3(), map, Rand.Range(1.5f, 3f), DustColor);
+					FleckMaker.ThrowDustPuffThick(result.ToVector3(), map, Rand.Range(1.5f, 3f), DustColor);
 					item.Position = result;
+					CompAbilityEffect_Teleport.SendSkipUsedSignal(result, parent.pawn);
 				}
 			}
 			SoundDefOf.Psycast_Skip_Pulse.PlayOneShot(new TargetInfo(target.Cell, map));
@@ -44,7 +45,7 @@ namespace RimWorld
 				{
 					foreach (Thing item in FindClosestChunks(t))
 					{
-						MoteMaker.MakeStaticMote(item.TrueCenter(), parent.pawn.Map, ThingDefOf.Mote_PsycastSkipFlashEntry, 0.72f);
+						FleckMaker.Static(item.TrueCenter(), parent.pawn.Map, FleckDefOf.PsycastSkipFlashEntry, 0.72f);
 					}
 				},
 				ticksAwayFromCast = 5
@@ -116,7 +117,7 @@ namespace RimWorld
 			{
 				if (throwMessages)
 				{
-					Messages.Message("AbilityNotEnoughFreeSpace".Translate(), parent.pawn, MessageTypeDefOf.RejectInput, historical: false);
+					Messages.Message("CannotUseAbility".Translate(parent.def.label) + ": " + "AbilityNotEnoughFreeSpace".Translate(), parent.pawn, MessageTypeDefOf.RejectInput, historical: false);
 				}
 				return false;
 			}
@@ -136,13 +137,13 @@ namespace RimWorld
 			return base.CanApplyOn(target, dest);
 		}
 
-		public override string ExtraLabel(LocalTargetInfo target)
+		public override string ExtraLabelMouseAttachment(LocalTargetInfo target)
 		{
 			if (target.IsValid && !target.Cell.Filled(parent.pawn.Map) && !FindClosestChunks(target).Any())
 			{
 				return "AbilityNoChunkToSkip".Translate();
 			}
-			return base.ExtraLabel(target);
+			return base.ExtraLabelMouseAttachment(target);
 		}
 	}
 }

@@ -45,114 +45,114 @@ namespace Verse
 			{
 				AppendGeneralLoadErrors(stringBuilder);
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Error while generating translation report (general load errors): " + arg);
+				Log.Error("Error while generating translation report (general load errors): " + ex);
 			}
 			try
 			{
 				AppendDefInjectionsLoadErros(stringBuilder);
 			}
-			catch (Exception arg2)
+			catch (Exception ex2)
 			{
-				Log.Error("Error while generating translation report (def-injections load errors): " + arg2);
-			}
-			try
-			{
-				AppendBackstoriesLoadErrors(stringBuilder);
-			}
-			catch (Exception arg3)
-			{
-				Log.Error("Error while generating translation report (backstories load errors): " + arg3);
+				Log.Error("Error while generating translation report (def-injections load errors): " + ex2);
 			}
 			try
 			{
 				AppendMissingKeyedTranslations(stringBuilder);
 			}
-			catch (Exception arg4)
+			catch (Exception ex3)
 			{
-				Log.Error("Error while generating translation report (missing keyed translations): " + arg4);
+				Log.Error("Error while generating translation report (missing keyed translations): " + ex3);
 			}
 			List<string> list = new List<string>();
 			try
 			{
 				AppendMissingDefInjections(stringBuilder, list);
 			}
-			catch (Exception arg5)
+			catch (Exception ex4)
 			{
-				Log.Error("Error while generating translation report (missing def-injections): " + arg5);
+				Log.Error("Error while generating translation report (missing def-injections): " + ex4);
 			}
 			try
 			{
 				AppendMissingBackstories(stringBuilder);
 			}
-			catch (Exception arg6)
+			catch (Exception ex5)
 			{
-				Log.Error("Error while generating translation report (missing backstories): " + arg6);
+				Log.Error("Error while generating translation report (missing backstories): " + ex5);
 			}
 			try
 			{
 				AppendUnnecessaryDefInjections(stringBuilder, list);
 			}
-			catch (Exception arg7)
+			catch (Exception ex6)
 			{
-				Log.Error("Error while generating translation report (unnecessary def-injections): " + arg7);
+				Log.Error("Error while generating translation report (unnecessary def-injections): " + ex6);
 			}
 			try
 			{
 				AppendRenamedDefInjections(stringBuilder);
 			}
-			catch (Exception arg8)
+			catch (Exception ex7)
 			{
-				Log.Error("Error while generating translation report (renamed def-injections): " + arg8);
+				Log.Error("Error while generating translation report (renamed def-injections): " + ex7);
 			}
 			try
 			{
 				AppendArgumentCountMismatches(stringBuilder);
 			}
-			catch (Exception arg9)
+			catch (Exception ex8)
 			{
-				Log.Error("Error while generating translation report (argument count mismatches): " + arg9);
+				Log.Error("Error while generating translation report (argument count mismatches): " + ex8);
 			}
 			try
 			{
 				AppendUnnecessaryKeyedTranslations(stringBuilder);
 			}
-			catch (Exception arg10)
+			catch (Exception ex9)
 			{
-				Log.Error("Error while generating translation report (unnecessary keyed translations): " + arg10);
+				Log.Error("Error while generating translation report (unnecessary keyed translations): " + ex9);
 			}
 			try
 			{
 				AppendKeyedTranslationsMatchingEnglish(stringBuilder);
 			}
-			catch (Exception arg11)
+			catch (Exception ex10)
 			{
-				Log.Error("Error while generating translation report (keyed translations matching English): " + arg11);
+				Log.Error("Error while generating translation report (keyed translations matching English): " + ex10);
 			}
 			try
 			{
 				AppendBackstoriesMatchingEnglish(stringBuilder);
 			}
-			catch (Exception arg12)
+			catch (Exception ex11)
 			{
-				Log.Error("Error while generating translation report (backstories matching English): " + arg12);
+				Log.Error("Error while generating translation report (backstories matching English): " + ex11);
 			}
 			try
 			{
 				AppendDefInjectionsSyntaxSuggestions(stringBuilder);
 			}
-			catch (Exception arg13)
+			catch (Exception ex12)
 			{
-				Log.Error("Error while generating translation report (def-injections syntax suggestions): " + arg13);
+				Log.Error("Error while generating translation report (def-injections syntax suggestions): " + ex12);
 			}
 			try
 			{
 				AppendTKeySystemErrors(stringBuilder);
 			}
-			catch (Exception arg14)
+			catch (Exception ex13)
 			{
-				Log.Error("Error while generating translation report (TKeySystem errors): " + arg14);
+				Log.Error("Error while generating translation report (TKeySystem errors): " + ex13);
+			}
+			try
+			{
+				AppendObsoleteBackstoryTranslations(stringBuilder);
+			}
+			catch (Exception ex14)
+			{
+				Log.Error("Error while generating translation report (backstory syntax suggestions): " + ex14);
 			}
 			string text = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
 			if (text.NullOrEmpty())
@@ -194,21 +194,6 @@ namespace Verse
 			}
 			sb.AppendLine();
 			sb.AppendLine("========== Def-injected translations load errors (" + num + ") ==========");
-			sb.Append(stringBuilder);
-		}
-
-		private static void AppendBackstoriesLoadErrors(StringBuilder sb)
-		{
-			LoadedLanguage activeLanguage = LanguageDatabase.activeLanguage;
-			StringBuilder stringBuilder = new StringBuilder();
-			int num = 0;
-			foreach (string backstoriesLoadError in activeLanguage.backstoriesLoadErrors)
-			{
-				num++;
-				stringBuilder.AppendLine(backstoriesLoadError);
-			}
-			sb.AppendLine();
-			sb.AppendLine("========== Backstories load errors (" + num + ") ==========");
 			sb.Append(stringBuilder);
 		}
 
@@ -267,7 +252,7 @@ namespace Verse
 		{
 			LoadedLanguage activeLanguage = LanguageDatabase.activeLanguage;
 			LoadedLanguage defaultLanguage = LanguageDatabase.defaultLanguage;
-			if (activeLanguage == defaultLanguage)
+			if (activeLanguage == defaultLanguage || !BackstoryTranslationUtility.AnyLegacyBackstoryFiles(activeLanguage.AllDirectories))
 			{
 				return;
 			}
@@ -385,7 +370,7 @@ namespace Verse
 			int num = 0;
 			foreach (KeyValuePair<string, LoadedLanguage.KeyedReplacement> keyedReplacement in activeLanguage.keyedReplacements)
 			{
-				if (!keyedReplacement.Value.isPlaceholder && defaultLanguage.TryGetTextFromKey(keyedReplacement.Key, out var translated) && keyedReplacement.Value.value == (string)translated)
+				if (!keyedReplacement.Value.isPlaceholder && defaultLanguage.TryGetTextFromKey(keyedReplacement.Key, out var translated) && keyedReplacement.Value.value == translated)
 				{
 					num++;
 					stringBuilder.AppendLine(keyedReplacement.Key + " '" + keyedReplacement.Value.value.Replace("\n", "\\n") + "' (" + activeLanguage.GetKeySourceFileAndLine(keyedReplacement.Key) + ")");
@@ -400,7 +385,7 @@ namespace Verse
 		{
 			LoadedLanguage activeLanguage = LanguageDatabase.activeLanguage;
 			LoadedLanguage defaultLanguage = LanguageDatabase.defaultLanguage;
-			if (activeLanguage == defaultLanguage)
+			if (activeLanguage == defaultLanguage || !BackstoryTranslationUtility.AnyLegacyBackstoryFiles(activeLanguage.AllDirectories))
 			{
 				return;
 			}
@@ -413,6 +398,26 @@ namespace Verse
 			}
 			sb.AppendLine();
 			sb.AppendLine("========== Backstory translations matching English (maybe ok) (" + num + ") ==========");
+			sb.Append(stringBuilder);
+		}
+
+		private static void AppendObsoleteBackstoryTranslations(StringBuilder sb)
+		{
+			LoadedLanguage activeLanguage = LanguageDatabase.activeLanguage;
+			LoadedLanguage defaultLanguage = LanguageDatabase.defaultLanguage;
+			if (activeLanguage == defaultLanguage)
+			{
+				return;
+			}
+			StringBuilder stringBuilder = new StringBuilder();
+			int num = 0;
+			foreach (string item in BackstoryTranslationUtility.ObsoleteBackstoryTranslations(activeLanguage))
+			{
+				num++;
+				stringBuilder.AppendLine(item);
+			}
+			sb.AppendLine();
+			sb.AppendLine("========== Backstories translation using obsolete format (def injection is now enabled for backstories) (" + num + ") ==========");
 			sb.Append(stringBuilder);
 		}
 

@@ -6,7 +6,12 @@ namespace RimWorld
 	{
 		public override float RandomSelectionWeight(Pawn initiator, Pawn recipient)
 		{
-			if (initiator.story.traits.HasTrait(TraitDefOf.Kind))
+			if (initiator.Inhumanized())
+			{
+				return 0f;
+			}
+			Trait trait = initiator.story.traits.GetTrait(TraitDefOf.Kind);
+			if (trait != null && !trait.Suppressed)
 			{
 				return 0.01f;
 			}

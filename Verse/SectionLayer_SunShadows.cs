@@ -1,17 +1,48 @@
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
 {
-	internal class SectionLayer_SunShadows : SectionLayer
+	internal class SectionLayer_SunShadows : SectionLayer_Dynamic
 	{
 		private static readonly Color32 LowVertexColor = new Color32(0, 0, 0, 0);
 
-		public override bool Visible => DebugViewSettings.drawShadows;
+		private static int frame;
+
+		private static CellRect cachedRect;
+
+		public override bool Visible
+		{
+			get
+			{
+				if (DebugViewSettings.drawShadows)
+				{
+					return base.Map?.Biome?.disableShadows != true;
+				}
+				return false;
+			}
+		}
 
 		public SectionLayer_SunShadows(Section section)
 			: base(section)
 		{
-			relevantChangeTypes = MapMeshFlag.Buildings;
+			relevantChangeTypes = MapMeshFlagDefOf.Buildings;
+		}
+
+		public override bool ShouldDrawDynamic(CellRect view)
+		{
+			return section.CellRect.Overlaps(GetSunShadowsViewRect(section.map, view));
+		}
+
+		public override CellRect GetBoundaryRect()
+		{
+			return new CellRect(0, 0, section.map.Size.x, section.map.Size.z);
+		}
+
+		public override void DrawLayer()
+		{
+			RefreshSubMeshBounds();
+			base.DrawLayer();
 		}
 
 		public override void Regenerate()
@@ -34,12 +65,12 @@ namespace Verse
 			{
 				for (int j = cellRect.minZ; j <= cellRect.maxZ; j++)
 				{
-					Thing thing = innerArray[cellIndices.CellToIndex(i, j)];
-					if (thing == null || !(thing.def.staticSunShadowHeight > 0f))
+					Building building = innerArray[cellIndices.CellToIndex(i, j)];
+					if (building == null || !(building.def.staticSunShadowHeight > 0f))
 					{
 						continue;
 					}
-					float staticSunShadowHeight = thing.def.staticSunShadowHeight;
+					float staticSunShadowHeight = building.def.staticSunShadowHeight;
 					Color32 item = new Color32(0, 0, 0, (byte)(255f * staticSunShadowHeight));
 					int count = subMesh.verts.Count;
 					subMesh.verts.Add(new Vector3(i, y, j));
@@ -59,8 +90,8 @@ namespace Verse
 					subMesh.tris.Add(count2 - 1);
 					if (i > 0)
 					{
-						thing = innerArray[cellIndices.CellToIndex(i - 1, j)];
-						if (thing == null || thing.def.staticSunShadowHeight < staticSunShadowHeight)
+						building = innerArray[cellIndices.CellToIndex(i - 1, j)];
+						if (building == null || building.def.staticSunShadowHeight < staticSunShadowHeight)
 						{
 							int count3 = subMesh.verts.Count;
 							subMesh.verts.Add(new Vector3(i, y, j));
@@ -77,8 +108,8 @@ namespace Verse
 					}
 					if (i < base.Map.Size.x - 1)
 					{
-						thing = innerArray[cellIndices.CellToIndex(i + 1, j)];
-						if (thing == null || thing.def.staticSunShadowHeight < staticSunShadowHeight)
+						building = innerArray[cellIndices.CellToIndex(i + 1, j)];
+						if (building == null || building.def.staticSunShadowHeight < staticSunShadowHeight)
 						{
 							int count4 = subMesh.verts.Count;
 							subMesh.verts.Add(new Vector3(i + 1, y, j + 1));
@@ -95,8 +126,8 @@ namespace Verse
 					}
 					if (j > 0)
 					{
-						thing = innerArray[cellIndices.CellToIndex(i, j - 1)];
-						if (thing == null || thing.def.staticSunShadowHeight < staticSunShadowHeight)
+						building = innerArray[cellIndices.CellToIndex(i, j - 1)];
+						if (building == null || building.def.staticSunShadowHeight < staticSunShadowHeight)
 						{
 							int count5 = subMesh.verts.Count;
 							subMesh.verts.Add(new Vector3(i, y, j));
@@ -120,8 +151,35 @@ namespace Verse
 				Vector3 size = subMesh.mesh.bounds.size;
 				size.x += 2f * num + 2f;
 				size.z += 2f * num + 2f;
-				subMesh.mesh.bounds = new Bounds(subMesh.mesh.bounds.center, size);
+				subMesh.mesh.bounds = new Bounds(Vector3.zero, new Vector3(1000f, 1000f, 1000f));
 			}
+		}
+
+		public static CellRect GetSunShadowsViewRect(Map map, CellRect rect)
+		{
+			if (frame == RealTime.frameCount)
+			{
+				return cachedRect;
+			}
+			GenCelestial.LightInfo lightSourceInfo = GenCelestial.GetLightSourceInfo(map, GenCelestial.LightType.Shadow);
+			if (lightSourceInfo.vector.x < 0f)
+			{
+				rect.maxX -= Mathf.FloorToInt(lightSourceInfo.vector.x);
+			}
+			else
+			{
+				rect.minX -= Mathf.CeilToInt(lightSourceInfo.vector.x);
+			}
+			if (lightSourceInfo.vector.y < 0f)
+			{
+				rect.maxZ -= Mathf.FloorToInt(lightSourceInfo.vector.y);
+			}
+			else
+			{
+				rect.minZ -= Mathf.CeilToInt(lightSourceInfo.vector.y);
+			}
+			frame = RealTime.frameCount;
+			return cachedRect = rect.ClipInsideMap(map);
 		}
 	}
 }

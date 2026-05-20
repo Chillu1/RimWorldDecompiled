@@ -11,6 +11,12 @@ namespace Verse
 
 		public RenderTextureFormat format;
 
+		public bool startEnabled = true;
+
+		public bool doNotUpdate;
+
+		public Color backgroundColor = new Color(0f, 0f, 0f, 0f);
+
 		[Unsaved(false)]
 		private int layerCached = -1;
 

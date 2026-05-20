@@ -55,7 +55,7 @@ namespace RimWorld
 		{
 			if (pawn.drugs != null && pawn.drugs.CurrentPolicy != null)
 			{
-				return pawn.drugs.CurrentPolicy.uniqueId;
+				return pawn.drugs.CurrentPolicy.id;
 			}
 			return int.MinValue;
 		}

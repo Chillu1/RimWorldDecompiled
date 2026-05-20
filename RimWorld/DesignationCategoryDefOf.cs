@@ -7,11 +7,9 @@ namespace RimWorld
 	{
 		public static DesignationCategoryDef Production;
 
-		public static DesignationCategoryDef Structure;
-
-		public static DesignationCategoryDef Security;
-
 		public static DesignationCategoryDef Floors;
+
+		public static DesignationCategoryDef Zone;
 
 		static DesignationCategoryDefOf()
 		{

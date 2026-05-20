@@ -1,26 +1,31 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
+using LudeonTK;
 using RimWorld;
+using Unity.Collections;
 
 namespace Verse.AI
 {
-	public sealed class PathGrid
+	public class PathGrid : IDisposable
 	{
-		private Map map;
+		public readonly Map map;
 
-		public int[] pathGrid;
+		public readonly PathGridDef def;
+
+		private NativeArray<int> pathGrid;
+
+		private NativeBitArray dirty;
 
 		public const int ImpassableCost = 10000;
 
-		public PathGrid(Map map)
+		public NativeArray<int> Grid_Unsafe => pathGrid;
+
+		public PathGrid(Map map, PathGridDef def)
 		{
 			this.map = map;
-			ResetPathGrid();
-		}
-
-		public void ResetPathGrid()
-		{
-			pathGrid = new int[map.cellIndices.NumGridCells];
+			this.def = def;
+			pathGrid = new NativeArray<int>(map.cellIndices.NumGridCells, Allocator.Persistent);
 		}
 
 		public bool Walkable(IntVec3 loc)
@@ -29,12 +34,12 @@ namespace Verse.AI
 			{
 				return false;
 			}
-			return pathGrid[map.cellIndices.CellToIndex(loc)] < 10000;
+			return Cost(loc) < 10000;
 		}
 
 		public bool WalkableFast(IntVec3 loc)
 		{
-			return pathGrid[map.cellIndices.CellToIndex(loc)] < 10000;
+			return Cost(loc) < 10000;
 		}
 
 		public bool WalkableFast(int x, int z)
@@ -47,41 +52,57 @@ namespace Verse.AI
 			return pathGrid[index] < 10000;
 		}
 
-		public int PerceivedPathCostAt(IntVec3 loc)
+		public int Cost(IntVec3 loc)
 		{
 			return pathGrid[map.cellIndices.CellToIndex(loc)];
 		}
 
-		public void RecalculatePerceivedPathCostUnderThing(Thing t)
+		private void RecalculatePerceivedPathCostAt(IntVec3 c)
 		{
-			if (t.def.size == IntVec2.One)
+			bool haveNotified = false;
+			RecalculatePerceivedPathCostAt(c, ref haveNotified);
+		}
+
+		public void RecalculatePerceivedPathCostAt(IntVec3 c, ref bool haveNotified)
+		{
+			if (!c.InBounds(map))
 			{
-				RecalculatePerceivedPathCostAt(t.Position);
 				return;
 			}
-			CellRect cellRect = t.OccupiedRect();
-			for (int i = cellRect.minZ; i <= cellRect.maxZ; i++)
+			if (dirty.IsCreated)
 			{
-				for (int j = cellRect.minX; j <= cellRect.maxX; j++)
+				dirty.Set(map.cellIndices.CellToIndex(c), value: true);
+			}
+			else if (!haveNotified)
+			{
+				if (RecalcuateCellDirect(c))
 				{
-					IntVec3 c = new IntVec3(j, 0, i);
-					RecalculatePerceivedPathCostAt(c);
+					NotifyCellDirtied(c);
+					haveNotified = true;
 				}
+			}
+			else
+			{
+				pathGrid[map.cellIndices.CellToIndex(c)] = CalculatedCostAt(c, perceivedStatic: true, IntVec3.Invalid);
 			}
 		}
 
-		public void RecalculatePerceivedPathCostAt(IntVec3 c)
+		private bool RecalcuateCellDirect(IntVec3 c)
 		{
-			if (c.InBounds(map))
+			if (!c.InBounds(map))
 			{
-				bool flag = WalkableFast(c);
-				pathGrid[map.cellIndices.CellToIndex(c)] = CalculatedCostAt(c, perceivedStatic: true, IntVec3.Invalid);
-				if (WalkableFast(c) != flag)
-				{
-					map.reachability.ClearCache();
-					map.regionDirtyer.Notify_WalkabilityChanged(c);
-				}
+				return false;
 			}
+			int index = map.cellIndices[c];
+			bool num = WalkableFast(index);
+			pathGrid[index] = CalculatedCostAt(c, perceivedStatic: true, IntVec3.Invalid);
+			return num != WalkableFast(index);
+		}
+
+		private void NotifyCellDirtied(IntVec3 cell)
+		{
+			map.reachability.ClearCache();
+			map.regionDirtyer.Notify_WalkabilityChanged(cell, WalkableFast(cell));
 		}
 
 		public void RecalculateAllPerceivedPathCosts()
@@ -90,23 +111,38 @@ namespace Verse.AI
 			{
 				RecalculatePerceivedPathCostAt(allCell);
 			}
+			if (dirty.IsCreated)
+			{
+				dirty.Clear();
+			}
 		}
 
-		public int CalculatedCostAt(IntVec3 c, bool perceivedStatic, IntVec3 prevCell)
+		public virtual int CalculatedCostAt(IntVec3 c, bool perceivedStatic, IntVec3 prevCell, int? baseCostOverride = null)
 		{
 			int num = 0;
 			bool flag = false;
 			TerrainDef terrainDef = map.terrainGrid.TerrainAt(c);
-			if (terrainDef == null || terrainDef.passability == Traversability.Impassable)
+			if (terrainDef == null || (terrainDef.passability == Traversability.Impassable && (!def.flying || !terrainDef.forcePassableByFlyingPawns)))
 			{
 				return 10000;
 			}
-			num = terrainDef.pathCost;
+			if (baseCostOverride.HasValue)
+			{
+				num = baseCostOverride.Value;
+			}
+			else if (!def.flying)
+			{
+				num = terrainDef.pathCost;
+			}
 			List<Thing> list = map.thingGrid.ThingsListAt(c);
 			for (int i = 0; i < list.Count; i++)
 			{
 				Thing thing = list[i];
-				if (thing.def.passability == Traversability.Impassable)
+				if (thing.def.passability == Traversability.Impassable && (!def.flying || !thing.def.forcePassableByFlyingPawns))
+				{
+					return 10000;
+				}
+				if (!def.fencePassable && thing.def.building != null && thing.def.building.isFence)
 				{
 					return 10000;
 				}
@@ -118,19 +154,23 @@ namespace Verse.AI
 						num = pathCost;
 					}
 				}
-				if (thing is Building_Door && prevCell.IsValid)
+				if (thing is Building_Door building_Door && prevCell.IsValid && prevCell.GetEdifice(map) is Building_Door building_Door2 && !building_Door.FreePassage && !building_Door2.FreePassage)
 				{
-					Building edifice = prevCell.GetEdifice(map);
-					if (edifice != null && edifice is Building_Door)
-					{
-						flag = true;
-					}
+					flag = true;
 				}
 			}
-			int num2 = SnowUtility.MovementTicksAddOn(map.snowGrid.GetCategory(c));
+			int num2 = WeatherBuildupUtility.MovementTicksAddOn(map.snowGrid.GetCategory(c));
 			if (num2 > num)
 			{
 				num = num2;
+			}
+			if (ModsConfig.OdysseyActive)
+			{
+				int num3 = WeatherBuildupUtility.MovementTicksAddOn(map.sandGrid.GetCategory(c));
+				if (num3 > num)
+				{
+					num = num3;
+				}
 			}
 			if (flag)
 			{
@@ -140,8 +180,8 @@ namespace Verse.AI
 			{
 				for (int j = 0; j < 9; j++)
 				{
-					IntVec3 b = GenAdj.AdjacentCellsAndInside[j];
-					IntVec3 c2 = c + b;
+					IntVec3 intVec = GenAdj.AdjacentCellsAndInside[j];
+					IntVec3 c2 = c + intVec;
 					if (!c2.InBounds(map))
 					{
 						continue;
@@ -158,7 +198,7 @@ namespace Verse.AI
 					}
 					if (fire != null && fire.parent == null)
 					{
-						num = ((b.x != 0 || b.z != 0) ? (num + 150) : (num + 1000));
+						num = ((intVec.x != 0 || intVec.z != 0) ? (num + 150) : (num + 1000));
 					}
 				}
 			}
@@ -185,6 +225,38 @@ namespace Verse.AI
 				return def.pathCostIgnoreRepeat;
 			}
 			return false;
+		}
+
+		public void DisableIncrementalDirtying()
+		{
+			if (!dirty.IsCreated)
+			{
+				dirty = new NativeBitArray(map.cellIndices.NumGridCells, Allocator.Persistent);
+			}
+		}
+
+		public void ReEnableIncrementalDirtying()
+		{
+			if (!dirty.IsCreated)
+			{
+				return;
+			}
+			for (int i = 0; i < dirty.Length; i++)
+			{
+				if (dirty.IsSet(i))
+				{
+					IntVec3 intVec = map.cellIndices[i];
+					RecalcuateCellDirect(intVec);
+					NotifyCellDirtied(intVec);
+				}
+			}
+			dirty.Dispose();
+		}
+
+		public void Dispose()
+		{
+			NativeArrayUtility.EnsureDisposed(ref pathGrid);
+			dirty.EnsureDisposed();
 		}
 
 		[DebugOutput]

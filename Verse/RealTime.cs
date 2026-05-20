@@ -13,9 +13,13 @@ namespace Verse
 
 		public static int frameCount;
 
+		private static float unpausedTime;
+
 		private static float lastRealTime = 0f;
 
 		public static float LastRealTime => lastRealTime;
+
+		public static float UnpausedRealTime => unpausedTime;
 
 		public static void Update()
 		{
@@ -26,7 +30,14 @@ namespace Verse
 			lastRealTime = realtimeSinceStartup;
 			if (Current.ProgramState == ProgramState.Playing)
 			{
-				moteList.MoteListUpdate();
+				if (Find.Maps != null && !Find.Maps.Empty())
+				{
+					moteList.MoteListUpdate();
+				}
+				if (Current.Game != null)
+				{
+					unpausedTime += deltaTime * Find.TickManager.TickRateMultiplier;
+				}
 			}
 			else
 			{

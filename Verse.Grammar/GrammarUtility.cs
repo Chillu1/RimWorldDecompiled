@@ -11,7 +11,7 @@ namespace Verse.Grammar
 		{
 			if (pawn == null)
 			{
-				Log.ErrorOnce($"Tried to insert rule {pawnSymbol} for null pawn", 16015097);
+				Log.ErrorOnce("Tried to insert rule " + pawnSymbol + " for null pawn", 16015097);
 				return Enumerable.Empty<Rule>();
 			}
 			TaggedString text = "";
@@ -19,10 +19,10 @@ namespace Verse.Grammar
 			{
 				PawnRelationUtility.TryAppendRelationsWithColonistsInfo(ref text, pawn);
 			}
-			return RulesForPawn(pawnSymbol, pawn.Name, (pawn.story != null) ? pawn.story.Title : null, pawn.kindDef, pawn.gender, pawn.Faction, pawn.ageTracker.AgeBiologicalYears, pawn.ageTracker.AgeChronologicalYears, text, PawnUtility.EverBeenColonistOrTameAnimal(pawn), PawnUtility.EverBeenQuestLodger(pawn), pawn.Faction != null && pawn.Faction.leader == pawn, (pawn.royalty != null) ? pawn.royalty.AllTitlesForReading : null, constants, addTags);
+			return RulesForPawn(pawnSymbol, pawn.Name, pawn.story?.Title, pawn.kindDef, pawn.gender, pawn.Faction, pawn.ageTracker.AgeBiologicalYears, pawn.ageTracker.AgeChronologicalYears, text, PawnUtility.EverBeenColonistOrTameAnimal(pawn), PawnUtility.EverBeenQuestLodger(pawn), pawn.Faction != null && pawn.Faction.leader == pawn, pawn.royalty?.AllTitlesForReading, ModsConfig.AnomalyActive && pawn.health.hediffSet.HasHediff(HediffDefOf.CubeInterest), pawn.LabelNoParenthesis, constants, addTags);
 		}
 
-		public static IEnumerable<Rule> RulesForPawn(string pawnSymbol, Name name, string title, PawnKindDef kind, Gender gender, Faction faction, int age, int chronologicalAge, string relationInfo, bool everBeenColonistOrTameAnimal, bool everBeenQuestLodger, bool isFactionLeader, List<RoyalTitle> royalTitles, Dictionary<string, string> constants = null, bool addTags = true)
+		public static IEnumerable<Rule> RulesForPawn(string pawnSymbol, Name name, string title, PawnKindDef kind, Gender gender, Faction faction, int age, int chronologicalAge, string relationInfo, bool everBeenColonistOrTameAnimal, bool everBeenQuestLodger, bool isFactionLeader, List<RoyalTitle> royalTitles, bool cubeInterest, string labelNoParenthesis, Dictionary<string, string> constants = null, bool addTags = true)
 		{
 			string prefix = "";
 			if (!pawnSymbol.NullOrEmpty())
@@ -35,18 +35,21 @@ namespace Verse.Grammar
 				Gender.Male => kind.labelMale.NullOrEmpty() ? kind.label : kind.labelMale, 
 				_ => kind.label, 
 			};
-			yield return new Rule_String(output: ((name == null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(kindLabel, gender) : Find.ActiveLanguageWorker.WithIndefiniteArticle(name.ToStringFull, gender, plural: false, name: true)).ApplyTag(TagType.Name).Resolve(), keyword: prefix + "nameFull");
+			Gender kindGender = GrammarResolverSimple.ResolveGender(kindLabel, gender);
+			string text = ((name == null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(kindLabel, kindGender) : Find.ActiveLanguageWorker.WithIndefiniteArticle(name.ToStringFull, gender, plural: false, name: true));
+			yield return new Rule_String(prefix + "nameFull", addTags ? text.ApplyTag(TagType.Name).Resolve() : text);
 			string nameShort = ((name == null) ? kindLabel : name.ToStringShort);
 			yield return new Rule_String(prefix + "label", addTags ? nameShort.ApplyTag(TagType.Name).Resolve() : nameShort);
-			string nameShortDef2 = ((name == null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(kindLabel, gender) : Find.ActiveLanguageWorker.WithDefiniteArticle(name.ToStringShort, gender, plural: false, name: true));
-			yield return new Rule_String(prefix + "definite", addTags ? nameShortDef2.ApplyTag(TagType.Name).Resolve() : nameShortDef2);
-			yield return new Rule_String(prefix + "nameDef", addTags ? nameShortDef2.ApplyTag(TagType.Name).Resolve() : nameShortDef2);
-			nameShortDef2 = ((name == null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(kindLabel, gender) : Find.ActiveLanguageWorker.WithIndefiniteArticle(name.ToStringShort, gender, plural: false, name: true));
-			yield return new Rule_String(prefix + "indefinite", addTags ? nameShortDef2.ApplyTag(TagType.Name).Resolve() : nameShortDef2);
-			yield return new Rule_String(prefix + "nameIndef", addTags ? nameShortDef2.ApplyTag(TagType.Name).Resolve() : nameShortDef2);
-			yield return new Rule_String(prefix + "pronoun", gender.GetPronoun());
-			yield return new Rule_String(prefix + "possessive", gender.GetPossessive());
-			yield return new Rule_String(prefix + "objective", gender.GetObjective());
+			yield return new Rule_String(prefix + "labelNoParenthesis", addTags ? labelNoParenthesis.ApplyTag(TagType.Name).Resolve() : labelNoParenthesis);
+			string nameShortDef = ((name == null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(kindLabel, kindGender) : Find.ActiveLanguageWorker.WithDefiniteArticle(name.ToStringShort, gender, plural: false, name: true));
+			yield return new Rule_String(prefix + "definite", addTags ? nameShortDef.ApplyTag(TagType.Name).Resolve() : nameShortDef);
+			yield return new Rule_String(prefix + "nameDef", addTags ? nameShortDef.ApplyTag(TagType.Name).Resolve() : nameShortDef);
+			nameShortDef = ((name == null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(kindLabel, kindGender) : Find.ActiveLanguageWorker.WithIndefiniteArticle(name.ToStringShort, gender, plural: false, name: true));
+			yield return new Rule_String(prefix + "indefinite", addTags ? nameShortDef.ApplyTag(TagType.Name).Resolve() : nameShortDef);
+			yield return new Rule_String(prefix + "nameIndef", addTags ? nameShortDef.ApplyTag(TagType.Name).Resolve() : nameShortDef);
+			yield return new Rule_String(prefix + "pronoun", ((name != null) ? gender : kindGender).GetPronoun());
+			yield return new Rule_String(prefix + "possessive", ((name != null) ? gender : kindGender).GetPossessive());
+			yield return new Rule_String(prefix + "objective", ((name != null) ? gender : kindGender).GetObjective());
 			if (faction != null)
 			{
 				yield return new Rule_String(prefix + "factionName", addTags ? faction.Name.ApplyTag(faction).Resolve() : faction.Name);
@@ -61,13 +64,15 @@ namespace Verse.Grammar
 			}
 			if (kind != null)
 			{
-				yield return new Rule_String(prefix + "kind", GenLabel.BestKindLabel(kind, gender));
+				yield return new Rule_String(prefix + "kind", GenLabel.BestKindLabel(kind, kindGender));
+				yield return new Rule_String(prefix + "kindPlural", GenLabel.BestKindLabel(kind, kindGender, plural: true));
 			}
 			if (title != null)
 			{
 				yield return new Rule_String(prefix + "title", title);
-				yield return new Rule_String(prefix + "titleIndef", Find.ActiveLanguageWorker.WithIndefiniteArticle(title, gender));
-				yield return new Rule_String(prefix + "titleDef", Find.ActiveLanguageWorker.WithDefiniteArticle(title, gender));
+				Gender titleGender = LanguageDatabase.activeLanguage.ResolveGender(title, null, gender);
+				yield return new Rule_String(prefix + "titleIndef", Find.ActiveLanguageWorker.WithIndefiniteArticle(title, titleGender));
+				yield return new Rule_String(prefix + "titleDef", Find.ActiveLanguageWorker.WithDefiniteArticle(title, titleGender));
 			}
 			if (royalTitles != null)
 			{
@@ -129,6 +134,17 @@ namespace Verse.Grammar
 			if (constants != null)
 			{
 				constants[prefix + "gender"] = gender.ToString();
+				constants[prefix + "genderResolved"] = ((name != null) ? gender : kindGender).ToString();
+				constants[prefix + "cubeInterest"] = cubeInterest.ToString();
+			}
+		}
+
+		public static IEnumerable<Rule> RulesForThing(string prefix, Thing thing)
+		{
+			prefix += "_";
+			if (thing.TryGetQuality(out var qc))
+			{
+				yield return new Rule_String(prefix + "quality", qc.GetLabel().ToLower());
 			}
 		}
 
@@ -136,7 +152,7 @@ namespace Verse.Grammar
 		{
 			if (def == null)
 			{
-				Log.ErrorOnce($"Tried to insert rule {prefix} for null def", 79641686);
+				Log.ErrorOnce("Tried to insert rule " + prefix + " for null def", 79641686);
 				yield break;
 			}
 			if (!prefix.NullOrEmpty())
@@ -144,9 +160,9 @@ namespace Verse.Grammar
 				prefix += "_";
 			}
 			yield return new Rule_String(prefix + "label", def.label);
-			if (def is PawnKindDef)
+			if (def is PawnKindDef pawnKindDef)
 			{
-				yield return new Rule_String(prefix + "labelPlural", ((PawnKindDef)def).GetLabelPlural());
+				yield return new Rule_String(prefix + "labelPlural", pawnKindDef.GetLabelPlural());
 			}
 			else
 			{
@@ -162,7 +178,7 @@ namespace Verse.Grammar
 		{
 			if (part == null)
 			{
-				Log.ErrorOnce($"Tried to insert rule {prefix} for null body part", 394876778);
+				Log.ErrorOnce("Tried to insert rule " + prefix + " for null body part", 394876778);
 				yield break;
 			}
 			if (!prefix.NullOrEmpty())
@@ -195,7 +211,7 @@ namespace Verse.Grammar
 			}
 		}
 
-		public static IEnumerable<Rule> RulesForFaction(string prefix, Faction faction, bool addTags = true)
+		public static IEnumerable<Rule> RulesForFaction(string prefix, Faction faction, Dictionary<string, string> constants = null, bool addTags = true)
 		{
 			if (!prefix.NullOrEmpty())
 			{
@@ -215,6 +231,11 @@ namespace Verse.Grammar
 			yield return new Rule_String(prefix + "pawnsPluralIndef", Find.ActiveLanguageWorker.WithIndefiniteArticle(faction.def.pawnsPlural, LanguageDatabase.activeLanguage.ResolveGender(faction.def.pawnsPlural, faction.def.pawnSingular), plural: true));
 			yield return new Rule_String(prefix + "leaderTitle", faction.LeaderTitle);
 			yield return new Rule_String(prefix + "royalFavorLabel", faction.def.royalFavorLabel);
+			if (constants != null)
+			{
+				constants.Add(prefix + "temporary", faction.temporary.ToString());
+				constants.Add(prefix + "hasLeader", (faction.leader != null) ? "True" : "False");
+			}
 		}
 
 		public static IEnumerable<Rule> RulesForWorldObject(string prefix, WorldObject worldObject, bool addTags = true)
@@ -234,6 +255,36 @@ namespace Verse.Grammar
 				}
 				return str.ApplyTag(TagType.Settlement, worldObject.Faction.GetUniqueLoadID()).Resolve();
 			}
+		}
+
+		public static IEnumerable<Rule> RulesForIdeo(string prefix, Ideo ideo)
+		{
+			if (ideo == null)
+			{
+				Log.ErrorOnce("Tried to insert rule " + prefix + " for null ideo", 453454453);
+				yield break;
+			}
+			if (!prefix.NullOrEmpty())
+			{
+				prefix += "_";
+			}
+			yield return new Rule_String(prefix + "name", ideo.name.ApplyTag(ideo).Resolve());
+			yield return new Rule_String(prefix + "memberName", ideo.memberName);
+			yield return new Rule_String(prefix + "memberNamePlural", ideo.MemberNamePlural);
+		}
+
+		public static IEnumerable<Rule> RulesForPrecept(string prefix, Precept precept)
+		{
+			if (precept == null)
+			{
+				Log.ErrorOnce("Tried to insert rule " + prefix + " for null precet", 823453451);
+				yield break;
+			}
+			if (!prefix.NullOrEmpty())
+			{
+				prefix += "_";
+			}
+			yield return new Rule_String(prefix + "name", precept.Label.ApplyTag(precept.ideo).Resolve());
 		}
 	}
 }

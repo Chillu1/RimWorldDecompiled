@@ -43,5 +43,11 @@ namespace RimWorld
 				yield return "count must be larger than 0";
 			}
 		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_Values.Look(ref count, "count", 0);
+		}
 	}
 }

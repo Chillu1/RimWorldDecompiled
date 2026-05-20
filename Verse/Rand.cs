@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Text;
+using LudeonTK;
 using UnityEngine;
 using Verse.Noise;
 
@@ -13,7 +15,7 @@ namespace Verse
 
 		private static uint iterations;
 
-		private static Stack<ulong> stateStack;
+		private static readonly Stack<ulong> stateStack;
 
 		private static List<int> tmpRange;
 
@@ -88,9 +90,18 @@ namespace Verse
 			}
 		}
 
+		public static RandBlock Block(int blockSeed)
+		{
+			return new RandBlock(blockSeed);
+		}
+
+		public static float ValueAsync(int seed)
+		{
+			return (float)(((double)MurmurHash.GetInt((uint)seed, 0u) - -2147483648.0) / 4294967295.0);
+		}
+
 		static Rand()
 		{
-			iterations = 0u;
 			stateStack = new Stack<ulong>();
 			tmpRange = new List<int>();
 			seed = (uint)DateTime.Now.GetHashCode();
@@ -108,18 +119,33 @@ namespace Verse
 			}
 		}
 
+		public static Vector2 InsideAnnulus(float innerRadius, float outerRadius)
+		{
+			float f = MathF.PI * 2f * Value;
+			Vector2 vector = new Vector2(Mathf.Cos(f), Mathf.Sin(f));
+			innerRadius *= innerRadius;
+			outerRadius *= outerRadius;
+			return Mathf.Sqrt(Mathf.Lerp(innerRadius, outerRadius, Value)) * vector;
+		}
+
+		public static Vector3 InsideAnnulusVector3(float innerRadius, float outerRadius)
+		{
+			Vector2 vector = InsideAnnulus(innerRadius, outerRadius);
+			return new Vector3(vector.x, 0f, vector.y);
+		}
+
 		public static float Gaussian(float centerX = 0f, float widthFactor = 1f)
 		{
 			float value = Value;
 			float value2 = Value;
-			return Mathf.Sqrt(-2f * Mathf.Log(value)) * Mathf.Sin((float)Math.PI * 2f * value2) * widthFactor + centerX;
+			return Mathf.Sqrt(-2f * Mathf.Log(value)) * Mathf.Sin(MathF.PI * 2f * value2) * widthFactor + centerX;
 		}
 
 		public static float GaussianAsymmetric(float centerX = 0f, float lowerWidthFactor = 1f, float upperWidthFactor = 1f)
 		{
 			float value = Value;
 			float value2 = Value;
-			float num = Mathf.Sqrt(-2f * Mathf.Log(value)) * Mathf.Sin((float)Math.PI * 2f * value2);
+			float num = Mathf.Sqrt(-2f * Mathf.Log(value)) * Mathf.Sin(MathF.PI * 2f * value2);
 			if (num <= 0f)
 			{
 				return num * lowerWidthFactor + centerX;
@@ -127,31 +153,37 @@ namespace Verse
 			return num * upperWidthFactor + centerX;
 		}
 
-		public static int Range(int min, int max)
+		public static T EnumValue<T>()
 		{
-			if (max <= min)
-			{
-				return min;
-			}
-			return min + Mathf.Abs(Int % (max - min));
+			Array values = Enum.GetValues(typeof(T));
+			return (T)values.GetValue(Range(0, values.Length));
 		}
 
-		public static int RangeInclusive(int min, int max)
+		public static int Range(int minInclusive, int maxExclusive)
 		{
-			if (max <= min)
+			if (maxExclusive <= minInclusive)
 			{
-				return min;
+				return minInclusive;
 			}
-			return Range(min, max + 1);
+			return minInclusive + Mathf.Abs(Int % (maxExclusive - minInclusive));
 		}
 
-		public static float Range(float min, float max)
+		public static int RangeInclusive(int minInclusive, int maxInclusive)
 		{
-			if (max <= min)
+			if (maxInclusive <= minInclusive)
 			{
-				return min;
+				return minInclusive;
 			}
-			return Value * (max - min) + min;
+			return Range(minInclusive, maxInclusive + 1);
+		}
+
+		public static float Range(float minInclusive, float maxInclusive)
+		{
+			if (maxInclusive <= minInclusive)
+			{
+				return minInclusive;
+			}
+			return Value * (maxInclusive - minInclusive) + minInclusive;
 		}
 
 		public static bool Chance(float chance)
@@ -165,6 +197,15 @@ namespace Verse
 				return true;
 			}
 			return Value < chance;
+		}
+
+		public static bool DynamicChance(int amountPlaced, int amountToPlace, int positionsRemaining)
+		{
+			if (amountPlaced >= amountToPlace || positionsRemaining <= 0)
+			{
+				return false;
+			}
+			return Chance((float)(amountToPlace - amountPlaced) / (float)positionsRemaining);
 		}
 
 		public static bool ChanceSeeded(float chance, int specialSeed)
@@ -183,28 +224,34 @@ namespace Verse
 			return value;
 		}
 
-		public static float RangeSeeded(float min, float max, int specialSeed)
+		public static float RangeSeeded(float minInclusive, float maxInclusive, int specialSeed)
 		{
 			PushState(specialSeed);
-			float result = Range(min, max);
+			float result = Range(minInclusive, maxInclusive);
 			PopState();
 			return result;
 		}
 
-		public static int RangeSeeded(int min, int max, int specialSeed)
+		public static int RangeSeeded(int minInclusive, int maxExclusive, int specialSeed)
 		{
 			PushState(specialSeed);
-			int result = Range(min, max);
+			int result = Range(minInclusive, maxExclusive);
 			PopState();
 			return result;
 		}
 
-		public static int RangeInclusiveSeeded(int min, int max, int specialSeed)
+		public static int RangeInclusiveSeeded(int minInclusive, int maxInclusive, int specialSeed)
 		{
 			PushState(specialSeed);
-			int result = RangeInclusive(min, max);
+			int result = RangeInclusive(minInclusive, maxInclusive);
 			PopState();
 			return result;
+		}
+
+		public static T Element<T>(params T[] list)
+		{
+			float value = Value;
+			return list[Range(0, Mathf.RoundToInt(value * (float)list.Length))];
 		}
 
 		public static T Element<T>(T a, T b)
@@ -459,15 +506,19 @@ namespace Verse
 			return num2 / num / 3f;
 		}
 
-		public static bool MTBEventOccurs(float mtb, float mtbUnit, float checkDuration)
+		public static bool MTBEventOccurs(float mtb, float mtbUnit, float ticksSinceLastCheck)
 		{
-			if (mtb == float.PositiveInfinity)
+			if (float.IsPositiveInfinity(mtb))
 			{
 				return false;
 			}
-			if (mtb <= 0f)
+			if (mtb == 0f)
 			{
-				Log.Error("MTBEventOccurs with mtb=" + mtb);
+				return true;
+			}
+			if (mtb < 0f)
+			{
+				Log.Error("MTBEventOccurs with nevative mtb=" + mtb);
 				return true;
 			}
 			if (mtbUnit <= 0f)
@@ -475,15 +526,15 @@ namespace Verse
 				Log.Error("MTBEventOccurs with mtbUnit=" + mtbUnit);
 				return false;
 			}
-			if (checkDuration <= 0f)
+			if (ticksSinceLastCheck <= 0f)
 			{
-				Log.Error("MTBEventOccurs with checkDuration=" + checkDuration);
+				Log.Error("MTBEventOccurs with checkDuration=" + ticksSinceLastCheck);
 				return false;
 			}
-			double num = (double)checkDuration / ((double)mtb * (double)mtbUnit);
+			double num = (double)ticksSinceLastCheck / ((double)mtb * (double)mtbUnit);
 			if (num <= 0.0)
 			{
-				Log.Error("chancePerCheck is " + num + ". mtb=" + mtb + ", mtbUnit=" + mtbUnit + ", checkDuration=" + checkDuration);
+				Log.Error("chancePerCheck is " + num + ". mtb=" + mtb + ", mtbUnit=" + mtbUnit + ", checkDuration=" + ticksSinceLastCheck);
 				return false;
 			}
 			double num2 = 1.0;
@@ -500,6 +551,32 @@ namespace Verse
 				}
 			}
 			return (double)Value < num;
+		}
+
+		public static float CombineMTBs(List<float> mtbs)
+		{
+			if (mtbs.Count == 0)
+			{
+				return 0f;
+			}
+			if (mtbs.Count == 1)
+			{
+				return mtbs[0];
+			}
+			foreach (float mtb in mtbs)
+			{
+				if (mtb < 0f || float.IsNaN(mtb))
+				{
+					Log.Error($"Unexpected MTB value found while combining MTBs: {mtb}");
+					return 0f;
+				}
+			}
+			return (float)(1.0 / mtbs.Aggregate(0.0, (double acc, float mtb) => acc + 1.0 / (double)mtb));
+		}
+
+		public static float CombineMTBs(float mtb1, float mtb2)
+		{
+			return (float)(1.0 / (1.0 / (double)mtb1 + 1.0 / (double)mtb2));
 		}
 
 		public static void SplitRandomly(float valueToSplit, int splitIntoCount, List<float> outValues, List<float> zeroIfFractionBelow = null, List<float> minFractions = null)
@@ -604,37 +681,18 @@ namespace Verse
 			}
 			stopwatch.Stop();
 			PopState();
-			stringBuilder.AppendLine("Time: " + stopwatch.ElapsedMilliseconds.ToString() + "ms (for sum " + num + ")");
+			stringBuilder.AppendLine("Time: " + stopwatch.ElapsedMilliseconds + "ms (for sum " + num + ")");
 			stringBuilder.AppendLine();
 			stringBuilder.AppendLine("Distribution test with " + 100000 + " values");
 			DebugHistogram debugHistogram = new DebugHistogram(new float[11]
 			{
-				0f,
-				0.1f,
-				0.2f,
-				0.3f,
-				0.4f,
-				0.5f,
-				0.6f,
-				0.7f,
-				0.8f,
-				0.9f,
+				0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f,
 				1f
 			});
 			DebugHistogram debugHistogram2 = new DebugHistogram(new float[12]
 			{
-				0f,
-				0.01f,
-				0.02f,
-				0.03f,
-				0.04f,
-				0.05f,
-				0.06f,
-				0.07f,
-				0.08f,
-				0.09f,
-				0.1f,
-				1f
+				0f, 0.01f, 0.02f, 0.03f, 0.04f, 0.05f, 0.06f, 0.07f, 0.08f, 0.09f,
+				0.1f, 1f
 			});
 			PushState();
 			for (int j = 0; j < 100000; j++)
@@ -694,16 +752,7 @@ namespace Verse
 			stringBuilder.AppendLine("Near seed tests");
 			DebugHistogram debugHistogram3 = new DebugHistogram(new float[11]
 			{
-				0f,
-				0.1f,
-				0.2f,
-				0.3f,
-				0.4f,
-				0.5f,
-				0.6f,
-				0.7f,
-				0.8f,
-				0.9f,
+				0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f,
 				1f
 			});
 			PushState();
@@ -714,11 +763,11 @@ namespace Verse
 			}
 			PopState();
 			debugHistogram3.Display(stringBuilder);
-			int @int = Int;
-			stringBuilder.AppendLine("Repeating single ValueSeeded with seed " + @int + ". This should give the same result:");
+			int specialSeed = Int;
+			stringBuilder.AppendLine("Repeating single ValueSeeded with seed " + specialSeed + ". This should give the same result:");
 			for (int num8 = 0; num8 < 4; num8++)
 			{
-				stringBuilder.AppendLine("   " + ValueSeeded(@int));
+				stringBuilder.AppendLine("   " + ValueSeeded(specialSeed));
 			}
 			Log.Message(stringBuilder.ToString());
 			if (DebugViewSettings.drawRecordedNoise)
@@ -834,10 +883,10 @@ namespace Verse
 			{
 				return UnitVector3;
 			}
-			float num = Range(Mathf.Cos(angle * ((float)Math.PI / 180f)), 1f);
-			float f = Range(0f, (float)Math.PI * 2f);
-			Vector3 point = new Vector3(Mathf.Sqrt(1f - num * num) * Mathf.Cos(f), Mathf.Sqrt(1f - num * num) * Mathf.Sin(f), num);
-			return Quaternion.FromToRotation(Vector3.forward, center) * point;
+			float num = Range(Mathf.Cos(angle * (MathF.PI / 180f)), 1f);
+			float f = Range(0f, MathF.PI * 2f);
+			Vector3 vector = new Vector3(Mathf.Sqrt(1f - num * num) * Mathf.Cos(f), Mathf.Sqrt(1f - num * num) * Mathf.Sin(f), num);
+			return Quaternion.FromToRotation(Vector3.forward, center) * vector;
 		}
 	}
 }

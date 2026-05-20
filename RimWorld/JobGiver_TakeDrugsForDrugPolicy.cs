@@ -7,10 +7,14 @@ namespace RimWorld
 	{
 		public override float GetPriority(Pawn pawn)
 		{
-			DrugPolicy currentPolicy = pawn.drugs.CurrentPolicy;
-			for (int i = 0; i < currentPolicy.Count; i++)
+			DrugPolicy drugPolicy = pawn.drugs?.CurrentPolicy;
+			if (drugPolicy == null)
 			{
-				if (pawn.drugs.ShouldTryToTakeScheduledNow(currentPolicy[i].drug))
+				return 0f;
+			}
+			for (int i = 0; i < drugPolicy.Count; i++)
+			{
+				if (pawn.drugs.ShouldTryToTakeScheduledNow(drugPolicy[i].drug))
 				{
 					return 7.5f;
 				}
@@ -21,15 +25,27 @@ namespace RimWorld
 		protected override Job TryGiveJob(Pawn pawn)
 		{
 			DrugPolicy currentPolicy = pawn.drugs.CurrentPolicy;
+			if (currentPolicy == null)
+			{
+				return null;
+			}
 			for (int i = 0; i < currentPolicy.Count; i++)
 			{
-				if (pawn.drugs.ShouldTryToTakeScheduledNow(currentPolicy[i].drug))
+				if (!pawn.drugs.ShouldTryToTakeScheduledNow(currentPolicy[i].drug))
 				{
-					Thing thing = FindDrugFor(pawn, currentPolicy[i].drug);
-					if (thing != null)
+					continue;
+				}
+				Thing thing = FindDrugFor(pawn, currentPolicy[i].drug);
+				if (thing != null)
+				{
+					Pawn pawn2 = (thing.ParentHolder as Pawn_InventoryTracker)?.pawn;
+					if (pawn2 != null && pawn2 != pawn)
 					{
-						return DrugAIUtility.IngestAndTakeToInventoryJob(thing, pawn, 1);
+						Job job = JobMaker.MakeJob(JobDefOf.TakeFromOtherInventory, thing, pawn2);
+						job.count = 1;
+						return job;
 					}
+					return DrugAIUtility.IngestAndTakeToInventoryJob(thing, pawn, 1);
 				}
 			}
 			return null;
@@ -45,7 +61,25 @@ namespace RimWorld
 					return innerContainer[i];
 				}
 			}
-			return GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(drugDef), PathEndMode.ClosestTouch, TraverseParms.For(pawn), 9999f, (Thing x) => DrugValidator(pawn, x));
+			Thing thing = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(drugDef), PathEndMode.ClosestTouch, TraverseParms.For(pawn), 9999f, (Thing x) => DrugValidator(pawn, x));
+			if (thing != null)
+			{
+				return thing;
+			}
+			if (pawn.IsColonist && pawn.Map != null)
+			{
+				foreach (Pawn spawnedColonyAnimal in pawn.Map.mapPawns.SpawnedColonyAnimals)
+				{
+					foreach (Thing item in spawnedColonyAnimal.inventory.innerContainer)
+					{
+						if (item.def == drugDef && DrugValidator(pawn, item) && !spawnedColonyAnimal.IsForbidden(pawn) && pawn.CanReach(spawnedColonyAnimal, PathEndMode.OnCell, Danger.Some))
+						{
+							return item;
+						}
+					}
+				}
+			}
+			return null;
 		}
 
 		private bool DrugValidator(Pawn pawn, Thing drug)

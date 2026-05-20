@@ -7,14 +7,22 @@ namespace RimWorld
 	{
 		public static MentalStateDef Berserk;
 
-		public static MentalStateDef Binging_DrugExtreme;
+		public static MentalStateDef BerserkPermanent;
 
-		[MayRequireRoyalty]
 		public static MentalStateDef BerserkMechanoid;
 
-		public static MentalStateDef Wander_Psychotic;
+		public static MentalStateDef CocoonDisturbed;
 
-		public static MentalStateDef Binging_DrugMajor;
+		[MayRequireBiotech]
+		public static MentalStateDef BerserkWarcall;
+
+		[MayRequireAnomaly]
+		public static MentalStateDef HumanityBreak;
+
+		[MayRequireAnomaly]
+		public static MentalStateDef EntityKiller;
+
+		public static MentalStateDef Wander_Psychotic;
 
 		public static MentalStateDef Wander_Sad;
 
@@ -27,6 +35,23 @@ namespace RimWorld
 		public static MentalStateDef ManhunterPermanent;
 
 		public static MentalStateDef SocialFighting;
+
+		public static MentalStateDef Roaming;
+
+		[MayRequireIdeology]
+		public static MentalStateDef Rebellion;
+
+		[MayRequireAnomaly]
+		public static MentalStateDef ManhunterBloodRain;
+
+		[MayRequireAnomaly]
+		public static MentalStateDef CubeSculpting;
+
+		[MayRequireOdyssey]
+		public static MentalStateDef Terror;
+
+		[MayRequireBiotech]
+		public static MentalStateDef PanicFleeFire;
 
 		static MentalStateDefOf()
 		{

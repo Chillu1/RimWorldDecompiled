@@ -9,13 +9,15 @@ namespace RimWorld
 	{
 		private Map map;
 
-		private List<Thing> haulables = new List<Thing>();
+		private HashSet<Thing> haulables = new HashSet<Thing>();
 
 		private const int CellsPerTick = 4;
 
-		private static int groupCycleIndex;
+		private const int HaulSourcesPerTick = 4;
 
-		private List<int> cellCycleIndices = new List<int>();
+		private static int groupCycleIndex = 0;
+
+		private static readonly List<int> cellCycleIndices = new List<int>();
 
 		private string debugOutput = "uninitialized";
 
@@ -24,7 +26,7 @@ namespace RimWorld
 			this.map = map;
 		}
 
-		public List<Thing> ThingsPotentiallyNeedingHauling()
+		public ICollection<Thing> ThingsPotentiallyNeedingHauling()
 		{
 			return haulables;
 		}
@@ -59,15 +61,29 @@ namespace RimWorld
 			TryRemove(t);
 		}
 
+		public void Notify_AddedThing(Thing t)
+		{
+			CheckAdd(t);
+		}
+
 		public void Notify_SlotGroupChanged(SlotGroup sg)
 		{
 			List<IntVec3> cellsList = sg.CellsList;
 			if (cellsList != null)
 			{
+				sg.RemoveHaulDesignationOnStoredThings();
 				for (int i = 0; i < cellsList.Count; i++)
 				{
 					RecalcAllInCell(cellsList[i]);
 				}
+			}
+		}
+
+		public void Notify_HaulSourceChanged(IHaulSource holder)
+		{
+			foreach (Thing item in (IEnumerable<Thing>)holder.GetDirectlyHeldThings())
+			{
+				Check(item);
 			}
 		}
 
@@ -78,36 +94,51 @@ namespace RimWorld
 			{
 				groupCycleIndex = 0;
 			}
-			List<SlotGroup> allGroupsListForReading = map.haulDestinationManager.AllGroupsListForReading;
-			if (allGroupsListForReading.Count == 0)
+			CellsCheckTick(map.haulDestinationManager.AllGroupsListForReading);
+			HaulSourcesCheckTick(map.haulDestinationManager.AllHaulSourcesListForReading);
+		}
+
+		private void CellsCheckTick(List<SlotGroup> sgList)
+		{
+			if (sgList.Count == 0)
 			{
 				return;
 			}
-			int num = groupCycleIndex % allGroupsListForReading.Count;
-			SlotGroup slotGroup = allGroupsListForReading[groupCycleIndex % allGroupsListForReading.Count];
-			if (slotGroup.CellsList.Count == 0)
+			int num = groupCycleIndex % sgList.Count;
+			SlotGroup slotGroup = sgList[groupCycleIndex % sgList.Count];
+			if (slotGroup.CellsList.Count != 0)
 			{
-				return;
-			}
-			while (cellCycleIndices.Count <= num)
-			{
-				cellCycleIndices.Add(0);
-			}
-			if (cellCycleIndices[num] >= 2147473647)
-			{
-				cellCycleIndices[num] = 0;
-			}
-			for (int i = 0; i < 4; i++)
-			{
-				cellCycleIndices[num]++;
-				List<Thing> thingList = slotGroup.CellsList[cellCycleIndices[num] % slotGroup.CellsList.Count].GetThingList(map);
-				for (int j = 0; j < thingList.Count; j++)
+				while (cellCycleIndices.Count <= num)
 				{
-					if (thingList[j].def.EverHaulable)
-					{
-						Check(thingList[j]);
-						break;
-					}
+					cellCycleIndices.Add(0);
+				}
+				if (cellCycleIndices[num] >= 2147473647)
+				{
+					cellCycleIndices[num] = 0;
+				}
+				for (int i = 0; i < 4; i++)
+				{
+					cellCycleIndices[num]++;
+					RecalcAllInCell(slotGroup.CellsList[cellCycleIndices[num] % slotGroup.CellsList.Count]);
+				}
+			}
+		}
+
+		private void HaulSourcesCheckTick(List<IHaulSource> haulList)
+		{
+			if (haulList.Count == 0)
+			{
+				return;
+			}
+			int num = Mathf.CeilToInt((float)haulList.Count / 4f);
+			int num2 = groupCycleIndex % num;
+			for (int i = 0; i < 4 && i < haulList.Count; i++)
+			{
+				int index = num2 + i;
+				IHaulSource haulSource = haulList[index];
+				if (haulSource.GetDirectlyHeldThings().Count != 0)
+				{
+					RecalculateAllInHaulSource(haulSource);
 				}
 			}
 		}
@@ -129,16 +160,32 @@ namespace RimWorld
 			}
 		}
 
+		public void RecalculateAllInHaulSources(IList<IHaulSource> sources)
+		{
+			foreach (IHaulSource source in sources)
+			{
+				foreach (Thing item in (IEnumerable<Thing>)source.GetDirectlyHeldThings())
+				{
+					Check(item);
+				}
+			}
+		}
+
+		public void RecalculateAllInHaulSource(IHaulSource source)
+		{
+			foreach (Thing item in (IEnumerable<Thing>)source.GetDirectlyHeldThings())
+			{
+				Check(item);
+			}
+		}
+
 		private void Check(Thing t)
 		{
 			if (ShouldBeHaulable(t))
 			{
-				if (!haulables.Contains(t))
-				{
-					haulables.Add(t);
-				}
+				haulables.Add(t);
 			}
-			else if (haulables.Contains(t))
+			else
 			{
 				haulables.Remove(t);
 			}
@@ -165,12 +212,16 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (t.ParentHolder is IHaulSource { HaulSourceEnabled: false })
+			{
+				return false;
+			}
 			return true;
 		}
 
 		private void CheckAdd(Thing t)
 		{
-			if (ShouldBeHaulable(t) && !haulables.Contains(t))
+			if (ShouldBeHaulable(t))
 			{
 				haulables.Add(t);
 			}

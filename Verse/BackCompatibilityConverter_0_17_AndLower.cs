@@ -556,13 +556,11 @@ namespace Verse
 		{
 			if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
-				Game game = obj as Game;
-				if (game != null && game.battleLog == null)
+				if (obj is Game { battleLog: null } game)
 				{
 					game.battleLog = new BattleLog();
 				}
-				BattleLogEntry_MeleeCombat battleLogEntry_MeleeCombat = obj as BattleLogEntry_MeleeCombat;
-				if (battleLogEntry_MeleeCombat != null)
+				if (obj is BattleLogEntry_MeleeCombat battleLogEntry_MeleeCombat)
 				{
 					if (battleLogEntry_MeleeCombat.RuleDef == null)
 					{
@@ -590,43 +588,31 @@ namespace Verse
 			}
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
-				Map map = obj as Map;
-				if (map != null && map.pawnDestinationReservationManager == null)
+				if (obj is Map { pawnDestinationReservationManager: null } map)
 				{
 					map.pawnDestinationReservationManager = new PawnDestinationReservationManager();
 				}
-				Pawn pawn = obj as Pawn;
-				if (pawn != null && pawn.Spawned && pawn.rotationTracker == null)
+				if (obj is Pawn { Spawned: not false, rotationTracker: null } pawn)
 				{
 					pawn.rotationTracker = new Pawn_RotationTracker(pawn);
 				}
-				Pawn_MindState pawn_MindState = obj as Pawn_MindState;
-				if (pawn_MindState != null && pawn_MindState.inspirationHandler == null)
+				if (obj is Pawn_MindState { inspirationHandler: null } pawn_MindState)
 				{
 					pawn_MindState.inspirationHandler = new InspirationHandler(pawn_MindState.pawn);
 				}
-				ImportantPawnComp importantPawnComp = obj as ImportantPawnComp;
-				if (importantPawnComp != null && importantPawnComp.pawn == null)
+				if (obj is ImportantPawnComp { pawn: null } importantPawnComp)
 				{
 					importantPawnComp.pawn = new ThingOwner<Pawn>(importantPawnComp, oneStackOnly: true);
 				}
-				Pawn_RecordsTracker pawn_RecordsTracker = obj as Pawn_RecordsTracker;
-				if (pawn_RecordsTracker != null && Find.TaleManager.AnyTaleConcerns(pawn_RecordsTracker.pawn))
-				{
-					pawn_RecordsTracker.AccumulateStoryEvent(StoryEventDefOf.TaleCreated);
-				}
-				WorldPawns worldPawns = obj as WorldPawns;
-				if (worldPawns != null && worldPawns.gc == null)
+				if (obj is WorldPawns { gc: null } worldPawns)
 				{
 					worldPawns.gc = new WorldPawnGC();
 				}
-				GameCondition gameCondition = obj as GameCondition;
-				if (gameCondition != null && !gameCondition.Permanent && gameCondition.Duration > 1000000000)
+				if (obj is GameCondition { Permanent: false, Duration: >1000000000 } gameCondition)
 				{
 					gameCondition.Permanent = true;
 				}
-				Building_TurretGun building_TurretGun = obj as Building_TurretGun;
-				if (building_TurretGun != null && building_TurretGun.gun == null)
+				if (obj is Building_TurretGun { gun: null } building_TurretGun)
 				{
 					building_TurretGun.MakeGun();
 				}

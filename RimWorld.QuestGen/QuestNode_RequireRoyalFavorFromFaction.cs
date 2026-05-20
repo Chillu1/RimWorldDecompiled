@@ -6,7 +6,11 @@ namespace RimWorld.QuestGen
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			return faction.GetValue(slate).allowRoyalFavorRewards;
+			if (faction.GetValue(slate) != null)
+			{
+				return faction.GetValue(slate).allowRoyalFavorRewards;
+			}
+			return false;
 		}
 
 		protected override void RunInt()

@@ -5,8 +5,6 @@ namespace RimWorld
 	[DefOf]
 	public static class GameConditionDefOf
 	{
-		public static GameConditionDef SolarFlare;
-
 		public static GameConditionDef Eclipse;
 
 		public static GameConditionDef PsychicDrone;
@@ -34,8 +32,35 @@ namespace RimWorld
 		[MayRequireRoyalty]
 		public static GameConditionDef EMIField;
 
-		[MayRequireRoyalty]
-		public static GameConditionDef ToxicSpewer;
+		[MayRequireBiotech]
+		public static GameConditionDef NoxiousHaze;
+
+		[MayRequireAnomaly]
+		public static GameConditionDef DeathPall;
+
+		[MayRequireAnomaly]
+		public static GameConditionDef GrayPall;
+
+		[MayRequireAnomaly]
+		public static GameConditionDef HateChantDrone;
+
+		[MayRequireAnomaly]
+		public static GameConditionDef UnnaturalHeat;
+
+		[MayRequireAnomaly]
+		public static GameConditionDef UnnaturalDarkness;
+
+		[MayRequireAnomaly]
+		public static GameConditionDef BloodRain;
+
+		[MayRequireOdyssey]
+		public static GameConditionDef Drought;
+
+		[MayRequireOdyssey]
+		public static GameConditionDef LavaFlow;
+
+		[MayRequireOdyssey]
+		public static GameConditionDef GillRot;
 
 		static GameConditionDefOf()
 		{

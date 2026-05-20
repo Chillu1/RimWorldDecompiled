@@ -10,6 +10,10 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (!r.ProperRoom)
+			{
+				return false;
+			}
 			foreach (Thing containedAndAdjacentThing in r.ContainedAndAdjacentThings)
 			{
 				if (things.Contains(containedAndAdjacentThing.def) && p.ownership.AssignedThrone == containedAndAdjacentThing)

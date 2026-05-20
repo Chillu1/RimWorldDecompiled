@@ -106,13 +106,13 @@ namespace RimWorld
 			tmpThings.Clear();
 			tmpThings.AddRange(map.listerThings.ThingsInGroup(ThingRequestGroup.BuildingArtificial));
 			hasAtleast1TurretInt = tmpThings.Any((Thing t) => t is Building_Turret);
-			for (int i = 0; i < tmpThings.Count; i++)
+			for (int num = 0; num < tmpThings.Count; num++)
 			{
-				if (!IsPowerUser(tmpThings[i]))
+				if (!IsPowerUser(tmpThings[num]))
 				{
 					continue;
 				}
-				CompPowerTrader powerComp = tmpThings[i].TryGetComp<CompPowerTrader>();
+				CompPowerTrader powerComp = tmpThings[num].TryGetComp<CompPowerTrader>();
 				PowerNet powerNet = powerComp.PowerNet;
 				if (powerNet != null && powerNet.hasPowerSource)
 				{
@@ -121,32 +121,32 @@ namespace RimWorld
 				}
 				map.powerNetManager.UpdatePowerNetsAndConnections_First();
 				Building newBattery;
-				if (TryFindClosestReachableNet(powerComp.parent.Position, (PowerNet x) => x.CurrentEnergyGainRate() - powerComp.Props.basePowerConsumption * CompPower.WattsToWattDaysPerTick > 1E-07f, map, out var foundNet, out var closestTransmitter))
+				if (TryFindClosestReachableNet(powerComp.parent.Position, (PowerNet x) => x.CurrentEnergyGainRate() - powerComp.Props.PowerConsumption * CompPower.WattsToWattDaysPerTick > 1E-07f, map, out var foundNet, out var closestTransmitter))
 				{
 					map.floodFiller.ReconstructLastFloodFillPath(closestTransmitter, tmpCells);
 					bool flag = false;
-					if (canSpawnPowerGenerators && tmpThings[i] is Building_Turret && tmpCells.Count > 13)
+					if (canSpawnPowerGenerators && tmpThings[num] is Building_Turret && tmpCells.Count > 13)
 					{
-						flag = TrySpawnPowerGeneratorAndBatteryIfCanAndConnect(tmpThings[i], map);
+						flag = TrySpawnPowerGeneratorAndBatteryIfCanAndConnect(tmpThings[num], map);
 					}
 					if (!flag)
 					{
-						SpawnTransmitters(tmpCells, map, tmpThings[i].Faction);
+						SpawnTransmitters(tmpCells, map, tmpThings[num].Faction);
 					}
 					TryTurnOnImmediately(powerComp, map);
 				}
-				else if (canSpawnPowerGenerators && TrySpawnPowerGeneratorAndBatteryIfCanAndConnect(tmpThings[i], map))
+				else if (canSpawnPowerGenerators && TrySpawnPowerGeneratorAndBatteryIfCanAndConnect(tmpThings[num], map))
 				{
 					TryTurnOnImmediately(powerComp, map);
 				}
 				else if (TryFindClosestReachableNet(powerComp.parent.Position, (PowerNet x) => x.CurrentStoredEnergy() > 1E-07f, map, out foundNet, out closestTransmitter))
 				{
 					map.floodFiller.ReconstructLastFloodFillPath(closestTransmitter, tmpCells);
-					SpawnTransmitters(tmpCells, map, tmpThings[i].Faction);
+					SpawnTransmitters(tmpCells, map, tmpThings[num].Faction);
 				}
-				else if (canSpawnBatteries && TrySpawnBatteryNear(tmpThings[i].Position, map, tmpThings[i].Faction, out newBattery))
+				else if (canSpawnBatteries && TrySpawnBatteryNear(tmpThings[num].Position, map, tmpThings[num].Faction, out newBattery))
 				{
-					SpawnTransmitters(tmpThings[i].Position, newBattery.Position, map, tmpThings[i].Faction);
+					SpawnTransmitters(tmpThings[num].Position, newBattery.Position, map, tmpThings[num].Faction);
 					if (newBattery.GetComp<CompPowerBattery>().StoredEnergy > 0f)
 					{
 						TryTurnOnImmediately(powerComp, map);
@@ -187,7 +187,7 @@ namespace RimWorld
 				{
 					if (!compPowerTrader.PowerOn)
 					{
-						return compPowerTrader.Props.basePowerConsumption > 0f;
+						return compPowerTrader.Props.PowerConsumption > 0f;
 					}
 					return false;
 				}
@@ -209,7 +209,7 @@ namespace RimWorld
 				{
 					if (!compPowerTrader.PowerOn)
 					{
-						return compPowerTrader.Props.basePowerConsumption < 0f;
+						return compPowerTrader.Props.PowerConsumption < 0f;
 					}
 					return false;
 				}

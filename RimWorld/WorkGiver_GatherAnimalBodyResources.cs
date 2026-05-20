@@ -6,10 +6,7 @@ namespace RimWorld
 {
 	public abstract class WorkGiver_GatherAnimalBodyResources : WorkGiver_Scanner
 	{
-		protected abstract JobDef JobDef
-		{
-			get;
-		}
+		protected abstract JobDef JobDef { get; }
 
 		public override PathEndMode PathEndMode => PathEndMode.Touch;
 
@@ -25,7 +22,7 @@ namespace RimWorld
 			List<Pawn> list = pawn.Map.mapPawns.SpawnedPawnsInFaction(pawn.Faction);
 			for (int i = 0; i < list.Count; i++)
 			{
-				if (list[i].RaceProps.Animal)
+				if (list[i].IsAnimal)
 				{
 					CompHasGatherableBodyResource comp = GetComp(list[i]);
 					if (comp != null && comp.ActiveAndFull)
@@ -39,13 +36,12 @@ namespace RimWorld
 
 		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			Pawn pawn2 = t as Pawn;
-			if (pawn2 == null || !pawn2.RaceProps.Animal)
+			if (!(t is Pawn { IsAnimal: not false } pawn2))
 			{
 				return false;
 			}
 			CompHasGatherableBodyResource comp = GetComp(pawn2);
-			if (comp == null || !comp.ActiveAndFull || pawn2.Downed || !pawn2.CanCasuallyInteractNow() || !pawn.CanReserve(pawn2, 1, -1, null, forced))
+			if (comp == null || !comp.ActiveAndFull || pawn2.Downed || (pawn2.roping != null && pawn2.roping.IsRopedByPawn) || !pawn2.CanCasuallyInteractNow() || !pawn.CanReserve(pawn2, 1, -1, null, forced))
 			{
 				return false;
 			}

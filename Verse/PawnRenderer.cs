@@ -2,15 +2,31 @@ using System;
 using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
-using Verse.AI.Group;
 
 namespace Verse
 {
 	public class PawnRenderer
 	{
-		private Pawn pawn;
+		private struct PreRenderResults
+		{
+			public bool valid;
 
-		public PawnGraphicSet graphics;
+			public bool draw;
+
+			public bool useCached;
+
+			public bool showBody;
+
+			public float bodyAngle;
+
+			public PawnPosture posture;
+
+			public Vector3 bodyPos;
+
+			public PawnDrawParms parms;
+		}
+
+		private readonly Pawn pawn;
 
 		public PawnDownedWiggler wiggler;
 
@@ -20,49 +36,100 @@ namespace Verse
 
 		private PawnWoundDrawer woundOverlays;
 
+		private PawnFirefoamDrawer firefoamOverlays;
+
+		private PawnShamblerScarDrawer shamblerScarDrawer;
+
+		private PawnScariaSoreDrawer scariaSoreDrawer;
+
 		private Graphic_Shadow shadowGraphic;
 
-		private const float CarriedThingDrawAngle = 16f;
+		public DamageFlasher flasher;
 
-		private const float SubInterval = 3f / 980f;
+		public PawnRenderTree renderTree;
 
-		private const float YOffset_PrimaryEquipmentUnder = 0f;
+		private Graphic silhouetteGraphic;
 
-		private const float YOffset_Behind = 3f / 980f;
+		private Vector3 silhouettePos;
 
-		private const float YOffset_Utility_South = 3f / 490f;
+		private ThingDef statueStuff;
 
-		private const float YOffset_Body = 9f / 980f;
+		private Color? statuePaintColor;
 
-		private const float YOffsetInterval_Clothes = 3f / 980f;
+		private const float CarriedPawnDrawAngle = 70f;
 
-		private const float YOffset_Wounds = 9f / 490f;
+		private const float CachedPawnTextureMinCameraZoom = 18f;
 
-		private const float YOffset_Shell = 3f / 140f;
+		private PreRenderResults results;
 
-		private const float YOffset_Head = 6f / 245f;
+		private readonly Dictionary<Apparel, (Color, bool)> tmpOriginalColors = new Dictionary<Apparel, (Color, bool)>();
 
-		private const float YOffset_Utility = 27f / 980f;
+		public Graphic BodyGraphic => renderTree.BodyGraphic;
 
-		private const float YOffset_OnHead = 3f / 98f;
+		public Graphic HeadGraphic => renderTree.HeadGraphic;
 
-		private const float YOffset_PostHead = 33f / 980f;
-
-		private const float YOffset_CarriedThing = 9f / 245f;
-
-		private const float YOffset_PrimaryEquipmentOver = 9f / 245f;
-
-		private const float YOffset_Status = 39f / 980f;
-
-		private RotDrawMode CurRotDrawMode
+		public RotDrawMode CurRotDrawMode
 		{
 			get
 			{
+				if (pawn.IsMutant && pawn.mutant.Def.useCorpseGraphics)
+				{
+					return RottableUtility.GetRotDrawMode(pawn.mutant.rotStage);
+				}
 				if (pawn.Dead && pawn.Corpse != null)
 				{
 					return pawn.Corpse.CurRotDrawMode;
 				}
 				return RotDrawMode.Fresh;
+			}
+		}
+
+		public PawnWoundDrawer WoundOverlays => woundOverlays;
+
+		public PawnFirefoamDrawer FirefoamOverlays => firefoamOverlays;
+
+		public PawnShamblerScarDrawer ShamblerScarDrawer => shamblerScarDrawer;
+
+		public PawnScariaSoreDrawer ScariaSoreDrawer => scariaSoreDrawer;
+
+		public PawnHeadOverlays StatusOverlays => statusOverlays;
+
+		public AnimationDef CurAnimation => renderTree.currentAnimation;
+
+		public bool HasAnimation => renderTree.currentAnimation != null;
+
+		public Graphic SilhouetteGraphic => silhouetteGraphic;
+
+		public Vector3 SilhouettePos => silhouettePos;
+
+		public Material FlightShadowMaterial => MaterialPool.MatFrom("Things/Skyfaller/SkyfallerShadowCircle", ShaderDatabase.Transparent, new Color(1f, 1f, 1f, 0.5f));
+
+		public Color? StatueColor
+		{
+			get
+			{
+				if (statueStuff != null)
+				{
+					return statuePaintColor ?? statueStuff?.stuffProps?.color;
+				}
+				return null;
+			}
+		}
+
+		private PawnRenderFlags DefaultRenderFlagsNow
+		{
+			get
+			{
+				PawnNeedsHediffMaterial(out var renderFlags);
+				if (!pawn.health.hediffSet.HasHead)
+				{
+					renderFlags |= PawnRenderFlags.HeadStump;
+				}
+				if (statueStuff != null)
+				{
+					renderFlags |= PawnRenderFlags.Statue;
+				}
+				return renderFlags;
 			}
 		}
 
@@ -72,393 +139,423 @@ namespace Verse
 			wiggler = new PawnDownedWiggler(pawn);
 			statusOverlays = new PawnHeadOverlays(pawn);
 			woundOverlays = new PawnWoundDrawer(pawn);
-			graphics = new PawnGraphicSet(pawn);
+			firefoamOverlays = new PawnFirefoamDrawer(pawn);
+			shamblerScarDrawer = new PawnShamblerScarDrawer(pawn);
+			scariaSoreDrawer = new PawnScariaSoreDrawer(pawn);
 			effecters = new PawnStatusEffecters(pawn);
-		}
-
-		public void RenderPawnAt(Vector3 drawLoc)
-		{
-			RenderPawnAt(drawLoc, CurRotDrawMode, !pawn.health.hediffSet.HasHead, pawn.IsInvisible());
-		}
-
-		public void RenderPawnAt(Vector3 drawLoc, RotDrawMode bodyDrawType, bool headStump, bool invisible)
-		{
-			if (!graphics.AllResolved)
+			renderTree = new PawnRenderTree(pawn);
+			flasher = new DamageFlasher(pawn);
+			if (pawn.RaceProps.startingAnimation != null)
 			{
-				graphics.ResolveAllGraphics();
+				SetAnimation(pawn.RaceProps.startingAnimation);
 			}
-			if (pawn.GetPosture() == PawnPosture.Standing)
+		}
+
+		public void SetStatue(ThingDef stuff)
+		{
+			statueStuff = stuff;
+		}
+
+		public void SetStatuePaintColor(Color? color)
+		{
+			statuePaintColor = color;
+		}
+
+		private Mesh GetBlitMeshUpdatedFrame(PawnTextureAtlasFrameSet frameSet, Rot4 rotation, PawnDrawMode drawMode)
+		{
+			int index = frameSet.GetIndex(rotation, drawMode);
+			if (frameSet.isDirty[index])
 			{
-				RenderPawnInternal(drawLoc, 0f, renderBody: true, bodyDrawType, headStump, invisible);
-				if (pawn.carryTracker != null)
+				Find.PawnCacheCamera.rect = frameSet.uvRects[index];
+				Find.PawnCacheRenderer.RenderPawn(pawn, frameSet.atlas, Vector3.zero, 1f, 0f, rotation);
+				Find.PawnCacheCamera.rect = new Rect(0f, 0f, 1f, 1f);
+				frameSet.isDirty[index] = false;
+			}
+			return frameSet.meshes[index];
+		}
+
+		private void DrawShadowInternal(Vector3 drawLoc)
+		{
+			if (pawn.Flying)
+			{
+				Vector3 drawPos = pawn.DrawPos;
+				drawPos.y = AltitudeLayer.Filth.AltitudeFor();
+				drawPos -= new Vector3(0f, 0f, pawn.flight.PositionOffsetFactor);
+				Matrix4x4 matrix = Matrix4x4.TRS(drawPos, Quaternion.identity, Vector3.one * 0.75f);
+				Graphics.DrawMesh(MeshPool.plane10, matrix, FlightShadowMaterial, 0);
+			}
+			else
+			{
+				if (pawn.Swimming || pawn.DrawNonHumanlikeSwimmingGraphic)
 				{
-					Thing carriedThing = pawn.carryTracker.CarriedThing;
-					if (carriedThing != null)
+					return;
+				}
+				if (pawn.def.race.specialShadowData != null)
+				{
+					if (shadowGraphic == null)
 					{
-						Vector3 drawPos = drawLoc;
-						bool behind = false;
-						bool flip = false;
-						if (pawn.CurJob == null || !pawn.jobs.curDriver.ModifyCarriedThingDrawPos(ref drawPos, ref behind, ref flip))
-						{
-							if (carriedThing is Pawn || carriedThing is Corpse)
-							{
-								drawPos += new Vector3(0.44f, 0f, 0f);
-							}
-							else
-							{
-								drawPos += new Vector3(0.18f, 0f, 0.05f);
-							}
-						}
-						if (behind)
-						{
-							drawPos.y -= 9f / 245f;
-						}
-						else
-						{
-							drawPos.y += 9f / 245f;
-						}
-						carriedThing.DrawAt(drawPos, flip);
+						shadowGraphic = new Graphic_Shadow(pawn.def.race.specialShadowData);
+					}
+					shadowGraphic.Draw(drawLoc, Rot4.North, pawn);
+				}
+				BodyGraphic?.ShadowGraphic?.Draw(drawLoc, Rot4.North, pawn);
+			}
+		}
+
+		public void DynamicDrawPhaseAt(DrawPhase phase, Vector3 drawLoc, Rot4? rotOverride = null, bool neverAimWeapon = false)
+		{
+			switch (phase)
+			{
+			case DrawPhase.EnsureInitialized:
+				EnsureGraphicsInitialized();
+				break;
+			case DrawPhase.ParallelPreDraw:
+				ParallelPreRenderPawnAt(drawLoc, rotOverride, neverAimWeapon);
+				break;
+			case DrawPhase.Draw:
+				RenderPawnAt(drawLoc, rotOverride, neverAimWeapon);
+				break;
+			}
+		}
+
+		public void RenderPawnAt(Vector3 drawLoc, Rot4? rotOverride = null, bool neverAimWeapon = false)
+		{
+			if (!results.valid)
+			{
+				EnsureGraphicsInitialized();
+				ParallelPreRenderPawnAt(drawLoc, rotOverride, neverAimWeapon);
+			}
+			if (!results.draw)
+			{
+				return;
+			}
+			if (results.useCached)
+			{
+				if (GlobalTextureAtlasManager.TryGetPawnFrameSet(pawn, out var frameSet, out var _))
+				{
+					using (new ProfilerBlock("Draw Cached Mesh"))
+					{
+						Rot4 facing = results.parms.facing;
+						Vector3 bodyPos = results.bodyPos;
+						float bodyAngle = results.bodyAngle;
+						PawnDrawMode drawMode = ((!results.showBody) ? PawnDrawMode.HeadOnly : PawnDrawMode.BodyAndHead);
+						Material mat = OverrideMaterialIfNeeded(MaterialPool.MatFrom(new MaterialRequest(frameSet.atlas, ShaderDatabase.Cutout)), PawnRenderFlags.None);
+						GenDraw.DrawMeshNowOrLater(GetBlitMeshUpdatedFrame(frameSet, facing, drawMode), bodyPos, Quaternion.AngleAxis(bodyAngle, Vector3.up), mat, drawNow: false);
+						Vector3 drawPos = bodyPos.WithYOffset(PawnRenderUtility.AltitudeForLayer((facing == Rot4.North) ? (-10f) : 90f));
+						PawnRenderUtility.DrawEquipmentAndApparelExtras(pawn, drawPos, facing, results.parms.flags);
 					}
 				}
-				if (!invisible)
+				else
 				{
-					if (pawn.def.race.specialShadowData != null)
-					{
-						if (shadowGraphic == null)
-						{
-							shadowGraphic = new Graphic_Shadow(pawn.def.race.specialShadowData);
-						}
-						shadowGraphic.Draw(drawLoc, Rot4.North, pawn);
-					}
-					if (graphics.nakedGraphic != null && graphics.nakedGraphic.ShadowGraphic != null)
-					{
-						graphics.nakedGraphic.ShadowGraphic.Draw(drawLoc, Rot4.North, pawn);
-					}
+					Log.ErrorOnce($"Attempted to use a cached frame set for pawn {pawn.Name} but failed to get one.", Gen.HashCombine(pawn.GetHashCode(), 5938111));
 				}
 			}
 			else
 			{
-				float angle = BodyAngle();
-				Rot4 rot = LayingFacing();
-				Building_Bed building_Bed = pawn.CurrentBed();
-				bool renderBody;
-				Vector3 rootLoc;
-				if (building_Bed != null && pawn.RaceProps.Humanlike)
+				using (new ProfilerBlock("Render Pawn Internal"))
 				{
-					renderBody = building_Bed.def.building.bed_showSleeperBody;
-					AltitudeLayer altLayer = (AltitudeLayer)Mathf.Max((int)building_Bed.def.altitudeLayer, 17);
-					Vector3 vector;
-					Vector3 a = (vector = pawn.Position.ToVector3ShiftedWithAltitude(altLayer));
-					vector.y += 6f / 245f;
-					Rot4 rotation = building_Bed.Rotation;
-					rotation.AsInt += 2;
-					float d = 0f - BaseHeadOffsetAt(Rot4.South).z;
-					Vector3 a2 = rotation.FacingCell.ToVector3();
-					rootLoc = a + a2 * d;
-					rootLoc.y += 9f / 980f;
+					RenderPawnInternal(results.parms);
 				}
-				else
+			}
+			if (results.posture == PawnPosture.Standing && !results.parms.flags.FlagSet(PawnRenderFlags.Invisible))
+			{
+				using (new ProfilerBlock("Draw Shadow Internal"))
 				{
-					renderBody = true;
-					rootLoc = drawLoc;
-					if (!pawn.Dead && pawn.CarriedBy == null)
-					{
-						rootLoc.y = AltitudeLayer.LayingPawn.AltitudeFor() + 9f / 980f;
-					}
+					DrawShadowInternal(drawLoc);
 				}
-				RenderPawnInternal(rootLoc, angle, renderBody, rot, rot, bodyDrawType, portrait: false, headStump, invisible);
 			}
 			if (pawn.Spawned && !pawn.Dead)
 			{
 				pawn.stances.StanceTrackerDraw();
 				pawn.pather.PatherDraw();
+				pawn.roping.RopingDraw();
 			}
+			Graphic graphic = (pawn.RaceProps.Humanlike ? pawn.ageTracker.CurLifeStage.silhouetteGraphicData.Graphic : ((pawn.ageTracker.CurKindLifeStage.silhouetteGraphicData == null) ? BodyGraphic : pawn.ageTracker.CurKindLifeStage.silhouetteGraphicData.Graphic));
+			SetSilhouetteData(graphic, results.bodyPos);
 			DrawDebug();
+			results = default(PreRenderResults);
 		}
 
-		public void RenderPortrait()
+		private void SetSilhouetteData(Graphic graphic, Vector3 pos)
+		{
+			silhouetteGraphic = graphic;
+			silhouettePos = pos;
+		}
+
+		public void RenderShadowOnlyAt(Vector3 drawLoc)
+		{
+			if (pawn.GetPosture() == PawnPosture.Standing && !DefaultRenderFlagsNow.FlagSet(PawnRenderFlags.Invisible))
+			{
+				DrawShadowInternal(drawLoc);
+			}
+		}
+
+		public void EnsureGraphicsInitialized()
+		{
+			renderTree.EnsureInitialized(DefaultRenderFlagsNow);
+		}
+
+		private void ParallelPreRenderPawnAt(Vector3 drawLoc, Rot4? rotOverride = null, bool neverAimWeapon = false)
+		{
+			results = ParallelGetPreRenderResults(drawLoc, rotOverride, neverAimWeapon);
+		}
+
+		private PreRenderResults ParallelGetPreRenderResults(Vector3 drawLoc, Rot4? rotOverride = null, bool neverAimWeapon = false, bool disableCache = false)
+		{
+			PreRenderResults result = new PreRenderResults
+			{
+				valid = true
+			};
+			if (pawn.IsHiddenFromPlayer())
+			{
+				return result;
+			}
+			result.draw = true;
+			if (!renderTree.Resolved)
+			{
+				renderTree.SetDirty();
+			}
+			PawnRenderFlags pawnRenderFlags = DefaultRenderFlagsNow | PawnRenderFlags.Clothes | PawnRenderFlags.Headgear;
+			if (neverAimWeapon)
+			{
+				pawnRenderFlags |= PawnRenderFlags.NeverAimWeapon;
+			}
+			bool crawling = pawn.Crawling;
+			bool swimming = pawn.Swimming;
+			if (swimming)
+			{
+				pawnRenderFlags = (PawnRenderFlags)((uint)pawnRenderFlags & 0xFFFFFF1Fu);
+				pawnRenderFlags |= PawnRenderFlags.NoBody;
+			}
+			RotDrawMode curRotDrawMode = CurRotDrawMode;
+			PawnPosture posture = pawn.GetPosture();
+			bool showBody;
+			Vector3 bodyPos = GetBodyPos(drawLoc, posture, out showBody);
+			float num = ((posture == PawnPosture.Standing) ? 0f : BodyAngle(pawnRenderFlags));
+			Rot4 bodyFacing = rotOverride ?? ((posture == PawnPosture.Standing || crawling) ? pawn.Rotation : LayingFacing());
+			result.posture = posture;
+			result.showBody = showBody;
+			result.bodyPos = bodyPos;
+			result.bodyAngle = num;
+			result.useCached = !disableCache && pawn.RaceProps.Humanlike && Find.CameraDriver.ZoomRootSize > 18f && !pawnRenderFlags.FlagSet(PawnRenderFlags.Portrait) && !pawnRenderFlags.FlagSet(PawnRenderFlags.Statue) && curRotDrawMode != RotDrawMode.Dessicated && !crawling && !swimming && renderTree.currentAnimation == null && pawn.carryTracker?.CarriedThing == null && pawn.CarriedBy == null && !PawnNeedsHediffMaterial(out var _);
+			result.parms = GetDrawParms(bodyPos, num, bodyFacing, curRotDrawMode, pawnRenderFlags);
+			if (result.useCached)
+			{
+				return result;
+			}
+			renderTree.ParallelPreDraw(result.parms);
+			return result;
+		}
+
+		public void RenderCache(Rot4 rotation, float angle, Vector3 positionOffset, bool renderHead, bool portrait, bool renderHeadgear, bool renderClothes, IReadOnlyDictionary<Apparel, Color> overrideApparelColor = null, Color? overrideHairColor = null, bool stylingStation = false)
 		{
 			Vector3 zero = Vector3.zero;
-			float angle;
-			if (pawn.Dead || pawn.Downed)
-			{
-				angle = 85f;
-				zero.x -= 0.18f;
-				zero.z -= 0.18f;
-			}
-			else
-			{
-				angle = 0f;
-			}
-			RenderPawnInternal(zero, angle, renderBody: true, Rot4.South, Rot4.South, CurRotDrawMode, portrait: true, !pawn.health.hediffSet.HasHead, pawn.IsInvisible());
-		}
-
-		private void RenderPawnInternal(Vector3 rootLoc, float angle, bool renderBody, RotDrawMode draw, bool headStump, bool invisible)
-		{
-			RenderPawnInternal(rootLoc, angle, renderBody, pawn.Rotation, pawn.Rotation, draw, portrait: false, headStump, invisible);
-		}
-
-		private void RenderPawnInternal(Vector3 rootLoc, float angle, bool renderBody, Rot4 bodyFacing, Rot4 headFacing, RotDrawMode bodyDrawType, bool portrait, bool headStump, bool invisible)
-		{
-			if (!graphics.AllResolved)
-			{
-				graphics.ResolveAllGraphics();
-			}
-			Quaternion quaternion = Quaternion.AngleAxis(angle, Vector3.up);
-			Mesh mesh = null;
-			if (renderBody)
-			{
-				Vector3 loc = rootLoc;
-				loc.y += 9f / 980f;
-				if (bodyDrawType == RotDrawMode.Dessicated && !pawn.RaceProps.Humanlike && graphics.dessicatedGraphic != null && !portrait)
-				{
-					graphics.dessicatedGraphic.Draw(loc, bodyFacing, pawn, angle);
-				}
-				else
-				{
-					mesh = ((!pawn.RaceProps.Humanlike) ? graphics.nakedGraphic.MeshAt(bodyFacing) : MeshPool.humanlikeBodySet.MeshAt(bodyFacing));
-					List<Material> list = graphics.MatsBodyBaseAt(bodyFacing, bodyDrawType);
-					for (int i = 0; i < list.Count; i++)
-					{
-						Material mat = OverrideMaterialIfNeeded_NewTemp(list[i], pawn, portrait);
-						GenDraw.DrawMeshNowOrLater(mesh, loc, quaternion, mat, portrait);
-						loc.y += 3f / 980f;
-					}
-					if (bodyDrawType == RotDrawMode.Fresh)
-					{
-						Vector3 drawLoc = rootLoc;
-						drawLoc.y += 9f / 490f;
-						woundOverlays.RenderOverBody(drawLoc, mesh, quaternion, portrait);
-					}
-				}
-			}
-			Vector3 vector = rootLoc;
-			Vector3 a = rootLoc;
-			if (bodyFacing != Rot4.North)
-			{
-				a.y += 6f / 245f;
-				vector.y += 3f / 140f;
-			}
-			else
-			{
-				a.y += 3f / 140f;
-				vector.y += 6f / 245f;
-			}
-			Vector3 vector2 = rootLoc;
-			vector2.y += ((bodyFacing == Rot4.South) ? (3f / 490f) : (27f / 980f));
-			List<ApparelGraphicRecord> apparelGraphics = graphics.apparelGraphics;
-			if (graphics.headGraphic != null)
-			{
-				Vector3 b = quaternion * BaseHeadOffsetAt(headFacing);
-				Material material = graphics.HeadMatAt_NewTemp(headFacing, bodyDrawType, headStump, portrait);
-				if (material != null)
-				{
-					GenDraw.DrawMeshNowOrLater(MeshPool.humanlikeHeadSet.MeshAt(headFacing), a + b, quaternion, material, portrait);
-				}
-				Vector3 loc2 = rootLoc + b;
-				loc2.y += 3f / 98f;
-				bool flag = false;
-				if (!portrait || !Prefs.HatsOnlyOnMap)
-				{
-					Mesh mesh2 = graphics.HairMeshSet.MeshAt(headFacing);
-					for (int j = 0; j < apparelGraphics.Count; j++)
-					{
-						if (apparelGraphics[j].sourceApparel.def.apparel.LastLayer == ApparelLayerDefOf.Overhead)
-						{
-							if (!apparelGraphics[j].sourceApparel.def.apparel.hatRenderedFrontOfFace)
-							{
-								flag = true;
-								Material original = apparelGraphics[j].graphic.MatAt(bodyFacing);
-								original = OverrideMaterialIfNeeded_NewTemp(original, pawn, portrait);
-								GenDraw.DrawMeshNowOrLater(mesh2, loc2, quaternion, original, portrait);
-							}
-							else
-							{
-								Material original2 = apparelGraphics[j].graphic.MatAt(bodyFacing);
-								original2 = OverrideMaterialIfNeeded_NewTemp(original2, pawn, portrait);
-								Vector3 loc3 = rootLoc + b;
-								loc3.y += ((bodyFacing == Rot4.North) ? (3f / 980f) : (33f / 980f));
-								GenDraw.DrawMeshNowOrLater(mesh2, loc3, quaternion, original2, portrait);
-							}
-						}
-					}
-				}
-				if (!flag && bodyDrawType != RotDrawMode.Dessicated && !headStump)
-				{
-					GenDraw.DrawMeshNowOrLater(graphics.HairMeshSet.MeshAt(headFacing), mat: graphics.HairMatAt_NewTemp(headFacing, portrait), loc: loc2, quat: quaternion, drawNow: portrait);
-				}
-			}
-			if (renderBody)
-			{
-				for (int k = 0; k < apparelGraphics.Count; k++)
-				{
-					ApparelGraphicRecord apparelGraphicRecord = apparelGraphics[k];
-					if (apparelGraphicRecord.sourceApparel.def.apparel.LastLayer == ApparelLayerDefOf.Shell && !apparelGraphicRecord.sourceApparel.def.apparel.shellRenderedBehindHead)
-					{
-						Material original3 = apparelGraphicRecord.graphic.MatAt(bodyFacing);
-						original3 = OverrideMaterialIfNeeded_NewTemp(original3, pawn, portrait);
-						GenDraw.DrawMeshNowOrLater(mesh, vector, quaternion, original3, portrait);
-					}
-					if (RenderAsPack(apparelGraphicRecord.sourceApparel))
-					{
-						Material original4 = apparelGraphicRecord.graphic.MatAt(bodyFacing);
-						original4 = OverrideMaterialIfNeeded_NewTemp(original4, pawn, portrait);
-						if (apparelGraphicRecord.sourceApparel.def.apparel.wornGraphicData != null)
-						{
-							Vector2 vector3 = apparelGraphicRecord.sourceApparel.def.apparel.wornGraphicData.BeltOffsetAt(bodyFacing, pawn.story.bodyType);
-							Vector2 vector4 = apparelGraphicRecord.sourceApparel.def.apparel.wornGraphicData.BeltScaleAt(pawn.story.bodyType);
-							Matrix4x4 matrix = Matrix4x4.Translate(vector2) * Matrix4x4.Rotate(quaternion) * Matrix4x4.Translate(new Vector3(vector3.x, 0f, vector3.y)) * Matrix4x4.Scale(new Vector3(vector4.x, 1f, vector4.y));
-							GenDraw.DrawMeshNowOrLater_NewTemp(mesh, matrix, original4, portrait);
-						}
-						else
-						{
-							GenDraw.DrawMeshNowOrLater(mesh, vector, quaternion, original4, portrait);
-						}
-					}
-				}
-			}
-			if (!portrait && pawn.RaceProps.Animal && pawn.inventory != null && pawn.inventory.innerContainer.Count > 0 && graphics.packGraphic != null)
-			{
-				Graphics.DrawMesh(mesh, vector, quaternion, graphics.packGraphic.MatAt(bodyFacing), 0);
-			}
+			PawnRenderFlags pawnRenderFlags = DefaultRenderFlagsNow | PawnRenderFlags.Cache | PawnRenderFlags.DrawNow;
 			if (portrait)
 			{
-				return;
+				pawnRenderFlags |= PawnRenderFlags.Portrait;
 			}
-			DrawEquipment(rootLoc);
-			if (pawn.apparel != null)
+			if (!renderHead)
 			{
-				List<Apparel> wornApparel = pawn.apparel.WornApparel;
-				for (int l = 0; l < wornApparel.Count; l++)
+				pawnRenderFlags |= PawnRenderFlags.HeadStump;
+			}
+			if (renderHeadgear)
+			{
+				pawnRenderFlags |= PawnRenderFlags.Headgear;
+			}
+			if (renderClothes)
+			{
+				pawnRenderFlags |= PawnRenderFlags.Clothes;
+			}
+			if (stylingStation)
+			{
+				pawnRenderFlags |= PawnRenderFlags.StylingStation;
+			}
+			tmpOriginalColors.Clear();
+			try
+			{
+				if (overrideApparelColor != null)
 				{
-					wornApparel[l].DrawWornExtras();
+					foreach (KeyValuePair<Apparel, Color> item in overrideApparelColor)
+					{
+						item.Deconstruct(out var key, out var value);
+						Apparel apparel = key;
+						Color newColor = value;
+						CompColorable compColorable = apparel.TryGetComp<CompColorable>();
+						if (compColorable != null)
+						{
+							tmpOriginalColors.Add(apparel, (compColorable.Color, compColorable.Active));
+							apparel.SetColor(newColor);
+						}
+					}
+				}
+				Color hairColor = Color.white;
+				if (pawn.story != null)
+				{
+					hairColor = pawn.story.HairColor;
+					if (overrideHairColor.HasValue)
+					{
+						pawn.story.HairColor = overrideHairColor.Value;
+						pawn.Drawer.renderer.renderTree.SetDirty();
+					}
+				}
+				PawnDrawParms drawParms = GetDrawParms(zero + positionOffset, angle, rotation, CurRotDrawMode, pawnRenderFlags);
+				renderTree.EnsureInitialized(DefaultRenderFlagsNow);
+				renderTree.ParallelPreDraw(drawParms);
+				RenderPawnInternal(drawParms);
+				foreach (KeyValuePair<Apparel, (Color, bool)> tmpOriginalColor in tmpOriginalColors)
+				{
+					if (!tmpOriginalColor.Value.Item2)
+					{
+						tmpOriginalColor.Key.TryGetComp<CompColorable>().Disable();
+					}
+					else
+					{
+						tmpOriginalColor.Key.SetColor(tmpOriginalColor.Value.Item1);
+					}
+				}
+				if (pawn.story != null && overrideHairColor.HasValue)
+				{
+					pawn.story.HairColor = hairColor;
+					pawn.Drawer.renderer.renderTree.SetDirty();
 				}
 			}
-			Vector3 bodyLoc = rootLoc;
-			bodyLoc.y += 39f / 980f;
-			statusOverlays.RenderStatusOverlays(bodyLoc, quaternion, MeshPool.humanlikeHeadSet.MeshAt(headFacing));
+			catch (Exception ex)
+			{
+				Log.Error("Error rendering pawn portrait: " + ex);
+			}
+			finally
+			{
+				tmpOriginalColors.Clear();
+			}
 		}
 
-		private void DrawEquipment(Vector3 rootLoc)
+		private Vector3 GetBodyPos(Vector3 drawLoc, PawnPosture posture, out bool showBody)
 		{
-			if (pawn.Dead || !pawn.Spawned || pawn.equipment == null || pawn.equipment.Primary == null || (pawn.CurJob != null && pawn.CurJob.def.neverShowWeapon))
+			if (posture == PawnPosture.Standing)
 			{
-				return;
+				showBody = true;
+				return drawLoc;
 			}
-			Stance_Busy stance_Busy = pawn.stances.curStance as Stance_Busy;
-			if (stance_Busy != null && !stance_Busy.neverAimWeapon && stance_Busy.focusTarg.IsValid)
+			Building_Bed building_Bed = pawn.CurrentBed();
+			Vector3 result;
+			if (building_Bed != null && pawn.RaceProps.Humanlike)
 			{
-				Vector3 a = ((!stance_Busy.focusTarg.HasThing) ? stance_Busy.focusTarg.Cell.ToVector3Shifted() : stance_Busy.focusTarg.Thing.DrawPos);
-				float num = 0f;
-				if ((a - pawn.DrawPos).MagnitudeHorizontalSquared() > 0.001f)
-				{
-					num = (a - pawn.DrawPos).AngleFlat();
-				}
-				Vector3 drawLoc = rootLoc + new Vector3(0f, 0f, 0.4f).RotatedBy(num);
-				drawLoc.y += 9f / 245f;
-				DrawEquipmentAiming(pawn.equipment.Primary, drawLoc, num);
-			}
-			else if (CarryWeaponOpenly())
-			{
-				if (pawn.Rotation == Rot4.South)
-				{
-					Vector3 drawLoc2 = rootLoc + new Vector3(0f, 0f, -0.22f);
-					drawLoc2.y += 9f / 245f;
-					DrawEquipmentAiming(pawn.equipment.Primary, drawLoc2, 143f);
-				}
-				else if (pawn.Rotation == Rot4.North)
-				{
-					Vector3 drawLoc3 = rootLoc + new Vector3(0f, 0f, -0.11f);
-					drawLoc3.y += 0f;
-					DrawEquipmentAiming(pawn.equipment.Primary, drawLoc3, 143f);
-				}
-				else if (pawn.Rotation == Rot4.East)
-				{
-					Vector3 drawLoc4 = rootLoc + new Vector3(0.2f, 0f, -0.22f);
-					drawLoc4.y += 9f / 245f;
-					DrawEquipmentAiming(pawn.equipment.Primary, drawLoc4, 143f);
-				}
-				else if (pawn.Rotation == Rot4.West)
-				{
-					Vector3 drawLoc5 = rootLoc + new Vector3(-0.2f, 0f, -0.22f);
-					drawLoc5.y += 9f / 245f;
-					DrawEquipmentAiming(pawn.equipment.Primary, drawLoc5, 217f);
-				}
-			}
-		}
-
-		public void DrawEquipmentAiming(Thing eq, Vector3 drawLoc, float aimAngle)
-		{
-			Mesh mesh = null;
-			float num = aimAngle - 90f;
-			if (aimAngle > 20f && aimAngle < 160f)
-			{
-				mesh = MeshPool.plane10;
-				num += eq.def.equippedAngleOffset;
-			}
-			else if (aimAngle > 200f && aimAngle < 340f)
-			{
-				mesh = MeshPool.plane10Flip;
-				num -= 180f;
-				num -= eq.def.equippedAngleOffset;
+				showBody = building_Bed.def.building.bed_showSleeperBody;
+				AltitudeLayer altLayer = (AltitudeLayer)Mathf.Max((int)building_Bed.def.altitudeLayer, 20);
+				Vector3 vector = pawn.Position.ToVector3ShiftedWithAltitude(altLayer);
+				Rot4 rotation = building_Bed.Rotation;
+				rotation.AsInt += 2;
+				float num = BaseHeadOffsetAt(Rot4.South).z + pawn.story.bodyType.bedOffset + building_Bed.def.building.bed_pawnDrawOffset;
+				Vector3 vector2 = rotation.FacingCell.ToVector3();
+				result = vector - vector2 * num;
 			}
 			else
 			{
-				mesh = MeshPool.plane10;
-				num += eq.def.equippedAngleOffset;
+				showBody = true;
+				result = drawLoc;
+				if (pawn.ParentHolder is IThingHolderWithDrawnPawn thingHolderWithDrawnPawn)
+				{
+					result.y = thingHolderWithDrawnPawn.HeldPawnDrawPos_Y;
+				}
+				else if (pawn.ParentHolder.ParentHolder is IThingHolderWithDrawnPawn thingHolderWithDrawnPawn2)
+				{
+					result.y = thingHolderWithDrawnPawn2.HeldPawnDrawPos_Y;
+				}
+				else if (!pawn.Dead && pawn.CarriedBy == null && pawn.ParentHolder.Isnt<PawnFlyer>())
+				{
+					result.y = AltitudeLayer.LayingPawn.AltitudeFor();
+				}
 			}
-			num %= 360f;
-			Material material = null;
-			Graphic_StackCount graphic_StackCount = eq.Graphic as Graphic_StackCount;
-			Graphics.DrawMesh(material: (graphic_StackCount == null) ? eq.Graphic.MatSingle : graphic_StackCount.SubGraphicForStackCount(1, eq.def).MatSingle, mesh: mesh, position: drawLoc, rotation: Quaternion.AngleAxis(num, Vector3.up), layer: 0);
+			showBody = pawn.mindState?.duty?.def?.drawBodyOverride ?? showBody;
+			return result;
 		}
 
-		private Material OverrideMaterialIfNeeded_NewTemp(Material original, Pawn pawn, bool portrait = false)
+		private bool PawnNeedsHediffMaterial(out PawnRenderFlags renderFlags)
 		{
-			Material baseMat = ((!portrait && pawn.IsInvisible()) ? InvisibilityMatPool.GetInvisibleMat(original) : original);
-			return graphics.flasher.GetDamagedMat(baseMat);
-		}
-
-		[Obsolete("Only need this overload to not break mod compatibility.")]
-		private Material OverrideMaterialIfNeeded(Material original, Pawn pawn)
-		{
-			return OverrideMaterialIfNeeded_NewTemp(original, pawn);
-		}
-
-		private bool CarryWeaponOpenly()
-		{
-			if (pawn.carryTracker != null && pawn.carryTracker.CarriedThing != null)
+			renderFlags = PawnRenderFlags.None;
+			if (pawn.IsPsychologicallyInvisible())
 			{
-				return false;
-			}
-			if (pawn.Drafted)
-			{
-				return true;
-			}
-			if (pawn.CurJob != null && pawn.CurJob.def.alwaysShowWeapon)
-			{
-				return true;
-			}
-			if (pawn.mindState.duty != null && pawn.mindState.duty.def.alwaysShowWeapon)
-			{
-				return true;
-			}
-			Lord lord = pawn.GetLord();
-			if (lord != null && lord.LordJob != null && lord.LordJob.AlwaysShowWeapon)
-			{
+				renderFlags |= PawnRenderFlags.Invisible;
 				return true;
 			}
 			return false;
 		}
 
+		private void RenderPawnInternal(PawnDrawParms parms)
+		{
+			renderTree.Draw(parms);
+		}
+
+		private PawnDrawParms GetDrawParms(Vector3 rootLoc, float angle, Rot4 bodyFacing, RotDrawMode bodyDrawType, PawnRenderFlags flags)
+		{
+			return new PawnDrawParms
+			{
+				pawn = pawn,
+				matrix = Matrix4x4.TRS(rootLoc + pawn.ageTracker.CurLifeStage.bodyDrawOffset, Quaternion.AngleAxis(angle, Vector3.up), Vector3.one),
+				facing = bodyFacing,
+				rotDrawMode = bodyDrawType,
+				posture = pawn.GetPosture(),
+				flags = flags,
+				tint = flasher.CurColor.ToTransparent(InvisibilityUtility.GetAlpha(pawn)),
+				bed = pawn.CurrentBed(),
+				coveredInFoam = FirefoamOverlays.coveredInFoam,
+				carriedThing = pawn.carryTracker?.CarriedThing,
+				dead = pawn.Dead,
+				crawling = pawn.Crawling,
+				swimming = pawn.Swimming,
+				statueColor = StatueColor
+			};
+		}
+
+		private Material OverrideMaterialIfNeeded(Material original, PawnRenderFlags flags)
+		{
+			if (flags.FlagSet(PawnRenderFlags.Cache) || flags.FlagSet(PawnRenderFlags.Portrait))
+			{
+				return original;
+			}
+			if (pawn.IsPsychologicallyInvisible())
+			{
+				return InvisibilityMatPool.GetInvisibleMat(original);
+			}
+			return flasher.GetDamagedMat(original);
+		}
+
+		private Rot4 RotationForcedByJob()
+		{
+			if (pawn.jobs?.curDriver != null && pawn.jobs.curDriver.ForcedLayingRotation.IsValid)
+			{
+				return pawn.jobs.curDriver.ForcedLayingRotation;
+			}
+			return Rot4.Invalid;
+		}
+
 		public Rot4 LayingFacing()
 		{
-			if (pawn.GetPosture() == PawnPosture.LayingOnGroundFaceUp)
+			Rot4 result = RotationForcedByJob();
+			if (result.IsValid)
+			{
+				return result;
+			}
+			PawnPosture posture = pawn.GetPosture();
+			if (posture == PawnPosture.LayingOnGroundFaceUp || pawn.Deathresting)
 			{
 				return Rot4.South;
 			}
 			if (pawn.RaceProps.Humanlike)
 			{
+				if (pawn.DevelopmentalStage.Baby() && pawn.ParentHolder is Pawn_CarryTracker pawn_CarryTracker)
+				{
+					if (!(pawn_CarryTracker.pawn.Rotation == Rot4.West) && !(pawn_CarryTracker.pawn.Rotation == Rot4.North))
+					{
+						return Rot4.West;
+					}
+					return Rot4.East;
+				}
+				if (posture.FaceUp() && pawn.CurrentBed() != null)
+				{
+					return Rot4.South;
+				}
 				switch (pawn.thingIDNumber % 4)
 				{
 				case 0:
@@ -488,7 +585,7 @@ namespace Verse
 			return Rot4.Random;
 		}
 
-		public float BodyAngle()
+		public float BodyAngle(PawnRenderFlags flags)
 		{
 			if (pawn.GetPosture() == PawnPosture.Standing)
 			{
@@ -501,6 +598,23 @@ namespace Verse
 				rotation.AsInt += 2;
 				return rotation.AsAngle;
 			}
+			if (pawn.ParentHolder is IThingHolderWithDrawnPawn thingHolderWithDrawnPawn)
+			{
+				return thingHolderWithDrawnPawn.HeldPawnBodyAngle;
+			}
+			if (pawn.ParentHolder.ParentHolder is IThingHolderWithDrawnPawn thingHolderWithDrawnPawn2)
+			{
+				return thingHolderWithDrawnPawn2.HeldPawnBodyAngle;
+			}
+			if (pawn.ParentHolder is Pawn_CarryTracker pawn_CarryTracker)
+			{
+				Rot4 rotation2 = pawn_CarryTracker.pawn.Rotation;
+				return ((rotation2 == Rot4.West || rotation2 == Rot4.North) ? 290f : 70f) + pawn_CarryTracker.pawn.Drawer.renderer.BodyAngle(flags);
+			}
+			if (pawn.Crawling && !flags.FlagSet(PawnRenderFlags.Portrait))
+			{
+				return PawnRenderUtility.CrawlingBodyAngle(pawn.Rotation);
+			}
 			if (pawn.Downed || pawn.Dead)
 			{
 				return wiggler.downedAngle;
@@ -509,68 +623,91 @@ namespace Verse
 			{
 				return LayingFacing().AsAngle;
 			}
-			Rot4 rot = Rot4.West;
-			switch (pawn.thingIDNumber % 2)
+			if (RotationForcedByJob().IsValid)
 			{
-			case 0:
-				rot = Rot4.West;
-				break;
-			case 1:
-				rot = Rot4.East;
-				break;
+				return 0f;
 			}
-			return rot.AsAngle;
+			return ((pawn.thingIDNumber % 2 == 0) ? Rot4.West : Rot4.East).AsAngle;
 		}
 
 		public Vector3 BaseHeadOffsetAt(Rot4 rotation)
 		{
-			Vector2 headOffset = pawn.story.bodyType.headOffset;
+			Vector2 vector = pawn.story.bodyType.headOffset * Mathf.Sqrt(pawn.ageTracker.CurLifeStage.bodySizeFactor);
 			switch (rotation.AsInt)
 			{
 			case 0:
-				return new Vector3(0f, 0f, headOffset.y);
+				return new Vector3(0f, 0f, vector.y);
 			case 1:
-				return new Vector3(headOffset.x, 0f, headOffset.y);
+				return new Vector3(vector.x, 0f, vector.y);
 			case 2:
-				return new Vector3(0f, 0f, headOffset.y);
+				return new Vector3(0f, 0f, vector.y);
 			case 3:
-				return new Vector3(0f - headOffset.x, 0f, headOffset.y);
+				return new Vector3(0f - vector.x, 0f, vector.y);
 			default:
 				Log.Error("BaseHeadOffsetAt error in " + pawn);
 				return Vector3.zero;
 			}
 		}
 
+		public void SetAnimation(AnimationDef animation)
+		{
+			if (animation == null)
+			{
+				renderTree.currentAnimation = null;
+				renderTree.animationStartTick = -99999;
+			}
+			else
+			{
+				renderTree.currentAnimation = animation;
+				renderTree.animationStartTick = Find.TickManager.TicksGame;
+				if (animation.startOnRandomTick)
+				{
+					renderTree.animationStartTick += Rand.RangeSeeded(0, animation.durationTicks, pawn.thingIDNumber);
+				}
+			}
+			renderTree.SetDirty();
+		}
+
+		public void SetAllGraphicsDirty()
+		{
+			LongEventHandler.ExecuteWhenFinished(delegate
+			{
+				if (renderTree.Resolved)
+				{
+					renderTree.SetDirty();
+					SilhouetteUtility.NotifyGraphicDirty(pawn);
+					WoundOverlays.ClearCache();
+					PortraitsCache.SetDirty(pawn);
+					GlobalTextureAtlasManager.TryMarkPawnFrameSetDirty(pawn);
+				}
+			});
+		}
+
 		public void Notify_DamageApplied(DamageInfo dam)
 		{
-			graphics.flasher.Notify_DamageApplied(dam);
+			flasher.Notify_DamageApplied(dam);
 			wiggler.Notify_DamageApplied(dam);
 		}
 
-		public void RendererTick()
+		public void ProcessPostTickVisuals(int ticksPassed)
 		{
-			wiggler.WigglerTick();
-			effecters.EffectersTick();
+			wiggler.ProcessPostTickVisuals(ticksPassed);
+			if (renderTree.AnimationFinished)
+			{
+				SetAnimation(null);
+			}
 		}
 
-		public static bool RenderAsPack(Apparel apparel)
+		public void EffectersTick(bool suspended)
 		{
-			if (apparel.def.apparel.LastLayer.IsUtilityLayer)
-			{
-				if (apparel.def.apparel.wornGraphicData != null)
-				{
-					return apparel.def.apparel.wornGraphicData.renderUtilityAsPack;
-				}
-				return true;
-			}
-			return false;
+			effecters.EffectersTick(suspended);
 		}
 
 		private void DrawDebug()
 		{
-			if (DebugViewSettings.drawDuties && Find.Selector.IsSelected(pawn) && pawn.mindState != null && pawn.mindState.duty != null)
+			if (DebugViewSettings.drawDuties && Find.Selector.IsSelected(pawn))
 			{
-				pawn.mindState.duty.DrawDebug(pawn);
+				pawn.mindState?.duty?.DrawDebug(pawn);
 			}
 		}
 	}

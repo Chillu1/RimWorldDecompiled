@@ -53,7 +53,7 @@ namespace RimWorld
 			}
 		}
 
-		public override bool PlayerHasResearched()
+		public override bool PlayerCanBuildNow()
 		{
 			for (int i = 0; i < things.Count; i++)
 			{
@@ -63,6 +63,12 @@ namespace RimWorld
 				}
 			}
 			return false;
+		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_Collections.Look(ref things, "things", LookMode.Def);
 		}
 	}
 }

@@ -7,8 +7,7 @@ namespace RimWorld
 	{
 		public static IEnumerable<Command> BuildFacilityCommands(BuildableDef building)
 		{
-			ThingDef thingDef = building as ThingDef;
-			if (thingDef == null)
+			if (!(building is ThingDef thingDef))
 			{
 				yield break;
 			}

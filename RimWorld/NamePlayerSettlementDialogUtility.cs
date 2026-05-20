@@ -5,6 +5,8 @@ namespace RimWorld
 {
 	public static class NamePlayerSettlementDialogUtility
 	{
+		public const int CharacterLimit = 64;
+
 		public static bool IsValidName(string s)
 		{
 			if (s.Length == 0)

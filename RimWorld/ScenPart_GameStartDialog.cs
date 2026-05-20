@@ -5,7 +5,7 @@ namespace RimWorld
 {
 	public class ScenPart_GameStartDialog : ScenPart
 	{
-		private string text;
+		private string text = "";
 
 		private string textKey;
 
@@ -49,6 +49,11 @@ namespace RimWorld
 				Find.WindowStack.Add(dialog_NodeTree);
 				Find.Archive.Add(new ArchivedDialog(diaNode.text));
 			}
+		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode() ^ text.GetHashCodeSafe() ^ textKey.GetHashCodeSafe() ^ ((closeSound != null) ? closeSound.GetHashCode() : 0);
 		}
 	}
 }

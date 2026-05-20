@@ -6,7 +6,12 @@ namespace RimWorld
 	{
 		public override string GetInspectString()
 		{
-			return base.GetInspectString() + ("\n" + StatDefOf.Beauty.LabelCap + ": " + StatDefOf.Beauty.ValueToString(this.GetStatValue(StatDefOf.Beauty)));
+			string text = base.GetInspectString();
+			if (!string.IsNullOrEmpty(text))
+			{
+				text += "\n";
+			}
+			return text + $"{StatDefOf.Beauty.LabelCap}: {StatDefOf.Beauty.ValueToString(this.GetStatValue(StatDefOf.Beauty))}";
 		}
 	}
 }

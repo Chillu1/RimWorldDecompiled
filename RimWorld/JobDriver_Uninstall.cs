@@ -8,6 +8,8 @@ namespace RimWorld
 
 		protected override float TotalNeededWork => base.TargetA.Thing.def.building.uninstallWork;
 
+		protected override EffecterDef WorkEffecter => null;
+
 		protected override void FinishedRemoving()
 		{
 			base.Building.Uninstall();

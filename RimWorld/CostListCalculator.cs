@@ -70,6 +70,8 @@ namespace RimWorld
 
 		private static Dictionary<CostListPair, List<ThingDefCountClass>> cachedCosts = new Dictionary<CostListPair, List<ThingDefCountClass>>(FastCostListPairComparer.Instance);
 
+		private static Difficulty cachedDifficulty = null;
+
 		public static void Reset()
 		{
 			cachedCosts.Clear();
@@ -82,6 +84,11 @@ namespace RimWorld
 
 		public static List<ThingDefCountClass> CostListAdjusted(this BuildableDef entDef, ThingDef stuff, bool errorOnNullStuff = true)
 		{
+			if (cachedDifficulty != Find.Storyteller.difficulty)
+			{
+				Reset();
+				cachedDifficulty = Find.Storyteller.difficulty;
+			}
 			CostListPair key = new CostListPair(entDef, stuff);
 			if (!cachedCosts.TryGetValue(key, out var value))
 			{
@@ -91,7 +98,7 @@ namespace RimWorld
 				{
 					if (errorOnNullStuff && stuff == null)
 					{
-						Log.Error(string.Concat("Cannot get AdjustedCostList for ", entDef, " with null Stuff."));
+						Log.Error("Cannot get AdjustedCostList for " + entDef?.ToString() + " with null Stuff.");
 						if (GenStuff.DefaultStuffFor(entDef) == null)
 						{
 							return null;
@@ -100,7 +107,7 @@ namespace RimWorld
 					}
 					if (stuff != null)
 					{
-						num = Mathf.RoundToInt((float)entDef.costStuffCount / stuff.VolumePerUnit);
+						num = Mathf.RoundToInt((float)entDef.CostStuffCount / stuff.VolumePerUnit);
 						if (num < 1)
 						{
 							num = 1;
@@ -108,19 +115,19 @@ namespace RimWorld
 					}
 					else
 					{
-						num = entDef.costStuffCount;
+						num = entDef.CostStuffCount;
 					}
 				}
 				else if (stuff != null)
 				{
-					Log.Error(string.Concat("Got AdjustedCostList for ", entDef, " with stuff ", stuff, " but is not MadeFromStuff."));
+					Log.Error("Got AdjustedCostList for " + entDef?.ToString() + " with stuff " + stuff?.ToString() + " but is not MadeFromStuff.");
 				}
 				bool flag = false;
-				if (entDef.costList != null)
+				if (entDef.CostList != null)
 				{
-					for (int i = 0; i < entDef.costList.Count; i++)
+					for (int i = 0; i < entDef.CostList.Count; i++)
 					{
-						ThingDefCountClass thingDefCountClass = entDef.costList[i];
+						ThingDefCountClass thingDefCountClass = entDef.CostList[i];
 						if (thingDefCountClass.thingDef == stuff)
 						{
 							value.Add(new ThingDefCountClass(thingDefCountClass.thingDef, thingDefCountClass.count + num));

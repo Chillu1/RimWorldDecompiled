@@ -9,19 +9,7 @@ namespace RimWorld
 
 		public static ScenPartDef PlayerPawnsArriveMethod;
 
-		public static ScenPartDef ForcedTrait;
-
-		public static ScenPartDef ForcedHediff;
-
-		public static ScenPartDef StartingAnimal;
-
-		public static ScenPartDef ScatterThingsNearPlayerStart;
-
-		public static ScenPartDef StartingThing_Defined;
-
-		public static ScenPartDef ScatterThingsAnywhere;
-
-		public static ScenPartDef GameStartDialog;
+		public static ScenPartDef PlanetLayerFixed;
 
 		static ScenPartDefOf()
 		{

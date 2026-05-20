@@ -14,55 +14,48 @@ namespace RimWorld
 		public static QuestScriptDef ChooseNaturalRandomQuest(float points, IIncidentTarget target)
 		{
 			bool flag = Rand.Chance(PopulationIncreasingQuestChance());
-			if (TryGetQuest(flag, out var chosen2))
+			if (TryGetQuest(flag, out var chosen))
+			{
+				return chosen;
+			}
+			if (flag && TryGetQuest(incPop: false, out var chosen2))
 			{
 				return chosen2;
 			}
-			if (flag && TryGetQuest(incPop: false, out var chosen3))
-			{
-				return chosen3;
-			}
-			Log.Error("Couldn't find any random quest. points=" + points);
 			return null;
-			bool TryGetQuest(bool incPop, out QuestScriptDef chosen)
+			bool TryGetQuest(bool incPop, out QuestScriptDef result)
 			{
-				return DefDatabase<QuestScriptDef>.AllDefs.Where((QuestScriptDef x) => x.IsRootRandomSelected && x.rootIncreasesPopulation == incPop && x.CanRun(points)).TryRandomElementByWeight((QuestScriptDef x) => GetNaturalRandomSelectionWeight(x, points, target.StoryState), out chosen);
+				return DefDatabase<QuestScriptDef>.AllDefs.Where((QuestScriptDef x) => x.IsRootRandomSelected && x.rootIncreasesPopulation == incPop && x.CanRun(points, target)).TryRandomElementByWeight((QuestScriptDef x) => GetNaturalRandomSelectionWeight(x, points, target.StoryState), out result);
 			}
 		}
 
 		public static float GetNaturalRandomSelectionWeight(QuestScriptDef quest, float points, StoryState storyState)
 		{
-			if (quest.rootSelectionWeight <= 0f || points < quest.rootMinPoints || StorytellerUtility.GetProgressScore(storyState.Target) < quest.rootMinProgressScore)
+			if (quest.rootSelectionWeight <= 0f || points < quest.rootMinPoints || GenDate.DaysPassedSinceSettle < quest.rootEarliestDay || StorytellerUtility.GetProgressScore(storyState.Target) < quest.rootMinProgressScore)
 			{
 				return 0f;
+			}
+			if (quest.minRefireDays > 0f)
+			{
+				List<Quest> questsListForReading = Find.QuestManager.QuestsListForReading;
+				for (int i = 0; i < questsListForReading.Count; i++)
+				{
+					if (questsListForReading[i].root == quest && (float)(Find.TickManager.TicksGame - questsListForReading[i].appearanceTick) < 60000f * quest.minRefireDays)
+					{
+						return 0f;
+					}
+				}
 			}
 			float num = quest.rootSelectionWeight;
 			if (quest.rootSelectionWeightFactorFromPointsCurve != null)
 			{
 				num *= quest.rootSelectionWeightFactorFromPointsCurve.Evaluate(points);
 			}
-			for (int i = 0; i < storyState.RecentRandomQuests.Count; i++)
+			for (int j = 0; j < storyState.RecentRandomQuests.Count; j++)
 			{
-				if (storyState.RecentRandomQuests[i] == quest)
+				if (storyState.RecentRandomQuests[j] == quest)
 				{
-					switch (i)
-					{
-					case 0:
-						num *= 0.01f;
-						break;
-					case 1:
-						num *= 0.3f;
-						break;
-					case 2:
-						num *= 0.5f;
-						break;
-					case 3:
-						num *= 0.7f;
-						break;
-					case 4:
-						num *= 0.9f;
-						break;
-					}
+					num *= QuestTuning.RecentStoryWeightFactors[j];
 				}
 			}
 			if (!quest.canGiveRoyalFavor && PlayerWantsRoyalFavorFromAnyFaction())
@@ -75,9 +68,9 @@ namespace RimWorld
 			static bool PlayerWantsRoyalFavorFromAnyFaction()
 			{
 				List<Faction> allFactionsListForReading = Find.FactionManager.AllFactionsListForReading;
-				for (int j = 0; j < allFactionsListForReading.Count; j++)
+				for (int k = 0; k < allFactionsListForReading.Count; k++)
 				{
-					if (allFactionsListForReading[j].allowRoyalFavorRewards && allFactionsListForReading[j] != Faction.OfPlayer && allFactionsListForReading[j].def.HasRoyalTitles && !allFactionsListForReading[j].temporary)
+					if (allFactionsListForReading[k].allowRoyalFavorRewards && allFactionsListForReading[k] != Faction.OfPlayer && allFactionsListForReading[k].def.HasRoyalTitles && !allFactionsListForReading[k].temporary)
 					{
 						return true;
 					}
@@ -92,32 +85,15 @@ namespace RimWorld
 			{
 				return 0f;
 			}
-			float num = quest.decreeSelectionWeight;
+			float decreeSelectionWeight = quest.decreeSelectionWeight;
 			for (int i = 0; i < storyState.RecentRandomDecrees.Count; i++)
 			{
 				if (storyState.RecentRandomDecrees[i] == quest)
 				{
-					switch (i)
-					{
-					case 0:
-						num *= 0.01f;
-						break;
-					case 1:
-						num *= 0.3f;
-						break;
-					case 2:
-						num *= 0.5f;
-						break;
-					case 3:
-						num *= 0.7f;
-						break;
-					case 4:
-						num *= 0.9f;
-						break;
-					}
+					return QuestTuning.RecentStoryWeightFactors[i];
 				}
 			}
-			return num;
+			return decreeSelectionWeight;
 		}
 
 		public static float DebugTotalNaturalRandomSelectionWeight(QuestScriptDef quest, float points, IIncidentTarget target)
@@ -126,7 +102,7 @@ namespace RimWorld
 			{
 				return 0f;
 			}
-			if (!quest.CanRun(points))
+			if (!quest.CanRun(points, target))
 			{
 				return 0f;
 			}

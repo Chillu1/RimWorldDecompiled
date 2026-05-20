@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using Verse;
 
@@ -7,7 +6,7 @@ namespace RimWorld
 {
 	public class Pawn_FilthTracker : IExposable
 	{
-		private Pawn pawn;
+		private readonly Pawn pawn;
 
 		private List<Filth> carriedFilth = new List<Filth>();
 
@@ -18,6 +17,8 @@ namespace RimWorld
 		private const float FilthDropChance = 0.05f;
 
 		private const int MaxCarriedTerrainFilthThickness = 1;
+
+		private const float BaseChanceToSpreadPerCell = 0.005f;
 
 		public string FilthReport
 		{
@@ -39,6 +40,8 @@ namespace RimWorld
 				return stringBuilder.ToString();
 			}
 		}
+
+		public List<Filth> CarriedFilthListForReading => carriedFilth;
 
 		private FilthSourceFlags AdditionalFilthSourceFlags
 		{
@@ -76,6 +79,10 @@ namespace RimWorld
 
 		public void Notify_EnteredNewCell()
 		{
+			if (pawn.Flying)
+			{
+				return;
+			}
 			if (Rand.Value < 0.05f)
 			{
 				TryDropFilth();
@@ -84,16 +91,27 @@ namespace RimWorld
 			{
 				TryPickupFilth();
 			}
-			if (!pawn.RaceProps.Humanlike)
+			if (!(Rand.Value < pawn.GetStatValue(StatDefOf.FilthRate) * 0.005f))
 			{
-				if (Rand.Value < PawnUtility.AnimalFilthChancePerCell(pawn.def, pawn.BodySize) && FilthMaker.TryMakeFilth(pawn.Position, pawn.Map, ThingDefOf.Filth_AnimalFilth, 1, AdditionalFilthSourceFlags))
+				return;
+			}
+			if (pawn.RaceProps.Humanlike)
+			{
+				if (FilthMaker.TryMakeFilth(filthDef: (lastTerrainFilthDef == null || !Rand.Chance(0.66f)) ? ThingDefOf.Filth_Trash : lastTerrainFilthDef, c: pawn.Position, map: pawn.Map, count: 1, additionalFlags: AdditionalFilthSourceFlags | FilthSourceFlags.Pawn))
+				{
+					FilthMonitor.Notify_FilthHumanGenerated();
+				}
+			}
+			else if (pawn.RaceProps.Insect)
+			{
+				if (FilthMaker.TryMakeFilth(pawn.Position, pawn.Map, ThingDefOf.Filth_Slime, 1, AdditionalFilthSourceFlags | FilthSourceFlags.Pawn))
 				{
 					FilthMonitor.Notify_FilthAnimalGenerated();
 				}
 			}
-			else if (Rand.Value < PawnUtility.HumanFilthChancePerCell(pawn.def, pawn.BodySize) && FilthMaker.TryMakeFilth(filthDef: (lastTerrainFilthDef == null || !Rand.Chance(0.66f)) ? ThingDefOf.Filth_Trash : lastTerrainFilthDef, c: pawn.Position, map: pawn.Map, count: 1, additionalFlags: AdditionalFilthSourceFlags))
+			else if (pawn.IsAnimal && FilthMaker.TryMakeFilth(pawn.Position, pawn.Map, ThingDefOf.Filth_AnimalFilth, 1, AdditionalFilthSourceFlags | FilthSourceFlags.Pawn))
 			{
-				FilthMonitor.Notify_FilthHumanGenerated();
+				FilthMonitor.Notify_FilthAnimalGenerated();
 			}
 		}
 
@@ -109,7 +127,7 @@ namespace RimWorld
 						ThinCarriedFilth(carriedFilth[num]);
 					}
 				}
-				Filth filth = carriedFilth.Where((Filth f) => f.def == terrDef.generatedFilth).FirstOrDefault();
+				Filth filth = carriedFilth.FirstOrDefault((Filth f) => f.def == terrDef.generatedFilth);
 				if (filth == null || filth.thickness < 1)
 				{
 					GainFilth(terrDef.generatedFilth);
@@ -119,11 +137,21 @@ namespace RimWorld
 			List<Thing> thingList = pawn.Position.GetThingList(pawn.Map);
 			for (int num2 = thingList.Count - 1; num2 >= 0; num2--)
 			{
-				Filth filth2 = thingList[num2] as Filth;
-				if (filth2 != null && filth2.CanFilthAttachNow)
+				if (thingList[num2] is Filth { CanFilthAttachNow: not false } filth2)
 				{
 					GainFilth(filth2.def, filth2.sources);
 					filth2.ThinFilth();
+				}
+			}
+			if (pawn.Position.Roofed(pawn.Map))
+			{
+				return;
+			}
+			foreach (GameCondition activeCondition in pawn.Map.GameConditionManager.ActiveConditions)
+			{
+				if (activeCondition.def.spreadsFilth != null)
+				{
+					GainFilth(activeCondition.def.spreadsFilth, Gen.YieldSingle(activeCondition.Label));
 				}
 			}
 		}

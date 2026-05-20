@@ -22,7 +22,7 @@ namespace RimWorld
 			toil.FailOnDespawnedNullOrForbidden(TargetIndex.A);
 			toil.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
 			yield return toil;
-			Toil maintain = new Toil();
+			Toil maintain = ToilMaker.MakeToil("MakeNewToils");
 			maintain.initAction = delegate
 			{
 				maintain.actor.CurJob.targetA.Thing.TryGetComp<CompMaintainable>().Maintained();

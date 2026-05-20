@@ -5,15 +5,9 @@ namespace RimWorld
 {
 	public abstract class SketchBuildable : SketchEntity
 	{
-		public abstract BuildableDef Buildable
-		{
-			get;
-		}
+		public abstract BuildableDef Buildable { get; }
 
-		public abstract ThingDef Stuff
-		{
-			get;
-		}
+		public abstract ThingDef Stuff { get; }
 
 		public override string Label => GenLabel.ThingLabel(Buildable, Stuff);
 
@@ -52,6 +46,24 @@ namespace RimWorld
 				}
 			}
 			return null;
+		}
+
+		protected void ForceTerrainAffordance(IntVec3 at, Rot4 rot, Map map, TerrainDef defaultTerrain)
+		{
+			TerrainDef newTerr = ((defaultTerrain == null || !defaultTerrain.affordances.Contains(Buildable.terrainAffordanceNeeded)) ? map.Biome.TerrainForAffordance(Buildable.terrainAffordanceNeeded) : defaultTerrain);
+			CellRect cellRect = GenAdj.OccupiedRect(at, rot, Buildable.Size);
+			cellRect.ClipInsideMap(map);
+			foreach (IntVec3 item in cellRect)
+			{
+				if (map.terrainGrid.TerrainAt(item).IsWater)
+				{
+					map.terrainGrid.SetFoundation(item, ModsConfig.OdysseyActive ? TerrainDefOf.HeavyBridge : TerrainDefOf.Bridge);
+				}
+				else
+				{
+					map.terrainGrid.SetTerrain(item, newTerr);
+				}
+			}
 		}
 	}
 }

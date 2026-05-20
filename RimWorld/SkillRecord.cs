@@ -4,7 +4,7 @@ using Verse;
 
 namespace RimWorld
 {
-	public class SkillRecord : IExposable
+	public class SkillRecord : IExposable, IComparable<SkillRecord>
 	{
 		private Pawn pawn;
 
@@ -19,6 +19,10 @@ namespace RimWorld
 		public float xpSinceMidnight;
 
 		private BoolUnknown cachedTotallyDisabled = BoolUnknown.Unknown;
+
+		private BoolUnknown cachedPermanentlyDisabled = BoolUnknown.Unknown;
+
+		private int? aptitudeCached;
 
 		public const int IntervalTicks = 200;
 
@@ -47,15 +51,13 @@ namespace RimWorld
 			new CurvePoint(19f, 30000f)
 		};
 
+		public Pawn Pawn => pawn;
+
 		public int Level
 		{
 			get
 			{
-				if (TotallyDisabled)
-				{
-					return 0;
-				}
-				return levelInt;
+				return GetLevel();
 			}
 			set
 			{
@@ -88,11 +90,27 @@ namespace RimWorld
 				{
 					cachedTotallyDisabled = ((!CalculateTotallyDisabled()) ? BoolUnknown.False : BoolUnknown.True);
 				}
+				if (PermanentlyDisabled)
+				{
+					return true;
+				}
 				return cachedTotallyDisabled == BoolUnknown.True;
 			}
 		}
 
-		public string LevelDescriptor => levelInt switch
+		public bool PermanentlyDisabled
+		{
+			get
+			{
+				if (cachedPermanentlyDisabled == BoolUnknown.Unknown)
+				{
+					cachedPermanentlyDisabled = ((!CalculatePermanentlyDisabled()) ? BoolUnknown.False : BoolUnknown.True);
+				}
+				return cachedPermanentlyDisabled == BoolUnknown.True;
+			}
+		}
+
+		public string LevelDescriptor => GetLevelForUI() switch
 		{
 			0 => "Skill0".Translate(), 
 			1 => "Skill1".Translate(), 
@@ -120,6 +138,48 @@ namespace RimWorld
 
 		public bool LearningSaturatedToday => xpSinceMidnight > 4000f;
 
+		public int Aptitude
+		{
+			get
+			{
+				if (!aptitudeCached.HasValue)
+				{
+					aptitudeCached = 0;
+					if (ModsConfig.BiotechActive && pawn.genes != null)
+					{
+						foreach (Gene item in pawn.genes.GenesListForReading)
+						{
+							if (item.Active)
+							{
+								aptitudeCached += item.def.AptitudeFor(def);
+							}
+						}
+					}
+					if (ModsConfig.AnomalyActive)
+					{
+						if (pawn.story?.traits != null)
+						{
+							foreach (Trait item2 in pawn.story.traits.TraitsSorted)
+							{
+								if (!item2.Suppressed)
+								{
+									aptitudeCached += item2.def.DataAtDegree(item2.Degree).AptitudeFor(def);
+								}
+							}
+						}
+						if (pawn.health?.hediffSet != null)
+						{
+							foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
+							{
+								aptitudeCached += hediff.def.AptitudeFor(def);
+							}
+						}
+					}
+				}
+				return aptitudeCached.Value;
+			}
+		}
+
 		public SkillRecord()
 		{
 		}
@@ -146,42 +206,45 @@ namespace RimWorld
 
 		public void Interval()
 		{
-			float num = (pawn.story.traits.HasTrait(TraitDefOf.GreatMemory) ? 0.5f : 1f);
-			switch (levelInt)
+			if (!ModsConfig.AnomalyActive || !pawn.story.traits.HasTrait(TraitDefOf.PerfectMemory))
 			{
-			case 10:
-				Learn(-0.1f * num);
-				break;
-			case 11:
-				Learn(-0.2f * num);
-				break;
-			case 12:
-				Learn(-0.4f * num);
-				break;
-			case 13:
-				Learn(-0.6f * num);
-				break;
-			case 14:
-				Learn(-1f * num);
-				break;
-			case 15:
-				Learn(-1.8f * num);
-				break;
-			case 16:
-				Learn(-2.8f * num);
-				break;
-			case 17:
-				Learn(-4f * num);
-				break;
-			case 18:
-				Learn(-6f * num);
-				break;
-			case 19:
-				Learn(-8f * num);
-				break;
-			case 20:
-				Learn(-12f * num);
-				break;
+				float num = (pawn.story.traits.HasTrait(TraitDefOf.GreatMemory) ? 0.5f : 1f);
+				switch (levelInt)
+				{
+				case 10:
+					Learn(-0.1f * num);
+					break;
+				case 11:
+					Learn(-0.2f * num);
+					break;
+				case 12:
+					Learn(-0.4f * num);
+					break;
+				case 13:
+					Learn(-0.6f * num);
+					break;
+				case 14:
+					Learn(-1f * num);
+					break;
+				case 15:
+					Learn(-1.8f * num);
+					break;
+				case 16:
+					Learn(-2.8f * num);
+					break;
+				case 17:
+					Learn(-4f * num);
+					break;
+				case 18:
+					Learn(-6f * num);
+					break;
+				case 19:
+					Learn(-8f * num);
+					break;
+				case 20:
+					Learn(-12f * num);
+					break;
+				}
 			}
 		}
 
@@ -190,14 +253,14 @@ namespace RimWorld
 			return XpForLevelUpCurve.Evaluate(startingLevel);
 		}
 
-		public void Learn(float xp, bool direct = false)
+		public void Learn(float xp, bool direct = false, bool ignoreLearnRate = false)
 		{
 			if (TotallyDisabled || (xp < 0f && levelInt == 0))
 			{
 				return;
 			}
 			bool flag = false;
-			if (xp > 0f)
+			if (xp > 0f && !ignoreLearnRate)
 			{
 				xp *= LearnRateFactor(direct);
 			}
@@ -244,10 +307,65 @@ namespace RimWorld
 					break;
 				}
 			}
-			if (flag && pawn.IsColonist && pawn.Spawned)
+			if (flag && pawn.IsColonist && pawn.SpawnedOrAnyParentSpawned)
 			{
-				MoteMaker.ThrowText(pawn.DrawPos, pawn.Map, def.LabelCap + "\n" + "TextMote_SkillUp".Translate(levelInt));
+				MoteMaker.ThrowText(pawn.DrawPosHeld ?? pawn.PositionHeld.ToVector3Shifted(), pawn.MapHeld, def.LabelCap + "\n" + "TextMote_SkillUp".Translate(Level));
 			}
+		}
+
+		public int CompareTo(SkillRecord other)
+		{
+			int result = Level - other.Level;
+			if (Level == other.Level)
+			{
+				if (xpSinceLastLevel == other.xpSinceLastLevel)
+				{
+					return 0;
+				}
+				if (!(xpSinceLastLevel > other.xpSinceLastLevel))
+				{
+					return -1;
+				}
+				return 1;
+			}
+			return result;
+		}
+
+		public int GetLevel(bool includeAptitudes = true)
+		{
+			if (TotallyDisabled)
+			{
+				return 0;
+			}
+			int num = levelInt;
+			if (includeAptitudes)
+			{
+				num += Aptitude;
+			}
+			return Mathf.Clamp(num, 0, 20);
+		}
+
+		public int GetLevelForUI(bool includeAptitudes = true)
+		{
+			if (PermanentlyDisabled)
+			{
+				return 0;
+			}
+			int num = levelInt;
+			if (includeAptitudes)
+			{
+				num += Aptitude;
+			}
+			return Mathf.Clamp(num, 0, 20);
+		}
+
+		public int GetUnclampedLevel()
+		{
+			if (PermanentlyDisabled)
+			{
+				return 0;
+			}
+			return levelInt + Aptitude;
 		}
 
 		public float LearnRateFactor(bool direct = false)
@@ -266,6 +384,10 @@ namespace RimWorld
 			if (!direct)
 			{
 				num *= pawn.GetStatValue(StatDefOf.GlobalLearningFactor);
+				if (def == SkillDefOf.Animals)
+				{
+					num *= pawn.GetStatValue(StatDefOf.AnimalsLearningFactor);
+				}
 				if (LearningSaturatedToday)
 				{
 					num *= 0.2f;
@@ -276,9 +398,9 @@ namespace RimWorld
 
 		public void EnsureMinLevelWithMargin(int minLevel)
 		{
-			if (!TotallyDisabled && (Level < minLevel || (Level == minLevel && xpSinceLastLevel < XpRequiredForLevelUp / 2f)))
+			if (!TotallyDisabled && (levelInt < minLevel || (levelInt == minLevel && xpSinceLastLevel < XpRequiredForLevelUp / 2f)))
 			{
-				Level = minLevel;
+				levelInt = minLevel;
 				xpSinceLastLevel = XpRequiredForLevelUp / 2f;
 			}
 		}
@@ -286,11 +408,22 @@ namespace RimWorld
 		public void Notify_SkillDisablesChanged()
 		{
 			cachedTotallyDisabled = BoolUnknown.Unknown;
+			cachedPermanentlyDisabled = BoolUnknown.Unknown;
+		}
+
+		public void DirtyAptitudes()
+		{
+			aptitudeCached = null;
 		}
 
 		private bool CalculateTotallyDisabled()
 		{
-			return def.IsDisabled(pawn.story.DisabledWorkTagsBackstoryAndTraits, pawn.GetDisabledWorkTypes(permanentOnly: true));
+			return def.IsDisabled(pawn.CombinedDisabledWorkTags, pawn.GetDisabledWorkTypes());
+		}
+
+		private bool CalculatePermanentlyDisabled()
+		{
+			return def.IsDisabled(pawn.CombinedDisabledWorkTags, pawn.GetDisabledWorkTypes(permanentOnly: true));
 		}
 
 		public override string ToString()

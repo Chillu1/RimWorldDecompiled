@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Verse;
+using Verse.Steam;
 
 namespace RimWorld
 {
@@ -20,15 +21,26 @@ namespace RimWorld
 						colonistsNeedingRescueResult.Add(item);
 					}
 				}
+				foreach (Pawn item2 in PawnsFinder.AllMaps_ColonySubhumansSpawnedPlayerControlled)
+				{
+					if (NeedsRescue(item2))
+					{
+						colonistsNeedingRescueResult.Add(item2);
+					}
+				}
 				return colonistsNeedingRescueResult;
 			}
 		}
 
 		public static bool NeedsRescue(Pawn p)
 		{
-			if (p.Downed && !p.InBed() && !(p.ParentHolder is Pawn_CarryTracker))
+			if (p.Downed && HealthAIUtility.WantsToBeRescued(p) && !p.InBed() && !(p.ParentHolder is Pawn_CarryTracker))
 			{
 				if (p.jobs?.jobQueue != null && p.jobs.jobQueue.Count > 0 && p.jobs.jobQueue.Peek().job.CanBeginNow(p))
+				{
+					return false;
+				}
+				if (ChildcareUtility.BabyBeingPlayedWith(p))
 				{
 					return false;
 				}
@@ -39,7 +51,7 @@ namespace RimWorld
 
 		public override string GetLabel()
 		{
-			if (ColonistsNeedingRescue.Count == 1)
+			if (colonistsNeedingRescueResult.Count == 1)
 			{
 				return "ColonistNeedsRescue".Translate();
 			}
@@ -49,9 +61,13 @@ namespace RimWorld
 		public override TaggedString GetExplanation()
 		{
 			StringBuilder stringBuilder = new StringBuilder();
-			foreach (Pawn item in ColonistsNeedingRescue)
+			foreach (Pawn item in colonistsNeedingRescueResult)
 			{
 				stringBuilder.AppendLine("  - " + item.NameShortColored.Resolve());
+			}
+			if (SteamDeck.IsSteamDeckInNonKeyboardMode)
+			{
+				return "ColonistsNeedRescueDescController".Translate(stringBuilder.ToString());
 			}
 			return "ColonistsNeedRescueDesc".Translate(stringBuilder.ToString());
 		}

@@ -11,7 +11,7 @@ namespace RimWorld
 	{
 		public const float WarmupSoundLength = 5.125f;
 
-		public const int BestowTimeTicks = 471;
+		public const int BestowTimeTicks = 5000;
 
 		public const int PlayWarmupSoundAfterTicks = 307;
 
@@ -36,7 +36,7 @@ namespace RimWorld
 			{
 				foreach (RoomRequirement throneRoomRequirement in titleAwardedWhenUpdating.throneRoomRequirements)
 				{
-					if (!throneRoomRequirement.Met(bestower.GetRoom(), target))
+					if (!throneRoomRequirement.MetOrDisabled(bestower.GetRoom(), target))
 					{
 						return false;
 					}
@@ -47,6 +47,7 @@ namespace RimWorld
 
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
 		{
+			Bestower.ClearAllReservations();
 			if (pawn.Reserve(BestowSpot, job, 1, -1, null, errorOnFailed))
 			{
 				return pawn.Reserve(Bestower, job, 1, -1, null, errorOnFailed);
@@ -56,14 +57,13 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (!ModLister.CheckRoyalty("Bestowing ceremony"))
 			{
-				Log.ErrorOnce("Bestowing cermonies are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 5464564);
 				yield break;
 			}
-			AddFailCondition(() => Bestower.GetLord() == null || Bestower.GetLord().CurLordToil == null || !(Bestower.GetLord().CurLordToil is LordToil_BestowingCeremony_Wait));
+			AddFailCondition(() => Bestower.GetLord() == null || Bestower.GetLord().CurLordToil == null || !(Bestower.GetLord().CurLordToil is LordToil_BestowingCeremony_Perform));
 			yield return Toils_Goto.GotoCell(TargetIndex.B, PathEndMode.OnCell);
-			Toil waitToil = Toils_General.Wait(471);
+			Toil waitToil = Toils_General.Wait(5000);
 			waitToil.AddPreInitAction(delegate
 			{
 				Messages.Message("MessageBestowingCeremonyStarted".Translate(pawn.Named("PAWN")), Bestower, MessageTypeDefOf.PositiveEvent);
@@ -88,7 +88,7 @@ namespace RimWorld
 					Vector3 loc = (pawn.TrueCenter() + Bestower.TrueCenter()) / 2f;
 					mote = MoteMaker.MakeStaticMote(loc, pawn.Map, ThingDefOf.Mote_Bestow);
 				}
-				mote.Maintain();
+				mote?.Maintain();
 				if ((sound == null || sound.Ended) && waitToil.actor.jobs.curDriver.ticksLeftThisToil <= 307)
 				{
 					sound = SoundDefOf.Bestowing_Warmup.TrySpawnSustainer(SoundInfo.InMap(new TargetInfo(pawn.Position, pawn.Map), MaintenanceType.PerTick));
@@ -105,7 +105,7 @@ namespace RimWorld
 			yield return Toils_General.Do(delegate
 			{
 				CeremonyJob.FinishCeremony(pawn);
-				MoteMaker.MakeStaticMote((pawn.TrueCenter() + Bestower.TrueCenter()) / 2f, pawn.Map, ThingDefOf.Mote_PsycastAreaEffect, 2f);
+				FleckMaker.Static((pawn.TrueCenter() + Bestower.TrueCenter()) / 2f, pawn.Map, FleckDefOf.PsycastAreaEffect, 2f);
 				SoundDefOf.Bestowing_Finished.PlayOneShot(pawn);
 			});
 		}

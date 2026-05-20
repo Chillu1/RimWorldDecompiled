@@ -14,7 +14,7 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<int> goodwillChange;
 
-		public SlateRef<string> reason;
+		public SlateRef<HistoryEventDef> reason;
 
 		protected override bool TestRunInt(Slate slate)
 		{
@@ -34,7 +34,7 @@ namespace RimWorld.QuestGen
 				pawns = pawns.GetValue(slate),
 				faction = faction.GetValue(slate),
 				goodwillChange = goodwillChange.GetValue(slate),
-				reason = reason.GetValue(slate)
+				historyEvent = reason.GetValue(slate)
 			};
 			QuestGen.quest.AddPart(part);
 		}

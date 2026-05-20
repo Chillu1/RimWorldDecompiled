@@ -14,7 +14,7 @@ namespace RimWorld
 			List<DirectPawnRelation> directRelations = otherPawn.relations.DirectRelations;
 			for (int i = 0; i < directRelations.Count; i++)
 			{
-				if (directRelations[i].otherPawn != p && !directRelations[i].otherPawn.Dead && (directRelations[i].def == PawnRelationDefOf.Lover || directRelations[i].def == PawnRelationDefOf.Fiance))
+				if (directRelations[i].otherPawn != p && !directRelations[i].otherPawn.Dead && (directRelations[i].def == PawnRelationDefOf.Lover || directRelations[i].def == PawnRelationDefOf.Fiance) && !new HistoryEvent(otherPawn.GetHistoryEventLoveRelationCount(), otherPawn.Named(HistoryEventArgsNames.Doer)).DoerWillingToDo())
 				{
 					return true;
 				}

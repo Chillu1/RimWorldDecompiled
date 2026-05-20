@@ -1,3 +1,4 @@
+using UnityEngine;
 using Verse;
 
 namespace RimWorld
@@ -18,6 +19,27 @@ namespace RimWorld
 				Direction8Way.NorthWest => "Direction8Way_NorthWest_Short".Translate(), 
 				_ => "Unknown Direction8Way", 
 			};
+		}
+
+		public static float AsAngle(this Direction8Way dir)
+		{
+			return dir switch
+			{
+				Direction8Way.North => 0f, 
+				Direction8Way.NorthEast => 45f, 
+				Direction8Way.East => 90f, 
+				Direction8Way.SouthEast => 135f, 
+				Direction8Way.South => 180f, 
+				Direction8Way.SouthWest => 225f, 
+				Direction8Way.West => 270f, 
+				Direction8Way.NorthWest => 315f, 
+				_ => float.MaxValue, 
+			};
+		}
+
+		public static Vector3 AsVector(this Direction8Way dir)
+		{
+			return Quaternion.AngleAxis(dir.AsAngle(), Vector3.up) * Vector3.forward;
 		}
 	}
 }

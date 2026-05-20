@@ -19,7 +19,9 @@ namespace RimWorld
 
 		private static int dateStringYear;
 
-		private static readonly List<string> fastHourStrings;
+		private static readonly List<string> fastHourStrings24h;
+
+		private static readonly List<string> fastHourStrings12h;
 
 		private static readonly List<string> seasonsCached;
 
@@ -31,7 +33,7 @@ namespace RimWorld
 		{
 			get
 			{
-				if (!WorldRendererUtility.WorldRenderedNow)
+				if (!WorldRendererUtility.WorldSelected)
 				{
 					return Find.CurrentMap != null;
 				}
@@ -45,7 +47,8 @@ namespace RimWorld
 			dateStringSeason = Season.Undefined;
 			dateStringQuadrum = Quadrum.Undefined;
 			dateStringYear = -1;
-			fastHourStrings = new List<string>();
+			fastHourStrings24h = new List<string>();
+			fastHourStrings12h = new List<string>();
 			seasonsCached = new List<string>();
 			Reset();
 		}
@@ -57,16 +60,23 @@ namespace RimWorld
 			dateStringSeason = Season.Undefined;
 			dateStringQuadrum = Quadrum.Undefined;
 			dateStringYear = -1;
-			fastHourStrings.Clear();
+			fastHourStrings24h.Clear();
 			for (int i = 0; i < 24; i++)
 			{
-				fastHourStrings.Add(i + (string)"LetterHour".Translate());
+				fastHourStrings24h.Add(i.ToString() + "LetterHour".Translate());
+			}
+			fastHourStrings12h.Clear();
+			for (int j = 0; j < 24; j++)
+			{
+				TaggedString taggedString = ((j >= 12) ? "PM".Translate() : "AM".Translate());
+				string item = ((j == 0) ? $"12 {taggedString}" : ((j > 12) ? $"{j - 12} {taggedString}" : $"{j} {taggedString}"));
+				fastHourStrings12h.Add(item);
 			}
 			seasonsCached.Clear();
 			int length = Enum.GetValues(typeof(Season)).Length;
-			for (int j = 0; j < length; j++)
+			for (int k = 0; k < length; k++)
 			{
-				Season season = (Season)j;
+				Season season = (Season)k;
 				seasonsCached.Add((season == Season.Undefined) ? "" : season.LabelCap());
 			}
 		}
@@ -74,11 +84,11 @@ namespace RimWorld
 		public static void DateOnGUI(Rect dateRect)
 		{
 			Vector2 vector;
-			if (WorldRendererUtility.WorldRenderedNow && Find.WorldSelector.selectedTile >= 0)
+			if (WorldRendererUtility.WorldSelected && Find.WorldSelector.SelectedTile.Valid)
 			{
-				vector = Find.WorldGrid.LongLatOf(Find.WorldSelector.selectedTile);
+				vector = Find.WorldGrid.LongLatOf(Find.WorldSelector.SelectedTile);
 			}
-			else if (WorldRendererUtility.WorldRenderedNow && Find.WorldSelector.NumSelectedObjects > 0)
+			else if (WorldRendererUtility.WorldSelected && Find.WorldSelector.NumSelectedObjects > 0)
 			{
 				vector = Find.WorldGrid.LongLatOf(Find.WorldSelector.FirstSelectedObject.Tile);
 			}
@@ -105,18 +115,25 @@ namespace RimWorld
 				dateStringYear = num2;
 			}
 			Text.Font = GameFont.Small;
-			float num3 = Mathf.Max(Mathf.Max(Text.CalcSize(fastHourStrings[index]).x, Text.CalcSize(dateString).x), Text.CalcSize(text).x) + 7f;
+			float num3 = Mathf.Max(Mathf.Max(Text.CalcSize(Prefs.TwelveHourClockMode ? fastHourStrings12h[index] : fastHourStrings24h[index]).x, Text.CalcSize(dateString).x), Text.CalcSize(text).x) + 7f;
 			dateRect.xMin = dateRect.xMax - num3;
 			if (Mouse.IsOver(dateRect))
 			{
 				Widgets.DrawHighlight(dateRect);
 			}
-			GUI.BeginGroup(dateRect);
+			Widgets.BeginGroup(dateRect);
 			Text.Font = GameFont.Small;
 			Text.Anchor = TextAnchor.UpperRight;
 			Rect rect = dateRect.AtZero();
 			rect.xMax -= 7f;
-			Widgets.Label(rect, fastHourStrings[index]);
+			if (Prefs.TwelveHourClockMode)
+			{
+				Widgets.Label(rect, fastHourStrings12h[index]);
+			}
+			else
+			{
+				Widgets.Label(rect, fastHourStrings24h[index]);
+			}
 			rect.yMin += 26f;
 			Widgets.Label(rect, dateString);
 			rect.yMin += 26f;
@@ -125,7 +142,7 @@ namespace RimWorld
 				Widgets.Label(rect, text);
 			}
 			Text.Anchor = TextAnchor.UpperLeft;
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			if (Mouse.IsOver(dateRect))
 			{
 				StringBuilder stringBuilder = new StringBuilder();

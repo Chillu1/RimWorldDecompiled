@@ -24,7 +24,7 @@ namespace Verse
 			}
 		}
 
-		public override void CompPostTick(ref float severityAdjustment)
+		public override void CompPostTickInterval(ref float severityAdjustment, int delta)
 		{
 			if (CompShouldRemove)
 			{
@@ -44,7 +44,7 @@ namespace Verse
 			}
 			else
 			{
-				currentInterval--;
+				currentInterval -= delta;
 			}
 		}
 

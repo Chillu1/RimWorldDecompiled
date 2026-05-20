@@ -10,6 +10,8 @@ namespace RimWorld
 
 		protected virtual int Width => def.width;
 
+		protected virtual TextAnchor Anchor => TextAnchor.MiddleLeft;
+
 		public override void DoHeader(Rect rect, PawnTable table)
 		{
 			base.DoHeader(rect, table);
@@ -25,7 +27,7 @@ namespace RimWorld
 				return;
 			}
 			Text.Font = GameFont.Small;
-			Text.Anchor = TextAnchor.MiddleLeft;
+			Text.Anchor = Anchor;
 			Text.WordWrap = false;
 			Widgets.Label(rect2, textFor);
 			Text.WordWrap = true;
@@ -47,7 +49,7 @@ namespace RimWorld
 
 		public override int Compare(Pawn a, Pawn b)
 		{
-			return comparer.Compare(GetTextFor(a), GetTextFor(a));
+			return comparer.Compare(GetTextFor(a), GetTextFor(b));
 		}
 
 		protected abstract string GetTextFor(Pawn pawn);

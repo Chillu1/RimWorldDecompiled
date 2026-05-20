@@ -1,5 +1,5 @@
-using System;
 using System.Collections.Generic;
+using LudeonTK;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -13,7 +13,11 @@ namespace RimWorld
 
 		private float selectedPsyfocusTarget = -1f;
 
-		private bool draggingPsyfocusBar;
+		private static bool draggingBar;
+
+		private float lastTargetValue;
+
+		private float targetValue;
 
 		private Texture2D LimitedTex;
 
@@ -23,11 +27,13 @@ namespace RimWorld
 
 		private const string UnlimitedIconPath = "UI/Icons/EntropyLimit/Unlimited";
 
-		private const float CostPreviewFadeIn = 0.1f;
+		public const float CostPreviewFadeIn = 0.1f;
 
-		private const float CostPreviewSolid = 0.15f;
+		public const float CostPreviewSolid = 0.15f;
 
-		private const float CostPreviewFadeOut = 0.6f;
+		public const float CostPreviewFadeInSolid = 0.25f;
+
+		public const float CostPreviewFadeOut = 0.6f;
 
 		private static readonly Color PainBoostColor = new Color(0.2f, 0.65f, 0.35f);
 
@@ -50,19 +56,21 @@ namespace RimWorld
 		public PsychicEntropyGizmo(Pawn_PsychicEntropyTracker tracker)
 		{
 			this.tracker = tracker;
-			order = -100f;
+			Order = -100f;
+			targetValue = tracker.TargetPsyfocus;
 			LimitedTex = ContentFinder<Texture2D>.Get("UI/Icons/EntropyLimit/Limited");
 			UnlimitedTex = ContentFinder<Texture2D>.Get("UI/Icons/EntropyLimit/Unlimited");
 		}
 
 		private void DrawThreshold(Rect rect, float percent, float entropyValue)
 		{
-			Rect rect2 = default(Rect);
-			rect2.x = rect.x + 3f + (rect.width - 8f) * percent;
-			rect2.y = rect.y + rect.height - 9f;
-			rect2.width = 2f;
-			rect2.height = 6f;
-			Rect position = rect2;
+			Rect position = new Rect
+			{
+				x = rect.x + 3f + (rect.width - 8f) * percent,
+				y = rect.y + rect.height - 9f,
+				width = 2f,
+				height = 6f
+			};
 			if (entropyValue < percent)
 			{
 				GUI.DrawTexture(position, BaseContent.GreyTex);
@@ -76,31 +84,33 @@ namespace RimWorld
 		private void DrawPsyfocusTarget(Rect rect, float percent)
 		{
 			float num = Mathf.Round((rect.width - 8f) * percent);
-			Rect position = default(Rect);
-			position.x = rect.x + 3f + num;
-			position.y = rect.y;
-			position.width = 2f;
-			position.height = rect.height;
+			GUI.DrawTexture(new Rect
+			{
+				x = rect.x + 3f + num,
+				y = rect.y,
+				width = 2f,
+				height = rect.height
+			}, PsyfocusTargetTex);
+			float num2 = UIScaling.AdjustCoordToUIScalingFloor(rect.x + 2f + num);
+			float xMax = UIScaling.AdjustCoordToUIScalingCeil(num2 + 4f);
+			Rect obj = new Rect
+			{
+				y = rect.y - 3f,
+				height = 5f,
+				xMin = num2,
+				xMax = xMax
+			};
+			GUI.DrawTexture(obj, PsyfocusTargetTex);
+			Rect position = obj;
+			position.y = rect.yMax - 2f;
 			GUI.DrawTexture(position, PsyfocusTargetTex);
-			float num2 = Widgets.AdjustCoordToUIScalingFloor(rect.x + 2f + num);
-			float xMax = Widgets.AdjustCoordToUIScalingCeil(num2 + 4f);
-			position = default(Rect);
-			position.y = rect.y - 3f;
-			position.height = 5f;
-			position.xMin = num2;
-			position.xMax = xMax;
-			Rect rect2 = position;
-			GUI.DrawTexture(rect2, PsyfocusTargetTex);
-			Rect position2 = rect2;
-			position2.y = rect.yMax - 2f;
-			GUI.DrawTexture(position2, PsyfocusTargetTex);
 		}
 
-		public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth)
+		public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth, GizmoRenderParms parms)
 		{
 			Rect rect = new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), 75f);
 			Rect rect2 = rect.ContractedBy(6f);
-			Command_Psycast command_Psycast = ((MainTabWindow_Inspect)MainButtonDefOf.Inspect.TabWindow)?.LastMouseoverGizmo as Command_Psycast;
+			Command_Psycast command_Psycast = MapGizmoUtility.LastMouseOverGizmo as Command_Psycast;
 			float num = Mathf.Repeat(Time.time, 0.85f);
 			float num2 = 1f;
 			if (num < 0.1f)
@@ -146,8 +156,8 @@ namespace RimWorld
 						num4 -= 1f;
 						num3 -= 1f;
 					}
-					rect6.xMin = Widgets.AdjustCoordToUIScalingFloor(rect6.xMin + num4 * width);
-					rect6.width = Widgets.AdjustCoordToUIScalingFloor(Mathf.Max(Mathf.Min(num3, 1f) - num4, 0f) * width);
+					rect6.xMin = UIScaling.AdjustCoordToUIScalingFloor(rect6.xMin + num4 * width);
+					rect6.width = UIScaling.AdjustCoordToUIScalingFloor(Mathf.Max(Mathf.Min(num3, 1f) - num4, 0f) * width);
 					GUI.color = new Color(1f, 1f, 1f, num2 * 0.7f);
 					GenUI.DrawTextureWithMaterial(rect6, EntropyBarTexAdd, null);
 					GUI.color = Color.white;
@@ -176,15 +186,30 @@ namespace RimWorld
 			TooltipHandler.TipRegion(rect7, delegate
 			{
 				float f = tracker.EntropyValue / tracker.RecoveryRate;
-				return string.Format("PawnTooltipPsychicEntropyStats".Translate(), Mathf.Round(tracker.EntropyValue), Mathf.Round(tracker.MaxEntropy), tracker.RecoveryRate.ToString("0.#"), Mathf.Round(f)) + "\n\n" + "PawnTooltipPsychicEntropyDesc".Translate();
+				TaggedString taggedString = ("PsychicEntropy".Translate() + ": ").Colorize(ColoredText.TipSectionTitleColor) + Mathf.Round(tracker.EntropyValue) + " / " + Mathf.Round(tracker.MaxEntropy);
+				taggedString += "\n" + "PawnTooltipPsychicEntropyStats".Translate(tracker.RecoveryRate.ToString("0.#"), Mathf.Round(f));
+				return (taggedString + ("\n\n" + "PawnTooltipPsychicEntropyDesc".Translate())).Resolve();
 			}, Gen.HashCombineInt(tracker.GetHashCode(), 133858));
 			Rect rect8 = rect2;
 			rect8.x += 63f;
 			rect8.y += 38f;
 			rect8.width = 100f;
 			rect8.height = 22f;
-			bool flag = Mouse.IsOver(rect8);
-			Widgets.FillableBar(rect8, Mathf.Min(tracker.CurrentPsyfocus, 1f), flag ? PsyfocusBarHighlightTex : PsyfocusBarTex, EmptyBarTex, doBorder: true);
+			lastTargetValue = targetValue;
+			if (tracker.Pawn.IsColonistPlayerControlled)
+			{
+				Widgets.DraggableBar(rect8, PsyfocusBarTex, PsyfocusBarHighlightTex, EmptyBarTex, PsyfocusTargetTex, ref draggingBar, tracker.CurrentPsyfocus, ref targetValue, Pawn_PsychicEntropyTracker.PsyfocusBandPercentages, 16);
+				if (lastTargetValue != targetValue)
+				{
+					tracker.SetPsyfocusTarget(targetValue);
+					PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.MeditationDesiredPsyfocus, KnowledgeAmount.Total);
+				}
+			}
+			else
+			{
+				Widgets.FillableBar(rect8, tracker.CurrentPsyfocus, PsyfocusBarTex, EmptyBarTex, doBorder: true);
+			}
+			UIHighlighter.HighlightOpportunity(rect8, "PsyfocusBar");
 			if (command_Psycast != null)
 			{
 				float min = command_Psycast.Ability.def.PsyfocusCostRange.min;
@@ -193,61 +218,25 @@ namespace RimWorld
 					Rect rect9 = rect8.ContractedBy(3f);
 					float num5 = Mathf.Max(tracker.CurrentPsyfocus - min, 0f);
 					float width2 = rect9.width;
-					rect9.xMin = Widgets.AdjustCoordToUIScalingFloor(rect9.xMin + num5 * width2);
-					rect9.width = Widgets.AdjustCoordToUIScalingCeil((tracker.CurrentPsyfocus - num5) * width2);
+					rect9.xMin = UIScaling.AdjustCoordToUIScalingFloor(rect9.xMin + num5 * width2);
+					rect9.width = UIScaling.AdjustCoordToUIScalingCeil((tracker.CurrentPsyfocus - num5) * width2);
 					GUI.color = new Color(1f, 1f, 1f, num2);
 					GenUI.DrawTextureWithMaterial(rect9, PsyfocusBarTexReduce, null);
 					GUI.color = Color.white;
 				}
 			}
-			for (int i = 1; i < Pawn_PsychicEntropyTracker.PsyfocusBandPercentages.Count - 1; i++)
-			{
-				DrawThreshold(rect8, Pawn_PsychicEntropyTracker.PsyfocusBandPercentages[i], tracker.CurrentPsyfocus);
-			}
-			float num6 = Mathf.Clamp(Mathf.Round((Event.current.mousePosition.x - (rect8.x + 3f)) / (rect8.width - 8f) * 16f) / 16f, 0f, 1f);
-			Event current2 = Event.current;
-			if (current2.type == EventType.MouseDown && current2.button == 0 && flag)
-			{
-				selectedPsyfocusTarget = num6;
-				draggingPsyfocusBar = true;
-				PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.MeditationDesiredPsyfocus, KnowledgeAmount.Total);
-				SoundDefOf.DragSlider.PlayOneShotOnCamera();
-				current2.Use();
-			}
-			if (current2.type == EventType.MouseDrag && current2.button == 0 && draggingPsyfocusBar && flag)
-			{
-				if (Math.Abs(num6 - selectedPsyfocusTarget) > float.Epsilon)
-				{
-					SoundDefOf.DragSlider.PlayOneShotOnCamera();
-				}
-				selectedPsyfocusTarget = num6;
-				current2.Use();
-			}
-			if (current2.type == EventType.MouseUp && current2.button == 0 && draggingPsyfocusBar)
-			{
-				if (selectedPsyfocusTarget >= 0f)
-				{
-					tracker.SetPsyfocusTarget(selectedPsyfocusTarget);
-				}
-				selectedPsyfocusTarget = -1f;
-				draggingPsyfocusBar = false;
-				current2.Use();
-			}
-			UIHighlighter.HighlightOpportunity(rect8, "PsyfocusBar");
-			DrawPsyfocusTarget(rect8, draggingPsyfocusBar ? selectedPsyfocusTarget : tracker.TargetPsyfocus);
-			GUI.color = Color.white;
 			Rect rect10 = rect2;
 			rect10.y += 38f;
 			rect10.width = 175f;
 			rect10.height = 38f;
-			TooltipHandler.TipRegion(rect10, () => tracker.PsyfocusTipString_NewTemp(selectedPsyfocusTarget), Gen.HashCombineInt(tracker.GetHashCode(), 133873));
+			TooltipHandler.TipRegion(rect10, () => tracker.PsyfocusTipString(selectedPsyfocusTarget), Gen.HashCombineInt(tracker.GetHashCode(), 133873));
 			if (tracker.Pawn.IsColonistPlayerControlled)
 			{
-				float num7 = 32f;
-				float num8 = 4f;
-				float num9 = rect2.height / 2f - num7 + num8;
-				float num10 = rect2.width - num7;
-				Rect rect11 = new Rect(rect2.x + num10, rect2.y + num9, num7, num7);
+				float num6 = 32f;
+				float num7 = 4f;
+				float num8 = rect2.height / 2f - num6 + num7;
+				float num9 = rect2.width - num6;
+				Rect rect11 = new Rect(rect2.x + num9, rect2.y + num8, num6, num6);
 				if (Widgets.ButtonImage(rect11, tracker.limitEntropyAmount ? LimitedTex : UnlimitedTex))
 				{
 					tracker.limitEntropyAmount = !tracker.limitEntropyAmount;
@@ -262,11 +251,11 @@ namespace RimWorld
 				}
 				TooltipHandler.TipRegionByKey(rect11, "PawnTooltipPsychicEntropyLimit");
 			}
-			if (tracker.PainMultiplier > 1f)
+			if (TryGetPainMultiplier(tracker.Pawn, out var painMultiplier))
 			{
 				Text.Font = GameFont.Small;
 				Text.Anchor = TextAnchor.MiddleCenter;
-				string recoveryBonus = (tracker.PainMultiplier - 1f).ToStringPercent("F0");
+				string recoveryBonus = (painMultiplier - 1f).ToStringPercent("F0");
 				string text = recoveryBonus;
 				float widthCached = text.GetWidthCached();
 				Rect rect12 = rect2;
@@ -282,6 +271,21 @@ namespace RimWorld
 				TooltipHandler.TipRegion(rect12.ContractedBy(-1f), () => "PawnTooltipPsychicEntropyPainFocus".Translate(tracker.Pawn.health.hediffSet.PainTotal.ToStringPercent("F0"), recoveryBonus), Gen.HashCombineInt(tracker.GetHashCode(), 133878));
 			}
 			return new GizmoResult(GizmoState.Clear);
+		}
+
+		private bool TryGetPainMultiplier(Pawn pawn, out float painMultiplier)
+		{
+			List<StatPart> parts = StatDefOf.PsychicEntropyRecoveryRate.parts;
+			for (int i = 0; i < parts.Count; i++)
+			{
+				if (parts[i] is StatPart_Pain statPart_Pain)
+				{
+					painMultiplier = statPart_Pain.PainFactor(tracker.Pawn);
+					return true;
+				}
+			}
+			painMultiplier = 0f;
+			return false;
 		}
 
 		public override float GetWidth(float maxWidth)

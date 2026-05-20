@@ -19,7 +19,7 @@ namespace RimWorld
 				mat = PowerOverlayMats.MatConnectorLine;
 				y = AltitudeLayer.MapDataOverlay.AltitudeFor();
 			}
-			Vector3 center = (A.TrueCenter() + B.TrueCenter()) / 2f;
+			Vector3 center = (A.TrueCenter() + A.Graphic.DrawOffset(A.Rotation) + B.TrueCenter() + B.Graphic.DrawOffset(B.Rotation)) / 2f;
 			center.y = y;
 			Vector3 v = B.TrueCenter() - A.TrueCenter();
 			Vector2 size = new Vector2(1f, v.MagnitudeHorizontal());
@@ -30,7 +30,7 @@ namespace RimWorld
 		public static void RenderAnticipatedWirePieceConnecting(IntVec3 userPos, Rot4 rotation, IntVec2 thingSize, Thing transmitter)
 		{
 			Vector3 vector = GenThing.TrueCenter(userPos, rotation, thingSize, AltitudeLayer.MapDataOverlay.AltitudeFor());
-			if (userPos != transmitter.Position)
+			if (!(userPos == transmitter.Position))
 			{
 				Vector3 vector2 = transmitter.TrueCenter();
 				vector2.y = AltitudeLayer.MapDataOverlay.AltitudeFor();

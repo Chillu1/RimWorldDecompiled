@@ -38,7 +38,7 @@ namespace RimWorld
 			foreach (IntVec3 item in cellRect)
 			{
 				TerrainDef terrainDef = map.terrainGrid.TerrainAt(item);
-				if (!terrainDef.affordances.Contains(TerrainAffordanceDefOf.Heavy) && (terrainDef.driesTo == null || !terrainDef.driesTo.affordances.Contains(TerrainAffordanceDefOf.Heavy)))
+				if (!item.GetAffordances(map).Contains(TerrainAffordanceDefOf.Heavy) && (terrainDef.driesTo == null || !terrainDef.driesTo.affordances.Contains(TerrainAffordanceDefOf.Heavy)))
 				{
 					return false;
 				}
@@ -54,23 +54,25 @@ namespace RimWorld
 			rect.ClipInsideMap(map);
 			foreach (IntVec3 item in rect)
 			{
-				if (map.terrainGrid.TerrainAt(item).affordances.Contains(TerrainAffordanceDefOf.Heavy))
+				if (item.GetAffordances(map).Contains(TerrainAffordanceDefOf.Heavy))
 				{
 					continue;
 				}
 				CompTerrainPumpDry.AffectCell(map, item);
 				for (int i = 0; i < 8; i++)
 				{
-					Vector3 b = Rand.InsideUnitCircleVec3 * 3f;
-					IntVec3 c2 = IntVec3.FromVector3(item.ToVector3Shifted() + b);
+					Vector3 vector = Rand.InsideUnitCircleVec3 * 3f;
+					IntVec3 c2 = IntVec3.FromVector3(item.ToVector3Shifted() + vector);
 					if (c2.InBounds(map))
 					{
 						CompTerrainPumpDry.AffectCell(map, c2);
 					}
 				}
 			}
-			ResolveParams resolveParams = default(ResolveParams);
-			resolveParams.rect = rect;
+			ResolveParams resolveParams = new ResolveParams
+			{
+				rect = rect
+			};
 			RimWorld.BaseGen.BaseGen.globalSettings.map = map;
 			RimWorld.BaseGen.BaseGen.symbolStack.Push("ship_core", resolveParams);
 			RimWorld.BaseGen.BaseGen.Generate();

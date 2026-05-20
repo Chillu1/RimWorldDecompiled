@@ -12,14 +12,10 @@ namespace RimWorld
 
 		private SkyColorSet ToxicFalloutColors = new SkyColorSet(new ColorInt(216, 255, 0).ToColor, new ColorInt(234, 200, 255).ToColor, new Color(0.6f, 0.8f, 0.5f), 0.85f);
 
-		private List<SkyOverlay> overlays = new List<SkyOverlay>
+		private readonly List<SkyOverlay> overlays = new List<SkyOverlay>
 		{
 			new WeatherOverlay_Fallout()
 		};
-
-		public const int CheckInterval = 3451;
-
-		private const float ToxicPerDay = 0.5f;
 
 		private const float PlantKillChance = 0.0065f;
 
@@ -47,31 +43,19 @@ namespace RimWorld
 			{
 				for (int k = 0; k < affectedMaps.Count; k++)
 				{
-					overlays[j].TickOverlay(affectedMaps[k]);
+					overlays[j].TickOverlay(affectedMaps[k], 1f);
 				}
 			}
 		}
 
 		private void DoPawnsToxicDamage(Map map)
 		{
-			List<Pawn> allPawnsSpawned = map.mapPawns.AllPawnsSpawned;
+			IReadOnlyList<Pawn> allPawnsSpawned = map.mapPawns.AllPawnsSpawned;
 			for (int i = 0; i < allPawnsSpawned.Count; i++)
 			{
-				DoPawnToxicDamage(allPawnsSpawned[i]);
-			}
-		}
-
-		public static void DoPawnToxicDamage(Pawn p)
-		{
-			if ((!p.Spawned || !p.Position.Roofed(p.Map)) && p.RaceProps.IsFlesh)
-			{
-				float num = 0.028758334f;
-				num *= p.GetStatValue(StatDefOf.ToxicSensitivity);
-				if (num != 0f)
+				if (!allPawnsSpawned[i].kindDef.immuneToGameConditionEffects)
 				{
-					float num2 = Mathf.Lerp(0.85f, 1.15f, Rand.ValueSeeded(p.thingIDNumber ^ 0x46EDC5D));
-					num *= num2;
-					HealthUtility.AdjustSeverity(p, HediffDefOf.ToxicBuildup, num);
+					ToxicUtility.DoAirbornePawnToxicDamage(allPawnsSpawned[i]);
 				}
 			}
 		}
@@ -90,6 +74,10 @@ namespace RimWorld
 				{
 					if (thing.def.plant.dieFromToxicFallout && Rand.Value < 0.0065f)
 					{
+						if (thing is Plant { IsCrop: not false } plant && MessagesRepeatAvoider.MessageShowAllowed("MessagePlantDiedOfPoison-" + thing.def.defName, 240f))
+						{
+							Messages.Message("MessagePlantDiedOfPoison".Translate(plant.GetCustomLabelNoCount(includeHp: false)), new TargetInfo(plant.Position, map), MessageTypeDefOf.NegativeEvent);
+						}
 						thing.Kill();
 					}
 				}

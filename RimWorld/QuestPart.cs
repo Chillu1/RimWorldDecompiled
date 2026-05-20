@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
@@ -22,46 +23,19 @@ namespace RimWorld
 
 		public string debugLabel;
 
-		public virtual string DescriptionPart
-		{
-			get;
-		}
+		public virtual string DescriptionPart { get; }
 
 		public int Index => quest.PartsListForReading.IndexOf(this);
 
-		public virtual IEnumerable<GlobalTargetInfo> QuestLookTargets
-		{
-			get
-			{
-				yield break;
-			}
-		}
+		public virtual IEnumerable<GlobalTargetInfo> QuestLookTargets => Enumerable.Empty<GlobalTargetInfo>();
 
 		public virtual string QuestSelectTargetsLabel => null;
 
-		public virtual IEnumerable<GlobalTargetInfo> QuestSelectTargets
-		{
-			get
-			{
-				yield break;
-			}
-		}
+		public virtual IEnumerable<GlobalTargetInfo> QuestSelectTargets => Enumerable.Empty<GlobalTargetInfo>();
 
-		public virtual IEnumerable<Faction> InvolvedFactions
-		{
-			get
-			{
-				yield break;
-			}
-		}
+		public virtual IEnumerable<Faction> InvolvedFactions => Enumerable.Empty<Faction>();
 
-		public virtual IEnumerable<Dialog_InfoCard.Hyperlink> Hyperlinks
-		{
-			get
-			{
-				yield break;
-			}
-		}
+		public virtual IEnumerable<Dialog_InfoCard.Hyperlink> Hyperlinks => Enumerable.Empty<Dialog_InfoCard.Hyperlink>();
 
 		public virtual bool IncreasesPopulation => false;
 
@@ -75,6 +49,11 @@ namespace RimWorld
 		}
 
 		public virtual bool QuestPartReserves(Faction f)
+		{
+			return false;
+		}
+
+		public virtual bool QuestPartReserves(TransportShip ship)
 		{
 			return false;
 		}
@@ -113,7 +92,15 @@ namespace RimWorld
 		{
 		}
 
+		public virtual void Notify_PawnBorn(Thing baby, Thing birther, Pawn mother, Pawn father)
+		{
+		}
+
 		public virtual void Notify_FactionRemoved(Faction faction)
+		{
+		}
+
+		public virtual void Notify_PawnDiscarded(Pawn pawn)
 		{
 		}
 
@@ -135,12 +122,12 @@ namespace RimWorld
 
 		public override string ToString()
 		{
-			string str = GetType().Name + " (index=" + Index;
+			string text = $"{GetType().Name} (quest.id={quest?.id ?? (-1)}, index={Index}";
 			if (!debugLabel.NullOrEmpty())
 			{
-				str = str + ", debugLabel=" + debugLabel;
+				text = text + ", debugLabel=" + debugLabel;
 			}
-			return str + ")";
+			return text + ")";
 		}
 
 		public string GetUniqueLoadID()

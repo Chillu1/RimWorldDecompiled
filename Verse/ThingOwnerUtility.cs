@@ -7,13 +7,13 @@ namespace Verse
 {
 	public static class ThingOwnerUtility
 	{
-		private static Stack<IThingHolder> tmpStack = new Stack<IThingHolder>();
+		private static readonly Stack<IThingHolder> tmpStack = new Stack<IThingHolder>();
 
-		private static List<IThingHolder> tmpHolders = new List<IThingHolder>();
+		private static readonly List<IThingHolder> tmpHolders = new List<IThingHolder>();
 
-		private static List<Thing> tmpThings = new List<Thing>();
+		private static readonly List<Thing> tmpThings = new List<Thing>();
 
-		private static List<IThingHolder> tmpMapChildHolders = new List<IThingHolder>();
+		private static readonly List<IThingHolder> tmpMapChildHolders = new List<IThingHolder>();
 
 		public static bool ThisOrAnyCompIsThingHolder(this ThingDef thingDef)
 		{
@@ -48,8 +48,7 @@ namespace Verse
 				List<ThingComp> allComps = thingWithComps.AllComps;
 				for (int i = 0; i < allComps.Count; i++)
 				{
-					IThingHolder thingHolder2 = allComps[i] as IThingHolder;
-					if (thingHolder2 != null)
+					if (allComps[i] is IThingHolder thingHolder2)
 					{
 						ThingOwner directlyHeldThings2 = thingHolder2.GetDirectlyHeldThings();
 						if (directlyHeldThings2 != null)
@@ -78,8 +77,7 @@ namespace Verse
 				List<ThingComp> allComps2 = thingWithComps.AllComps;
 				for (int j = 0; j < allComps2.Count; j++)
 				{
-					IThingHolder thingHolder3 = allComps2[j] as IThingHolder;
-					if (thingHolder3 == null)
+					if (!(allComps2[j] is IThingHolder thingHolder3))
 					{
 						continue;
 					}
@@ -108,13 +106,11 @@ namespace Verse
 		{
 			while (holder != null)
 			{
-				Thing thing = holder as Thing;
-				if (thing != null && thing.Spawned)
+				if (holder is Thing { Spawned: not false } thing)
 				{
 					return thing;
 				}
-				ThingComp thingComp = holder as ThingComp;
-				if (thingComp != null && thingComp.parent.Spawned)
+				if (holder is ThingComp thingComp && thingComp.parent.Spawned)
 				{
 					return thingComp.parent;
 				}
@@ -128,18 +124,13 @@ namespace Verse
 			IntVec3 result = IntVec3.Invalid;
 			while (holder != null)
 			{
-				Thing thing = holder as Thing;
-				if (thing != null && thing.Position.IsValid)
+				if (holder is Thing { Position: { IsValid: not false } } thing)
 				{
 					result = thing.Position;
 				}
-				else
+				else if (holder is ThingComp thingComp && thingComp.parent.Position.IsValid)
 				{
-					ThingComp thingComp = holder as ThingComp;
-					if (thingComp != null && thingComp.parent.Position.IsValid)
-					{
-						result = thingComp.parent.Position;
-					}
+					result = thingComp.parent.Position;
 				}
 				holder = holder.ParentHolder;
 			}
@@ -150,35 +141,46 @@ namespace Verse
 		{
 			while (holder != null)
 			{
-				Map map = holder as Map;
-				if (map != null)
+				if (holder is Map result)
 				{
-					return map;
+					return result;
 				}
 				holder = holder.ParentHolder;
 			}
 			return null;
 		}
 
-		public static int GetRootTile(IThingHolder holder)
+		public static PlanetTile GetRootTile(IThingHolder holder)
 		{
 			while (holder != null)
 			{
-				WorldObject worldObject = holder as WorldObject;
-				if (worldObject != null && worldObject.Tile >= 0)
+				if (holder is WorldObject { Tile: { Valid: not false } } worldObject)
 				{
 					return worldObject.Tile;
 				}
 				holder = holder.ParentHolder;
 			}
-			return -1;
+			return PlanetTile.Invalid;
 		}
 
 		public static bool ContentsSuspended(IThingHolder holder)
 		{
 			while (holder != null)
 			{
-				if (holder is Building_CryptosleepCasket || holder is ImportantPawnComp)
+				if (holder is Building_CryptosleepCasket || holder is ISuspendableThingHolder { IsContentsSuspended: not false })
+				{
+					return true;
+				}
+				holder = holder.ParentHolder;
+			}
+			return false;
+		}
+
+		public static bool ContentsInCryptosleep(IThingHolder holder)
+		{
+			while (holder != null)
+			{
+				if (holder is Building_CryptosleepCasket)
 				{
 					return true;
 				}
@@ -224,23 +226,19 @@ namespace Verse
 			int i = 0;
 			for (int count = container.Count; i < count; i++)
 			{
-				IThingHolder thingHolder = container[i] as IThingHolder;
-				if (thingHolder != null)
+				if (container[i] is IThingHolder item)
 				{
-					outThingsHolders.Add(thingHolder);
+					outThingsHolders.Add(item);
 				}
-				ThingWithComps thingWithComps = container[i] as ThingWithComps;
-				if (thingWithComps == null)
+				if (!(container[i] is ThingWithComps { AllComps: var allComps }))
 				{
 					continue;
 				}
-				List<ThingComp> allComps = thingWithComps.AllComps;
 				for (int j = 0; j < allComps.Count; j++)
 				{
-					IThingHolder thingHolder2 = allComps[j] as IThingHolder;
-					if (thingHolder2 != null)
+					if (allComps[j] is IThingHolder item2)
 					{
-						outThingsHolders.Add(thingHolder2);
+						outThingsHolders.Add(item2);
 					}
 				}
 			}
@@ -253,17 +251,31 @@ namespace Verse
 
 		public static T GetAnyParent<T>(Thing thing) where T : class, IThingHolder
 		{
-			T val = thing as T;
-			if (val != null)
+			if (thing is T result)
 			{
-				return val;
+				return result;
 			}
 			for (IThingHolder parentHolder = thing.ParentHolder; parentHolder != null; parentHolder = parentHolder.ParentHolder)
 			{
-				T val2 = parentHolder as T;
-				if (val2 != null)
+				if (parentHolder is T result2)
 				{
-					return val2;
+					return result2;
+				}
+			}
+			return null;
+		}
+
+		public static Thing GetFirstParentThing(Thing thing)
+		{
+			for (IThingHolder parentHolder = thing.ParentHolder; parentHolder != null; parentHolder = parentHolder.ParentHolder)
+			{
+				if (parentHolder is Thing result)
+				{
+					return result;
+				}
+				if (parentHolder is ThingComp thingComp)
+				{
+					return thingComp.parent;
 				}
 			}
 			return null;
@@ -277,13 +289,11 @@ namespace Verse
 			}
 			for (IThingHolder parentHolder = thing.ParentHolder; parentHolder != null; parentHolder = parentHolder.ParentHolder)
 			{
-				Thing thing2 = parentHolder as Thing;
-				if (thing2 != null && thing2.Spawned)
+				if (parentHolder is Thing { Spawned: not false } thing2)
 				{
 					return thing2;
 				}
-				ThingComp thingComp = parentHolder as ThingComp;
-				if (thingComp != null && thingComp.parent.Spawned)
+				if (parentHolder is ThingComp thingComp && thingComp.parent.Spawned)
 				{
 					return thingComp.parent;
 				}
@@ -333,10 +343,9 @@ namespace Verse
 				List<Thing> list = map.listerThings.ThingsMatching(request);
 				for (int i = 0; i < list.Count; i++)
 				{
-					T val = list[i] as T;
-					if (val != null)
+					if (list[i] is T item)
 					{
-						outThings.Add(val);
+						outThings.Add(item);
 					}
 				}
 			}
@@ -348,10 +357,9 @@ namespace Verse
 				GetAllThingsRecursively(tmpMapChildHolders[j], tmpThings, allowUnreal, passCheck);
 				for (int k = 0; k < tmpThings.Count; k++)
 				{
-					T val2 = tmpThings[k] as T;
-					if (val2 != null && request.Accepts(val2))
+					if (tmpThings[k] is T val && request.Accepts(val))
 					{
-						outThings.Add(val2);
+						outThings.Add(val);
 					}
 				}
 			}
@@ -382,12 +390,17 @@ namespace Verse
 				temperature = 14f;
 				return true;
 			}
-			if (holder is CompLaunchable || holder is ActiveDropPodInfo || holder is TravelingTransportPods)
+			if (holder is CompLaunchable || holder is ActiveTransporterInfo || holder is TravellingTransporters)
 			{
 				temperature = 14f;
 				return true;
 			}
 			if (holder is Settlement_TraderTracker || holder is TradeShip)
+			{
+				temperature = 14f;
+				return true;
+			}
+			if (holder is CompTransporter)
 			{
 				temperature = 14f;
 				return true;

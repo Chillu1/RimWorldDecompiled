@@ -17,25 +17,17 @@ namespace RimWorld
 
 		public override void TransformValue(StatRequest req, ref float val)
 		{
-			if (req.HasThing)
+			if (req.HasThing && req.Thing is Pawn pawn && ActiveFor(pawn))
 			{
-				Pawn pawn = req.Thing as Pawn;
-				if (pawn != null && ActiveFor(pawn))
-				{
-					val *= FactorFromMood(pawn);
-				}
+				val *= FactorFromMood(pawn);
 			}
 		}
 
 		public override string ExplanationPart(StatRequest req)
 		{
-			if (req.HasThing)
+			if (req.HasThing && req.Thing is Pawn pawn && ActiveFor(pawn))
 			{
-				Pawn pawn = req.Thing as Pawn;
-				if (pawn != null && ActiveFor(pawn))
-				{
-					return "StatsReport_MoodMultiplier".Translate(pawn.needs.mood.CurLevel.ToStringPercent()) + ": x" + FactorFromMood(pawn).ToStringPercent();
-				}
+				return "StatsReport_MoodMultiplier".Translate(pawn.needs.mood.CurLevel.ToStringPercent()) + ": x" + FactorFromMood(pawn).ToStringPercent();
 			}
 			return null;
 		}

@@ -14,7 +14,7 @@ namespace Verse
 		{
 			yield return Toils_General.Do(delegate
 			{
-				pawn.stances.SetStance(new Stance_Warmup(job.ability.def.verbProperties.warmupTime.SecondsToTicks(), null, job.ability.verb));
+				pawn.stances.SetStance(new Stance_WarmupAbilityWorld(job.ability.def.verbProperties.warmupTime.SecondsToTicks(), null, job.ability.verb));
 			});
 			yield return Toils_General.Do(delegate
 			{

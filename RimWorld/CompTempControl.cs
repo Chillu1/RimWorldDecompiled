@@ -8,21 +8,36 @@ namespace RimWorld
 {
 	public class CompTempControl : ThingComp
 	{
-		[Unsaved(false)]
+		protected const float DefaultTargetTemperature = 21f;
+
 		public bool operatingAtHighPower;
+
+		private CompPowerTrader intPowerTrader;
 
 		public float targetTemperature = -99999f;
 
-		private const float DefaultTargetTemperature = 21f;
+		public virtual float TargetTemperature
+		{
+			get
+			{
+				return targetTemperature;
+			}
+			set
+			{
+				targetTemperature = value;
+			}
+		}
 
 		public CompProperties_TempControl Props => (CompProperties_TempControl)props;
+
+		public CompPowerTrader PowerTrader => intPowerTrader ?? (intPowerTrader = parent.GetComp<CompPowerTrader>());
 
 		public override void PostSpawnSetup(bool respawningAfterLoad)
 		{
 			base.PostSpawnSetup(respawningAfterLoad);
-			if (targetTemperature < -2000f)
+			if (TargetTemperature < -2000f)
 			{
-				targetTemperature = Props.defaultTargetTemperature;
+				TargetTemperature = Props.defaultTargetTemperature;
 			}
 		}
 
@@ -32,7 +47,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref targetTemperature, "targetTemperature", 0f);
 		}
 
-		private float RoundedToCurrentTempModeOffset(float celsiusTemp)
+		protected float RoundedToCurrentTempModeOffset(float celsiusTemp)
 		{
 			return GenTemperature.ConvertTemperatureOffset(Mathf.RoundToInt(GenTemperature.CelsiusToOffset(celsiusTemp, Prefs.TemperatureMode)), Prefs.TemperatureMode, TemperatureDisplayMode.Celsius);
 		}
@@ -68,7 +83,7 @@ namespace RimWorld
 			Command_Action command_Action3 = new Command_Action();
 			command_Action3.action = delegate
 			{
-				targetTemperature = 21f;
+				TargetTemperature = 21f;
 				SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
 				ThrowCurrentTemperatureText();
 			};
@@ -101,32 +116,27 @@ namespace RimWorld
 			yield return command_Action5;
 		}
 
-		private void InterfaceChangeTargetTemperature(float offset)
+		protected void InterfaceChangeTargetTemperature(float offset)
 		{
 			SoundDefOf.DragSlider.PlayOneShotOnCamera();
-			targetTemperature += offset;
-			targetTemperature = Mathf.Clamp(targetTemperature, -273.15f, 1000f);
+			TargetTemperature += offset;
+			TargetTemperature = Mathf.Clamp(TargetTemperature, -273.15f, 1000f);
 			ThrowCurrentTemperatureText();
 		}
 
-		private void ThrowCurrentTemperatureText()
+		protected void ThrowCurrentTemperatureText()
 		{
-			MoteMaker.ThrowText(parent.TrueCenter() + new Vector3(0.5f, 0f, 0.5f), parent.Map, targetTemperature.ToStringTemperature("F0"), Color.white);
+			MoteMaker.ThrowText(parent.TrueCenter() + new Vector3(0.5f, 0f, 0.5f), parent.Map, TargetTemperature.ToStringTemperature("F0"), Color.white);
 		}
 
 		public override string CompInspectStringExtra()
 		{
 			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.Append("TargetTemperature".Translate() + ": ");
-			stringBuilder.AppendLine(targetTemperature.ToStringTemperature("F0"));
-			stringBuilder.Append("PowerConsumptionMode".Translate() + ": ");
-			if (operatingAtHighPower)
+			stringBuilder.Append((Props.inspectString ?? ((string)"TargetTemperature".Translate())) + ": ");
+			stringBuilder.AppendLine(TargetTemperature.ToStringTemperature("F0"));
+			if (PowerTrader != null)
 			{
-				stringBuilder.Append("PowerConsumptionHigh".Translate().CapitalizeFirst());
-			}
-			else
-			{
-				stringBuilder.Append("PowerConsumptionLow".Translate().CapitalizeFirst());
+				stringBuilder.Append(string.Format(arg1: (PowerTrader.Off ? ((string)"PowerConsumptionOff".Translate()) : (operatingAtHighPower ? ((string)"PowerConsumptionHigh".Translate()) : ((string)"PowerConsumptionLow".Translate()))).CapitalizeFirst(), format: "{0}: {1}", arg0: "PowerConsumptionMode".Translate()));
 			}
 			return stringBuilder.ToString();
 		}

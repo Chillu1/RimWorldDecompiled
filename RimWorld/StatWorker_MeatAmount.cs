@@ -5,6 +5,15 @@ namespace RimWorld
 {
 	public class StatWorker_MeatAmount : StatWorker
 	{
+		public override bool ShouldShowFor(StatRequest req)
+		{
+			if (req.Pawn?.RaceProps?.hasMeat == true)
+			{
+				return false;
+			}
+			return base.ShouldShowFor(req);
+		}
+
 		public override IEnumerable<Dialog_InfoCard.Hyperlink> GetInfoCardHyperlinks(StatRequest statRequest)
 		{
 			foreach (Dialog_InfoCard.Hyperlink infoCardHyperlink in base.GetInfoCardHyperlinks(statRequest))

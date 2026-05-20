@@ -41,9 +41,9 @@ namespace RimWorld
 					{
 					case TraderCaravanRole.Carrier:
 					{
-						for (int k = 0; k < p.inventory.innerContainer.Count; k++)
+						for (int j = 0; j < p.inventory.innerContainer.Count; j++)
 						{
-							yield return p.inventory.innerContainer[k];
+							yield return p.inventory.innerContainer[j];
 						}
 						break;
 					}
@@ -100,15 +100,49 @@ namespace RimWorld
 			{
 				yield return item;
 			}
+			if (ModsConfig.BiotechActive)
+			{
+				List<Building> list = pawn.Map.listerBuildings.AllBuildingsColonistOfDef(ThingDefOf.GeneBank);
+				foreach (Building item2 in list)
+				{
+					if (!ReachableForTrade(item2))
+					{
+						continue;
+					}
+					CompGenepackContainer compGenepackContainer = item2.TryGetComp<CompGenepackContainer>();
+					if (compGenepackContainer == null)
+					{
+						continue;
+					}
+					List<Genepack> containedGenepacks = compGenepackContainer.ContainedGenepacks;
+					foreach (Genepack item3 in containedGenepacks)
+					{
+						yield return item3;
+					}
+				}
+			}
+			IEnumerable<IHaulSource> enumerable2 = pawn.Map.listerBuildings.AllColonistBuildingsOfType<IHaulSource>();
+			foreach (IHaulSource item4 in enumerable2)
+			{
+				Building thing = (Building)item4;
+				if (!ReachableForTrade(thing))
+				{
+					continue;
+				}
+				foreach (Thing item5 in (IEnumerable<Thing>)item4.GetDirectlyHeldThings())
+				{
+					yield return item5;
+				}
+			}
 			if (pawn.GetLord() == null)
 			{
 				yield break;
 			}
-			foreach (Pawn item2 in from x in TradeUtility.AllSellableColonyPawns(pawn.Map)
+			foreach (Pawn item6 in from x in TradeUtility.AllSellableColonyPawns(pawn.Map)
 				where !x.Downed && ReachableForTrade(x)
 				select x)
 			{
-				yield return item2;
+				yield return item6;
 			}
 		}
 
@@ -116,11 +150,10 @@ namespace RimWorld
 		{
 			if (Goods.Contains(toGive))
 			{
-				Log.Error(string.Concat("Tried to add ", toGive, " to stock (pawn's trader tracker), but it's already here."));
+				Log.Error("Tried to add " + toGive?.ToString() + " to stock (pawn's trader tracker), but it's already here.");
 				return;
 			}
-			Pawn pawn = toGive as Pawn;
-			if (pawn != null)
+			if (toGive is Pawn pawn)
 			{
 				pawn.PreTraded(TradeAction.PlayerSells, playerNegotiator, this.pawn);
 				AddPawnToStock(pawn);
@@ -144,8 +177,7 @@ namespace RimWorld
 
 		public void GiveSoldThingToPlayer(Thing toGive, int countToGive, Pawn playerNegotiator)
 		{
-			Pawn pawn = toGive as Pawn;
-			if (pawn != null)
+			if (toGive is Pawn pawn)
 			{
 				pawn.PreTraded(TradeAction.PlayerBuys, playerNegotiator, this.pawn);
 				pawn.GetLord()?.Notify_PawnLost(pawn, PawnLostCondition.Undefined);
@@ -164,7 +196,9 @@ namespace RimWorld
 				this.pawn.GetLord()?.extraForbiddenThings.Add(thing);
 				return;
 			}
-			Log.Error(string.Concat("Could not place bought thing ", thing, " at ", positionHeld));
+			string obj = thing?.ToString();
+			IntVec3 intVec = positionHeld;
+			Log.Error("Could not place bought thing " + obj + " at " + intVec.ToString());
 			thing.Destroy();
 		}
 
@@ -186,7 +220,7 @@ namespace RimWorld
 			if (lord == null)
 			{
 				newPawn.Destroy();
-				Log.Error(string.Concat("Tried to sell pawn ", newPawn, " to ", pawn, ", but ", pawn, " has no lord. Traders without lord can't buy pawns."));
+				Log.Error("Tried to sell pawn " + newPawn?.ToString() + " to " + pawn?.ToString() + ", but " + pawn?.ToString() + " has no lord. Traders without lord can't buy pawns.");
 			}
 			else
 			{
@@ -221,11 +255,16 @@ namespace RimWorld
 
 		private bool ReachableForTrade(Thing thing)
 		{
-			if (pawn.Map != thing.Map)
+			Thing thing2 = thing;
+			if (HaulAIUtility.IsInHaulableInventory(thing))
+			{
+				thing2 = thing.SpawnedParentOrMe;
+			}
+			if (pawn.Map != thing2.MapHeld)
 			{
 				return false;
 			}
-			return pawn.Map.reachability.CanReach(pawn.Position, thing, PathEndMode.Touch, TraverseMode.PassDoors, Danger.Some);
+			return pawn.Map.reachability.CanReach(pawn.Position, thing2, PathEndMode.Touch, TraverseMode.PassDoors, Danger.Some);
 		}
 	}
 }

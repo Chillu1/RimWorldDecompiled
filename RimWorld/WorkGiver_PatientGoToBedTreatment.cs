@@ -19,18 +19,18 @@ namespace RimWorld
 			return base.NonScanJob(pawn);
 		}
 
-		private bool AnyAvailableDoctorFor(Pawn pawn)
+		public static bool AnyAvailableDoctorFor(Pawn pawn)
 		{
 			Map mapHeld = pawn.MapHeld;
-			if (mapHeld == null || pawn.Faction == null)
+			if (mapHeld == null)
 			{
 				return false;
 			}
-			List<Pawn> list = mapHeld.mapPawns.SpawnedPawnsInFaction(pawn.Faction);
+			List<Pawn> list = mapHeld.mapPawns.SpawnedPawnsInFaction(Faction.OfPlayer);
 			for (int i = 0; i < list.Count; i++)
 			{
 				Pawn pawn2 = list[i];
-				if (pawn2 != pawn && pawn2.RaceProps.Humanlike && !pawn2.Downed && pawn2.Awake() && !pawn2.InBed() && !pawn2.InMentalState && !pawn2.IsPrisoner && pawn2.workSettings != null && pawn2.workSettings.WorkIsActive(WorkTypeDefOf.Doctor) && pawn2.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation) && pawn2.CanReach(pawn, PathEndMode.Touch, Danger.Deadly))
+				if (pawn2 != pawn && (pawn2.RaceProps.Humanlike || pawn2.IsColonyMechPlayerControlled) && !pawn2.Downed && pawn2.Awake() && !pawn2.InBed() && !pawn2.InMentalState && !pawn2.IsPrisoner && pawn2.workSettings != null && pawn2.workSettings.EverWork && pawn2.workSettings.WorkIsActive(WorkTypeDefOf.Doctor) && pawn2.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation) && pawn2.CanReach(pawn, PathEndMode.Touch, Danger.Deadly))
 				{
 					return true;
 				}

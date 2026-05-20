@@ -16,14 +16,16 @@ namespace RimWorld
 		public override void SpawnSetup(Map map, bool respawningAfterLoad)
 		{
 			base.SpawnSetup(map, respawningAfterLoad);
-			steamSprayer = new IntermittentSteamSprayer(this);
-			steamSprayer.startSprayCallback = StartSpray;
-			steamSprayer.endSprayCallback = EndSpray;
+			steamSprayer = new IntermittentSteamSprayer(this)
+			{
+				startSprayCallback = StartSpray,
+				endSprayCallback = EndSpray
+			};
 		}
 
 		private void StartSpray()
 		{
-			SnowUtility.AddSnowRadial(this.OccupiedRect().RandomCell, base.Map, 4f, -0.06f);
+			WeatherBuildupUtility.AddSnowRadial(this.OccupiedRect().RandomCell, base.Map, 4f, -0.06f);
 			spraySustainer = SoundDefOf.GeyserSpray.TrySpawnSustainer(new TargetInfo(base.Position, base.Map));
 			spraySustainerStartTick = Find.TickManager.TicksGame;
 		}
@@ -37,7 +39,7 @@ namespace RimWorld
 			}
 		}
 
-		public override void Tick()
+		protected override void Tick()
 		{
 			if (harvester == null)
 			{

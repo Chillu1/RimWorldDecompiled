@@ -33,8 +33,7 @@ namespace RimWorld
 					boundUftInt = null;
 					return null;
 				}
-				Thing thing = billStack.billGiver as Thing;
-				if (thing != null)
+				if (billStack.billGiver is Thing thing)
 				{
 					WorkTypeDef workTypeDef = null;
 					List<WorkGiverDef> allDefsListForReading = DefDatabase<WorkGiverDef>.AllDefsListForReading;
@@ -64,6 +63,11 @@ namespace RimWorld
 			{
 				return;
 			}
+			if (value != null && value.Destroyed)
+			{
+				Log.Error($"Tried to bound destroyed UnfinishedThing {value} to bill {this}.");
+				return;
+			}
 			UnfinishedThing unfinishedThing = boundUftInt;
 			boundUftInt = value;
 			if (setOtherLink)
@@ -83,8 +87,8 @@ namespace RimWorld
 		{
 		}
 
-		public Bill_ProductionWithUft(RecipeDef recipe)
-			: base(recipe)
+		public Bill_ProductionWithUft(RecipeDef recipe, Precept_ThingStyle precept = null)
+			: base(recipe, precept)
 		{
 		}
 

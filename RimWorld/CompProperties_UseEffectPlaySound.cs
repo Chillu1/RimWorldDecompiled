@@ -2,7 +2,7 @@ using Verse;
 
 namespace RimWorld
 {
-	public class CompProperties_UseEffectPlaySound : CompProperties_Usable
+	public class CompProperties_UseEffectPlaySound : CompProperties_UseEffect
 	{
 		public SoundDef soundOnUsed;
 

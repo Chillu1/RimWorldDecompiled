@@ -8,13 +8,7 @@ namespace RimWorld.BaseGen
 {
 	public class SymbolResolver_EdgeThing : SymbolResolver
 	{
-		private List<int> randomRotations = new List<int>
-		{
-			0,
-			1,
-			2,
-			3
-		};
+		private List<int> randomRotations = new List<int> { 0, 1, 2, 3 };
 
 		private int MaxTriesToAvoidOtherEdgeThings = 4;
 
@@ -26,19 +20,19 @@ namespace RimWorld.BaseGen
 			}
 			if (rp.singleThingDef != null)
 			{
-				bool avoidOtherEdgeThings = rp.edgeThingAvoidOtherEdgeThings ?? false;
-				bool mustReachMapEdge = rp.edgeThingMustReachMapEdge ?? false;
+				bool valueOrDefault = rp.edgeThingAvoidOtherEdgeThings == true;
+				bool valueOrDefault2 = rp.edgeThingMustReachMapEdge == true;
 				IntVec3 spawnCell;
 				if (rp.thingRot.HasValue)
 				{
-					if (!TryFindSpawnCell(rp.rect, rp.singleThingDef, rp.thingRot.Value, avoidOtherEdgeThings, mustReachMapEdge, out spawnCell))
+					if (!TryFindSpawnCell(rp.rect, rp.singleThingDef, rp.thingRot.Value, valueOrDefault, valueOrDefault2, out spawnCell))
 					{
 						return false;
 					}
 				}
 				else if (!rp.singleThingDef.rotatable)
 				{
-					if (!TryFindSpawnCell(rp.rect, rp.singleThingDef, Rot4.North, avoidOtherEdgeThings, mustReachMapEdge, out spawnCell))
+					if (!TryFindSpawnCell(rp.rect, rp.singleThingDef, Rot4.North, valueOrDefault, valueOrDefault2, out spawnCell))
 					{
 						return false;
 					}
@@ -48,7 +42,7 @@ namespace RimWorld.BaseGen
 					bool flag = false;
 					for (int i = 0; i < 4; i++)
 					{
-						if (TryFindSpawnCell(rp.rect, rp.singleThingDef, new Rot4(i), avoidOtherEdgeThings, mustReachMapEdge, out spawnCell))
+						if (TryFindSpawnCell(rp.rect, rp.singleThingDef, new Rot4(i), valueOrDefault, valueOrDefault2, out spawnCell))
 						{
 							flag = true;
 							break;
@@ -68,11 +62,11 @@ namespace RimWorld.BaseGen
 			ThingDef thingDef = rp.singleThingDef ?? DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef x) => (x.IsWeapon || x.IsMedicine || x.IsDrug) && x.graphicData != null && !x.destroyOnDrop && x.size.x <= rp.rect.Width && x.size.z <= rp.rect.Width && x.size.x <= rp.rect.Height && x.size.z <= rp.rect.Height).RandomElement();
 			IntVec3 spawnCell = IntVec3.Invalid;
 			Rot4 value = Rot4.North;
-			bool avoidOtherEdgeThings = rp.edgeThingAvoidOtherEdgeThings ?? false;
-			bool mustReachMapEdge = rp.edgeThingMustReachMapEdge ?? false;
+			bool valueOrDefault = rp.edgeThingAvoidOtherEdgeThings == true;
+			bool valueOrDefault2 = rp.edgeThingMustReachMapEdge == true;
 			if (rp.thingRot.HasValue)
 			{
-				if (!TryFindSpawnCell(rp.rect, thingDef, rp.thingRot.Value, avoidOtherEdgeThings, mustReachMapEdge, out spawnCell))
+				if (!TryFindSpawnCell(rp.rect, thingDef, rp.thingRot.Value, valueOrDefault, valueOrDefault2, out spawnCell))
 				{
 					return;
 				}
@@ -80,7 +74,7 @@ namespace RimWorld.BaseGen
 			}
 			else if (!thingDef.rotatable)
 			{
-				if (!TryFindSpawnCell(rp.rect, thingDef, Rot4.North, avoidOtherEdgeThings, mustReachMapEdge, out spawnCell))
+				if (!TryFindSpawnCell(rp.rect, thingDef, Rot4.North, valueOrDefault, valueOrDefault2, out spawnCell))
 				{
 					return;
 				}
@@ -90,11 +84,11 @@ namespace RimWorld.BaseGen
 			{
 				randomRotations.Shuffle();
 				bool flag = false;
-				for (int i = 0; i < randomRotations.Count; i++)
+				for (int num = 0; num < randomRotations.Count; num++)
 				{
-					if (TryFindSpawnCell(rp.rect, thingDef, new Rot4(randomRotations[i]), avoidOtherEdgeThings, mustReachMapEdge, out spawnCell))
+					if (TryFindSpawnCell(rp.rect, thingDef, new Rot4(randomRotations[num]), valueOrDefault, valueOrDefault2, out spawnCell))
 					{
-						value = new Rot4(randomRotations[i]);
+						value = new Rot4(randomRotations[num]);
 						flag = true;
 						break;
 					}

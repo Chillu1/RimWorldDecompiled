@@ -54,6 +54,8 @@ namespace Verse.Profile
 			BreakRiskAlertUtility.Clear();
 			Region.ClearStaticData();
 			PawnsFinder.Clear();
+			SectionLayer_GravshipMask.ResetStaticData();
+			LongEventHandler.ExecuteWhenFinished(WorldTerrainColliderManager.ClearCache);
 			List<MainButtonDef> allDefsListForReading = DefDatabase<MainButtonDef>.AllDefsListForReading;
 			for (int l = 0; l < allDefsListForReading.Count; l++)
 			{

@@ -12,8 +12,14 @@ namespace RimWorld
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
 				Hive hiveFor = GetHiveFor(lord.ownedPawns[i]);
-				PawnDuty duty = new PawnDuty(DutyDefOf.DefendHiveAggressively, hiveFor, distToHiveToAttack);
-				lord.ownedPawns[i].mindState.duty = duty;
+				if (hiveFor == null)
+				{
+					lord.ownedPawns[i].mindState.duty = new PawnDuty(DutyDefOf.AssaultColony);
+				}
+				else
+				{
+					lord.ownedPawns[i].mindState.duty = new PawnDuty(DutyDefOf.DefendHiveAggressively, hiveFor, distToHiveToAttack);
+				}
 			}
 		}
 	}

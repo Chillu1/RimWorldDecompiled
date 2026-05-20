@@ -7,13 +7,30 @@ namespace RimWorld.Planet
 	{
 		public override bool ShouldRemoveMapNow(out bool alsoRemoveWorldObject)
 		{
-			if (!base.Map.mapPawns.AnyPawnBlockingMapRemoval)
-			{
-				alsoRemoveWorldObject = true;
-				return true;
-			}
 			alsoRemoveWorldObject = false;
-			return false;
+			if (base.Map.AnyBuildingBlockingMapRemoval)
+			{
+				return false;
+			}
+			if (base.Map.mapPawns.AnyPawnBlockingMapRemoval)
+			{
+				return false;
+			}
+			if (TransporterUtility.IncomingTransporterPreventingMapRemoval(base.Map))
+			{
+				return false;
+			}
+			alsoRemoveWorldObject = true;
+			return true;
+		}
+
+		public override IEnumerable<IncidentTargetTagDef> IncidentTargetTags()
+		{
+			foreach (IncidentTargetTagDef item in base.IncidentTargetTags())
+			{
+				yield return item;
+			}
+			yield return IncidentTargetTagDefOf.Map_PlayerHome;
 		}
 
 		public override IEnumerable<Gizmo> GetGizmos()

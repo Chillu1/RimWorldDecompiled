@@ -17,6 +17,7 @@ namespace Verse.AI
 		Escaping,
 		JoiningCaravan,
 		TrainedAnimalBehavior,
-		UnloadingOwnInventory
+		UnloadingOwnInventory,
+		TakeForInventoryStock
 	}
 }

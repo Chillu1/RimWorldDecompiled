@@ -1,4 +1,3 @@
-using System;
 using Verse;
 using Verse.AI;
 
@@ -8,7 +7,13 @@ namespace RimWorld
 	{
 		protected override Job TryGiveJob(Pawn pawn)
 		{
-			Predicate<Thing> validator = delegate(Thing t)
+			Thing thing = GenClosest.ClosestThing_Global_Reachable(pawn.Position, pawn.Map, pawn.Map.listerHaulables.ThingsPotentiallyNeedingHauling(), PathEndMode.OnCell, TraverseParms.For(pawn), 9999f, Validator);
+			if (thing != null)
+			{
+				return HaulAIUtility.HaulToStorageJob(pawn, thing, forced: false);
+			}
+			return null;
+			bool Validator(Thing t)
 			{
 				if (t.IsForbidden(pawn))
 				{
@@ -22,15 +27,12 @@ namespace RimWorld
 				{
 					return false;
 				}
-				IntVec3 foundCell;
-				return StoreUtility.TryFindBestBetterStoreCellFor(t, pawn, pawn.Map, StoreUtility.CurrentStoragePriorityOf(t), pawn.Faction, out foundCell) ? true : false;
-			};
-			Thing thing = GenClosest.ClosestThing_Global_Reachable(pawn.Position, pawn.Map, pawn.Map.listerHaulables.ThingsPotentiallyNeedingHauling(), PathEndMode.OnCell, TraverseParms.For(pawn), 9999f, validator);
-			if (thing != null)
-			{
-				return HaulAIUtility.HaulToStorageJob(pawn, thing);
+				if (!StoreUtility.TryFindBestBetterStoreCellFor(t, pawn, pawn.Map, StoreUtility.CurrentStoragePriorityOf(t), pawn.Faction, out var _))
+				{
+					return false;
+				}
+				return true;
 			}
-			return null;
 		}
 	}
 }

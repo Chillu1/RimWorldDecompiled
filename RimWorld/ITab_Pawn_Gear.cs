@@ -4,6 +4,7 @@ using System.Linq;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
+using Verse.AI;
 using Verse.Sound;
 
 namespace RimWorld
@@ -32,11 +33,21 @@ namespace RimWorld
 
 		private static List<Thing> workingInvList = new List<Thing>();
 
+		private static List<Thing> workingEquipmentList = new List<Thing>();
+
 		public override bool IsVisible
 		{
 			get
 			{
 				Pawn selPawnForGear = SelPawnForGear;
+				if (selPawnForGear.ageTracker.CurLifeStage == LifeStageDefOf.HumanlikeBaby || (ModsConfig.AnomalyActive && selPawnForGear.RaceProps.IsAnomalyEntity))
+				{
+					return false;
+				}
+				if (ModsConfig.OdysseyActive && selPawnForGear.RaceProps.IsDrone)
+				{
+					return false;
+				}
 				if (!ShouldShowInventory(selPawnForGear) && !ShouldShowApparel(selPawnForGear))
 				{
 					return ShouldShowEquipment(selPawnForGear);
@@ -50,7 +61,7 @@ namespace RimWorld
 			get
 			{
 				Pawn selPawnForGear = SelPawnForGear;
-				if (selPawnForGear.Downed || selPawnForGear.InMentalState)
+				if (selPawnForGear.Downed || selPawnForGear.InMentalState || selPawnForGear.CarriedBy != null)
 				{
 					return false;
 				}
@@ -86,12 +97,11 @@ namespace RimWorld
 		{
 			get
 			{
-				if (base.SelPawn != null)
+				if (SelPawn != null)
 				{
-					return base.SelPawn;
+					return SelPawn;
 				}
-				Corpse corpse = base.SelThing as Corpse;
-				if (corpse != null)
+				if (base.SelThing is Corpse corpse)
 				{
 					return corpse.InnerPawn;
 				}
@@ -109,13 +119,18 @@ namespace RimWorld
 		protected override void FillTab()
 		{
 			Text.Font = GameFont.Small;
-			Rect rect = new Rect(0f, 20f, size.x, size.y - 20f).ContractedBy(10f);
-			Rect position = new Rect(rect.x, rect.y, rect.width, rect.height);
-			GUI.BeginGroup(position);
+			Rect rect = new Rect(0f, 20f, size.x, size.y - 20f);
+			Rect rect2 = rect.ContractedBy(10f);
+			Rect rect3 = new Rect(rect2.x, rect2.y, rect2.width, rect2.height);
+			if (Prefs.DevMode && Widgets.ButtonText(new Rect(rect.xMax - 18f - 125f, 5f, 115f, Text.LineHeight), "Dev tool..."))
+			{
+				Find.WindowStack.Add(new FloatMenu(DebugToolsPawns.PawnGearDevOptions(SelPawnForGear)));
+			}
+			Widgets.BeginGroup(rect3);
 			Text.Font = GameFont.Small;
 			GUI.color = Color.white;
-			Rect outRect = new Rect(0f, 0f, position.width, position.height);
-			Rect viewRect = new Rect(0f, 0f, position.width - 16f, scrollViewHeight);
+			Rect outRect = new Rect(0f, 0f, rect3.width, rect3.height);
+			Rect viewRect = new Rect(0f, 0f, rect3.width - 16f, scrollViewHeight);
 			Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
 			float curY = 0f;
 			TryDrawMassInfo(ref curY, viewRect.width);
@@ -130,17 +145,23 @@ namespace RimWorld
 			if (ShouldShowEquipment(SelPawnForGear))
 			{
 				Widgets.ListSeparator(ref curY, viewRect.width, "Equipment".Translate());
-				foreach (ThingWithComps item in SelPawnForGear.equipment.AllEquipmentListForReading)
+				workingEquipmentList.Clear();
+				workingEquipmentList.AddRange(SelPawnForGear.equipment.AllEquipmentListForReading);
+				workingEquipmentList.AddRange(SelPawnForGear.apparel.WornApparel.Where((Apparel x) => x.def.apparel.layers.Contains(ApparelLayerDefOf.Belt)));
+				foreach (Thing workingEquipment in workingEquipmentList)
 				{
-					DrawThingRow(ref curY, viewRect.width, item);
+					DrawThingRow(ref curY, viewRect.width, workingEquipment);
 				}
 			}
 			if (ShouldShowApparel(SelPawnForGear))
 			{
 				Widgets.ListSeparator(ref curY, viewRect.width, "Apparel".Translate());
-				foreach (Apparel item2 in SelPawnForGear.apparel.WornApparel.OrderByDescending((Apparel ap) => ap.def.apparel.bodyPartGroups[0].listOrder))
+				foreach (Apparel item in from ap in SelPawnForGear.apparel.WornApparel
+					where !ap.def.apparel.layers.Contains(ApparelLayerDefOf.Belt)
+					orderby ap.def.apparel.bodyPartGroups[0].listOrder descending
+					select ap)
 				{
-					DrawThingRow(ref curY, viewRect.width, item2);
+					DrawThingRow(ref curY, viewRect.width, item);
 				}
 			}
 			if (ShouldShowInventory(SelPawnForGear))
@@ -148,9 +169,9 @@ namespace RimWorld
 				Widgets.ListSeparator(ref curY, viewRect.width, "Inventory".Translate());
 				workingInvList.Clear();
 				workingInvList.AddRange(SelPawnForGear.inventory.innerContainer);
-				for (int i = 0; i < workingInvList.Count; i++)
+				for (int num = 0; num < workingInvList.Count; num++)
 				{
-					DrawThingRow(ref curY, viewRect.width, workingInvList[i], inventory: true);
+					DrawThingRow(ref curY, viewRect.width, workingInvList[num], inventory: true);
 				}
 				workingInvList.Clear();
 			}
@@ -167,7 +188,7 @@ namespace RimWorld
 				scrollViewHeight = curY + 20f;
 			}
 			Widgets.EndScrollView();
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			GUI.color = Color.white;
 			Text.Anchor = TextAnchor.UpperLeft;
 		}
@@ -186,12 +207,12 @@ namespace RimWorld
 				{
 					flag2 = inventory || !EquipmentUtility.QuestLodgerCanUnequip(thing, SelPawnForGear);
 				}
-				Apparel apparel;
-				bool flag3 = (apparel = thing as Apparel) != null && SelPawnForGear.apparel != null && SelPawnForGear.apparel.IsLocked(apparel);
-				flag = flag2 || flag3;
+				bool flag3 = !inventory && SelPawnForGear.kindDef.destroyGearOnDrop;
+				bool flag4 = thing is Apparel apparel && SelPawnForGear.apparel != null && SelPawnForGear.apparel.IsLocked(apparel);
+				flag = flag2 || flag4 || flag3;
 				if (Mouse.IsOver(rect2))
 				{
-					if (flag3)
+					if (flag4)
 					{
 						TooltipHandler.TipRegion(rect2, "DropThingLocked".Translate());
 					}
@@ -208,8 +229,15 @@ namespace RimWorld
 				Color mouseoverColor = (flag ? color : GenUI.MouseoverColor);
 				if (Widgets.ButtonImage(rect2, TexButton.Drop, color, mouseoverColor, !flag) && !flag)
 				{
-					SoundDefOf.Tick_High.PlayOneShotOnCamera();
-					InterfaceDrop(thing);
+					Action action = delegate
+					{
+						SoundDefOf.Tick_High.PlayOneShotOnCamera();
+						InterfaceDrop(thing);
+					};
+					if (!ModsConfig.BiotechActive || !MechanitorUtility.TryConfirmBandwidthLossFromDroppingThing(SelPawnForGear, thing, action))
+					{
+						action();
+					}
 				}
 				rect.width -= 24f;
 			}
@@ -244,8 +272,7 @@ namespace RimWorld
 			GUI.color = ThingLabelColor;
 			Rect rect5 = new Rect(36f, y, rect.width - 36f, rect.height);
 			string text = thing.LabelCap;
-			Apparel apparel2 = thing as Apparel;
-			if (apparel2 != null && SelPawnForGear.outfits != null && SelPawnForGear.outfits.forcedHandler.IsForced(apparel2))
+			if (thing is Apparel ap && SelPawnForGear.outfits != null && SelPawnForGear.outfits.forcedHandler.IsForced(ap))
 			{
 				text += ", " + "ApparelForcedLower".Translate();
 			}
@@ -258,12 +285,7 @@ namespace RimWorld
 			Text.WordWrap = true;
 			if (Mouse.IsOver(rect))
 			{
-				string text2 = thing.DescriptionDetailed;
-				if (thing.def.useHitPoints)
-				{
-					text2 = text2 + "\n" + thing.HitPoints + " / " + thing.MaxHitPoints;
-				}
-				TooltipHandler.TipRegion(rect, text2);
+				TooltipHandler.TipRegion(rect, thing.GetTooltip());
 			}
 			y += 28f;
 		}
@@ -304,7 +326,8 @@ namespace RimWorld
 			{
 				Rect rect = new Rect(0f, curY, width, 22f);
 				float num = MassUtility.GearAndInventoryMass(SelPawnForGear);
-				Widgets.Label(rect, TranslatorFormattedStringExtensions.Translate(arg2: MassUtility.Capacity(SelPawnForGear).ToString("0.##"), key: "MassCarried", arg1: num.ToString("0.##")));
+				float num2 = MassUtility.Capacity(SelPawnForGear);
+				Widgets.Label(rect, "MassCarried".Translate(num.ToString("0.##"), num2.ToString("0.##")));
 				curY += 22f;
 			}
 		}
@@ -324,14 +347,13 @@ namespace RimWorld
 		private void InterfaceDrop(Thing t)
 		{
 			ThingWithComps thingWithComps = t as ThingWithComps;
-			Apparel apparel = t as Apparel;
-			if (apparel != null && SelPawnForGear.apparel != null && SelPawnForGear.apparel.WornApparel.Contains(apparel))
+			if (t is Apparel apparel && SelPawnForGear.apparel != null && SelPawnForGear.apparel.WornApparel.Contains(apparel))
 			{
-				SelPawnForGear.jobs.TryTakeOrderedJob(JobMaker.MakeJob(JobDefOf.RemoveApparel, apparel));
+				SelPawnForGear.jobs.TryTakeOrderedJob(JobMaker.MakeJob(JobDefOf.RemoveApparel, apparel), JobTag.Misc);
 			}
 			else if (thingWithComps != null && SelPawnForGear.equipment != null && SelPawnForGear.equipment.AllEquipmentListForReading.Contains(thingWithComps))
 			{
-				SelPawnForGear.jobs.TryTakeOrderedJob(JobMaker.MakeJob(JobDefOf.DropEquipment, thingWithComps));
+				SelPawnForGear.jobs.TryTakeOrderedJob(JobMaker.MakeJob(JobDefOf.DropEquipment, thingWithComps), JobTag.Misc);
 			}
 			else if (!t.def.destroyOnDrop)
 			{

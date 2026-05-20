@@ -5,20 +5,22 @@ namespace Verse
 {
 	public class Triangulator
 	{
-		private List<Vector2> m_points = new List<Vector2>();
+		private readonly List<Vector3> m_points;
 
-		public Triangulator(Vector2[] points)
+		private readonly List<int> indices = new List<int>();
+
+		public Triangulator(List<Vector3> points)
 		{
-			m_points = new List<Vector2>(points);
+			m_points = points;
 		}
 
-		public int[] Triangulate()
+		public List<int> Triangulate()
 		{
-			List<int> list = new List<int>();
+			indices.Clear();
 			int count = m_points.Count;
 			if (count < 3)
 			{
-				return list.ToArray();
+				return indices;
 			}
 			int[] array = new int[count];
 			if (Area() > 0f)
@@ -37,50 +39,48 @@ namespace Verse
 			}
 			int num = count;
 			int num2 = 2 * num;
-			int num3 = 0;
-			int num4 = num - 1;
+			int num3 = num - 1;
 			while (num > 2)
 			{
 				if (num2-- <= 0)
 				{
-					return list.ToArray();
+					return indices;
 				}
-				int num5 = num4;
-				if (num <= num5)
-				{
-					num5 = 0;
-				}
-				num4 = num5 + 1;
+				int num4 = num3;
 				if (num <= num4)
 				{
 					num4 = 0;
 				}
-				int num6 = num4 + 1;
-				if (num <= num6)
+				num3 = num4 + 1;
+				if (num <= num3)
 				{
-					num6 = 0;
+					num3 = 0;
 				}
-				if (Snip(num5, num4, num6, num, array))
+				int num5 = num3 + 1;
+				if (num <= num5)
 				{
-					int item = array[num5];
-					int item2 = array[num4];
-					int item3 = array[num6];
-					list.Add(item);
-					list.Add(item2);
-					list.Add(item3);
-					num3++;
-					int num7 = num4;
-					for (int k = num4 + 1; k < num; k++)
+					num5 = 0;
+				}
+				if (Snip(num4, num3, num5, num, array))
+				{
+					int item = array[num4];
+					int item2 = array[num3];
+					int item3 = array[num5];
+					indices.Add(item);
+					indices.Add(item2);
+					indices.Add(item3);
+					int num6 = num3;
+					for (int k = num3 + 1; k < num; k++)
 					{
-						array[num7] = array[k];
-						num7++;
+						array[num6] = array[k];
+						num6++;
 					}
 					num--;
 					num2 = 2 * num;
 				}
 			}
-			list.Reverse();
-			return list.ToArray();
+			indices.Reverse();
+			return indices;
 		}
 
 		private float Area()
@@ -91,9 +91,9 @@ namespace Verse
 			int num2 = 0;
 			while (num2 < count)
 			{
-				Vector2 vector = m_points[index];
-				Vector2 vector2 = m_points[num2];
-				num += vector.x * vector2.y - vector2.x * vector.y;
+				Vector3 vector = m_points[index];
+				Vector3 vector2 = m_points[num2];
+				num += vector.x * vector2.z - vector2.x * vector.z;
 				index = num2++;
 			}
 			return num * 0.5f;
@@ -101,10 +101,10 @@ namespace Verse
 
 		private bool Snip(int u, int v, int w, int n, int[] V)
 		{
-			Vector2 a = m_points[V[u]];
-			Vector2 b = m_points[V[v]];
-			Vector2 c = m_points[V[w]];
-			if (Mathf.Epsilon > (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x))
+			Vector3 a = m_points[V[u]];
+			Vector3 b = m_points[V[v]];
+			Vector3 c = m_points[V[w]];
+			if (Mathf.Epsilon > (b.x - a.x) * (c.z - a.z) - (b.z - a.z) * (c.x - a.x))
 			{
 				return false;
 			}
@@ -112,7 +112,7 @@ namespace Verse
 			{
 				if (i != u && i != v && i != w)
 				{
-					Vector2 p = m_points[V[i]];
+					Vector3 p = m_points[V[i]];
 					if (InsideTriangle(a, b, c, p))
 					{
 						return false;
@@ -122,20 +122,20 @@ namespace Verse
 			return true;
 		}
 
-		private bool InsideTriangle(Vector2 A, Vector2 B, Vector2 C, Vector2 P)
+		private static bool InsideTriangle(Vector3 A, Vector3 B, Vector3 C, Vector3 P)
 		{
 			float num = C.x - B.x;
-			float num2 = C.y - B.y;
+			float num2 = C.z - B.z;
 			float num3 = A.x - C.x;
-			float num4 = A.y - C.y;
+			float num4 = A.z - C.z;
 			float num5 = B.x - A.x;
-			float num6 = B.y - A.y;
+			float num6 = B.z - A.z;
 			float num7 = P.x - A.x;
-			float num8 = P.y - A.y;
+			float num8 = P.z - A.z;
 			float num9 = P.x - B.x;
-			float num10 = P.y - B.y;
+			float num10 = P.z - B.z;
 			float num11 = P.x - C.x;
-			float num12 = P.y - C.y;
+			float num12 = P.z - C.z;
 			float num13 = num * num10 - num2 * num9;
 			float num14 = num5 * num8 - num6 * num7;
 			float num15 = num3 * num12 - num4 * num11;

@@ -8,7 +8,7 @@ namespace RimWorld
 	{
 		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			if (!ShouldTakeCareOfPrisoner_NewTemp(pawn, t, forced))
+			if (!ShouldTakeCareOfPrisoner(pawn, t))
 			{
 				return null;
 			}
@@ -21,6 +21,10 @@ namespace RimWorld
 			{
 				return null;
 			}
+			if (pawn2.needs.food == null)
+			{
+				return null;
+			}
 			if (pawn2.needs.food.CurLevelPercentage >= pawn2.needs.food.PercentageThreshHungry + 0.02f)
 			{
 				return null;
@@ -29,7 +33,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			if (!FoodUtility.TryFindBestFoodSourceFor(pawn, pawn2, pawn2.needs.food.CurCategory == HungerCategory.Starving, out var foodSource, out var foodDef, canRefillDispenser: false, canUseInventory: true, allowForbidden: false, allowCorpse: false))
+			if (!FoodUtility.TryFindBestFoodSourceFor(pawn, pawn2, pawn2.needs.food.CurCategory == HungerCategory.Starving, out var foodSource, out var foodDef, canRefillDispenser: false, canUseInventory: true, canUsePackAnimalInventory: false, allowForbidden: false, allowCorpse: false, allowSociallyImproper: false, allowHarvest: false, forceScanWholeMap: false, ignoreReservations: false, calculateWantedStackCount: true))
 			{
 				return null;
 			}
@@ -41,7 +45,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			float nutrition = FoodUtility.GetNutrition(foodSource, foodDef);
+			float nutrition = FoodUtility.GetNutrition(pawn2, foodSource, foodDef);
 			Job job = JobMaker.MakeJob(JobDefOf.DeliverFood, foodSource, pawn2);
 			job.count = FoodUtility.WillIngestStackCountOf(pawn2, foodDef, nutrition);
 			job.targetC = RCellFinder.SpotToChewStandingNear(pawn2, foodSource);
@@ -61,9 +65,10 @@ namespace RimWorld
 			{
 				return false;
 			}
-			for (int i = 0; i < room.RegionCount; i++)
+			List<Region> regions = room.Regions;
+			for (int i = 0; i < regions.Count; i++)
 			{
-				Region region = room.Regions[i];
+				Region region = regions[i];
 				List<Thing> list = region.ListerThings.ThingsInGroup(ThingRequestGroup.FoodSourceNotPlantOrTree);
 				for (int j = 0; j < list.Count; j++)
 				{
@@ -76,8 +81,8 @@ namespace RimWorld
 				List<Thing> list2 = region.ListerThings.ThingsInGroup(ThingRequestGroup.Pawn);
 				for (int k = 0; k < list2.Count; k++)
 				{
-					Pawn pawn = list2[k] as Pawn;
-					if (pawn.IsPrisonerOfColony && pawn.needs.food.CurLevelPercentage < pawn.needs.food.PercentageThreshHungry + 0.02f && (pawn.carryTracker.CarriedThing == null || !pawn.WillEat(pawn.carryTracker.CarriedThing)))
+					Pawn pawn = (Pawn)list2[k];
+					if (pawn.IsPrisonerOfColony && pawn.needs.food != null && pawn.needs.food.CurLevelPercentage < pawn.needs.food.PercentageThreshHungry + 0.02f && (pawn.carryTracker.CarriedThing == null || !pawn.WillEat(pawn.carryTracker.CarriedThing)))
 					{
 						num += pawn.needs.food.NutritionWanted;
 					}
@@ -96,13 +101,9 @@ namespace RimWorld
 			{
 				return foodSource.GetStatValue(StatDefOf.Nutrition) * (float)foodSource.stackCount;
 			}
-			if (p.RaceProps.ToolUser && p.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation))
+			if (p.RaceProps.ToolUser && p.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation) && foodSource is Building_NutrientPasteDispenser { CanDispenseNow: not false } building_NutrientPasteDispenser && p.CanReach(building_NutrientPasteDispenser.InteractionCell, PathEndMode.OnCell, Danger.Some))
 			{
-				Building_NutrientPasteDispenser building_NutrientPasteDispenser = foodSource as Building_NutrientPasteDispenser;
-				if (building_NutrientPasteDispenser != null && building_NutrientPasteDispenser.CanDispenseNow && p.CanReach(building_NutrientPasteDispenser.InteractionCell, PathEndMode.OnCell, Danger.Some))
-				{
-					return 99999f;
-				}
+				return 99999f;
 			}
 			return 0f;
 		}

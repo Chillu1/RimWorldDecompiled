@@ -8,7 +8,7 @@ namespace Verse
 	{
 		private static Dictionary<int, Graphic> ghostGraphics = new Dictionary<int, Graphic>();
 
-		public static Graphic GhostGraphicFor(Graphic baseGraphic, ThingDef thingDef, Color ghostCol)
+		public static Graphic GhostGraphicFor(Graphic baseGraphic, ThingDef thingDef, Color ghostCol, ThingDef stuff = null)
 		{
 			if (thingDef.useSameGraphicForGhost)
 			{
@@ -18,15 +18,20 @@ namespace Verse
 			seed = Gen.HashCombine(seed, baseGraphic);
 			seed = Gen.HashCombine(seed, thingDef);
 			seed = Gen.HashCombineStruct(seed, ghostCol);
+			seed = Gen.HashCombine(seed, stuff);
 			if (!ghostGraphics.TryGetValue(seed, out var value))
 			{
-				if (thingDef.graphicData.Linked || thingDef.IsDoor)
+				if (thingDef.graphicData.Linked || (thingDef.IsDoor && !thingDef.building.isSupportDoor))
 				{
 					value = GraphicDatabase.Get<Graphic_Single>(thingDef.uiIconPath, ShaderTypeDefOf.EdgeDetect.Shader, thingDef.graphicData.drawSize, ghostCol);
 				}
 				else
 				{
-					if (baseGraphic == null)
+					if (thingDef.useBlueprintGraphicAsGhost)
+					{
+						baseGraphic = thingDef.blueprintDef.graphic;
+					}
+					else if (baseGraphic == null)
 					{
 						baseGraphic = thingDef.graphic;
 					}
@@ -37,7 +42,8 @@ namespace Verse
 						graphicData.CopyFrom(baseGraphic.data);
 						graphicData.shadowData = null;
 					}
-					value = GraphicDatabase.Get(baseGraphic.GetType(), baseGraphic.path, ShaderTypeDefOf.EdgeDetect.Shader, baseGraphic.drawSize, ghostCol, Color.white, graphicData, null);
+					string path = baseGraphic.path;
+					value = ((!(baseGraphic is Graphic_Appearances graphic_Appearances) || stuff == null) ? GraphicDatabase.Get(baseGraphic.GetType(), path, ShaderTypeDefOf.EdgeDetect.Shader, baseGraphic.drawSize, ghostCol, Color.white, graphicData, null) : GraphicDatabase.Get<Graphic_Single>(graphic_Appearances.SubGraphicFor(stuff).path, ShaderTypeDefOf.EdgeDetect.Shader, thingDef.graphicData.drawSize, ghostCol, Color.white, graphicData));
 				}
 				ghostGraphics.Add(seed, value);
 			}

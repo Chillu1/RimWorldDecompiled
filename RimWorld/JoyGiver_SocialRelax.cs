@@ -9,7 +9,7 @@ namespace RimWorld
 {
 	public class JoyGiver_SocialRelax : JoyGiver
 	{
-		private static List<CompGatherSpot> workingSpots = new List<CompGatherSpot>();
+		private static readonly List<CompGatherSpot> workingSpots = new List<CompGatherSpot>();
 
 		private const float GatherRadius = 3.9f;
 
@@ -19,16 +19,16 @@ namespace RimWorld
 			orderby Mathf.Abs((c - IntVec3.Zero).LengthHorizontal - 1.95f)
 			select c).ToList();
 
-		private static List<ThingDef> nurseableDrugs = new List<ThingDef>();
+		private static readonly List<ThingDef> nurseableDrugs = new List<ThingDef>();
 
 		public override Job TryGiveJob(Pawn pawn)
 		{
 			return TryGiveJobInt(pawn, null);
 		}
 
-		public override Job TryGiveJobInGatheringArea(Pawn pawn, IntVec3 gatheringSpot)
+		public override Job TryGiveJobInGatheringArea(Pawn pawn, IntVec3 gatheringSpot, float maxRadius = -1f)
 		{
-			return TryGiveJobInt(pawn, (CompGatherSpot x) => GatheringsUtility.InGatheringArea(x.parent.Position, gatheringSpot, pawn.Map));
+			return TryGiveJobInt(pawn, (CompGatherSpot x) => GatheringsUtility.InGatheringArea(x.parent.Position, gatheringSpot, pawn.Map) && (maxRadius < 0f || x.parent.Position.InHorDistOf(gatheringSpot, maxRadius)));
 		}
 
 		private Job TryGiveJobInt(Pawn pawn, Predicate<CompGatherSpot> gatherSpotValidator)
@@ -51,7 +51,7 @@ namespace RimWorld
 				}
 				workingSpots.Remove(result);
 			}
-			while (result.parent.IsForbidden(pawn) || !pawn.CanReach(result.parent, PathEndMode.Touch, Danger.None) || !result.parent.IsSociallyProper(pawn) || !result.parent.IsPoliticallyProper(pawn) || (gatherSpotValidator != null && !gatherSpotValidator(result)));
+			while (result.parent.IsForbidden(pawn) || result.parent.Fogged() || !pawn.CanReach(result.parent, PathEndMode.Touch, Danger.None) || !result.parent.IsSociallyProper(pawn) || !result.parent.IsPoliticallyProper(pawn) || result.parent.Position.VacuumConcernTo(pawn) || (gatherSpotValidator != null && !gatherSpotValidator(result)));
 			Job job;
 			Thing chair2;
 			if (result.parent.def.surfaceType == SurfaceType.Eat)
@@ -77,7 +77,7 @@ namespace RimWorld
 			if (pawn.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation) && TryFindIngestibleToNurse(result.parent.Position, pawn, out var ingestible))
 			{
 				job.targetC = ingestible;
-				job.count = Mathf.Min(ingestible.stackCount, ingestible.def.ingestible.maxNumToIngestAtOnce);
+				job.count = Mathf.Min(ingestible.stackCount, ingestible.def.ingestible.defaultNumToIngestAtOnce);
 			}
 			return job;
 		}
@@ -85,6 +85,11 @@ namespace RimWorld
 		private static bool TryFindIngestibleToNurse(IntVec3 center, Pawn ingester, out Thing ingestible)
 		{
 			if (ingester.IsTeetotaler())
+			{
+				ingestible = null;
+				return false;
+			}
+			if (!new HistoryEvent(HistoryEventDefOf.IngestedRecreationalDrug, ingester.Named(HistoryEventArgsNames.Doer)).DoerWillingToDo())
 			{
 				ingestible = null;
 				return false;
@@ -109,8 +114,7 @@ namespace RimWorld
 				List<Thing> list = ingester.Map.listerThings.ThingsOfDef(nurseableDrugs[j]);
 				if (list.Count > 0)
 				{
-					Predicate<Thing> validator = (Thing t) => ingester.CanReserve(t) && !t.IsForbidden(ingester);
-					ingestible = GenClosest.ClosestThing_Global_Reachable(center, ingester.Map, list, PathEndMode.OnCell, TraverseParms.For(ingester), 40f, validator);
+					ingestible = GenClosest.ClosestThing_Global_Reachable(center, ingester.Map, list, PathEndMode.OnCell, TraverseParms.For(ingester), 40f, Validator);
 					if (ingestible != null)
 					{
 						return true;
@@ -119,6 +123,14 @@ namespace RimWorld
 			}
 			ingestible = null;
 			return false;
+			bool Validator(Thing t)
+			{
+				if (ingester.CanReserve(t) && !t.Fogged())
+				{
+					return !t.IsForbidden(ingester);
+				}
+				return false;
+			}
 		}
 
 		private static bool TryFindChairBesideTable(Thing table, Pawn sitter, out Thing chair)
@@ -126,7 +138,8 @@ namespace RimWorld
 			for (int i = 0; i < 30; i++)
 			{
 				Building edifice = table.RandomAdjacentCellCardinal().GetEdifice(table.Map);
-				if (edifice != null && edifice.def.building.isSittable && sitter.CanReserve(edifice))
+				CompAssignableToPawn_Throne compAssignableToPawn_Throne = edifice.TryGetComp<CompAssignableToPawn_Throne>();
+				if (edifice != null && edifice.def.building.isSittable && !edifice.Fogged() && !edifice.IsForbidden(sitter) && Toils_Ingest.TryFindFreeSittingSpotOnThing(edifice, sitter, out var _) && !edifice.Position.VacuumConcernTo(sitter) && (compAssignableToPawn_Throne == null || compAssignableToPawn_Throne.AssignedPawns.Contains(sitter)))
 				{
 					chair = edifice;
 					return true;
@@ -141,7 +154,8 @@ namespace RimWorld
 			for (int i = 0; i < RadialPatternMiddleOutward.Count; i++)
 			{
 				Building edifice = (center + RadialPatternMiddleOutward[i]).GetEdifice(sitter.Map);
-				if (edifice != null && edifice.def.building.isSittable && sitter.CanReserve(edifice) && !edifice.IsForbidden(sitter) && GenSight.LineOfSight(center, edifice.Position, sitter.Map, skipFirstCell: true))
+				CompAssignableToPawn_Throne compAssignableToPawn_Throne = edifice.TryGetComp<CompAssignableToPawn_Throne>();
+				if (edifice != null && edifice.def.building.isSittable && !edifice.Fogged() && !edifice.IsForbidden(sitter) && !edifice.VacuumConcernTo(sitter) && Toils_Ingest.TryFindFreeSittingSpotOnThing(edifice, sitter, out var _) && GenSight.LineOfSight(center, edifice.Position, sitter.Map, skipFirstCell: true) && (compAssignableToPawn_Throne == null || compAssignableToPawn_Throne.AssignedPawns.Contains(sitter)))
 				{
 					chair = edifice;
 					return true;
@@ -156,7 +170,7 @@ namespace RimWorld
 			for (int i = 0; i < 30; i++)
 			{
 				IntVec3 intVec = center + GenRadial.RadialPattern[Rand.Range(1, NumRadiusCells)];
-				if (sitter.CanReserveAndReach(intVec, PathEndMode.OnCell, Danger.None) && intVec.GetEdifice(sitter.Map) == null && GenSight.LineOfSight(center, intVec, sitter.Map, skipFirstCell: true))
+				if (sitter.CanReserveAndReach(intVec, PathEndMode.OnCell, Danger.None) && intVec.GetEdifice(sitter.Map) == null && !intVec.Fogged(sitter.Map) && !intVec.VacuumConcernTo(sitter) && GenSight.LineOfSight(center, intVec, sitter.Map, skipFirstCell: true))
 				{
 					result = intVec;
 					return true;

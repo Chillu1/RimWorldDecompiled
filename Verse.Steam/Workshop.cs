@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using RimWorld;
 using Steamworks;
 
@@ -45,7 +46,7 @@ namespace Verse.Steam
 
 		internal static void Upload(WorkshopUploadable item)
 		{
-			if (curStage != 0)
+			if (curStage != WorkshopInteractStage.None)
 			{
 				Messages.Message("UploadAlreadyInProgress".Translate(), MessageTypeDefOf.RejectInput, historical: false);
 				return;
@@ -55,7 +56,7 @@ namespace Verse.Steam
 			{
 				if (Prefs.LogVerbose)
 				{
-					Log.Message("Workshop: Starting item update for mod '" + uploadingHook.Name + "' with PublishedFileId " + uploadingHook.PublishedFileId);
+					Log.Message("Workshop: Starting item update for mod '" + uploadingHook.Name + "' with PublishedFileId " + uploadingHook.PublishedFileId.ToString());
 				}
 				curStage = WorkshopInteractStage.SubmittingItem;
 				curUpdateHandle = SteamUGC.StartItemUpdate(SteamUtils.GetAppID(), uploadingHook.PublishedFileId);
@@ -76,6 +77,11 @@ namespace Verse.Steam
 				createResult.Set(hAPICall2);
 			}
 			Find.WindowStack.Add(new Dialog_WorkshopOperationInProgress());
+		}
+
+		internal static void Unsubscribe(PublishedFileId_t pfid)
+		{
+			SteamUGC.UnsubscribeItem(pfid);
 		}
 
 		internal static void Unsubscribe(WorkshopUploadable item)
@@ -103,8 +109,10 @@ namespace Verse.Steam
 			{
 				if (Prefs.LogVerbose)
 				{
-					Log.Message("Workshop: Item subscribed: " + result.m_nPublishedFileId);
+					PublishedFileId_t nPublishedFileId = result.m_nPublishedFileId;
+					Log.Message("Workshop: Item subscribed: " + nPublishedFileId.ToString());
 				}
+				Find.WindowStack.WindowOfType<Page_ModsConfig>()?.Notify_SteamItemSubscribed(result.m_nPublishedFileId);
 				WorkshopItems.Notify_Subscribed(result.m_nPublishedFileId);
 			}
 		}
@@ -115,8 +123,10 @@ namespace Verse.Steam
 			{
 				if (Prefs.LogVerbose)
 				{
-					Log.Message("Workshop: Item installed: " + result.m_nPublishedFileId);
+					PublishedFileId_t nPublishedFileId = result.m_nPublishedFileId;
+					Log.Message("Workshop: Item installed: " + nPublishedFileId.ToString());
 				}
+				Find.WindowStack.WindowOfType<Page_ModsConfig>()?.Notify_SteamItemInstalled(result.m_nPublishedFileId);
 				WorkshopItems.Notify_Installed(result.m_nPublishedFileId);
 			}
 		}
@@ -127,7 +137,8 @@ namespace Verse.Steam
 			{
 				if (Prefs.LogVerbose)
 				{
-					Log.Message("Workshop: Item unsubscribed: " + result.m_nPublishedFileId);
+					PublishedFileId_t nPublishedFileId = result.m_nPublishedFileId;
+					Log.Message("Workshop: Item unsubscribed: " + nPublishedFileId.ToString());
 				}
 				Find.WindowStack.WindowOfType<Page_ModsConfig>()?.Notify_SteamItemUnsubscribed(result.m_nPublishedFileId);
 				Find.WindowStack.WindowOfType<Page_SelectScenario>()?.Notify_SteamItemUnsubscribed(result.m_nPublishedFileId);
@@ -148,7 +159,7 @@ namespace Verse.Steam
 			uploadingHook.PublishedFileId = result.m_nPublishedFileId;
 			if (Prefs.LogVerbose)
 			{
-				Log.Message("Workshop: Item created. PublishedFileId: " + uploadingHook.PublishedFileId);
+				Log.Message("Workshop: Item created. PublishedFileId: " + uploadingHook.PublishedFileId.ToString());
 			}
 			curUpdateHandle = SteamUGC.StartItemUpdate(SteamUtils.GetAppID(), uploadingHook.PublishedFileId);
 			SetWorkshopItemDataFrom(curUpdateHandle, uploadingHook, creating: true);
@@ -208,15 +219,21 @@ namespace Verse.Steam
 				else
 				{
 					text = text + "\n  Title: " + pDetails.m_rgchTitle;
-					text = text + "\n  PublishedFileId: " + pDetails.m_nPublishedFileId;
-					text = text + "\n  Created: " + DateTime.FromFileTimeUtc(pDetails.m_rtimeCreated).ToString();
-					text = text + "\n  Updated: " + DateTime.FromFileTimeUtc(pDetails.m_rtimeUpdated).ToString();
-					text = text + "\n  Added to list: " + DateTime.FromFileTimeUtc(pDetails.m_rtimeAddedToUserList).ToString();
+					string text2 = text;
+					PublishedFileId_t nPublishedFileId = pDetails.m_nPublishedFileId;
+					text = text2 + "\n  PublishedFileId: " + nPublishedFileId.ToString();
+					text = text + "\n  Created: " + DateTime.FromFileTimeUtc(pDetails.m_rtimeCreated);
+					text = text + "\n  Updated: " + DateTime.FromFileTimeUtc(pDetails.m_rtimeUpdated);
+					text = text + "\n  Added to list: " + DateTime.FromFileTimeUtc(pDetails.m_rtimeAddedToUserList);
 					text = text + "\n  File size: " + pDetails.m_nFileSize.ToStringKilobytes();
 					text = text + "\n  Preview size: " + pDetails.m_nPreviewFileSize.ToStringKilobytes();
 					text = text + "\n  File name: " + pDetails.m_pchFileName;
-					text = text + "\n  CreatorAppID: " + pDetails.m_nCreatorAppID;
-					text = text + "\n  ConsumerAppID: " + pDetails.m_nConsumerAppID;
+					string text3 = text;
+					AppId_t nCreatorAppID = pDetails.m_nCreatorAppID;
+					text = text3 + "\n  CreatorAppID: " + nCreatorAppID.ToString();
+					string text4 = text;
+					nCreatorAppID = pDetails.m_nConsumerAppID;
+					text = text4 + "\n  ConsumerAppID: " + nCreatorAppID.ToString();
 					text = text + "\n  Visibiliy: " + pDetails.m_eVisibility;
 					text = text + "\n  FileType: " + pDetails.m_eFileType;
 					text = text + "\n  Owner: " + pDetails.m_ulSteamIDOwner;
@@ -305,14 +322,15 @@ namespace Verse.Steam
 			{
 				return "[unpublished]";
 			}
-			string str = string.Concat("[", pfid, "] ");
+			PublishedFileId_t publishedFileId_t = pfid;
+			string text = "[" + publishedFileId_t.ToString() + "] ";
 			if (SteamUGC.GetItemInstallInfo(pfid, out var punSizeOnDisk, out var pchFolder, 257u, out var _))
 			{
-				str += "\n      installed";
-				str = str + "\n      folder=" + pchFolder;
-				return str + "\n      sizeOnDisk=" + ((float)punSizeOnDisk / 1024f).ToString("F2") + "Kb";
+				text += "\n      installed";
+				text = text + "\n      folder=" + pchFolder;
+				return text + "\n      sizeOnDisk=" + ((float)punSizeOnDisk / 1024f).ToString("F2") + "Kb";
 			}
-			return str + "\n      not installed";
+			return text + "\n      not installed";
 		}
 
 		private static bool IsOurAppId(AppId_t appId)

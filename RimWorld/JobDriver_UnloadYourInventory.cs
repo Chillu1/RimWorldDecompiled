@@ -28,7 +28,7 @@ namespace RimWorld
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			yield return Toils_General.Wait(10);
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
 				if (!pawn.inventory.UnloadEverything)
@@ -54,28 +54,28 @@ namespace RimWorld
 			yield return toil;
 			yield return Toils_Reserve.Reserve(TargetIndex.B);
 			yield return Toils_Goto.GotoCell(TargetIndex.B, PathEndMode.Touch);
-			Toil toil2 = new Toil();
+			Toil toil2 = ToilMaker.MakeToil("MakeNewToils");
 			toil2.initAction = delegate
 			{
-				Thing lastResultingThing = job.GetTarget(TargetIndex.A).Thing;
-				if (lastResultingThing == null || !pawn.inventory.innerContainer.Contains(lastResultingThing))
+				Thing resultingTransferredItem = job.GetTarget(TargetIndex.A).Thing;
+				if (resultingTransferredItem == null || !pawn.inventory.innerContainer.Contains(resultingTransferredItem))
 				{
 					EndJobWith(JobCondition.Incompletable);
 				}
 				else
 				{
-					if (!pawn.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation) || !lastResultingThing.def.EverStorable(willMinifyIfPossible: false))
+					if (!pawn.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation) || !resultingTransferredItem.def.EverStorable(willMinifyIfPossible: false))
 					{
-						pawn.inventory.innerContainer.TryDrop(lastResultingThing, ThingPlaceMode.Near, countToDrop, out lastResultingThing);
+						pawn.inventory.innerContainer.TryDrop(resultingTransferredItem, ThingPlaceMode.Near, countToDrop, out resultingTransferredItem);
 						EndJobWith(JobCondition.Succeeded);
 					}
 					else
 					{
-						pawn.inventory.innerContainer.TryTransferToContainer(lastResultingThing, pawn.carryTracker.innerContainer, countToDrop, out lastResultingThing);
+						pawn.inventory.innerContainer.TryTransferToContainer(resultingTransferredItem, pawn.carryTracker.innerContainer, countToDrop, out resultingTransferredItem);
 						job.count = countToDrop;
-						job.SetTarget(TargetIndex.A, lastResultingThing);
+						job.SetTarget(TargetIndex.A, resultingTransferredItem);
 					}
-					lastResultingThing.SetForbidden(value: false, warnOnFail: false);
+					resultingTransferredItem.SetForbidden(value: false, warnOnFail: false);
 				}
 			};
 			yield return toil2;

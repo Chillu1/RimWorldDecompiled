@@ -5,7 +5,7 @@ using System.Linq;
 
 namespace Verse
 {
-	public class DefMap<D, V> : IExposable, IEnumerable<KeyValuePair<D, V>>, IEnumerable where D : Def, new()where V : new()
+	public class DefMap<D, V> : IExposable, IEnumerable<KeyValuePair<D, V>>, IEnumerable where D : Def, new() where V : new()
 	{
 		private List<V> values;
 
@@ -40,7 +40,7 @@ namespace Verse
 			int defCount = DefDatabase<D>.DefCount;
 			if (defCount == 0)
 			{
-				throw new Exception(string.Concat("Constructed DefMap<", typeof(D), ", ", typeof(V), "> without defs being initialized. Try constructing it in ResolveReferences instead of the constructor."));
+				throw new Exception("Constructed DefMap<" + typeof(D)?.ToString() + ", " + typeof(V)?.ToString() + "> without defs being initialized. Try constructing it in ResolveReferences instead of the constructor.");
 			}
 			values = new List<V>(defCount);
 			for (int i = 0; i < defCount; i++)
@@ -52,7 +52,7 @@ namespace Verse
 		public void ExposeData()
 		{
 			Scribe_Collections.Look(ref values, "vals", LookMode.Undefined);
-			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
 				int defCount = DefDatabase<D>.DefCount;
 				for (int i = values.Count; i < defCount; i++)

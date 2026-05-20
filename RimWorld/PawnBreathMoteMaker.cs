@@ -17,25 +17,25 @@ namespace RimWorld
 
 		private const float MaxBreathTemperature = 0f;
 
-		private static readonly Vector3 BreathOffset = new Vector3(0f, 0f, -0.04f);
-
 		private const float BreathRotationOffsetDist = 0.21f;
+
+		private static readonly Vector3 BreathOffset = new Vector3(0f, 0f, -0.04f);
 
 		public PawnBreathMoteMaker(Pawn pawn)
 		{
 			this.pawn = pawn;
 		}
 
-		public void BreathMoteMakerTick()
+		public void ProcessPostTickVisuals(int ticksPassed)
 		{
-			if (pawn.RaceProps.Humanlike && !pawn.RaceProps.IsMechanoid)
+			if (pawn.RaceProps.Humanlike && !pawn.RaceProps.IsMechanoid && !pawn.IsShambler && (!ModsConfig.OdysseyActive || !(pawn.Position.GetVacuum(pawn.MapHeld) > 0f)))
 			{
 				int num = Mathf.Abs(Find.TickManager.TicksGame + pawn.HashOffset()) % 320;
-				if (num == 0)
+				if (num < ticksPassed)
 				{
 					doThisBreath = pawn.AmbientTemperature < 0f && pawn.GetPosture() == PawnPosture.Standing;
 				}
-				if (doThisBreath && num < 80 && num % 8 == 0)
+				if (doThisBreath && num < 80 && num % 8 < ticksPassed)
 				{
 					TryMakeBreathMote();
 				}
@@ -44,7 +44,7 @@ namespace RimWorld
 
 		private void TryMakeBreathMote()
 		{
-			MoteMaker.ThrowBreathPuff(pawn.Drawer.DrawPos + pawn.Drawer.renderer.BaseHeadOffsetAt(pawn.Rotation) + pawn.Rotation.FacingCell.ToVector3() * 0.21f + BreathOffset, inheritVelocity: pawn.Drawer.tweener.LastTickTweenedVelocity, map: pawn.Map, throwAngle: pawn.Rotation.AsAngle);
+			FleckMaker.ThrowBreathPuff(pawn.Drawer.DrawPos + pawn.Drawer.renderer.BaseHeadOffsetAt(pawn.Rotation) + pawn.Rotation.FacingCell.ToVector3() * 0.21f + BreathOffset, inheritVelocity: pawn.Drawer.tweener.LastTickTweenedVelocity, map: pawn.Map, throwAngle: pawn.Rotation.AsAngle);
 		}
 	}
 }

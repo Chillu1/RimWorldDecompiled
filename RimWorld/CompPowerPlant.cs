@@ -9,24 +9,30 @@ namespace RimWorld
 
 		protected CompBreakdownable breakdownableComp;
 
+		protected CompAutoPowered autoPoweredComp;
+
+		protected CompToxifier toxifier;
+
 		private Sustainer sustainerProducingPower;
 
-		protected virtual float DesiredPowerOutput => 0f - base.Props.basePowerConsumption;
+		protected virtual float DesiredPowerOutput => 0f - base.Props.PowerConsumption;
 
 		public override void PostSpawnSetup(bool respawningAfterLoad)
 		{
 			base.PostSpawnSetup(respawningAfterLoad);
 			refuelableComp = parent.GetComp<CompRefuelable>();
 			breakdownableComp = parent.GetComp<CompBreakdownable>();
-			if (base.Props.basePowerConsumption < 0f && !parent.IsBrokenDown() && FlickUtility.WantsToBeOn(parent))
+			autoPoweredComp = parent.GetComp<CompAutoPowered>();
+			toxifier = parent.GetComp<CompToxifier>();
+			if (base.Props.PowerConsumption < 0f && !parent.IsBrokenDown() && FlickUtility.WantsToBeOn(parent))
 			{
 				base.PowerOn = true;
 			}
 		}
 
-		public override void PostDeSpawn(Map map)
+		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
 		{
-			base.PostDeSpawn(map);
+			base.PostDeSpawn(map, mode);
 			if (sustainerProducingPower != null && !sustainerProducingPower.Ended)
 			{
 				sustainerProducingPower.End();
@@ -56,9 +62,9 @@ namespace RimWorld
 			}
 		}
 
-		public void UpdateDesiredPowerOutput()
+		public virtual void UpdateDesiredPowerOutput()
 		{
-			if ((breakdownableComp != null && breakdownableComp.BrokenDown) || (refuelableComp != null && !refuelableComp.HasFuel) || (flickableComp != null && !flickableComp.SwitchIsOn) || !base.PowerOn)
+			if ((breakdownableComp != null && breakdownableComp.BrokenDown) || (refuelableComp != null && !refuelableComp.HasFuel) || (flickableComp != null && !flickableComp.SwitchIsOn) || (autoPoweredComp != null && !autoPoweredComp.WantsToBeOn) || (toxifier != null && !toxifier.CanPolluteNow) || !base.PowerOn)
 			{
 				base.PowerOutput = 0f;
 			}

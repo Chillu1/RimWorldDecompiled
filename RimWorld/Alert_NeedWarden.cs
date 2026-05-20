@@ -25,7 +25,7 @@ namespace RimWorld
 				bool flag = false;
 				foreach (Pawn item in map.mapPawns.FreeColonistsSpawned)
 				{
-					if (!item.Downed && item.workSettings != null && item.workSettings.GetPriority(WorkTypeDefOf.Warden) > 0)
+					if ((item.Spawned || item.BrieflyDespawned()) && !item.Downed && item.workSettings != null && item.workSettings.GetPriority(WorkTypeDefOf.Warden) > 0)
 					{
 						flag = true;
 						break;

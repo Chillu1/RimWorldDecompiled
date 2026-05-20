@@ -14,15 +14,15 @@ namespace Verse
 
 		public const float TabHoriztonalOverlap = 10f;
 
-		private static List<TabRecord> tmpTabs = new List<TabRecord>();
+		private static readonly List<TabRecord> tmpTabs = new List<TabRecord>();
 
-		public static TabRecord DrawTabs(Rect baseRect, List<TabRecord> tabs, int rows)
+		public static TabRecord DrawTabs<T>(Rect baseRect, List<T> tabs, int rows, float? maxTabWidth) where T : TabRecord
 		{
 			if (rows <= 1)
 			{
 				return DrawTabs(baseRect, tabs);
 			}
-			int num = Mathf.FloorToInt(tabs.Count / rows);
+			int num = Mathf.FloorToInt((float)tabs.Count / (float)rows);
 			int num2 = 0;
 			TabRecord result = null;
 			Rect rect = baseRect;
@@ -38,7 +38,7 @@ namespace Verse
 				{
 					tmpTabs.Add(tabs[j]);
 				}
-				TabRecord tabRecord = DrawTabs(baseRect, tmpTabs, baseRect.width);
+				TabRecord tabRecord = DrawTabs(baseRect, tmpTabs, maxTabWidth ?? baseRect.width);
 				if (tabRecord != null)
 				{
 					result = tabRecord;
@@ -50,62 +50,116 @@ namespace Verse
 			return result;
 		}
 
-		public static TabRecord DrawTabs(Rect baseRect, List<TabRecord> tabs, float maxTabWidth = 200f)
+		public static float GetOverflowTabHeight<T>(Rect baseRect, List<T> tabs, float minTabWidth, float maxTabWidth) where T : TabRecord
 		{
-			TabRecord tabRecord = null;
-			TabRecord tabRecord2 = tabs.Find((TabRecord t) => t.Selected);
+			int num = Mathf.CeilToInt((float)tabs.Count * minTabWidth / baseRect.width);
+			if (num <= 1)
+			{
+				return 32f;
+			}
+			return 32f * (float)num - (float)num;
+		}
+
+		public static TabRecord DrawTabsOverflow<T>(Rect baseRect, List<T> tabs, float minTabWidth, float maxTabWidth) where T : TabRecord
+		{
+			int num = Mathf.CeilToInt((float)tabs.Count * minTabWidth / baseRect.width);
+			if (num <= 1)
+			{
+				baseRect.y += 32f;
+				T result = DrawTabs(baseRect, tabs, maxTabWidth);
+				baseRect.yMax = baseRect.y;
+				return result;
+			}
+			baseRect.height = 64f;
+			int num2 = Mathf.FloorToInt((float)tabs.Count / (float)num);
+			int num3 = 0;
+			TabRecord result2 = null;
+			for (int i = 0; i < num; i++)
+			{
+				int num4 = Mathf.Min(tabs.Count - num3, num2);
+				if (tabs.Count - num3 - num4 == 1)
+				{
+					baseRect.xMax += baseRect.width / (float)num2;
+					num4++;
+				}
+				int num5 = num3;
+				baseRect.y += 31f;
+				tmpTabs.Clear();
+				for (int j = num3; j < num5 + num4; j++)
+				{
+					tmpTabs.Add(tabs[j]);
+					num3++;
+				}
+				TabRecord tabRecord = DrawTabs(baseRect, tmpTabs, baseRect.width);
+				if (tabRecord != null)
+				{
+					result2 = tabRecord;
+				}
+			}
+			tmpTabs.Clear();
+			return result2;
+		}
+
+		public static TTabRecord DrawTabs<TTabRecord>(Rect baseRect, List<TTabRecord> tabs, float maxTabWidth = 200f) where TTabRecord : TabRecord
+		{
+			TTabRecord val = null;
+			TTabRecord val2 = tabs.Find((TTabRecord t) => t.Selected);
 			float num = baseRect.width + (float)(tabs.Count - 1) * 10f;
 			float tabWidth = num / (float)tabs.Count;
 			if (tabWidth > maxTabWidth)
 			{
 				tabWidth = maxTabWidth;
 			}
-			Rect position = new Rect(baseRect);
-			position.y -= 32f;
-			position.height = 9999f;
-			GUI.BeginGroup(position);
+			Rect rect = new Rect(baseRect);
+			rect.y -= 32f;
+			rect.height = 9999f;
+			Widgets.BeginGroup(rect);
 			Text.Anchor = TextAnchor.MiddleCenter;
 			Text.Font = GameFont.Small;
-			Func<TabRecord, Rect> func = (TabRecord tab) => new Rect((float)tabs.IndexOf(tab) * (tabWidth - 10f), 1f, tabWidth, 32f);
-			List<TabRecord> list = tabs.ListFullCopy();
-			if (tabRecord2 != null)
+			Func<TTabRecord, Rect> func = (TTabRecord tab) => new Rect((float)tabs.IndexOf(tab) * (tabWidth - 10f), 1f, tabWidth, 32f);
+			List<TTabRecord> list = tabs.ListFullCopy();
+			if (val2 != null)
 			{
-				list.Remove(tabRecord2);
-				list.Add(tabRecord2);
+				list.Remove(val2);
+				list.Add(val2);
 			}
-			TabRecord tabRecord3 = null;
-			List<TabRecord> list2 = list.ListFullCopy();
+			TabRecord tabRecord = null;
+			List<TTabRecord> list2 = list.ListFullCopy();
 			list2.Reverse();
-			for (int i = 0; i < list2.Count; i++)
+			for (int num2 = 0; num2 < list2.Count; num2++)
 			{
-				TabRecord tabRecord4 = list2[i];
-				Rect rect = func(tabRecord4);
-				if (tabRecord3 == null && Mouse.IsOver(rect))
+				TTabRecord val3 = list2[num2];
+				Rect rect2 = func(val3);
+				if (tabRecord == null && Mouse.IsOver(rect2))
 				{
-					tabRecord3 = tabRecord4;
+					tabRecord = val3;
 				}
-				MouseoverSounds.DoRegion(rect, SoundDefOf.Mouseover_Tab);
-				if (Widgets.ButtonInvisible(rect))
+				MouseoverSounds.DoRegion(rect2, SoundDefOf.Mouseover_Tab);
+				if (Mouse.IsOver(rect2) && !val3.GetTip().NullOrEmpty())
 				{
-					tabRecord = tabRecord4;
+					TooltipHandler.TipRegion(rect2, val3.GetTip());
+				}
+				if (Widgets.ButtonInvisible(rect2))
+				{
+					val = val3;
 				}
 			}
-			foreach (TabRecord item in list)
+			foreach (TTabRecord item in list)
 			{
-				Rect rect2 = func(item);
-				item.Draw(rect2);
+				Rect rect3 = func(item);
+				item.Draw(rect3);
 			}
 			Text.Anchor = TextAnchor.UpperLeft;
-			GUI.EndGroup();
-			if (tabRecord != null && tabRecord != tabRecord2)
+			Widgets.EndGroup();
+			if (val != null && val != val2)
 			{
 				SoundDefOf.RowTabSelect.PlayOneShotOnCamera();
-				if (tabRecord.clickedAction != null)
+				if (val.clickedAction != null)
 				{
-					tabRecord.clickedAction();
+					val.clickedAction();
 				}
 			}
-			return tabRecord;
+			return val;
 		}
 	}
 }

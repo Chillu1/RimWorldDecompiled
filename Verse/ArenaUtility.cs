@@ -44,7 +44,7 @@ namespace Verse
 		public static void BeginArenaFight(List<PawnKindDef> lhs, List<PawnKindDef> rhs, Action<ArenaResult> callback)
 		{
 			MapParent mapParent = (MapParent)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.Debug_Arena);
-			mapParent.Tile = TileFinder.RandomSettlementTileFor(Faction.OfPlayer, mustBeAutoChoosable: true, (int tile) => lhs.Concat(rhs).Any((PawnKindDef pawnkind) => Find.World.tileTemperatures.SeasonAndOutdoorTemperatureAcceptableFor(tile, pawnkind.race)));
+			mapParent.Tile = TileFinder.RandomSettlementTileFor(Faction.OfPlayer, mustBeAutoChoosable: true, (PlanetTile tile) => lhs.Concat(rhs).Any((PawnKindDef pawnkind) => Find.World.tileTemperatures.SeasonAndOutdoorTemperatureAcceptableFor(tile, pawnkind.race)));
 			mapParent.SetFaction(Faction.OfPlayer);
 			Find.WorldObjects.Add(mapParent);
 			Map orGenerateMap = GetOrGenerateMapUtility.GetOrGenerateMap(mapParent.Tile, new IntVec3(50, 1, 50), null);
@@ -103,7 +103,8 @@ namespace Verse
 				Current.Game.GetComponent<GameComponent_DebugTools>().AddPerFrameCallback(() => ArenaFightQueue(lhs, rhs, delegate(ArenaResult result)
 				{
 					callback(result);
-					remaining--;
+					int num = remaining - 1;
+					remaining = num;
 					if (remaining % 10 == 0)
 					{
 						report();
@@ -151,14 +152,15 @@ namespace Verse
 				num3 *= num7;
 				List<PawnKindDef> lhs = Enumerable.Repeat(lhsDef, GenMath.RoundRandom(num2)).ToList();
 				List<PawnKindDef> rhs = Enumerable.Repeat(rhsDef, GenMath.RoundRandom(num3)).ToList();
-				currentFights++;
+				int num8 = currentFights + 1;
+				currentFights = num8;
 				BeginArenaFight(lhs, rhs, delegate(ArenaResult result)
 				{
-					int num8 = currentFights - 1;
-					currentFights = num8;
-					num8 = completeFights + 1;
-					completeFights = num8;
-					if (result.winner != 0)
+					int num9 = currentFights - 1;
+					currentFights = num9;
+					num9 = completeFights + 1;
+					completeFights = num9;
+					if (result.winner != ArenaResult.Winner.Other)
 					{
 						float teamA = ratings[lhsDef];
 						float teamB = ratings[rhsDef];

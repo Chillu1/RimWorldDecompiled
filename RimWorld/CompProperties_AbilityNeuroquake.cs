@@ -8,6 +8,8 @@ namespace RimWorld
 
 		public int worldRangeTiles;
 
+		public float mentalStateRadius;
+
 		public CompProperties_AbilityNeuroquake()
 		{
 			compClass = typeof(CompAbilityEffect_Neuroquake);

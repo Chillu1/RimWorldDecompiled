@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Verse;
 
 namespace RimWorld
@@ -11,7 +12,7 @@ namespace RimWorld
 
 		public virtual IEnumerable<string> GetExplanationAbstract(ThingDef def)
 		{
-			yield break;
+			return Enumerable.Empty<string>();
 		}
 
 		public virtual float GetMaxOffset(Thing parent = null)

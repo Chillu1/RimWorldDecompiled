@@ -16,16 +16,16 @@ namespace RimWorld
 
 		public static void AffectCell(Map map, IntVec3 c)
 		{
-			TerrainDef terrain = c.GetTerrain(map);
-			TerrainDef terrainToDryTo = GetTerrainToDryTo(map, terrain);
+			TerrainDef terrainDef = map.terrainGrid.TopTerrainAt(c);
+			TerrainDef terrainToDryTo = GetTerrainToDryTo(map, terrainDef);
 			if (terrainToDryTo != null)
 			{
 				map.terrainGrid.SetTerrain(c, terrainToDryTo);
 			}
-			TerrainDef terrainDef = map.terrainGrid.UnderTerrainAt(c);
-			if (terrainDef != null)
+			TerrainDef terrainDef2 = map.terrainGrid.UnderTerrainAt(c);
+			if (terrainDef2 != null)
 			{
-				TerrainDef terrainToDryTo2 = GetTerrainToDryTo(map, terrainDef);
+				TerrainDef terrainToDryTo2 = GetTerrainToDryTo(map, terrainDef2);
 				if (terrainToDryTo2 != null)
 				{
 					map.terrainGrid.SetUnderTerrain(c, terrainToDryTo2);
@@ -33,9 +33,9 @@ namespace RimWorld
 			}
 		}
 
-		public override void PostDeSpawn(Map map)
+		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
 		{
-			base.PostDeSpawn(map);
+			base.PostDeSpawn(map, mode);
 			if (sustainer != null && !sustainer.Ended)
 			{
 				sustainer.End();

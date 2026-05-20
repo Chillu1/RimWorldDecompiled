@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace Verse
@@ -12,11 +13,13 @@ namespace Verse
 
 		private string stackTrace;
 
+		private string timestamp;
+
 		public Color Color => type switch
 		{
 			LogMessageType.Message => Color.white, 
 			LogMessageType.Warning => Color.yellow, 
-			LogMessageType.Error => Color.red, 
+			LogMessageType.Error => ColorLibrary.LogError, 
 			_ => Color.white, 
 		};
 
@@ -37,6 +40,7 @@ namespace Verse
 			this.text = text;
 			type = LogMessageType.Message;
 			stackTrace = null;
+			timestamp = DateTime.Now.ToString("HH:mm:ss");
 		}
 
 		public LogMessage(LogMessageType type, string text, string stackTrace)
@@ -44,10 +48,12 @@ namespace Verse
 			this.text = text;
 			this.type = type;
 			this.stackTrace = stackTrace;
+			timestamp = DateTime.Now.ToString("HH:mm:ss");
 		}
 
 		public override string ToString()
 		{
+			string text = "[" + timestamp + "] " + this.text;
 			if (repeats > 1)
 			{
 				return "(" + repeats + ") " + text;

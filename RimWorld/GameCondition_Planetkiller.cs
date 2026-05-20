@@ -17,7 +17,11 @@ namespace RimWorld
 			get
 			{
 				Vector2 location = ((Find.CurrentMap == null) ? default(Vector2) : Find.WorldGrid.LongLatOf(Find.CurrentMap.Tile));
-				return (string)(string.Concat(string.Concat(def.LabelCap, "\n"), "\n", Description) + ("\n" + "ImpactDate".Translate().CapitalizeFirst() + ": " + GenDate.DateFullStringAt(GenDate.TickGameToAbs(startTick + base.Duration), location))) + ("\n" + "TimeLeft".Translate().CapitalizeFirst() + ": " + base.TicksLeft.ToStringTicksToPeriod());
+				string text = def.LabelCap;
+				text += "\n";
+				text = text + "\n" + Description;
+				text = string.Concat(text, "\n", "ImpactDate".Translate().CapitalizeFirst(), ": ", GenDate.DateFullStringAt(GenDate.TickGameToAbs(startTick + base.Duration), location).Colorize(ColoredText.DateTimeColor));
+				return string.Concat(text, "\n", "TimeLeft".Translate().CapitalizeFirst(), ": ", base.TicksLeft.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor));
 			}
 		}
 

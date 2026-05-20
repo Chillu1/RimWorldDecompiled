@@ -15,5 +15,11 @@ namespace Verse.AI
 		public RandomSocialMode socialModeMax = RandomSocialMode.SuperActive;
 
 		public bool threatDisabled;
+
+		public bool ritualSpectateTarget;
+
+		public bool forceFaceUpPosture;
+
+		public bool? drawBodyOverride;
 	}
 }

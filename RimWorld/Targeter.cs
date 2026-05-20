@@ -16,6 +16,8 @@ namespace RimWorld
 
 		public List<Pawn> targetingSourceAdditionalPawns;
 
+		public Func<LocalTargetInfo, ITargetingSource> targetingSourceGetter;
+
 		private Action<LocalTargetInfo> action;
 
 		private Pawn caster;
@@ -30,7 +32,19 @@ namespace RimWorld
 
 		private Func<LocalTargetInfo, bool> targetValidator;
 
+		private bool playSoundOnAction = true;
+
+		private bool requiresAvailableVerb = true;
+
+		private bool requiresCastedSelected = true;
+
+		private Action<LocalTargetInfo> onGuiAction;
+
+		private Action<LocalTargetInfo> onUpdateAction;
+
 		private bool needsStopTargetingCall;
+
+		private bool allowNonSelectedTargetingSource;
 
 		public bool IsTargeting
 		{
@@ -44,7 +58,7 @@ namespace RimWorld
 			}
 		}
 
-		public void BeginTargeting(ITargetingSource source, ITargetingSource parent = null)
+		public void BeginTargeting(ITargetingSource source, ITargetingSource parent = null, bool allowNonSelectedTargetingSource = false, Func<LocalTargetInfo, ITargetingSource> extraSourceGetter = null, Action actionWhenFinished = null, bool requiresAvailableVerb = true)
 		{
 			if (source.Targetable)
 			{
@@ -66,13 +80,17 @@ namespace RimWorld
 			action = null;
 			caster = null;
 			targetParams = null;
-			actionWhenFinished = null;
+			this.actionWhenFinished = actionWhenFinished;
 			mouseAttachment = null;
 			targetingSourceParent = parent;
+			targetingSourceGetter = extraSourceGetter;
+			this.requiresAvailableVerb = requiresAvailableVerb;
+			requiresCastedSelected = true;
 			needsStopTargetingCall = false;
+			this.allowNonSelectedTargetingSource = allowNonSelectedTargetingSource;
 		}
 
-		public void BeginTargeting(TargetingParameters targetParams, Action<LocalTargetInfo> action, Pawn caster = null, Action actionWhenFinished = null, Texture2D mouseAttachment = null)
+		public void BeginTargeting(TargetingParameters targetParams, Action<LocalTargetInfo> action, Pawn caster = null, Action actionWhenFinished = null, Texture2D mouseAttachment = null, bool requiresCastedSelected = true)
 		{
 			targetingSource = null;
 			targetingSourceParent = null;
@@ -84,14 +102,37 @@ namespace RimWorld
 			this.mouseAttachment = mouseAttachment;
 			highlightAction = null;
 			targetValidator = null;
+			onGuiAction = null;
+			onUpdateAction = null;
+			this.requiresCastedSelected = requiresCastedSelected;
 			needsStopTargetingCall = false;
+			playSoundOnAction = true;
 		}
 
-		public void BeginTargeting(TargetingParameters targetParams, Action<LocalTargetInfo> action, Action<LocalTargetInfo> highlightAction, Func<LocalTargetInfo, bool> targetValidator, Pawn caster = null, Action actionWhenFinished = null, Texture2D mouseAttachment = null)
+		public void BeginTargeting(TargetingParameters targetParams, Action<LocalTargetInfo> action, Action<LocalTargetInfo> onGuiAction)
 		{
 			targetingSource = null;
 			targetingSourceParent = null;
 			targetingSourceAdditionalPawns = null;
+			this.action = action;
+			this.targetParams = targetParams;
+			caster = null;
+			actionWhenFinished = null;
+			mouseAttachment = null;
+			highlightAction = null;
+			targetValidator = null;
+			this.onGuiAction = onGuiAction;
+			onUpdateAction = null;
+			requiresCastedSelected = true;
+			needsStopTargetingCall = false;
+			playSoundOnAction = true;
+		}
+
+		public void BeginTargeting(TargetingParameters targetParams, Action<LocalTargetInfo> action, Action<LocalTargetInfo> highlightAction, Func<LocalTargetInfo, bool> targetValidator, Pawn caster = null, Action actionWhenFinished = null, Texture2D mouseAttachment = null, bool playSoundOnAction = true, Action<LocalTargetInfo> onGuiAction = null, Action<LocalTargetInfo> onUpdateAction = null)
+		{
+			targetingSource = null;
+			targetingSourceParent = null;
+			targetingSourceAdditionalPawns = new List<Pawn>();
 			this.action = action;
 			this.targetParams = targetParams;
 			this.caster = caster;
@@ -99,6 +140,10 @@ namespace RimWorld
 			this.mouseAttachment = mouseAttachment;
 			this.highlightAction = highlightAction;
 			this.targetValidator = targetValidator;
+			this.playSoundOnAction = playSoundOnAction;
+			this.onGuiAction = onGuiAction;
+			this.onUpdateAction = onUpdateAction;
+			requiresCastedSelected = true;
 			needsStopTargetingCall = false;
 		}
 
@@ -115,7 +160,11 @@ namespace RimWorld
 			targetingSource = ability;
 			highlightAction = null;
 			targetValidator = null;
+			onGuiAction = null;
+			onUpdateAction = null;
+			requiresCastedSelected = true;
 			needsStopTargetingCall = false;
+			playSoundOnAction = true;
 		}
 
 		public void StopTargeting()
@@ -131,10 +180,15 @@ namespace RimWorld
 			targetParams = null;
 			highlightAction = null;
 			targetValidator = null;
+			targetingSourceGetter = null;
+			onUpdateAction = null;
+			onGuiAction = null;
+			requiresCastedSelected = true;
 		}
 
 		public void ProcessInputEvents()
 		{
+			UpdateTargetingSource();
 			ConfirmStillValid();
 			if (!IsTargeting)
 			{
@@ -153,7 +207,7 @@ namespace RimWorld
 					}
 					OrderVerbForceTarget();
 				}
-				if (action != null)
+				else if (action != null)
 				{
 					if (targetValidator != null)
 					{
@@ -171,20 +225,23 @@ namespace RimWorld
 						action(localTargetInfo);
 					}
 				}
-				SoundDefOf.Tick_High.PlayOneShotOnCamera();
+				if (playSoundOnAction)
+				{
+					SoundDefOf.Tick_High.PlayOneShotOnCamera();
+				}
 				if (targetingSource != null)
 				{
 					if (targetingSource.DestinationSelector != null)
 					{
-						BeginTargeting(targetingSource.DestinationSelector, targetingSource);
+						BeginTargeting(targetingSource.DestinationSelector, targetingSource, allowNonSelectedTargetingSource: false, targetingSourceGetter);
 					}
 					else if (targetingSource.MultiSelect && Event.current.shift)
 					{
-						BeginTargeting(targetingSource);
+						BeginTargeting(targetingSource, null, allowNonSelectedTargetingSource: false, targetingSourceGetter);
 					}
 					else if (targetingSourceParent != null && targetingSourceParent.MultiSelect && Event.current.shift)
 					{
-						BeginTargeting(targetingSourceParent);
+						BeginTargeting(targetingSourceParent, null, allowNonSelectedTargetingSource: false, targetingSourceGetter);
 					}
 				}
 				if (needsStopTargetingCall)
@@ -212,10 +269,20 @@ namespace RimWorld
 			{
 				GenUI.DrawMouseAttachment(mouseAttachment ?? TexCommand.Attack);
 			}
+			if (onGuiAction != null)
+			{
+				LocalTargetInfo obj = CurrentTargetUnderMouse(mustBeHittableNowIfNotMelee: true);
+				onGuiAction(obj);
+			}
+			if (targetingSource?.GetVerb?.verbProps?.mouseTargetingText != null)
+			{
+				Widgets.MouseAttachedLabel(targetingSource.GetVerb.verbProps.mouseTargetingText);
+			}
 		}
 
 		public void TargeterUpdate()
 		{
+			UpdateTargetingSource();
 			if (targetingSource != null)
 			{
 				targetingSource.DrawHighlight(CurrentTargetUnderMouse(mustBeHittableNowIfNotMelee: true));
@@ -231,6 +298,11 @@ namespace RimWorld
 				{
 					GenDraw.DrawTargetHighlight(localTargetInfo);
 				}
+			}
+			if (onUpdateAction != null)
+			{
+				LocalTargetInfo obj = CurrentTargetUnderMouse(mustBeHittableNowIfNotMelee: true);
+				onUpdateAction(obj);
 			}
 		}
 
@@ -257,9 +329,21 @@ namespace RimWorld
 			return false;
 		}
 
+		private void UpdateTargetingSource()
+		{
+			if (targetingSourceGetter != null)
+			{
+				ITargetingSource targetingSource = targetingSourceGetter(CurrentTargetUnderMouse(mustBeHittableNowIfNotMelee: true));
+				if (targetingSource != null)
+				{
+					this.targetingSource = targetingSource;
+				}
+			}
+		}
+
 		private void ConfirmStillValid()
 		{
-			if (caster != null && (caster.Map != Find.CurrentMap || caster.Destroyed || !Find.Selector.IsSelected(caster)))
+			if (caster != null && (caster.Map != Find.CurrentMap || caster.Destroyed || (requiresCastedSelected && !Find.Selector.IsSelected(caster))))
 			{
 				StopTargeting();
 			}
@@ -268,7 +352,7 @@ namespace RimWorld
 				return;
 			}
 			Selector selector = Find.Selector;
-			if (targetingSource.Caster.Map != Find.CurrentMap || targetingSource.Caster.Destroyed || !selector.IsSelected(targetingSource.Caster) || (targetingSource.GetVerb != null && !targetingSource.GetVerb.Available()))
+			if (targetingSource.Caster.MapHeld != Find.CurrentMap || targetingSource.Caster.Destroyed || (!allowNonSelectedTargetingSource && !selector.IsSelected(targetingSource.Caster)) || (targetingSource.GetVerb != null && requiresAvailableVerb && !targetingSource.GetVerb.Available()) || (targetingSource is CompAbilityEffect_WithDest compAbilityEffect_WithDest && compAbilityEffect_WithDest.SelectedTargetInvalidated()) || (targetingSource is Verb_CastAbility verb_CastAbility && !verb_CastAbility.ability.CanQueueCast))
 			{
 				StopTargeting();
 				return;
@@ -288,6 +372,10 @@ namespace RimWorld
 			if (targetingSource.CasterIsPawn)
 			{
 				OrderPawnForceTarget(targetingSource);
+				if (targetingSourceAdditionalPawns == null)
+				{
+					return;
+				}
 				for (int i = 0; i < targetingSourceAdditionalPawns.Count; i++)
 				{
 					Verb targetingVerb = GetTargetingVerb(targetingSourceAdditionalPawns[i]);
@@ -302,12 +390,16 @@ namespace RimWorld
 			List<object> selectedObjects = Find.Selector.SelectedObjects;
 			for (int j = 0; j < numSelected; j++)
 			{
-				Building_Turret building_Turret = selectedObjects[j] as Building_Turret;
-				if (building_Turret != null && building_Turret.Map == Find.CurrentMap)
+				if (selectedObjects[j] is Building_Turret building_Turret && building_Turret.Map == Find.CurrentMap)
 				{
 					LocalTargetInfo targ = CurrentTargetUnderMouse(mustBeHittableNowIfNotMelee: true);
 					building_Turret.OrderAttack(targ);
 				}
+			}
+			if (targetingSource != null && targetingSource.Caster is Building_Turret building_Turret2 && building_Turret2 != null && building_Turret2.Map == Find.CurrentMap)
+			{
+				LocalTargetInfo targ2 = CurrentTargetUnderMouse(mustBeHittableNowIfNotMelee: true);
+				building_Turret2.OrderAttack(targ2);
 			}
 		}
 
@@ -327,7 +419,8 @@ namespace RimWorld
 				return LocalTargetInfo.Invalid;
 			}
 			TargetingParameters targetingParameters = ((targetingSource != null) ? targetingSource.targetParams : targetParams);
-			LocalTargetInfo localTargetInfo = GenUI.TargetsAtMouse_NewTemp(targetingParameters, thingsOnly: false, targetingSource).FirstOrFallback(LocalTargetInfo.Invalid);
+			ColonistBar.Entry entry;
+			LocalTargetInfo localTargetInfo = ((!Find.ColonistBar.TryGetEntryAt(UI.MousePositionOnUIInverted, out entry) || entry.pawn == null || !targetingParameters.CanTarget(entry.pawn)) ? GenUI.TargetsAtMouse(targetingParameters, thingsOnly: false, targetingSource).FirstOrFallback(LocalTargetInfo.Invalid) : ((!entry.pawn.Dead) ? ((LocalTargetInfo)entry.pawn) : ((LocalTargetInfo)entry.pawn.Corpse)));
 			if (localTargetInfo.IsValid && targetingSource != null)
 			{
 				if (mustBeHittableNowIfNotMelee && !(localTargetInfo.Thing is Pawn) && !targetingSource.IsMeleeAttack)

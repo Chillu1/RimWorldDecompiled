@@ -12,21 +12,21 @@ namespace RimWorld
 			float num = Props.mtbDays;
 			if (Props.mtbDaysFactorByDaysPassedCurve != null)
 			{
-				num *= Props.mtbDaysFactorByDaysPassedCurve.Evaluate(GenDate.DaysPassedFloat);
+				num *= Props.mtbDaysFactorByDaysPassedCurve.Evaluate(GenDate.DaysPassedSinceSettleFloat);
 			}
 			if (Rand.MTBEventOccurs(num, 60000f, 1000f))
 			{
 				IncidentParms parms = GenerateParms(Props.category, target);
-				if (UsableIncidentsInCategory(Props.category, parms).TryRandomElementByWeight((IncidentDef incDef) => IncidentChanceFinal(incDef), out var result))
+				if (TrySelectRandomIncident(UsableIncidentsInCategory(Props.category, parms), out var foundDef, target))
 				{
-					yield return new FiringIncident(result, this, parms);
+					yield return new FiringIncident(foundDef, this, parms);
 				}
 			}
 		}
 
 		public override string ToString()
 		{
-			return base.ToString() + " " + Props.category;
+			return $"{base.ToString()} {Props.category}";
 		}
 	}
 }

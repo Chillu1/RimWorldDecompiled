@@ -31,7 +31,7 @@ namespace RimWorld
 			Pawn defendee = GetDefendee(pawn);
 			if (defendee == null)
 			{
-				Log.Error(string.Concat(GetType(), " has null defendee. pawn=", pawn.ToStringSafe()));
+				Log.Error(GetType()?.ToString() + " has null defendee. pawn=" + pawn.ToStringSafe());
 				return null;
 			}
 			Pawn carriedBy = defendee.CarriedBy;
@@ -54,7 +54,7 @@ namespace RimWorld
 			if (attackMeleeThreatEvenIfNotHostile)
 			{
 				Pawn defendee = GetDefendee(pawn);
-				if (defendee.Spawned && !defendee.InMentalState && defendee.mindState.meleeThreat != null && defendee.mindState.meleeThreat != pawn && pawn.CanReach(defendee.mindState.meleeThreat, PathEndMode.Touch, Danger.Deadly))
+				if (defendee.Spawned && !defendee.InMentalState && defendee.mindState.meleeThreat != null && defendee.mindState.meleeThreat != pawn && defendee.mindState.MeleeThreatStillThreat && pawn.CanReach(defendee.mindState.meleeThreat, PathEndMode.Touch, Danger.Deadly))
 				{
 					return defendee.mindState.meleeThreat;
 				}
@@ -62,24 +62,25 @@ namespace RimWorld
 			return base.FindAttackTarget(pawn);
 		}
 
-		protected override bool TryFindShootingPosition(Pawn pawn, out IntVec3 dest)
+		protected override bool TryFindShootingPosition(Pawn pawn, out IntVec3 dest, Verb verbToUse = null)
 		{
-			Verb verb = pawn.TryGetAttackVerb(null, !pawn.IsColonist);
+			Verb verb = verbToUse ?? pawn.TryGetAttackVerb(null, !pawn.IsColonist);
 			if (verb == null)
 			{
 				dest = IntVec3.Invalid;
 				return false;
 			}
-			CastPositionRequest newReq = default(CastPositionRequest);
-			newReq.caster = pawn;
-			newReq.target = pawn.mindState.enemyTarget;
-			newReq.verb = verb;
-			newReq.maxRangeFromTarget = 9999f;
-			newReq.locus = GetDefendee(pawn).PositionHeld;
-			newReq.maxRangeFromLocus = GetFlagRadius(pawn);
-			newReq.wantCoverFromTarget = verb.verbProps.range > 7f;
-			newReq.maxRegions = 50;
-			return CastPositionFinder.TryFindCastPosition(newReq, out dest);
+			return CastPositionFinder.TryFindCastPosition(new CastPositionRequest
+			{
+				caster = pawn,
+				target = pawn.mindState.enemyTarget,
+				verb = verb,
+				maxRangeFromTarget = 9999f,
+				locus = GetDefendee(pawn).PositionHeld,
+				maxRangeFromLocus = GetFlagRadius(pawn),
+				wantCoverFromTarget = (verb.EffectiveRange > 7f),
+				maxRegions = 50
+			}, out dest);
 		}
 	}
 }

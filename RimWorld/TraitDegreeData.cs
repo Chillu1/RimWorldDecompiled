@@ -4,7 +4,7 @@ using Verse;
 
 namespace RimWorld
 {
-	public class TraitDegreeData
+	public class TraitDegreeData : IRenderNodePropertiesParent
 	{
 		[MustTranslate]
 		public string label;
@@ -36,7 +36,17 @@ namespace RimWorld
 
 		public SimpleCurve randomMentalStateMtbDaysMoodCurve;
 
+		public MentalStateDef forcedMentalState;
+
+		public float forcedMentalStateMtbDays = -1f;
+
 		public List<MentalStateDef> disallowedMentalStates;
+
+		public List<ThoughtDef> disallowedThoughts;
+
+		public List<TraitIngestionThoughtsOverride> disallowedThoughtsFromIngestion;
+
+		public List<TraitIngestionThoughtsOverride> extraThoughtsFromIngestion;
 
 		public List<InspirationDef> disallowedInspirations;
 
@@ -52,7 +62,7 @@ namespace RimWorld
 
 		public List<MentalBreakDef> theOnlyAllowedMentalBreaks;
 
-		public Dictionary<SkillDef, int> skillGains = new Dictionary<SkillDef, int>();
+		public List<SkillGain> skillGains = new List<SkillGain>();
 
 		public float socialFightChanceFactor = 1f;
 
@@ -62,7 +72,25 @@ namespace RimWorld
 
 		public float hungerRateFactor = 1f;
 
+		public float painOffset;
+
+		public float painFactor = 1f;
+
 		public Type mentalStateGiverClass = typeof(TraitMentalStateGiver);
+
+		public List<AbilityDef> abilities;
+
+		public List<IngestibleModifiers> ingestibleModifiers;
+
+		public List<Aptitude> aptitudes;
+
+		public List<NeedDef> enablesNeeds;
+
+		public List<NeedDef> disablesNeeds;
+
+		private List<PawnRenderNodeProperties> renderNodeProperties;
+
+		public List<PossessionThingDefCountClass> possessions = new List<PossessionThingDefCountClass>();
 
 		[Unsaved(false)]
 		private TraitMentalStateGiver mentalStateGiverInt;
@@ -75,6 +103,15 @@ namespace RimWorld
 
 		[Unsaved(false)]
 		private string cachedLabelFemaleCap;
+
+		[Unsaved(false)]
+		private List<IssueDef> affectedIssuesCached;
+
+		[Unsaved(false)]
+		private List<MemeDef> agreeableMemesCached;
+
+		[Unsaved(false)]
+		private List<MemeDef> disagreeableMemesCached;
 
 		public string LabelCap
 		{
@@ -100,6 +137,10 @@ namespace RimWorld
 				return mentalStateGiverInt;
 			}
 		}
+
+		public bool HasDefinedGraphicProperties => !renderNodeProperties.NullOrEmpty();
+
+		public List<PawnRenderNodeProperties> RenderNodeProperties => renderNodeProperties;
 
 		public string GetLabelFor(Pawn pawn)
 		{
@@ -161,9 +202,87 @@ namespace RimWorld
 			}
 		}
 
+		public List<IssueDef> GetAffectedIssues(TraitDef def)
+		{
+			if (affectedIssuesCached == null)
+			{
+				affectedIssuesCached = new List<IssueDef>();
+				List<PreceptDef> allDefsListForReading = DefDatabase<PreceptDef>.AllDefsListForReading;
+				for (int i = 0; i < allDefsListForReading.Count; i++)
+				{
+					if (!affectedIssuesCached.Contains(allDefsListForReading[i].issue) && allDefsListForReading[i].TraitsAffecting.Any((TraitRequirement x) => x.def == def && x.degree.GetValueOrDefault() == degree))
+					{
+						affectedIssuesCached.Add(allDefsListForReading[i].issue);
+					}
+				}
+			}
+			return affectedIssuesCached;
+		}
+
+		public List<MemeDef> GetAffectedMemes(TraitDef def, bool agreeable)
+		{
+			if (agreeable)
+			{
+				if (agreeableMemesCached == null)
+				{
+					agreeableMemesCached = new List<MemeDef>();
+					List<MemeDef> allDefsListForReading = DefDatabase<MemeDef>.AllDefsListForReading;
+					for (int i = 0; i < allDefsListForReading.Count; i++)
+					{
+						if (!allDefsListForReading[i].agreeableTraits.NullOrEmpty() && allDefsListForReading[i].agreeableTraits.Any((TraitRequirement x) => x.def == def && x.degree.GetValueOrDefault() == degree))
+						{
+							agreeableMemesCached.Add(allDefsListForReading[i]);
+						}
+					}
+				}
+				return agreeableMemesCached;
+			}
+			if (disagreeableMemesCached == null)
+			{
+				disagreeableMemesCached = new List<MemeDef>();
+				List<MemeDef> allDefsListForReading2 = DefDatabase<MemeDef>.AllDefsListForReading;
+				for (int num = 0; num < allDefsListForReading2.Count; num++)
+				{
+					if (!allDefsListForReading2[num].disagreeableTraits.NullOrEmpty() && allDefsListForReading2[num].disagreeableTraits.Any((TraitRequirement x) => x.def == def && x.degree.GetValueOrDefault() == degree))
+					{
+						disagreeableMemesCached.Add(allDefsListForReading2[num]);
+					}
+				}
+			}
+			return disagreeableMemesCached;
+		}
+
+		public int AptitudeFor(SkillDef skill)
+		{
+			int num = 0;
+			if (aptitudes.NullOrEmpty())
+			{
+				return num;
+			}
+			for (int i = 0; i < aptitudes.Count; i++)
+			{
+				if (aptitudes[i].skill == skill)
+				{
+					num += aptitudes[i].level;
+				}
+			}
+			return num;
+		}
+
 		public void PostLoad()
 		{
 			untranslatedLabel = label;
+		}
+
+		public void ResolveReferences()
+		{
+			if (renderNodeProperties != null)
+			{
+				for (int i = 0; i < renderNodeProperties.Count; i++)
+				{
+					renderNodeProperties[i].ResolveReferencesRecursive();
+				}
+			}
 		}
 	}
 }

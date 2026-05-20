@@ -1,10 +1,11 @@
 using System.Collections.Generic;
+using LudeonTK;
 
 namespace Verse
 {
 	public class LogMessageQueue
 	{
-		public int maxMessages = 200;
+		public int maxMessages = 1000;
 
 		private Queue<LogMessage> messages = new Queue<LogMessage>();
 
@@ -14,9 +15,22 @@ namespace Verse
 
 		public void Enqueue(LogMessage msg)
 		{
+			Enqueue(msg, out var _);
+		}
+
+		public void Enqueue(LogMessage msg, out bool repeatsCapped)
+		{
+			repeatsCapped = false;
 			if (lastMessage != null && msg.CanCombineWith(lastMessage))
 			{
-				lastMessage.repeats++;
+				if (lastMessage.repeats >= 99)
+				{
+					repeatsCapped = true;
+				}
+				else
+				{
+					lastMessage.repeats++;
+				}
 				return;
 			}
 			lastMessage = msg;

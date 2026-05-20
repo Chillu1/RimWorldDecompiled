@@ -13,9 +13,17 @@ namespace RimWorld
 
 		private float intervalDays;
 
+		private float minDays;
+
+		private float maxDays;
+
 		private bool repeat;
 
 		private string intervalDaysBuffer;
+
+		private string minDaysBuffer;
+
+		private string maxDaysBuffer;
 
 		private float occurTick;
 
@@ -23,26 +31,42 @@ namespace RimWorld
 
 		protected override string IncidentTag => "CreateIncident";
 
-		private float IntervalTicks => 60000f * intervalDays;
+		private float RandomInterval
+		{
+			get
+			{
+				float maxInclusive = ((maxDays > 0f && maxDays > minDays) ? maxDays : minDays);
+				return Rand.Range(minDays, maxInclusive);
+			}
+		}
 
 		public override void ExposeData()
 		{
 			base.ExposeData();
 			Scribe_Values.Look(ref intervalDays, "intervalDays", 0f);
+			Scribe_Values.Look(ref minDays, "minDays", intervalDays);
+			Scribe_Values.Look(ref maxDays, "maxDays", 0f);
 			Scribe_Values.Look(ref repeat, "repeat", defaultValue: false);
 			Scribe_Values.Look(ref occurTick, "occurTick", 0f);
 			Scribe_Values.Look(ref isFinished, "isFinished", defaultValue: false);
+		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode() ^ intervalDays.GetHashCode() ^ (repeat ? 1 : 0) ^ occurTick.GetHashCode() ^ (isFinished ? 1 : 0);
 		}
 
 		public override void DoEditInterface(Listing_ScenEdit listing)
 		{
 			Rect scenPartRect = listing.GetScenPartRect(this, ScenPart.RowHeight * 3f);
 			Rect rect = new Rect(scenPartRect.x, scenPartRect.y, scenPartRect.width, scenPartRect.height / 3f);
-			Rect rect2 = new Rect(scenPartRect.x, scenPartRect.y + scenPartRect.height / 3f, scenPartRect.width, scenPartRect.height / 3f);
-			Rect rect3 = new Rect(scenPartRect.x, scenPartRect.y + scenPartRect.height * 2f / 3f, scenPartRect.width, scenPartRect.height / 3f);
+			Rect rect2 = new Rect(scenPartRect.x, scenPartRect.y + scenPartRect.height / 3f, scenPartRect.width / 2f, scenPartRect.height / 3f);
+			Rect rect3 = new Rect(scenPartRect.x + scenPartRect.width / 2f, scenPartRect.y + scenPartRect.height / 3f, scenPartRect.width / 2f, scenPartRect.height / 3f);
+			Rect rect4 = new Rect(scenPartRect.x, scenPartRect.y + scenPartRect.height * 2f / 3f, scenPartRect.width, scenPartRect.height / 3f);
 			DoIncidentEditInterface(rect);
-			Widgets.TextFieldNumericLabeled(rect2, "intervalDays".Translate(), ref intervalDays, ref intervalDaysBuffer);
-			Widgets.CheckboxLabeled(rect3, "repeat".Translate(), ref repeat);
+			Widgets.TextFieldNumericLabeled(rect2, "minDays".Translate(), ref minDays, ref minDaysBuffer);
+			Widgets.TextFieldNumericLabeled(rect3, "maxDays".Translate(), ref maxDays, ref maxDaysBuffer);
+			Widgets.CheckboxLabeled(rect4, "repeat".Translate(), ref repeat);
 		}
 
 		public override void Randomize()
@@ -53,6 +77,7 @@ namespace RimWorld
 			{
 				intervalDays = 0f;
 			}
+			minDays = intervalDays;
 			repeat = Rand.Range(0, 100) < 50;
 		}
 
@@ -66,7 +91,7 @@ namespace RimWorld
 		public override void PostGameStart()
 		{
 			base.PostGameStart();
-			occurTick = (float)Find.TickManager.TicksGame + IntervalTicks;
+			occurTick = (float)Find.TickManager.TicksGame + 60000f * RandomInterval;
 		}
 
 		public override void Tick()
@@ -88,9 +113,9 @@ namespace RimWorld
 				{
 					isFinished = true;
 				}
-				else if (repeat && intervalDays > 0f)
+				else if (repeat && (minDays > 0f || maxDays > minDays))
 				{
-					occurTick += IntervalTicks;
+					occurTick += 60000f * RandomInterval;
 				}
 				else
 				{

@@ -15,25 +15,17 @@ namespace RimWorld
 
 		public override void TransformValue(StatRequest req, ref float val)
 		{
-			if (req.HasThing)
+			if (req.HasThing && req.Thing is Pawn pawn && pawn.needs.rest != null)
 			{
-				Pawn pawn = req.Thing as Pawn;
-				if (pawn != null && pawn.needs.rest != null)
-				{
-					val *= RestMultiplier(pawn.needs.rest.CurCategory);
-				}
+				val *= RestMultiplier(pawn.needs.rest.CurCategory);
 			}
 		}
 
 		public override string ExplanationPart(StatRequest req)
 		{
-			if (req.HasThing)
+			if (req.HasThing && req.Thing is Pawn pawn && pawn.needs.rest != null)
 			{
-				Pawn pawn = req.Thing as Pawn;
-				if (pawn != null && pawn.needs.rest != null)
-				{
-					return pawn.needs.rest.CurCategory.GetLabel() + ": x" + RestMultiplier(pawn.needs.rest.CurCategory).ToStringPercent();
-				}
+				return pawn.needs.rest.CurCategory.GetLabel() + ": x" + RestMultiplier(pawn.needs.rest.CurCategory).ToStringPercent();
 			}
 			return null;
 		}

@@ -106,6 +106,11 @@ namespace Verse
 			return new IntVec2(a.x * b, a.z * b);
 		}
 
+		public static IntVec2 operator *(IntVec2 a, float b)
+		{
+			return new IntVec2(Mathf.RoundToInt((float)a.x * b), Mathf.RoundToInt((float)a.z * b));
+		}
+
 		public static IntVec2 operator /(IntVec2 a, int b)
 		{
 			return new IntVec2(a.x / b, a.z / b);

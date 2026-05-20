@@ -89,7 +89,7 @@ namespace RimWorld
 			Map map = target.Map;
 			target.Destroy(DestroyMode.WillReplace);
 			Thing thing = ThingMaker.MakeThing(target.def.building.smoothedThing, target.Stuff);
-			thing.SetFaction(smoother.Faction);
+			thing.SetFaction(smoother?.Faction ?? Faction.OfPlayer);
 			GenSpawn.Spawn(thing, target.Position, map, target.Rotation);
 			map.designationManager.TryRemoveDesignation(target.Position, DesignationDefOf.SmoothWall);
 			return thing;

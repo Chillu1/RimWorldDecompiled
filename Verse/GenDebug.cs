@@ -39,5 +39,13 @@ namespace Verse
 				}
 			}
 		}
+
+		public static void SpawnArea(CellRect r, Map map, ThingDef def)
+		{
+			foreach (IntVec3 item in r)
+			{
+				GenSpawn.Spawn(def, item, map);
+			}
+		}
 	}
 }

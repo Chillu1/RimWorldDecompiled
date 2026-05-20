@@ -11,25 +11,19 @@ namespace Verse
 				if (refee == null)
 				{
 					Scribe.saver.WriteElement(label, "null");
-					return;
 				}
-				Thing thing = refee as Thing;
-				if (thing == null || !CheckSaveReferenceToDestroyedThing(thing, label, saveDestroyedThings))
+				else if ((!(refee is Thing th) || !CheckSaveReferenceToDestroyedThing(th, label, saveDestroyedThings)) && (!(refee is WorldObject w) || !CheckSaveReferenceToDestroyedWorldObject(w, label, saveDestroyedThings)))
 				{
-					WorldObject worldObject = refee as WorldObject;
-					if (worldObject == null || !CheckSaveReferenceToDestroyedWorldObject(worldObject, label, saveDestroyedThings))
-					{
-						string uniqueLoadID = refee.GetUniqueLoadID();
-						Scribe.saver.WriteElement(label, uniqueLoadID);
-						Scribe.saver.loadIDsErrorsChecker.RegisterReferenced(refee, label);
-					}
+					string uniqueLoadID = refee.GetUniqueLoadID();
+					Scribe.saver.WriteElement(label, uniqueLoadID);
+					Scribe.saver.loadIDsErrorsChecker.RegisterReferenced(refee, label);
 				}
 			}
 			else if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
 				if (Scribe.loader.curParent != null && Scribe.loader.curParent.GetType().IsValueType)
 				{
-					Log.Warning(string.Concat("Trying to load reference of an object of type ", typeof(T), " with label ", label, ", but our current node is a value type. The reference won't be loaded properly. curParent=", Scribe.loader.curParent));
+					Log.Warning("Trying to load reference of an object of type " + typeof(T)?.ToString() + " with label " + label + ", but our current node is a value type. The reference won't be loaded properly. curParent=" + Scribe.loader.curParent);
 				}
 				string targetLoadID = Scribe.loader.curXmlParent[label]?.InnerText;
 				Scribe.loader.crossRefs.loadIDs.RegisterLoadIDReadFromXml(targetLoadID, typeof(T), label);
@@ -76,7 +70,7 @@ namespace Verse
 			}
 			if (th.Discarded)
 			{
-				Log.Warning(string.Concat("Trying to save reference to a discarded thing ", th, " with saveDestroyedThings=true. This means that it's not deep-saved anywhere and is no longer managed by anything in the code, so saving its reference will always fail. , label=", label));
+				Log.Warning("Trying to save reference to a discarded thing " + th?.ToString() + " with saveDestroyedThings=true. This means that it's not deep-saved anywhere and is no longer managed by anything in the code, so saving its reference will always fail. , label=" + label);
 				Scribe.saver.WriteElement(label, "null");
 				return true;
 			}

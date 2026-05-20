@@ -36,20 +36,20 @@ namespace Verse
 		{
 			if (regions[0] == reg || regions[1] == reg)
 			{
-				Log.Error("Tried to double-register region " + reg.ToString() + " in " + this);
+				Log.Error($"Tried to double-register region {reg} in {this}");
+				return;
 			}
-			else if (RegionA == null || !RegionA.valid)
+			if (RegionA == null || !RegionA.valid)
 			{
 				RegionA = reg;
+				return;
 			}
-			else if (RegionB == null || !RegionB.valid)
+			if (RegionB == null || !RegionB.valid)
 			{
 				RegionB = reg;
+				return;
 			}
-			else
-			{
-				Log.Error(string.Concat("Could not register region ", reg.ToString(), " in link ", this, ": > 2 regions on link!\nRegionA: ", RegionA.DebugString, "\nRegionB: ", RegionB.DebugString));
-			}
+			Log.Error($"Could not register region {reg} in link {this}: > 2 regions on link!\nRegionA: {RegionA.DebugString}\nRegionB: {RegionB.DebugString}");
 		}
 
 		public void Deregister(Region reg)
@@ -59,7 +59,7 @@ namespace Verse
 				RegionA = null;
 				if (RegionB == null)
 				{
-					reg.Map.regionLinkDatabase.Notify_LinkHasNoRegions(this);
+					reg.Map?.regionLinkDatabase.Notify_LinkHasNoRegions(this);
 				}
 			}
 			else if (RegionB == reg)
@@ -67,7 +67,7 @@ namespace Verse
 				RegionB = null;
 				if (RegionA == null)
 				{
-					reg.Map.regionLinkDatabase.Notify_LinkHasNoRegions(this);
+					reg.Map?.regionLinkDatabase.Notify_LinkHasNoRegions(this);
 				}
 			}
 		}

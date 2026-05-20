@@ -27,15 +27,15 @@ namespace RimWorld
 			}
 			if (IntervalsPassed == 204)
 			{
-				IncidentCategoryDef threatCategory = (Find.Storyteller.difficultyValues.allowIntroThreats ? IncidentCategoryDefOf.ThreatSmall : IncidentCategoryDefOf.Misc);
-				if (DefDatabase<IncidentDef>.AllDefs.Where((IncidentDef def) => def.TargetAllowed(target) && def.category == threatCategory).TryRandomElementByWeight(base.IncidentChanceFinal, out var result))
+				IncidentCategoryDef threatCategory = (Find.Storyteller.difficulty.allowIntroThreats ? IncidentCategoryDefOf.ThreatSmall : IncidentCategoryDefOf.Misc);
+				if (DefDatabase<IncidentDef>.AllDefs.Where((IncidentDef def) => def.TargetAllowed(target) && def.category == threatCategory).TryRandomElementByWeight((IncidentDef def) => IncidentChanceFinal(def, target), out var result))
 				{
 					FiringIncident firingIncident2 = new FiringIncident(result, this);
 					firingIncident2.parms = StorytellerUtility.DefaultParmsNow(result.category, target);
 					yield return firingIncident2;
 				}
 			}
-			if (IntervalsPassed == 264 && DefDatabase<IncidentDef>.AllDefs.Where((IncidentDef def) => def.TargetAllowed(target) && def.category == IncidentCategoryDefOf.Misc).TryRandomElementByWeight(base.IncidentChanceFinal, out var result2))
+			if (IntervalsPassed == 264 && DefDatabase<IncidentDef>.AllDefs.Where((IncidentDef def) => def.TargetAllowed(target) && def.category == IncidentCategoryDefOf.Misc).TryRandomElementByWeight((IncidentDef def) => IncidentChanceFinal(def, target), out var result2))
 			{
 				FiringIncident firingIncident3 = new FiringIncident(result2, this);
 				firingIncident3.parms = StorytellerUtility.DefaultParmsNow(result2.category, target);
@@ -46,16 +46,16 @@ namespace RimWorld
 				yield break;
 			}
 			IncidentDef incidentDef = IncidentDefOf.RaidEnemy;
-			if (!Find.Storyteller.difficultyValues.allowIntroThreats)
+			if (!Find.Storyteller.difficulty.allowIntroThreats)
 			{
-				incidentDef = DefDatabase<IncidentDef>.AllDefs.Where((IncidentDef def) => def.TargetAllowed(target) && def.category == IncidentCategoryDefOf.Misc).RandomElementByWeightWithFallback(base.IncidentChanceFinal);
+				incidentDef = DefDatabase<IncidentDef>.AllDefs.Where((IncidentDef def) => def.TargetAllowed(target) && def.category == IncidentCategoryDefOf.Misc).RandomElementByWeightWithFallback((IncidentDef def) => IncidentChanceFinal(def, target));
 			}
 			if (incidentDef != null && incidentDef.TargetAllowed(target))
 			{
 				FiringIncident firingIncident4 = new FiringIncident(incidentDef, this);
 				firingIncident4.parms = GenerateParms(incidentDef.category, target);
 				firingIncident4.parms.points = 40f;
-				firingIncident4.parms.raidForceOneIncap = true;
+				firingIncident4.parms.raidForceOneDowned = true;
 				firingIncident4.parms.raidNeverFleeIndividual = true;
 				yield return firingIncident4;
 			}

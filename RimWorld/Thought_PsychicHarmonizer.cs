@@ -14,8 +14,12 @@ namespace RimWorld
 		{
 			get
 			{
-				Pawn pawn = harmonizer.pawn;
-				if (pawn.health.Dead || pawn.needs == null || pawn.needs.mood == null)
+				Pawn pawn = harmonizer?.pawn;
+				if (pawn == null)
+				{
+					return true;
+				}
+				if (pawn.health.Dead || pawn.needs?.mood == null)
 				{
 					return true;
 				}
@@ -53,7 +57,7 @@ namespace RimWorld
 			}
 			float num = base.MoodOffset();
 			float num2 = Mathf.Lerp(-1f, 1f, harmonizer.pawn.needs.mood.CurLevel);
-			float statValue = harmonizer.pawn.GetStatValue(StatDefOf.PsychicSensitivity);
+			float statValue = harmonizer.pawn.GetStatValue(StatDefOf.PsychicSensitivity, applyPostProcess: true, 1);
 			return num * num2 * statValue;
 		}
 
@@ -65,14 +69,13 @@ namespace RimWorld
 
 		public override bool GroupsWith(Thought other)
 		{
-			Thought_PsychicHarmonizer thought_PsychicHarmonizer = other as Thought_PsychicHarmonizer;
-			if (thought_PsychicHarmonizer == null)
+			if (!(other is Thought_PsychicHarmonizer thought_PsychicHarmonizer))
 			{
 				return false;
 			}
-			if (base.GroupsWith(other))
+			if (thought_PsychicHarmonizer.harmonizer == harmonizer)
 			{
-				return thought_PsychicHarmonizer.harmonizer == harmonizer;
+				return base.GroupsWith(other);
 			}
 			return false;
 		}

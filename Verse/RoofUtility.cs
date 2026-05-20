@@ -28,7 +28,8 @@ namespace Verse
 			{
 				if (roofGrid.Roofed(item))
 				{
-					return true;
+					result = true;
+					break;
 				}
 			}
 			return result;
@@ -40,9 +41,16 @@ namespace Verse
 			{
 				return true;
 			}
-			if (blocker.def.category == ThingCategory.Plant && worker.CanReserveAndReach(blocker, PathEndMode.ClosestTouch, worker.NormalMaxDanger(), 1, -1, null, forced))
+			if (blocker.def.category == ThingCategory.Plant)
 			{
-				return true;
+				if (!PlantUtility.PawnWillingToCutPlant_Job(blocker, worker))
+				{
+					return false;
+				}
+				if (worker.CanReserveAndReach(blocker, PathEndMode.ClosestTouch, worker.NormalMaxDanger(), 1, -1, null, forced))
+				{
+					return true;
+				}
 			}
 			return false;
 		}
@@ -55,6 +63,10 @@ namespace Verse
 			}
 			if (blocker.def.category == ThingCategory.Plant && worker.CanReserveAndReach(blocker, PathEndMode.ClosestTouch, worker.NormalMaxDanger(), 1, -1, null, forced))
 			{
+				if (!PlantUtility.PawnWillingToCutPlant_Job(blocker, worker))
+				{
+					return null;
+				}
 				return JobMaker.MakeJob(JobDefOf.CutPlant, blocker);
 			}
 			return null;

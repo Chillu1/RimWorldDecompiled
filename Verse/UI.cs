@@ -58,9 +58,25 @@ namespace Verse
 			GUI.FocusControl(null);
 		}
 
+		public static void UnfocusCurrentTextField()
+		{
+			GUI.SetNextControlName("FOR_UNFOCUS");
+			GUI.TextField(default(Rect), "");
+			GUI.FocusControl("FOR_UNFOCUS");
+		}
+
 		public static Vector2 GUIToScreenPoint(Vector2 guiPoint)
 		{
 			return GUIUtility.GUIToScreenPoint(guiPoint / Prefs.UIScale);
+		}
+
+		public static Rect GUIToScreenRect(Rect guiRect)
+		{
+			return new Rect
+			{
+				min = GUIToScreenPoint(guiRect.min),
+				max = GUIToScreenPoint(guiRect.max)
+			};
 		}
 
 		public static void RotateAroundPivot(float angle, Vector2 center)

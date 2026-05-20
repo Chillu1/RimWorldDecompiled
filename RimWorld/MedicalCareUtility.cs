@@ -51,11 +51,11 @@ namespace RimWorld
 				}
 				if (medCare == mc)
 				{
-					Widgets.DrawBox(rect2, 3);
+					Widgets.DrawBox(rect2, 2);
 				}
 				if (Mouse.IsOver(rect2))
 				{
-					TooltipHandler.TipRegion(rect2, () => mc.GetLabel(), 632165 + i * 17);
+					TooltipHandler.TipRegion(rect2, () => mc.GetLabel().CapitalizeFirst(), 632165 + i * 17);
 				}
 				rect2.x += rect2.width;
 			}
@@ -100,13 +100,33 @@ namespace RimWorld
 				MedicalCareCategory mc = (MedicalCareCategory)i;
 				yield return new Widgets.DropdownMenuElement<MedicalCareCategory>
 				{
-					option = new FloatMenuOption(mc.GetLabel(), delegate
+					option = new FloatMenuOption(mc.GetLabel().CapitalizeFirst(), delegate
 					{
 						p.playerSettings.medCare = mc;
-					}),
+					}, MedicalCareIcon(mc), Color.white),
 					payload = mc
 				};
 			}
+			yield return new Widgets.DropdownMenuElement<MedicalCareCategory>
+			{
+				option = new FloatMenuOption("ChangeDefaults".Translate(), delegate
+				{
+					Find.WindowStack.Add(new Dialog_MedicalDefaults());
+				})
+			};
+		}
+
+		private static Texture2D MedicalCareIcon(MedicalCareCategory category)
+		{
+			return category switch
+			{
+				MedicalCareCategory.NoCare => careTextures[0], 
+				MedicalCareCategory.NoMeds => careTextures[1], 
+				MedicalCareCategory.HerbalOrWorse => careTextures[2], 
+				MedicalCareCategory.NormalOrWorse => careTextures[3], 
+				MedicalCareCategory.Best => careTextures[4], 
+				_ => null, 
+			};
 		}
 	}
 }

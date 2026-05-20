@@ -10,9 +10,9 @@ namespace RimWorld
 	{
 		private static List<Need> displayNeeds = new List<Need>();
 
-		private static readonly Color MoodColor = new Color(0.1f, 1f, 0.1f);
+		public static readonly Color MoodColor = new Color(0.1f, 1f, 0.1f);
 
-		private static readonly Color MoodColorNegative = new Color(0.8f, 0.4f, 0.4f);
+		public static readonly Color MoodColorNegative = new Color(0.8f, 0.4f, 0.4f);
 
 		private static readonly Color NoEffectColor = new Color(0.5f, 0.5f, 0.5f, 0.75f);
 
@@ -78,11 +78,11 @@ namespace RimWorld
 
 		private static void DoMoodAndThoughts(Rect rect, Pawn pawn, ref Vector2 thoughtScrollPosition)
 		{
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			Rect rect2 = new Rect(0f, 0f, rect.width * 0.8f, 70f);
 			pawn.needs.mood.DrawOnGUI(rect2);
 			DrawThoughtListing(new Rect(0f, 80f, rect.width, rect.height - 70f - 10f).ContractedBy(10f), pawn, ref thoughtScrollPosition);
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		private static void UpdateDisplayNeeds(Pawn pawn)
@@ -106,6 +106,7 @@ namespace RimWorld
 				return;
 			}
 			Text.Font = GameFont.Small;
+			IdeoUIUtility.DrawExtraThoughtInfoFromIdeo(pawn, ref listingRect);
 			PawnNeedsUIUtility.GetThoughtGroupsInDisplayOrder(pawn.needs.mood, thoughtGroupsPresent);
 			float height = (float)thoughtGroupsPresent.Count * 24f;
 			Widgets.BeginScrollView(listingRect, ref thoughtScrollPosition, new Rect(0f, 0f, listingRect.width - 16f, height));
@@ -127,16 +128,20 @@ namespace RimWorld
 			try
 			{
 				pawn.needs.mood.thoughts.GetMoodThoughts(group, thoughtGroup);
-				Thought leadingThoughtInGroup = PawnNeedsUIUtility.GetLeadingThoughtInGroup(thoughtGroup);
-				if (!leadingThoughtInGroup.VisibleInNeedsTab)
+				if (thoughtGroup.Count == 0)
+				{
+					return false;
+				}
+				Thought leadingThought = PawnNeedsUIUtility.GetLeadingThoughtInGroup(thoughtGroup);
+				if (!leadingThought.VisibleInNeedsTab)
 				{
 					thoughtGroup.Clear();
 					return false;
 				}
-				if (leadingThoughtInGroup != thoughtGroup[0])
+				if (leadingThought != thoughtGroup[0])
 				{
-					thoughtGroup.Remove(leadingThoughtInGroup);
-					thoughtGroup.Insert(0, leadingThoughtInGroup);
+					thoughtGroup.Remove(leadingThought);
+					thoughtGroup.Insert(0, leadingThought);
 				}
 				if (Mouse.IsOver(rect))
 				{
@@ -145,17 +150,27 @@ namespace RimWorld
 				if (Mouse.IsOver(rect))
 				{
 					StringBuilder stringBuilder = new StringBuilder();
-					stringBuilder.Append(leadingThoughtInGroup.Description);
-					if (group.def.DurationTicks > 5)
+					stringBuilder.Append(leadingThought.LabelCap.AsTipTitle()).AppendLine().AppendLine();
+					if (pawn.DevelopmentalStage.Baby())
+					{
+						stringBuilder.AppendLine(leadingThought.BabyTalk);
+						stringBuilder.AppendLine();
+						stringBuilder.AppendTagged(("Translation".Translate() + ": " + leadingThought.Description).Colorize(ColoredText.SubtleGrayColor));
+					}
+					else
+					{
+						stringBuilder.Append(leadingThought.Description);
+					}
+					int durationTicks = group.DurationTicks;
+					if (durationTicks > 5)
 					{
 						stringBuilder.AppendLine();
 						stringBuilder.AppendLine();
-						Thought_Memory thought_Memory = leadingThoughtInGroup as Thought_Memory;
-						if (thought_Memory != null)
+						if (leadingThought is Thought_Memory thought_Memory)
 						{
 							if (thoughtGroup.Count == 1)
 							{
-								stringBuilder.Append("ThoughtExpiresIn".Translate((group.def.DurationTicks - thought_Memory.age).ToStringTicksToPeriod()));
+								stringBuilder.AppendTagged("ThoughtExpiresIn".Translate((durationTicks - thought_Memory.age).ToStringTicksToPeriod()));
 							}
 							else
 							{
@@ -166,9 +181,9 @@ namespace RimWorld
 									num = Mathf.Min(num, item.age);
 									num2 = Mathf.Max(num2, item.age);
 								}
-								stringBuilder.Append("ThoughtStartsExpiringIn".Translate((group.def.DurationTicks - num2).ToStringTicksToPeriod()));
+								stringBuilder.AppendTagged("ThoughtStartsExpiringIn".Translate((durationTicks - num2).ToStringTicksToPeriod()));
 								stringBuilder.AppendLine();
-								stringBuilder.Append("ThoughtFinishesExpiringIn".Translate((group.def.DurationTicks - num).ToStringTicksToPeriod()));
+								stringBuilder.AppendTagged("ThoughtFinishesExpiringIn".Translate((durationTicks - num).ToStringTicksToPeriod()));
 							}
 						}
 					}
@@ -205,7 +220,7 @@ namespace RimWorld
 				Rect rect2 = new Rect(rect.x + 10f, rect.y, 225f, rect.height);
 				rect2.yMin -= 3f;
 				rect2.yMax += 3f;
-				string text = leadingThoughtInGroup.LabelCap;
+				string text = leadingThought.LabelCap;
 				if (thoughtGroup.Count > 1)
 				{
 					text = text + " x" + thoughtGroup.Count;
@@ -229,10 +244,17 @@ namespace RimWorld
 				Text.Anchor = TextAnchor.UpperLeft;
 				GUI.color = Color.white;
 				Text.WordWrap = true;
+				if (ModsConfig.IdeologyActive && leadingThought.sourcePrecept != null && !Find.IdeoManager.classicMode)
+				{
+					IdeoUIUtility.DoIdeoIcon(new Rect(rect.x + 235f + 32f + 10f, rect.y, 20f, 20f), leadingThought.sourcePrecept.ideo, doTooltip: false, delegate
+					{
+						IdeoUIUtility.OpenIdeoInfo(leadingThought.sourcePrecept.ideo);
+					});
+				}
 			}
 			catch (Exception ex)
 			{
-				Log.ErrorOnce(string.Concat("Exception in DrawThoughtGroup for ", group.def, " on ", pawn, ": ", ex.ToString()), 3452698);
+				Log.ErrorOnce("Exception in DrawThoughtGroup for " + group.def?.ToString() + " on " + pawn?.ToString() + ": " + ex, 3452698);
 			}
 			return true;
 		}

@@ -7,7 +7,28 @@ namespace RimWorld
 {
 	public static class GenStuff
 	{
+		private static List<ThingDef> cachedStuffDefs;
+
 		private static List<ThingDef> allowedStuffTmp = new List<ThingDef>();
+
+		private static List<ThingDef> StuffDefs
+		{
+			get
+			{
+				if (cachedStuffDefs == null)
+				{
+					cachedStuffDefs = new List<ThingDef>();
+					foreach (ThingDef item in DefDatabase<ThingDef>.AllDefsListForReading)
+					{
+						if (item.IsStuff)
+						{
+							cachedStuffDefs.Add(item);
+						}
+					}
+				}
+				return cachedStuffDefs;
+			}
+		}
 
 		public static ThingDef DefaultStuffFor(BuildableDef bd)
 		{
@@ -15,9 +36,12 @@ namespace RimWorld
 			{
 				return null;
 			}
-			ThingDef thingDef = bd as ThingDef;
-			if (thingDef != null)
+			if (bd is ThingDef thingDef)
 			{
+				if (thingDef.defaultStuff != null)
+				{
+					return thingDef.defaultStuff;
+				}
 				if (thingDef.IsMeleeWeapon)
 				{
 					if (ThingDefOf.Steel.stuffProps.CanMake(bd))
@@ -78,7 +102,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			return AllowedStuffsFor(td).RandomElement();
+			return AllowedStuffsFor(td, TechLevel.Undefined, checkAllowedInStuffGeneration: true).RandomElement();
 		}
 
 		public static ThingDef RandomStuffByCommonalityFor(ThingDef td, TechLevel maxTechLevel = TechLevel.Undefined)
@@ -94,30 +118,39 @@ namespace RimWorld
 			return stuff;
 		}
 
-		public static IEnumerable<ThingDef> AllowedStuffsFor(BuildableDef td, TechLevel maxTechLevel = TechLevel.Undefined)
+		public static IEnumerable<ThingDef> AllowedStuffsFor(BuildableDef td, TechLevel maxTechLevel = TechLevel.Undefined, bool checkAllowedInStuffGeneration = false)
 		{
 			if (!td.MadeFromStuff)
 			{
 				yield break;
 			}
-			List<ThingDef> allDefs = DefDatabase<ThingDef>.AllDefsListForReading;
-			for (int i = 0; i < allDefs.Count; i++)
+			ThingDef found = null;
+			int yielded = 0;
+			for (int i = 0; i < StuffDefs.Count; i++)
 			{
-				ThingDef thingDef = allDefs[i];
+				ThingDef thingDef = StuffDefs[i];
 				if (thingDef.IsStuff && (maxTechLevel == TechLevel.Undefined || (int)thingDef.techLevel <= (int)maxTechLevel) && thingDef.stuffProps.CanMake(td))
 				{
-					yield return thingDef;
+					found = thingDef;
+					if (!checkAllowedInStuffGeneration || thingDef.stuffProps.allowedInStuffGeneration)
+					{
+						yielded++;
+						yield return thingDef;
+					}
 				}
+			}
+			if (yielded == 0 && found != null)
+			{
+				yield return found;
 			}
 		}
 
 		public static IEnumerable<ThingDef> AllowedStuffs(List<StuffCategoryDef> categories, TechLevel maxTechLevel = TechLevel.Undefined)
 		{
-			List<ThingDef> allDefs = DefDatabase<ThingDef>.AllDefsListForReading;
-			for (int i = 0; i < allDefs.Count; i++)
+			for (int i = 0; i < StuffDefs.Count; i++)
 			{
-				ThingDef thingDef = allDefs[i];
-				if (!thingDef.IsStuff || (maxTechLevel != 0 && (int)thingDef.techLevel > (int)maxTechLevel))
+				ThingDef thingDef = StuffDefs[i];
+				if (!thingDef.IsStuff || (maxTechLevel != TechLevel.Undefined && (int)thingDef.techLevel > (int)maxTechLevel))
 				{
 					continue;
 				}
@@ -151,7 +184,7 @@ namespace RimWorld
 				stuff = null;
 				return true;
 			}
-			return AllowedStuffsFor(td, maxTechLevel).TryRandomElementByWeight((ThingDef x) => x.stuffProps.commonality, out stuff);
+			return AllowedStuffsFor(td, maxTechLevel, checkAllowedInStuffGeneration: true).TryRandomElementByWeight((ThingDef x) => x.stuffProps.commonality, out stuff);
 		}
 
 		public static bool TryRandomStuffFor(ThingDef td, out ThingDef stuff, TechLevel maxTechLevel = TechLevel.Undefined, Predicate<ThingDef> validator = null)
@@ -164,7 +197,7 @@ namespace RimWorld
 			if (validator != null)
 			{
 				allowedStuffTmp.Clear();
-				foreach (ThingDef item in AllowedStuffsFor(td, maxTechLevel))
+				foreach (ThingDef item in AllowedStuffsFor(td, maxTechLevel, checkAllowedInStuffGeneration: true))
 				{
 					if (validator(item))
 					{
@@ -191,7 +224,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			IEnumerable<ThingDef> enumerable = AllowedStuffsFor(thingDef, maxTechLevel);
+			IEnumerable<ThingDef> enumerable = AllowedStuffsFor(thingDef, maxTechLevel, checkAllowedInStuffGeneration: true);
 			if (validator != null)
 			{
 				enumerable = enumerable.Where((ThingDef x) => validator(x));
@@ -211,6 +244,11 @@ namespace RimWorld
 				return result;
 			}
 			return null;
+		}
+
+		public static void ResetStaticData()
+		{
+			cachedStuffDefs = null;
 		}
 	}
 }

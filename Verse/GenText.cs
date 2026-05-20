@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using RimWorld;
 using UnityEngine;
 using Verse.Grammar;
+using Verse.Steam;
 
 namespace Verse
 {
@@ -20,11 +21,15 @@ namespace Verse
 
 		private static StringBuilder tmpSb = new StringBuilder();
 
+		private static string[] tmpSeparators = new string[1];
+
 		private static StringBuilder tmpSbForCapitalizedSentences = new StringBuilder();
 
 		private static StringBuilder tmpStringBuilder = new StringBuilder();
 
 		private static string[] eventTypesCached;
+
+		private static readonly char[] separatorArrayTmp = new char[1] { ' ' };
 
 		public static string Possessive(this Pawn p)
 		{
@@ -123,27 +128,27 @@ namespace Verse
 				}
 				string text2 = text.Substring(num2 + 5, num3 - (num2 + 5));
 				KeyBindingDef namedSilentFail = DefDatabase<KeyBindingDef>.GetNamedSilentFail(text2);
-				string str = text.Substring(0, num2);
+				string text3 = text.Substring(0, num2);
 				if (namedSilentFail != null)
 				{
-					str = ((!resolveKeys) ? (str + "placeholder") : (str + namedSilentFail.MainKeyLabel));
+					text3 = ((!resolveKeys) ? (text3 + "placeholder") : ((!SteamDeck.IsSteamDeckInNonKeyboardMode) ? (text3 + namedSilentFail.MainKeyLabel) : (text3 + SteamDeck.GetKeyBindingLabel(namedSilentFail))));
 				}
 				else
 				{
-					str += "error";
+					text3 += "error";
 					if (outErrors != null)
 					{
-						string text3 = "Could not find key '" + text2 + "'";
-						string text4 = BackCompatibility.BackCompatibleDefName(typeof(KeyBindingDef), text2);
-						if (text4 != text2)
+						string text4 = "Could not find key '" + text2 + "'";
+						string text5 = BackCompatibility.BackCompatibleDefName(typeof(KeyBindingDef), text2);
+						if (text5 != text2)
 						{
-							text3 = text3 + " (hint: it was renamed to '" + text4 + "')";
+							text4 = text4 + " (hint: it was renamed to '" + text5 + "')";
 						}
-						outErrors.Add(text3);
+						outErrors.Add(text4);
 					}
 				}
-				str += text.Substring(num3 + 1);
-				text = str;
+				text3 += text.Substring(num3 + 1);
+				text = text3;
 			}
 			return text;
 		}
@@ -168,19 +173,24 @@ namespace Verse
 
 		public static string KindLabelIndefinite(this Pawn pawn)
 		{
-			return Find.ActiveLanguageWorker.WithIndefiniteArticlePostProcessed(pawn.KindLabel, pawn.gender);
+			string kindLabel = pawn.KindLabel;
+			Gender gender = LanguageDatabase.activeLanguage.ResolveGender(kindLabel, null, pawn.gender);
+			return Find.ActiveLanguageWorker.WithIndefiniteArticlePostProcessed(kindLabel, gender);
 		}
 
 		public static string KindLabelDefinite(this Pawn pawn)
 		{
-			return Find.ActiveLanguageWorker.WithDefiniteArticlePostProcessed(pawn.KindLabel, pawn.gender);
+			string kindLabel = pawn.KindLabel;
+			Gender gender = LanguageDatabase.activeLanguage.ResolveGender(kindLabel, null, pawn.gender);
+			return Find.ActiveLanguageWorker.WithDefiniteArticlePostProcessed(kindLabel, gender);
 		}
 
 		public static string RandomSeedString()
 		{
-			GrammarRequest request = default(GrammarRequest);
-			request.Includes.Add(RulePackDefOf.SeedGenerator);
-			return GrammarResolver.Resolve("r_seed", request).ToLower();
+			return GrammarResolver.Resolve("r_seed", new GrammarRequest
+			{
+				Includes = { RulePackDefOf.SeedGenerator }
+			}).ToLower();
 		}
 
 		public static string Shorten(this string s)
@@ -283,21 +293,14 @@ namespace Verse
 
 		public static IEnumerable<string> LinesFromString(string text)
 		{
-			string[] separator = new string[2]
-			{
-				"\r\n",
-				"\n"
-			};
+			string[] separator = new string[2] { "\r\n", "\n" };
 			string[] array = text.Split(separator, StringSplitOptions.RemoveEmptyEntries);
 			for (int i = 0; i < array.Length; i++)
 			{
 				string text2 = array[i].Trim();
 				if (!text2.StartsWith("//"))
 				{
-					text2 = text2.Split(new string[1]
-					{
-						"//"
-					}, StringSplitOptions.None)[0];
+					text2 = text2.Split(new string[1] { "//" }, StringSplitOptions.None)[0];
 					if (text2.Length != 0)
 					{
 						yield return text2;
@@ -374,7 +377,7 @@ namespace Verse
 
 		public static string WithoutByteOrderMark(this string str)
 		{
-			return str.Trim().Trim('\ufeff');
+			return str.Trim().Trim(new char[1] { '\ufeff' });
 		}
 
 		public static bool NamesOverlap(string A, string B)
@@ -424,6 +427,19 @@ namespace Verse
 				return char.ToUpper(str[num]) + str.Substring(num + 1);
 			}
 			return str.Substring(0, num) + char.ToUpper(str[num]) + str.Substring(num + 1);
+		}
+
+		public static string EndWithPeriod(this string str)
+		{
+			if (str.NullOrEmpty())
+			{
+				return str;
+			}
+			if (str[str.Length - 1] == '.')
+			{
+				return str;
+			}
+			return str + ".";
 		}
 
 		public static string CapitalizeFirst(this string str, Def possibleDef)
@@ -484,19 +500,25 @@ namespace Verse
 			{
 				return str;
 			}
-			string[] array = str.MergeMultipleSpaces(leaveMultipleSpacesAtLineBeginning: false).Trim().Split(' ');
+			return CapitalizeFirstLetterAfterSeparator(CapitalizeFirstLetterAfterSeparator(CapitalizeFirstLetterAfterSeparator(str.MergeMultipleSpaces(leaveMultipleSpacesAtLineBeginning: false).Trim(), " "), "-"), " '");
+		}
+
+		private static string CapitalizeFirstLetterAfterSeparator(string str, string separator)
+		{
+			tmpSeparators[0] = separator;
+			string[] array = str.Split(tmpSeparators, StringSplitOptions.None);
 			for (int i = 0; i < array.Length; i++)
 			{
 				string text = array[i];
 				if ((i == 0 || i == array.Length - 1 || TitleCaseHelper.IsUppercaseTitleWord(text)) && !text.NullOrEmpty())
 				{
 					int num = text.FirstLetterBetweenTags();
-					string str2 = ((num == 0) ? text[num].ToString().ToUpper() : (text.Substring(0, num) + char.ToUpper(text[num])));
-					string str3 = text.Substring(num + 1);
-					array[i] = str2 + str3;
+					string text2 = ((num == 0) ? text[num].ToString().ToUpper() : (text.Substring(0, num) + char.ToUpper(text[num])));
+					string text3 = text.Substring(num + 1);
+					array[i] = text2 + text3;
 				}
 			}
-			return string.Join(" ", array);
+			return string.Join(separator, array);
 		}
 
 		public static string CapitalizeSentences(string input, bool capitalizeFirstSentence = true)
@@ -529,7 +551,7 @@ namespace Verse
 				{
 					tmpSbForCapitalizedSentences.Append(input[i]);
 				}
-				if (input[i] == '\r' || input[i] == '\n' || (input[i] == '.' && i < input.Length - 1 && !char.IsLetter(input[i + 1])) || input[i] == '!' || input[i] == '?' || input[i] == ':')
+				if (input[i] == '\r' || input[i] == '\n' || (input[i] == '.' && i < input.Length - 1 && input[i + 1] == ' ') || input[i] == '!' || input[i] == '?' || input[i] == ':')
 				{
 					flag = true;
 				}
@@ -568,34 +590,84 @@ namespace Verse
 			return Find.ActiveLanguageWorker.ToTitleCase(str);
 		}
 
-		public static string ToCommaList(this IEnumerable<string> items, bool useAnd = false)
+		public static string ToCommaList(this IEnumerable<string> items, bool useAnd = false, bool emptyIfNone = false)
 		{
 			if (items == null)
 			{
 				return "";
 			}
-			string text = null;
-			string text2 = null;
-			int num = 0;
+			string first;
+			string last;
+			int count;
+			StringBuilder stringBuilder = ToCommaListInner(items, out first, out last, out count);
+			switch (count)
+			{
+			case 0:
+				return emptyIfNone ? ((TaggedString)"") : "NoneLower".Translate();
+			case 1:
+				return last;
+			default:
+				if (useAnd)
+				{
+					if (count == 2)
+					{
+						return "ToCommaListAnd".Translate(first, last).Resolve();
+					}
+					stringBuilder.Remove(stringBuilder.Length - 2, 2);
+					return "ToCommaListAnd".Translate(stringBuilder.ToString(), last).Resolve();
+				}
+				stringBuilder.Append(last);
+				return stringBuilder.ToString();
+			}
+		}
+
+		public static string ToCommaListOr(this IEnumerable<string> items, bool emptyIfNone = false)
+		{
+			if (items == null)
+			{
+				return "";
+			}
+			string first;
+			string last;
+			int count;
+			StringBuilder stringBuilder = ToCommaListInner(items, out first, out last, out count);
+			switch (count)
+			{
+			case 0:
+				return emptyIfNone ? ((TaggedString)"") : "NoneLower".Translate();
+			case 1:
+				return last;
+			case 2:
+				return "ToCommaListOr".Translate(first, last).Resolve();
+			default:
+				stringBuilder.Remove(stringBuilder.Length - 2, 2);
+				return "ToCommaListOr".Translate(stringBuilder.ToString(), last).Resolve();
+			}
+		}
+
+		private static StringBuilder ToCommaListInner(IEnumerable<string> items, out string first, out string last, out int count)
+		{
+			first = null;
+			last = null;
+			count = 0;
 			StringBuilder stringBuilder = new StringBuilder();
-			IList<string> list = items as IList<string>;
-			if (list != null)
+			if (items is IList<string> list)
 			{
 				for (int i = 0; i < list.Count; i++)
 				{
-					string text3 = list[i];
-					if (!text3.NullOrEmpty())
+					string text = list[i];
+					if (!text.NullOrEmpty())
 					{
-						if (text2 == null)
+						if (first == null)
 						{
-							text2 = text3;
+							first = text;
 						}
-						if (text != null)
+						if (last != null)
 						{
-							stringBuilder.Append(text + ", ");
+							stringBuilder.Append(last + ", ");
 						}
-						text = text3;
-						num++;
+						last = text;
+						count++;
 					}
 				}
 			}
@@ -605,38 +677,20 @@ namespace Verse
 				{
 					if (!item.NullOrEmpty())
 					{
-						if (text2 == null)
+						if (first == null)
 						{
-							text2 = item;
+							first = item;
 						}
-						if (text != null)
+						if (last != null)
 						{
-							stringBuilder.Append(text + ", ");
+							stringBuilder.Append(last + ", ");
 						}
-						text = item;
-						num++;
+						last = item;
+						count++;
 					}
 				}
 			}
-			switch (num)
-			{
-			case 0:
-				return "NoneLower".Translate();
-			case 1:
-				return text;
-			default:
-				if (useAnd)
-				{
-					if (num == 2)
-					{
-						return "ToCommaListAnd".Translate(text2, text);
-					}
-					stringBuilder.Remove(stringBuilder.Length - 2, 2);
-					return "ToCommaListAnd".Translate(stringBuilder.ToString(), text);
-				}
-				stringBuilder.Append(text);
-				return stringBuilder.ToString();
-			}
+			return stringBuilder;
 		}
 
 		public static TaggedString ToClauseSequence(this List<string> entries)
@@ -728,6 +782,48 @@ namespace Verse
 			return stringBuilder.ToString();
 		}
 
+		public static string ToStringList(this IEnumerable<string> items, string seperator)
+		{
+			StringBuilder stringBuilder = new StringBuilder();
+			string text = null;
+			string text2 = null;
+			if (items is IList<string> list)
+			{
+				for (int i = 0; i < list.Count; i++)
+				{
+					string text3 = list[i];
+					if (!text3.NullOrEmpty())
+					{
+						if (text == null)
+						{
+							text = text3;
+						}
+						if (text2 != null)
+						{
+							stringBuilder.Append(text2 + seperator);
+						}
+						text2 = text3;
+					}
+				}
+			}
+			else
+			{
+				foreach (string item in items)
+				{
+					if (text != null)
+					{
+						stringBuilder.Append(seperator);
+					}
+					stringBuilder.Append(item);
+					if (text == null)
+					{
+						text = item;
+					}
+				}
+			}
+			return stringBuilder.ToString();
+		}
+
 		public static string ToCamelCase(string str)
 		{
 			string text = "";
@@ -777,8 +873,8 @@ namespace Verse
 			{
 				value = value.RawText.Substring(0, value.RawText.Length - 1);
 			}
-			while (value.RawText.StripTags().Length > 0 && Text.CalcSize(value.RawText.StripTags() + "...").x > width);
-			value += "...";
+			while (value.RawText.StripTags().Length > 0 && Text.CalcSize(AddEllipses(value.RawText.StripTags())).x > width);
+			value = AddEllipses(value);
 			cache?.Add(str.RawText, str);
 			return value;
 		}
@@ -799,10 +895,41 @@ namespace Verse
 			{
 				value = value.Substring(0, value.Length - 1);
 			}
-			while (value.Length > 0 && Text.CalcHeight(value + "...", width) > height);
-			value += "...";
+			while (value.Length > 0 && Text.CalcHeight(AddEllipses(value), width) > height);
+			value = AddEllipses(value);
 			cache?.Add(str, value);
 			return value;
+		}
+
+		public static TaggedString TruncateHeight(this TaggedString str, float width, float height, Dictionary<string, TaggedString> cache = null)
+		{
+			if (cache != null && cache.TryGetValue(str.RawText, out var value))
+			{
+				return value;
+			}
+			if (Text.CalcHeight(str.RawText.StripTags(), width) <= height)
+			{
+				cache?.Add(str.RawText, str);
+				return str;
+			}
+			value = str;
+			do
+			{
+				value = value.RawText.Substring(0, value.RawText.Length - 1);
+			}
+			while (value.RawText.StripTags().Length > 0 && Text.CalcHeight(AddEllipses(value.RawText.StripTags()), width) > height);
+			value = AddEllipses(value);
+			cache?.Add(str.RawText, value);
+			return value;
+		}
+
+		public static string AddEllipses(string s)
+		{
+			if (s.Length > 0 && s[s.Length - 1] == '.')
+			{
+				return s + " ...";
+			}
+			return s + "...";
 		}
 
 		public static string Flatten(this string str)
@@ -982,6 +1109,16 @@ namespace Verse
 		public static string ToStringPercent(this float f, string format)
 		{
 			return ((f + 1E-05f) * 100f).ToString(format) + "%";
+		}
+
+		public static string ToStringPercentSigned(this float f)
+		{
+			return ((Mathf.Sign(f) > 0f) ? "+" : ((Mathf.Sign(f) < 0f) ? "-" : "")) + (Mathf.Abs(f) * 100f).ToStringDecimalIfSmall() + "%";
+		}
+
+		public static string ToStringPercentSigned(this float f, string format)
+		{
+			return ((Mathf.Sign(f) > 0f) ? "+" : ((Mathf.Sign(f) < 0f) ? "-" : "")) + ((Mathf.Abs(f) + 1E-05f) * 100f).ToString(format) + "%";
 		}
 
 		public static string ToStringMoney(this float f, string format = null)
@@ -1243,8 +1380,8 @@ namespace Verse
 				KeyCode.LeftControl => "LCtrl", 
 				KeyCode.RightAlt => "RAlt", 
 				KeyCode.LeftAlt => "LAlt", 
-				KeyCode.RightCommand => "Appl", 
-				KeyCode.LeftCommand => "Cmd", 
+				KeyCode.RightMeta => "Appl", 
+				KeyCode.LeftMeta => "Cmd", 
 				KeyCode.LeftWindows => "Win", 
 				KeyCode.RightWindows => "Win", 
 				KeyCode.AltGr => "AltGr", 
@@ -1262,9 +1399,10 @@ namespace Verse
 			sb.AppendWithSeparator(text, ", ");
 		}
 
-		public static void AppendInNewLine(this StringBuilder sb, string text)
+		public static StringBuilder AppendInNewLine(this StringBuilder sb, string text)
 		{
 			sb.AppendWithSeparator(text, "\n");
+			return sb;
 		}
 
 		public static void AppendWithSeparator(this StringBuilder sb, string text, string separator)
@@ -1346,6 +1484,22 @@ namespace Verse
 				}
 			}
 			return stringBuilder.ToString();
+		}
+
+		public static bool TryGetSeparatedValues(string str, char separator, out string[] output)
+		{
+			if (str.NullOrEmpty() || !str.Contains(separator))
+			{
+				output = null;
+				return false;
+			}
+			separatorArrayTmp[0] = separator;
+			output = str.Split(separatorArrayTmp, StringSplitOptions.RemoveEmptyEntries);
+			for (int i = 0; i < output.Length; i++)
+			{
+				output[i] = output[i].Trim();
+			}
+			return true;
 		}
 	}
 }

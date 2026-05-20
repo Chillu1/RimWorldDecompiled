@@ -9,16 +9,14 @@ namespace RimWorld
 	{
 		private static Func<Pawn, int> displayOrderGetter = (Pawn x) => (x.playerSettings == null) ? 999999 : x.playerSettings.displayOrder;
 
-		private static Func<Pawn, int> thingIDNumberGetter = (Pawn x) => x.thingIDNumber;
-
 		public static void Sort(List<Pawn> pawns)
 		{
-			pawns.SortBy(displayOrderGetter, thingIDNumberGetter);
+			pawns.SortBy(displayOrderGetter);
 		}
 
 		public static IEnumerable<Pawn> InOrder(IEnumerable<Pawn> pawns)
 		{
-			return pawns.OrderBy(displayOrderGetter).ThenBy(thingIDNumberGetter);
+			return pawns.OrderBy(displayOrderGetter);
 		}
 	}
 }

@@ -329,7 +329,7 @@ namespace Verse
 				case "BuildingRubble":
 					return "Filth_RubbleBuilding";
 				}
-				if (defName.EndsWith("_Meat"))
+				if (defName.EndsWith("_Meat") && !defName.Contains("Meal"))
 				{
 					return MeatSuffixExtract.Replace(defName, "Meat_$1");
 				}
@@ -780,8 +780,7 @@ namespace Verse
 		{
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
-				Map map = obj as Map;
-				if (map != null)
+				if (obj is Map map)
 				{
 					if (map.retainedCaravanData == null)
 					{
@@ -796,30 +795,25 @@ namespace Verse
 						map.wildPlantSpawner = new WildPlantSpawner(map);
 					}
 				}
-				Thing thing = obj as Thing;
-				if (thing != null && thing.def.useHitPoints && thing.MaxHitPoints != thing.HitPoints && Mathf.Abs((float)thing.HitPoints / (float)thing.MaxHitPoints - 0.617f) < 0.02f && thing.Stuff == ThingDefOf.WoodLog)
+				if (obj is Thing thing && thing.def.useHitPoints && thing.MaxHitPoints != thing.HitPoints && Mathf.Abs((float)thing.HitPoints / (float)thing.MaxHitPoints - 0.617f) < 0.02f && thing.Stuff == ThingDefOf.WoodLog)
 				{
 					thing.HitPoints = thing.MaxHitPoints;
 				}
-				Pawn pawn = obj as Pawn;
-				if (pawn != null && !pawn.Destroyed && !pawn.Dead && pawn.needs == null)
+				if (obj is Pawn { Destroyed: false, Dead: false, needs: null } pawn)
 				{
 					Log.Error(pawn.ToStringSafe() + " has null needs tracker even though he's not dead. Fixing...");
 					pawn.needs = new Pawn_NeedsTracker(pawn);
 					pawn.needs.SetInitialLevels();
 				}
-				History history = obj as History;
-				if (history != null && history.archive == null)
+				if (obj is History { archive: null } history)
 				{
 					history.archive = new Archive();
 				}
-				WorldInfo worldInfo = obj as WorldInfo;
-				if (worldInfo != null && worldInfo.persistentRandomValue == 0)
+				if (obj is WorldInfo { persistentRandomValue: 0 } worldInfo)
 				{
 					worldInfo.persistentRandomValue = Rand.Int;
 				}
-				Caravan caravan = obj as Caravan;
-				if (caravan != null)
+				if (obj is Caravan caravan)
 				{
 					if (caravan.forage == null)
 					{
@@ -838,49 +832,31 @@ namespace Verse
 						caravan.beds = new Caravan_BedsTracker(caravan);
 					}
 				}
-				PlaySettings playSettings = obj as PlaySettings;
-				if (playSettings != null)
+				if (obj is PlaySettings playSettings)
 				{
-					playSettings.defaultCareForColonyHumanlike = MedicalCareCategory.Best;
-					playSettings.defaultCareForColonyAnimal = MedicalCareCategory.HerbalOrWorse;
-					playSettings.defaultCareForColonyPrisoner = MedicalCareCategory.HerbalOrWorse;
+					playSettings.defaultCareForColonist = MedicalCareCategory.Best;
+					playSettings.defaultCareForTamedAnimal = MedicalCareCategory.HerbalOrWorse;
+					playSettings.defaultCareForPrisoner = MedicalCareCategory.HerbalOrWorse;
 					playSettings.defaultCareForNeutralFaction = MedicalCareCategory.HerbalOrWorse;
-					playSettings.defaultCareForNeutralAnimal = MedicalCareCategory.HerbalOrWorse;
+					playSettings.defaultCareForWildlife = MedicalCareCategory.HerbalOrWorse;
 					playSettings.defaultCareForHostileFaction = MedicalCareCategory.HerbalOrWorse;
 				}
 			}
 			if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
-				Hediff hediff = obj as Hediff;
-				if (hediff != null)
+				if (obj is Hediff hediff)
 				{
 					Scribe_Values.Look(ref hediff.temp_partIndexToSetLater, "partIndex", -1);
 				}
-				Bill_Medical bill_Medical = obj as Bill_Medical;
-				if (bill_Medical != null)
+				if (obj is Bill_Medical bill_Medical)
 				{
 					Scribe_Values.Look(ref bill_Medical.temp_partIndexToSetLater, "partIndex", -1);
 				}
-				FactionRelation factionRelation = obj as FactionRelation;
-				if (factionRelation != null)
+				if (obj is HediffComp_GetsPermanent hediffComp_GetsPermanent)
 				{
 					bool value = false;
-					Scribe_Values.Look(ref value, "hostile", defaultValue: false);
-					if (value || factionRelation.goodwill <= -75)
-					{
-						factionRelation.kind = FactionRelationKind.Hostile;
-					}
-					else if (factionRelation.goodwill >= 75)
-					{
-						factionRelation.kind = FactionRelationKind.Ally;
-					}
-				}
-				HediffComp_GetsPermanent hediffComp_GetsPermanent = obj as HediffComp_GetsPermanent;
-				if (hediffComp_GetsPermanent != null)
-				{
-					bool value2 = false;
-					Scribe_Values.Look(ref value2, "isOld", defaultValue: false);
-					if (value2)
+					Scribe_Values.Look(ref value, "isOld", defaultValue: false);
+					if (value)
 					{
 						hediffComp_GetsPermanent.isPermanentInt = true;
 					}
@@ -894,20 +870,18 @@ namespace Verse
 						Current.Game.uniqueIDsManager = target;
 					}
 				}
-				WorldFeature worldFeature = obj as WorldFeature;
-				if (worldFeature != null && worldFeature.maxDrawSizeInTiles == 0f)
+				if (obj is WorldFeature { maxDrawSizeInTiles: 0f } worldFeature)
 				{
-					Vector2 value3 = Vector2.zero;
-					Scribe_Values.Look(ref value3, "maxDrawSizeInTiles");
-					worldFeature.maxDrawSizeInTiles = value3.x;
+					Vector2 value2 = Vector2.zero;
+					Scribe_Values.Look(ref value2, "maxDrawSizeInTiles");
+					worldFeature.maxDrawSizeInTiles = value2.x;
 				}
 			}
 			if (Scribe.mode != LoadSaveMode.ResolvingCrossRefs)
 			{
 				return;
 			}
-			Hediff hediff2 = obj as Hediff;
-			if (hediff2 != null && hediff2.temp_partIndexToSetLater >= 0 && hediff2.pawn != null)
+			if (obj is Hediff { temp_partIndexToSetLater: >=0, pawn: not null } hediff2)
 			{
 				if (hediff2.temp_partIndexToSetLater == 0)
 				{
@@ -919,8 +893,7 @@ namespace Verse
 				}
 				hediff2.temp_partIndexToSetLater = -1;
 			}
-			Bill_Medical bill_Medical2 = obj as Bill_Medical;
-			if (bill_Medical2 != null)
+			if (obj is Bill_Medical bill_Medical2)
 			{
 				if (bill_Medical2.temp_partIndexToSetLater == 0)
 				{

@@ -8,6 +8,16 @@ namespace RimWorld
 
 		public const int MinGoodwill = -100;
 
+		public const int NaturalEnemyNaturalGoodwill = -130;
+
+		public const int NaturalEnemyInitialGoodwill = -80;
+
+		public const int NaturalGoodwillRange = 50;
+
+		public const float NaturalGoodwillDailyChange = 0.2f;
+
+		public const float GoodwillChangeTowardsNaturalGoodwillFactor = 1.25f;
+
 		public const int BecomeHostileThreshold = -75;
 
 		public const int BecomeNeutralThreshold = 0;
@@ -42,7 +52,13 @@ namespace RimWorld
 
 		public const int Goodwill_BodyPartRemovalViolation = -70;
 
+		public const int Goodwill_HemogenPackExtracted = -1;
+
+		public const int Goodwill_SurgicalInspection = -1;
+
 		public const int Goodwill_MemberEuthanized = -100;
+
+		public const int Goodwill_MemberKilledInstantly = -100;
 
 		public const int Goodwill_AttackedSettlement = -50;
 
@@ -50,7 +66,15 @@ namespace RimWorld
 
 		public const int Goodwill_TraderRequested = -15;
 
+		public const int Goodwill_OrbitalTraderRequested = -30;
+
 		public const int Goodwill_MemberStripped = -40;
+
+		public const int Goodwill_MemberKidnappedOnGravship = -10;
+
+		public const int Goodwill_MemberXenogermAbsorbed = -50;
+
+		public const int Goodwill_MemberMutated = -50;
 
 		public static readonly SimpleCurve Goodwill_PerQuadrumFromSettlementProximity = new SimpleCurve
 		{

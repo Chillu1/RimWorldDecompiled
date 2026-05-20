@@ -141,7 +141,7 @@ namespace Ionic.Zlib
 						mode = 6;
 						break;
 					}
-					if (((uint)num9 & 0x10u) != 0)
+					if ((num9 & 0x10) != 0)
 					{
 						bitsToGet = num9 & 0xF;
 						len = tree[num8 + 2];
@@ -154,7 +154,7 @@ namespace Ionic.Zlib
 						tree_index = num8 / 3 + tree[num8 + 2];
 						break;
 					}
-					if (((uint)num9 & 0x20u) != 0)
+					if ((num9 & 0x20) != 0)
 					{
 						mode = 7;
 						break;
@@ -223,7 +223,7 @@ namespace Ionic.Zlib
 					num >>= tree[num8 + 1];
 					num2 -= tree[num8 + 1];
 					int num9 = tree[num8];
-					if (((uint)num9 & 0x10u) != 0)
+					if ((num9 & 0x10) != 0)
 					{
 						bitsToGet = num9 & 0xF;
 						dist = tree[num8 + 2];
@@ -450,7 +450,7 @@ namespace Ionic.Zlib
 					{
 						num2 >>= array[num10 + 1];
 						num3 -= array[num10 + 1];
-						if (((uint)num11 & 0x10u) != 0)
+						if ((num11 & 0x10) != 0)
 						{
 							num11 &= 0xF;
 							num12 = array[num10 + 2] + (num2 & InternalInflateConstants.InflateMask[num11]);
@@ -469,7 +469,7 @@ namespace Ionic.Zlib
 							{
 								num2 >>= array[num10 + 1];
 								num3 -= array[num10 + 1];
-								if (((uint)num11 & 0x10u) != 0)
+								if ((num11 & 0x10) != 0)
 								{
 									break;
 								}
@@ -582,7 +582,7 @@ namespace Ionic.Zlib
 							}
 							continue;
 						}
-						if (((uint)num11 & 0x20u) != 0)
+						if ((num11 & 0x20) != 0)
 						{
 							num12 = z.AvailableBytesIn - num;
 							num12 = ((num3 >> 3 < num12) ? (num3 >> 3) : num12);

@@ -17,13 +17,13 @@ namespace RimWorld.Planet
 			return Mathf.Clamp(Mathf.RoundToInt(Mathf.Sqrt(Mathf.RoundToInt((caravanPawns.Count + enemies.Count) * 900))), 75, 110);
 		}
 
-		public static bool CanFireIncidentWhichWantsToGenerateMapAt(int tile)
+		public static bool CanFireIncidentWhichWantsToGenerateMapAt(PlanetTile tile)
 		{
 			if (Current.Game.FindMap(tile) != null)
 			{
 				return false;
 			}
-			if (!Find.WorldGrid[tile].biome.implemented)
+			if (!Find.WorldGrid[tile].PrimaryBiome.implemented)
 			{
 				return false;
 			}
@@ -44,10 +44,10 @@ namespace RimWorld.Planet
 			Map map = GetOrGenerateMapForIncident(caravan, new IntVec3(num, 1, num), WorldObjectDefOf.Ambush);
 			MultipleCaravansCellFinder.FindStartingCellsFor2Groups(map, out var playerStartingSpot, out var second);
 			CaravanEnterMapUtility.Enter(caravan, map, (Pawn x) => CellFinder.RandomSpawnCellForPawnNear(playerStartingSpot, map), CaravanDropInventoryMode.DoNotDrop, draftColonists: true);
-			for (int i = 0; i < enemies.Count; i++)
+			for (int num2 = 0; num2 < enemies.Count; num2++)
 			{
 				IntVec3 loc = CellFinder.RandomSpawnCellForPawnNear(second, map);
-				GenSpawn.Spawn(enemies[i], loc, map, Rot4.Random);
+				GenSpawn.Spawn(enemies[num2], loc, map, Rot4.Random);
 			}
 			if (sendLetterIfRelatedPawns)
 			{
@@ -58,7 +58,7 @@ namespace RimWorld.Planet
 
 		public static Map GetOrGenerateMapForIncident(Caravan caravan, IntVec3 size, WorldObjectDef suggestedMapParentDef)
 		{
-			int tile = caravan.Tile;
+			PlanetTile tile = caravan.Tile;
 			bool num = Current.Game.FindMap(tile) == null;
 			Map orGenerateMap = GetOrGenerateMapUtility.GetOrGenerateMap(tile, size, suggestedMapParentDef);
 			if (num)

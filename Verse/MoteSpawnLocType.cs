@@ -5,6 +5,8 @@ namespace Verse
 		OnSource,
 		BetweenPositions,
 		BetweenTouchingCells,
-		RandomCellOnTarget
+		RandomCellOnTarget,
+		RandomDrawPosOnTarget,
+		OnTarget
 	}
 }

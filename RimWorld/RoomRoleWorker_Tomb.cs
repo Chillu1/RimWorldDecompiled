@@ -18,5 +18,14 @@ namespace RimWorld
 			}
 			return 50f * (float)num;
 		}
+
+		public override float GetScoreDeltaIfBuildingPlaced(Room room, ThingDef buildingDef)
+		{
+			if (!buildingDef.thingClass.IsAssignableFrom(typeof(Building_Sarcophagus)))
+			{
+				return 0f;
+			}
+			return 50f;
+		}
 	}
 }

@@ -5,13 +5,17 @@ namespace Verse
 	[Flags]
 	public enum LinkFlags
 	{
-		None = 0x0,
-		MapEdge = 0x1,
-		Rock = 0x2,
-		Wall = 0x4,
-		Sandbags = 0x8,
+		None = 0,
+		MapEdge = 1,
+		Rock = 2,
+		Wall = 4,
+		Sandbags = 8,
 		PowerConduit = 0x10,
 		Barricades = 0x20,
+		Fences = 0x40,
+		Fleshmass = 0x80,
+		SolidIce = 0x100,
+		BurrowWall = 0x200,
 		Custom1 = 0x20000,
 		Custom2 = 0x40000,
 		Custom3 = 0x80000,

@@ -94,17 +94,17 @@ namespace RimWorld.Planet
 				{
 					return 0;
 				}
-				int num = Mathf.Min(remaining, thing.stackCount);
-				remaining -= num;
-				return num;
+				int num2 = Mathf.Min(remaining, thing.stackCount);
+				remaining -= num2;
+				return num2;
 			});
-			for (int i = 0; i < list.Count; i++)
+			for (int num = 0; num < list.Count; num++)
 			{
-				list[i].Destroy();
+				list[num].Destroy();
 			}
 			if (parent.Faction != null)
 			{
-				parent.Faction.TryAffectGoodwillWith(Faction.OfPlayer, 12, canSendMessage: true, canSendHostilityLetter: true, "GoodwillChangedReason_FulfilledTradeRequest".Translate(), parent);
+				Faction.OfPlayer.TryAffectGoodwillWith(parent.Faction, 12, canSendMessage: true, canSendHostilityLetter: true, HistoryEventDefOf.QuestGoodwillReward);
 			}
 			QuestUtility.SendQuestTargetSignals(parent.questTags, "TradeRequestFulfilled", parent.Named("SUBJECT"), caravan.Named("CARAVAN"));
 			Disable();
@@ -112,12 +112,11 @@ namespace RimWorld.Planet
 
 		private bool PlayerCanGive(Thing thing)
 		{
-			if (thing.GetRotStage() != 0)
+			if (thing.GetRotStage() != RotStage.Fresh)
 			{
 				return false;
 			}
-			Apparel apparel = thing as Apparel;
-			if (apparel != null && apparel.WornByCorpse)
+			if (thing is Apparel { WornByCorpse: not false })
 			{
 				return false;
 			}

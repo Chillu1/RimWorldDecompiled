@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using RimWorld.QuestGen;
 using Verse;
 using Verse.AI;
@@ -42,7 +43,7 @@ namespace RimWorld
 		{
 			StringBuilder stringBuilder = new StringBuilder();
 			bool flag = ShouldBecomeConceitedOnNewTitle(pawn);
-			List<WorkTags> list = pawn.story.DisabledWorkTagsBackstoryAndTraits.GetAllSelectedItems<WorkTags>().ToList();
+			List<WorkTags> list = pawn.story.DisabledWorkTagsBackstoryTraitsAndGenes.GetAllSelectedItems<WorkTags>().ToList();
 			List<WorkTags> obj = ((newTitle == null) ? new List<WorkTags>() : newTitle.disabledWorkTags.GetAllSelectedItems<WorkTags>().ToList());
 			List<WorkTags> list2 = new List<WorkTags>();
 			foreach (WorkTags item in obj)
@@ -55,12 +56,12 @@ namespace RimWorld
 			int num = ((newTitle != null) ? faction.def.RoyalTitlesAwardableInSeniorityOrderForReading.IndexOf(newTitle) : (-1));
 			if (newTitle != null && flag)
 			{
-				stringBuilder.AppendLine("LetterRoyalTitleConceitedTrait".Translate(pawn.Named("PAWN"), (from t in GetConceitedTraits(pawn)
+				stringBuilder.AppendLineTagged("LetterRoyalTitleConceitedTrait".Translate(pawn.Named("PAWN"), (from t in GetConceitedTraits(pawn)
 					select t.Label).ToCommaList(useAnd: true)));
 				stringBuilder.AppendLine();
 				if (newTitle.minExpectation != null)
 				{
-					stringBuilder.AppendLine("LetterRoyalTitleExpectation".Translate(pawn.Named("PAWN"), newTitle.minExpectation.label).CapitalizeFirst());
+					stringBuilder.AppendLineTagged("LetterRoyalTitleExpectation".Translate(pawn.Named("PAWN"), newTitle.minExpectation.label).CapitalizeFirst());
 					stringBuilder.AppendLine();
 				}
 			}
@@ -70,17 +71,17 @@ namespace RimWorld
 				{
 					Pawn heir = pawn.royalty.GetHeir(faction);
 					TaggedString taggedString = ((heir != null) ? "LetterRoyalTitleHeir".Translate(pawn.Named("PAWN"), heir.Named("HEIR")) : "LetterRoyalTitleNoHeir".Translate(pawn.Named("PAWN")));
-					stringBuilder.Append(taggedString);
+					stringBuilder.AppendTagged(taggedString);
 					if (heir != null && heir.Faction != Faction.OfPlayer)
 					{
-						stringBuilder.Append(" " + "LetterRoyalTitleHeirFactionWarning".Translate(heir.Named("PAWN"), faction.Named("FACTION")));
+						stringBuilder.AppendTagged(" " + "LetterRoyalTitleHeirFactionWarning".Translate(heir.Named("PAWN"), faction.Named("FACTION")));
 					}
-					stringBuilder.AppendLine(" " + "LetterRoyalTitleChangingHeir".Translate(faction.Named("FACTION")));
+					stringBuilder.AppendLineTagged(" " + "LetterRoyalTitleChangingHeir".Translate(faction.Named("FACTION")));
 				}
 				else
 				{
-					stringBuilder.Append("LetterRoyalTitleCantBeInherited".Translate(newTitle.Named("TITLE")).CapitalizeFirst());
-					stringBuilder.Append(" " + "LetterRoyalTitleNoHeir".Translate(pawn.Named("PAWN")));
+					stringBuilder.AppendTagged("LetterRoyalTitleCantBeInherited".Translate(newTitle.Named("TITLE")).CapitalizeFirst());
+					stringBuilder.AppendTagged(" " + "LetterRoyalTitleNoHeir".Translate(pawn.Named("PAWN")));
 					stringBuilder.AppendLine();
 				}
 				stringBuilder.AppendLine();
@@ -94,7 +95,7 @@ namespace RimWorld
 			{
 				stringBuilder.AppendLine("LetterRoyalTitleDisabledWorkTag".Translate(pawn.Named("PAWN"), (from t in list2
 					orderby FirstTitleDisablingWorkTags(t).seniority
-					select $"{t.LabelTranslated()} ({FirstTitleDisablingWorkTags(t).GetLabelFor(pawn)})").ToLineList("- ")).CapitalizeFirst());
+					select t.LabelTranslated() + " (" + FirstTitleDisablingWorkTags(t).GetLabelFor(pawn) + ")").ToLineList("- ")).CapitalizeFirst());
 				stringBuilder.AppendLine();
 			}
 			if (newTitle != null)
@@ -106,20 +107,37 @@ namespace RimWorld
 				}
 				if (newTitle.requiredApparel != null && newTitle.requiredApparel.Count > 0)
 				{
+					bool flag2 = false;
 					stringBuilder.AppendLine("LetterRoyalTitleApparelRequirement".Translate(pawn.Named("PAWN")).CapitalizeFirst());
-					foreach (RoyalTitleDef.ApparelRequirement item2 in newTitle.requiredApparel)
+					foreach (ApparelRequirement item2 in newTitle.requiredApparel)
 					{
-						int j = 0;
+						int i = 0;
 						stringBuilder.Append("- ");
-						stringBuilder.AppendLine(string.Join(", ", item2.AllRequiredApparelForPawn(pawn, ignoreGender: false, includeWorn: true).Select(delegate(ThingDef a)
+						stringBuilder.Append(string.Join(", ", item2.AllRequiredApparelForPawn(pawn, ignoreGender: false, includeWorn: true).Select(delegate(ThingDef a)
 						{
-							string result = ((j == 0) ? a.LabelCap.Resolve() : a.label);
-							j++;
+							string result = ((i == 0) ? a.LabelCap.Resolve() : a.label);
+							i++;
 							return result;
 						}).ToArray()));
+						if (!ApparelUtility.IsRequirementActive(item2, ApparelRequirementSource.Title, pawn, out var disabledByLabel))
+						{
+							stringBuilder.Append(" [" + "ApparelRequirementDisabledLabel".Translate() + ": " + disabledByLabel + "]");
+						}
+						else
+						{
+							flag2 = true;
+						}
+						stringBuilder.AppendLine();
 					}
-					stringBuilder.AppendLine("- " + "ApparelRequirementAnyPrestigeArmor".Translate());
-					stringBuilder.AppendLine("- " + "ApparelRequirementAnyPsycasterApparel".Translate());
+					if (flag2)
+					{
+						stringBuilder.AppendLine("- " + "ApparelRequirementAnyPrestigeArmor".Translate());
+						stringBuilder.AppendLine("- " + "ApparelRequirementAnyPsycasterApparel".Translate());
+						if (ModsConfig.BiotechActive)
+						{
+							stringBuilder.AppendLine("- " + "ApparelRequirementAnyMechlordApparel".Translate());
+						}
+					}
 					stringBuilder.AppendLine();
 				}
 				if (!newTitle.throneRoomRequirements.NullOrEmpty())
@@ -204,13 +222,13 @@ namespace RimWorld
 							}
 							else
 							{
-								list4.AddDistinct(faction.GetMaxAllowedImplantLevel(royalImplantRule.implantHediff, newTitle));
+								list4.AddUnique(faction.GetMaxAllowedImplantLevel(royalImplantRule.implantHediff, newTitle));
 							}
 						}
 					}
 					if (list4.Count > 0)
 					{
-						stringBuilder.AppendLine("LetterRoyalTitleAllowedImplants".Translate(pawn.Named("PAWN"), "\n" + list4.Select((RoyalImplantRule i) => (i.maxLevel == 0) ? $"{i.implantHediff.LabelCap} ({faction.GetMinTitleForImplant(i.implantHediff).GetLabelFor(pawn)})" : $"{i.implantHediff.LabelCap}({i.maxLevel}x) ({i.minTitle.GetLabelFor(pawn)})").ToLineList("- ")).CapitalizeFirst());
+						stringBuilder.AppendLine("LetterRoyalTitleAllowedImplants".Translate(pawn.Named("PAWN"), "\n" + list4.Select((RoyalImplantRule royalImplantRule) => (royalImplantRule.maxLevel == 0) ? $"{royalImplantRule.implantHediff.LabelCap} ({faction.GetMinTitleForImplant(royalImplantRule.implantHediff).GetLabelFor(pawn)})" : $"{royalImplantRule.implantHediff.LabelCap}({royalImplantRule.maxLevel}x) ({royalImplantRule.minTitle.GetLabelFor(pawn)})").ToLineList("- ")).CapitalizeFirst());
 						stringBuilder.AppendLine();
 					}
 				}
@@ -233,7 +251,7 @@ namespace RimWorld
 					}
 					if (list5.Count > 0)
 					{
-						stringBuilder.AppendLine("LetterRoyalTitleImplantsMustBeRemoved".Translate(pawn.Named("PAWN"), "\n" + list5.Select((Hediff i) => i.LabelCap).ToLineList("- ")).Resolve());
+						stringBuilder.AppendLine("LetterRoyalTitleImplantsMustBeRemoved".Translate(pawn.Named("PAWN"), "\n" + list5.Select((Hediff hediff) => hediff.LabelCap).ToLineList("- ")).Resolve());
 						stringBuilder.AppendLine("LetterRoyalTitleImplantGracePeriod".Translate());
 						stringBuilder.AppendLine();
 					}
@@ -292,10 +310,9 @@ namespace RimWorld
 			Building_Throne result = null;
 			foreach (Thing item in pawn.Map.listerThings.ThingsOfDef(ThingDefOf.Throne))
 			{
-				Building_Throne building_Throne = item as Building_Throne;
-				if (building_Throne != null && building_Throne.CompAssignableToPawn.HasFreeSlot && building_Throne.Spawned && !building_Throne.IsForbidden(pawn) && pawn.CanReserveAndReach(building_Throne, PathEndMode.InteractionCell, pawn.NormalMaxDanger()) && RoomRoleWorker_ThroneRoom.Validate(building_Throne.GetRoom()) == null)
+				if (item is Building_Throne building_Throne && building_Throne.CompAssignableToPawn.HasFreeSlot && building_Throne.Spawned && !building_Throne.IsForbidden(pawn) && pawn.CanReserveAndReach(building_Throne, PathEndMode.InteractionCell, pawn.NormalMaxDanger()) && RoomRoleWorker_ThroneRoom.Validate(building_Throne.GetRoom()) == null)
 				{
-					PawnPath pawnPath = pawn.Map.pathFinder.FindPath(pawn.Position, building_Throne, pawn, PathEndMode.InteractionCell);
+					PawnPath pawnPath = pawn.Map.pathFinder.FindPathNow(pawn.Position, building_Throne, TraverseParms.For(pawn), null, PathEndMode.InteractionCell);
 					float num2 = (pawnPath.Found ? pawnPath.TotalCost : float.PositiveInfinity);
 					pawnPath.ReleaseToPool();
 					if (num > num2)
@@ -305,7 +322,7 @@ namespace RimWorld
 					}
 				}
 			}
-			if (num == float.PositiveInfinity)
+			if (num >= float.PositiveInfinity)
 			{
 				return null;
 			}
@@ -333,7 +350,6 @@ namespace RimWorld
 				{
 					return null;
 				}
-				pawn.ownership.ClaimThrone(building_Throne);
 			}
 			return building_Throne;
 		}
@@ -342,7 +358,7 @@ namespace RimWorld
 		{
 			foreach (RoomRequirement bedroomRequirement in title.def.bedroomRequirements)
 			{
-				if (!bedroomRequirement.Met(room))
+				if (!bedroomRequirement.MetOrDisabled(room))
 				{
 					return false;
 				}
@@ -397,10 +413,13 @@ namespace RimWorld
 			}
 			foreach (Trait allTrait in p.story.traits.allTraits)
 			{
-				TraitDegreeData traitDegreeData = allTrait.def.DataAtDegree(allTrait.Degree);
-				if ((traitDegreeData.statFactors != null && traitDegreeData.statFactors.Any((StatModifier f) => f.stat == StatDefOf.PsychicSensitivity && f.value < 1f)) || (traitDegreeData.statOffsets != null && traitDegreeData.statOffsets.Any((StatModifier f) => f.stat == StatDefOf.PsychicSensitivity && f.value < 0f)))
+				if (!allTrait.Suppressed)
 				{
-					yield return allTrait;
+					TraitDegreeData traitDegreeData = allTrait.def.DataAtDegree(allTrait.Degree);
+					if ((traitDegreeData.statFactors != null && traitDegreeData.statFactors.Any((StatModifier f) => f.stat == StatDefOf.PsychicSensitivity && f.value < 1f)) || (traitDegreeData.statOffsets != null && traitDegreeData.statOffsets.Any((StatModifier f) => f.stat == StatDefOf.PsychicSensitivity && f.value < 0f)))
+					{
+						yield return allTrait;
+					}
 				}
 			}
 		}
@@ -436,7 +455,7 @@ namespace RimWorld
 				if (!item.Historical)
 				{
 					QuestPart_BestowingCeremony questPart_BestowingCeremony = (QuestPart_BestowingCeremony)item.PartsListForReading.FirstOrDefault((QuestPart p) => p is QuestPart_BestowingCeremony);
-					if (questPart_BestowingCeremony != null && questPart_BestowingCeremony.target == pawn && questPart_BestowingCeremony.bestower.Faction == faction)
+					if (questPart_BestowingCeremony != null && questPart_BestowingCeremony.target == pawn && questPart_BestowingCeremony.bestower != null && questPart_BestowingCeremony.bestower.Faction == faction)
 					{
 						return item;
 					}
@@ -448,6 +467,10 @@ namespace RimWorld
 		public static bool ShouldGetBestowingCeremonyQuest(Pawn pawn, out Faction faction)
 		{
 			faction = null;
+			if (pawn.IsMutant && pawn.mutant.Def.disableTitles)
+			{
+				return false;
+			}
 			if (pawn.Faction != null && pawn.Faction.IsPlayer && pawn.royalty != null && pawn.royalty.CanUpdateTitleOfAnyFaction(out faction))
 			{
 				return GetCurrentBestowingCeremonyQuest(pawn, faction) == null;
@@ -457,6 +480,10 @@ namespace RimWorld
 
 		public static bool ShouldGetBestowingCeremonyQuest(Pawn pawn, Faction faction)
 		{
+			if (pawn.IsMutant && pawn.mutant.Def.disableTitles)
+			{
+				return false;
+			}
 			if (pawn.Faction != null && pawn.Faction.IsPlayer && pawn.royalty != null && pawn.royalty.CanUpdateTitle(faction))
 			{
 				return GetCurrentBestowingCeremonyQuest(pawn, faction) == null;
@@ -481,12 +508,20 @@ namespace RimWorld
 
 		public static void GenerateBestowingCeremonyQuest(Pawn pawn, Faction faction)
 		{
+			if (pawn == null || pawn.Dead)
+			{
+				return;
+			}
 			Slate slate = new Slate();
 			slate.Set("titleHolder", pawn);
 			slate.Set("bestowingFaction", faction);
-			if (QuestScriptDefOf.BestowingCeremony.CanRun(slate))
+			if (QuestScriptDefOf.BestowingCeremony.CanRun(slate, pawn.MapHeld))
 			{
-				QuestUtility.SendLetterQuestAvailable(QuestUtility.GenerateQuestAndMakeAvailable(QuestScriptDefOf.BestowingCeremony, slate));
+				Quest quest = QuestUtility.GenerateQuestAndMakeAvailable(QuestScriptDefOf.BestowingCeremony, slate);
+				if (quest.root.sendAvailableLetter)
+				{
+					QuestUtility.SendLetterQuestAvailable(quest);
+				}
 			}
 		}
 

@@ -18,14 +18,14 @@ namespace RimWorld
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.Touch);
-			Toil doWork = new Toil();
+			Toil doWork = ToilMaker.MakeToil("MakeNewToils");
 			doWork.initAction = delegate
 			{
 				workLeft = 2300f;
 			};
-			doWork.tickAction = delegate
+			doWork.tickIntervalAction = delegate(int delta)
 			{
-				workLeft -= doWork.actor.GetStatValue(StatDefOf.ConstructionSpeed) * 1.7f;
+				workLeft -= doWork.actor.GetStatValue(StatDefOf.ConstructionSpeed) * 1.7f * (float)delta;
 				if (workLeft <= 0f)
 				{
 					Thing thing = ThingMaker.MakeThing(ThingDefOf.Snowman);
@@ -35,7 +35,7 @@ namespace RimWorld
 				}
 				else
 				{
-					JoyUtility.JoyTickCheckEnd(pawn);
+					JoyUtility.JoyTickCheckEnd(pawn, delta);
 				}
 			};
 			doWork.defaultCompleteMode = ToilCompleteMode.Never;

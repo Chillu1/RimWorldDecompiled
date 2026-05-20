@@ -9,32 +9,32 @@ namespace RimWorld.Planet
 
 		public override int SeedPart => 401463656;
 
-		public override void GenerateFresh(string seed)
+		public override void GenerateFresh(string seed, PlanetLayer layer)
 		{
-			GenerateLakes();
+			GenerateLakes(layer);
 		}
 
-		private void GenerateLakes()
+		private void GenerateLakes(PlanetLayer layer)
 		{
-			WorldGrid grid = Find.WorldGrid;
-			bool[] touched = new bool[grid.TilesCount];
+			bool[] touched = new bool[layer.TilesCount];
 			List<int> oceanChunk = new List<int>();
-			for (int i = 0; i < grid.TilesCount; i++)
+			foreach (Tile tile2 in layer.Tiles)
 			{
-				if (touched[i] || grid[i].biome != BiomeDefOf.Ocean)
+				PlanetTile tile = tile2.tile;
+				if (touched[tile.tileId] || layer[tile.tileId].PrimaryBiome != BiomeDefOf.Ocean)
 				{
 					continue;
 				}
-				Find.WorldFloodFiller.FloodFill(i, (int tid) => grid[tid].biome == BiomeDefOf.Ocean, delegate(int tid)
+				layer.Filler.FloodFill(tile, (PlanetTile tid) => layer[tid].PrimaryBiome == BiomeDefOf.Ocean, delegate(PlanetTile planetTile)
 				{
-					oceanChunk.Add(tid);
-					touched[tid] = true;
+					oceanChunk.Add(planetTile.tileId);
+					touched[planetTile.tileId] = true;
 				});
 				if (oceanChunk.Count <= 15)
 				{
-					for (int j = 0; j < oceanChunk.Count; j++)
+					for (int num = 0; num < oceanChunk.Count; num++)
 					{
-						grid[oceanChunk[j]].biome = BiomeDefOf.Lake;
+						layer[oceanChunk[num]].PrimaryBiome = BiomeDefOf.Lake;
 					}
 				}
 				oceanChunk.Clear();

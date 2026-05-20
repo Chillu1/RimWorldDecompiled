@@ -32,9 +32,9 @@ namespace RimWorld
 			{
 				if (Rand.Value > pawn.kindDef.techHediffsChance)
 				{
-					break;
+					continue;
 				}
-				IEnumerable<ThingDef> source = DefDatabase<ThingDef>.AllDefs.Where((ThingDef x) => x.isTechHediff && !tmpGeneratedTechHediffsList.Contains(x) && x.BaseMarketValue <= partsMoney && x.techHediffsTags != null && pawn.kindDef.techHediffsTags.Any((string tag) => x.techHediffsTags.Contains(tag)) && (pawn.kindDef.techHediffsDisallowTags == null || !pawn.kindDef.techHediffsDisallowTags.Any((string tag) => x.techHediffsTags.Contains(tag))));
+				IEnumerable<ThingDef> source = DefDatabase<ThingDef>.AllDefs.Where((ThingDef x) => x.isTechHediff && !tmpGeneratedTechHediffsList.Contains(x) && x.BaseMarketValue <= partsMoney && x.techHediffsTags != null && pawn.kindDef.techHediffsTags.Any((string tag) => x.techHediffsTags.Contains(tag)) && (!pawn.WorkTagIsDisabled(WorkTags.Violent) || !x.violentTechHediff) && (pawn.kindDef.techHediffsDisallowTags == null || !pawn.kindDef.techHediffsDisallowTags.Any((string tag) => x.techHediffsTags.Contains(tag))));
 				if (source.Any())
 				{
 					ThingDef thingDef = source.RandomElementByWeight((ThingDef w) => w.BaseMarketValue);
@@ -51,9 +51,22 @@ namespace RimWorld
 			if (source.Any())
 			{
 				RecipeDef recipeDef = source.RandomElement();
-				if (recipeDef.Worker.GetPartsToApplyOn(pawn, recipeDef).Any())
+				if (!recipeDef.targetsBodyPart)
+				{
+					recipeDef.Worker.ApplyOnPawn(pawn, null, null, emptyIngredientsList, null);
+				}
+				else if (recipeDef.Worker.GetPartsToApplyOn(pawn, recipeDef).Any())
 				{
 					recipeDef.Worker.ApplyOnPawn(pawn, recipeDef.Worker.GetPartsToApplyOn(pawn, recipeDef).RandomElement(), null, emptyIngredientsList, null);
+				}
+			}
+			else
+			{
+				CompProperties_UseEffectInstallImplant compProperties = partDef.GetCompProperties<CompProperties_UseEffectInstallImplant>();
+				if (compProperties != null)
+				{
+					List<BodyPartRecord> partsWithDef = pawn.RaceProps.body.GetPartsWithDef(compProperties.bodyPart);
+					pawn.health.AddHediff(compProperties.hediffDef, partsWithDef.NullOrEmpty() ? null : partsWithDef.RandomElement());
 				}
 			}
 		}

@@ -22,12 +22,20 @@ namespace Verse
 
 		public static T RandomEnumValue<T>(bool disallowFirstValue)
 		{
-			return (T)(object)Rand.Range(disallowFirstValue ? 1 : 0, Enum.GetValues(typeof(T)).Length);
+			int minInclusive = (disallowFirstValue ? 1 : 0);
+			T[] array = (T[])Enum.GetValues(typeof(T));
+			int num = Rand.Range(minInclusive, array.Length);
+			return array[num];
 		}
 
 		public static Vector3 RandomHorizontalVector(float max)
 		{
 			return new Vector3(Rand.Range(0f - max, max), 0f, Rand.Range(0f - max, max));
+		}
+
+		public static Vector3 Random2DVector(Vector3 max)
+		{
+			return new Vector3(Rand.Range(0f - max.x, max.x), 0f, Rand.Range(0f - max.z, max.z));
 		}
 
 		public static int GetBitCountOf(long lValue)
@@ -75,7 +83,7 @@ namespace Verse
 			{
 				return obj.ToString();
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
 				int num = 0;
 				bool flag = false;
@@ -89,11 +97,11 @@ namespace Verse
 				}
 				if (flag)
 				{
-					Log.ErrorOnce("Exception in ToString(): " + arg, num ^ 0x6EB69D11);
+					Log.ErrorOnce("Exception in ToString(): " + ex, num ^ 0x6EB69D11);
 				}
 				else
 				{
-					Log.Error("Exception in ToString(): " + arg);
+					Log.Error("Exception in ToString(): " + ex);
 				}
 				return "error";
 			}
@@ -118,7 +126,7 @@ namespace Verse
 				}
 				return text;
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
 				int num = 0;
 				bool flag = false;
@@ -132,11 +140,11 @@ namespace Verse
 				}
 				if (flag)
 				{
-					Log.ErrorOnce("Exception while enumerating: " + arg, num ^ 0x22AC96D9);
+					Log.ErrorOnce("Exception while enumerating: " + ex, num ^ 0x22AC96D9);
 				}
 				else
 				{
-					Log.Error("Exception while enumerating: " + arg);
+					Log.Error("Exception while enumerating: " + ex);
 				}
 				return "error";
 			}
@@ -156,6 +164,15 @@ namespace Verse
 				s_memberwiseClone = typeof(object).GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic);
 			}
 			return (T)s_memberwiseClone.Invoke(obj, null);
+		}
+
+		public static void MemberwiseShallowCopy(object from, object to)
+		{
+			FieldInfo[] fields = from.GetType().GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+			foreach (FieldInfo fieldInfo in fields)
+			{
+				fieldInfo.SetValue(to, fieldInfo.GetValue(from));
+			}
 		}
 
 		public static int FixedTimeStepUpdate(ref float timeBuffer, float fps)
@@ -209,9 +226,29 @@ namespace Verse
 			return o.ID.HashOffset();
 		}
 
+		public static bool IsHashIntervalTick(this Map m, int interval)
+		{
+			return m.HashOffsetTicks() % interval == 0;
+		}
+
+		public static bool IsHashIntervalTick(this Map m, int interval, int offset)
+		{
+			return (m.HashOffsetTicks() + offset) % interval == 0;
+		}
+
+		public static int HashOffsetTicks(this Map m)
+		{
+			return Find.TickManager.TicksGame + m.uniqueID.HashOffset();
+		}
+
 		public static bool IsHashIntervalTick(this Thing t, int interval)
 		{
 			return t.HashOffsetTicks() % interval == 0;
+		}
+
+		public static bool IsHashIntervalTick(this Thing t, int interval, int delta)
+		{
+			return Math.Abs(t.HashOffsetTicks() % interval) < delta;
 		}
 
 		public static int HashOffsetTicks(this Thing t)
@@ -221,7 +258,34 @@ namespace Verse
 
 		public static bool IsHashIntervalTick(this WorldObject o, int interval)
 		{
-			return o.HashOffsetTicks() % interval == 0;
+			if (interval <= 0)
+			{
+				return true;
+			}
+			int num = o.HashOffsetTicks() % interval;
+			if (num < 0)
+			{
+				num += interval;
+			}
+			return num == 0;
+		}
+
+		public static bool IsHashIntervalTick(this WorldObject o, int interval, int delta)
+		{
+			if (interval <= 0)
+			{
+				return true;
+			}
+			if (delta <= 0)
+			{
+				return false;
+			}
+			int num = o.HashOffsetTicks() % interval;
+			if (num < 0)
+			{
+				num += interval;
+			}
+			return num < delta;
 		}
 
 		public static int HashOffsetTicks(this WorldObject o)
@@ -237,6 +301,11 @@ namespace Verse
 		public static int HashOffsetTicks(this Faction f)
 		{
 			return Find.TickManager.TicksGame + f.randomKey.HashOffset();
+		}
+
+		public static int HashOrderless(int v1, int v2)
+		{
+			return HashCombineInt(Math.Min(v1, v2), Math.Max(v1, v2));
 		}
 
 		public static bool IsNestedHashIntervalTick(this Thing t, int outerInterval, int approxInnerInterval)
@@ -301,6 +370,15 @@ namespace Verse
 				}
 			}
 			return stringBuilder.ToString();
+		}
+
+		public static bool InBounds<T>(this T[,] array, int i, int j)
+		{
+			if (i >= 0 && j >= 0 && i < array.GetLength(0))
+			{
+				return j < array.GetLength(1);
+			}
+			return false;
 		}
 	}
 }

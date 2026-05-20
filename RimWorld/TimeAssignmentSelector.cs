@@ -17,15 +17,13 @@ namespace RimWorld
 			DrawTimeAssignmentSelectorFor(rect2, TimeAssignmentDefOf.Anything);
 			rect2.x += rect2.width;
 			DrawTimeAssignmentSelectorFor(rect2, TimeAssignmentDefOf.Work);
-			rect2.y += rect2.height;
-			rect2.x -= rect2.width;
+			rect2.x += rect2.width;
 			DrawTimeAssignmentSelectorFor(rect2, TimeAssignmentDefOf.Joy);
 			rect2.x += rect2.width;
 			DrawTimeAssignmentSelectorFor(rect2, TimeAssignmentDefOf.Sleep);
 			if (ModsConfig.RoyaltyActive)
 			{
 				rect2.x += rect2.width;
-				rect2.y -= rect2.height;
 				DrawTimeAssignmentSelectorFor(rect2, TimeAssignmentDefOf.Meditate);
 			}
 		}
@@ -39,16 +37,14 @@ namespace RimWorld
 				selectedAssignment = ta;
 				SoundDefOf.Tick_High.PlayOneShotOnCamera();
 			}
-			GUI.color = Color.white;
 			if (Mouse.IsOver(rect))
 			{
 				Widgets.DrawHighlight(rect);
 			}
-			Text.Font = GameFont.Small;
-			Text.Anchor = TextAnchor.MiddleCenter;
-			GUI.color = Color.white;
-			Widgets.Label(rect, ta.LabelCap);
-			Text.Anchor = TextAnchor.UpperLeft;
+			using (new TextBlock(TextAnchor.MiddleCenter))
+			{
+				Widgets.Label(rect, ta.LabelCap);
+			}
 			if (selectedAssignment == ta)
 			{
 				Widgets.DrawBox(rect, 2);

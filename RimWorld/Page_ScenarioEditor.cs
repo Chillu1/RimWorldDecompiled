@@ -18,7 +18,23 @@ namespace RimWorld
 
 		private bool editMode;
 
-		public override string PageTitle => "ScenarioEditor".Translate();
+		private bool needsSave = true;
+
+		private int initialHash;
+
+		public bool ScenarioEdited
+		{
+			get
+			{
+				if (editMode)
+				{
+					return curScen.GetHashCode() != initialHash;
+				}
+				return false;
+			}
+		}
+
+		public override string PageTitle => "ScenarioEditor".Translate() + (ScenarioEdited ? "*" : "");
 
 		public Scenario EditingScenario => curScen;
 
@@ -33,19 +49,21 @@ namespace RimWorld
 			{
 				RandomizeSeedAndScenario();
 			}
+			initialHash = curScen.GetHashCode();
 		}
 
 		public override void PreOpen()
 		{
 			base.PreOpen();
 			infoScrollPosition = Vector2.zero;
+			needsSave = true;
 		}
 
 		public override void DoWindowContents(Rect rect)
 		{
 			DrawPageTitle(rect);
 			Rect mainRect = GetMainRect(rect);
-			GUI.BeginGroup(mainRect);
+			Widgets.BeginGroup(mainRect);
 			Rect rect2 = new Rect(0f, 0f, mainRect.width * 0.35f, mainRect.height).Rounded();
 			DoConfigControls(rect2);
 			Rect rect3 = new Rect(rect2.xMax + 17f, 0f, mainRect.width - rect2.width - 17f, mainRect.height).Rounded();
@@ -57,7 +75,7 @@ namespace RimWorld
 			{
 				ScenarioUI.DrawScenarioEditInterface(rect3, curScen, ref infoScrollPosition);
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			DoBottomButtons(rect);
 		}
 
@@ -93,10 +111,10 @@ namespace RimWorld
 			if (seedIsValid)
 			{
 				listing_Standard.Label("Seed".Translate().CapitalizeFirst());
-				string a = listing_Standard.TextEntry(seed);
-				if (a != seed)
+				string text = listing_Standard.TextEntry(seed);
+				if (text != seed)
 				{
-					seed = a;
+					seed = text;
 					curScen = ScenarioMaker.GenerateNewRandomScenario(seed);
 				}
 			}
@@ -166,7 +184,7 @@ namespace RimWorld
 		private void OpenAddScenPartMenu()
 		{
 			FloatMenuUtility.MakeMenu(from p in ScenarioMaker.AddableParts(curScen)
-				where p.category != ScenPartCategory.Fixed
+				where p.PlayerAddRemovable
 				orderby p.label
 				select p, (ScenPartDef p) => p.LabelCap, (ScenPartDef p) => delegate
 			{
@@ -195,8 +213,28 @@ namespace RimWorld
 			{
 				return false;
 			}
-			Page_SelectScenario.BeginScenarioConfiguration(curScen, this);
-			return true;
+			if (!ScenarioEdited || !needsSave)
+			{
+				Page_SelectScenario.BeginScenarioConfiguration(curScen, this);
+				return true;
+			}
+			Find.WindowStack.Add(new Dialog_MessageBox("ScenarioChangedSavePrompt".Translate(), "Yes".Translate(), delegate
+			{
+				Find.WindowStack.Add(new Dialog_ScenarioList_Save(curScen, delegate
+				{
+					Page_SelectScenario.BeginScenarioConfiguration(curScen, this);
+					needsSave = false;
+					DoNext();
+				}));
+			}, "No".Translate(), delegate
+			{
+				Page_SelectScenario.BeginScenarioConfiguration(curScen, this);
+				needsSave = false;
+				DoNext();
+			}, null, buttonADestructive: false, null, delegate
+			{
+			}));
+			return false;
 		}
 	}
 }

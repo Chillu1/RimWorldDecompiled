@@ -17,7 +17,7 @@ namespace RimWorld.QuestGen
 
 		private static List<QuestPart> tmpPrevQuestParts = new List<QuestPart>();
 
-		public static QuestPart_Choice GiveRewards(this Quest quest, RewardsGeneratorParams parms, string inSignal = null, string customLetterLabel = null, string customLetterText = null, RulePack customLetterLabelRules = null, RulePack customLetterTextRules = null, bool? useDifficultyFactor = null, Action runIfChosenPawnSignalUsed = null, int? variants = null, bool addCampLootReward = false, Pawn asker = null, bool addShuttleLootReward = false, bool addPossibleFutureReward = false)
+		public static QuestPart_Choice GiveRewards(this Quest quest, RewardsGeneratorParams parms, string inSignal = null, string customLetterLabel = null, string customLetterText = null, RulePack customLetterLabelRules = null, RulePack customLetterTextRules = null, bool? useDifficultyFactor = null, Action runIfChosenPawnSignalUsed = null, int? variants = null, bool addCampLootReward = false, Pawn asker = null, bool addShuttleLootReward = false, bool addPossibleFutureReward = false, float? overridePopulationIntent = null)
 		{
 			try
 			{
@@ -26,7 +26,7 @@ namespace RimWorld.QuestGen
 				parmsResolved.rewardValue = ((parmsResolved.rewardValue == 0f) ? slate.Get("rewardValue", 0f) : parmsResolved.rewardValue);
 				if (useDifficultyFactor ?? true)
 				{
-					parmsResolved.rewardValue *= Find.Storyteller.difficultyValues.EffectiveQuestRewardValueFactor;
+					parmsResolved.rewardValue *= Find.Storyteller.difficulty.EffectiveQuestRewardValueFactor;
 					parmsResolved.rewardValue = Math.Max(1f, parmsResolved.rewardValue);
 				}
 				if (slate.Get("debugDontGenerateRewardThings", defaultValue: false))
@@ -36,7 +36,7 @@ namespace RimWorld.QuestGen
 				}
 				parmsResolved.minGeneratedRewardValue = 250f;
 				parmsResolved.giverFaction = parmsResolved.giverFaction ?? asker?.Faction;
-				parmsResolved.populationIntent = QuestTuning.PopIncreasingRewardWeightByPopIntentCurve.Evaluate(StorytellerUtilityPopulation.PopulationIntentForQuest);
+				parmsResolved.populationIntent = overridePopulationIntent ?? QuestTuning.PopIncreasingRewardWeightByPopIntentCurve.Evaluate(StorytellerUtilityPopulation.PopulationIntentForQuest);
 				if (parmsResolved.giverFaction == null || parmsResolved.giverFaction.def.permanentEnemy)
 				{
 					parmsResolved.allowGoodwill = false;
@@ -44,6 +44,14 @@ namespace RimWorld.QuestGen
 				if (parmsResolved.giverFaction == null || asker.royalty == null || !asker.royalty.HasAnyTitleIn(asker.Faction) || parmsResolved.giverFaction.HostileTo(Faction.OfPlayer))
 				{
 					parmsResolved.allowRoyalFavor = false;
+				}
+				if (!ModsConfig.IdeologyActive || Faction.OfPlayer.ideos.FluidIdeo == null)
+				{
+					parmsResolved.allowDevelopmentPoints = false;
+				}
+				if (!ModsConfig.BiotechActive)
+				{
+					parmsResolved.allowXenogermReimplantation = false;
 				}
 				Slate.VarRestoreInfo restoreInfo = slate.GetRestoreInfo("inSignal");
 				if (inSignal.NullOrEmpty())
@@ -93,6 +101,34 @@ namespace RimWorld.QuestGen
 							questPart_Choice.choices[l].rewards.Add(new Reward_PossibleFutureReward());
 						}
 					}
+					if (parmsResolved.allowDevelopmentPoints)
+					{
+						if (questPart_Choice.choices.Count <= 0)
+						{
+							QuestPart_Choice.Choice choice2 = new QuestPart_Choice.Choice();
+							choice2.rewards.Add(new Reward_DevelopmentPoints(quest));
+							questPart_Choice.choices.Add(choice2);
+						}
+						else
+						{
+							for (int m = 0; m < questPart_Choice.choices.Count; m++)
+							{
+								questPart_Choice.choices[m].rewards.Add(new Reward_DevelopmentPoints(quest));
+							}
+						}
+					}
+					if (parmsResolved.allowXenogermReimplantation)
+					{
+						QuestPart_Choice.Choice choice3 = new QuestPart_Choice.Choice();
+						Reward_ReimplantXenogerm reward_ReimplantXenogerm = new Reward_ReimplantXenogerm();
+						choice3.rewards.Add(reward_ReimplantXenogerm);
+						questPart_Choice.choices.Add(choice3);
+						foreach (QuestPart item in reward_ReimplantXenogerm.GenerateQuestParts(0, parms, null, null, null, null))
+						{
+							QuestGen.quest.AddPart(item);
+							choice3.questParts.Add(item);
+						}
+					}
 					questPart_Choice.choices.SortByDescending(GetDisplayPriority);
 					QuestGen.quest.AddPart(questPart_Choice);
 					if (chosenPawnSignalUsed && runIfChosenPawnSignalUsed != null)
@@ -101,18 +137,18 @@ namespace RimWorld.QuestGen
 						tmpPrevQuestParts.AddRange(QuestGen.quest.PartsListForReading);
 						runIfChosenPawnSignalUsed();
 						List<QuestPart> partsListForReading = QuestGen.quest.PartsListForReading;
-						for (int m = 0; m < partsListForReading.Count; m++)
+						for (int n = 0; n < partsListForReading.Count; n++)
 						{
-							if (tmpPrevQuestParts.Contains(partsListForReading[m]))
+							if (tmpPrevQuestParts.Contains(partsListForReading[n]))
 							{
 								continue;
 							}
-							for (int n = 0; n < questPart_Choice.choices.Count; n++)
+							for (int num2 = 0; num2 < questPart_Choice.choices.Count; num2++)
 							{
 								bool flag = false;
-								for (int num2 = 0; num2 < questPart_Choice.choices[n].rewards.Count; num2++)
+								for (int num3 = 0; num3 < questPart_Choice.choices[num2].rewards.Count; num3++)
 								{
-									if (questPart_Choice.choices[n].rewards[num2].MakesUseOfChosenPawnSignal)
+									if (questPart_Choice.choices[num2].rewards[num3].MakesUseOfChosenPawnSignal)
 									{
 										flag = true;
 										break;
@@ -120,7 +156,7 @@ namespace RimWorld.QuestGen
 								}
 								if (flag)
 								{
-									questPart_Choice.choices[n].questParts.Add(partsListForReading[m]);
+									questPart_Choice.choices[num2].questParts.Add(partsListForReading[n]);
 								}
 							}
 						}
@@ -219,9 +255,9 @@ namespace RimWorld.QuestGen
 			if (reward_Items == null)
 			{
 				List<Type> b = list3.Select((Reward x) => x.GetType()).ToList();
-				for (int k = 0; k < generatedRewards.Count; k++)
+				for (int num = 0; num < generatedRewards.Count; num++)
 				{
-					if (generatedRewards[k].Select((Reward x) => x.GetType()).ToList().ListsEqualIgnoreOrder(b))
+					if (generatedRewards[num].Select((Reward x) => x.GetType()).ToList().SetsEqual(b))
 					{
 						return null;
 					}
@@ -230,10 +266,10 @@ namespace RimWorld.QuestGen
 			else if (list3.Count == 1)
 			{
 				List<ThingDef> b2 = reward_Items.ItemsListForReading.Select((Thing x) => x.def).ToList();
-				for (int l = 0; l < generatedRewards.Count; l++)
+				for (int num2 = 0; num2 < generatedRewards.Count; num2++)
 				{
-					Reward_Items reward_Items2 = (Reward_Items)generatedRewards[l].Find((Reward x) => x is Reward_Items);
-					if (reward_Items2 != null && reward_Items2.ItemsListForReading.Select((Thing x) => x.def).ToList().ListsEqualIgnoreOrder(b2))
+					Reward_Items reward_Items2 = (Reward_Items)generatedRewards[num2].Find((Reward x) => x is Reward_Items);
+					if (reward_Items2 != null && reward_Items2.ItemsListForReading.Select((Thing x) => x.def).ToList().SetsEqual(b2))
 					{
 						return null;
 					}
@@ -241,26 +277,26 @@ namespace RimWorld.QuestGen
 			}
 			list3.SortBy((Reward x) => x is Reward_Items);
 			choice.rewards.AddRange(list3);
-			for (int m = 0; m < list3.Count; m++)
+			for (int num3 = 0; num3 < list3.Count; num3++)
 			{
 				if (addDescriptionRules)
 				{
-					list.Add(list3[m].GetDescription(parmsResolved));
-					if (!(list3[m] is Reward_Items))
+					list.Add(list3[num3].GetDescription(parmsResolved));
+					if (!(list3[num3] is Reward_Items))
 					{
-						list2.Add(list3[m].GetDescription(parmsResolved));
+						list2.Add(list3[num3].GetDescription(parmsResolved));
 					}
-					else if (m == list3.Count - 1)
+					else if (num3 == list3.Count - 1)
 					{
 						flag = true;
 					}
 				}
-				foreach (QuestPart item in list3[m].GenerateQuestParts(m, parmsResolved, customLetterLabel, customLetterText, customLetterLabelRules, customLetterTextRules))
+				foreach (QuestPart item in list3[num3].GenerateQuestParts(num3, parmsResolved, customLetterLabel, customLetterText, customLetterLabelRules, customLetterTextRules))
 				{
 					QuestGen.quest.AddPart(item);
 					choice.questParts.Add(item);
 				}
-				if (!parmsResolved.chosenPawnSignal.NullOrEmpty() && list3[m].MakesUseOfChosenPawnSignal)
+				if (!parmsResolved.chosenPawnSignal.NullOrEmpty() && list3[num3].MakesUseOfChosenPawnSignal)
 				{
 					chosenPawnSignalUsed = true;
 				}
@@ -324,16 +360,20 @@ namespace RimWorld.QuestGen
 				{
 					return list;
 				}
+				if (list.Any((Reward x) => x is Reward_ReimplantXenogerm))
+				{
+					return list;
+				}
 				Reward_Items reward_Items = (Reward_Items)list.FirstOrDefault((Reward x) => x is Reward_Items);
 				if (reward_Items != null)
 				{
 					bool flag = false;
-					for (int j = 0; j < generatedRewards.Count; j++)
+					for (int num2 = 0; num2 < generatedRewards.Count; num2++)
 					{
 						Reward_Items otherGeneratedItems = null;
-						for (int k = 0; k < generatedRewards[j].Count; k++)
+						for (int num3 = 0; num3 < generatedRewards[num2].Count; num3++)
 						{
-							otherGeneratedItems = generatedRewards[j][k] as Reward_Items;
+							otherGeneratedItems = generatedRewards[num2][num3] as Reward_Items;
 							if (otherGeneratedItems != null)
 							{
 								break;
@@ -341,10 +381,10 @@ namespace RimWorld.QuestGen
 						}
 						if (otherGeneratedItems != null)
 						{
-							int i;
-							for (i = 0; i < otherGeneratedItems.items.Count; i++)
+							int k;
+							for (k = 0; k < otherGeneratedItems.items.Count; k++)
 							{
-								if (reward_Items.items.Any((Thing x) => x.GetInnerIfMinified().def == otherGeneratedItems.items[i].GetInnerIfMinified().def))
+								if (reward_Items.items.Any((Thing x) => x.GetInnerIfMinified().def == otherGeneratedItems.items[k].GetInnerIfMinified().def))
 								{
 									flag = true;
 									break;
@@ -371,14 +411,21 @@ namespace RimWorld.QuestGen
 		{
 			for (int i = 0; i < choice.rewards.Count; i++)
 			{
-				if (choice.rewards[i] is Reward_RoyalFavor)
+				if (choice.rewards[i] is Reward_ReimplantXenogerm)
 				{
-					return 1;
+					return 2;
 				}
 			}
 			for (int j = 0; j < choice.rewards.Count; j++)
 			{
-				if (choice.rewards[j] is Reward_Goodwill)
+				if (choice.rewards[j] is Reward_RoyalFavor)
+				{
+					return 1;
+				}
+			}
+			for (int k = 0; k < choice.rewards.Count; k++)
+			{
+				if (choice.rewards[k] is Reward_Goodwill)
 				{
 					return -1;
 				}

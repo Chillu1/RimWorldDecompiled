@@ -13,7 +13,7 @@ namespace RimWorld
 			int transportersGroup = pawn.mindState.duty.transportersGroup;
 			if (transportersGroup != -1)
 			{
-				List<Pawn> allPawnsSpawned = pawn.Map.mapPawns.AllPawnsSpawned;
+				IReadOnlyList<Pawn> allPawnsSpawned = pawn.Map.mapPawns.AllPawnsSpawned;
 				for (int i = 0; i < allPawnsSpawned.Count; i++)
 				{
 					if (allPawnsSpawned[i] != pawn && allPawnsSpawned[i].CurJobDef == JobDefOf.HaulToTransporter)
@@ -46,6 +46,10 @@ namespace RimWorld
 
 		public static CompTransporter FindMyTransporter(List<CompTransporter> transporters, Pawn me)
 		{
+			if (transporters == null)
+			{
+				return null;
+			}
 			for (int i = 0; i < transporters.Count; i++)
 			{
 				List<TransferableOneWay> leftToLoad = transporters[i].leftToLoad;

@@ -6,13 +6,9 @@ namespace RimWorld
 	{
 		protected DesignationDef designationDef;
 
-		public override int DraggableDimensions => 2;
-
 		protected override DesignationDef Designation => designationDef;
 
-		public Designator_Plants()
-		{
-		}
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Plants;
 
 		public override AcceptanceReport CanDesignateThing(Thing t)
 		{

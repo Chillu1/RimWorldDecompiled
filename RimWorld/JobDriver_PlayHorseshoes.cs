@@ -6,13 +6,13 @@ namespace RimWorld
 	{
 		private const int HorseshoeThrowInterval = 400;
 
-		protected override void WatchTickAction()
+		protected override void WatchTickAction(int delta)
 		{
-			if (pawn.IsHashIntervalTick(400))
+			if (pawn.IsHashIntervalTick(400, delta))
 			{
-				MoteMaker.ThrowHorseshoe(pawn, base.TargetA.Cell);
+				FleckMaker.ThrowHorseshoe(pawn, base.TargetA.Cell);
 			}
-			base.WatchTickAction();
+			base.WatchTickAction(delta);
 		}
 	}
 }

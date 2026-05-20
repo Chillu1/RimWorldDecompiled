@@ -9,8 +9,6 @@ namespace RimWorld.Planet
 	{
 		private Site site;
 
-		public static readonly IntVec3 MapSize = new IntVec3(120, 1, 120);
-
 		private static List<SitePartDef> tmpDefs = new List<SitePartDef>();
 
 		private static List<SitePartDef> tmpUsedDefs = new List<SitePartDef>();
@@ -28,7 +26,7 @@ namespace RimWorld.Planet
 			this.site = site;
 		}
 
-		public override FloatMenuAcceptanceReport StillValid(Caravan caravan, int destinationTile)
+		public override FloatMenuAcceptanceReport StillValid(Caravan caravan, PlanetTile destinationTile)
 		{
 			FloatMenuAcceptanceReport floatMenuAcceptanceReport = base.StillValid(caravan, destinationTile);
 			if (!floatMenuAcceptanceReport)
@@ -62,7 +60,7 @@ namespace RimWorld.Planet
 			LookTargets lookTargets = new LookTargets(caravan.PawnsListForReading);
 			bool draftColonists = site.Faction == null || site.Faction.HostileTo(Faction.OfPlayer);
 			bool num = !site.HasMap;
-			Map orGenerateMap = GetOrGenerateMapUtility.GetOrGenerateMap(site.Tile, MapSize, null);
+			Map orGenerateMap = GetOrGenerateMapUtility.GetOrGenerateMap(site.Tile, site.PreferredMapSize, null);
 			if (num)
 			{
 				Find.TickManager.Notify_GeneratedPotentiallyHostileMap();
@@ -71,11 +69,18 @@ namespace RimWorld.Planet
 				stringBuilder.Append("LetterCaravanEnteredMap".Translate(caravan.Label, site).CapitalizeFirst());
 				AppendThreatInfo(stringBuilder, site, orGenerateMap, out var letterDef, out var allLookTargets);
 				TaggedString letterText = null;
-				SettlementUtility.AffectRelationsOnAttacked_NewTmp(site, ref letterText);
+				if (site.parts.Any((SitePart part) => part.def.considerEnteringAsAttack))
+				{
+					SettlementUtility.AffectRelationsOnAttacked(site, ref letterText);
+				}
 				if (!letterText.NullOrEmpty())
 				{
 					if (stringBuilder.Length > 0)
 					{
+						if (stringBuilder[stringBuilder.Length - 1] != '\n')
+						{
+							stringBuilder.AppendLine();
+						}
 						stringBuilder.AppendLine();
 					}
 					stringBuilder.AppendLineTagged(letterText);

@@ -6,13 +6,15 @@ namespace RimWorld
 {
 	public class Need_Food : Need
 	{
-		private int lastNonStarvingTick = -99999;
+		public int lastNonStarvingTick = -99999;
 
-		public const float BaseFoodFallPerTick = 2.66666666E-05f;
+		public const float BaseFoodFallPerTick = 2.6666667E-05f;
 
-		private const float BaseMalnutritionSeverityPerDay = 0.17f;
+		private const float BaseMalnutritionSeverityPerDay = 0.453f;
 
-		private const float BaseMalnutritionSeverityPerInterval = 0.00113333331f;
+		private const float BaseMalnutritionSeverityPerInterval = 0.0011325f;
+
+		private CompHoldingPlatformTarget platformComp;
 
 		public bool Starving => CurCategory == HungerCategory.Starving;
 
@@ -21,6 +23,8 @@ namespace RimWorld
 		public float PercentageThreshHungry => pawn.RaceProps.FoodLevelPercentageWantEat * 0.8f;
 
 		public float NutritionBetweenHungryAndFed => (1f - PercentageThreshHungry) * MaxLevel;
+
+		private CompHoldingPlatformTarget PlatformTarget => platformComp ?? (platformComp = pawn.TryGetComp<CompHoldingPlatformTarget>());
 
 		public HungerCategory CurCategory
 		{
@@ -48,42 +52,107 @@ namespace RimWorld
 
 		public int TicksUntilHungryWhenFedIgnoringMalnutrition => Mathf.CeilToInt(NutritionBetweenHungryAndFed / FoodFallPerTickAssumingCategory(HungerCategory.Fed, ignoreMalnutrition: true));
 
-		public override int GUIChangeArrow => -1;
+		public override int GUIChangeArrow
+		{
+			get
+			{
+				if (GainingFood())
+				{
+					return 1;
+				}
+				if (!(FoodFallPerTickAssumingCategory(HungerCategory.Hungry) > 0f))
+				{
+					return 0;
+				}
+				return -1;
+			}
+		}
 
-		public override float MaxLevel => pawn.BodySize * pawn.ageTracker.CurLifeStage.foodMaxFactor;
+		public override float MaxLevel
+		{
+			get
+			{
+				if (Current.ProgramState != ProgramState.Playing)
+				{
+					return pawn.BodySize * pawn.ageTracker.CurLifeStage.foodMaxFactor;
+				}
+				return pawn.GetStatValue(StatDefOf.MaxNutrition, applyPostProcess: true, 15);
+			}
+		}
 
 		public float NutritionWanted => MaxLevel - CurLevel;
 
-		private float HungerRate => pawn.ageTracker.CurLifeStage.hungerRateFactor * pawn.RaceProps.baseHungerRate * pawn.health.hediffSet.HungerRateFactor * ((pawn.story == null || pawn.story.traits == null) ? 1f : pawn.story.traits.HungerRateFactor) * pawn.GetStatValue(StatDefOf.HungerRateMultiplier);
-
-		private float HungerRateIgnoringMalnutrition => pawn.ageTracker.CurLifeStage.hungerRateFactor * pawn.RaceProps.baseHungerRate * pawn.health.hediffSet.GetHungerRateFactor(HediffDefOf.Malnutrition) * ((pawn.story == null || pawn.story.traits == null) ? 1f : pawn.story.traits.HungerRateFactor) * pawn.GetStatValue(StatDefOf.HungerRateMultiplier);
-
 		public int TicksStarving => Mathf.Max(0, Find.TickManager.TicksGame - lastNonStarvingTick);
 
-		private float MalnutritionSeverityPerInterval => 0.00113333331f * Mathf.Lerp(0.8f, 1.2f, Rand.ValueSeeded(pawn.thingIDNumber ^ 0x26EF7A));
+		private float MalnutritionSeverityPerInterval => 0.0011325f * Mathf.Lerp(0.8f, 1.2f, Rand.ValueSeeded(pawn.thingIDNumber ^ 0x26EF7A));
+
+		protected override bool IsFrozen
+		{
+			get
+			{
+				if (!base.IsFrozen && !pawn.Deathresting)
+				{
+					return PlatformTarget?.CurrentlyHeldOnPlatform ?? false;
+				}
+				return true;
+			}
+		}
 
 		public Need_Food(Pawn pawn)
 			: base(pawn)
 		{
 		}
 
-		public override void ExposeData()
+		public bool GainingFood()
 		{
-			base.ExposeData();
-			Scribe_Values.Look(ref lastNonStarvingTick, "lastNonStarvingTick", -99999);
+			if (pawn.jobs?.curDriver is IEatingDriver { GainingNutritionNow: not false })
+			{
+				return true;
+			}
+			if (ModsConfig.BiotechActive && ChildcareUtility.CanSuckle(pawn, out var _) && pawn.CarriedBy?.jobs.curDriver is JobDriver_FeedBaby { Feeding: not false })
+			{
+				return true;
+			}
+			return false;
 		}
 
-		public float FoodFallPerTickAssumingCategory(HungerCategory cat, bool ignoreMalnutrition = false)
+		public float FoodFallPerTickAssumingCategory(HungerCategory hunger, bool ignoreMalnutrition = false)
 		{
-			float num = (ignoreMalnutrition ? HungerRateIgnoringMalnutrition : HungerRate);
-			return cat switch
+			Building_Bed building_Bed = pawn.CurrentBed();
+			float num = BaseHungerRate(pawn.ageTracker.CurLifeStage, pawn.def) * hunger.HungerMultiplier() * pawn.health.hediffSet.GetHungerRateFactor(ignoreMalnutrition ? HediffDefOf.Malnutrition : null) * (pawn.story?.traits?.HungerRateFactor ?? 1f) * (building_Bed?.GetStatValue(StatDefOf.BedHungerRateFactor) ?? 1f);
+			if (ModsConfig.BiotechActive)
 			{
-				HungerCategory.Fed => 2.66666666E-05f * num, 
-				HungerCategory.Hungry => 2.66666666E-05f * num * 0.5f, 
-				HungerCategory.UrgentlyHungry => 2.66666666E-05f * num * 0.25f, 
-				HungerCategory.Starving => 2.66666666E-05f * num * 0.15f, 
-				_ => 999f, 
-			};
+				Hediff firstHediffOfDef = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Lactating);
+				if (firstHediffOfDef != null)
+				{
+					HediffComp_Lactating hediffComp_Lactating = firstHediffOfDef.TryGetComp<HediffComp_Lactating>();
+					if (hediffComp_Lactating != null)
+					{
+						num += hediffComp_Lactating.AddedNutritionPerDay() / 60000f;
+					}
+				}
+			}
+			if (ModsConfig.BiotechActive && pawn.genes != null)
+			{
+				int num2 = 0;
+				foreach (Gene item in pawn.genes.GenesListForReading)
+				{
+					if (!item.Overridden)
+					{
+						num2 += item.def.biostatMet;
+					}
+				}
+				num *= GeneTuning.MetabolismToFoodConsumptionFactorCurve.Evaluate(num2);
+			}
+			if (ModsConfig.AnomalyActive)
+			{
+				CompHoldingPlatformTarget platformTarget = PlatformTarget;
+				if (platformTarget != null && platformTarget.CurrentlyHeldOnPlatform)
+				{
+					num = 0f;
+				}
+			}
+			return num;
 		}
 
 		public override void NeedInterval()
@@ -96,7 +165,7 @@ namespace RimWorld
 			{
 				lastNonStarvingTick = Find.TickManager.TicksGame;
 			}
-			if (!IsFrozen)
+			if (!IsFrozen || pawn.Deathresting)
 			{
 				if (Starving)
 				{
@@ -111,26 +180,28 @@ namespace RimWorld
 
 		public override void SetInitialLevel()
 		{
-			if (pawn.RaceProps.Humanlike)
-			{
-				base.CurLevelPercentage = 0.8f;
-			}
-			else
-			{
-				base.CurLevelPercentage = Rand.Range(0.5f, 0.9f);
-			}
+			StatDefOf.MaxNutrition.Worker.ClearCacheForThing(pawn);
+			base.CurLevelPercentage = (pawn.RaceProps.Humanlike ? 0.8f : Rand.Range(0.5f, 0.9f));
 			if (Current.ProgramState == ProgramState.Playing)
 			{
 				lastNonStarvingTick = Find.TickManager.TicksGame;
 			}
 		}
 
-		public override string GetTipString()
+		public override void OnNeedRemoved()
 		{
-			return base.LabelCap + ": " + base.CurLevelPercentage.ToStringPercent() + " (" + CurLevel.ToString("0.##") + " / " + MaxLevel.ToString("0.##") + ")\n" + def.description;
+			if (pawn.health.hediffSet.TryGetHediff(HediffDefOf.Malnutrition, out var hediff))
+			{
+				pawn.health.RemoveHediff(hediff);
+			}
 		}
 
-		public override void DrawOnGUI(Rect rect, int maxThresholdMarkers = int.MaxValue, float customMargin = -1f, bool drawArrows = true, bool doTooltip = true)
+		public override string GetTipString()
+		{
+			return (base.LabelCap + ": " + base.CurLevelPercentage.ToStringPercent()).Colorize(ColoredText.TipSectionTitleColor) + " (" + CurLevel.ToString("0.##") + " / " + MaxLevel.ToString("0.##") + ")\n" + def.description;
+		}
+
+		public override void DrawOnGUI(Rect rect, int maxThresholdMarkers = int.MaxValue, float customMargin = -1f, bool drawArrows = true, bool doTooltip = true, Rect? rectForTooltip = null, bool drawLabel = true)
 		{
 			if (threshPercents == null)
 			{
@@ -139,7 +210,18 @@ namespace RimWorld
 			threshPercents.Clear();
 			threshPercents.Add(PercentageThreshHungry);
 			threshPercents.Add(PercentageThreshUrgentlyHungry);
-			base.DrawOnGUI(rect, maxThresholdMarkers, customMargin, drawArrows, doTooltip);
+			base.DrawOnGUI(rect, maxThresholdMarkers, customMargin, drawArrows, doTooltip, rectForTooltip, drawLabel);
+		}
+
+		public static float BaseHungerRate(LifeStageDef lifeStage, ThingDef pawnDef)
+		{
+			return lifeStage.hungerRateFactor * pawnDef.race.baseHungerRate * 2.6666667E-05f;
+		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_Values.Look(ref lastNonStarvingTick, "lastNonStarvingTick", -99999);
 		}
 	}
 }

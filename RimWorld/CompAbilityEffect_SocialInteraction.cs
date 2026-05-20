@@ -26,15 +26,11 @@ namespace RimWorld
 			Pawn pawn = target.Pawn;
 			if (pawn != null)
 			{
-				if (!Props.canApplyToMentallyBroken && !AbilityUtility.ValidateNoMentalState(pawn, throwMessages))
+				if (!Props.canApplyToMentallyBroken && !AbilityUtility.ValidateNoMentalState(pawn, throwMessages, parent))
 				{
 					return false;
 				}
-				if (!AbilityUtility.ValidateIsAwake(pawn, throwMessages))
-				{
-					return false;
-				}
-				if (!AbilityUtility.ValidateIsConscious(pawn, throwMessages))
+				if (!Props.canApplyToUnconscious && !AbilityUtility.ValidateIsConscious(pawn, throwMessages, parent))
 				{
 					return false;
 				}

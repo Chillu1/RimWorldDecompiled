@@ -1,5 +1,6 @@
 using UnityEngine;
 using Verse;
+using Verse.Steam;
 
 namespace RimWorld
 {
@@ -32,7 +33,14 @@ namespace RimWorld
 		public override void DoWindowContents(Rect inRect)
 		{
 			Text.Anchor = TextAnchor.MiddleCenter;
-			Widgets.Label(inRect, "PressAnyKeyOrEsc".Translate());
+			if (SteamDeck.IsSteamDeckInNonKeyboardMode)
+			{
+				Widgets.Label(inRect, "PressAnyKeyOrEscController".Translate().Resolve().AdjustedForKeys());
+			}
+			else
+			{
+				Widgets.Label(inRect, "PressAnyKeyOrEsc".Translate());
+			}
 			Text.Anchor = TextAnchor.UpperLeft;
 			if (!Event.current.isKey || Event.current.type != EventType.KeyDown || Event.current.keyCode == KeyCode.None)
 			{

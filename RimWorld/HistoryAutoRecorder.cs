@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Verse;
 
 namespace RimWorld
@@ -14,6 +15,11 @@ namespace RimWorld
 		{
 			if (Find.TickManager.TicksGame % def.recordTicksFrequency == 0 || !records.Any())
 			{
+				if (Find.AnyPlayerHomeMap == null)
+				{
+					records.Add(records.Last());
+					return;
+				}
 				float item = def.Worker.PullRecord();
 				records.Add(item);
 			}
@@ -27,7 +33,7 @@ namespace RimWorld
 			{
 				arr = RecordsToBytes();
 			}
-			DataExposeUtility.ByteArray(ref arr, "records");
+			DataExposeUtility.LookByteArray(ref arr, "records");
 			if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
 				SetRecordsFromBytes(arr);

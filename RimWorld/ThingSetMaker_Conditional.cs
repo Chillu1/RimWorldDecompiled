@@ -33,5 +33,18 @@ namespace RimWorld
 		}
 
 		protected abstract bool Condition(ThingSetMakerParams parms);
+
+		public override IEnumerable<string> ConfigErrors()
+		{
+			if (thingSetMaker == null)
+			{
+				yield return "thingSetMaker is null.";
+				yield break;
+			}
+			foreach (string item in thingSetMaker.ConfigErrors())
+			{
+				yield return item;
+			}
+		}
 	}
 }

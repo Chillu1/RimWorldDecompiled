@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using LudeonTK;
 using UnityEngine;
 
 namespace Verse
@@ -12,18 +13,25 @@ namespace Verse
 			public string stackTrace;
 		}
 
-		private static Dictionary<Material, MaterialInfo> references = new Dictionary<Material, MaterialInfo>();
+		private static bool trackMaterialStackTrace = false;
 
-		public static int nextWarningThreshold;
+		private static readonly Dictionary<Material, MaterialInfo> references = new Dictionary<Material, MaterialInfo>();
+
+		private static int nextWarningThreshold;
 
 		private static Dictionary<string, int> snapshot = new Dictionary<string, int>();
 
 		public static Material Create(Material material)
 		{
+			if (!UnityData.IsInMainThread)
+			{
+				Log.Error("Attempted to create duplicate material off main thread, do this in ensure materials initialized.");
+				return null;
+			}
 			Material material2 = new Material(material);
 			references[material2] = new MaterialInfo
 			{
-				stackTrace = (Prefs.DevMode ? Environment.StackTrace : "(unavailable)")
+				stackTrace = (trackMaterialStackTrace ? Environment.StackTrace : "(unavailable)")
 			};
 			TryReport();
 			return material2;
@@ -31,10 +39,15 @@ namespace Verse
 
 		public static Material Create(Shader shader)
 		{
+			if (!UnityData.IsInMainThread)
+			{
+				Log.Error("Attempted to create material off main thread, do this in ensure materials initialized.");
+				return null;
+			}
 			Material material = new Material(shader);
 			references[material] = new MaterialInfo
 			{
-				stackTrace = (Prefs.DevMode ? Environment.StackTrace : "(unavailable)")
+				stackTrace = (trackMaterialStackTrace ? Environment.StackTrace : "(unavailable)")
 			};
 			TryReport();
 			return material;
@@ -50,7 +63,7 @@ namespace Verse
 			UnityEngine.Object.Destroy(material);
 		}
 
-		public static void TryReport()
+		private static void TryReport()
 		{
 			if (MaterialWarningThreshold() > nextWarningThreshold)
 			{
@@ -106,9 +119,8 @@ namespace Verse
 				currentSnapshot[item.Key] = item.Count();
 			}
 			foreach (string item2 in (from k in source
-				select new KeyValuePair<string, int>(k, currentSnapshot.TryGetValue(k, 0) - snapshot.TryGetValue(k, 0)) into kvp
-				orderby kvp.Value descending
-				select kvp into g
+				select new KeyValuePair<string, int>(k, currentSnapshot.TryGetValue(k, 0) - snapshot.TryGetValue(k, 0)) into g
+				orderby g.Value descending
 				select $"{g.Value}: {g.Key}").Take(20))
 			{
 				Log.Error(item2);

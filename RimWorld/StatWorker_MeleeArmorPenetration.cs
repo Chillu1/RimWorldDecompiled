@@ -18,7 +18,7 @@ namespace RimWorld
 		{
 			if (req.Thing == null)
 			{
-				Log.Error(string.Concat("Getting MeleeArmorPenetration stat for ", req.Def, " without concrete pawn. This always returns 0."));
+				Log.Error("Getting MeleeArmorPenetration stat for " + req.Def?.ToString() + " without concrete pawn. This always returns 0.");
 			}
 			return GetArmorPenetration(req, applyPostProcess);
 		}
@@ -34,8 +34,7 @@ namespace RimWorld
 
 		private float GetArmorPenetration(StatRequest req, bool applyPostProcess = true)
 		{
-			Pawn pawn = req.Thing as Pawn;
-			if (pawn == null)
+			if (!(req.Thing is Pawn pawn))
 			{
 				return 0f;
 			}

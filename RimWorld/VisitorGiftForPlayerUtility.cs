@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using Verse;
 
 namespace RimWorld
@@ -9,7 +10,7 @@ namespace RimWorld
 	{
 		public static float ChanceToLeaveGift(Faction faction, Map map)
 		{
-			if (faction.IsPlayer)
+			if (faction == null || faction.IsPlayer)
 			{
 				return 0f;
 			}
@@ -18,8 +19,10 @@ namespace RimWorld
 
 		public static List<Thing> GenerateGifts(Faction faction, Map map)
 		{
-			ThingSetMakerParams parms = default(ThingSetMakerParams);
-			parms.totalMarketValueRange = DiplomacyTuning.VisitorGiftTotalMarketValueRangeBase * DiplomacyTuning.VisitorGiftTotalMarketValueFactorFromPlayerWealthCurve.Evaluate(map.wealthWatcher.WealthTotal);
+			ThingSetMakerParams parms = new ThingSetMakerParams
+			{
+				totalMarketValueRange = DiplomacyTuning.VisitorGiftTotalMarketValueRangeBase * DiplomacyTuning.VisitorGiftTotalMarketValueFactorFromPlayerWealthCurve.Evaluate(map.wealthWatcher.WealthTotal)
+			};
 			return ThingSetMakerDefOf.VisitorGift.root.Generate(parms);
 		}
 
@@ -37,11 +40,11 @@ namespace RimWorld
 			return DiplomacyTuning.VisitorGiftChanceFactorFromGoodwillCurve.Evaluate(faction.PlayerGoodwill);
 		}
 
-		public static void GiveGift(List<Pawn> possibleGivers, Faction faction)
+		private static Pawn GetGiftGiver(List<Pawn> possibleGivers, Faction faction)
 		{
 			if (possibleGivers.NullOrEmpty())
 			{
-				return;
+				return null;
 			}
 			Pawn pawn = null;
 			for (int i = 0; i < possibleGivers.Count; i++)
@@ -67,22 +70,40 @@ namespace RimWorld
 			{
 				pawn = possibleGivers[0];
 			}
-			List<Thing> list = GenerateGifts(faction, pawn.Map);
-			TargetInfo target = TargetInfo.Invalid;
-			for (int k = 0; k < list.Count; k++)
+			return pawn;
+		}
+
+		public static void GiveGift(List<Pawn> possibleGivers, Faction faction, List<Thing> gifts)
+		{
+			Pawn giftGiver = GetGiftGiver(possibleGivers, faction);
+			if (giftGiver == null)
 			{
-				if (GenPlace.TryPlaceThing(list[k], pawn.Position, pawn.Map, ThingPlaceMode.Near))
+				return;
+			}
+			TargetInfo targetInfo = TargetInfo.Invalid;
+			for (int i = 0; i < gifts.Count; i++)
+			{
+				if (GenPlace.TryPlaceThing(gifts[i], giftGiver.Position, giftGiver.Map, ThingPlaceMode.Near))
 				{
-					target = list[k];
+					targetInfo = gifts[i];
 				}
 				else
 				{
-					list[k].Destroy();
+					gifts[i].Destroy();
 				}
 			}
-			if (target.IsValid)
+			if (targetInfo.IsValid)
 			{
-				Find.LetterStack.ReceiveLetter("LetterLabelVisitorsGaveGift".Translate(pawn.Faction.Name), "LetterVisitorsGaveGift".Translate(pawn.Faction.def.pawnsPlural, list.Select((Thing g) => g.LabelCap).ToLineList("   -"), pawn.Named("PAWN")).AdjustedFor(pawn), LetterDefOf.PositiveEvent, target, faction);
+				Find.LetterStack.ReceiveLetter("LetterLabelVisitorsGaveGift".Translate(giftGiver.Faction.Name), "LetterVisitorsGaveGift".Translate(giftGiver.Faction.def.pawnsPlural, gifts.Select((Thing g) => g.LabelCap).ToLineList("   -"), giftGiver.Named("PAWN")).AdjustedFor(giftGiver), LetterDefOf.PositiveEvent, targetInfo, faction);
+			}
+		}
+
+		public static void GiveRandomGift(List<Pawn> possibleGivers, Faction faction)
+		{
+			Pawn giftGiver = GetGiftGiver(possibleGivers, faction);
+			if (giftGiver != null)
+			{
+				GiveGift(possibleGivers, faction, GenerateGifts(faction, giftGiver.Map));
 			}
 		}
 
@@ -98,7 +119,7 @@ namespace RimWorld
 			{
 				if (!allFaction.IsPlayer && !allFaction.HostileTo(Faction.OfPlayer) && !allFaction.Hidden)
 				{
-					stringBuilder.Append(allFaction.Name + " (" + allFaction.PlayerGoodwill.ToStringWithSign() + ", " + allFaction.PlayerRelationKind.GetLabel() + ")");
+					stringBuilder.Append(allFaction.Name + " (" + allFaction.PlayerGoodwill.ToStringWithSign() + ", " + allFaction.PlayerRelationKind.GetLabelCap() + ")");
 					stringBuilder.Append(": " + ChanceToLeaveGift(allFaction, Find.CurrentMap).ToStringPercent());
 					stringBuilder.AppendLine(" (rels factor: " + FactionRelationsChanceFactor(allFaction).ToStringPercent() + ")");
 				}

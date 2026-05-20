@@ -7,16 +7,6 @@ namespace RimWorld.Planet
 {
 	public class WorldGenStep_Rivers : WorldGenStep
 	{
-		private static readonly SimpleCurve ElevationChangeCost = new SimpleCurve
-		{
-			new CurvePoint(-1000f, 50f),
-			new CurvePoint(-100f, 100f),
-			new CurvePoint(0f, 400f),
-			new CurvePoint(0f, 5000f),
-			new CurvePoint(100f, 50000f),
-			new CurvePoint(1000f, 50000f)
-		};
-
 		private const float HillinessSmallHillsElevation = 15f;
 
 		private const float HillinessLargeHillsElevation = 250f;
@@ -29,47 +19,57 @@ namespace RimWorld.Planet
 
 		private const float EvaporationMultiple = 250f;
 
+		private static readonly SimpleCurve ElevationChangeCost = new SimpleCurve
+		{
+			new CurvePoint(-1000f, 50f),
+			new CurvePoint(-100f, 100f),
+			new CurvePoint(0f, 400f),
+			new CurvePoint(0f, 5000f),
+			new CurvePoint(100f, 50000f),
+			new CurvePoint(1000f, 50000f)
+		};
+
 		public override int SeedPart => 605014749;
 
-		public override void GenerateFresh(string seed)
+		public override void GenerateFresh(string seed, PlanetLayer layer)
 		{
-			GenerateRivers();
+			GenerateRivers(layer);
 		}
 
-		private void GenerateRivers()
+		private void GenerateRivers(PlanetLayer layer)
 		{
-			Find.WorldPathGrid.RecalculateAllPerceivedPathCosts();
-			List<int> coastalWaterTiles = GetCoastalWaterTiles();
+			Find.WorldPathGrid.RecalculateLayerPerceivedPathCosts(layer);
+			List<PlanetTile> coastalWaterTiles = GetCoastalWaterTiles(layer);
 			if (!coastalWaterTiles.Any())
 			{
 				return;
 			}
-			List<int> neighbors = new List<int>();
-			List<int>[] array = Find.WorldPathFinder.FloodPathsWithCostForTree(coastalWaterTiles, delegate(int st, int ed)
+			List<PlanetTile> neighbors = new List<PlanetTile>();
+			List<PlanetTile>[] array = layer.Pather.FloodPathsWithCostForTree(coastalWaterTiles, delegate(PlanetTile st, PlanetTile ed)
 			{
 				Tile tile = Find.WorldGrid[ed];
 				Tile tile2 = Find.WorldGrid[st];
 				Find.WorldGrid.GetTileNeighbors(ed, neighbors);
-				int num = neighbors[0];
-				for (int j = 0; j < neighbors.Count; j++)
+				PlanetTile planetTile = neighbors[0];
+				for (int i = 0; i < neighbors.Count; i++)
 				{
-					if (GetImpliedElevation(Find.WorldGrid[neighbors[j]]) < GetImpliedElevation(Find.WorldGrid[num]))
+					if (GetImpliedElevation(Find.WorldGrid[neighbors[i]]) < GetImpliedElevation(Find.WorldGrid[planetTile]))
 					{
-						num = neighbors[j];
+						planetTile = neighbors[i];
 					}
 				}
 				float num2 = 1f;
-				if (num != st)
+				if (planetTile != st)
 				{
 					num2 = 2f;
 				}
 				return Mathf.RoundToInt(num2 * ElevationChangeCost.Evaluate(GetImpliedElevation(tile2) - GetImpliedElevation(tile)));
-			}, (int tid) => Find.WorldGrid[tid].WaterCovered);
+			}, (PlanetTile tid) => Find.WorldGrid[tid].WaterCovered);
 			float[] flow = new float[array.Length];
-			for (int i = 0; i < coastalWaterTiles.Count; i++)
+			for (int num = 0; num < coastalWaterTiles.Count; num++)
 			{
-				AccumulateFlow(flow, array, coastalWaterTiles[i]);
-				CreateRivers(flow, array, coastalWaterTiles[i]);
+				AccumulateFlow(flow, array, coastalWaterTiles[num]);
+				CreateRivers(flow, array, coastalWaterTiles[num]);
 			}
 		}
 
@@ -95,21 +95,22 @@ namespace RimWorld.Planet
 			return tile.elevation + num;
 		}
 
-		private List<int> GetCoastalWaterTiles()
+		private List<PlanetTile> GetCoastalWaterTiles(PlanetLayer layer)
 		{
-			List<int> list = new List<int>();
-			List<int> list2 = new List<int>();
+			List<PlanetTile> list = new List<PlanetTile>();
+			List<PlanetTile> list2 = new List<PlanetTile>();
 			for (int i = 0; i < Find.WorldGrid.TilesCount; i++)
 			{
-				if (Find.WorldGrid[i].biome != BiomeDefOf.Ocean)
+				PlanetTile planetTile = new PlanetTile(i, layer);
+				if (Find.WorldGrid[i].PrimaryBiome != BiomeDefOf.Ocean)
 				{
 					continue;
 				}
-				Find.WorldGrid.GetTileNeighbors(i, list2);
+				Find.WorldGrid.GetTileNeighbors(planetTile, list2);
 				bool flag = false;
 				for (int j = 0; j < list2.Count; j++)
 				{
-					if (Find.WorldGrid[list2[j]].biome != BiomeDefOf.Ocean)
+					if (Find.WorldGrid[list2[j]].PrimaryBiome != BiomeDefOf.Ocean)
 					{
 						flag = true;
 						break;
@@ -117,71 +118,73 @@ namespace RimWorld.Planet
 				}
 				if (flag)
 				{
-					list.Add(i);
+					list.Add(planetTile);
 				}
 			}
 			return list;
 		}
 
-		private void AccumulateFlow(float[] flow, List<int>[] riverPaths, int index)
+		private void AccumulateFlow(float[] flow, List<PlanetTile>[] riverPaths, PlanetTile planetTile)
 		{
-			Tile tile = Find.WorldGrid[index];
-			flow[index] += tile.rainfall;
-			if (riverPaths[index] != null)
+			Tile tile = Find.WorldGrid[planetTile];
+			int tileId = planetTile.tileId;
+			flow[tileId] += tile.rainfall;
+			if (riverPaths[tileId] != null)
 			{
-				for (int i = 0; i < riverPaths[index].Count; i++)
+				for (int i = 0; i < riverPaths[tileId].Count; i++)
 				{
-					AccumulateFlow(flow, riverPaths, riverPaths[index][i]);
-					flow[index] += flow[riverPaths[index][i]];
+					AccumulateFlow(flow, riverPaths, riverPaths[tileId][i]);
+					flow[tileId] += flow[riverPaths[tileId][i].tileId];
 				}
 			}
-			flow[index] = Mathf.Max(0f, flow[index] - CalculateTotalEvaporation(flow[index], tile.temperature));
+			flow[tileId] = Mathf.Max(0f, flow[tileId] - CalculateTotalEvaporation(flow[tileId], tile.temperature));
 		}
 
-		private void CreateRivers(float[] flow, List<int>[] riverPaths, int index)
+		private void CreateRivers(float[] flow, List<PlanetTile>[] riverPaths, PlanetTile index)
 		{
-			List<int> list = new List<int>();
+			List<PlanetTile> list = new List<PlanetTile>();
 			Find.WorldGrid.GetTileNeighbors(index, list);
 			for (int i = 0; i < list.Count; i++)
 			{
-				float targetFlow = flow[list[i]];
+				float targetFlow = flow[list[i].tileId];
 				RiverDef riverDef = DefDatabase<RiverDef>.AllDefs.Where((RiverDef rd) => rd.spawnFlowThreshold > 0 && (float)rd.spawnFlowThreshold <= targetFlow).MaxByWithFallback((RiverDef rd) => rd.spawnFlowThreshold);
 				if (riverDef != null && Rand.Value < riverDef.spawnChance)
 				{
-					Find.WorldGrid.OverlayRiver(index, list[i], riverDef);
-					ExtendRiver(flow, riverPaths, list[i], riverDef);
+					PlanetTile planetTile = list[i];
+					Find.WorldGrid.OverlayRiver(index, planetTile, riverDef);
+					ExtendRiver(flow, riverPaths, planetTile, riverDef);
 				}
 			}
 		}
 
-		private void ExtendRiver(float[] flow, List<int>[] riverPaths, int index, RiverDef incomingRiver)
+		private void ExtendRiver(float[] flow, List<PlanetTile>[] riverPaths, PlanetTile planetTile, RiverDef incomingRiver)
 		{
-			if (riverPaths[index] == null)
+			if (riverPaths[planetTile.tileId] == null)
 			{
 				return;
 			}
-			int bestOutput = riverPaths[index].MaxBy((int ni) => flow[ni]);
+			PlanetTile bestOutput = riverPaths[planetTile.tileId].MaxBy((PlanetTile x) => flow[x.tileId]);
 			RiverDef riverDef = incomingRiver;
-			while (riverDef != null && (float)riverDef.degradeThreshold > flow[bestOutput])
+			while (riverDef != null && (float)riverDef.degradeThreshold > flow[bestOutput.tileId])
 			{
 				riverDef = riverDef.degradeChild;
 			}
 			if (riverDef != null)
 			{
-				Find.WorldGrid.OverlayRiver(index, bestOutput, riverDef);
+				Find.WorldGrid.OverlayRiver(planetTile, bestOutput, riverDef);
 				ExtendRiver(flow, riverPaths, bestOutput, riverDef);
 			}
 			if (incomingRiver.branches == null)
 			{
 				return;
 			}
-			foreach (int alternateRiver in riverPaths[index].Where((int ni) => ni != bestOutput))
+			foreach (PlanetTile alternateRiver in riverPaths[planetTile.tileId].Where((PlanetTile ni) => ni != bestOutput))
 			{
-				RiverDef.Branch branch2 = incomingRiver.branches.Where((RiverDef.Branch branch) => (float)branch.minFlow <= flow[alternateRiver]).MaxByWithFallback((RiverDef.Branch branch) => branch.minFlow);
-				if (branch2 != null && Rand.Value < branch2.chance)
+				RiverDef.Branch branch = incomingRiver.branches.Where((RiverDef.Branch branch2) => (float)branch2.minFlow <= flow[alternateRiver.tileId]).MaxByWithFallback((RiverDef.Branch branch2) => branch2.minFlow);
+				if (branch != null && Rand.Value < branch.chance)
 				{
-					Find.WorldGrid.OverlayRiver(index, alternateRiver, branch2.child);
-					ExtendRiver(flow, riverPaths, alternateRiver, branch2.child);
+					Find.WorldGrid.OverlayRiver(planetTile, alternateRiver, branch.child);
+					ExtendRiver(flow, riverPaths, alternateRiver, branch.child);
 				}
 			}
 		}

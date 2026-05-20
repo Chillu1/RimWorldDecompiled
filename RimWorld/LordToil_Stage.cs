@@ -20,10 +20,10 @@ namespace RimWorld
 
 		public override void UpdateAllDuties()
 		{
-			LordToilData_Stage data = Data;
+			LordToilData_Stage lordToilData_Stage = Data;
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
-				lord.ownedPawns[i].mindState.duty = new PawnDuty(DutyDefOf.Defend, data.stagingPoint);
+				lord.ownedPawns[i].mindState.duty = new PawnDuty(DutyDefOf.Defend, lordToilData_Stage.stagingPoint);
 				lord.ownedPawns[i].mindState.duty.radius = 28f;
 			}
 		}

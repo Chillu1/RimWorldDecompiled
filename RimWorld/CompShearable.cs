@@ -27,6 +27,10 @@ namespace RimWorld
 				{
 					return false;
 				}
+				if (ModsConfig.AnomalyActive && pawn.IsShambler)
+				{
+					return false;
+				}
 				return true;
 			}
 		}

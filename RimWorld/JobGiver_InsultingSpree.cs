@@ -7,8 +7,11 @@ namespace RimWorld
 	{
 		protected override Job TryGiveJob(Pawn pawn)
 		{
-			MentalState_InsultingSpree mentalState_InsultingSpree = pawn.MentalState as MentalState_InsultingSpree;
-			if (mentalState_InsultingSpree == null || mentalState_InsultingSpree.target == null || !pawn.CanReach(mentalState_InsultingSpree.target, PathEndMode.Touch, Danger.Deadly))
+			if (!(pawn.MentalState is MentalState_InsultingSpree { target: not null } mentalState_InsultingSpree) || !pawn.CanReach(mentalState_InsultingSpree.target, PathEndMode.Touch, Danger.Deadly))
+			{
+				return null;
+			}
+			if (!SocialInteractionUtility.BestInteractableCell(pawn, mentalState_InsultingSpree.target).IsValid)
 			{
 				return null;
 			}

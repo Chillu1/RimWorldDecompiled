@@ -1,5 +1,3 @@
-using System;
-
 namespace RimWorld
 {
 	[DefOf]
@@ -16,6 +14,8 @@ namespace RimWorld
 		public static StatDef SellPriceFactor;
 
 		public static StatDef Beauty;
+
+		public static StatDef BeautyOutdoors;
 
 		public static StatDef Cleanliness;
 
@@ -37,15 +37,17 @@ namespace RimWorld
 
 		public static StatDef MoveSpeed;
 
+		public static StatDef CrawlSpeed;
+
 		public static StatDef GlobalLearningFactor;
 
-		public static StatDef HungerRateMultiplier;
+		public static StatDef BedHungerRateFactor;
 
 		public static StatDef RestRateMultiplier;
 
 		public static StatDef PsychicSensitivity;
 
-		public static StatDef ToxicSensitivity;
+		public static StatDef ToxicResistance;
 
 		public static StatDef MentalBreakThreshold;
 
@@ -69,6 +71,18 @@ namespace RimWorld
 
 		public static StatDef ForagedNutritionPerDay;
 
+		public static StatDef FilthRate;
+
+		public static StatDef MaxNutrition;
+
+		public static StatDef LifespanFactor;
+
+		public static StatDef MaxFlightTime;
+
+		public static StatDef FlightCooldown;
+
+		public static StatDef Wildness;
+
 		[MayRequireRoyalty]
 		public static StatDef PsychicEntropyMax;
 
@@ -80,6 +94,75 @@ namespace RimWorld
 
 		[MayRequireRoyalty]
 		public static StatDef MeditationFocusGain;
+
+		[MayRequireIdeology]
+		public static StatDef CertaintyLossFactor;
+
+		[MayRequireIdeology]
+		public static StatDef SocialIdeoSpreadFrequencyFactor;
+
+		[MayRequireIdeology]
+		public static StatDef SuppressionPower;
+
+		[MayRequireIdeology]
+		public static StatDef SlaveSuppressionFallRate;
+
+		public static StatDef AnimalsLearningFactor;
+
+		public static StatDef BondAnimalChanceFactor;
+
+		public static StatDef CaravanRidingSpeedFactor;
+
+		public static StatDef CaravanBonusSpeedFactor;
+
+		public static StatDef RestFallRateFactor;
+
+		public static StatDef JoyFallRateFactor;
+
+		[MayRequireIdeology]
+		public static StatDef BiosculpterOccupantSpeed;
+
+		[MayRequireBiotech]
+		public static StatDef MechEnergyUsageFactor;
+
+		public static StatDef MeleeDamageFactor;
+
+		public static StatDef MeleeCooldownFactor;
+
+		public static StatDef ToxicEnvironmentResistance;
+
+		[MayRequireBiotech]
+		public static StatDef HemogenGainFactor;
+
+		[MayRequireBiotech]
+		public static StatDef RawNutritionFactor;
+
+		[MayRequireBiotech]
+		public static StatDef CancerRate;
+
+		[MayRequireBiotech]
+		public static StatDef WastepacksPerRecharge;
+
+		[MayRequireBiotech]
+		public static StatDef MechEnergyLossPerHP;
+
+		[MayRequireBiotech]
+		public static StatDef LearningRateFactor;
+
+		[MayRequireBiotech]
+		public static StatDef GrowthVatOccupantSpeed;
+
+		[MayRequireAnomaly]
+		public static StatDef MinimumContainmentStrength;
+
+		[MayRequireAnomaly]
+		public static StatDef PsychicRitualQualityOffset;
+
+		[MayRequireOdyssey]
+		public static StatDef VacuumResistance;
+
+		[MayRequireOdyssey]
+		public static StatDef PilotingAbility;
 
 		public static StatDef WorkSpeedGlobal;
 
@@ -105,15 +188,60 @@ namespace RimWorld
 
 		public static StatDef PlantHarvestYield;
 
+		public static StatDef DrugHarvestYield;
+
 		public static StatDef FixBrokenDownBuildingSuccessChance;
 
 		public static StatDef ConstructSuccessChance;
 
 		public static StatDef GeneralLaborSpeed;
 
-		[DefAlias("GeneralLaborSpeed")]
-		[Obsolete("Use StatDefOf.GeneralLaborSpeed, this field is only here for legacy reasons and will be removed in the future.")]
-		public static StatDef UnskilledLaborSpeed;
+		public static StatDef CleaningSpeed;
+
+		public static StatDef ReadingSpeed;
+
+		public static StatDef HackingSpeed;
+
+		public static StatDef HackingStealth;
+
+		[MayRequireIdeology]
+		public static StatDef PruningSpeed;
+
+		[MayRequireBiotech]
+		public static StatDef MechBandwidth;
+
+		[MayRequireBiotech]
+		public static StatDef MechRemoteRepairDistance;
+
+		[MayRequireBiotech]
+		public static StatDef MechRemoteShieldEnergy;
+
+		[MayRequireBiotech]
+		public static StatDef MechControlGroups;
+
+		[MayRequireBiotech]
+		public static StatDef BandwidthCost;
+
+		[MayRequireBiotech]
+		public static StatDef MechRepairSpeed;
+
+		[MayRequireBiotech]
+		public static StatDef ControlTakingTime;
+
+		[MayRequireAnomaly]
+		public static StatDef EntityStudyRate;
+
+		[MayRequireAnomaly]
+		public static StatDef ActivitySuppressionRate;
+
+		[MayRequireAnomaly]
+		public static StatDef StudyEfficiency;
+
+		[MayRequireOdyssey]
+		public static StatDef FishingSpeed;
+
+		[MayRequireOdyssey]
+		public static StatDef FishingYield;
 
 		public static StatDef MedicalTendSpeed;
 
@@ -127,9 +255,23 @@ namespace RimWorld
 
 		public static StatDef TradePriceImprovement;
 
+		public static StatDef DrugSellPriceImprovement;
+
 		public static StatDef SocialImpact;
 
 		public static StatDef PawnBeauty;
+
+		[MayRequireIdeology]
+		public static StatDef AnimalProductsSellImprovement;
+
+		[MayRequireIdeology]
+		public static StatDef ConversionPower;
+
+		[MayRequireBiotech]
+		public static StatDef BabyPlayGainFactor;
+
+		[MayRequireBiotech]
+		public static StatDef Fertility;
 
 		public static StatDef AnimalGatherSpeed;
 
@@ -143,11 +285,57 @@ namespace RimWorld
 
 		public static StatDef ShootingAccuracyTurret;
 
+		public static StatDef MortarMissRadiusFactor;
+
 		public static StatDef AimingDelayFactor;
+
+		[MayRequireIdeology]
+		public static StatDef ShootingAccuracyOutdoorsDarkOffset;
+
+		[MayRequireIdeology]
+		public static StatDef ShootingAccuracyOutdoorsLitOffset;
+
+		[MayRequireIdeology]
+		public static StatDef ShootingAccuracyIndoorsDarkOffset;
+
+		[MayRequireIdeology]
+		public static StatDef ShootingAccuracyIndoorsLitOffset;
+
+		[MayRequireIdeology]
+		public static StatDef MeleeHitChanceOutdoorsDarkOffset;
+
+		[MayRequireIdeology]
+		public static StatDef MeleeHitChanceOutdoorsLitOffset;
+
+		[MayRequireIdeology]
+		public static StatDef MeleeHitChanceIndoorsDarkOffset;
+
+		[MayRequireIdeology]
+		public static StatDef MeleeHitChanceIndoorsLitOffset;
+
+		[MayRequireIdeology]
+		public static StatDef MeleeDodgeChanceOutdoorsDarkOffset;
+
+		[MayRequireIdeology]
+		public static StatDef MeleeDodgeChanceOutdoorsLitOffset;
+
+		[MayRequireIdeology]
+		public static StatDef MeleeDodgeChanceIndoorsDarkOffset;
+
+		[MayRequireIdeology]
+		public static StatDef MeleeDodgeChanceIndoorsLitOffset;
+
+		[MayRequireBiotech]
+		public static StatDef StaggerDurationFactor;
+
+		public static StatDef RangedCooldownFactor;
 
 		public static StatDef MeleeHitChance;
 
 		public static StatDef MeleeDodgeChance;
+
+		[MayRequireBiotech]
+		public static StatDef MeleeDoorDamageFactor;
 
 		public static StatDef PawnTrapSpringChance;
 
@@ -158,8 +346,6 @@ namespace RimWorld
 		public static StatDef MeleeWeapon_DamageMultiplier;
 
 		public static StatDef MeleeWeapon_CooldownMultiplier;
-
-		public static StatDef MeleeWeapon_AverageArmorPenetration;
 
 		public static StatDef SharpDamageMultiplier;
 
@@ -179,6 +365,12 @@ namespace RimWorld
 
 		public static StatDef RangedWeapon_DamageMultiplier;
 
+		public static StatDef RangedWeapon_ArmorPenetrationMultiplier;
+
+		public static StatDef RangedWeapon_RangeMultiplier;
+
+		public static StatDef RangedWeapon_WarmupMultiplier;
+
 		public static StatDef AccuracyTouch;
 
 		public static StatDef AccuracyShort;
@@ -186,6 +378,14 @@ namespace RimWorld
 		public static StatDef AccuracyMedium;
 
 		public static StatDef AccuracyLong;
+
+		public static StatDef ShootingAccuracyFactor_Touch;
+
+		public static StatDef ShootingAccuracyFactor_Short;
+
+		public static StatDef ShootingAccuracyFactor_Medium;
+
+		public static StatDef ShootingAccuracyFactor_Long;
 
 		public static StatDef StuffEffectMultiplierArmor;
 
@@ -207,7 +407,7 @@ namespace RimWorld
 
 		public static StatDef EnergyShieldEnergyMax;
 
-		public static StatDef SmokepopBeltRadius;
+		public static StatDef PackRadius;
 
 		[MayRequireRoyalty]
 		public static StatDef JumpRange;
@@ -221,6 +421,8 @@ namespace RimWorld
 		public static StatDef ImmunityGainSpeed;
 
 		public static StatDef ImmunityGainSpeedFactor;
+
+		public static StatDef InjuryHealingFactor;
 
 		public static StatDef DoorOpenSpeed;
 
@@ -242,6 +444,33 @@ namespace RimWorld
 
 		public static StatDef SurgerySuccessChanceFactor;
 
+		[MayRequireIdeology]
+		public static StatDef StyleDominance;
+
+		[MayRequireIdeology]
+		public static StatDef BiosculpterPodSpeedFactor;
+
+		[MayRequireRoyalty]
+		public static StatDef MeditationPlantGrowthOffset;
+
+		[MayRequireBiotech]
+		public static StatDef GeneticComplexityIncrease;
+
+		[MayRequireBiotech]
+		public static StatDef AssemblySpeedFactor;
+
+		[MayRequireAnomaly]
+		public static StatDef PsychicRitualQuality;
+
+		[MayRequireAnomaly]
+		public static StatDef ContainmentStrength;
+
+		[MayRequireOdyssey]
+		public static StatDef GravshipRange;
+
+		[MayRequireOdyssey]
+		public static StatDef SubstructureSupport;
+
 		public static StatDef Ability_CastingTime;
 
 		public static StatDef Ability_EntropyGain;
@@ -260,10 +489,17 @@ namespace RimWorld
 
 		public static StatDef Ability_DetectChancePerEntropy;
 
-		[Obsolete("Will be removed in the future")]
-		public static StatDef Bladelink_DetectionChance;
-
 		public static StatDef MeditationFocusStrength;
+
+		[MayRequireIdeology]
+		public static StatDef TerrorSource;
+
+		[MayRequireIdeology]
+		public static StatDef Terror;
+
+		public static StatDef FilthMultiplier;
+
+		public static StatDef CleaningTimeFactor;
 
 		static StatDefOf()
 		{

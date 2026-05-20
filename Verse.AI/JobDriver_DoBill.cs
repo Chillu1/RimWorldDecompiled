@@ -23,13 +23,24 @@ namespace Verse.AI
 
 		public IBillGiver BillGiver => (job.GetTarget(TargetIndex.A).Thing as IBillGiver) ?? throw new InvalidOperationException("DoBill on non-Billgiver.");
 
+		public bool AnyIngredientsQueued => !job.GetTargetQueue(TargetIndex.B).NullOrEmpty();
+
 		public override string GetReport()
 		{
+			if (ModsConfig.BiotechActive && job.bill is Bill_Mech bill)
+			{
+				return MechanitorUtility.GetMechGestationJobString(this, pawn, bill);
+			}
 			if (job.RecipeDef != null)
 			{
 				return ReportStringProcessed(job.RecipeDef.jobString);
 			}
 			return base.GetReport();
+		}
+
+		public override bool IsContinuation(Job j)
+		{
+			return j.bill == job.bill;
 		}
 
 		public override void ExposeData()
@@ -42,7 +53,12 @@ namespace Verse.AI
 
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
 		{
+			Thing thing = job.GetTarget(TargetIndex.A).Thing;
 			if (!pawn.Reserve(job.GetTarget(TargetIndex.A), job, 1, -1, null, errorOnFailed))
+			{
+				return false;
+			}
+			if (thing != null && thing.def.hasInteractionCell && !pawn.ReserveSittableOrSpot(thing.InteractionCell, job, errorOnFailed))
 			{
 				return false;
 			}
@@ -60,8 +76,7 @@ namespace Verse.AI
 			this.FailOnBurningImmobile(TargetIndex.A);
 			this.FailOn(delegate
 			{
-				IBillGiver billGiver = job.GetTarget(TargetIndex.A).Thing as IBillGiver;
-				if (billGiver != null)
+				if (job.GetTarget(TargetIndex.A).Thing is IBillGiver billGiver)
 				{
 					if (job.bill.DeletedOrDereferenced)
 					{
@@ -75,64 +90,90 @@ namespace Verse.AI
 				return false;
 			});
 			Toil gotoBillGiver = Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.InteractionCell);
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
-				if (job.targetQueueB != null && job.targetQueueB.Count == 1)
+				if (job.targetQueueB != null && job.targetQueueB.Count == 1 && job.targetQueueB[0].Thing is UnfinishedThing { Destroyed: false } unfinishedThing)
 				{
-					UnfinishedThing unfinishedThing = job.targetQueueB[0].Thing as UnfinishedThing;
-					if (unfinishedThing != null)
-					{
-						unfinishedThing.BoundBill = (Bill_ProductionWithUft)job.bill;
-					}
+					unfinishedThing.BoundBill = (Bill_ProductionWithUft)job.bill;
 				}
+				job.bill.Notify_DoBillStarted(pawn);
 			};
 			yield return toil;
 			yield return Toils_Jump.JumpIf(gotoBillGiver, () => job.GetTargetQueue(TargetIndex.B).NullOrEmpty());
-			Toil extract = Toils_JobTransforms.ExtractNextTargetFromQueue(TargetIndex.B);
-			yield return extract;
-			Toil getToHaulTarget = Toils_Goto.GotoThing(TargetIndex.B, PathEndMode.ClosestTouch).FailOnDespawnedNullOrForbidden(TargetIndex.B).FailOnSomeonePhysicallyInteracting(TargetIndex.B);
-			yield return getToHaulTarget;
-			yield return Toils_Haul.StartCarryThing(TargetIndex.B, putRemainderInQueue: true, subtractNumTakenFromJobCount: false, failIfStackCountLessThanJobCount: true);
-			yield return JumpToCollectNextIntoHandsForBill(getToHaulTarget, TargetIndex.B);
-			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.InteractionCell).FailOnDestroyedOrNull(TargetIndex.B);
-			Toil findPlaceTarget2 = Toils_JobTransforms.SetTargetToIngredientPlaceCell(TargetIndex.A, TargetIndex.B, TargetIndex.C);
-			yield return findPlaceTarget2;
-			yield return Toils_Haul.PlaceHauledThingInCell(TargetIndex.C, findPlaceTarget2, storageMode: false);
-			yield return Toils_Jump.JumpIfHaveTargetInQueue(TargetIndex.B, extract);
+			foreach (Toil item in CollectIngredientsToils(TargetIndex.B, TargetIndex.A, TargetIndex.C, subtractNumTakenFromJobCount: false, failIfStackCountLessThanJobCount: true, BillGiver is Building_WorkTableAutonomous))
+			{
+				yield return item;
+			}
 			yield return gotoBillGiver;
 			yield return Toils_Recipe.MakeUnfinishedThingIfNeeded();
-			yield return Toils_Recipe.DoRecipeWork().FailOnDespawnedNullOrForbiddenPlacedThings().FailOnCannotTouch(TargetIndex.A, PathEndMode.InteractionCell);
-			yield return Toils_Recipe.FinishRecipeAndStartStoringProduct();
-			if (job.RecipeDef.products.NullOrEmpty() && job.RecipeDef.specialProducts.NullOrEmpty())
-			{
-				yield break;
-			}
-			yield return Toils_Reserve.Reserve(TargetIndex.B);
-			findPlaceTarget2 = Toils_Haul.CarryHauledThingToCell(TargetIndex.B);
-			yield return findPlaceTarget2;
-			yield return Toils_Haul.PlaceHauledThingInCell(TargetIndex.B, findPlaceTarget2, storageMode: true, tryStoreInSameStorageIfSpotCantHoldWholeStack: true);
-			Toil recount = new Toil();
-			recount.initAction = delegate
-			{
-				Bill_Production bill_Production = recount.actor.jobs.curJob.bill as Bill_Production;
-				if (bill_Production != null && bill_Production.repeatMode == BillRepeatModeDefOf.TargetCount)
-				{
-					base.Map.resourceCounter.UpdateResourceCounts();
-				}
-			};
-			yield return recount;
+			yield return Toils_Recipe.DoRecipeWork().FailOnDespawnedNullOrForbiddenPlacedThings(TargetIndex.A).FailOnCannotTouch(TargetIndex.A, PathEndMode.InteractionCell);
+			yield return Toils_Recipe.CheckIfRecipeCanFinishNow();
+			yield return Toils_Recipe.FinishRecipeAndStartStoringProduct(TargetIndex.None);
 		}
 
-		private static Toil JumpToCollectNextIntoHandsForBill(Toil gotoGetTargetToil, TargetIndex ind)
+		public static IEnumerable<Toil> CollectIngredientsToils(TargetIndex ingredientInd, TargetIndex billGiverInd, TargetIndex ingredientPlaceCellInd, bool subtractNumTakenFromJobCount = false, bool failIfStackCountLessThanJobCount = true, bool placeInBillGiver = false)
 		{
-			Toil toil = new Toil();
+			Toil extract = Toils_JobTransforms.ExtractNextTargetFromQueue(ingredientInd);
+			yield return extract;
+			Toil jumpIfHaveTargetInQueue = Toils_Jump.JumpIfHaveTargetInQueue(ingredientInd, extract);
+			yield return JumpIfTargetInsideBillGiver(jumpIfHaveTargetInQueue, ingredientInd, billGiverInd);
+			Toil getToHaulTarget = Toils_Goto.GotoThing(ingredientInd, PathEndMode.ClosestTouch, canGotoSpawnedParent: true).FailOnForbidden(ingredientInd).FailOnSomeonePhysicallyInteracting(ingredientInd);
+			yield return getToHaulTarget;
+			yield return Toils_Haul.StartCarryThing(ingredientInd, putRemainderInQueue: true, subtractNumTakenFromJobCount, failIfStackCountLessThanJobCount, reserve: false, canTakeFromInventory: true);
+			yield return JumpToCollectNextIntoHandsForBill(getToHaulTarget, TargetIndex.B);
+			yield return Toils_Goto.GotoThing(billGiverInd, PathEndMode.InteractionCell).FailOnDestroyedOrNull(ingredientInd);
+			if (!placeInBillGiver)
+			{
+				Toil findPlaceTarget = Toils_JobTransforms.SetTargetToIngredientPlaceCell(billGiverInd, ingredientInd, ingredientPlaceCellInd);
+				yield return findPlaceTarget;
+				yield return Toils_Haul.PlaceHauledThingInCell(ingredientPlaceCellInd, findPlaceTarget, storageMode: false);
+				Toil physReserveToil = ToilMaker.MakeToil("CollectIngredientsToils");
+				physReserveToil.initAction = delegate
+				{
+					physReserveToil.actor.Map.physicalInteractionReservationManager.Reserve(physReserveToil.actor, physReserveToil.actor.CurJob, physReserveToil.actor.CurJob.GetTarget(ingredientInd));
+				};
+				yield return physReserveToil;
+			}
+			else
+			{
+				yield return Toils_Haul.DepositHauledThingInContainer(billGiverInd, ingredientInd);
+			}
+			yield return jumpIfHaveTargetInQueue;
+		}
+
+		private static Toil JumpIfTargetInsideBillGiver(Toil jumpToil, TargetIndex ingredient, TargetIndex billGiver)
+		{
+			Toil toil = ToilMaker.MakeToil("JumpIfTargetInsideBillGiver");
+			toil.initAction = delegate
+			{
+				Thing thing = toil.actor.CurJob.GetTarget(billGiver).Thing;
+				if (thing != null && thing.Spawned)
+				{
+					Thing thing2 = toil.actor.jobs.curJob.GetTarget(ingredient).Thing;
+					if (thing2 != null)
+					{
+						ThingOwner thingOwner = thing.TryGetInnerInteractableThingOwner();
+						if (thingOwner != null && thingOwner.Contains(thing2))
+						{
+							HaulAIUtility.UpdateJobWithPlacedThings(toil.actor.jobs.curJob, thing2, thing2.stackCount);
+							toil.actor.jobs.curDriver.JumpToToil(jumpToil);
+						}
+					}
+				}
+			};
+			return toil;
+		}
+
+		public static Toil JumpToCollectNextIntoHandsForBill(Toil gotoGetTargetToil, TargetIndex ind)
+		{
+			Toil toil = ToilMaker.MakeToil("JumpToCollectNextIntoHandsForBill");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;
 				if (actor.carryTracker.CarriedThing == null)
 				{
-					Log.Error(string.Concat("JumpToAlsoCollectTargetInQueue run on ", actor, " who is not carrying something."));
+					Log.Error("JumpToAlsoCollectTargetInQueue run on " + actor?.ToString() + " who is not carrying something.");
 				}
 				else if (!actor.carryTracker.Full)
 				{

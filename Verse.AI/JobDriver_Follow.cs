@@ -16,8 +16,8 @@ namespace Verse.AI
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			this.FailOnDespawnedOrNull(TargetIndex.A);
-			Toil toil = new Toil();
-			toil.tickAction = delegate
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
+			toil.tickIntervalAction = delegate
 			{
 				Pawn pawn = (Pawn)job.GetTarget(TargetIndex.A).Thing;
 				if (!base.pawn.Position.InHorDistOf(pawn.Position, 4f) || !base.pawn.Position.WithinRegions(pawn.Position, base.Map, 2, TraverseParms.For(base.pawn)))

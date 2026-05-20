@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 using Verse;
 using Verse.AI;
 
@@ -40,8 +41,7 @@ namespace RimWorld
 
 		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			Pawn pawn2 = t as Pawn;
-			if (pawn2 == null || !pawn2.AnimalOrWildMan())
+			if (!(t is Pawn pawn2) || !pawn2.AnimalOrWildMan())
 			{
 				return false;
 			}
@@ -50,6 +50,18 @@ namespace RimWorld
 				return false;
 			}
 			if (pawn.Map.designationManager.DesignationOn(t, DesignationDefOf.Hunt) == null)
+			{
+				return false;
+			}
+			if (HistoryEventUtility.IsKillingInnocentAnimal(pawn, pawn2) && !new HistoryEvent(HistoryEventDefOf.KilledInnocentAnimal, pawn.Named(HistoryEventArgsNames.Doer)).Notify_PawnAboutToDo_Job())
+			{
+				return false;
+			}
+			if (pawn.Ideo != null && pawn.Ideo.IsVeneratedAnimal(pawn2) && !new HistoryEvent(HistoryEventDefOf.HuntedVeneratedAnimal, pawn.Named(HistoryEventArgsNames.Doer)).Notify_PawnAboutToDo_Job())
+			{
+				return false;
+			}
+			if (!CanFindHuntingPosition(pawn, pawn2))
 			{
 				return false;
 			}
@@ -70,6 +82,20 @@ namespace RimWorld
 			return false;
 		}
 
+		private bool CanFindHuntingPosition(Pawn hunter, Pawn animal)
+		{
+			CastPositionRequest newReq = new CastPositionRequest
+			{
+				caster = hunter,
+				target = animal,
+				verb = hunter.TryGetAttackVerb(animal),
+				wantCoverFromTarget = false
+			};
+			newReq.maxRangeFromTarget = (animal.Downed ? Mathf.Min(newReq.verb.EffectiveRange, animal.RaceProps.executionRange) : Mathf.Max(newReq.verb.EffectiveRange * 0.95f, 1.42f));
+			IntVec3 dest;
+			return CastPositionFinder.TryFindCastPosition(newReq, out dest);
+		}
+
 		public static bool HasShieldAndRangedWeapon(Pawn p)
 		{
 			if (p.equipment.Primary != null && p.equipment.Primary.def.IsWeaponUsingProjectiles)
@@ -77,7 +103,7 @@ namespace RimWorld
 				List<Apparel> wornApparel = p.apparel.WornApparel;
 				for (int i = 0; i < wornApparel.Count; i++)
 				{
-					if (wornApparel[i] is ShieldBelt)
+					if (wornApparel[i].def.IsShieldThatBlocksRanged)
 					{
 						return true;
 					}

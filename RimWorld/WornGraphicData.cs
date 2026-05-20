@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using Verse;
 
@@ -25,72 +26,69 @@ namespace RimWorld
 
 		public WornGraphicBodyTypeData fat;
 
+		public WornGraphicDirectionData GetDirectionalData(Rot4 facing)
+		{
+			return facing.AsInt switch
+			{
+				0 => north, 
+				1 => east, 
+				2 => south, 
+				3 => west, 
+				_ => throw new ArgumentException($"Unhandled Rot4: {facing}"), 
+			};
+		}
+
 		public Vector2 BeltOffsetAt(Rot4 facing, BodyTypeDef bodyType)
 		{
-			WornGraphicDirectionData wornGraphicDirectionData = default(WornGraphicDirectionData);
-			switch (facing.AsInt)
-			{
-			case 0:
-				wornGraphicDirectionData = north;
-				break;
-			case 1:
-				wornGraphicDirectionData = east;
-				break;
-			case 2:
-				wornGraphicDirectionData = south;
-				break;
-			case 3:
-				wornGraphicDirectionData = west;
-				break;
-			}
-			Vector2 offset = wornGraphicDirectionData.offset;
+			WornGraphicDirectionData directionalData = GetDirectionalData(facing);
+			Vector2 offset = directionalData.offset;
 			if (bodyType == BodyTypeDefOf.Male)
 			{
-				offset += wornGraphicDirectionData.male.offset;
+				offset += directionalData.male.offset;
 			}
 			else if (bodyType == BodyTypeDefOf.Female)
 			{
-				offset += wornGraphicDirectionData.female.offset;
+				offset += directionalData.female.offset;
 			}
 			else if (bodyType == BodyTypeDefOf.Thin)
 			{
-				offset += wornGraphicDirectionData.thin.offset;
+				offset += directionalData.thin.offset;
 			}
 			else if (bodyType == BodyTypeDefOf.Hulk)
 			{
-				offset += wornGraphicDirectionData.hulk.offset;
+				offset += directionalData.hulk.offset;
 			}
 			else if (bodyType == BodyTypeDefOf.Fat)
 			{
-				offset += wornGraphicDirectionData.fat.offset;
+				offset += directionalData.fat.offset;
 			}
 			return offset;
 		}
 
-		public Vector2 BeltScaleAt(BodyTypeDef bodyType)
+		public Vector2 BeltScaleAt(Rot4 facing, BodyTypeDef bodyType)
 		{
-			Vector2 result = Vector2.one;
+			Vector2 scale = GetDirectionalData(facing).Scale;
 			if (bodyType == BodyTypeDefOf.Male)
 			{
-				result = male.Scale;
+				scale *= male.Scale;
 			}
 			else if (bodyType == BodyTypeDefOf.Female)
 			{
-				result = female.Scale;
+				scale *= female.Scale;
 			}
 			else if (bodyType == BodyTypeDefOf.Thin)
 			{
-				result = thin.Scale;
+				scale *= thin.Scale;
 			}
 			else if (bodyType == BodyTypeDefOf.Hulk)
 			{
-				result = hulk.Scale;
+				scale *= hulk.Scale;
 			}
 			else if (bodyType == BodyTypeDefOf.Fat)
 			{
-				result = fat.Scale;
+				scale *= fat.Scale;
 			}
-			return result;
+			return scale;
 		}
 	}
 }

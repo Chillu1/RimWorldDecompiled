@@ -7,13 +7,21 @@ namespace Verse
 	{
 		public static bool HasAttribute<T>(this MemberInfo memberInfo) where T : Attribute
 		{
-			T customAttribute;
-			return memberInfo.TryGetAttribute<T>(out customAttribute);
+			return Attribute.IsDefined(memberInfo, typeof(T), inherit: true);
 		}
 
 		public static bool TryGetAttribute<T>(this MemberInfo memberInfo, out T customAttribute) where T : Attribute
 		{
-			object[] customAttributes = memberInfo.GetCustomAttributes(typeof(T), inherit: true);
+			if (!memberInfo.HasAttribute<T>())
+			{
+				customAttribute = null;
+				return false;
+			}
+			Attribute[] customAttributes = Attribute.GetCustomAttributes(memberInfo, typeof(T), inherit: true);
+			if (customAttributes.Length == 1)
+			{
+				return (customAttribute = customAttributes[0] as T) != null;
+			}
 			if (customAttributes.Length == 0)
 			{
 				customAttribute = null;
@@ -21,9 +29,9 @@ namespace Verse
 			}
 			for (int i = 0; i < customAttributes.Length; i++)
 			{
-				if (customAttributes[i] is T)
+				if (customAttributes[i] is T val)
 				{
-					customAttribute = (T)customAttributes[i];
+					customAttribute = val;
 					return true;
 				}
 			}
@@ -33,8 +41,7 @@ namespace Verse
 
 		public static T TryGetAttribute<T>(this MemberInfo memberInfo) where T : Attribute
 		{
-			T customAttribute = null;
-			memberInfo.TryGetAttribute<T>(out customAttribute);
+			memberInfo.TryGetAttribute<T>(out var customAttribute);
 			return customAttribute;
 		}
 	}

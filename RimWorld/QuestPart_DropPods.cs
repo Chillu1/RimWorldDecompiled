@@ -21,6 +21,10 @@ namespace RimWorld
 
 		private List<Pawn> pawns = new List<Pawn>();
 
+		private List<Pawn> pawnsInContainers = new List<Pawn>();
+
+		public List<ThingDefCountClass> thingDefs = new List<ThingDefCountClass>();
+
 		public List<ThingDef> thingsToExcludeFromHyperlinks = new List<ThingDef>();
 
 		public bool joinPlayer;
@@ -28,6 +32,14 @@ namespace RimWorld
 		public bool makePrisoners;
 
 		public bool destroyItemsOnCleanup = true;
+
+		public bool dropAllInSamePod;
+
+		public bool allowFogged;
+
+		public Faction faction;
+
+		public bool canRetargetAnyMap;
 
 		public string customLetterText;
 
@@ -38,6 +50,8 @@ namespace RimWorld
 		public bool sendStandardLetter = true;
 
 		private Thing importantLookTarget;
+
+		private List<Thing> tmpThingsToDrop = new List<Thing>();
 
 		public IEnumerable<Thing> Things
 		{
@@ -53,21 +67,30 @@ namespace RimWorld
 				{
 					return;
 				}
-				foreach (Thing item in value)
+				foreach (Thing item3 in value)
 				{
-					if (item.Destroyed)
+					if (item3.Destroyed)
 					{
-						Log.Error("Tried to add a destroyed thing to QuestPart_DropPods: " + item.ToStringSafe());
+						Log.Error("Tried to add a destroyed thing to QuestPart_DropPods: " + item3.ToStringSafe());
 						continue;
 					}
-					Pawn pawn = item as Pawn;
-					if (pawn != null)
+					if (item3 is Pawn item)
 					{
-						pawns.Add(pawn);
+						pawns.Add(item);
+						continue;
 					}
-					else
+					items.Add(item3);
+					ThingOwner thingOwner = item3.TryGetInnerInteractableThingOwner();
+					if (thingOwner == null)
 					{
-						items.Add(item);
+						continue;
+					}
+					for (int i = 0; i < thingOwner.Count; i++)
+					{
+						if (thingOwner[i] is Pawn item2)
+						{
+							pawnsInContainers.Add(item2);
+						}
 					}
 				}
 			}
@@ -85,7 +108,7 @@ namespace RimWorld
 				{
 					yield return mapParent;
 				}
-				foreach (Pawn questLookTarget2 in PawnsArriveQuestPartUtility.GetQuestLookTargets(pawns))
+				foreach (Pawn questLookTarget2 in PawnsArriveQuestPartUtility.GetQuestLookTargets(pawns.Concat(pawnsInContainers)))
 				{
 					yield return questLookTarget2;
 				}
@@ -101,79 +124,125 @@ namespace RimWorld
 		public override void Notify_QuestSignalReceived(Signal signal)
 		{
 			base.Notify_QuestSignalReceived(signal);
-			if (!(signal.tag == inSignal))
+			if (signal.tag != inSignal)
+			{
+				return;
+			}
+			if (mapParent == null || !mapParent.HasMap || !quest.IsParentSuitableForQuest(mapParent))
+			{
+				if (canRetargetAnyMap)
+				{
+					mapParent = quest.TryFindNewSuitablePlayerMapParentForRetarget(checkQuestScript: false);
+				}
+				else
+				{
+					mapParent = quest.TryFindNewSuitablePlayerMapParentForRetarget();
+				}
+			}
+			if (mapParent == null || !mapParent.HasMap)
 			{
 				return;
 			}
 			pawns.RemoveAll((Pawn x) => x.Destroyed);
+			pawnsInContainers.RemoveAll((Pawn x) => x.Destroyed);
 			items.RemoveAll((Thing x) => x.Destroyed);
-			Thing thing = Things.Where((Thing x) => x is Pawn).MaxByWithFallback((Thing x) => x.MarketValue);
-			Thing thing2 = Things.MaxByWithFallback((Thing x) => x.MarketValue * (float)x.stackCount);
-			if (mapParent != null && mapParent.HasMap && Things.Any())
+			tmpThingsToDrop.Clear();
+			tmpThingsToDrop.AddRange(Things);
+			for (int num = 0; num < thingDefs.Count; num++)
 			{
-				Map map = mapParent.Map;
-				IntVec3 intVec = (dropSpot.IsValid ? dropSpot : GetRandomDropSpot());
-				if (sendStandardLetter)
-				{
-					TaggedString title;
-					TaggedString text;
-					if (joinPlayer && pawns.Count == 1 && pawns[0].RaceProps.Humanlike)
-					{
-						text = "LetterRefugeeJoins".Translate(pawns[0].Named("PAWN"));
-						title = "LetterLabelRefugeeJoins".Translate(pawns[0].Named("PAWN"));
-						PawnRelationUtility.TryAppendRelationsWithColonistsInfo(ref text, ref title, pawns[0]);
-					}
-					else
-					{
-						text = "LetterQuestDropPodsArrived".Translate(GenLabel.ThingsLabel(Things));
-						title = "LetterLabelQuestDropPodsArrived".Translate();
-						PawnRelationUtility.Notify_PawnsSeenByPlayer_Letter(pawns, ref title, ref text, "LetterRelatedPawnsNeutralGroup".Translate(Faction.OfPlayer.def.pawnsPlural), informEvenIfSeenBefore: true);
-					}
-					title = (customLetterLabel.NullOrEmpty() ? title : customLetterLabel.Formatted(title.Named("BASELABEL")));
-					text = (customLetterText.NullOrEmpty() ? text : customLetterText.Formatted(text.Named("BASETEXT")));
-					Find.LetterStack.ReceiveLetter(title, text, customLetterDef ?? LetterDefOf.PositiveEvent, new TargetInfo(intVec, map), null, quest);
-				}
-				if (joinPlayer)
-				{
-					for (int i = 0; i < pawns.Count; i++)
-					{
-						if (pawns[i].Faction != Faction.OfPlayer)
-						{
-							pawns[i].SetFaction(Faction.OfPlayer);
-						}
-					}
-				}
-				else if (makePrisoners)
-				{
-					for (int j = 0; j < pawns.Count; j++)
-					{
-						if (pawns[j].RaceProps.Humanlike)
-						{
-							if (!pawns[j].IsPrisonerOfColony)
-							{
-								pawns[j].guest.SetGuestStatus(Faction.OfPlayer, prisoner: true);
-							}
-							HealthUtility.TryAnesthetize(pawns[j]);
-						}
-					}
-				}
-				for (int k = 0; k < pawns.Count; k++)
-				{
-					pawns[k].needs.SetInitialLevels();
-				}
-				DropPodUtility.DropThingsNear(intVec, map, Things, 110, canInstaDropDuringInit: false, leaveSlag: false, !useTradeDropSpot, forbid: false);
-				importantLookTarget = items.Find((Thing x) => x.GetInnerIfMinified() is MonumentMarker).GetInnerIfMinified();
-				items.Clear();
+				Thing thing = ThingMaker.MakeThing(thingDefs[num].thingDef, GenStuff.RandomStuffByCommonalityFor(thingDefs[num].thingDef));
+				thing.stackCount = thingDefs[num].count;
+				tmpThingsToDrop.Add(thing);
 			}
+			tmpThingsToDrop.RemoveAll((Thing x) => x.Spawned);
+			Thing thing2 = tmpThingsToDrop.Where((Thing x) => x is Pawn).MaxByWithFallback((Thing x) => x.MarketValue);
+			Thing thing3 = tmpThingsToDrop.MaxByWithFallback((Thing x) => x.MarketValue * (float)x.stackCount);
+			if (!tmpThingsToDrop.Any())
+			{
+				return;
+			}
+			Map map = mapParent.Map;
+			IntVec3 intVec = (dropSpot.IsValid ? dropSpot : GetRandomDropSpot());
+			TaggedString text = null;
+			TaggedString label = null;
+			if (sendStandardLetter)
+			{
+				if (joinPlayer && pawns.Count == 1 && pawns[0].RaceProps.Humanlike)
+				{
+					text = "LetterRefugeeJoins".Translate(pawns[0].Named("PAWN"));
+					label = "LetterLabelRefugeeJoins".Translate(pawns[0].Named("PAWN"));
+					PawnRelationUtility.TryAppendRelationsWithColonistsInfo(ref text, ref label, pawns[0]);
+				}
+				else
+				{
+					text = "LetterQuestDropPodsArrived".Translate(GenLabel.ThingsLabel(tmpThingsToDrop));
+					label = "LetterLabelQuestDropPodsArrived".Translate();
+					PawnRelationUtility.Notify_PawnsSeenByPlayer_Letter(pawns, ref label, ref text, "LetterRelatedPawnsNeutralGroup".Translate(Faction.OfPlayer.def.pawnsPlural), informEvenIfSeenBefore: true);
+				}
+				label = (customLetterLabel.NullOrEmpty() ? label : customLetterLabel.Formatted(label.Named("BASELABEL")));
+				text = (customLetterText.NullOrEmpty() ? text : customLetterText.Formatted(text.Named("BASETEXT")));
+			}
+			if (joinPlayer)
+			{
+				for (int num2 = 0; num2 < pawns.Count; num2++)
+				{
+					if (pawns[num2].Faction != Faction.OfPlayer)
+					{
+						pawns[num2].SetFaction(Faction.OfPlayer);
+					}
+				}
+			}
+			else if (makePrisoners)
+			{
+				for (int num3 = 0; num3 < pawns.Count; num3++)
+				{
+					if (pawns[num3].RaceProps.Humanlike)
+					{
+						if (!pawns[num3].IsPrisonerOfColony)
+						{
+							pawns[num3].guest.SetGuestStatus(Faction.OfPlayer, GuestStatus.Prisoner);
+						}
+						HealthUtility.TryAnesthetize(pawns[num3]);
+					}
+				}
+			}
+			if (dropAllInSamePod)
+			{
+				DropPodUtility.DropThingGroupsNear(intVec, map, new List<List<Thing>> { tmpThingsToDrop }, 110, instaDrop: false, leaveSlag: false, !useTradeDropSpot, forbid: false, allowFogged, canTransfer: false, faction);
+			}
+			else
+			{
+				DropPodUtility.DropThingsNear(intVec, map, tmpThingsToDrop, 110, canInstaDropDuringInit: false, leaveSlag: false, !useTradeDropSpot, forbid: false, allowFogged, faction);
+			}
+			for (int num4 = 0; num4 < pawns.Count; num4++)
+			{
+				pawns[num4].needs.SetInitialLevels();
+				pawns[num4].mindState?.SetupLastHumanMeatTick();
+			}
+			if (sendStandardLetter)
+			{
+				IntVec3 cell = intVec;
+				for (int num5 = 0; num5 < tmpThingsToDrop.Count; num5++)
+				{
+					if (tmpThingsToDrop[num5].SpawnedOrAnyParentSpawned)
+					{
+						cell = tmpThingsToDrop[num5].PositionHeld;
+						break;
+					}
+				}
+				Find.LetterStack.ReceiveLetter(label, text, customLetterDef ?? LetterDefOf.PositiveEvent, new TargetInfo(cell, map), null, quest);
+			}
+			importantLookTarget = items.Find((Thing x) => x.GetInnerIfMinified() is MonumentMarker).GetInnerIfMinified();
+			items.Clear();
 			if (!outSignalResult.NullOrEmpty())
 			{
-				if (thing != null)
-				{
-					Find.SignalManager.SendSignal(new Signal(outSignalResult, thing.Named("SUBJECT")));
-				}
-				else if (thing2 != null)
+				if (thing2 != null)
 				{
 					Find.SignalManager.SendSignal(new Signal(outSignalResult, thing2.Named("SUBJECT")));
+				}
+				else if (thing3 != null)
+				{
+					Find.SignalManager.SendSignal(new Signal(outSignalResult, thing3.Named("SUBJECT")));
 				}
 				else
 				{
@@ -184,7 +253,11 @@ namespace RimWorld
 
 		public override bool QuestPartReserves(Pawn p)
 		{
-			return pawns.Contains(p);
+			if (!pawns.Contains(p))
+			{
+				return pawnsInContainers.Contains(p);
+			}
+			return true;
 		}
 
 		public override void ReplacePawnReferences(Pawn replace, Pawn with)
@@ -229,11 +302,19 @@ namespace RimWorld
 			{
 				return DropCellFinder.TradeDropSpot(map);
 			}
-			if (CellFinderLoose.TryGetRandomCellWith((IntVec3 x) => x.Standable(map) && !x.Roofed(map) && !x.Fogged(map) && map.reachability.CanReachColony(x), map, 1000, out var result))
+			if (CellFinderLoose.TryGetRandomCellWith((IntVec3 x) => x.Standable(map) && !x.Roofed(map) && (allowFogged || !x.Fogged(map)) && map.reachability.CanReachColony(x), map, 1000, out var result))
 			{
 				return result;
 			}
 			return DropCellFinder.RandomDropSpot(map);
+		}
+
+		public override void Notify_FactionRemoved(Faction f)
+		{
+			if (faction == f)
+			{
+				faction = null;
+			}
 		}
 
 		public override void ExposeData()
@@ -246,6 +327,8 @@ namespace RimWorld
 			Scribe_References.Look(ref mapParent, "mapParent");
 			Scribe_Collections.Look(ref items, "items", LookMode.Deep);
 			Scribe_Collections.Look(ref pawns, "pawns", LookMode.Reference);
+			Scribe_Collections.Look(ref pawnsInContainers, "pawnsInContainers", LookMode.Reference);
+			Scribe_Collections.Look(ref thingDefs, "thingDefs", LookMode.Deep);
 			Scribe_Values.Look(ref joinPlayer, "joinPlayer", defaultValue: false);
 			Scribe_Values.Look(ref makePrisoners, "makePrisoners", defaultValue: false);
 			Scribe_Values.Look(ref customLetterLabel, "customLetterLabel");
@@ -255,6 +338,8 @@ namespace RimWorld
 			Scribe_References.Look(ref importantLookTarget, "importantLookTarget");
 			Scribe_Collections.Look(ref thingsToExcludeFromHyperlinks, "thingsToExcludeFromHyperlinks", LookMode.Def);
 			Scribe_Values.Look(ref destroyItemsOnCleanup, "destroyItemsOnCleanup", defaultValue: false);
+			Scribe_Values.Look(ref allowFogged, "allowFogged", defaultValue: false);
+			Scribe_References.Look(ref faction, "faction");
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				if (thingsToExcludeFromHyperlinks == null)
@@ -263,6 +348,7 @@ namespace RimWorld
 				}
 				items.RemoveAll((Thing x) => x == null);
 				pawns.RemoveAll((Pawn x) => x == null);
+				pawnsInContainers.RemoveAll((Pawn x) => x == null);
 			}
 		}
 
@@ -278,8 +364,7 @@ namespace RimWorld
 			List<Thing> list = ThingSetMakerDefOf.DebugQuestDropPodsContents.root.Generate();
 			for (int i = 0; i < list.Count; i++)
 			{
-				Pawn pawn = list[i] as Pawn;
-				if (pawn != null)
+				if (list[i] is Pawn pawn)
 				{
 					pawn.relations.everSeenByPlayer = true;
 					if (!pawn.IsWorldPawn())

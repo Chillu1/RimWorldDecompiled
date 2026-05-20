@@ -32,6 +32,10 @@ namespace Verse.Sound
 			{
 				return 1f / (ageRealTime + 1f);
 			}
+			if (def.priorityMode == VoicePriorityMode.PrioritizeExisting)
+			{
+				return ageRealTime;
+			}
 			throw new NotImplementedException();
 		}
 
@@ -45,23 +49,32 @@ namespace Verse.Sound
 			{
 				return false;
 			}
-			SampleOneShot sampleOneShot = LeastImportantOf(def);
-			if (sampleOneShot != null && ImportanceOf(def, info, 0f) < ImportanceOf(sampleOneShot))
-			{
-				return false;
-			}
 			return true;
 		}
 
 		public void TryAddPlayingOneShot(SampleOneShot newSample)
 		{
-			if (samples.Where((SampleOneShot s) => s.subDef == newSample.subDef).Count() >= newSample.subDef.parentDef.maxVoices)
+			if (samples.Where((SampleOneShot s) => s.subDef.IsSameOrHasSameTag(newSample.subDef)).Count() >= newSample.subDef.parentDef.maxVoices)
 			{
-				SampleOneShot sampleOneShot = LeastImportantOf(newSample.subDef.parentDef);
+				SampleOneShot sampleOneShot = LeastImportantOf(newSample.subDef);
 				sampleOneShot.source.Stop();
 				samples.Remove(sampleOneShot);
 			}
 			samples.Add(newSample);
+		}
+
+		private SampleOneShot LeastImportantOf(SubSoundDef def)
+		{
+			SampleOneShot sampleOneShot = null;
+			for (int i = 0; i < samples.Count; i++)
+			{
+				SampleOneShot sampleOneShot2 = samples[i];
+				if (sampleOneShot2.subDef.IsSameOrHasSameTag(def) && (sampleOneShot == null || ImportanceOf(sampleOneShot2) < ImportanceOf(sampleOneShot)))
+				{
+					sampleOneShot = sampleOneShot2;
+				}
+			}
+			return sampleOneShot;
 		}
 
 		private SampleOneShot LeastImportantOf(SoundDef def)

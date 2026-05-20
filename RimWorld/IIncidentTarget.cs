@@ -1,44 +1,24 @@
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
 {
 	public interface IIncidentTarget : ILoadReferenceable
 	{
-		int Tile
-		{
-			get;
-		}
+		PlanetTile Tile { get; }
 
-		StoryState StoryState
-		{
-			get;
-		}
+		StoryState StoryState { get; }
 
-		GameConditionManager GameConditionManager
-		{
-			get;
-		}
+		GameConditionManager GameConditionManager { get; }
 
-		float PlayerWealthForStoryteller
-		{
-			get;
-		}
+		float PlayerWealthForStoryteller { get; }
 
-		IEnumerable<Pawn> PlayerPawnsForStoryteller
-		{
-			get;
-		}
+		IEnumerable<Pawn> PlayerPawnsForStoryteller { get; }
 
-		FloatRange IncidentPointsRandomFactorRange
-		{
-			get;
-		}
+		FloatRange IncidentPointsRandomFactorRange { get; }
 
-		int ConstantRandSeed
-		{
-			get;
-		}
+		int ConstantRandSeed { get; }
 
 		IEnumerable<IncidentTargetTagDef> IncidentTargetTags();
 	}

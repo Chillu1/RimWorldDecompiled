@@ -11,6 +11,10 @@ namespace RimWorld
 		public static List<ShipLandingArea> GetLandingZones(Map map)
 		{
 			tmpShipLandingAreas.Clear();
+			if (!ModsConfig.RoyaltyActive)
+			{
+				return tmpShipLandingAreas;
+			}
 			foreach (Thing item in map.listerThings.ThingsOfDef(ThingDefOf.ShipLandingBeacon))
 			{
 				CompShipLandingBeacon compShipLandingBeacon = item.TryGetComp<CompShipLandingBeacon>();

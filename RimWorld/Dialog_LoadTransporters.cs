@@ -31,8 +31,6 @@ namespace RimWorld
 
 		private float lastMassFlashTime = -9999f;
 
-		public bool autoLoot;
-
 		private bool massUsageDirty = true;
 
 		private float cachedMassUsage;
@@ -55,11 +53,11 @@ namespace RimWorld
 
 		private bool daysWorthOfFoodDirty = true;
 
-		private Pair<float, float> cachedDaysWorthOfFood;
+		private (float days, float tillRot) cachedDaysWorthOfFood;
 
 		private bool foragedFoodPerDayDirty = true;
 
-		private Pair<ThingDef, float> cachedForagedFoodPerDay;
+		private (ThingDef food, float perDay) cachedForagedFoodPerDay;
 
 		private string cachedForagedFoodPerDayExplanation;
 
@@ -96,7 +94,7 @@ namespace RimWorld
 				float num = 0f;
 				for (int i = 0; i < transporters.Count; i++)
 				{
-					num += transporters[i].Props.massCapacity;
+					num += transporters[i].MassCapacity;
 				}
 				return num;
 			}
@@ -140,8 +138,8 @@ namespace RimWorld
 				if (massUsageDirty)
 				{
 					massUsageDirty = false;
-					CompShuttle shuttle = transporters[0].Shuttle;
-					cachedMassUsage = CollectionsMassCalculator.MassUsageTransferables(transferables, IgnorePawnsInventoryMode.IgnoreIfAssignedToUnload, shuttle == null || (shuttle.requiredColonistCount == 0 && !shuttle.IsMissionShuttle));
+					CompShuttle compShuttle = transporters.AsShuttle();
+					cachedMassUsage = CollectionsMassCalculator.MassUsageTransferables(transferables, IgnorePawnsInventoryMode.IgnoreIfAssignedToUnload, compShuttle == null || compShuttle.requiredColonistCount == 0);
 				}
 				return cachedMassUsage;
 			}
@@ -164,32 +162,36 @@ namespace RimWorld
 		{
 			get
 			{
+				if (!map.Tile.Valid || !map.Tile.LayerDef.SurfaceTiles)
+				{
+					return 0f;
+				}
 				if (tilesPerDayDirty)
 				{
 					tilesPerDayDirty = false;
 					StringBuilder stringBuilder = new StringBuilder();
-					cachedTilesPerDay = TilesPerDayCalculator.ApproxTilesPerDay(transferables, MassUsage, MassCapacity, map.Tile, -1, stringBuilder);
+					cachedTilesPerDay = TilesPerDayCalculator.ApproxTilesPerDay(transferables, MassUsage, MassCapacity, map.Tile, PlanetTile.Invalid, transporters.IsShuttle(), stringBuilder);
 					cachedTilesPerDayExplanation = stringBuilder.ToString();
 				}
 				return cachedTilesPerDay;
 			}
 		}
 
-		private Pair<float, float> DaysWorthOfFood
+		private (float days, float tillRot) DaysWorthOfFood
 		{
 			get
 			{
 				if (daysWorthOfFoodDirty)
 				{
 					daysWorthOfFoodDirty = false;
-					float first = DaysWorthOfFoodCalculator.ApproxDaysWorthOfFood(transferables, map.Tile, IgnorePawnsInventoryMode.IgnoreIfAssignedToUnload, Faction.OfPlayer);
-					cachedDaysWorthOfFood = new Pair<float, float>(first, DaysUntilRotCalculator.ApproxDaysUntilRot(transferables, map.Tile, IgnorePawnsInventoryMode.IgnoreIfAssignedToUnload));
+					float item = DaysWorthOfFoodCalculator.ApproxDaysWorthOfFood(transferables, map.Tile, IgnorePawnsInventoryMode.IgnoreIfAssignedToUnload, Faction.OfPlayer);
+					cachedDaysWorthOfFood = (days: item, tillRot: DaysUntilRotCalculator.ApproxDaysUntilRot(transferables, map.Tile, IgnorePawnsInventoryMode.IgnoreIfAssignedToUnload));
 				}
 				return cachedDaysWorthOfFood;
 			}
 		}
 
-		private Pair<ThingDef, float> ForagedFoodPerDay
+		private (ThingDef food, float perDay) ForagedFoodPerDay
 		{
 			get
 			{
@@ -243,12 +245,12 @@ namespace RimWorld
 			Rect rect = new Rect(0f, 0f, inRect.width, 35f);
 			Text.Font = GameFont.Medium;
 			Text.Anchor = TextAnchor.MiddleCenter;
-			Widgets.Label(rect, "LoadTransporters".Translate(TransportersLabel));
+			Widgets.Label(rect, "LoadTransporters".Translate(TransportersLabel).CapitalizeFirst());
 			Text.Font = GameFont.Small;
 			Text.Anchor = TextAnchor.UpperLeft;
-			if (transporters[0].Props.showOverallStats)
+			if (transporters[0].Props.showOverallStats && transporters[0].Map.Tile.Valid)
 			{
-				CaravanUIUtility.DrawCaravanInfo(new CaravanUIUtility.CaravanInfo(MassUsage, MassCapacity, "", TilesPerDay, cachedTilesPerDayExplanation, DaysWorthOfFood, ForagedFoodPerDay, cachedForagedFoodPerDayExplanation, Visibility, cachedVisibilityExplanation, CaravanMassUsage, CaravanMassCapacity, cachedCaravanMassCapacityExplanation), null, map.Tile, null, lastMassFlashTime, new Rect(12f, 35f, inRect.width - 24f, 40f), lerpMassColor: false);
+				CaravanUIUtility.DrawCaravanInfo(new CaravanUIUtility.CaravanInfo(MassUsage, MassCapacity, "", TilesPerDay, cachedTilesPerDayExplanation, DaysWorthOfFood, ForagedFoodPerDay, cachedForagedFoodPerDayExplanation, Visibility, cachedVisibilityExplanation, CaravanMassUsage, CaravanMassCapacity, cachedCaravanMassCapacityExplanation), null, map.Tile, null, lastMassFlashTime, new Rect(12f, 35f, inRect.width - 24f, 40f), lerpMassColor: false, null, multiline: false, !transporters.IsShuttle());
 				inRect.yMin += 52f;
 			}
 			tabsList.Clear();
@@ -264,11 +266,12 @@ namespace RimWorld
 			Widgets.DrawMenuSection(inRect);
 			TabDrawer.DrawTabs(inRect, tabsList);
 			inRect = inRect.ContractedBy(17f);
-			GUI.BeginGroup(inRect);
+			inRect.height += 17f;
+			Widgets.BeginGroup(inRect);
 			Rect rect2 = inRect.AtZero();
 			DoBottomButtons(rect2);
 			Rect inRect2 = rect2;
-			inRect2.yMax -= 59f;
+			inRect2.yMax -= 76f;
 			bool anythingChanged = false;
 			switch (tab)
 			{
@@ -283,7 +286,7 @@ namespace RimWorld
 			{
 				CountToTransferChanged();
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		public override bool CausesMessageBackground()
@@ -309,62 +312,78 @@ namespace RimWorld
 			}
 		}
 
+		private bool ErrorsRequireConfirmation(List<Pawn> pawns)
+		{
+			if (transporters.IsShuttle())
+			{
+				return false;
+			}
+			if (CaravanMassUsage > CaravanMassCapacity && CaravanMassCapacity != 0f)
+			{
+				if (transporters[0].parent != null && transporters[0].parent.def == ThingDefOf.TransportPod)
+				{
+					return pawns.Any((Pawn x) => x.IsFreeColonist);
+				}
+				return true;
+			}
+			return false;
+		}
+
 		private void DoBottomButtons(Rect rect)
 		{
-			Rect rect2 = new Rect(rect.width / 2f - BottomButtonSize.x / 2f, rect.height - 55f, BottomButtonSize.x, BottomButtonSize.y);
-			if (Widgets.ButtonText(rect2, autoLoot ? "LoadSelected".Translate() : "AcceptButton".Translate()))
-			{
-				if (CaravanMassUsage > CaravanMassCapacity && CaravanMassCapacity != 0f)
-				{
-					if (CheckForErrors(TransferableUtility.GetPawnsFromTransferables(transferables)))
-					{
-						Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("TransportersCaravanWillBeImmobile".Translate(), delegate
-						{
-							if (TryAccept())
-							{
-								if (autoLoot)
-								{
-									LoadInstantly();
-								}
-								SoundDefOf.Tick_High.PlayOneShotOnCamera();
-								Close(doCloseSound: false);
-							}
-						}));
-					}
-				}
-				else if (TryAccept())
-				{
-					if (autoLoot)
-					{
-						LoadInstantly();
-					}
-					SoundDefOf.Tick_High.PlayOneShotOnCamera();
-					Close(doCloseSound: false);
-				}
-			}
-			if (Widgets.ButtonText(new Rect(rect2.x - 10f - BottomButtonSize.x, rect2.y, BottomButtonSize.x, BottomButtonSize.y), "ResetButton".Translate()))
+			if (Widgets.ButtonText(new Rect(rect.width / 2f - BottomButtonSize.x / 2f, rect.height - 55f - 17f, BottomButtonSize.x, BottomButtonSize.y), "ResetButton".Translate()))
 			{
 				SoundDefOf.Tick_Low.PlayOneShotOnCamera();
 				CalculateAndRecacheTransferables();
 			}
-			if (Widgets.ButtonText(new Rect(rect2.xMax + 10f, rect2.y, BottomButtonSize.x, BottomButtonSize.y), "CancelButton".Translate()))
+			if (Widgets.ButtonText(new Rect(0f, rect.height - 55f - 17f, BottomButtonSize.x, BottomButtonSize.y), "CancelButton".Translate()))
 			{
 				Close();
+			}
+			Rect rect2 = new Rect(rect.width - BottomButtonSize.x, rect.height - 55f - 17f, BottomButtonSize.x, BottomButtonSize.y);
+			if (Widgets.ButtonText(rect2, "AcceptButton".Translate()))
+			{
+				onAcceptButton();
 			}
 			if (Prefs.DevMode)
 			{
 				float width = 200f;
-				float num = BottomButtonSize.y / 2f;
-				if (!LoadingInProgressOrReadyToLaunch && Widgets.ButtonText(new Rect(0f, rect.height - 55f, width, num), "Dev: Load instantly") && DebugTryLoadInstantly())
+				float height = BottomButtonSize.y / 2f;
+				if (!LoadingInProgressOrReadyToLaunch && Widgets.ButtonText(new Rect(0f, rect2.yMax + 4f, width, height), "DEV: Load instantly") && DebugTryLoadInstantly())
 				{
 					SoundDefOf.Tick_High.PlayOneShotOnCamera();
 					Close(doCloseSound: false);
 				}
-				if (Widgets.ButtonText(new Rect(0f, rect.height - 55f + num, width, num), "Dev: Select everything"))
+				if (Widgets.ButtonText(new Rect(0f, rect2.yMax + 4f, width, height), "DEV: Select everything"))
 				{
 					SoundDefOf.Tick_High.PlayOneShotOnCamera();
 					SetToLoadEverything();
 				}
+			}
+		}
+
+		private void onAcceptButton()
+		{
+			List<Pawn> pawnsFromTransferables = TransferableUtility.GetPawnsFromTransferables(transferables);
+			if (ErrorsRequireConfirmation(pawnsFromTransferables))
+			{
+				if (!CheckForErrors(pawnsFromTransferables))
+				{
+					return;
+				}
+				Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("TransportersCaravanWillBeImmobile".Translate(), delegate
+				{
+					if (TryAccept())
+					{
+						SoundDefOf.Tick_High.PlayOneShotOnCamera();
+						Close(doCloseSound: false);
+					}
+				}));
+			}
+			else if (TryAccept())
+			{
+				SoundDefOf.Tick_High.PlayOneShotOnCamera();
+				Close(doCloseSound: false);
 			}
 		}
 
@@ -387,9 +406,9 @@ namespace RimWorld
 					AddToTransferables(item);
 				}
 			}
-			pawnsTransfer = new TransferableOneWayWidget(null, null, null, "FormCaravanColonyThingCountTip".Translate(), drawMass: true, IgnorePawnsInventoryMode.IgnoreIfAssignedToUnload, includePawnsMassInMassUsage: true, () => MassCapacity - MassUsage, 0f, ignoreSpawnedCorpseGearAndInventoryMass: false, map.Tile, drawMarketValue: true, drawEquippedWeapon: true, drawNutritionEatenPerDay: true, drawItemNutrition: false, drawForagedFoodPerDay: true);
+			pawnsTransfer = new TransferableOneWayWidget(null, null, null, "TransporterColonyThingCountTip".Translate(), drawMass: true, IgnorePawnsInventoryMode.IgnoreIfAssignedToUnload, includePawnsMassInMassUsage: true, () => MassCapacity - MassUsage, 0f, ignoreSpawnedCorpseGearAndInventoryMass: false, map.Tile, drawMarketValue: true, drawEquippedWeapon: true, drawNutritionEatenPerDay: true, drawMechEnergy: false, drawItemNutrition: false, drawForagedFoodPerDay: true);
 			CaravanUIUtility.AddPawnsSections(pawnsTransfer, transferables);
-			itemsTransfer = new TransferableOneWayWidget(transferables.Where((TransferableOneWay x) => x.ThingDef.category != ThingCategory.Pawn), null, null, "FormCaravanColonyThingCountTip".Translate(), drawMass: true, IgnorePawnsInventoryMode.IgnoreIfAssignedToUnload, includePawnsMassInMassUsage: true, () => MassCapacity - MassUsage, 0f, ignoreSpawnedCorpseGearAndInventoryMass: false, map.Tile, drawMarketValue: true, drawEquippedWeapon: false, drawNutritionEatenPerDay: false, drawItemNutrition: true, drawForagedFoodPerDay: false, drawDaysUntilRot: true);
+			itemsTransfer = new TransferableOneWayWidget(transferables.Where((TransferableOneWay x) => x.ThingDef.category != ThingCategory.Pawn), null, null, "TransporterColonyThingCountTip".Translate(), drawMass: true, IgnorePawnsInventoryMode.IgnoreIfAssignedToUnload, includePawnsMassInMassUsage: true, () => MassCapacity - MassUsage, 0f, ignoreSpawnedCorpseGearAndInventoryMass: false, map.Tile, drawMarketValue: true, drawEquippedWeapon: false, drawNutritionEatenPerDay: false, drawMechEnergy: false, drawItemNutrition: true, drawForagedFoodPerDay: false, drawDaysUntilRot: true);
 			CountToTransferChanged();
 		}
 
@@ -407,19 +426,6 @@ namespace RimWorld
 			return true;
 		}
 
-		private void LoadInstantly()
-		{
-			TransporterUtility.InitiateLoading(transporters);
-			int i;
-			for (i = 0; i < transferables.Count; i++)
-			{
-				TransferableUtility.Transfer(transferables[i].things, transferables[i].CountToTransfer, delegate(Thing splitPiece, IThingHolder originalThing)
-				{
-					transporters[i % transporters.Count].GetDirectlyHeldThings().TryAdd(splitPiece);
-				});
-			}
-		}
-
 		private bool TryAccept()
 		{
 			List<Pawn> pawnsFromTransferables = TransferableUtility.GetPawnsFromTransferables(transferables);
@@ -431,7 +437,7 @@ namespace RimWorld
 			{
 				AssignTransferablesToRandomTransporters();
 				TransporterUtility.MakeLordsAsAppropriate(pawnsFromTransferables, transporters, map);
-				List<Pawn> allPawnsSpawned = map.mapPawns.AllPawnsSpawned;
+				IReadOnlyList<Pawn> allPawnsSpawned = map.mapPawns.AllPawnsSpawned;
 				for (int i = 0; i < allPawnsSpawned.Count; i++)
 				{
 					if (allPawnsSpawned[i].CurJobDef == JobDefOf.HaulToTransporter && transporters.Contains(((JobDriver_HaulToTransporter)allPawnsSpawned[i].jobs.curDriver).Transporter))
@@ -445,7 +451,11 @@ namespace RimWorld
 				TransporterUtility.InitiateLoading(transporters);
 				AssignTransferablesToRandomTransporters();
 				TransporterUtility.MakeLordsAsAppropriate(pawnsFromTransferables, transporters, map);
-				if (transporters[0].Props.max1PerGroup)
+				if (transporters.IsShuttle())
+				{
+					Messages.Message("MessageShuttleLoadingProcessStarted".Translate(), transporters[0].parent, MessageTypeDefOf.TaskCompletion, historical: false);
+				}
+				else if (transporters[0].Props.max1PerGroup)
 				{
 					Messages.Message("MessageTransporterSingleLoadingProcessStarted".Translate(), transporters[0].parent, MessageTypeDefOf.TaskCompletion, historical: false);
 				}
@@ -474,9 +484,9 @@ namespace RimWorld
 				{
 					continue;
 				}
-				for (int k = 0; k < transporters[i].leftToLoad.Count; k++)
+				for (int num = 0; num < transporters[i].leftToLoad.Count; num++)
 				{
-					TransferableOneWay transferableOneWay2 = transporters[i].leftToLoad[k];
+					TransferableOneWay transferableOneWay2 = transporters[i].leftToLoad[num];
 					if (transferableOneWay2.CountToTransfer != 0 && transferableOneWay2.HasAnyThing)
 					{
 						TransferableOneWay transferableOneWay3 = TransferableUtility.TransferableMatchingDesperate(transferableOneWay2.AnyThing, transferables, TransferAsOneMode.PodsOrCaravanPacking);
@@ -492,48 +502,50 @@ namespace RimWorld
 		private void AssignTransferablesToRandomTransporters()
 		{
 			tmpLeftToLoadCopy.Clear();
-			for (int j = 0; j < transporters.Count; j++)
+			for (int i = 0; i < transporters.Count; i++)
 			{
-				tmpLeftToLoadCopy.Add((transporters[j].leftToLoad != null) ? transporters[j].leftToLoad.ToList() : new List<TransferableOneWay>());
-				if (transporters[j].leftToLoad != null)
+				tmpLeftToLoadCopy.Add((transporters[i].leftToLoad != null) ? transporters[i].leftToLoad.ToList() : new List<TransferableOneWay>());
+				if (transporters[i].leftToLoad != null)
 				{
-					transporters[j].leftToLoad.Clear();
+					transporters[i].leftToLoad.Clear();
 				}
 			}
 			tmpLeftCountToTransfer.Clear();
-			for (int k = 0; k < transferables.Count; k++)
+			for (int j = 0; j < transferables.Count; j++)
 			{
-				tmpLeftCountToTransfer.Add(transferables[k], transferables[k].CountToTransfer);
+				tmpLeftCountToTransfer.Add(transferables[j], transferables[j].CountToTransfer);
 			}
 			if (LoadingInProgressOrReadyToLaunch)
 			{
-				int i;
-				for (i = 0; i < transferables.Count; i++)
+				for (int k = 0; k < transferables.Count; k++)
 				{
-					if (!transferables[i].HasAnyThing || tmpLeftCountToTransfer[transferables[i]] <= 0)
+					if (!transferables[k].HasAnyThing || tmpLeftCountToTransfer[transferables[k]] <= 0)
 					{
 						continue;
 					}
 					for (int l = 0; l < tmpLeftToLoadCopy.Count; l++)
 					{
-						TransferableOneWay transferableOneWay = TransferableUtility.TransferableMatching(transferables[i].AnyThing, tmpLeftToLoadCopy[l], TransferAsOneMode.PodsOrCaravanPacking);
+						TransferableOneWay transferableOneWay = TransferableUtility.TransferableMatching(transferables[k].AnyThing, tmpLeftToLoadCopy[l], TransferAsOneMode.PodsOrCaravanPacking);
 						if (transferableOneWay != null)
 						{
-							int num = Mathf.Min(tmpLeftCountToTransfer[transferables[i]], transferableOneWay.CountToTransfer);
+							int num = Mathf.Min(tmpLeftCountToTransfer[transferables[k]], transferableOneWay.CountToTransfer);
 							if (num > 0)
 							{
-								transporters[l].AddToTheToLoadList(transferables[i], num);
-								tmpLeftCountToTransfer[transferables[i]] -= num;
+								transporters[l].AddToTheToLoadList(transferables[k], num);
+								tmpLeftCountToTransfer[transferables[k]] -= num;
 							}
 						}
-						Thing thing = transporters[l].innerContainer.FirstOrDefault((Thing x) => TransferableUtility.TransferAsOne(transferables[i].AnyThing, x, TransferAsOneMode.PodsOrCaravanPacking));
-						if (thing != null)
+						for (int m = 0; m < transporters[l].innerContainer.Count; m++)
 						{
-							int num2 = Mathf.Min(tmpLeftCountToTransfer[transferables[i]], thing.stackCount);
-							if (num2 > 0)
+							Thing thing = transporters[l].innerContainer[m];
+							if (TransferableUtility.TransferAsOne(transferables[k].AnyThing, thing, TransferAsOneMode.PodsOrCaravanPacking))
 							{
-								transporters[l].AddToTheToLoadList(transferables[i], num2);
-								tmpLeftCountToTransfer[transferables[i]] -= num2;
+								int num2 = Mathf.Min(tmpLeftCountToTransfer[transferables[k]], thing.stackCount);
+								if (num2 > 0)
+								{
+									transporters[l].AddToTheToLoadList(transferables[k], num2);
+									tmpLeftCountToTransfer[transferables[k]] -= num2;
+								}
 							}
 						}
 					}
@@ -542,45 +554,62 @@ namespace RimWorld
 			tmpLeftToLoadCopy.Clear();
 			if (transferables.Any())
 			{
-				TransferableOneWay transferableOneWay2 = transferables.MaxBy((TransferableOneWay x) => tmpLeftCountToTransfer[x]);
-				int num3 = 0;
-				for (int m = 0; m < transferables.Count; m++)
+				transferables.SortByDescending((TransferableOneWay x) => x.AnyThing.GetStatValue(StatDefOf.Mass) * (float)tmpLeftCountToTransfer[x]);
+				foreach (TransferableOneWay transferable in transferables)
 				{
-					if (transferables[m] != transferableOneWay2 && tmpLeftCountToTransfer[transferables[m]] > 0)
+					if (tmpLeftCountToTransfer[transferable] == 0)
 					{
-						transporters[num3 % transporters.Count].AddToTheToLoadList(transferables[m], tmpLeftCountToTransfer[transferables[m]]);
-						num3++;
+						continue;
 					}
-				}
-				if (num3 < transporters.Count)
-				{
-					int num4 = tmpLeftCountToTransfer[transferableOneWay2];
-					int num5 = num4 / (transporters.Count - num3);
-					for (int n = num3; n < transporters.Count; n++)
+					TransferableOneWay transferableOneWay2 = transferable;
+					int num3 = tmpLeftCountToTransfer[transferableOneWay2];
+					int num4 = Mathf.CeilToInt((float)num3 / (float)transporters.Count);
+					int num5 = int.MaxValue;
+					int num6 = 0;
+					for (int num7 = 0; num7 < transporters.Count; num7++)
 					{
-						int num6 = ((n == transporters.Count - 1) ? num4 : num5);
-						if (num6 > 0)
+						if (transporters[num7].leftToLoad == null)
 						{
-							transporters[n].AddToTheToLoadList(transferableOneWay2, num6);
+							num6 = num7;
+							break;
 						}
-						num4 -= num6;
+						if (transporters[num7].leftToLoad.Count < num5)
+						{
+							num5 = transporters[num7].leftToLoad.Count;
+							num6 = num7;
+						}
 					}
-				}
-				else
-				{
-					transporters[num3 % transporters.Count].AddToTheToLoadList(transferableOneWay2, tmpLeftCountToTransfer[transferableOneWay2]);
+					for (int num8 = 0; num8 < transporters.Count; num8++)
+					{
+						if (num3 == 0)
+						{
+							break;
+						}
+						int num9 = ((num8 == transporters.Count - 1) ? num3 : num4);
+						if (num9 > 0)
+						{
+							transporters[num6].AddToTheToLoadList(transferableOneWay2, num9);
+						}
+						num3 -= num9;
+						num6 = (num6 + 1) % transporters.Count;
+					}
+					tmpLeftCountToTransfer[transferableOneWay2] = 0;
 				}
 			}
 			tmpLeftCountToTransfer.Clear();
-			for (int num7 = 0; num7 < transporters.Count; num7++)
+			for (int num10 = 0; num10 < transporters.Count; num10++)
 			{
-				for (int num8 = 0; num8 < transporters[num7].innerContainer.Count; num8++)
+				for (int num11 = transporters[num10].innerContainer.Count - 1; num11 >= 0; num11--)
 				{
-					Thing thing2 = transporters[num7].innerContainer[num8];
-					int num9 = transporters[num7].SubtractFromToLoadList(thing2, thing2.stackCount, sendMessageOnFinished: false);
-					if (num9 < thing2.stackCount)
+					Thing thing2 = transporters[num10].innerContainer[num11];
+					int num12 = transporters[num10].SubtractFromToLoadList(thing2, thing2.stackCount, sendMessageOnFinished: false);
+					if (num12 < thing2.stackCount)
 					{
-						transporters[num7].innerContainer.TryDrop(thing2, ThingPlaceMode.Near, thing2.stackCount - num9, out var _);
+						transporters[num10].Notify_ThingRemoved(thing2);
+						if (!transporters[num10].innerContainer.TryDrop(thing2, ThingPlaceMode.Near, thing2.stackCount - num12, out var _))
+						{
+							Log.Error("Transporter failed to drop " + (thing2.stackCount - num12) + " of " + thing2);
+						}
 					}
 				}
 			}
@@ -602,10 +631,10 @@ namespace RimWorld
 			}
 			if (transporters[0].Props.max1PerGroup)
 			{
-				CompShuttle shuttle = transporters[0].Shuttle;
-				if (shuttle != null && shuttle.requiredColonistCount > 0 && pawns.Count > shuttle.requiredColonistCount)
+				CompShuttle compShuttle = transporters.AsShuttle();
+				if (compShuttle != null && compShuttle.requiredColonistCount > 0 && pawns.Count > compShuttle.requiredColonistCount)
 				{
-					Messages.Message("TransporterSingleTooManyColonists".Translate(shuttle.requiredColonistCount), MessageTypeDefOf.RejectInput, historical: false);
+					Messages.Message("TransporterSingleTooManyColonists".Translate(compShuttle.requiredColonistCount), MessageTypeDefOf.RejectInput, historical: false);
 					return false;
 				}
 			}
@@ -636,32 +665,32 @@ namespace RimWorld
 				return false;
 			}
 			Map map = transporters[0].parent.Map;
-			for (int i = 0; i < transferables.Count; i++)
+			for (int num = 0; num < transferables.Count; num++)
 			{
-				if (transferables[i].ThingDef.category != ThingCategory.Item)
+				if (transferables[num].ThingDef.category != ThingCategory.Item)
 				{
 					continue;
 				}
-				int countToTransfer = transferables[i].CountToTransfer;
-				int num = 0;
+				int countToTransfer = transferables[num].CountToTransfer;
+				int num2 = 0;
 				if (countToTransfer <= 0)
 				{
 					continue;
 				}
-				for (int j = 0; j < transferables[i].things.Count; j++)
+				for (int num3 = 0; num3 < transferables[num].things.Count; num3++)
 				{
-					Thing t = transferables[i].things[j];
+					Thing t = transferables[num].things[num3];
 					Pawn_CarryTracker pawn_CarryTracker = t.ParentHolder as Pawn_CarryTracker;
-					if (map.reachability.CanReach(t.Position, transporters[0].parent, PathEndMode.Touch, TraverseParms.For(TraverseMode.PassDoors)) || transporters.Any((CompTransporter x) => x.innerContainer.Contains(t)) || (pawn_CarryTracker != null && pawn_CarryTracker.pawn.MapHeld.reachability.CanReach(pawn_CarryTracker.pawn.PositionHeld, transporters[0].parent, PathEndMode.Touch, TraverseParms.For(TraverseMode.PassDoors))))
+					if (map.reachability.CanReach(t.PositionHeld, transporters[0].parent, PathEndMode.Touch, TraverseParms.For(TraverseMode.PassDoors)) || transporters.Any((CompTransporter x) => x.innerContainer.Contains(t)) || (pawn_CarryTracker != null && pawn_CarryTracker.pawn.MapHeld.reachability.CanReach(pawn_CarryTracker.pawn.PositionHeld, transporters[0].parent, PathEndMode.Touch, TraverseParms.For(TraverseMode.PassDoors))))
 					{
-						num += t.stackCount;
-						if (num >= countToTransfer)
+						num2 += t.stackCount;
+						if (num2 >= countToTransfer)
 						{
 							break;
 						}
 					}
 				}
-				if (num >= countToTransfer)
+				if (num2 >= countToTransfer)
 				{
 					continue;
 				}
@@ -669,20 +698,20 @@ namespace RimWorld
 				{
 					if (transporters[0].Props.max1PerGroup)
 					{
-						Messages.Message("TransporterSingleItemIsUnreachableSingle".Translate(transferables[i].ThingDef.label), MessageTypeDefOf.RejectInput, historical: false);
+						Messages.Message("TransporterSingleItemIsUnreachableSingle".Translate(transferables[num].ThingDef.label), MessageTypeDefOf.RejectInput, historical: false);
 					}
 					else
 					{
-						Messages.Message("TransporterItemIsUnreachableSingle".Translate(transferables[i].ThingDef.label), MessageTypeDefOf.RejectInput, historical: false);
+						Messages.Message("TransporterItemIsUnreachableSingle".Translate(transferables[num].ThingDef.label), MessageTypeDefOf.RejectInput, historical: false);
 					}
 				}
 				else if (transporters[0].Props.max1PerGroup)
 				{
-					Messages.Message("TransporterSingleItemIsUnreachableMulti".Translate(countToTransfer, transferables[i].ThingDef.label), MessageTypeDefOf.RejectInput, historical: false);
+					Messages.Message("TransporterSingleItemIsUnreachableMulti".Translate(countToTransfer, transferables[num].ThingDef.label), MessageTypeDefOf.RejectInput, historical: false);
 				}
 				else
 				{
-					Messages.Message("TransporterItemIsUnreachableMulti".Translate(countToTransfer, transferables[i].ThingDef.label), MessageTypeDefOf.RejectInput, historical: false);
+					Messages.Message("TransporterItemIsUnreachableMulti".Translate(countToTransfer, transferables[num].ThingDef.label), MessageTypeDefOf.RejectInput, historical: false);
 				}
 				return false;
 			}
@@ -691,7 +720,7 @@ namespace RimWorld
 
 		private void AddPawnsToTransferables()
 		{
-			foreach (Pawn item in TransporterUtility.AllSendablePawns_NewTmp(transporters, map, autoLoot))
+			foreach (Pawn item in TransporterUtility.AllSendablePawns(transporters, map))
 			{
 				AddToTransferables(item);
 			}
@@ -699,7 +728,7 @@ namespace RimWorld
 
 		private void AddItemsToTransferables()
 		{
-			foreach (Thing item in TransporterUtility.AllSendableItems_NewTmp(transporters, map, autoLoot))
+			foreach (Thing item in TransporterUtility.AllSendableItems(transporters, map))
 			{
 				AddToTransferables(item);
 			}
@@ -728,6 +757,11 @@ namespace RimWorld
 			daysWorthOfFoodDirty = true;
 			foragedFoodPerDayDirty = true;
 			visibilityDirty = true;
+		}
+
+		public override void OnAcceptKeyPressed()
+		{
+			onAcceptButton();
 		}
 	}
 }

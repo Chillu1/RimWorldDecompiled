@@ -8,6 +8,8 @@ namespace RimWorld
 	{
 		public WorldObject worldObject;
 
+		public bool destroyOnCleanup;
+
 		public override IEnumerable<GlobalTargetInfo> QuestLookTargets
 		{
 			get
@@ -27,8 +29,7 @@ namespace RimWorld
 		{
 			if (target == worldObject)
 			{
-				Site site = target as Site;
-				if (site != null)
+				if (target is Site site)
 				{
 					for (int i = 0; i < site.parts.Count; i++)
 					{
@@ -56,10 +57,20 @@ namespace RimWorld
 			}
 		}
 
+		public override void Cleanup()
+		{
+			base.Cleanup();
+			if (destroyOnCleanup)
+			{
+				QuestPart_DestroyWorldObject.TryRemove(worldObject);
+			}
+		}
+
 		public override void ExposeData()
 		{
 			base.ExposeData();
 			Scribe_References.Look(ref worldObject, "worldObject");
+			Scribe_Values.Look(ref destroyOnCleanup, "destroyOnCleanup", defaultValue: false);
 		}
 
 		public override void AssignDebugData()
@@ -67,7 +78,7 @@ namespace RimWorld
 			base.AssignDebugData();
 			if (TileFinder.TryFindNewSiteTile(out var tile))
 			{
-				worldObject = SiteMaker.MakeSite((SitePartDef)null, tile, (Faction)null, ifHostileThenMustRemainHostile: true, (float?)null);
+				worldObject = SiteMaker.MakeSite((SitePartDef)null, tile, (Faction)null, ifHostileThenMustRemainHostile: true, (float?)null, (WorldObjectDef)null);
 			}
 		}
 	}

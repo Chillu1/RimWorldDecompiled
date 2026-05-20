@@ -17,6 +17,8 @@ namespace RimWorld
 
 		public string inSignalRemovePawn;
 
+		public bool wakeUp;
+
 		public override IEnumerable<GlobalTargetInfo> QuestLookTargets
 		{
 			get
@@ -41,7 +43,7 @@ namespace RimWorld
 			}
 			if (signal.tag == inSignal)
 			{
-				LeaveQuestPartUtility.MakePawnsLeave(pawns, sendStandardLetter, quest);
+				LeaveQuestPartUtility.MakePawnsLeave(pawns, sendStandardLetter, quest, wakeUp);
 			}
 		}
 
@@ -50,7 +52,7 @@ namespace RimWorld
 			base.Cleanup();
 			if (leaveOnCleanup)
 			{
-				LeaveQuestPartUtility.MakePawnsLeave(pawns, sendStandardLetter, quest);
+				LeaveQuestPartUtility.MakePawnsLeave(pawns, sendStandardLetter, quest, wakeUp);
 			}
 		}
 
@@ -62,6 +64,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref sendStandardLetter, "sendStandardLetter", defaultValue: true);
 			Scribe_Values.Look(ref leaveOnCleanup, "leaveOnCleanup", defaultValue: false);
 			Scribe_Values.Look(ref inSignalRemovePawn, "inSignalRemovePawn");
+			Scribe_Values.Look(ref wakeUp, "wakeUp", defaultValue: false);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				pawns.RemoveAll((Pawn x) => x == null);

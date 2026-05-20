@@ -44,7 +44,7 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (Prefs.DevMode)
+			if (Prefs.DevMode && DebugSettings.godMode)
 			{
 				Command_Action command_Action = new Command_Action();
 				command_Action.defaultLabel = "-10";
@@ -97,14 +97,13 @@ namespace RimWorld
 			((GameCondition_TemperatureOffset)condition).tempOffset = temperatureOffset;
 		}
 
-		public override void RandomizeSettings_NewTemp_NewTemp(Site site)
+		public override void RandomizeSettings(Site site)
 		{
 			bool flag = false;
 			bool flag2 = false;
 			foreach (WorldObject allWorldObject in Find.WorldObjects.AllWorldObjects)
 			{
-				Settlement settlement;
-				if ((settlement = allWorldObject as Settlement) == null || settlement.Faction != Faction.OfPlayer)
+				if (!(allWorldObject is Settlement settlement) || settlement.Faction != Faction.OfPlayer)
 				{
 					continue;
 				}
@@ -139,7 +138,7 @@ namespace RimWorld
 						break;
 					}
 				}
-				int tile = allWorldObject.Tile;
+				PlanetTile tile = allWorldObject.Tile;
 				if ((float)Find.WorldGrid.TraversalDistanceBetween(site.Tile, tile, passImpassable: true, Props.worldRange + 1) <= (float)Props.worldRange)
 				{
 					float num2 = GenTemperature.MinTemperatureAtTile(tile);

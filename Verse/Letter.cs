@@ -10,7 +10,7 @@ namespace Verse
 
 		public LetterDef def;
 
-		public TaggedString label;
+		private TaggedString label;
 
 		public LookTargets lookTargets;
 
@@ -52,6 +52,20 @@ namespace Verse
 
 		LookTargets IArchivable.LookTargets => lookTargets;
 
+		public virtual bool ShouldAutomaticallyOpenLetter => false;
+
+		public TaggedString Label
+		{
+			get
+			{
+				return label;
+			}
+			set
+			{
+				label = value.CapitalizeFirst();
+			}
+		}
+
 		public virtual void ExposeData()
 		{
 			Scribe_Values.Look(ref ID, "ID", 0);
@@ -60,6 +74,10 @@ namespace Verse
 			Scribe_Deep.Look(ref lookTargets, "lookTargets");
 			Scribe_References.Look(ref relatedFaction, "relatedFaction");
 			Scribe_Values.Look(ref arrivalTick, "arrivalTick", 0);
+			if (Scribe.mode == LoadSaveMode.PostLoadInit && relatedFaction != null && !Find.FactionManager.AllFactionsListForReading.Contains(relatedFaction))
+			{
+				relatedFaction = null;
+			}
 		}
 
 		public virtual void DrawButtonAt(float topY)
@@ -108,7 +126,10 @@ namespace Verse
 				}
 				GUI.DrawTexture(new Rect(vector2.x - x / 2f - 6f - 1f, vector2.y, x + 12f, 16f), TexUI.GrayTextBG);
 				GUI.color = new Color(1f, 1f, 1f, 0.75f);
-				Widgets.Label(new Rect(vector2.x - x / 2f, vector2.y - 3f, x, 999f), text);
+				Rect rect3 = new Rect(vector2.x - x / 2f, vector2.y - 3f, x, 999f);
+				Text.WordWrap = false;
+				Widgets.Label(rect3, text);
+				Text.WordWrap = true;
 				GUI.color = Color.white;
 				Text.Anchor = TextAnchor.UpperLeft;
 			}
@@ -134,21 +155,22 @@ namespace Verse
 			}
 			Find.LetterStack.Notify_LetterMouseover(this);
 			TaggedString mouseoverText = GetMouseoverText();
-			if (!mouseoverText.RawText.NullOrEmpty())
+			if (!mouseoverText.Resolve().NullOrEmpty())
 			{
 				Text.Font = GameFont.Small;
 				Text.Anchor = TextAnchor.UpperLeft;
 				float num2 = Text.CalcHeight(mouseoverText, 310f);
 				num2 += 20f;
 				float x = num - 330f - 10f;
-				Rect infoRect = new Rect(x, topY - num2 / 2f, 330f, num2);
+				float y = Mathf.Max(topY - num2 / 2f, 0f);
+				Rect infoRect = new Rect(x, y, 330f, num2);
 				Find.WindowStack.ImmediateWindow(2768333, infoRect, WindowLayer.Super, delegate
 				{
 					Text.Font = GameFont.Small;
-					Rect position = infoRect.AtZero().ContractedBy(10f);
-					GUI.BeginGroup(position);
-					Widgets.Label(new Rect(0f, 0f, position.width, position.height), mouseoverText.Resolve());
-					GUI.EndGroup();
+					Rect rect = infoRect.AtZero().ContractedBy(10f);
+					Widgets.BeginGroup(rect);
+					Widgets.Label(new Rect(0f, 0f, rect.width, rect.height), mouseoverText.Resolve());
+					Widgets.EndGroup();
 				});
 			}
 		}

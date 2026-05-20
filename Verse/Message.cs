@@ -18,6 +18,8 @@ namespace Verse
 
 		public int startingTick;
 
+		private float flashTime;
+
 		public LookTargets lookTargets;
 
 		public Quest quest;
@@ -29,6 +31,8 @@ namespace Verse
 		private const float DefaultMessageLifespan = 13f;
 
 		private const float FadeoutDuration = 0.6f;
+
+		private const float FlashDuration = 0.6f;
 
 		protected float Age => RealTime.LastRealTime - startingTime;
 
@@ -90,9 +94,7 @@ namespace Verse
 		{
 			this.text = text;
 			this.def = def;
-			startingFrame = RealTime.frameCount;
-			startingTime = RealTime.LastRealTime;
-			startingTick = GenTicks.TicksGame;
+			ResetTimer();
 			if (Find.UniqueIDsManager != null)
 			{
 				ID = Find.UniqueIDsManager.GetNextMessageID();
@@ -135,7 +137,7 @@ namespace Verse
 				cachedSize = Text.CalcSize(text);
 			}
 			lastDrawRect = new Rect(x, y, cachedSize.x, cachedSize.y);
-			lastDrawRect = lastDrawRect.ContractedBy(-2f);
+			lastDrawRect = lastDrawRect.ExpandedBy(6f, 2f);
 			return lastDrawRect;
 		}
 
@@ -155,20 +157,29 @@ namespace Verse
 					GUI.DrawTexture(rect2, BaseContent.WhiteTex);
 					GUI.color = new Color(1f, 1f, 1f, alpha);
 				}
-				if (CameraJumper.CanJump(lookTargets.TryGetPrimaryTarget()) || quest != null)
+				if (CameraJumper.CanJump(lookTargets.TryGetPrimaryTarget()) || (quest != null && !quest.hidden))
 				{
 					UIHighlighter.HighlightOpportunity(rect2, "Messages");
 					Widgets.DrawHighlightIfMouseover(rect2);
 				}
-				Widgets.Label(new Rect(2f, 0f, rect2.width - 2f, rect2.height), text);
+				if (flashTime + 0.6f > RealTime.LastRealTime)
+				{
+					float transparency = 1f - (RealTime.LastRealTime - flashTime) / 0.6f;
+					Widgets.DrawTextHighlight(rect2, 0f, ColorLibrary.Yellow.ToTransparent(transparency));
+				}
+				Widgets.Label(new Rect(6f, 2f, rect2.width - 6f, rect2.height - 2f), text);
 				if (Current.ProgramState == ProgramState.Playing && Widgets.ButtonInvisible(rect2))
 				{
-					if (CameraJumper.CanJump(lookTargets.TryGetPrimaryTarget()))
+					if (Event.current.button == 1)
+					{
+						startingTime = -99999f;
+					}
+					else if (CameraJumper.CanJump(lookTargets.TryGetPrimaryTarget()))
 					{
 						CameraJumper.TryJumpAndSelect(lookTargets.TryGetPrimaryTarget());
 						PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.ClickingMessages, KnowledgeAmount.Total);
 					}
-					else if (quest != null)
+					else if (quest != null && !quest.hidden)
 					{
 						if (Find.MainTabsRoot.OpenTab == MainButtonDefOf.Quests)
 						{
@@ -193,6 +204,18 @@ namespace Verse
 		void IArchivable.OpenArchived()
 		{
 			Find.WindowStack.Add(new Dialog_MessageBox(text));
+		}
+
+		public void ResetTimer()
+		{
+			startingFrame = RealTime.frameCount;
+			startingTime = RealTime.LastRealTime;
+			startingTick = GenTicks.TicksGame;
+		}
+
+		public void Flash()
+		{
+			flashTime = RealTime.LastRealTime;
 		}
 
 		public string GetUniqueLoadID()

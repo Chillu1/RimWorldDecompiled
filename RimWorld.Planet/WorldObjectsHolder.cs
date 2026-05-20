@@ -8,29 +8,39 @@ namespace RimWorld.Planet
 	{
 		private List<WorldObject> worldObjects = new List<WorldObject>();
 
-		private HashSet<WorldObject> worldObjectsHashSet = new HashSet<WorldObject>();
+		private readonly Dictionary<PlanetLayer, List<WorldObject>> layerWorldObjects = new Dictionary<PlanetLayer, List<WorldObject>>();
 
-		private List<Caravan> caravans = new List<Caravan>();
+		private readonly HashSet<WorldObject> worldObjectsHashSet = new HashSet<WorldObject>();
 
-		private List<Settlement> settlements = new List<Settlement>();
+		private readonly List<Caravan> caravans = new List<Caravan>();
 
-		private List<TravelingTransportPods> travelingTransportPods = new List<TravelingTransportPods>();
+		private readonly List<Settlement> settlements = new List<Settlement>();
 
-		private List<Settlement> settlementBases = new List<Settlement>();
+		private readonly List<TravellingTransporters> travellingTransporters = new List<TravellingTransporters>();
 
-		private List<DestroyedSettlement> destroyedSettlements = new List<DestroyedSettlement>();
+		private readonly List<Settlement> settlementBases = new List<Settlement>();
 
-		private List<RoutePlannerWaypoint> routePlannerWaypoints = new List<RoutePlannerWaypoint>();
+		private readonly List<DestroyedSettlement> destroyedSettlements = new List<DestroyedSettlement>();
 
-		private List<MapParent> mapParents = new List<MapParent>();
+		private readonly List<RoutePlannerWaypoint> routePlannerWaypoints = new List<RoutePlannerWaypoint>();
 
-		private List<Site> sites = new List<Site>();
+		private readonly List<MapParent> mapParents = new List<MapParent>();
 
-		private List<PeaceTalks> peaceTalks = new List<PeaceTalks>();
+		private readonly List<Site> sites = new List<Site>();
 
-		private static List<WorldObject> tmpUnsavedWorldObjects = new List<WorldObject>();
+		private readonly List<PeaceTalks> peaceTalks = new List<PeaceTalks>();
 
-		private static List<WorldObject> tmpWorldObjects = new List<WorldObject>();
+		private static readonly List<WorldObject> EmptyWorldObjectList = new List<WorldObject>();
+
+		private static readonly List<WorldObject> tmpSettlements = new List<WorldObject>();
+
+		private List<PlanetTile> tmpReservedTiles = new List<PlanetTile>();
+
+		private List<ILoadReferenceable> tmpTileReservers = new List<ILoadReferenceable>();
+
+		private static readonly List<WorldObject> tmpUnsavedWorldObjects = new List<WorldObject>();
+
+		private static readonly List<WorldObject> tmpWorldObjects = new List<WorldObject>();
 
 		public List<WorldObject> AllWorldObjects => worldObjects;
 
@@ -38,7 +48,7 @@ namespace RimWorld.Planet
 
 		public List<Settlement> Settlements => settlements;
 
-		public List<TravelingTransportPods> TravelingTransportPods => travelingTransportPods;
+		public List<TravellingTransporters> TravellingTransporters => travellingTransporters;
 
 		public List<Settlement> SettlementBases => settlementBases;
 
@@ -72,6 +82,49 @@ namespace RimWorld.Planet
 				}
 				return num;
 			}
+		}
+
+		public List<WorldObject> AllWorldObjectsOnLayer(PlanetLayer layer)
+		{
+			return layerWorldObjects.GetValueOrDefault(layer, EmptyWorldObjectList);
+		}
+
+		public List<WorldObject> AllSettlementsOnLayer(PlanetLayer layer)
+		{
+			if (!layerWorldObjects.TryGetValue(layer, out var value))
+			{
+				return EmptyWorldObjectList;
+			}
+			tmpSettlements.Clear();
+			foreach (WorldObject item in value)
+			{
+				if (item is Settlement)
+				{
+					tmpSettlements.Add(item);
+				}
+			}
+			return tmpSettlements;
+		}
+
+		public bool AnyFactionSettlementOnLayer(Faction faction, PlanetLayer layer)
+		{
+			if (!layerWorldObjects.TryGetValue(layer, out var value))
+			{
+				return false;
+			}
+			foreach (WorldObject item in value)
+			{
+				if (item is Settlement settlement && settlement.Faction == faction)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public bool AnyFactionSettlementOnRootSurface(Faction faction)
+		{
+			return AnyFactionSettlementOnLayer(faction, Find.WorldGrid.Surface);
 		}
 
 		public void ExposeData()
@@ -115,7 +168,7 @@ namespace RimWorld.Planet
 				}
 				catch (Exception arg)
 				{
-					Log.Error("Exception spawning WorldObject: " + arg);
+					Log.Error($"Exception spawning WorldObject: {arg}");
 					worldObjects.RemoveAt(num2);
 				}
 			}
@@ -125,13 +178,13 @@ namespace RimWorld.Planet
 		{
 			if (worldObjects.Contains(o))
 			{
-				Log.Error(string.Concat("Tried to add world object ", o, " to world, but it's already here."));
+				Log.Error($"Tried to add world object {o} to world, but it's already here.");
 				return;
 			}
-			if (o.Tile < 0)
+			if (!o.Tile.Valid && !(o is PocketMapParent))
 			{
-				Log.Error(string.Concat("Tried to add world object ", o, " but its tile is not set. Setting to 0."));
-				o.Tile = 0;
+				Log.Error($"Tried to add world object {o} but its tile is not set. Setting to 0.");
+				o.Tile = new PlanetTile(0);
 			}
 			worldObjects.Add(o);
 			AddToCache(o);
@@ -143,7 +196,7 @@ namespace RimWorld.Planet
 		{
 			if (!worldObjects.Contains(o))
 			{
-				Log.Error(string.Concat("Tried to remove world object ", o, " from world, but it's not here."));
+				Log.Error($"Tried to remove world object {o} from world, but it's not here.");
 				return;
 			}
 			worldObjects.Remove(o);
@@ -157,98 +210,108 @@ namespace RimWorld.Planet
 			tmpWorldObjects.AddRange(worldObjects);
 			for (int i = 0; i < tmpWorldObjects.Count; i++)
 			{
-				tmpWorldObjects[i].Tick();
+				tmpWorldObjects[i].DoTick();
 			}
 		}
 
 		private void AddToCache(WorldObject o)
 		{
 			worldObjectsHashSet.Add(o);
-			if (o is Caravan)
+			if (o.Tile.Valid)
 			{
-				caravans.Add((Caravan)o);
+				if (!layerWorldObjects.TryGetValue(o.Tile.Layer, out var value))
+				{
+					List<WorldObject> list = (layerWorldObjects[o.Tile.Layer] = new List<WorldObject>());
+					value = list;
+				}
+				value.Add(o);
 			}
-			if (o is Settlement)
+			if (o is Caravan item)
 			{
-				settlements.Add((Settlement)o);
+				caravans.Add(item);
 			}
-			if (o is TravelingTransportPods)
+			if (o is Settlement item2)
 			{
-				travelingTransportPods.Add((TravelingTransportPods)o);
+				settlements.Add(item2);
+				settlementBases.Add(item2);
 			}
-			if (o is Settlement)
+			if (o is TravellingTransporters item3)
 			{
-				settlementBases.Add((Settlement)o);
+				travellingTransporters.Add(item3);
 			}
-			if (o is DestroyedSettlement)
+			if (o is DestroyedSettlement item4)
 			{
-				destroyedSettlements.Add((DestroyedSettlement)o);
+				destroyedSettlements.Add(item4);
 			}
-			if (o is RoutePlannerWaypoint)
+			if (o is RoutePlannerWaypoint item5)
 			{
-				routePlannerWaypoints.Add((RoutePlannerWaypoint)o);
+				routePlannerWaypoints.Add(item5);
 			}
-			if (o is MapParent)
+			if (o is MapParent item6)
 			{
-				mapParents.Add((MapParent)o);
+				mapParents.Add(item6);
 			}
-			if (o is Site)
+			if (o is Site item7)
 			{
-				sites.Add((Site)o);
+				sites.Add(item7);
 			}
-			if (o is PeaceTalks)
+			if (o is PeaceTalks item8)
 			{
-				peaceTalks.Add((PeaceTalks)o);
+				peaceTalks.Add(item8);
 			}
+			ExpandableLandmarksUtility.Notify_WorldObjectsChanged();
 		}
 
 		private void RemoveFromCache(WorldObject o)
 		{
 			worldObjectsHashSet.Remove(o);
-			if (o is Caravan)
+			if (o.Tile.Valid && layerWorldObjects.TryGetValue(o.Tile.Layer, out var value))
 			{
-				caravans.Remove((Caravan)o);
+				value.Remove(o);
 			}
-			if (o is Settlement)
+			if (o is Caravan item)
 			{
-				settlements.Remove((Settlement)o);
+				caravans.Remove(item);
 			}
-			if (o is TravelingTransportPods)
+			if (o is Settlement item2)
 			{
-				travelingTransportPods.Remove((TravelingTransportPods)o);
+				settlements.Remove(item2);
+				settlementBases.Remove(item2);
 			}
-			if (o is Settlement)
+			if (o is TravellingTransporters item3)
 			{
-				settlementBases.Remove((Settlement)o);
+				travellingTransporters.Remove(item3);
 			}
-			if (o is DestroyedSettlement)
+			if (o is DestroyedSettlement item4)
 			{
-				destroyedSettlements.Remove((DestroyedSettlement)o);
+				destroyedSettlements.Remove(item4);
 			}
-			if (o is RoutePlannerWaypoint)
+			if (o is RoutePlannerWaypoint item5)
 			{
-				routePlannerWaypoints.Remove((RoutePlannerWaypoint)o);
+				routePlannerWaypoints.Remove(item5);
 			}
-			if (o is MapParent)
+			if (o is MapParent item6)
 			{
-				mapParents.Remove((MapParent)o);
+				mapParents.Remove(item6);
 			}
-			if (o is Site)
+			if (o is Site item7)
 			{
-				sites.Remove((Site)o);
+				sites.Remove(item7);
 			}
-			if (o is PeaceTalks)
+			if (o is PeaceTalks item8)
 			{
-				peaceTalks.Remove((PeaceTalks)o);
+				peaceTalks.Remove(item8);
 			}
+			ExpandableLandmarksUtility.Notify_WorldObjectsChanged();
 		}
 
 		private void Recache()
 		{
 			worldObjectsHashSet.Clear();
+			layerWorldObjects.Clear();
 			caravans.Clear();
 			settlements.Clear();
-			travelingTransportPods.Clear();
+			travellingTransporters.Clear();
 			settlementBases.Clear();
 			destroyedSettlements.Clear();
 			routePlannerWaypoints.Clear();
@@ -270,9 +333,9 @@ namespace RimWorld.Planet
 			return worldObjectsHashSet.Contains(o);
 		}
 
-		public IEnumerable<WorldObject> ObjectsAt(int tileID)
+		public IEnumerable<WorldObject> ObjectsAt(PlanetTile tileID)
 		{
-			if (tileID < 0)
+			if (!tileID.Valid)
 			{
 				yield break;
 			}
@@ -285,7 +348,19 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public bool AnyWorldObjectAt(int tile)
+		public bool AnyWorldObjectOnLayer(PlanetLayer layer)
+		{
+			for (int i = 0; i < worldObjects.Count; i++)
+			{
+				if (worldObjects[i].Tile.Layer == layer)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public bool AnyWorldObjectAt(PlanetTile tile)
 		{
 			for (int i = 0; i < worldObjects.Count; i++)
 			{
@@ -297,12 +372,12 @@ namespace RimWorld.Planet
 			return false;
 		}
 
-		public bool AnyWorldObjectAt<T>(int tile) where T : WorldObject
+		public bool AnyWorldObjectAt<T>(PlanetTile tile) where T : WorldObject
 		{
 			return WorldObjectAt<T>(tile) != null;
 		}
 
-		public T WorldObjectAt<T>(int tile) where T : WorldObject
+		public T WorldObjectAt<T>(PlanetTile tile) where T : WorldObject
 		{
 			for (int i = 0; i < worldObjects.Count; i++)
 			{
@@ -314,12 +389,26 @@ namespace RimWorld.Planet
 			return null;
 		}
 
-		public bool AnyWorldObjectAt(int tile, WorldObjectDef def)
+		public bool TryGetWorldObjectAt<T>(PlanetTile tile, out T wo) where T : WorldObject
+		{
+			for (int i = 0; i < worldObjects.Count; i++)
+			{
+				if (worldObjects[i].Tile == tile && worldObjects[i] is T)
+				{
+					wo = worldObjects[i] as T;
+					return true;
+				}
+			}
+			wo = null;
+			return false;
+		}
+
+		public bool AnyWorldObjectAt(PlanetTile tile, WorldObjectDef def)
 		{
 			return WorldObjectAt(tile, def) != null;
 		}
 
-		public WorldObject WorldObjectAt(int tile, WorldObjectDef def)
+		public WorldObject WorldObjectAt(PlanetTile tile, WorldObjectDef def)
 		{
 			for (int i = 0; i < worldObjects.Count; i++)
 			{
@@ -331,12 +420,12 @@ namespace RimWorld.Planet
 			return null;
 		}
 
-		public bool AnySettlementAt(int tile)
+		public bool AnySettlementAt(PlanetTile tile)
 		{
 			return SettlementAt(tile) != null;
 		}
 
-		public Settlement SettlementAt(int tile)
+		public Settlement SettlementAt(PlanetTile tile)
 		{
 			for (int i = 0; i < settlements.Count; i++)
 			{
@@ -348,12 +437,12 @@ namespace RimWorld.Planet
 			return null;
 		}
 
-		public bool AnySettlementBaseAt(int tile)
+		public bool AnySettlementBaseAt(PlanetTile tile)
 		{
 			return SettlementBaseAt(tile) != null;
 		}
 
-		public Settlement SettlementBaseAt(int tile)
+		public Settlement SettlementBaseAt(PlanetTile tile)
 		{
 			for (int i = 0; i < settlementBases.Count; i++)
 			{
@@ -365,12 +454,12 @@ namespace RimWorld.Planet
 			return null;
 		}
 
-		public bool AnySiteAt(int tile)
+		public bool AnySiteAt(PlanetTile tile)
 		{
 			return SiteAt(tile) != null;
 		}
 
-		public Site SiteAt(int tile)
+		public Site SiteAt(PlanetTile tile)
 		{
 			for (int i = 0; i < sites.Count; i++)
 			{
@@ -382,12 +471,12 @@ namespace RimWorld.Planet
 			return null;
 		}
 
-		public bool AnyDestroyedSettlementAt(int tile)
+		public bool AnyDestroyedSettlementAt(PlanetTile tile)
 		{
 			return DestroyedSettlementAt(tile) != null;
 		}
 
-		public DestroyedSettlement DestroyedSettlementAt(int tile)
+		public DestroyedSettlement DestroyedSettlementAt(PlanetTile tile)
 		{
 			for (int i = 0; i < destroyedSettlements.Count; i++)
 			{
@@ -399,12 +488,12 @@ namespace RimWorld.Planet
 			return null;
 		}
 
-		public bool AnyMapParentAt(int tile)
+		public bool AnyMapParentAt(PlanetTile tile)
 		{
 			return MapParentAt(tile) != null;
 		}
 
-		public MapParent MapParentAt(int tile)
+		public MapParent MapParentAt(PlanetTile tile)
 		{
 			for (int i = 0; i < mapParents.Count; i++)
 			{
@@ -416,12 +505,12 @@ namespace RimWorld.Planet
 			return null;
 		}
 
-		public bool AnyWorldObjectOfDefAt(WorldObjectDef def, int tile)
+		public bool AnyWorldObjectOfDefAt(WorldObjectDef def, PlanetTile tile)
 		{
 			return WorldObjectOfDefAt(def, tile) != null;
 		}
 
-		public WorldObject WorldObjectOfDefAt(WorldObjectDef def, int tile)
+		public WorldObject WorldObjectOfDefAt(WorldObjectDef def, PlanetTile tile)
 		{
 			for (int i = 0; i < worldObjects.Count; i++)
 			{
@@ -433,7 +522,19 @@ namespace RimWorld.Planet
 			return null;
 		}
 
-		public Caravan PlayerControlledCaravanAt(int tile)
+		public bool AnyGeneratedWorldLocationAt(PlanetTile tile)
+		{
+			for (int i = 0; i < worldObjects.Count; i++)
+			{
+				if (worldObjects[i].isGeneratedLocation && worldObjects[i].Tile == tile)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public Caravan PlayerControlledCaravanAt(PlanetTile tile)
 		{
 			for (int i = 0; i < caravans.Count; i++)
 			{
@@ -445,12 +546,13 @@ namespace RimWorld.Planet
 			return null;
 		}
 
-		public bool AnySettlementBaseAtOrAdjacent(int tile)
+		public bool AnySettlementBaseAtOrAdjacent(PlanetTile tile)
 		{
 			WorldGrid worldGrid = Find.WorldGrid;
 			for (int i = 0; i < settlementBases.Count; i++)
 			{
-				if (worldGrid.IsNeighborOrSame(settlementBases[i].Tile, tile))
+				Settlement settlement = settlementBases[i];
+				if (settlement.Tile.Layer == tile.Layer && worldGrid.IsNeighborOrSame(settlement.Tile, tile))
 				{
 					return true;
 				}
@@ -458,7 +560,23 @@ namespace RimWorld.Planet
 			return false;
 		}
 
-		public RoutePlannerWaypoint RoutePlannerWaypointAt(int tile)
+		public bool AnySettlementBaseAtOrAdjacent(PlanetTile tile, out WorldObject wo)
+		{
+			WorldGrid worldGrid = Find.WorldGrid;
+			for (int i = 0; i < settlementBases.Count; i++)
+			{
+				Settlement settlement = settlementBases[i];
+				if (settlement.Tile.Layer == tile.Layer && worldGrid.IsNeighborOrSame(settlement.Tile, tile))
+				{
+					wo = settlement;
+					return true;
+				}
+			}
+			wo = null;
+			return false;
+		}
+
+		public RoutePlannerWaypoint RoutePlannerWaypointAt(PlanetTile tile)
 		{
 			for (int i = 0; i < routePlannerWaypoints.Count; i++)
 			{
@@ -470,7 +588,7 @@ namespace RimWorld.Planet
 			return null;
 		}
 
-		public void GetPlayerControlledCaravansAt(int tile, List<Caravan> outCaravans)
+		public void GetPlayerControlledCaravansAt(PlanetTile tile, List<Caravan> outCaravans)
 		{
 			outCaravans.Clear();
 			for (int i = 0; i < caravans.Count; i++)

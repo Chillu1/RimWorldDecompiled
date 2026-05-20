@@ -20,6 +20,8 @@ namespace Verse
 
 		public Thing caster;
 
+		public MechanitorControlGroup controlGroup;
+
 		public string loadID;
 
 		public VerbState state;
@@ -32,17 +34,29 @@ namespace Verse
 
 		protected int ticksToNextBurstShot;
 
+		protected int lastShotTick = -999999;
+
 		protected bool surpriseAttack;
 
 		protected bool canHitNonTargetPawnsNow = true;
+
+		public bool preventFriendlyFire;
+
+		protected bool nonInterruptingSelfCast;
 
 		public Action castCompleteCallback;
 
 		private Texture2D commandIconCached;
 
-		private static List<IntVec3> tempLeanShootSources = new List<IntVec3>();
+		private readonly List<Tuple<Effecter, TargetInfo, TargetInfo>> maintainedEffecters = new List<Tuple<Effecter, TargetInfo, TargetInfo>>();
 
-		private static List<IntVec3> tempDestList = new List<IntVec3>();
+		private int? cachedTicksBetweenBurstShots;
+
+		private int? cachedBurstShotCount;
+
+		private static readonly List<IntVec3> tempLeanShootSources = new List<IntVec3>();
+
+		private static readonly List<IntVec3> tempDestList = new List<IntVec3>();
 
 		public IVerbOwner DirectOwner => verbTracker.directOwner;
 
@@ -50,7 +64,9 @@ namespace Verse
 
 		public CompEquippable EquipmentCompSource => DirectOwner as CompEquippable;
 
-		public CompReloadable ReloadableCompSource => DirectOwner as CompReloadable;
+		public CompApparelReloadable ReloadableCompSource => DirectOwner as CompApparelReloadable;
+
+		public CompApparelVerbOwner_Charged VerbOwner_ChargedCompSource => DirectOwner as CompApparelVerbOwner_Charged;
 
 		public ThingWithComps EquipmentSource
 		{
@@ -63,6 +79,10 @@ namespace Verse
 				if (ReloadableCompSource != null)
 				{
 					return ReloadableCompSource.parent;
+				}
+				if (VerbOwner_ChargedCompSource != null)
+				{
+					return VerbOwner_ChargedCompSource.parent;
 				}
 				return null;
 			}
@@ -108,9 +128,13 @@ namespace Verse
 
 		public virtual bool MultiSelect => false;
 
+		public virtual bool HidePawnTooltips => false;
+
 		public LocalTargetInfo CurrentTarget => currentTarget;
 
 		public LocalTargetInfo CurrentDestination => currentDestination;
+
+		public int LastShotTick => lastShotTick;
 
 		public virtual TargetingParameters targetParams => verbProps.targetParams;
 
@@ -154,14 +178,15 @@ namespace Verse
 				{
 					return null;
 				}
-				Stance_Warmup stance_Warmup;
-				if ((stance_Warmup = CasterPawn.stances.curStance as Stance_Warmup) == null || stance_Warmup.verb != this)
+				if (!(CasterPawn.stances.curStance is Stance_Warmup stance_Warmup) || stance_Warmup.verb != this)
 				{
 					return null;
 				}
 				return stance_Warmup;
 			}
 		}
+
+		public virtual float WarmupTime => verbProps.warmupTime;
 
 		public int WarmupTicksLeft
 		{
@@ -175,11 +200,65 @@ namespace Verse
 			}
 		}
 
-		public float WarmupProgress => 1f - WarmupTicksLeft.TicksToSeconds() / verbProps.warmupTime;
+		public float WarmupProgress => 1f - WarmupTicksLeft.TicksToSeconds() / WarmupTime;
 
 		public virtual string ReportLabel => verbProps.label;
 
-		protected virtual float EffectiveRange => verbProps.range;
+		public virtual float EffectiveRange => verbProps.AdjustedRange(this, Caster);
+
+		public virtual float? AimAngleOverride => null;
+
+		public bool NonInterruptingSelfCast
+		{
+			get
+			{
+				if (!verbProps.nonInterruptingSelfCast)
+				{
+					return nonInterruptingSelfCast;
+				}
+				return true;
+			}
+		}
+
+		public int TicksBetweenBurstShots
+		{
+			get
+			{
+				if (!cachedTicksBetweenBurstShots.HasValue)
+				{
+					float num = verbProps.ticksBetweenBurstShots;
+					if (EquipmentSource != null && EquipmentSource.TryGetComp<CompUniqueWeapon>(out var comp))
+					{
+						foreach (WeaponTraitDef item in comp.TraitsListForReading)
+						{
+							num /= item.burstShotSpeedMultiplier;
+						}
+					}
+					cachedTicksBetweenBurstShots = Mathf.RoundToInt(num);
+				}
+				return cachedTicksBetweenBurstShots.Value;
+			}
+		}
+
+		public int BurstShotCount
+		{
+			get
+			{
+				if (!cachedBurstShotCount.HasValue)
+				{
+					float num = verbProps.burstShotCount;
+					if (EquipmentSource != null && EquipmentSource.TryGetComp<CompUniqueWeapon>(out var comp))
+					{
+						foreach (WeaponTraitDef item in comp.TraitsListForReading)
+						{
+							num *= item.burstShotCountMultiplier;
+						}
+					}
+					cachedBurstShotCount = Mathf.CeilToInt(num);
+				}
+				return cachedBurstShotCount.Value;
+			}
+		}
 
 		public bool IsStillUsableBy(Pawn pawn)
 		{
@@ -192,6 +271,10 @@ namespace Verse
 				return false;
 			}
 			if (verbProps.GetDamageFactorFor(this, pawn) == 0f)
+			{
+				return false;
+			}
+			if (pawn.IsSubhuman && verbProps.category == VerbCategory.Ignite)
 			{
 				return false;
 			}
@@ -211,8 +294,11 @@ namespace Verse
 			Scribe_TargetInfo.Look(ref currentDestination, "currentDestination");
 			Scribe_Values.Look(ref burstShotsLeft, "burstShotsLeft", 0);
 			Scribe_Values.Look(ref ticksToNextBurstShot, "ticksToNextBurstShot", 0);
+			Scribe_Values.Look(ref lastShotTick, "lastShotTick", 0);
 			Scribe_Values.Look(ref surpriseAttack, "surpriseAttack", defaultValue: false);
 			Scribe_Values.Look(ref canHitNonTargetPawnsNow, "canHitNonTargetPawnsNow", defaultValue: false);
+			Scribe_Values.Look(ref preventFriendlyFire, "preventFriendlyFire", defaultValue: false);
+			Scribe_Values.Look(ref nonInterruptingSelfCast, "nonInterruptingSelfCast", defaultValue: false);
 		}
 
 		public string GetUniqueLoadID()
@@ -230,12 +316,12 @@ namespace Verse
 			return $"{owner.UniqueVerbOwnerID()}_{index}";
 		}
 
-		public bool TryStartCastOn(LocalTargetInfo castTarg, bool surpriseAttack = false, bool canHitNonTargetPawns = true)
+		public bool TryStartCastOn(LocalTargetInfo castTarg, bool surpriseAttack = false, bool canHitNonTargetPawns = true, bool preventFriendlyFire = false, bool nonInterruptingSelfCast = false)
 		{
-			return TryStartCastOn(castTarg, LocalTargetInfo.Invalid, surpriseAttack, canHitNonTargetPawns);
+			return TryStartCastOn(castTarg, LocalTargetInfo.Invalid, surpriseAttack, canHitNonTargetPawns, preventFriendlyFire, nonInterruptingSelfCast);
 		}
 
-		public virtual bool TryStartCastOn(LocalTargetInfo castTarg, LocalTargetInfo destTarg, bool surpriseAttack = false, bool canHitNonTargetPawns = true)
+		public virtual bool TryStartCastOn(LocalTargetInfo castTarg, LocalTargetInfo destTarg, bool surpriseAttack = false, bool canHitNonTargetPawns = true, bool preventFriendlyFire = false, bool nonInterruptingSelfCast = false)
 		{
 			if (caster == null)
 			{
@@ -256,9 +342,11 @@ namespace Verse
 			}
 			this.surpriseAttack = surpriseAttack;
 			canHitNonTargetPawnsNow = canHitNonTargetPawns;
+			this.preventFriendlyFire = preventFriendlyFire;
+			this.nonInterruptingSelfCast = nonInterruptingSelfCast;
 			currentTarget = castTarg;
 			currentDestination = destTarg;
-			if (CasterIsPawn && verbProps.warmupTime > 0f)
+			if (CasterIsPawn && WarmupTime > 0f)
 			{
 				if (!TryFindShootLineFromTo(caster.Position, castTarg, out var resultingLine))
 				{
@@ -266,11 +354,19 @@ namespace Verse
 				}
 				CasterPawn.Drawer.Notify_WarmingCastAlongLine(resultingLine, caster.Position);
 				float statValue = CasterPawn.GetStatValue(StatDefOf.AimingDelayFactor);
-				int ticks = (verbProps.warmupTime * statValue).SecondsToTicks();
+				int ticks = (WarmupTime * statValue).SecondsToTicks();
 				CasterPawn.stances.SetStance(new Stance_Warmup(ticks, castTarg, this));
+				if (verbProps.stunTargetOnCastStart && castTarg.Pawn != null)
+				{
+					castTarg.Pawn.stances.stunner.StunFor(ticks, null, addBattleLog: false);
+				}
 			}
 			else
 			{
+				if (verbTracker.directOwner is Ability ability)
+				{
+					ability.lastCastTick = Find.TickManager.TicksGame;
+				}
 				WarmupComplete();
 			}
 			return true;
@@ -281,32 +377,61 @@ namespace Verse
 			burstShotsLeft = ShotsPerBurst;
 			state = VerbState.Bursting;
 			TryCastNextBurstShot();
-			if (CasterIsPawn && currentTarget.HasThing)
-			{
-				Pawn pawn = currentTarget.Thing as Pawn;
-				if (pawn != null && pawn.IsColonistPlayerControlled)
-				{
-					CasterPawn.records.AccumulateStoryEvent(StoryEventDefOf.AttackedPlayer);
-				}
-			}
 		}
 
 		public void VerbTick()
 		{
-			if (state != VerbState.Bursting)
+			if (state == VerbState.Bursting)
 			{
-				return;
+				if (!caster.Spawned || (caster is Pawn pawn && pawn.stances.stunner.Stunned))
+				{
+					Reset();
+				}
+				else
+				{
+					ticksToNextBurstShot--;
+					if (ticksToNextBurstShot <= 0)
+					{
+						TryCastNextBurstShot();
+					}
+					BurstingTick();
+				}
 			}
-			if (!caster.Spawned)
+			for (int num = maintainedEffecters.Count - 1; num >= 0; num--)
 			{
-				Reset();
-				return;
+				Effecter item = maintainedEffecters[num].Item1;
+				if (item.ticksLeft > 0)
+				{
+					TargetInfo item2 = maintainedEffecters[num].Item2;
+					TargetInfo item3 = maintainedEffecters[num].Item3;
+					item.EffectTick(item2, item3);
+					item.ticksLeft--;
+				}
+				else
+				{
+					item.Cleanup();
+					maintainedEffecters.RemoveAt(num);
+				}
 			}
-			ticksToNextBurstShot--;
-			if (ticksToNextBurstShot <= 0)
-			{
-				TryCastNextBurstShot();
-			}
+		}
+
+		public virtual void BurstingTick()
+		{
+		}
+
+		public void AddEffecterToMaintain(Effecter eff, IntVec3 pos, int ticks, Map map = null)
+		{
+			eff.ticksLeft = ticks;
+			TargetInfo targetInfo = new TargetInfo(pos, map ?? caster.Map);
+			maintainedEffecters.Add(new Tuple<Effecter, TargetInfo, TargetInfo>(eff, targetInfo, targetInfo));
+		}
+
+		public void AddEffecterToMaintain(Effecter eff, IntVec3 posA, IntVec3 posB, int ticks, Map map = null)
+		{
+			eff.ticksLeft = ticks;
+			TargetInfo item = new TargetInfo(posA, map ?? caster.Map);
+			TargetInfo item2 = new TargetInfo(posB, map ?? caster.Map);
+			maintainedEffecters.Add(new Tuple<Effecter, TargetInfo, TargetInfo>(eff, item, item2));
 		}
 
 		public virtual bool Available()
@@ -319,8 +444,12 @@ namespace Verse
 					return false;
 				}
 			}
-			CompReloadable compReloadable = EquipmentSource?.GetComp<CompReloadable>();
-			if (compReloadable != null && !compReloadable.CanBeUsed)
+			CompApparelVerbOwner compApparelVerbOwner = EquipmentSource?.GetComp<CompApparelVerbOwner>();
+			if (compApparelVerbOwner != null && !compApparelVerbOwner.CanBeUsed(out var reason))
+			{
+				return false;
+			}
+			if (CasterIsPawn && EquipmentSource != null && EquipmentUtility.RolePreventsFromUsing(CasterPawn, EquipmentSource, out reason))
 			{
 				return false;
 			}
@@ -334,11 +463,11 @@ namespace Verse
 			{
 				if (verbProps.muzzleFlashScale > 0.01f)
 				{
-					MoteMaker.MakeStaticMote(caster.Position, caster.Map, ThingDefOf.Mote_ShotFlash, verbProps.muzzleFlashScale);
+					FleckMaker.Static(caster.Position, caster.Map, FleckDefOf.ShotFlash, verbProps.muzzleFlashScale);
 				}
 				if (verbProps.soundCast != null)
 				{
-					verbProps.soundCast.PlayOneShot(new TargetInfo(caster.Position, caster.Map));
+					verbProps.soundCast.PlayOneShot(new TargetInfo(caster.Position, caster.MapHeld));
 				}
 				if (verbProps.soundCastTail != null)
 				{
@@ -346,7 +475,8 @@ namespace Verse
 				}
 				if (CasterIsPawn)
 				{
-					if (CasterPawn.thinker != null)
+					CasterPawn.Notify_UsedVerb(CasterPawn, this);
+					if (CasterPawn.thinker != null && localTargetInfo == CasterPawn.mindState.enemyTarget)
 					{
 						CasterPawn.mindState.Notify_EngagedTarget();
 					}
@@ -388,21 +518,25 @@ namespace Verse
 			}
 			if (burstShotsLeft > 0)
 			{
-				ticksToNextBurstShot = verbProps.ticksBetweenBurstShots;
-				if (CasterIsPawn && !verbProps.nonInterruptingSelfCast)
+				ticksToNextBurstShot = TicksBetweenBurstShots;
+				if (CasterIsPawn && !NonInterruptingSelfCast)
 				{
-					CasterPawn.stances.SetStance(new Stance_Cooldown(verbProps.ticksBetweenBurstShots + 1, currentTarget, this));
+					CasterPawn.stances.SetStance(new Stance_Cooldown(TicksBetweenBurstShots + 1, currentTarget, this));
 				}
 				return;
 			}
 			state = VerbState.Idle;
-			if (CasterIsPawn && !verbProps.nonInterruptingSelfCast)
+			if (CasterIsPawn && !NonInterruptingSelfCast)
 			{
 				CasterPawn.stances.SetStance(new Stance_Cooldown(verbProps.AdjustedCooldownTicks(this, CasterPawn), currentTarget, this));
 			}
 			if (castCompleteCallback != null)
 			{
 				castCompleteCallback();
+			}
+			if (verbProps.consumeFuelPerBurst > 0f)
+			{
+				caster.TryGetComp<CompRefuelable>()?.ConsumeFuel(verbProps.consumeFuelPerBurst);
 			}
 		}
 
@@ -412,12 +546,11 @@ namespace Verse
 			{
 				Job job = JobMaker.MakeJob(JobDefOf.AttackMelee, target);
 				job.playerForced = true;
-				Pawn pawn = target.Thing as Pawn;
-				if (pawn != null)
+				if (target.Thing is Pawn pawn)
 				{
 					job.killIncappedTarget = pawn.Downed;
 				}
-				CasterPawn.jobs.TryTakeOrderedJob(job);
+				CasterPawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
 				return;
 			}
 			float num = verbProps.EffectiveMinRange(target, CasterPawn);
@@ -430,7 +563,7 @@ namespace Verse
 			job2.verbToUse = this;
 			job2.targetA = target;
 			job2.endIfCantShootInMelee = true;
-			CasterPawn.jobs.TryTakeOrderedJob(job2);
+			CasterPawn.jobs.TryTakeOrderedJob(job2, JobTag.Misc);
 		}
 
 		protected abstract bool TryCastShot();
@@ -449,6 +582,7 @@ namespace Verse
 			ticksToNextBurstShot = 0;
 			castCompleteCallback = null;
 			surpriseAttack = false;
+			preventFriendlyFire = false;
 		}
 
 		public virtual void Notify_EquipmentLost()
@@ -460,8 +594,7 @@ namespace Verse
 			Pawn casterPawn = CasterPawn;
 			if (casterPawn.Spawned)
 			{
-				Stance_Warmup stance_Warmup = casterPawn.stances.curStance as Stance_Warmup;
-				if (stance_Warmup != null && stance_Warmup.verb == this)
+				if (casterPawn.stances.curStance is Stance_Warmup stance_Warmup && stance_Warmup.verb == this)
 				{
 					casterPawn.stances.CancelBusyStanceSoft();
 				}
@@ -493,7 +626,12 @@ namespace Verse
 			{
 				return false;
 			}
-			bool flag = (thing as Pawn)?.Downed ?? false;
+			Pawn pawn = thing as Pawn;
+			bool flag = pawn?.Downed ?? false;
+			if ((CasterPawn != null && CasterPawn.Faction == Faction.OfPlayer && CasterPawn.IsShambler) || (pawn != null && pawn.Faction == Faction.OfPlayer && pawn.IsShambler))
+			{
+				return false;
+			}
 			if (thing.Faction != Faction.OfPlayer || !caster.HostileTo(Faction.OfPlayer))
 			{
 				if (caster.Faction == Faction.OfPlayer && thing.HostileTo(Faction.OfPlayer))
@@ -518,10 +656,17 @@ namespace Verse
 			return CanHitTargetFrom(caster.Position, targ);
 		}
 
-		public virtual bool ValidateTarget(LocalTargetInfo target)
+		public virtual bool ValidateTarget(LocalTargetInfo target, bool showMessages = true)
 		{
-			Pawn p;
-			if (CasterIsPawn && (p = target.Thing as Pawn) != null && (p.InSameExtraFaction(caster as Pawn, ExtraFactionType.HomeFaction) || p.InSameExtraFaction(caster as Pawn, ExtraFactionType.MiniFaction)))
+			if (CasterIsPawn && target.Thing is Pawn p && (p.InSameExtraFaction(caster as Pawn, ExtraFactionType.HomeFaction) || p.InSameExtraFaction(caster as Pawn, ExtraFactionType.MiniFaction)))
+			{
+				return false;
+			}
+			if (CasterIsPawn && target.Thing is Pawn victim && HistoryEventUtility.IsKillingInnocentAnimal(CasterPawn, victim) && !new HistoryEvent(HistoryEventDefOf.KilledInnocentAnimal, CasterPawn.Named(HistoryEventArgsNames.Doer)).Notify_PawnAboutToDo())
+			{
+				return false;
+			}
+			if (CasterIsPawn && target.Thing is Pawn pawn && CasterPawn.Ideo != null && CasterPawn.Ideo.IsVeneratedAnimal(pawn) && !new HistoryEvent(HistoryEventDefOf.HuntedVeneratedAnimal, CasterPawn.Named(HistoryEventArgsNames.Doer)).Notify_PawnAboutToDo())
 			{
 				return false;
 			}
@@ -530,7 +675,7 @@ namespace Verse
 
 		public virtual void DrawHighlight(LocalTargetInfo target)
 		{
-			verbProps.DrawRadiusRing(caster.Position);
+			verbProps.DrawRadiusRing(caster.Position, this);
 			if (target.IsValid)
 			{
 				GenDraw.DrawTargetHighlight(target);
@@ -548,12 +693,12 @@ namespace Verse
 			}
 			if (needLOSToCenter)
 			{
-				GenExplosion.RenderPredictedAreaOfEffect(resultingLine.Dest, num);
+				GenExplosion.RenderPredictedAreaOfEffect(resultingLine.Dest, num, verbProps.explosionRadiusRingColor);
 				return;
 			}
 			GenDraw.DrawFieldEdges((from x in GenRadial.RadialCellsAround(resultingLine.Dest, num, useCenter: true)
 				where x.InBounds(Find.CurrentMap)
-				select x).ToList());
+				select x).ToList(), verbProps.explosionRadiusRingColor);
 		}
 
 		public virtual void OnGUI(LocalTargetInfo target)
@@ -568,7 +713,11 @@ namespace Verse
 			{
 				return targetParams.canTargetSelf;
 			}
-			if (ApparelPreventsShooting(root, targ))
+			if (targ.Pawn != null && targ.Pawn.IsPsychologicallyInvisible() && caster.HostileTo(targ.Pawn))
+			{
+				return false;
+			}
+			if (ApparelPreventsShooting())
 			{
 				return false;
 			}
@@ -576,23 +725,28 @@ namespace Verse
 			return TryFindShootLineFromTo(root, targ, out resultingLine);
 		}
 
-		public bool ApparelPreventsShooting(IntVec3 root, LocalTargetInfo targ)
+		public bool ApparelPreventsShooting()
+		{
+			return FirstApparelPreventingShooting() != null;
+		}
+
+		public Apparel FirstApparelPreventingShooting()
 		{
 			if (CasterIsPawn && CasterPawn.apparel != null)
 			{
 				List<Apparel> wornApparel = CasterPawn.apparel.WornApparel;
 				for (int i = 0; i < wornApparel.Count; i++)
 				{
-					if (!wornApparel[i].AllowVerbCast(root, caster.Map, targ, this))
+					if (!wornApparel[i].AllowVerbCast(this))
 					{
-						return true;
+						return wornApparel[i];
 					}
 				}
 			}
-			return false;
+			return null;
 		}
 
-		public bool TryFindShootLineFromTo(IntVec3 root, LocalTargetInfo targ, out ShootLine resultingLine)
+		public bool TryFindShootLineFromTo(IntVec3 root, LocalTargetInfo targ, out ShootLine resultingLine, bool ignoreRange = false)
 		{
 			if (targ.HasThing && targ.Thing.Map != caster.Map)
 			{
@@ -604,10 +758,8 @@ namespace Verse
 				resultingLine = new ShootLine(root, targ.Cell);
 				return ReachabilityImmediate.CanReachImmediate(root, targ, caster.Map, PathEndMode.Touch, null);
 			}
-			CellRect cellRect = (targ.HasThing ? targ.Thing.OccupiedRect() : CellRect.SingleCell(targ.Cell));
-			float num = verbProps.EffectiveMinRange(targ, caster);
-			float num2 = cellRect.ClosestDistSquaredTo(root);
-			if (num2 > EffectiveRange * EffectiveRange || num2 < num * num)
+			CellRect occupiedRect = (targ.HasThing ? targ.Thing.OccupiedRect() : CellRect.SingleCell(targ.Cell));
+			if (!ignoreRange && OutOfRange(root, targ, occupiedRect))
 			{
 				resultingLine = new ShootLine(root, targ.Cell);
 				return false;
@@ -625,7 +777,7 @@ namespace Verse
 					resultingLine = new ShootLine(root, goodDest);
 					return true;
 				}
-				ShootLeanUtility.LeanShootingSourcesFromTo(root, cellRect.ClosestCellTo(root), caster.Map, tempLeanShootSources);
+				ShootLeanUtility.LeanShootingSourcesFromTo(root, occupiedRect.ClosestCellTo(root), caster.Map, tempLeanShootSources);
 				for (int i = 0; i < tempLeanShootSources.Count; i++)
 				{
 					IntVec3 intVec = tempLeanShootSources[i];
@@ -651,6 +803,17 @@ namespace Verse
 			return false;
 		}
 
+		public bool OutOfRange(IntVec3 root, LocalTargetInfo targ, CellRect occupiedRect)
+		{
+			float num = verbProps.EffectiveMinRange(targ, caster);
+			float num2 = occupiedRect.ClosestDistSquaredTo(root);
+			if (num2 > EffectiveRange * EffectiveRange || num2 < num * num)
+			{
+				return true;
+			}
+			return false;
+		}
+
 		private bool CanHitFromCellIgnoringRange(IntVec3 sourceCell, LocalTargetInfo targ, out IntVec3 goodDest)
 		{
 			if (targ.Thing != null)
@@ -660,7 +823,7 @@ namespace Verse
 					goodDest = IntVec3.Invalid;
 					return false;
 				}
-				ShootLeanUtility.CalcShootableCellsOf(tempDestList, targ.Thing);
+				ShootLeanUtility.CalcShootableCellsOf(tempDestList, targ.Thing, sourceCell);
 				for (int i = 0; i < tempDestList.Count; i++)
 				{
 					if (CanHitCellFromCellIgnoringRange(sourceCell, tempDestList[i], targ.Thing.def.Fillage == FillCategory.Full))
@@ -709,7 +872,7 @@ namespace Verse
 			{
 				text = text + "/" + loadID;
 			}
-			return GetType().ToString() + "(" + text + ")";
+			return $"{GetType()}({text})";
 		}
 	}
 }

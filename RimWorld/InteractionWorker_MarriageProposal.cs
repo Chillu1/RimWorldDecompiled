@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using UnityEngine;
 using Verse;
@@ -20,9 +21,13 @@ namespace RimWorld
 			{
 				return 0f;
 			}
-			Pawn spouse = recipient.GetSpouse();
-			Pawn spouse2 = initiator.GetSpouse();
-			if ((spouse != null && !spouse.Dead) || (spouse2 != null && !spouse2.Dead))
+			if (initiator.Inhumanized())
+			{
+				return 0f;
+			}
+			HistoryEvent ev = new HistoryEvent(initiator.GetHistoryEventForSpouseAndFianceCountPlusOne(), initiator.Named(HistoryEventArgsNames.Doer));
+			HistoryEvent ev2 = new HistoryEvent(recipient.GetHistoryEventForSpouseAndFianceCountPlusOne(), recipient.Named(HistoryEventArgsNames.Doer));
+			if (!ev.DoerWillingToDo() || !ev2.DoerWillingToDo())
 			{
 				return 0f;
 			}
@@ -42,6 +47,18 @@ namespace RimWorld
 			if (hediffWithTarget != null && hediffWithTarget.target == recipient)
 			{
 				num *= 10f;
+			}
+			if (initiator.health.hediffSet.HasPregnancyHediff() || recipient.health.hediffSet.HasPregnancyHediff())
+			{
+				num *= 3f;
+			}
+			foreach (Pawn child in initiator.relations.Children)
+			{
+				if (child.DevelopmentalStage.Baby() && !child.Dead && recipient.relations.Children.Contains(child))
+				{
+					num *= 2f;
+					break;
+				}
 			}
 			return num;
 		}
@@ -71,14 +88,8 @@ namespace RimWorld
 			}
 			else
 			{
-				if (initiator.needs.mood != null)
-				{
-					initiator.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.RejectedMyProposal, recipient);
-				}
-				if (recipient.needs.mood != null)
-				{
-					recipient.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.IRejectedTheirProposal, initiator);
-				}
+				initiator.needs.mood?.thoughts.memories.TryGainMemory(ThoughtDefOf.RejectedMyProposal, recipient);
+				recipient.needs.mood?.thoughts.memories.TryGainMemory(ThoughtDefOf.IRejectedTheirProposal, initiator);
 				extraSentencePacks.Add(RulePackDefOf.Sentence_MarriageProposalRejected);
 				if (Rand.Value < 0.4f)
 				{
@@ -96,7 +107,7 @@ namespace RimWorld
 					letterLabel = "LetterLabelAcceptedProposal".Translate();
 					letterDef = LetterDefOf.PositiveEvent;
 					stringBuilder.AppendLine("LetterAcceptedProposal".Translate(initiator.Named("INITIATOR"), recipient.Named("RECIPIENT")));
-					if (initiator.relations.nextMarriageNameChange != 0)
+					if (initiator.relations.nextMarriageNameChange != MarriageNameChange.NoChange)
 					{
 						SpouseRelationUtility.DetermineManAndWomanSpouses(initiator, recipient, out var man, out var woman);
 						stringBuilder.AppendLine();
@@ -133,8 +144,18 @@ namespace RimWorld
 			}
 		}
 
-		public float AcceptanceChance(Pawn initiator, Pawn recipient)
+		public static float AcceptanceChance(Pawn initiator, Pawn recipient)
 		{
+			HistoryEvent ev = new HistoryEvent(initiator.GetHistoryEventForSpouseAndFianceCountPlusOne(), initiator.Named(HistoryEventArgsNames.Doer));
+			HistoryEvent ev2 = new HistoryEvent(recipient.GetHistoryEventForSpouseAndFianceCountPlusOne(), recipient.Named(HistoryEventArgsNames.Doer));
+			if (!ev.DoerWillingToDo() || !ev2.DoerWillingToDo())
+			{
+				return 0f;
+			}
+			if (recipient.Inhumanized())
+			{
+				return 0f;
+			}
 			return Mathf.Clamp01(0.9f * Mathf.Clamp01(GenMath.LerpDouble(-20f, 60f, 0f, 1f, recipient.relations.OpinionOf(initiator))));
 		}
 	}

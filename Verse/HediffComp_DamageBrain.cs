@@ -6,9 +6,9 @@ namespace Verse
 	{
 		public HediffCompProperties_DamageBrain Props => (HediffCompProperties_DamageBrain)props;
 
-		public override void CompPostTick(ref float severityAdjustment)
+		public override void CompPostTickInterval(ref float severityAdjustment, int delta)
 		{
-			if (Props.mtbDaysPerStage[parent.CurStageIndex] > 0f && base.Pawn.IsHashIntervalTick(60) && Rand.MTBEventOccurs(Props.mtbDaysPerStage[parent.CurStageIndex], 60000f, 60f))
+			if ((!(Props.mtbDaysPerStage[parent.CurStageIndex] <= 0f) || base.Pawn.IsHashIntervalTick(60, delta)) && Rand.MTBEventOccurs(Props.mtbDaysPerStage[parent.CurStageIndex], 60000f, 60f))
 			{
 				BodyPartRecord brain = base.Pawn.health.hediffSet.GetBrain();
 				if (brain != null)

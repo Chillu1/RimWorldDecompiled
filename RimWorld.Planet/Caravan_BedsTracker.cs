@@ -23,12 +23,12 @@ namespace RimWorld.Planet
 			this.caravan = caravan;
 		}
 
-		public void BedsTrackerTick()
+		public void BedsTrackerTickInterval(int delta)
 		{
 			RecalculateUsedBeds();
 			foreach (KeyValuePair<Pawn, Building_Bed> usedBed in usedBeds)
 			{
-				PawnUtility.GainComfortFromThingIfPossible(usedBed.Key, usedBed.Value);
+				PawnUtility.GainComfortFromThingIfPossible(usedBed.Key, usedBed.Value, delta);
 			}
 		}
 
@@ -52,9 +52,9 @@ namespace RimWorld.Planet
 			if (!caravan.pather.MovingNow)
 			{
 				tmpUsableBeds.SortByDescending((Building_Bed x) => x.GetStatValue(StatDefOf.BedRestEffectiveness));
-				for (int i = 0; i < caravan.pawns.Count; i++)
+				for (int num = 0; num < caravan.pawns.Count; num++)
 				{
-					Pawn pawn = caravan.pawns[i];
+					Pawn pawn = caravan.pawns[num];
 					if (pawn.needs != null && pawn.needs.rest != null)
 					{
 						Building_Bed andRemoveFirstAvailableBedFor = GetAndRemoveFirstAvailableBedFor(pawn, tmpUsableBeds);
@@ -68,9 +68,9 @@ namespace RimWorld.Planet
 			else
 			{
 				tmpUsableBeds.SortByDescending((Building_Bed x) => x.GetStatValue(StatDefOf.ImmunityGainSpeedFactor));
-				for (int j = 0; j < caravan.pawns.Count; j++)
+				for (int num2 = 0; num2 < caravan.pawns.Count; num2++)
 				{
-					Pawn pawn2 = caravan.pawns[j];
+					Pawn pawn2 = caravan.pawns[num2];
 					if (pawn2.needs != null && pawn2.needs.rest != null && CaravanBedUtility.WouldBenefitFromRestingInBed(pawn2) && (!caravan.pather.MovingNow || pawn2.CarriedByCaravan()))
 					{
 						Building_Bed andRemoveFirstAvailableBedFor2 = GetAndRemoveFirstAvailableBedFor(pawn2, tmpUsableBeds);
@@ -119,8 +119,7 @@ namespace RimWorld.Planet
 			List<Thing> list = CaravanInventoryUtility.AllInventoryItems(caravan);
 			for (int i = 0; i < list.Count; i++)
 			{
-				Building_Bed building_Bed = list[i].GetInnerIfMinified() as Building_Bed;
-				if (building_Bed == null || !building_Bed.def.building.bed_caravansCanUse)
+				if (!(list[i].GetInnerIfMinified() is Building_Bed building_Bed) || !building_Bed.def.building.bed_caravansCanUse)
 				{
 					continue;
 				}
@@ -166,9 +165,9 @@ namespace RimWorld.Planet
 			{
 				return null;
 			}
-			string t = ((tmpPawnLabels.Count > 5) ? (tmpPawnLabels.Take(5).ToCommaList() + "...") : tmpPawnLabels.ToCommaList(useAnd: true));
+			string text = ((tmpPawnLabels.Count > 5) ? (tmpPawnLabels.Take(5).ToCommaList() + "...") : tmpPawnLabels.ToCommaList(useAnd: true));
 			tmpPawnLabels.Clear();
-			return "UsingBedrollsDueToIllness".Translate() + ": " + t;
+			return "UsingBedrollsDueToIllness".Translate() + ": " + text;
 		}
 	}
 }

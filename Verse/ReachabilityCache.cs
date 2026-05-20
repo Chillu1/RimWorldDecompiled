@@ -8,36 +8,24 @@ namespace Verse
 	{
 		private struct CachedEntry : IEquatable<CachedEntry>
 		{
-			public int FirstRoomID
-			{
-				get;
-				private set;
-			}
+			public int FirstID { get; private set; }
 
-			public int SecondRoomID
-			{
-				get;
-				private set;
-			}
+			public int SecondID { get; private set; }
 
-			public TraverseParms TraverseParms
-			{
-				get;
-				private set;
-			}
+			public TraverseParms TraverseParms { get; private set; }
 
-			public CachedEntry(int firstRoomID, int secondRoomID, TraverseParms traverseParms)
+			public CachedEntry(int firstID, int secondID, TraverseParms traverseParms)
 			{
 				this = default(CachedEntry);
-				if (firstRoomID < secondRoomID)
+				if (firstID < secondID)
 				{
-					FirstRoomID = firstRoomID;
-					SecondRoomID = secondRoomID;
+					FirstID = firstID;
+					SecondID = secondID;
 				}
 				else
 				{
-					FirstRoomID = secondRoomID;
-					SecondRoomID = firstRoomID;
+					FirstID = secondID;
+					SecondID = firstID;
 				}
 				TraverseParms = traverseParms;
 			}
@@ -63,7 +51,7 @@ namespace Verse
 
 			public bool Equals(CachedEntry other)
 			{
-				if (FirstRoomID == other.FirstRoomID && SecondRoomID == other.SecondRoomID)
+				if (FirstID == other.FirstID && SecondID == other.SecondID)
 				{
 					return TraverseParms == other.TraverseParms;
 				}
@@ -72,7 +60,7 @@ namespace Verse
 
 			public override int GetHashCode()
 			{
-				return Gen.HashCombineStruct(Gen.HashCombineInt(FirstRoomID, SecondRoomID), TraverseParms);
+				return Gen.HashCombineStruct(Gen.HashCombineInt(FirstID, SecondID), TraverseParms);
 			}
 		}
 
@@ -82,7 +70,7 @@ namespace Verse
 
 		public int Count => cacheDict.Count;
 
-		public BoolUnknown CachedResultFor(Room A, Room B, TraverseParms traverseParams)
+		public BoolUnknown CachedResultFor(District A, District B, TraverseParms traverseParams)
 		{
 			if (cacheDict.TryGetValue(new CachedEntry(A.ID, B.ID, traverseParams), out var value))
 			{
@@ -95,7 +83,7 @@ namespace Verse
 			return BoolUnknown.Unknown;
 		}
 
-		public void AddCachedResult(Room A, Room B, TraverseParms traverseParams, bool reachable)
+		public void AddCachedResult(District A, District B, TraverseParms traverseParams, bool reachable)
 		{
 			CachedEntry key = new CachedEntry(A.ID, B.ID, traverseParams);
 			if (!cacheDict.ContainsKey(key))

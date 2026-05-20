@@ -19,7 +19,7 @@ namespace RimWorld
 
 		private float rainRate;
 
-		private float deteriorationRate;
+		private float sandRate;
 
 		private const float MapFractionCheckPerTick = 0.0006f;
 
@@ -31,13 +31,23 @@ namespace RimWorld
 
 		private const float SnowFallRateFactor = 0.046f;
 
+		private const float SandFallRateFactor = 0.046f;
+
 		private const float SnowMeltRateFactor = 0.0058f;
+
+		private const float SandDissipateRate = 1f / 180f;
 
 		private static readonly FloatRange AutoIgnitionTemperatureRange = new FloatRange(240f, 1000f);
 
 		private const float AutoIgnitionChanceFactor = 0.7f;
 
 		private const float FireGlowRate = 0.33f;
+
+		private const float IgniteChancePerCheck = 0.03f;
+
+		private static int lastDeterioratedTick;
+
+		private const int MessageCooldownTicks = 60000;
 
 		public SteadyEnvironmentEffects(Map map)
 		{
@@ -53,7 +63,7 @@ namespace RimWorld
 			outdoorMeltAmount = MeltAmountAt(map.mapTemperature.OutdoorTemp);
 			snowRate = map.weatherManager.SnowRate;
 			rainRate = map.weatherManager.RainRate;
-			deteriorationRate = Mathf.Lerp(1f, 5f, rainRate);
+			sandRate = map.weatherManager.SandRate;
 			int num = Mathf.CeilToInt((float)map.Area * 0.0006f);
 			int area = map.Area;
 			for (int i = 0; i < num; i++)
@@ -70,8 +80,9 @@ namespace RimWorld
 
 		private void DoCellSteadyEffects(IntVec3 c)
 		{
-			Room room = c.GetRoom(map, RegionType.Set_All);
+			Room room = c.GetRoom(map);
 			bool flag = map.roofGrid.Roofed(c);
+			TerrainDef terrain = c.GetTerrain(map);
 			bool flag2 = room?.UsesOutdoorTemperature ?? false;
 			if (room == null || flag2)
 			{
@@ -79,34 +90,49 @@ namespace RimWorld
 				{
 					map.snowGrid.AddDepth(c, 0f - outdoorMeltAmount);
 				}
-				if (!flag && snowRate > 0.001f)
+				if (!flag)
 				{
-					AddFallenSnowAt(c, 0.046f * map.weatherManager.SnowRate);
+					if (snowRate > 0.001f)
+					{
+						AddFallenSnowAt(c, 0.046f * map.weatherManager.SnowRate);
+					}
+					if (ModsConfig.OdysseyActive)
+					{
+						if (sandRate > 0.001f)
+						{
+							AddFallenSandAt(c, 0.046f * map.weatherManager.SandRate);
+						}
+						else
+						{
+							map.sandGrid.AddDepth(c, -1f / 180f);
+						}
+					}
+				}
+				if (map.terrainGrid.TerrainAt(c).meltSnowRadius > 0f)
+				{
+					WeatherBuildupUtility.AddSnowRadial(c, map, map.terrainGrid.TerrainAt(c).meltSnowRadius, -0.06f);
 				}
 			}
 			if (room != null)
 			{
-				bool protectedByEdifice = ProtectedByEdifice(c, map);
-				TerrainDef terrain = c.GetTerrain(map);
 				List<Thing> thingList = c.GetThingList(map);
-				for (int i = 0; i < thingList.Count; i++)
+				for (int num = thingList.Count - 1; num >= 0; num--)
 				{
-					Thing thing = thingList[i];
-					Filth filth = thing as Filth;
-					if (filth != null)
+					Thing thing = thingList[num];
+					if (thing is Filth filth)
 					{
 						if (!flag && thing.def.filth.rainWashes && Rand.Chance(rainRate))
 						{
 							filth.ThinFilth();
 						}
-						if (filth.DisappearAfterTicks != 0 && filth.TicksSinceThickened > filth.DisappearAfterTicks)
+						if (filth.DisappearAfterTicks != 0 && filth.TicksSinceThickened > filth.DisappearAfterTicks && !filth.Destroyed)
 						{
 							filth.Destroy();
 						}
 					}
 					else
 					{
-						TryDoDeteriorate(thing, flag, flag2, protectedByEdifice, terrain);
+						TryDoDeteriorate(thing, flag, flag2, terrain);
 					}
 				}
 				if (!flag2)
@@ -114,30 +140,61 @@ namespace RimWorld
 					float temperature = room.Temperature;
 					if (temperature > 0f)
 					{
-						float num = MeltAmountAt(temperature);
-						if (num > 0f)
+						float num2 = MeltAmountAt(temperature);
+						if (num2 > 0f)
 						{
-							map.snowGrid.AddDepth(c, 0f - num);
+							map.snowGrid.AddDepth(c, 0f - num2);
 						}
-						if (room.RegionType.Passable() && temperature > AutoIgnitionTemperatureRange.min)
+						if (temperature > AutoIgnitionTemperatureRange.min)
 						{
 							float value = Rand.Value;
 							if (value < AutoIgnitionTemperatureRange.InverseLerpThroughRange(temperature) * 0.7f && Rand.Chance(FireUtility.ChanceToStartFireIn(c, map)))
 							{
-								FireUtility.TryStartFireIn(c, map, 0.1f);
+								FireUtility.TryStartFireIn(c, map, 0.1f, null);
 							}
 							if (value < 0.33f)
 							{
-								MoteMaker.ThrowHeatGlow(c, map, 2.3f);
+								FleckMaker.ThrowHeatGlow(c, map, 2.3f);
 							}
 						}
+					}
+					if (terrain.heatPerTick > 0f)
+					{
+						GenTemperature.PushHeat(c, map, terrain.heatPerTick * 1666.6666f);
+					}
+					if (ModsConfig.OdysseyActive)
+					{
+						map.sandGrid.AddDepth(c, -1f / 180f);
+					}
+				}
+			}
+			if (Rand.Chance(terrain.throwFleckChance))
+			{
+				FleckCreationData dataStatic = FleckMaker.GetDataStatic(c.ToVector3Shifted(), map, terrain.fleckData.fleck, terrain.fleckData.scaleRange.RandomInRange);
+				dataStatic.velocitySpeed = terrain.fleckData.velocitySpeedRange.RandomInRange;
+				dataStatic.velocityAngle = terrain.fleckData.velocityAngleRange.RandomInRange;
+				dataStatic.rotationRate = terrain.fleckData.rotationSpeedRange.RandomInRange;
+				if (!terrain.fleckData.solidTicksRange.IsZeros)
+				{
+					dataStatic.solidTimeOverride = terrain.fleckData.solidTicksRange.RandomInRange;
+				}
+				map.flecks.CreateFleck(dataStatic);
+			}
+			if (terrain.igniteRadius > 0f)
+			{
+				foreach (IntVec3 item in GenRadial.RadialCellsAround(c, terrain.igniteRadius, useCenter: true))
+				{
+					if (item.InBounds(map) && Rand.Chance(0.03f) && Rand.Chance(FireUtility.ChanceToStartFireIn(item, map)))
+					{
+						FireUtility.TryStartFireIn(item, map, 0.1f, null);
 					}
 				}
 			}
 			map.gameConditionManager.DoSteadyEffects(c, map);
+			GasUtility.DoSteadyEffects(c, map);
 		}
 
-		private static bool ProtectedByEdifice(IntVec3 c, Map map)
+		public static bool ProtectedByEdifice(IntVec3 c, Map map)
 		{
 			Building edifice = c.GetEdifice(map);
 			if (edifice != null && edifice.def.building != null && edifice.def.building.preventDeteriorationOnTop)
@@ -164,7 +221,7 @@ namespace RimWorld
 		{
 			if (snowNoise == null)
 			{
-				snowNoise = new Perlin(0.039999999105930328, 2.0, 0.5, 5, Rand.Range(0, 651431), QualityMode.Medium);
+				snowNoise = new Perlin(0.03999999910593033, 2.0, 0.5, 5, Rand.Range(0, 651431), QualityMode.Medium);
 			}
 			float value = snowNoise.GetValue(c);
 			value += 1f;
@@ -177,77 +234,116 @@ namespace RimWorld
 			map.snowGrid.AddDepth(c, depthToAdd);
 		}
 
+		public void AddFallenSandAt(IntVec3 c, float baseAmount)
+		{
+			if (snowNoise == null)
+			{
+				snowNoise = new Perlin(0.03999999910593033, 2.0, 0.5, 5, Rand.Range(0, 651431), QualityMode.Medium);
+			}
+			float value = snowNoise.GetValue(c);
+			value += 1f;
+			value *= 0.5f;
+			if (value < 0.5f)
+			{
+				value = 0.5f;
+			}
+			float depthToAdd = baseAmount * value;
+			map.sandGrid.AddDepth(c, depthToAdd);
+		}
+
 		public static float FinalDeteriorationRate(Thing t, List<string> reasons = null)
 		{
 			if (t.Spawned)
 			{
 				Room room = t.GetRoom();
-				return FinalDeteriorationRate(t, t.Position.Roofed(t.Map), room?.UsesOutdoorTemperature ?? false, ProtectedByEdifice(t.Position, t.Map), t.Position.GetTerrain(t.Map), reasons);
+				return FinalDeteriorationRate(t, t.Position.Roofed(t.Map), room?.UsesOutdoorTemperature ?? false, t.Position.GetTerrain(t.Map), reasons);
 			}
-			return FinalDeteriorationRate(t, roofed: false, roomUsesOutdoorTemperature: false, protectedByEdifice: false, null, reasons);
+			if (t.SpawnedOrAnyParentSpawned && !t.def.canDeteriorateUnspawned)
+			{
+				return 0f;
+			}
+			return FinalDeteriorationRate(t, roofed: false, roomUsesOutdoorTemperature: false, null, reasons);
 		}
 
-		public static float FinalDeteriorationRate(Thing t, bool roofed, bool roomUsesOutdoorTemperature, bool protectedByEdifice, TerrainDef terrain, List<string> reasons = null)
+		public static float FinalDeteriorationRate(Thing t, bool roofed, bool roomUsesOutdoorTemperature, TerrainDef terrain, List<string> reasons = null)
 		{
 			if (!t.def.CanEverDeteriorate)
 			{
 				return 0f;
 			}
-			if (protectedByEdifice)
+			Map mapHeld = t.MapHeld;
+			float num = t.GetStatValue(StatDefOf.DeteriorationRate);
+			Genepack genepack = t as Genepack;
+			if (ModsConfig.BiotechActive && genepack != null && !genepack.Deteriorating)
 			{
-				return 0f;
-			}
-			float statValue = t.GetStatValue(StatDefOf.DeteriorationRate);
-			if (statValue <= 0f)
-			{
-				return 0f;
-			}
-			float num = 0f;
-			if (!roofed)
-			{
-				num += 0.5f;
-				reasons?.Add("DeterioratingUnroofed".Translate());
-			}
-			if (roomUsesOutdoorTemperature)
-			{
-				num += 0.5f;
-				reasons?.Add("DeterioratingOutdoors".Translate());
-			}
-			if (terrain != null && terrain.extraDeteriorationFactor != 0f)
-			{
-				num += terrain.extraDeteriorationFactor;
-				reasons?.Add(terrain.label);
+				num = 0f;
 			}
 			if (num <= 0f)
 			{
 				return 0f;
 			}
-			return statValue * num;
+			if (reasons != null)
+			{
+				if (t.def.deteriorateFromEnvironmentalEffects)
+				{
+					if (!roofed)
+					{
+						reasons.Add("DeterioratingUnroofed".Translate());
+						if (mapHeld.weatherManager.RainRate > 0f)
+						{
+							reasons.Add("DeterioratingRaining".Translate());
+						}
+					}
+					if (roomUsesOutdoorTemperature)
+					{
+						reasons.Add("DeterioratingOutdoors".Translate());
+					}
+					if (terrain != null && terrain.extraDeteriorationFactor != 0f)
+					{
+						reasons.Add(terrain.label);
+					}
+				}
+				if (ModsConfig.BiotechActive && genepack != null && genepack.Deteriorating)
+				{
+					reasons.Add("NotInGeneBank".Translate());
+				}
+			}
+			return num;
 		}
 
-		private void TryDoDeteriorate(Thing t, bool roofed, bool roomUsesOutdoorTemperature, bool protectedByEdifice, TerrainDef terrain)
+		private void TryDoDeteriorate(Thing t, bool roofed, bool roomUsesOutdoorTemperature, TerrainDef terrain)
 		{
-			Corpse corpse = t as Corpse;
-			if (corpse != null && corpse.InnerPawn.apparel != null)
+			if (t is Corpse corpse && corpse.InnerPawn.apparel != null)
 			{
 				List<Apparel> wornApparel = corpse.InnerPawn.apparel.WornApparel;
 				for (int i = 0; i < wornApparel.Count; i++)
 				{
-					TryDoDeteriorate(wornApparel[i], roofed, roomUsesOutdoorTemperature, protectedByEdifice, terrain);
+					TryDoDeteriorate(wornApparel[i], roofed, roomUsesOutdoorTemperature, terrain);
 				}
 			}
-			float num = FinalDeteriorationRate(t, roofed, roomUsesOutdoorTemperature, protectedByEdifice, terrain);
-			if (!(num < 0.001f) && Rand.Chance(deteriorationRate * num / 36f))
+			float num = FinalDeteriorationRate(t, roofed, roomUsesOutdoorTemperature, terrain);
+			if (!(num < 0.001f) && Rand.Chance(num / 36f))
 			{
 				IntVec3 position = t.Position;
 				Map map = t.Map;
-				bool num2 = t.IsInAnyStorage();
-				t.TakeDamage(new DamageInfo(DamageDefOf.Deterioration, 1f));
-				if (num2 && t.Destroyed && t.def.messageOnDeteriorateInStorage)
-				{
-					Messages.Message("MessageDeterioratedAway".Translate(t.Label), new TargetInfo(position, map), MessageTypeDefOf.NegativeEvent);
-				}
+				bool sendMessage = t.IsInAnyStorage();
+				DoDeteriorationDamage(t, position, map, sendMessage);
 			}
+		}
+
+		public static void DoDeteriorationDamage(Thing t, IntVec3 pos, Map map, bool sendMessage)
+		{
+			t.TakeDamage(new DamageInfo(DamageDefOf.Deterioration, 1f));
+			if (sendMessage && t.Destroyed && t.def.messageOnDeteriorateInStorage && (lastDeterioratedTick == 0 || GenTicks.TicksGame >= lastDeterioratedTick + 60000))
+			{
+				lastDeterioratedTick = GenTicks.TicksGame;
+				Messages.Message("MessageDeterioratedAway".Translate(t.Label), new TargetInfo(pos, map), MessageTypeDefOf.NegativeEvent);
+			}
+		}
+
+		public static void Reset()
+		{
+			lastDeterioratedTick = 0;
 		}
 
 		private void RollForRainFire()

@@ -14,8 +14,8 @@ namespace RimWorld
 			{
 				return false;
 			}
-			PawnRelationWorker worker = PawnRelationDefOf.Grandparent.Worker;
-			if ((other.GetMother() != null && worker.InRelation(me, other.GetMother())) || (other.GetFather() != null && worker.InRelation(me, other.GetFather())))
+			_ = PawnRelationDefOf.Grandparent.Worker;
+			if ((me.GetMother() != null && (other.HasSameMother(me.GetMother()) || other.HasSameFather(me.GetMother()))) || (me.GetFather() != null && (other.HasSameMother(me.GetFather()) || other.HasSameFather(me.GetFather()))))
 			{
 				return true;
 			}

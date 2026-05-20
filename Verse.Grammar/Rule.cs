@@ -36,12 +36,11 @@ namespace Verse.Grammar
 		[NoTranslate]
 		public string requiredTag;
 
+		public int? usesLimit;
+
 		public List<ConstantConstraint> constantConstraints;
 
-		public abstract float BaseSelectionWeight
-		{
-			get;
-		}
+		public abstract float BaseSelectionWeight { get; }
 
 		public virtual float Priority => 0f;
 
@@ -92,7 +91,13 @@ namespace Verse.Grammar
 			case "<":
 				type = ConstantConstraint.Type.Less;
 				break;
+			case "[less_than]":
+				type = ConstantConstraint.Type.Less;
+				break;
 			case ">":
+				type = ConstantConstraint.Type.Greater;
+				break;
+			case "[greater_than]":
 				type = ConstantConstraint.Type.Greater;
 				break;
 			case "<=":
@@ -107,6 +112,54 @@ namespace Verse.Grammar
 				break;
 			}
 			AddConstantConstraint(key, value, type);
+		}
+
+		public bool ValidateConstraints(Dictionary<string, string> constraints)
+		{
+			bool result = true;
+			if (constantConstraints != null)
+			{
+				for (int i = 0; i < constantConstraints.Count; i++)
+				{
+					ConstantConstraint constantConstraint = constantConstraints[i];
+					string text = ((constraints != null) ? constraints.TryGetValue(constantConstraint.key, "") : "");
+					float result2 = 0f;
+					float result3 = 0f;
+					bool flag = !text.NullOrEmpty() && !constantConstraint.value.NullOrEmpty() && float.TryParse(text, out result2) && float.TryParse(constantConstraint.value, out result3);
+					bool flag2;
+					switch (constantConstraint.type)
+					{
+					case ConstantConstraint.Type.Equal:
+						flag2 = text.EqualsIgnoreCase(constantConstraint.value);
+						break;
+					case ConstantConstraint.Type.NotEqual:
+						flag2 = !text.EqualsIgnoreCase(constantConstraint.value);
+						break;
+					case ConstantConstraint.Type.Less:
+						flag2 = flag && result2 < result3;
+						break;
+					case ConstantConstraint.Type.Greater:
+						flag2 = flag && result2 > result3;
+						break;
+					case ConstantConstraint.Type.LessOrEqual:
+						flag2 = flag && result2 <= result3;
+						break;
+					case ConstantConstraint.Type.GreaterOrEqual:
+						flag2 = flag && result2 >= result3;
+						break;
+					default:
+						Log.Error("Unknown ConstantConstraint type: " + constantConstraint.type);
+						flag2 = false;
+						break;
+					}
+					if (!flag2)
+					{
+						result = false;
+						break;
+					}
+				}
+			}
+			return result;
 		}
 	}
 }

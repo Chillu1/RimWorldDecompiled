@@ -35,7 +35,7 @@ namespace RimWorld.BaseGen
 			Rot4 rot = rp.thingRot ?? Rot4.North;
 			IntVec3 center = IntVec3.Zero;
 			IntVec2 size = thingDef.size;
-			int num = rp.fillWithThingsPadding ?? 0;
+			int num = rp.fillWithThingsPadding.GetValueOrDefault();
 			if (num < 0)
 			{
 				num = 0;
@@ -46,12 +46,12 @@ namespace RimWorld.BaseGen
 				Log.Error("Thing has 0 size.");
 				return;
 			}
-			for (int i = rp.rect.minX; i <= rp.rect.maxX - size.x + 1; i += size.x + num)
+			for (int num2 = rp.rect.minX; num2 <= rp.rect.maxX - size.x + 1; num2 += size.x + num)
 			{
-				for (int j = rp.rect.minZ; j <= rp.rect.maxZ - size.z + 1; j += size.z + num)
+				for (int num3 = rp.rect.minZ; num3 <= rp.rect.maxZ - size.z + 1; num3 += size.z + num)
 				{
 					ResolveParams resolveParams = rp;
-					resolveParams.rect = new CellRect(i, j, size.x, size.z);
+					resolveParams.rect = new CellRect(num2, num3, size.x, size.z);
 					resolveParams.singleThingDef = thingDef;
 					resolveParams.thingRot = rot;
 					BaseGen.symbolStack.Push("thing", resolveParams);

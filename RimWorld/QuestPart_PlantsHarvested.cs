@@ -11,7 +11,7 @@ namespace RimWorld
 
 		private int harvested;
 
-		public override string DescriptionPart => (string)("PlantsHarvested".Translate().CapitalizeFirst() + ": ") + harvested + " / " + count;
+		public override string DescriptionPart => string.Concat("PlantsHarvested".Translate().CapitalizeFirst() + ": ", harvested.ToString(), " / ", count.ToString());
 
 		public override IEnumerable<Dialog_InfoCard.Hyperlink> Hyperlinks
 		{

@@ -10,7 +10,7 @@ namespace RimWorld
 
 		public override Pawn DominantPawn => pawnData.pawn;
 
-		public override string ShortSummary => (string)(def.LabelCap + ": ") + pawnData.name;
+		public override string ShortSummary => string.Concat(def.LabelCap + ": ", pawnData.name?.ToString());
 
 		public Tale_SinglePawn()
 		{
@@ -48,13 +48,13 @@ namespace RimWorld
 			Scribe_Deep.Look(ref pawnData, "pawnData");
 		}
 
-		protected override IEnumerable<Rule> SpecialTextGenerationRules()
+		protected override IEnumerable<Rule> SpecialTextGenerationRules(Dictionary<string, string> outConstants)
 		{
-			foreach (Rule rule in pawnData.GetRules("ANYPAWN"))
+			foreach (Rule rule in pawnData.GetRules("ANYPAWN", outConstants))
 			{
 				yield return rule;
 			}
-			foreach (Rule rule2 in pawnData.GetRules("PAWN"))
+			foreach (Rule rule2 in pawnData.GetRules("PAWN", outConstants))
 			{
 				yield return rule2;
 			}

@@ -61,8 +61,7 @@ namespace RimWorld
 
 		public override bool TryMerge(ScenPart other)
 		{
-			ScenPart_DisallowBuilding scenPart_DisallowBuilding = other as ScenPart_DisallowBuilding;
-			if (scenPart_DisallowBuilding != null && scenPart_DisallowBuilding.building == building)
+			if (other is ScenPart_DisallowBuilding scenPart_DisallowBuilding && scenPart_DisallowBuilding.building == building)
 			{
 				return true;
 			}
@@ -83,6 +82,20 @@ namespace RimWorld
 			yield return ThingDefOf.TrapSpike;
 			yield return ThingDefOf.Cooler;
 			yield return ThingDefOf.Heater;
+		}
+
+		public override bool HasNullDefs()
+		{
+			if (!base.HasNullDefs())
+			{
+				return building == null;
+			}
+			return true;
+		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode() ^ ((building != null) ? building.GetHashCode() : 0);
 		}
 	}
 }

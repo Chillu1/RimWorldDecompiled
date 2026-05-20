@@ -10,6 +10,10 @@ namespace Verse.AI
 			{
 				return null;
 			}
+			if (ModsConfig.AnomalyActive && Find.Anomaly.TryGetUnnaturalCorpseTrackerForHaunted(pawn, out var tracker) && IsCorpseValid(tracker.Corpse, pawn))
+			{
+				return tracker.Corpse;
+			}
 			return ((Building_Grave)GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.Grave), PathEndMode.InteractionCell, TraverseParms.For(pawn), 9999f, delegate(Thing x)
 			{
 				Building_Grave building_Grave = (Building_Grave)x;
@@ -39,8 +43,7 @@ namespace Verse.AI
 				}
 				return true;
 			}
-			Building_Grave building_Grave = corpse.ParentHolder as Building_Grave;
-			if (building_Grave != null && building_Grave.Spawned)
+			if (corpse.ParentHolder is Building_Grave { Spawned: not false } building_Grave)
 			{
 				if (!pawn.CanReserve(building_Grave))
 				{

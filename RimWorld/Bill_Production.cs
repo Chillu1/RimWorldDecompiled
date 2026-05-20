@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
 
 namespace RimWorld
 {
-	public class Bill_Production : Bill, IExposable
+	public class Bill_Production : Bill, IRenameable
 	{
 		public BillRepeatModeDef repeatMode = BillRepeatModeDefOf.RepeatCount;
 
@@ -14,7 +15,9 @@ namespace RimWorld
 
 		private BillStoreModeDef storeMode = BillStoreModeDefOf.BestStockpile;
 
-		private Zone_Stockpile storeZone;
+		private ISlotGroup storeGroup;
+
+		private string playerCustomName;
 
 		public int targetCount = 10;
 
@@ -26,13 +29,13 @@ namespace RimWorld
 
 		public bool includeTainted;
 
-		public Zone_Stockpile includeFromZone;
-
 		public FloatRange hpRange = FloatRange.ZeroToOne;
 
 		public QualityRange qualityRange = QualityRange.All;
 
 		public bool limitToAllowedStuff;
+
+		private ISlotGroup includeGroup;
 
 		public bool paused;
 
@@ -42,7 +45,7 @@ namespace RimWorld
 			{
 				if (paused)
 				{
-					return " " + "Paused".Translate();
+					return " " + "Paused".Translate().CapitalizeFirst();
 				}
 				return "";
 			}
@@ -80,12 +83,30 @@ namespace RimWorld
 			}
 		}
 
+		public string RenamableLabel
+		{
+			get
+			{
+				return playerCustomName ?? BaseLabel;
+			}
+			set
+			{
+				playerCustomName = value;
+			}
+		}
+
+		public string BaseLabel => base.LabelCap;
+
+		public string InspectLabel => RenamableLabel;
+
+		public override string LabelCap => RenamableLabel;
+
 		public Bill_Production()
 		{
 		}
 
-		public Bill_Production(RecipeDef recipe)
-			: base(recipe)
+		public Bill_Production(RecipeDef recipe, Precept_ThingStyle precept = null)
+			: base(recipe, precept)
 		{
 		}
 
@@ -95,16 +116,25 @@ namespace RimWorld
 			Scribe_Defs.Look(ref repeatMode, "repeatMode");
 			Scribe_Values.Look(ref repeatCount, "repeatCount", 0);
 			Scribe_Defs.Look(ref storeMode, "storeMode");
-			Scribe_References.Look(ref storeZone, "storeZone");
+			Scribe_Values.Look(ref playerCustomName, "playerCustomName");
 			Scribe_Values.Look(ref targetCount, "targetCount", 0);
 			Scribe_Values.Look(ref pauseWhenSatisfied, "pauseWhenSatisfied", defaultValue: false);
 			Scribe_Values.Look(ref unpauseWhenYouHave, "unpauseWhenYouHave", 0);
 			Scribe_Values.Look(ref includeEquipped, "includeEquipped", defaultValue: false);
 			Scribe_Values.Look(ref includeTainted, "includeTainted", defaultValue: false);
-			Scribe_References.Look(ref includeFromZone, "includeFromZone");
 			Scribe_Values.Look(ref hpRange, "hpRange", FloatRange.ZeroToOne);
 			Scribe_Values.Look(ref qualityRange, "qualityRange", QualityRange.All);
 			Scribe_Values.Look(ref limitToAllowedStuff, "limitToAllowedStuff", defaultValue: false);
+			if (Scribe.mode == LoadSaveMode.Saving)
+			{
+				SaveSlotReferencable(storeGroup, "storeGroup");
+				SaveSlotReferencable(includeGroup, "includeGroup");
+			}
+			else if (Scribe.mode == LoadSaveMode.ResolvingCrossRefs || Scribe.mode == LoadSaveMode.LoadingVars)
+			{
+				LoadSlotReferencable(ref storeGroup, "storeGroup");
+				LoadSlotReferencable(ref includeGroup, "includeGroup");
+			}
 			Scribe_Values.Look(ref paused, "paused", defaultValue: false);
 			if (repeatMode == null)
 			{
@@ -116,21 +146,59 @@ namespace RimWorld
 			}
 		}
 
+		private static void SaveSlotReferencable(ISlotGroup slot, string key)
+		{
+			ILoadReferenceable refee = null;
+			if (slot is ILoadReferenceable loadReferenceable)
+			{
+				refee = loadReferenceable;
+			}
+			else if (slot is SlotGroup { parent: ILoadReferenceable parent })
+			{
+				refee = parent;
+			}
+			Scribe_References.Look(ref refee, key);
+		}
+
+		private static void LoadSlotReferencable(ref ISlotGroup slot, string key)
+		{
+			ILoadReferenceable refee = null;
+			Scribe_References.Look(ref refee, key);
+			if (refee is ISlotGroup slotGroup)
+			{
+				slot = slotGroup;
+			}
+			else if (refee is ISlotGroupParent slotGroupParent)
+			{
+				slot = slotGroupParent.GetSlotGroup();
+			}
+		}
+
 		public override BillStoreModeDef GetStoreMode()
 		{
 			return storeMode;
 		}
 
-		public override Zone_Stockpile GetStoreZone()
+		public override ISlotGroup GetSlotGroup()
 		{
-			return storeZone;
+			return storeGroup;
 		}
 
-		public override void SetStoreMode(BillStoreModeDef mode, Zone_Stockpile zone = null)
+		public void SetIncludeGroup(ISlotGroup group)
 		{
+			includeGroup = group;
+		}
+
+		public ISlotGroup GetIncludeSlotGroup()
+		{
+			return includeGroup;
+		}
+
+		public override void SetStoreMode(BillStoreModeDef mode, ISlotGroup group = null)
+		{
+			storeGroup = group;
 			storeMode = mode;
-			storeZone = zone;
-			if (storeMode == BillStoreModeDefOf.SpecificStockpile != (storeZone != null))
+			if (storeMode == BillStoreModeDefOf.SpecificStockpile != (group != null))
 			{
 				Log.ErrorOnce("Inconsistent bill StoreMode data set", 75645354);
 			}
@@ -190,6 +258,11 @@ namespace RimWorld
 			recipe.Worker.Notify_IterationCompleted(billDoer, ingredients);
 		}
 
+		protected virtual Window GetBillDialog()
+		{
+			return new Dialog_BillConfig(this, ((Thing)billStack.billGiver).Position);
+		}
+
 		protected override void DoConfigInterface(Rect baseRect, Color baseColor)
 		{
 			Rect rect = new Rect(28f, 32f, 100f, 30f);
@@ -199,7 +272,7 @@ namespace RimWorld
 			WidgetRow widgetRow = new WidgetRow(baseRect.xMax, baseRect.y + 29f, UIDirection.LeftThenUp);
 			if (widgetRow.ButtonText("Details".Translate() + "..."))
 			{
-				Find.WindowStack.Add(new Dialog_BillConfig(this, ((Thing)billStack.billGiver).Position));
+				Find.WindowStack.Add(GetBillDialog());
 			}
 			if (widgetRow.ButtonText(repeatMode.LabelCap.Resolve().PadRight(20)))
 			{
@@ -273,50 +346,103 @@ namespace RimWorld
 		public override void ValidateSettings()
 		{
 			base.ValidateSettings();
-			if (storeZone != null)
-			{
-				if (!storeZone.zoneManager.AllZones.Contains(storeZone))
-				{
-					if (this != BillUtility.Clipboard)
-					{
-						Messages.Message("MessageBillValidationStoreZoneDeleted".Translate(LabelCap, billStack.billGiver.LabelShort.CapitalizeFirst(), storeZone.label), billStack.billGiver as Thing, MessageTypeDefOf.NegativeEvent);
-					}
-					SetStoreMode(BillStoreModeDefOf.DropOnFloor);
-				}
-				else if (base.Map != null && !base.Map.zoneManager.AllZones.Contains(storeZone))
-				{
-					if (this != BillUtility.Clipboard)
-					{
-						Messages.Message("MessageBillValidationStoreZoneUnavailable".Translate(LabelCap, billStack.billGiver.LabelShort.CapitalizeFirst(), storeZone.label), billStack.billGiver as Thing, MessageTypeDefOf.NegativeEvent);
-					}
-					SetStoreMode(BillStoreModeDefOf.DropOnFloor);
-				}
-			}
-			else if (storeMode == BillStoreModeDefOf.SpecificStockpile)
+			ValidateGroup(ref storeGroup);
+			ValidateGroup(ref includeGroup);
+			if (storeGroup == null && storeMode == BillStoreModeDefOf.SpecificStockpile)
 			{
 				SetStoreMode(BillStoreModeDefOf.DropOnFloor);
-				Log.ErrorOnce("Found SpecificStockpile bill store mode without associated stockpile, recovering", 46304128);
 			}
-			if (includeFromZone == null)
+		}
+
+		private void ValidateGroup(ref ISlotGroup slot)
+		{
+			if (slot == null)
 			{
 				return;
 			}
-			if (!includeFromZone.zoneManager.AllZones.Contains(includeFromZone))
+			if (slot is SlotGroup slotGroup)
+			{
+				if (slotGroup.parent is Zone_Stockpile zone && !IsZoneValid(zone))
+				{
+					slot = null;
+				}
+				else if (slotGroup.parent is Building_Storage storage && !IsBuildingValid(storage))
+				{
+					slot = null;
+				}
+			}
+			else if (slot is StorageGroup storageGroup && !IsStorageGroupValid(storageGroup))
+			{
+				slot = null;
+			}
+		}
+
+		private bool IsZoneValid(Zone_Stockpile zone)
+		{
+			if (zone == null)
+			{
+				return false;
+			}
+			int id = zone.ID;
+			if (!base.Map.zoneManager.AllZones.Contains(zone))
+			{
+				zone = base.Map.zoneManager.AllZones.FirstOrDefault((Zone x) => x.ID == id) as Zone_Stockpile;
+			}
+			if (zone == null)
+			{
+				return false;
+			}
+			if (!zone.zoneManager.AllZones.Contains(zone))
 			{
 				if (this != BillUtility.Clipboard)
 				{
-					Messages.Message("MessageBillValidationIncludeZoneDeleted".Translate(LabelCap, billStack.billGiver.LabelShort.CapitalizeFirst(), includeFromZone.label), billStack.billGiver as Thing, MessageTypeDefOf.NegativeEvent);
+					Messages.Message("MessageBillValidationIncludeZoneDeleted".Translate(LabelCap, billStack.billGiver.LabelShort.CapitalizeFirst(), zone.label), billStack.billGiver as Thing, MessageTypeDefOf.NegativeEvent);
 				}
-				includeFromZone = null;
+				return false;
 			}
-			else if (base.Map != null && !base.Map.zoneManager.AllZones.Contains(includeFromZone))
+			if (base.Map != null && !base.Map.zoneManager.AllZones.Contains(zone))
 			{
 				if (this != BillUtility.Clipboard)
 				{
-					Messages.Message("MessageBillValidationIncludeZoneUnavailable".Translate(LabelCap, billStack.billGiver.LabelShort.CapitalizeFirst(), includeFromZone.label), billStack.billGiver as Thing, MessageTypeDefOf.NegativeEvent);
+					Messages.Message("MessageBillValidationIncludeZoneUnavailable".Translate(LabelCap, billStack.billGiver.LabelShort.CapitalizeFirst(), zone.label), billStack.billGiver as Thing, MessageTypeDefOf.NegativeEvent);
 				}
-				includeFromZone = null;
+				return false;
 			}
+			return true;
+		}
+
+		private bool IsBuildingValid(Building_Storage storage)
+		{
+			if (storage == null)
+			{
+				return true;
+			}
+			if (base.Map != null && !base.Map.haulDestinationManager.AllGroups.Contains(storage.slotGroup))
+			{
+				if (this != BillUtility.Clipboard)
+				{
+					Messages.Message("MessageBillValidationIncludeBuildingDeleted".Translate(LabelCap, billStack.billGiver.LabelShort.CapitalizeFirst(), storage.LabelCap), billStack.billGiver as Thing, MessageTypeDefOf.NegativeEvent);
+				}
+				return false;
+			}
+			return true;
+		}
+
+		private bool IsStorageGroupValid(StorageGroup group)
+		{
+			if (group == null)
+			{
+				return true;
+			}
+			if (base.Map != null && !base.Map.storageGroups.HasStorageGroup(group))
+			{
+				if (this != BillUtility.Clipboard)
+				{
+					Messages.Message("MessageBillValidationIncludeStorageGroupDeleted".Translate(LabelCap, billStack.billGiver.LabelShort.CapitalizeFirst(), group.RenamableLabel), billStack.billGiver as Thing, MessageTypeDefOf.NegativeEvent);
+				}
+				return false;
+			}
+			return true;
 		}
 
 		public override Bill Clone()
@@ -325,13 +451,14 @@ namespace RimWorld
 			obj.repeatMode = repeatMode;
 			obj.repeatCount = repeatCount;
 			obj.storeMode = storeMode;
-			obj.storeZone = storeZone;
+			obj.storeGroup = storeGroup;
+			obj.playerCustomName = playerCustomName;
 			obj.targetCount = targetCount;
 			obj.pauseWhenSatisfied = pauseWhenSatisfied;
 			obj.unpauseWhenYouHave = unpauseWhenYouHave;
 			obj.includeEquipped = includeEquipped;
 			obj.includeTainted = includeTainted;
-			obj.includeFromZone = includeFromZone;
+			obj.includeGroup = includeGroup;
 			obj.hpRange = hpRange;
 			obj.qualityRange = qualityRange;
 			obj.limitToAllowedStuff = limitToAllowedStuff;

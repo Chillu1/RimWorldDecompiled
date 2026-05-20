@@ -53,7 +53,7 @@ namespace RimWorld
 				{
 					return OutdoorsCategory.CabinFeverLight;
 				}
-				if (CurLevel > 0.2f)
+				if (CurLevel >= 0.2f)
 				{
 					return OutdoorsCategory.CabinFeverSevere;
 				}
@@ -67,7 +67,17 @@ namespace RimWorld
 
 		public override bool ShowOnNeedList => !Disabled;
 
-		private bool Disabled => pawn.story.traits.HasTrait(TraitDefOf.Undergrounder);
+		private bool Disabled
+		{
+			get
+			{
+				if (!pawn.Dead)
+				{
+					return pawn.needs.PrefersIndoors;
+				}
+				return true;
+			}
+		}
 
 		public Need_Outdoors(Pawn pawn)
 			: base(pawn)

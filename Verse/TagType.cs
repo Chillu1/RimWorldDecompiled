@@ -8,6 +8,11 @@ namespace Verse
 		Settlement,
 		DateTime,
 		ColonistCount,
-		Threat
+		Threat,
+		Ideo,
+		SectionTitle,
+		Red,
+		Reward,
+		Gray
 	}
 }

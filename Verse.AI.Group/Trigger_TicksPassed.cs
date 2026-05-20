@@ -20,13 +20,13 @@ namespace Verse.AI.Group
 		{
 			if (signal.type == TriggerSignalType.Tick)
 			{
-				if (base.data == null || !(base.data is TriggerData_TicksPassed))
+				if (data == null || !(data is TriggerData_TicksPassed))
 				{
 					BackCompatibility.TriggerDataTicksPassedNull(this);
 				}
-				TriggerData_TicksPassed data = Data;
-				data.ticksPassed++;
-				return data.ticksPassed > duration;
+				TriggerData_TicksPassed triggerData_TicksPassed = Data;
+				triggerData_TicksPassed.ticksPassed++;
+				return triggerData_TicksPassed.ticksPassed > duration;
 			}
 			return false;
 		}

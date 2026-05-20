@@ -67,7 +67,7 @@ namespace RimWorld
 			}
 		}
 
-		private bool GainingJoy => Find.TickManager.TicksGame < lastGainTick + 10;
+		private bool GainingJoy => Find.TickManager.TicksGame < lastGainTick + 15;
 
 		public Need_Joy(Pawn pawn)
 			: base(pawn)
@@ -112,24 +112,24 @@ namespace RimWorld
 				tolerances.NeedInterval(pawn);
 				if (!GainingJoy)
 				{
-					CurLevel -= FallPerInterval;
+					CurLevel -= FallPerInterval * (pawn.IsFormingCaravan() ? 0.5f : 1f) * pawn.GetStatValue(StatDefOf.JoyFallRateFactor);
 				}
 			}
 		}
 
 		public override string GetTipString()
 		{
-			string text = base.GetTipString();
-			string text2 = tolerances.TolerancesString();
-			if (!string.IsNullOrEmpty(text2))
+			TaggedString taggedString = base.GetTipString();
+			string text = tolerances.TolerancesString();
+			if (!string.IsNullOrEmpty(text))
 			{
-				text = text + "\n\n" + text2;
+				taggedString += "\n\n" + text;
 			}
 			if (pawn.MapHeld != null)
 			{
 				ExpectationDef expectationDef = ExpectationsUtility.CurrentExpectationFor(pawn);
-				text += "\n\n" + "CurrentExpectationsAndRecreation".Translate(expectationDef.label, expectationDef.joyToleranceDropPerDay.ToStringPercent(), expectationDef.joyKindsNeeded);
-				text = text + "\n\n" + JoyUtility.JoyKindsOnMapString(pawn.MapHeld);
+				taggedString += "\n\n" + "CurrentExpectationsAndRecreation".Translate(expectationDef.label, expectationDef.joyToleranceDropPerDay.ToStringPercent(), expectationDef.joyKindsNeeded);
+				taggedString += "\n\n" + JoyUtility.JoyKindsOnMapString(pawn.MapHeld);
 			}
 			else
 			{
@@ -139,11 +139,11 @@ namespace RimWorld
 					float num = caravan.needs.GetCurrentJoyGainPerTick(pawn) * 2500f;
 					if (num > 0f)
 					{
-						text += "\n\n" + "GainingJoyBecauseCaravanNotMoving".Translate() + ": +" + num.ToStringPercent() + "/" + "LetterHour".Translate();
+						taggedString += "\n\n" + "GainingJoyBecauseCaravanNotMoving".Translate() + ": +" + num.ToStringPercent() + "/" + "LetterHour".Translate();
 					}
 				}
 			}
-			return text;
+			return taggedString.Resolve();
 		}
 	}
 }

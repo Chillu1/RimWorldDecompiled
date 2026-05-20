@@ -6,8 +6,7 @@ namespace RimWorld
 	{
 		public override bool Matches(Thing t)
 		{
-			Apparel apparel = t as Apparel;
-			if (apparel != null)
+			if (t is Apparel apparel)
 			{
 				return !apparel.WornByCorpse;
 			}

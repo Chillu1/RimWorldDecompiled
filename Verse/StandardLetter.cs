@@ -19,17 +19,17 @@ namespace Verse
 				}
 				if (!hyperlinkThingDefs.NullOrEmpty())
 				{
-					for (int k = 0; k < hyperlinkThingDefs.Count; k++)
+					for (int i = 0; i < hyperlinkThingDefs.Count; i++)
 					{
-						yield return Option_ViewInfoCard(k);
+						yield return Option_ViewInfoCard(i);
 					}
 				}
 				if (!hyperlinkHediffDefs.NullOrEmpty())
 				{
-					int k = ((hyperlinkThingDefs != null) ? hyperlinkThingDefs.Count : 0);
-					for (int i = 0; i < hyperlinkHediffDefs.Count; i++)
+					int i = ((hyperlinkThingDefs != null) ? hyperlinkThingDefs.Count : 0);
+					for (int j = 0; j < hyperlinkHediffDefs.Count; j++)
 					{
-						yield return Option_ViewInfoCard(k + i);
+						yield return Option_ViewInfoCard(i + j);
 					}
 				}
 			}

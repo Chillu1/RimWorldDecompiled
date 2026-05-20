@@ -8,14 +8,26 @@ namespace Verse
 
 		public void Attach(TargetInfo a, TargetInfo b)
 		{
-			link1 = new MoteAttachLink(a);
-			link2 = new MoteAttachLink(b);
+			link1 = new MoteAttachLink(a, Vector3.zero);
+			link2 = new MoteAttachLink(b, Vector3.zero);
 		}
 
-		public override void Draw()
+		public void Attach(TargetInfo a, TargetInfo b, Vector3 offsetA, Vector3 offsetB)
+		{
+			link1 = new MoteAttachLink(a, offsetA);
+			link2 = new MoteAttachLink(b, offsetB);
+		}
+
+		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
 		{
 			UpdatePositionAndRotation();
-			base.Draw();
+			base.DrawAt(drawLoc, flip);
+		}
+
+		public void UpdateTargets(TargetInfo a, TargetInfo b, Vector3 offsetA, Vector3 offsetB)
+		{
+			link1.UpdateTarget(a, offsetA);
+			link2.UpdateTarget(b, offsetB);
 		}
 
 		protected void UpdatePositionAndRotation()
@@ -39,7 +51,7 @@ namespace Verse
 					}
 					if (def.mote.scaleToConnectTargets)
 					{
-						exactScale = new Vector3(def.graphicData.drawSize.y, 1f, (link2.LastDrawPos - link1.LastDrawPos).MagnitudeHorizontal());
+						linearScale = new Vector3(def.graphicData.drawSize.y, 1f, (link2.LastDrawPos - link1.LastDrawPos).MagnitudeHorizontal());
 					}
 				}
 				else

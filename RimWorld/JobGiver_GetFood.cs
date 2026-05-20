@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using Verse;
 using Verse.AI;
 
@@ -53,23 +55,34 @@ namespace RimWorld
 			{
 				return null;
 			}
-			bool allowCorpse;
+			FoodPreferability foodPreferability = FoodPreferability.Undefined;
+			bool flag;
 			if (pawn.AnimalOrWildMan())
 			{
-				allowCorpse = true;
+				flag = true;
 			}
 			else
 			{
 				Hediff firstHediffOfDef = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Malnutrition);
-				allowCorpse = firstHediffOfDef != null && firstHediffOfDef.Severity > 0.4f;
+				flag = firstHediffOfDef != null && firstHediffOfDef.Severity > 0.4f;
+			}
+			if (pawn.IsMutant && pawn.mutant.Def.allowEatingCorpses)
+			{
+				flag = true;
+				foodPreferability = FoodPreferability.DesperateOnly;
 			}
 			bool desperate = pawn.needs.food.CurCategory == HungerCategory.Starving;
-			if (!FoodUtility.TryFindBestFoodSourceFor(pawn, pawn, desperate, out var foodSource, out var foodDef, canRefillDispenser: true, canUseInventory: true, allowForbidden: false, allowCorpse, allowSociallyImproper: false, pawn.IsWildMan(), forceScanWholeMap))
+			bool allowCorpse = flag;
+			FoodPreferability minPrefOverride = foodPreferability;
+			if (!FoodUtility.TryFindBestFoodSourceFor(pawn, pawn, desperate, out var foodSource, out var foodDef, canRefillDispenser: true, canUseInventory: true, canUsePackAnimalInventory: true, allowForbidden: false, allowCorpse, allowSociallyImproper: false, pawn.IsWildMan(), forceScanWholeMap, ignoreReservations: false, calculateWantedStackCount: false, allowVenerated: false, minPrefOverride))
 			{
+				if (ModsConfig.OdysseyActive && pawn.RaceProps.canFishForFood)
+				{
+					return TryFindFishJob(pawn);
+				}
 				return null;
 			}
-			Pawn pawn2 = foodSource as Pawn;
-			if (pawn2 != null)
+			if (foodSource is Pawn pawn2)
 			{
 				Job job = JobMaker.MakeJob(JobDefOf.PredatorHunt, pawn2);
 				job.killIncappedTarget = true;
@@ -79,14 +92,13 @@ namespace RimWorld
 			{
 				return JobMaker.MakeJob(JobDefOf.Harvest, foodSource);
 			}
-			Building_NutrientPasteDispenser building_NutrientPasteDispenser = foodSource as Building_NutrientPasteDispenser;
-			if (building_NutrientPasteDispenser != null && !building_NutrientPasteDispenser.HasEnoughFeedstockInHoppers())
+			if (foodSource is Building_NutrientPasteDispenser building_NutrientPasteDispenser && !building_NutrientPasteDispenser.HasEnoughFeedstockInHoppers())
 			{
 				Building building = building_NutrientPasteDispenser.AdjacentReachableHopper(pawn);
 				if (building != null)
 				{
 					ISlotGroupParent hopperSgp = building as ISlotGroupParent;
-					Job job2 = WorkGiver_CookFillHopper.HopperFillFoodJob(pawn, hopperSgp);
+					Job job2 = WorkGiver_CookFillHopper.HopperFillFoodJob(pawn, hopperSgp, forced: false);
 					if (job2 != null)
 					{
 						return job2;
@@ -98,10 +110,76 @@ namespace RimWorld
 					return null;
 				}
 			}
-			float nutrition = FoodUtility.GetNutrition(foodSource, foodDef);
-			Job job3 = JobMaker.MakeJob(JobDefOf.Ingest, foodSource);
-			job3.count = FoodUtility.WillIngestStackCountOf(pawn, foodDef, nutrition);
-			return job3;
+			if (!Toils_Ingest.TryFindChairOrSpot(pawn, foodSource, out var _))
+			{
+				return null;
+			}
+			float nutrition = FoodUtility.GetNutrition(pawn, foodSource, foodDef);
+			Pawn pawn3 = (foodSource.ParentHolder as Pawn_InventoryTracker)?.pawn;
+			if (pawn3 != null && pawn3 != pawn)
+			{
+				Job job3 = JobMaker.MakeJob(JobDefOf.TakeFromOtherInventory, foodSource, pawn3);
+				job3.count = FoodUtility.WillIngestStackCountOf(pawn, foodDef, nutrition);
+				return job3;
+			}
+			Job job4 = JobMaker.MakeJob(JobDefOf.Ingest, foodSource);
+			job4.count = FoodUtility.WillIngestStackCountOf(pawn, foodDef, nutrition);
+			return job4;
+		}
+
+		public static Job TryFindFishJob(Pawn pawn)
+		{
+			Map map = pawn.MapHeld;
+			if (map != null)
+			{
+				WaterBodyTracker waterBodyTracker = map.waterBodyTracker;
+				if (waterBodyTracker != null)
+				{
+					if (!waterBodyTracker.AnyBodyContainsFish)
+					{
+						return null;
+					}
+					List<WaterBody> validBodies = waterBodyTracker.Bodies.Where((WaterBody waterBody) => !waterBody.TotallyFrozen && !waterBody.CommonFish.EnumerableNullOrEmpty() && waterBody.Population > 10f).ToList();
+					if (validBodies.Count == 0)
+					{
+						return null;
+					}
+					TraverseParms traverseParams = TraverseParms.For(pawn);
+					Region foundRegion = null;
+					WaterBody foundBody = null;
+					RegionTraverser.BreadthFirstTraverse(pawn.PositionHeld, map, (Region from, Region to) => to.Allows(traverseParams, isDestination: false), delegate(Region r)
+					{
+						foreach (WaterBody validBody in validBodies)
+						{
+							if (r.extentsClose.Overlaps(validBody.Bounds) && r.Cells.Any((IntVec3 c) => validBody.cells.Contains(c)))
+							{
+								foundRegion = r;
+								foundBody = validBody;
+								return true;
+							}
+						}
+						return false;
+					});
+					if (foundRegion == null)
+					{
+						return null;
+					}
+					List<IntVec3> list = foundRegion.Cells.Where((IntVec3 c) => c.Standable(map) && c.InBounds(map) && c.GetWaterBody(map) == foundBody && c.GetTerrain(map).IsWater).ToList();
+					if (list.Count == 0)
+					{
+						return null;
+					}
+					for (int num = 0; num < 30; num++)
+					{
+						if (list.TryRandomElement(out var result) && !result.IsForbidden(pawn) && pawn.CanReserveAndReach(result, PathEndMode.OnCell, Danger.None))
+						{
+							return JobMaker.MakeJob(JobDefOf.FishAnimal, result, result);
+						}
+					}
+					return null;
+				}
+			}
+			return null;
 		}
 	}
 }

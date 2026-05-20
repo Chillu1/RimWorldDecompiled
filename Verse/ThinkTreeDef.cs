@@ -14,6 +14,7 @@ namespace Verse
 
 		public override void ResolveReferences()
 		{
+			base.ResolveReferences();
 			thinkRoot.ResolveSubnodesAndRecur();
 			foreach (ThinkNode item in thinkRoot.ThisAndChildrenRecursive)
 			{
@@ -36,15 +37,15 @@ namespace Verse
 				int key = node.UniqueSaveKey;
 				if (key == -1)
 				{
-					yield return string.Concat("Thinknode ", node.GetType(), " has invalid save key ", key);
+					yield return "Thinknode " + node.GetType()?.ToString() + " has invalid save key " + key;
 				}
 				else if (instances.Contains(node))
 				{
-					yield return string.Concat("There are two same ThinkNode instances in one think tree (their type is ", node.GetType(), ")");
+					yield return "There are two same ThinkNode instances in one think tree (their type is " + node.GetType()?.ToString() + ")";
 				}
 				else if (usedKeys.Contains(key))
 				{
-					yield return string.Concat("Two ThinkNodes have the same unique save key ", key, " (one of the nodes is ", node.GetType(), ")");
+					yield return "Two ThinkNodes have the same unique save key " + key + " (one of the nodes is " + node.GetType()?.ToString() + ")";
 				}
 				if (key != -1)
 				{
@@ -83,7 +84,7 @@ namespace Verse
 			{
 				if (node.subNodes[i].parent != null)
 				{
-					Log.Warning(string.Concat("Think node ", node.subNodes[i], " from think tree ", defName, " already has a parent node (", node.subNodes[i].parent, "). This means that it's referenced by more than one think tree (should have been copied instead)."));
+					Log.Warning("Think node " + node.subNodes[i]?.ToString() + " from think tree " + defName + " already has a parent node (" + node.subNodes[i].parent?.ToString() + "). This means that it's referenced by more than one think tree (should have been copied instead).");
 				}
 				else
 				{

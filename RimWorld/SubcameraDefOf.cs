@@ -7,6 +7,9 @@ namespace RimWorld
 	{
 		public static SubcameraDef WaterDepth;
 
+		[MayRequireOdyssey]
+		public static SubcameraDef GravshipMask;
+
 		static SubcameraDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(SubcameraDefOf));

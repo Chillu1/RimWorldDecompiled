@@ -10,24 +10,26 @@ namespace RimWorld
 
 		private const TargetIndex WatchTargetInd = TargetIndex.B;
 
+		private const TargetIndex ChairInd = TargetIndex.C;
+
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
 		{
-			return pawn.Reserve(job.GetTarget(TargetIndex.A), job, 1, -1, null, errorOnFailed);
+			return pawn.ReserveSittableOrSpot(job.GetTarget(TargetIndex.A).Cell, job, errorOnFailed);
 		}
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			if (job.GetTarget(TargetIndex.A).HasThing)
+			if (job.GetTarget(TargetIndex.C).HasThing)
 			{
-				this.EndOnDespawnedOrNull(TargetIndex.A);
+				this.EndOnDespawnedOrNull(TargetIndex.C);
 			}
 			yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.OnCell);
-			Toil toil = new Toil();
-			toil.tickAction = delegate
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
+			toil.tickIntervalAction = delegate(int delta)
 			{
 				pawn.rotationTracker.FaceCell(job.GetTarget(TargetIndex.B).Cell);
-				pawn.GainComfortFromCellIfPossible();
-				if (pawn.IsHashIntervalTick(100))
+				pawn.GainComfortFromCellIfPossible(delta);
+				if (pawn.IsHashIntervalTick(100, delta))
 				{
 					pawn.jobs.CheckForJobOverride();
 				}

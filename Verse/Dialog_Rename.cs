@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace Verse
 {
-	public abstract class Dialog_Rename : Window
+	public abstract class Dialog_Rename<T> : Window where T : class, IRenameable
 	{
 		protected string curName;
 
@@ -11,19 +11,23 @@ namespace Verse
 
 		private int startAcceptingInputAtFrame;
 
+		protected readonly T renaming;
+
 		private bool AcceptsInput => startAcceptingInputAtFrame <= Time.frameCount;
 
 		protected virtual int MaxNameLength => 28;
 
 		public override Vector2 InitialSize => new Vector2(280f, 175f);
 
-		public Dialog_Rename()
+		protected Dialog_Rename(T renaming)
 		{
-			forcePause = true;
+			this.renaming = renaming;
+			curName = renaming?.RenamableLabel;
 			doCloseX = true;
-			absorbInputAroundWindow = true;
+			forcePause = true;
 			closeOnAccept = false;
 			closeOnClickedOutside = true;
+			absorbInputAroundWindow = true;
 		}
 
 		public void WasOpenedByHotkey()
@@ -33,24 +37,25 @@ namespace Verse
 
 		protected virtual AcceptanceReport NameIsValid(string name)
 		{
-			if (name.Length == 0)
-			{
-				return false;
-			}
-			return true;
+			return name.Length != 0;
 		}
 
 		public override void DoWindowContents(Rect inRect)
 		{
 			Text.Font = GameFont.Small;
 			bool flag = false;
-			if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Return)
+			if (Event.current.type == EventType.KeyDown && (Event.current.keyCode == KeyCode.Return || Event.current.keyCode == KeyCode.KeypadEnter))
 			{
 				flag = true;
 				Event.current.Use();
 			}
+			Rect rect = new Rect(inRect);
+			Text.Font = GameFont.Medium;
+			rect.height = Text.LineHeight + 10f;
+			Widgets.Label(rect, "Rename".Translate());
+			Text.Font = GameFont.Small;
 			GUI.SetNextControlName("RenameField");
-			string text = Widgets.TextField(new Rect(0f, 15f, inRect.width, 35f), curName);
+			string text = Widgets.TextField(new Rect(0f, rect.height, inRect.width, 35f), curName);
 			if (AcceptsInput && text.Length < MaxNameLength)
 			{
 				curName = text;
@@ -64,7 +69,7 @@ namespace Verse
 				UI.FocusControl("RenameField", this);
 				focusedRenameField = true;
 			}
-			if (!(Widgets.ButtonText(new Rect(15f, inRect.height - 35f - 15f, inRect.width - 15f - 15f, 35f), "OK") || flag))
+			if (!(Widgets.ButtonText(new Rect(15f, inRect.height - 35f - 10f, inRect.width - 15f - 15f, 35f), "OK") || flag))
 			{
 				return;
 			}
@@ -79,14 +84,18 @@ namespace Verse
 				{
 					Messages.Message(acceptanceReport.Reason, MessageTypeDefOf.RejectInput, historical: false);
 				}
+				return;
 			}
-			else
+			if (renaming != null)
 			{
-				SetName(curName);
-				Find.WindowStack.TryRemove(this);
+				renaming.RenamableLabel = curName;
 			}
+			OnRenamed(curName);
+			Find.WindowStack.TryRemove(this);
 		}
 
-		protected abstract void SetName(string name);
+		protected virtual void OnRenamed(string name)
+		{
+		}
 	}
 }

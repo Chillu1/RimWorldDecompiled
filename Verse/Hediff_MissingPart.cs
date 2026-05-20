@@ -1,4 +1,5 @@
 using System.Text;
+using RimWorld;
 
 namespace Verse
 {
@@ -34,6 +35,10 @@ namespace Verse
 				{
 					return "RemovedBodyPart".Translate();
 				}
+				if (lastInjury != null && lastInjury.injuryProps.alwaysUseDestroyedLabel)
+				{
+					return lastInjury.injuryProps.destroyedLabel;
+				}
 				if (lastInjury == null || base.Part.depth == BodyPartDepth.Inside)
 				{
 					bool solid = base.Part.def.IsSolid(base.Part, pawn.health.hediffSet.hediffs);
@@ -44,6 +49,18 @@ namespace Verse
 					return lastInjury.injuryProps.destroyedOutLabel;
 				}
 				return lastInjury.injuryProps.destroyedLabel;
+			}
+		}
+
+		public override string Description
+		{
+			get
+			{
+				if (lastInjury != null && !string.IsNullOrEmpty(lastInjury.Description))
+				{
+					return lastInjury.Description;
+				}
+				return def.Description;
 			}
 		}
 
@@ -73,7 +90,11 @@ namespace Verse
 				{
 					return 0f;
 				}
-				return base.Part.def.GetMaxHealth(pawn) * def.injuryProps.bleedRate * base.Part.def.bleedRate;
+				if (!pawn.health.CanBleed)
+				{
+					return 0f;
+				}
+				return base.Part.def.GetMaxHealth(pawn) * def.injuryProps.bleedRate * base.Part.def.bleedRate * pawn.RaceProps.bleedRateFactor;
 			}
 		}
 
@@ -85,7 +106,7 @@ namespace Verse
 				{
 					return 0f;
 				}
-				return base.Part.def.GetMaxHealth(pawn) * def.injuryProps.painPerSeverity;
+				return base.Part.def.GetMaxHealth(pawn) * def.injuryProps.painPerSeverity / pawn.HealthScale;
 			}
 		}
 
@@ -95,8 +116,7 @@ namespace Verse
 			{
 				for (int i = 0; i < pawn.health.hediffSet.hediffs.Count; i++)
 				{
-					Hediff_MissingPart hediff_MissingPart = pawn.health.hediffSet.hediffs[i] as Hediff_MissingPart;
-					if (hediff_MissingPart != null && hediff_MissingPart.Part == base.Part.parent)
+					if (pawn.health.hediffSet.hediffs[i] is Hediff_MissingPart hediff_MissingPart && hediff_MissingPart.Part == base.Part.parent)
 					{
 						return true;
 					}
@@ -117,7 +137,13 @@ namespace Verse
 			}
 			set
 			{
-				isFreshInt = value;
+				if (isFreshInt != value)
+				{
+					isFreshInt = value;
+					pawn.Drawer.renderer.WoundOverlays.ClearCache();
+					PortraitsCache.SetDirty(pawn);
+					GlobalTextureAtlasManager.TryMarkPawnFrameSetDirty(pawn);
+				}
 			}
 		}
 
@@ -129,7 +155,7 @@ namespace Verse
 				{
 					return false;
 				}
-				if (!IsFresh || base.Part.depth == BodyPartDepth.Inside || base.Part.def.IsSolid(base.Part, pawn.health.hediffSet.hediffs) || ParentIsMissing)
+				if (!IsFresh || base.Part.depth == BodyPartDepth.Inside || base.Part.def.IsSolid(base.Part, pawn.health.hediffSet.hediffs) || pawn.health.hediffSet.PartOrAnyAncestorHasDirectlyAddedParts(base.Part.parent) || ParentIsMissing)
 				{
 					return false;
 				}
@@ -144,10 +170,10 @@ namespace Verse
 			return IsFreshNonSolidExtremity;
 		}
 
-		public override void Tick()
+		public override void TickInterval(int delta)
 		{
 			bool ticksAfterNoLongerFreshPassed = TicksAfterNoLongerFreshPassed;
-			base.Tick();
+			base.TickInterval(delta);
 			bool ticksAfterNoLongerFreshPassed2 = TicksAfterNoLongerFreshPassed;
 			if (ticksAfterNoLongerFreshPassed != ticksAfterNoLongerFreshPassed2)
 			{
@@ -155,9 +181,9 @@ namespace Verse
 			}
 		}
 
-		public override void Tended_NewTemp(float quality, float maxQuality, int batchPosition = 0)
+		public override void Tended(float quality, float maxQuality, int batchPosition = 0)
 		{
-			base.Tended_NewTemp(quality, maxQuality, batchPosition);
+			base.Tended(quality, maxQuality, batchPosition);
 			IsFresh = false;
 			pawn.health.Notify_HediffChanged(this);
 		}

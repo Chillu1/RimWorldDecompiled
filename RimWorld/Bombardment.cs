@@ -48,8 +48,7 @@ namespace RimWorld
 					Vector3 pos = targetCell.ToVector3() + Vector3.forward * Mathf.Lerp(60f, 0f, 1f - (float)lifeTime / (float)maxLifeTime);
 					pos.z += 1.25f;
 					pos.y = AltitudeLayer.MoteOverhead.AltitudeFor();
-					Matrix4x4 matrix = default(Matrix4x4);
-					matrix.SetTRS(pos, Quaternion.Euler(0f, 180f, 0f), new Vector3(2.5f, 1f, 2.5f));
+					Matrix4x4 matrix = Matrix4x4.TRS(pos, Quaternion.Euler(0f, 180f, 0f), new Vector3(2.5f, 1f, 2.5f));
 					Graphics.DrawMesh(MeshPool.plane10, matrix, material, 0);
 				}
 			}
@@ -94,13 +93,22 @@ namespace RimWorld
 			new CurvePoint(1f, 0.1f)
 		};
 
+		public override void SpawnSetup(Map map, bool respawningAfterReload)
+		{
+			base.SpawnSetup(map, respawningAfterReload);
+			if (!respawningAfterReload)
+			{
+				GetNextExplosionCell();
+			}
+		}
+
 		public override void StartStrike()
 		{
 			duration = bombIntervalTicks * explosionCount;
 			base.StartStrike();
 		}
 
-		public override void Tick()
+		protected override void Tick()
 		{
 			if (base.Destroyed)
 			{
@@ -109,7 +117,7 @@ namespace RimWorld
 			if (warmupTicks > 0)
 			{
 				warmupTicks--;
-				if (warmupTicks == 0)
+				if (warmupTicks <= 0)
 				{
 					StartStrike();
 				}
@@ -117,7 +125,7 @@ namespace RimWorld
 			else
 			{
 				base.Tick();
-				if (Find.TickManager.TicksGame % 20 == 0 && base.TicksLeft > 0)
+				if (base.TicksLeft > 0 && this.IsHashIntervalTick(20))
 				{
 					StartRandomFire();
 				}
@@ -145,15 +153,28 @@ namespace RimWorld
 				projectiles[num].Tick();
 				if (projectiles[num].LifeTime <= 0)
 				{
-					GenExplosion.DoExplosion(projectiles[num].targetCell, base.Map, explosionRadiusRange.RandomInRange, DamageDefOf.Bomb, base.instigator, -1, -1f, null, projectile: base.def, weapon: weaponDef);
+					TryDoExplosion(projectiles[num]);
 					projectiles.RemoveAt(num);
 				}
 			}
 		}
 
-		public override void Draw()
+		private void TryDoExplosion(BombardmentProjectile proj)
 		{
-			base.Draw();
+			List<Thing> list = base.Map.listerThings.ThingsInGroup(ThingRequestGroup.ProjectileInterceptor);
+			for (int i = 0; i < list.Count; i++)
+			{
+				if (list[i].TryGetComp<CompProjectileInterceptor>().CheckBombardmentIntercept(this, proj))
+				{
+					return;
+				}
+			}
+			GenExplosion.DoExplosion(proj.targetCell, base.Map, explosionRadiusRange.RandomInRange, DamageDefOf.Bomb, instigator, -1, -1f, null, projectile: def, weapon: weaponDef);
+		}
+
+		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
+		{
+			base.DrawAt(drawLoc, flip);
 			if (!projectiles.NullOrEmpty())
 			{
 				for (int i = 0; i < projectiles.Count; i++)
@@ -165,9 +186,22 @@ namespace RimWorld
 
 		private void StartRandomFire()
 		{
-			FireUtility.TryStartFireIn((from x in GenRadial.RadialCellsAround(base.Position, randomFireRadius, useCenter: true)
+			IntVec3 intVec = (from x in GenRadial.RadialCellsAround(base.Position, randomFireRadius, useCenter: true)
 				where x.InBounds(base.Map)
-				select x).RandomElementByWeight((IntVec3 x) => DistanceChanceFactor.Evaluate(x.DistanceTo(base.Position))), base.Map, Rand.Range(0.1f, 0.925f));
+				select x).RandomElementByWeight((IntVec3 x) => DistanceChanceFactor.Evaluate(x.DistanceTo(base.Position)));
+			List<Thing> list = base.Map.listerThings.ThingsInGroup(ThingRequestGroup.ProjectileInterceptor);
+			for (int num = 0; num < list.Count; num++)
+			{
+				if (!list[num].TryGetComp<CompProjectileInterceptor>().BombardmentCanStartFireAt(this, intVec))
+				{
+					return;
+				}
+			}
+			RoofDef roof = intVec.GetRoof(base.Map);
+			if (roof == null || !roof.isThickRoof)
+			{
+				FireUtility.TryStartFireIn(intVec, base.Map, Rand.Range(0.1f, 0.925f), instigator);
+			}
 		}
 
 		private void GetNextExplosionCell()

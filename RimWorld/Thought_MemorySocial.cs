@@ -31,7 +31,7 @@ namespace RimWorld
 			}
 		}
 
-		private float AgePct => (float)age / (float)def.DurationTicks;
+		private float AgePct => (float)age / (float)DurationTicks;
 
 		private float AgeFactor => Mathf.InverseLerp(1f, def.lerpOpinionToZeroAfterDurationPct, AgePct);
 
@@ -73,8 +73,7 @@ namespace RimWorld
 
 		public override bool GroupsWith(Thought other)
 		{
-			Thought_MemorySocial thought_MemorySocial = other as Thought_MemorySocial;
-			if (thought_MemorySocial == null)
+			if (!(other is Thought_MemorySocial thought_MemorySocial))
 			{
 				return false;
 			}

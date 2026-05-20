@@ -10,14 +10,18 @@ namespace RimWorld
 			{
 				return false;
 			}
-			return EquipmentUtility.IsBiocoded(t);
+			if (t.TryGetComp<CompBladelinkWeapon>() != null)
+			{
+				return false;
+			}
+			return CompBiocodable.IsBiocoded(t);
 		}
 
 		public override bool CanEverMatch(ThingDef def)
 		{
 			if (def.IsWeapon)
 			{
-				return def.HasComp(typeof(CompBiocodableWeapon));
+				return def.HasComp(typeof(CompBiocodable));
 			}
 			return false;
 		}

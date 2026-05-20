@@ -15,7 +15,27 @@ namespace Verse
 
 		private const int MaxDistToEdge = 2;
 
+		[Unsaved(false)]
+		private bool mapUsesExitGrid;
+
+		[Unsaved(false)]
+		private int lastCheckedMapTick = -99999;
+
 		public bool MapUsesExitGrid
+		{
+			get
+			{
+				if (Find.TickManager.TicksGame == lastCheckedMapTick)
+				{
+					return mapUsesExitGrid;
+				}
+				lastCheckedMapTick = Find.TickManager.TicksGame;
+				mapUsesExitGrid = MapUsesExitGridNow;
+				return mapUsesExitGrid;
+			}
+		}
+
+		private bool MapUsesExitGridNow
 		{
 			get
 			{
@@ -23,13 +43,20 @@ namespace Verse
 				{
 					return false;
 				}
-				CaravansBattlefield caravansBattlefield = map.Parent as CaravansBattlefield;
-				if (caravansBattlefield != null && caravansBattlefield.def.blockExitGridUntilBattleIsWon && !caravansBattlefield.WonBattle)
+				if (map.IsPocketMap)
 				{
 					return false;
 				}
-				FormCaravanComp component = map.Parent.GetComponent<FormCaravanComp>();
-				if (component != null && component.CanFormOrReformCaravanNow)
+				if (map.Biome.inVacuum)
+				{
+					return false;
+				}
+				if (map.Parent is CaravansBattlefield caravansBattlefield && caravansBattlefield.def.blockExitGridUntilBattleIsWon && !caravansBattlefield.WonBattle)
+				{
+					return false;
+				}
+				FormCaravanComp formCaravanComp = map.Parent?.GetComponent<FormCaravanComp>();
+				if (formCaravanComp != null && formCaravanComp.CanFormOrReformCaravanNow)
 				{
 					return false;
 				}
@@ -100,12 +127,16 @@ namespace Verse
 			{
 				return false;
 			}
+			if (!c.InBounds(map))
+			{
+				return false;
+			}
 			return Grid[c];
 		}
 
 		public void ExitMapGridUpdate()
 		{
-			if (MapUsesExitGrid)
+			if (MapUsesExitGrid && !Find.ScreenshotModeHandler.Active)
 			{
 				Drawer.MarkForDraw();
 				Drawer.CellBoolDrawerUpdate();

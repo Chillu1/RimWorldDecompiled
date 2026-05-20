@@ -65,9 +65,9 @@ namespace RimWorld
 					portraitLargeTex = ContentFinder<Texture2D>.Get(portraitLarge);
 				}
 			});
-			for (int i = 0; i < comps.Count; i++)
+			for (int num = 0; num < comps.Count; num++)
 			{
-				comps[i].ResolveReferences(this);
+				comps[num].ResolveReferences(this);
 			}
 		}
 

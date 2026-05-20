@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -9,15 +8,20 @@ namespace RimWorld.Planet
 	{
 		public static readonly Texture2D SettleCommandTex = ContentFinder<Texture2D>.Get("UI/Commands/Settle");
 
+		public static readonly Texture2D CreateCampCommandTex = ContentFinder<Texture2D>.Get("UI/Commands/CreateCamp");
+
 		public static bool PlayerSettlementsCountLimitReached
 		{
 			get
 			{
 				int num = 0;
-				List<Map> maps = Find.Maps;
-				for (int i = 0; i < maps.Count; i++)
+				foreach (Map map in Find.Maps)
 				{
-					if (maps[i].IsPlayerHome && maps[i].Parent is Settlement)
+					if (map.IsPlayerHome && map.Parent is Settlement)
+					{
+						num++;
+					}
+					else if (map.wasSpawnedViaGravShipLanding)
 					{
 						num++;
 					}
@@ -26,13 +30,22 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public static Settlement AddNewHome(int tile, Faction faction)
+		public static Settlement AddNewHome(PlanetTile tile, Faction faction)
 		{
-			Settlement settlement = (Settlement)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.Settlement);
+			AbandonedArchotechStructures abandonedArchotechStructures = Find.WorldObjects.WorldObjectAt<AbandonedArchotechStructures>(tile);
+			Settlement settlement = ((abandonedArchotechStructures == null) ? ((Settlement)WorldObjectMaker.MakeWorldObject(tile.LayerDef.SettlementWorldObjectDef)) : abandonedArchotechStructures.GenerateSettlementAndDestroy());
 			settlement.Tile = tile;
 			settlement.SetFaction(faction);
 			settlement.Name = SettlementNameGenerator.GenerateSettlementName(settlement);
 			Find.WorldObjects.Add(settlement);
+			if (faction == Faction.OfPlayer)
+			{
+				TaleRecorder.RecordTale(TaleDefOf.TileSettled).customLabel = "NewSettlement".Translate();
+				if (Find.IdeoManager != null)
+				{
+					Find.IdeoManager.lastResettledTick = GenTicks.TicksGame;
+				}
+			}
 			return settlement;
 		}
 	}

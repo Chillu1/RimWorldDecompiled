@@ -31,6 +31,10 @@ namespace RimWorld
 
 		public bool predatorsHuntHumanlikes = true;
 
+		public bool babiesAreHealthy;
+
+		public bool noBabiesOrChildren;
+
 		public float scariaRotChance;
 
 		public float colonistMoodOffset;
@@ -43,6 +47,8 @@ namespace RimWorld
 
 		public float butcherYieldFactor = 1f;
 
+		public float fishingYieldFactor = 1f;
+
 		public float researchSpeedFactor = 1f;
 
 		public float diseaseIntervalFactor = 1f;
@@ -54,6 +60,10 @@ namespace RimWorld
 		public float manhunterChanceOnDamageFactor = 1f;
 
 		public float deepDrillInfestationChanceFactor = 1f;
+
+		public float wastepackInfestationChanceFactor = 1f;
+
+		public float nomadicMineableResourcesFactor = 1f;
 
 		public float foodPoisonChanceFactor = 1f;
 
@@ -78,8 +88,28 @@ namespace RimWorld
 
 		public bool allowMortars = true;
 
+		public bool classicMortars;
+
 		public bool allowExtremeWeatherIncidents = true;
 
 		public bool fixedWealthMode;
+
+		public float lowPopConversionBoost = 3f;
+
+		public float minThreatPointsRangeCeiling = 70f;
+
+		public float childAgingRate = 4f;
+
+		public float adultAgingRate = 1f;
+
+		public bool unwaveringPrisoners = true;
+
+		public bool childRaidersAllowed;
+
+		public float anomalyThreatsInactiveFraction = 0.08f;
+
+		public float anomalyThreatsActiveFraction = 0.3f;
+
+		public float studyEfficiencyFactor = 1f;
 	}
 }

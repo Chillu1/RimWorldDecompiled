@@ -6,7 +6,7 @@ namespace Verse.AI.Group
 	{
 		public override bool ActivateOn(Lord lord, TriggerSignal signal)
 		{
-			if (signal.type == TriggerSignalType.PawnLost && (signal.condition == PawnLostCondition.IncappedOrKilled || signal.condition == PawnLostCondition.MadePrisoner))
+			if (signal.type == TriggerSignalType.PawnLost && (signal.condition == PawnLostCondition.Incapped || signal.condition == PawnLostCondition.MadePrisoner || signal.condition == PawnLostCondition.Killed))
 			{
 				if (signal.Pawn.GetTraderCaravanRole() == TraderCaravanRole.Trader || signal.Pawn.RaceProps.packAnimal)
 				{

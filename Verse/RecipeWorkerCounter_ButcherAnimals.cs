@@ -26,14 +26,14 @@ namespace Verse
 			return ThingCategoryDefOf.MeatRaw.label;
 		}
 
-		public override bool CanPossiblyStoreInStockpile(Bill_Production bill, Zone_Stockpile stockpile)
+		public override bool CanPossiblyStore(Bill_Production bill, ISlotGroup slotGroup)
 		{
 			foreach (ThingDef allowedThingDef in bill.ingredientFilter.AllowedThingDefs)
 			{
 				if (allowedThingDef.ingestible != null && allowedThingDef.ingestible.sourceDef != null)
 				{
 					RaceProperties race = allowedThingDef.ingestible.sourceDef.race;
-					if (race != null && race.meatDef != null && !stockpile.GetStoreSettings().AllowedToAccept(race.meatDef))
+					if (race != null && race.meatDef != null && !slotGroup.Settings.AllowedToAccept(race.meatDef))
 					{
 						return false;
 					}

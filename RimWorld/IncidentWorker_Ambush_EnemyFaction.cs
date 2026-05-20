@@ -22,7 +22,7 @@ namespace RimWorld
 		{
 			if (!PawnGroupMakerUtility.TryGetRandomFactionForCombatPawnGroup(parms.points, out parms.faction))
 			{
-				Log.Error(string.Concat("Could not find any valid faction for ", def, " incident."));
+				Log.Error("Could not find any valid faction for " + def?.ToString() + " incident.");
 				return new List<Pawn>();
 			}
 			PawnGroupMakerParms defaultPawnGroupMakerParms = IncidentParmsUtility.GetDefaultPawnGroupMakerParms(PawnGroupKindDefOf.Combat, parms);
@@ -39,7 +39,7 @@ namespace RimWorld
 		protected override string GetLetterText(Pawn anyPawn, IncidentParms parms)
 		{
 			Caravan caravan = parms.target as Caravan;
-			return string.Format(def.letterText, (caravan != null) ? caravan.Name : "yourCaravan".TranslateSimple(), parms.faction.def.pawnsPlural, parms.faction.Name).CapitalizeFirst();
+			return def.letterText.Formatted((caravan != null) ? caravan.Name : "yourCaravan".TranslateSimple(), parms.faction.def.pawnsPlural, parms.faction.NameColored).Resolve().CapitalizeFirst();
 		}
 	}
 }

@@ -1,4 +1,3 @@
-using System.Linq;
 using Verse;
 
 namespace RimWorld
@@ -28,7 +27,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			return user.royalty?.GetUnmetThroneroomRequirements().Any() == false;
+			return user.royalty?.AnyUnmetThroneroomRequirements() == false;
 		}
 	}
 }

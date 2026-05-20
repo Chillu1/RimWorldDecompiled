@@ -28,13 +28,12 @@ namespace RimWorld
 				factor = 1f;
 				return false;
 			}
-			Corpse corpse = req.Thing as Corpse;
-			if (corpse == null)
+			if (!(req.Thing is Corpse t))
 			{
 				factor = 1f;
 				return false;
 			}
-			factor = ((corpse.GetRotStage() == RotStage.Fresh) ? 1f : 0f);
+			factor = ((t.GetRotStage() == RotStage.Fresh) ? 1f : 0f);
 			return true;
 		}
 	}

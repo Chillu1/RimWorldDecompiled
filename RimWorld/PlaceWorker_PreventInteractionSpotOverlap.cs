@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Verse;
 
 namespace RimWorld
@@ -6,35 +7,48 @@ namespace RimWorld
 	{
 		public override AcceptanceReport AllowsPlacing(BuildableDef checkingDef, IntVec3 loc, Rot4 rot, Map map, Thing thingToIgnore = null, Thing thingToPlace = null)
 		{
-			ThingDef thingDef = checkingDef as ThingDef;
-			if (thingDef == null || !thingDef.hasInteractionCell)
+			if (!(checkingDef is ThingDef { HasSingleOrMultipleInteractionCells: not false } thingDef))
 			{
 				return true;
 			}
-			IntVec3 intVec = ThingUtility.InteractionCellWhenAt(thingDef, loc, rot, map);
+			List<IntVec3> list = new List<IntVec3>();
+			List<IntVec3> list2 = new List<IntVec3>();
+			ThingUtility.InteractionCellsWhenAt(list, thingDef, loc, rot, map);
 			for (int i = -1; i <= 1; i++)
 			{
 				for (int j = -1; j <= 1; j++)
 				{
-					IntVec3 c = intVec;
-					c.x += i;
-					c.z += j;
-					if (!c.InBounds(map))
+					foreach (IntVec3 item in list)
 					{
-						continue;
-					}
-					foreach (Thing item in map.thingGrid.ThingsListAtFast(c))
-					{
-						if (item != thingToIgnore)
+						IntVec3 c = item;
+						c.x += i;
+						c.z += j;
+						if (!c.InBounds(map))
 						{
-							ThingDef thingDef2 = item.def;
-							if (item.def.entityDefToBuild != null)
+							continue;
+						}
+						foreach (Thing item2 in map.thingGrid.ThingsListAtFast(c))
+						{
+							if (item2 == thingToIgnore)
 							{
-								thingDef2 = item.def.entityDefToBuild as ThingDef;
+								continue;
 							}
-							if (thingDef2 != null && thingDef2.hasInteractionCell && ThingUtility.InteractionCellWhenAt(thingDef2, item.Position, item.Rotation, item.Map) == intVec)
+							ThingDef thingDef2 = item2.def;
+							if (item2.def.entityDefToBuild != null)
 							{
-								return new AcceptanceReport(((item.def.entityDefToBuild == null) ? "InteractionSpotOverlaps" : "InteractionSpotWillOverlap").Translate(item.LabelNoCount, item));
+								thingDef2 = item2.def.entityDefToBuild as ThingDef;
+							}
+							if (thingDef2 == null || !thingDef2.HasSingleOrMultipleInteractionCells)
+							{
+								continue;
+							}
+							ThingUtility.InteractionCellsWhenAt(list2, thingDef2, item2.Position, item2.Rotation, item2.Map);
+							foreach (IntVec3 item3 in list2)
+							{
+								if (item3 == item)
+								{
+									return new AcceptanceReport(((item2.def.entityDefToBuild == null) ? "InteractionSpotOverlaps" : "InteractionSpotWillOverlap").Translate(item2.LabelNoCount, item2));
+								}
 							}
 						}
 					}

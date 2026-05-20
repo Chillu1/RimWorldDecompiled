@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Verse;
 
 namespace RimWorld.Planet
@@ -8,17 +9,22 @@ namespace RimWorld.Planet
 
 		public override int SeedPart => 976238715;
 
-		public override void GenerateFresh(string seed)
+		public override void GenerateFresh(string seed, PlanetLayer layer)
 		{
-			GenerateAncientSites();
+			GenerateAncientSites(layer);
 		}
 
-		private void GenerateAncientSites()
+		private void GenerateAncientSites(PlanetLayer layer)
 		{
-			int num = GenMath.RoundRandom((float)Find.WorldGrid.TilesCount / 100000f * ancientSitesPer100kTiles.RandomInRange);
+			int num = GenMath.RoundRandom((float)layer.TilesCount / 100000f * ancientSitesPer100kTiles.RandomInRange);
+			Dictionary<PlanetLayer, List<PlanetTile>> ancientSites = Find.World.genData.ancientSites;
+			if (!ancientSites.TryGetValue(layer, out var value))
+			{
+				value = (ancientSites[layer] = new List<PlanetTile>());
+			}
 			for (int i = 0; i < num; i++)
 			{
-				Find.World.genData.ancientSites.Add(TileFinder.RandomSettlementTileFor(null));
+				value.Add(TileFinder.RandomSettlementTileFor(layer, null));
 			}
 		}
 	}

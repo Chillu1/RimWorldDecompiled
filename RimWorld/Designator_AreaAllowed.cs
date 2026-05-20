@@ -3,15 +3,15 @@ using Verse;
 
 namespace RimWorld
 {
-	public abstract class Designator_AreaAllowed : Designator_Area
+	public abstract class Designator_AreaAllowed : Designator_Cells
 	{
-		private static Area selectedArea;
-
-		public override int DraggableDimensions => 2;
+		public static Area selectedArea;
 
 		public override bool DragDrawMeasurements => true;
 
 		public static Area SelectedArea => selectedArea;
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Areas;
 
 		public Designator_AreaAllowed(DesignateMode mode)
 		{

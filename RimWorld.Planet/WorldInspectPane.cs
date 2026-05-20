@@ -9,19 +9,7 @@ namespace RimWorld.Planet
 {
 	public class WorldInspectPane : Window, IInspectPane
 	{
-		private static readonly WITab[] TileTabs = new WITab[2]
-		{
-			new WITab_Terrain(),
-			new WITab_Planet()
-		};
-
 		private Type openTabType;
-
-		private float recentHeight;
-
-		public Gizmo mouseoverGizmo;
-
-		private static List<object> tmpObjectsList = new List<object>();
 
 		public Type OpenTabType
 		{
@@ -35,17 +23,7 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public float RecentHeight
-		{
-			get
-			{
-				return recentHeight;
-			}
-			set
-			{
-				recentHeight = value;
-			}
-		}
+		public float RecentHeight { get; set; }
 
 		protected override float Margin => 0f;
 
@@ -70,7 +48,7 @@ namespace RimWorld.Planet
 
 		public bool AnythingSelected => Find.WorldSelector.AnyObjectOrTileSelected;
 
-		private int SelectedTile => Find.WorldSelector.selectedTile;
+		private PlanetTile SelectedTile => Find.WorldSelector.SelectedTile;
 
 		private bool SelectedSingleObjectOrTile
 		{
@@ -80,7 +58,7 @@ namespace RimWorld.Planet
 				{
 					if (NumSelectedObjects == 0)
 					{
-						return SelectedTile >= 0;
+						return SelectedTile.Valid;
 					}
 					return false;
 				}
@@ -100,9 +78,9 @@ namespace RimWorld.Planet
 				{
 					return Find.WorldSelector.SingleSelectedObject.GetInspectTabs();
 				}
-				if (NumSelectedObjects == 0 && SelectedTile >= 0)
+				if (NumSelectedObjects == 0 && SelectedTile.Valid)
 				{
-					return TileTabs;
+					return PlanetLayer.Selected.Def.Tabs;
 				}
 				return null;
 			}
@@ -118,24 +96,41 @@ namespace RimWorld.Planet
 				stringBuilder.Append(" ");
 				stringBuilder.Append(vector.x.ToStringLongitude());
 				Tile tile = Find.WorldGrid[SelectedTile];
-				if (!tile.biome.impassable)
+				if (!tile.PrimaryBiome.impassable && tile.hilliness != Hilliness.Undefined)
 				{
 					stringBuilder.AppendLine();
 					stringBuilder.Append(tile.hilliness.GetLabelCap());
 				}
-				if (tile.Roads != null)
+				if (tile is SurfaceTile surfaceTile)
 				{
-					stringBuilder.AppendLine();
-					stringBuilder.Append(tile.Roads.Select((Tile.RoadLink rl) => rl.road).MaxBy((RoadDef road) => road.priority).LabelCap);
-				}
-				if (!Find.World.Impassable(SelectedTile))
-				{
-					string t = (WorldPathGrid.CalculatedMovementDifficultyAt(SelectedTile, perceivedStatic: false) * Find.WorldGrid.GetRoadMovementDifficultyMultiplier(SelectedTile, -1)).ToString("0.#");
-					stringBuilder.AppendLine();
-					stringBuilder.Append("MovementDifficulty".Translate() + ": " + t);
+					if (surfaceTile.Roads != null)
+					{
+						stringBuilder.AppendLine();
+						stringBuilder.Append(surfaceTile.Roads.Select((SurfaceTile.RoadLink rl) => rl.road).MaxBy((RoadDef road) => road.priority).LabelCap);
+					}
+					if (!Find.World.Impassable(SelectedTile))
+					{
+						string arg = (WorldPathGrid.CalculatedMovementDifficultyAt(SelectedTile, perceivedStatic: false) * Find.WorldGrid.GetRoadMovementDifficultyMultiplier(SelectedTile, PlanetTile.Invalid)).ToString("0.#");
+						stringBuilder.AppendLine();
+						stringBuilder.Append(string.Format("{0}: {1}", "MovementDifficulty".Translate(), arg));
+					}
 				}
 				stringBuilder.AppendLine();
-				stringBuilder.Append("AvgTemp".Translate() + ": " + GenTemperature.GetAverageTemperatureLabel(SelectedTile));
+				stringBuilder.Append(string.Format("{0}: {1}", "AvgTemp".Translate(), GenTemperature.GetAverageTemperatureLabel(SelectedTile)));
+				if (ModsConfig.BiotechActive && tile.pollution > 0f && tile.OnSurface)
+				{
+					stringBuilder.AppendLine();
+					string pollutionDescription = GenWorld.GetPollutionDescription(tile.pollution);
+					pollutionDescription = pollutionDescription + " (" + tile.pollution.ToStringPercent() + ")";
+					stringBuilder.Append(string.Format("{0}: {1}", "TilePollution".Translate(), pollutionDescription));
+				}
+				if (ModsConfig.OdysseyActive && tile.Mutators.Any())
+				{
+					stringBuilder.AppendLine();
+					stringBuilder.Append("TileMutators".Translate() + ": " + (from m in tile.Mutators
+						orderby -m.displayPriority
+						select m.Label(tile.tile)).ToCommaList().CapitalizeFirst());
+				}
 				return stringBuilder.ToString();
 			}
 		}
@@ -158,31 +153,19 @@ namespace RimWorld.Planet
 			windowRect.y = PaneTopY;
 		}
 
-		public void DrawInspectGizmos()
-		{
-			tmpObjectsList.Clear();
-			WorldRoutePlanner worldRoutePlanner = Find.WorldRoutePlanner;
-			List<WorldObject> selected = Selected;
-			for (int i = 0; i < selected.Count; i++)
-			{
-				if (!worldRoutePlanner.Active || selected[i] is RoutePlannerWaypoint)
-				{
-					tmpObjectsList.Add(selected[i]);
-				}
-			}
-			InspectGizmoGrid.DrawInspectGizmoGridFor(tmpObjectsList, out mouseoverGizmo);
-			tmpObjectsList.Clear();
-		}
-
 		public string GetLabel(Rect rect)
 		{
 			if (NumSelectedObjects > 0)
 			{
 				return WorldInspectPaneUtility.AdjustedLabelFor(Selected, rect);
 			}
-			if (SelectedTile >= 0)
+			if (SelectedTile.Valid)
 			{
-				return Find.WorldGrid[SelectedTile].biome.LabelCap;
+				if (ModsConfig.OdysseyActive && Find.World.landmarks[SelectedTile] != null)
+				{
+					return Find.World.landmarks[SelectedTile].name;
+				}
+				return Find.WorldGrid[SelectedTile].PrimaryBiome.LabelCap;
 			}
 			return "error";
 		}
@@ -208,7 +191,7 @@ namespace RimWorld.Planet
 			{
 				InspectPaneFiller.DoPaneContentsFor(Find.WorldSelector.FirstSelectedObject, rect);
 			}
-			else if (SelectedTile >= 0)
+			else if (SelectedTile.Valid)
 			{
 				InspectPaneFiller.DrawInspectString(TileInspectString, rect);
 			}
@@ -217,16 +200,16 @@ namespace RimWorld.Planet
 		public void DoInspectPaneButtons(Rect rect, ref float lineEndWidth)
 		{
 			WorldObject singleSelectedObject = Find.WorldSelector.SingleSelectedObject;
-			if (singleSelectedObject != null || SelectedTile >= 0)
+			if (singleSelectedObject != null || SelectedTile.Valid)
 			{
 				float x = rect.width - 48f;
 				if (singleSelectedObject != null)
 				{
 					Widgets.InfoCardButton(x, 0f, singleSelectedObject);
 				}
-				else
+				else if (Find.WorldGrid[SelectedTile].PrimaryBiome != null)
 				{
-					Widgets.InfoCardButton(x, 0f, Find.WorldGrid[SelectedTile].biome);
+					Widgets.InfoCardButton(x, 0f, Find.WorldGrid[SelectedTile].PrimaryBiome);
 				}
 				lineEndWidth += 24f;
 			}
@@ -241,10 +224,6 @@ namespace RimWorld.Planet
 		{
 			base.WindowUpdate();
 			InspectPaneUtility.UpdateTabs(this);
-			if (mouseoverGizmo != null)
-			{
-				mouseoverGizmo.GizmoUpdateOnMouseover();
-			}
 		}
 
 		public override void ExtraOnGUI()

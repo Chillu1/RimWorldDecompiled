@@ -13,6 +13,11 @@ namespace RimWorld
 		{
 			base.ExposeData();
 			Scribe_Defs.Look(ref factionDef, "factionDef");
+			if (Scribe.mode == LoadSaveMode.PostLoadInit && factionDef == null)
+			{
+				Randomize();
+				Log.Error("ScenPart had null faction after loading. Changing to " + factionDef.ToStringSafe());
+			}
 		}
 
 		public override void DoEditInterface(Listing_ScenEdit listing)
@@ -45,16 +50,16 @@ namespace RimWorld
 
 		public override void PostWorldGenerate()
 		{
-			Find.GameInitData.playerFaction = FactionGenerator.NewGeneratedFaction(factionDef);
+			Find.GameInitData.playerFaction = FactionGenerator.NewGeneratedFaction(new FactionGeneratorParms(factionDef));
 			Find.FactionManager.Add(Find.GameInitData.playerFaction);
-			FactionGenerator.EnsureRequiredEnemies(Find.GameInitData.playerFaction);
 		}
 
 		public override void PreMapGenerate()
 		{
-			Settlement settlement = (Settlement)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.Settlement);
+			PlanetTile startingTile = Find.GameInitData.startingTile;
+			Settlement settlement = (Settlement)WorldObjectMaker.MakeWorldObject(startingTile.LayerDef.SettlementWorldObjectDef);
 			settlement.SetFaction(Find.GameInitData.playerFaction);
-			settlement.Tile = Find.GameInitData.startingTile;
+			settlement.Tile = startingTile;
 			settlement.Name = SettlementNameGenerator.GenerateSettlementName(settlement, Find.GameInitData.playerFaction.def.playerInitialSettlementNameMaker);
 			Find.WorldObjects.Add(settlement);
 		}
@@ -62,6 +67,7 @@ namespace RimWorld
 		public override void PostGameStart()
 		{
 			Find.GameInitData.playerFaction = null;
+			TaleRecorder.RecordTale(TaleDefOf.TileSettled).customLabel = "NewSettlement".Translate();
 		}
 
 		public override IEnumerable<string> ConfigErrors()
@@ -70,6 +76,11 @@ namespace RimWorld
 			{
 				yield return "factionDef is null";
 			}
+		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode() ^ ((factionDef != null) ? factionDef.GetHashCode() : 0);
 		}
 	}
 }

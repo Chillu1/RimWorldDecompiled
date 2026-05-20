@@ -9,9 +9,8 @@ namespace RimWorld.Planet
 	{
 		public override void PostMapGenerate()
 		{
-			Building building = ((MapParent)parent).Map.listerBuildings.AllBuildingsColonistOfDef(ThingDefOf.Ship_Reactor).FirstOrDefault();
-			Building_ShipReactor building_ShipReactor;
-			if (building != null && (building_ShipReactor = building as Building_ShipReactor) != null)
+			Building_ShipReactor building_ShipReactor = ((MapParent)parent).Map.listerBuildings.AllBuildingsColonistOfClass<Building_ShipReactor>().FirstOrDefault();
+			if (building_ShipReactor != null)
 			{
 				building_ShipReactor.charlonsReactor = true;
 			}

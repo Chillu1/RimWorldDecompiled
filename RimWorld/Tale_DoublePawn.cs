@@ -16,7 +16,7 @@ namespace RimWorld
 		{
 			get
 			{
-				string text = (string)(def.LabelCap + ": ") + firstPawnData.name;
+				string text = string.Concat(def.LabelCap + ": ", firstPawnData.name?.ToString());
 				if (secondPawnData != null)
 				{
 					text = text + ", " + secondPawnData.name;
@@ -74,17 +74,17 @@ namespace RimWorld
 			Scribe_Deep.Look(ref secondPawnData, "secondPawnData");
 		}
 
-		protected override IEnumerable<Rule> SpecialTextGenerationRules()
+		protected override IEnumerable<Rule> SpecialTextGenerationRules(Dictionary<string, string> outConstants = null)
 		{
 			if (def.firstPawnSymbol.NullOrEmpty() || def.secondPawnSymbol.NullOrEmpty())
 			{
-				Log.Error(string.Concat(def, " uses DoublePawn tale class but firstPawnSymbol and secondPawnSymbol are not both set"));
+				Log.Error(def?.ToString() + " uses DoublePawn tale class but firstPawnSymbol and secondPawnSymbol are not both set");
 			}
 			foreach (Rule rule in firstPawnData.GetRules("ANYPAWN"))
 			{
 				yield return rule;
 			}
-			foreach (Rule rule2 in firstPawnData.GetRules(def.firstPawnSymbol))
+			foreach (Rule rule2 in firstPawnData.GetRules(def.firstPawnSymbol, outConstants))
 			{
 				yield return rule2;
 			}
@@ -96,7 +96,7 @@ namespace RimWorld
 			{
 				yield return rule3;
 			}
-			foreach (Rule rule4 in secondPawnData.GetRules(def.secondPawnSymbol))
+			foreach (Rule rule4 in secondPawnData.GetRules(def.secondPawnSymbol, outConstants))
 			{
 				yield return rule4;
 			}

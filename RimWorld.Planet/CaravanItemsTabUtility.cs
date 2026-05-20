@@ -60,7 +60,7 @@ namespace RimWorld.Planet
 
 		private static void DoRow(Rect rect, TransferableImmutable thing, Caravan caravan)
 		{
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			Rect rect2 = rect.AtZero();
 			if (thing.TotalStackCount != 1)
 			{
@@ -84,7 +84,7 @@ namespace RimWorld.Planet
 			Widgets.Label(rect5, thing.LabelCapWithTotalStackCount.Truncate(rect5.width));
 			Text.Anchor = TextAnchor.UpperLeft;
 			Text.WordWrap = true;
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 	}
 }

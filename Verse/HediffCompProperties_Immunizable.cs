@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace Verse
 {
 	public class HediffCompProperties_Immunizable : HediffCompProperties
@@ -11,6 +13,10 @@ namespace Verse
 		public float severityPerDayImmune;
 
 		public FloatRange severityPerDayNotImmuneRandomFactor = new FloatRange(1f, 1f);
+
+		public List<HediffDefFactor> severityFactorsFromHediffs = new List<HediffDefFactor>();
+
+		public bool hidden;
 
 		public HediffCompProperties_Immunizable()
 		{

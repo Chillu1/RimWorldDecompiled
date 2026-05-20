@@ -5,7 +5,7 @@ namespace RimWorld
 {
 	public class GameCondition_NoSunlight : GameCondition
 	{
-		private SkyColorSet EclipseSkyColors = new SkyColorSet(new Color(0.482f, 0.603f, 0.682f), Color.white, new Color(0.6f, 0.6f, 0.6f), 1f);
+		public static readonly SkyColorSet EclipseSkyColors = new SkyColorSet(new Color(0.482f, 0.603f, 0.682f), Color.white, new Color(0.6f, 0.6f, 0.6f), 1f);
 
 		public override int TransitionTicks => 200;
 

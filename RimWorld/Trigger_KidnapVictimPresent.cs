@@ -21,21 +21,21 @@ namespace RimWorld
 		{
 			if (signal.type == TriggerSignalType.Tick && Find.TickManager.TicksGame % 120 == 0)
 			{
-				if (base.data == null || !(base.data is TriggerData_PawnCycleInd))
+				if (data == null || !(data is TriggerData_PawnCycleInd))
 				{
 					BackCompatibility.TriggerDataPawnCycleIndNull(this);
 				}
 				if (Find.TickManager.TicksGame - lord.lastPawnHarmTick > 300)
 				{
-					TriggerData_PawnCycleInd data = Data;
-					data.pawnCycleInd++;
-					if (data.pawnCycleInd >= lord.ownedPawns.Count)
+					TriggerData_PawnCycleInd triggerData_PawnCycleInd = Data;
+					triggerData_PawnCycleInd.pawnCycleInd++;
+					if (triggerData_PawnCycleInd.pawnCycleInd >= lord.ownedPawns.Count)
 					{
-						data.pawnCycleInd = 0;
+						triggerData_PawnCycleInd.pawnCycleInd = 0;
 					}
 					if (lord.ownedPawns.Any())
 					{
-						Pawn pawn = lord.ownedPawns[data.pawnCycleInd];
+						Pawn pawn = lord.ownedPawns[triggerData_PawnCycleInd.pawnCycleInd];
 						if (pawn.Spawned && !pawn.Downed && pawn.MentalStateDef == null && KidnapAIUtility.TryFindGoodKidnapVictim(pawn, 8f, out var _) && !GenAI.InDangerousCombat(pawn))
 						{
 							return true;

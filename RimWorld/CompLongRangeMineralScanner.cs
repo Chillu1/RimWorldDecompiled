@@ -39,7 +39,7 @@ namespace RimWorld
 			slate.Set("targetMineable", targetMineable);
 			slate.Set("targetMineableThing", targetMineable.building.mineableThing);
 			slate.Set("worker", worker);
-			if (QuestScriptDefOf.LongRangeMineralScannerLump.CanRun(slate))
+			if (QuestScriptDefOf.LongRangeMineralScannerLump.CanRun(slate, parent.Map))
 			{
 				Quest quest = QuestUtility.GenerateQuestAndMakeAvailable(QuestScriptDefOf.LongRangeMineralScannerLump, slate);
 				Find.LetterStack.ReceiveLetter(quest.name, quest.description, LetterDefOf.PositiveEvent, null, null, quest);
@@ -59,6 +59,7 @@ namespace RimWorld
 			ThingDef mineableThing = targetMineable.building.mineableThing;
 			Command_Action command_Action = new Command_Action();
 			command_Action.defaultLabel = "CommandSelectMineralToScanFor".Translate() + ": " + mineableThing.LabelCap;
+			command_Action.defaultDesc = "CommandSelectMineralToScanForDesc".Translate();
 			command_Action.icon = mineableThing.uiIcon;
 			command_Action.iconAngle = mineableThing.uiIconAngle;
 			command_Action.iconOffset = mineableThing.uiIconOffset;
@@ -66,16 +67,14 @@ namespace RimWorld
 			{
 				List<ThingDef> mineables = ((GenStep_PreciousLump)GenStepDefOf.PreciousLump.genStep).mineables;
 				List<FloatMenuOption> list = new List<FloatMenuOption>();
-				ThingDef localD = default(ThingDef);
 				foreach (ThingDef item3 in mineables)
 				{
-					localD = item3;
+					ThingDef localD = item3;
 					FloatMenuOption item = new FloatMenuOption(localD.building.mineableThing.LabelCap, delegate
 					{
 						foreach (object selectedObject in Find.Selector.SelectedObjects)
 						{
-							Thing thing = selectedObject as Thing;
-							if (thing != null)
+							if (selectedObject is Thing thing)
 							{
 								CompLongRangeMineralScanner compLongRangeMineralScanner = thing.TryGetComp<CompLongRangeMineralScanner>();
 								if (compLongRangeMineralScanner != null)

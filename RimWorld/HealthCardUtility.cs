@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using UnityEngine;
 using Verse;
 
@@ -28,7 +29,7 @@ namespace RimWorld
 
 		private static float lastMaxIconsTotalWidth;
 
-		public const float TopPadding = 20f;
+		private const float TopPadding = 20f;
 
 		private const float ThoughtLevelHeight = 25f;
 
@@ -46,11 +47,13 @@ namespace RimWorld
 
 		private static readonly Texture2D BleedingIcon = ContentFinder<Texture2D>.Get("UI/Icons/Medical/Bleeding");
 
+		private const int HideBloodLossTicksThreshold = 60000;
+
 		private static readonly Dictionary<EfficiencyEstimate, Color> efficiencyToColor = new Dictionary<EfficiencyEstimate, Color>
 		{
 			{
 				EfficiencyEstimate.None,
-				ColoredText.RedReadable
+				ColorLibrary.RedReadable
 			},
 			{
 				EfficiencyEstimate.VeryPoor,
@@ -74,7 +77,11 @@ namespace RimWorld
 			}
 		};
 
-		private static List<ThingDef> tmpMedicineBestToWorst = new List<ThingDef>();
+		private static List<Hediff> tmpHediffImpactors = new List<Hediff>();
+
+		private static List<BodyPartRecord> tmpBodyPartImpactors = new List<BodyPartRecord>();
+
+		private static List<Gene> tmpGeneImpactors = new List<Gene>();
 
 		public static void DrawPawnHealthCard(Rect outRect, Pawn pawn, bool allowOperations, bool showBloodLoss, Thing thingForMedBills)
 		{
@@ -83,12 +90,14 @@ namespace RimWorld
 				Log.Error("Called DrawPawnHealthCard with a dead pawn and allowOperations=true. Operations are disallowed on corpses.");
 				allowOperations = false;
 			}
+			outRect.y += 20f;
+			outRect.height -= 20f;
 			outRect = outRect.Rounded();
 			Rect rect = new Rect(outRect.x, outRect.y, outRect.width * 0.375f, outRect.height).Rounded();
 			Rect rect2 = new Rect(rect.xMax, outRect.y, outRect.width - rect.width, outRect.height);
 			rect.yMin += 11f;
 			DrawHealthSummary(rect, pawn, allowOperations, thingForMedBills);
-			DrawHediffListing(rect2.ContractedBy(10f), pawn, showBloodLoss);
+			DrawHediffListing(rect2.ContractedBy(10f), pawn, showBloodLoss, 0f, Prefs.DevMode && Current.ProgramState == ProgramState.Playing);
 		}
 
 		public static void DrawHealthSummary(Rect rect, Pawn pawn, bool allowOperations, Thing thingForMedBills)
@@ -99,22 +108,28 @@ namespace RimWorld
 				onOperationTab = false;
 			}
 			Widgets.DrawMenuSection(rect);
-			List<TabRecord> list = new List<TabRecord>();
-			list.Add(new TabRecord("HealthOverview".Translate(), delegate
+			List<TabRecord> list = new List<TabRecord>
 			{
-				onOperationTab = false;
-			}, !onOperationTab));
+				new TabRecord("HealthOverview".Translate(), delegate
+				{
+					onOperationTab = false;
+				}, !onOperationTab)
+			};
 			if (allowOperations)
 			{
-				string label = (pawn.RaceProps.IsMechanoid ? "MedicalOperationsMechanoidsShort".Translate(pawn.BillStack.Count) : "MedicalOperationsShort".Translate(pawn.BillStack.Count));
-				list.Add(new TabRecord(label, delegate
+				string text = (pawn.RaceProps.IsMechanoid ? "MedicalOperationsMechanoidsShort".Translate() : "MedicalOperationsShort".Translate());
+				if (pawn.BillStack.Count > 0)
+				{
+					text = text + " (" + pawn.BillStack.Count + ")";
+				}
+				list.Add(new TabRecord(text, delegate
 				{
 					onOperationTab = true;
 				}, onOperationTab));
 			}
 			TabDrawer.DrawTabs(rect, list);
 			rect = rect.ContractedBy(9f);
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			float curY = 0f;
 			Text.Font = GameFont.Medium;
 			GUI.color = Color.white;
@@ -131,17 +146,22 @@ namespace RimWorld
 			Text.Font = GameFont.Small;
 			GUI.color = Color.white;
 			Text.Anchor = TextAnchor.UpperLeft;
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
-		public static void DrawHediffListing(Rect rect, Pawn pawn, bool showBloodLoss)
+		public static bool AnyHediffsDisplayed(Pawn pawn, bool showBloodLoss)
+		{
+			return VisibleHediffGroupsInOrder(pawn, showBloodLoss).Any();
+		}
+
+		public static void DrawHediffListing(Rect rect, Pawn pawn, bool showBloodLoss, float rowLeftPad = 0f, bool showDebugOptions = false)
 		{
 			GUI.color = Color.white;
-			if (Prefs.DevMode && Current.ProgramState == ProgramState.Playing)
+			if (showDebugOptions)
 			{
 				DoDebugOptions(rect, pawn);
 			}
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			float lineHeight = Text.LineHeight;
 			Rect outRect = new Rect(0f, 0f, rect.width, rect.height - lineHeight);
 			Rect viewRect = new Rect(0f, 0f, rect.width - 16f, scrollViewHeight);
@@ -155,14 +175,11 @@ namespace RimWorld
 			float curY = 0f;
 			highlight = true;
 			bool flag = false;
-			if (Event.current.type == EventType.Layout)
-			{
-				lastMaxIconsTotalWidth = 0f;
-			}
+			lastMaxIconsTotalWidth = 0f;
 			foreach (IGrouping<BodyPartRecord, Hediff> item in VisibleHediffGroupsInOrder(pawn, showBloodLoss))
 			{
 				flag = true;
-				DrawHediffRow(rect2, pawn, item, ref curY);
+				DrawHediffRow(rect2, pawn, item, ref curY, rowLeftPad);
 			}
 			if (!flag)
 			{
@@ -182,12 +199,12 @@ namespace RimWorld
 			if (bleedRateTotal > 0.01f)
 			{
 				Rect rect3 = new Rect(0f, rect.height - lineHeight, rect.width, lineHeight);
-				string t = "BleedingRate".Translate() + ": " + bleedRateTotal.ToStringPercent() + "/" + "LetterDay".Translate();
+				string text = "BleedingRate".Translate() + ": " + bleedRateTotal.ToStringPercent() + "/" + "LetterDay".Translate();
 				int num = HealthUtility.TicksUntilDeathDueToBloodLoss(pawn);
-				t = ((num >= 60000) ? ((string)(t + (" (" + "WontBleedOutSoon".Translate() + ")"))) : ((string)(t + (" (" + "TimeToDeath".Translate(num.ToStringTicksToPeriod()) + ")"))));
-				Widgets.Label(rect3, t);
+				text = ((ModsConfig.BiotechActive && pawn.genes != null && pawn.genes.HasActiveGene(GeneDefOf.Deathless)) ? ((string)(text + (" (" + "Deathless".Translate() + ")"))) : ((num >= 60000) ? ((string)(text + (" (" + "WontBleedOutSoon".Translate() + ")"))) : ((string)(text + (" (" + "TimeToDeath".Translate(num.ToStringTicksToPeriod()) + ")")))));
+				Widgets.Label(rect3, text);
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			GUI.color = Color.white;
 		}
 
@@ -250,23 +267,33 @@ namespace RimWorld
 			Func<List<FloatMenuOption>> recipeOptionsMaker = delegate
 			{
 				List<FloatMenuOption> list = new List<FloatMenuOption>();
+				int num = 0;
 				foreach (RecipeDef allRecipe in thingForMedBills.def.AllRecipes)
 				{
-					if (allRecipe.AvailableNow && allRecipe.AvailableOnNow(pawn))
+					if (allRecipe.AvailableNow)
 					{
-						IEnumerable<ThingDef> enumerable = allRecipe.PotentiallyMissingIngredients(null, thingForMedBills.Map);
-						if (!enumerable.Any((ThingDef x) => x.isTechHediff) && !enumerable.Any((ThingDef x) => x.IsDrug) && (!enumerable.Any() || !allRecipe.dontShowIfAnyIngredientMissing))
+						AcceptanceReport report = allRecipe.Worker.AvailableReport(pawn);
+						if (report.Accepted || !report.Reason.NullOrEmpty())
 						{
-							if (allRecipe.targetsBodyPart)
+							IEnumerable<ThingDef> enumerable = allRecipe.PotentiallyMissingIngredients(null, thingForMedBills.MapHeld);
+							if (!enumerable.Any((ThingDef x) => x.isTechHediff) && !enumerable.Any((ThingDef x) => x.IsDrug) && (!enumerable.Any() || !allRecipe.dontShowIfAnyIngredientMissing))
 							{
-								foreach (BodyPartRecord item in allRecipe.Worker.GetPartsToApplyOn(pawn, allRecipe))
+								if (allRecipe.targetsBodyPart)
 								{
-									list.Add(GenerateSurgeryOption(pawn, thingForMedBills, allRecipe, enumerable, item));
+									foreach (BodyPartRecord item in allRecipe.Worker.GetPartsToApplyOn(pawn, allRecipe))
+									{
+										if (allRecipe.AvailableOnNow(pawn, item))
+										{
+											list.Add(GenerateSurgeryOption(pawn, thingForMedBills, allRecipe, enumerable, report, num, item));
+											num++;
+										}
+									}
 								}
-							}
-							else
-							{
-								list.Add(GenerateSurgeryOption(pawn, thingForMedBills, allRecipe, enumerable));
+								else if (!pawn.health.hediffSet.HasHediff(allRecipe.addsHediff))
+								{
+									list.Add(GenerateSurgeryOption(pawn, thingForMedBills, allRecipe, enumerable, report, num));
+									num++;
+								}
 							}
 						}
 					}
@@ -278,29 +305,34 @@ namespace RimWorld
 			return curY;
 		}
 
-		private static FloatMenuOption GenerateSurgeryOption(Pawn pawn, Thing thingForMedBills, RecipeDef recipe, IEnumerable<ThingDef> missingIngredients, BodyPartRecord part = null)
+		private static FloatMenuOption GenerateSurgeryOption(Pawn pawn, Thing thingForMedBills, RecipeDef recipe, IEnumerable<ThingDef> missingIngredients, AcceptanceReport report, int index, BodyPartRecord part = null)
 		{
-			string text = recipe.Worker.GetLabelWhenUsedOn(pawn, part).CapitalizeFirst();
+			string label = recipe.Worker.GetLabelWhenUsedOn(pawn, part).CapitalizeFirst();
 			if (part != null && !recipe.hideBodyPartNames)
 			{
-				text = text + " (" + part.Label + ")";
+				label = label + " (" + part.Label + ")";
 			}
 			FloatMenuOption floatMenuOption;
-			if (missingIngredients.Any())
+			if (!report.Reason.NullOrEmpty())
 			{
-				text += " (";
+				label = label + " (" + report.Reason + ")";
+				floatMenuOption = new FloatMenuOption(label, null);
+			}
+			else if (missingIngredients.Any())
+			{
+				label += " (";
 				bool flag = true;
 				foreach (ThingDef missingIngredient in missingIngredients)
 				{
 					if (!flag)
 					{
-						text += ", ";
+						label += ", ";
 					}
 					flag = false;
-					text += "MissingMedicalBillIngredient".Translate(missingIngredient.label);
+					label += "MissingMedicalBillIngredient".Translate(missingIngredient.label);
 				}
-				text += ")";
-				floatMenuOption = new FloatMenuOption(text, null);
+				label += ")";
+				floatMenuOption = new FloatMenuOption(label, null);
 			}
 			else
 			{
@@ -312,10 +344,43 @@ namespace RimWorld
 						HediffDef hediffDef = recipe.addsHediff ?? recipe.changesHediffLevel;
 						if (hediffDef != null)
 						{
-							TaggedString text2 = CompRoyalImplant.CheckForViolations(medPawn, hediffDef, recipe.hediffLevelOffset);
-							if (!text2.NullOrEmpty())
+							TaggedString text = CompRoyalImplant.CheckForViolations(medPawn, hediffDef, recipe.hediffLevelOffset);
+							if (!text.NullOrEmpty())
 							{
-								Find.WindowStack.Add(new Dialog_MessageBox(text2, "Yes".Translate(), delegate
+								Find.WindowStack.Add(new Dialog_MessageBox(text, "Yes".Translate(), delegate
+								{
+									CreateSurgeryBill(medPawn, recipe, part);
+								}, "No".Translate()));
+							}
+							else
+							{
+								TaggedString confirmation = recipe.Worker.GetConfirmation(medPawn);
+								if (!confirmation.NullOrEmpty())
+								{
+									Find.WindowStack.Add(new Dialog_MessageBox(confirmation, "Yes".Translate(), delegate
+									{
+										CreateSurgeryBill(medPawn, recipe, part);
+									}, "No".Translate()));
+								}
+								else
+								{
+									CreateSurgeryBill(medPawn, recipe, part);
+								}
+							}
+						}
+						else if (recipe.Worker is Recipe_ImplantXenogerm)
+						{
+							Find.WindowStack.Add(new Dialog_SelectXenogerm(pawn, pawn.Map, null, delegate(Xenogerm x)
+							{
+								x.SetTargetPawn(pawn);
+							}));
+						}
+						else
+						{
+							TaggedString confirmation2 = recipe.Worker.GetConfirmation(medPawn);
+							if (!confirmation2.NullOrEmpty())
+							{
+								Find.WindowStack.Add(new Dialog_MessageBox(confirmation2, "Yes".Translate(), delegate
 								{
 									CreateSurgeryBill(medPawn, recipe, part);
 								}, "No".Translate()));
@@ -325,139 +390,138 @@ namespace RimWorld
 								CreateSurgeryBill(medPawn, recipe, part);
 							}
 						}
-						else
-						{
-							CreateSurgeryBill(medPawn, recipe, part);
-						}
 					}
 				};
-				floatMenuOption = ((recipe.Worker is Recipe_AdministerIngestible) ? new FloatMenuOption(text, action, recipe.ingredients.FirstOrDefault()?.FixedIngredient) : ((!(recipe.Worker is Recipe_RemoveBodyPart)) ? new FloatMenuOption(text, action, null) : new FloatMenuOption(text, action, part.def.spawnThingOnRemoved)));
+				floatMenuOption = ((recipe.Worker is Recipe_AdministerIngestible) ? new FloatMenuOption(label, action, recipe.ingredients.FirstOrDefault()?.FixedIngredient) : ((!(recipe.Worker is Recipe_RemoveBodyPart)) ? new FloatMenuOption(label, action, recipe.UIIconThing, recipe.UIIcon) : new FloatMenuOption(label, action, part.def.spawnThingOnRemoved)));
 			}
 			floatMenuOption.extraPartWidth = 29f;
 			floatMenuOption.extraPartOnGUI = (Rect rect) => Widgets.InfoCardButton(rect.x + 5f, rect.y + (rect.height - 24f) / 2f, recipe);
+			floatMenuOption.mouseoverGuiAction = delegate(Rect rect)
+			{
+				BillUtility.DoBillInfoWindow(index, label, rect, recipe, part, pawn);
+			};
 			return floatMenuOption;
 		}
 
-		private static void CreateSurgeryBill(Pawn medPawn, RecipeDef recipe, BodyPartRecord part)
+		public static Bill_Medical CreateSurgeryBill(Pawn medPawn, RecipeDef recipe, BodyPartRecord part, List<Thing> uniqueIngredients = null, bool sendMessages = true)
 		{
-			Bill_Medical bill_Medical = new Bill_Medical(recipe);
+			Bill_Medical bill_Medical = new Bill_Medical(recipe, uniqueIngredients);
 			medPawn.BillStack.AddBill(bill_Medical);
 			bill_Medical.Part = part;
 			if (recipe.conceptLearned != null)
 			{
 				PlayerKnowledgeDatabase.KnowledgeDemonstrated(recipe.conceptLearned, KnowledgeAmount.Total);
 			}
-			Map map = medPawn.Map;
-			if (!map.mapPawns.FreeColonists.Any((Pawn col) => recipe.PawnSatisfiesSkillRequirements(col)))
+			if (sendMessages)
 			{
-				Bill.CreateNoPawnsWithSkillDialog(recipe);
-			}
-			if (!medPawn.InBed() && medPawn.RaceProps.IsFlesh)
-			{
-				if (medPawn.RaceProps.Humanlike)
+				Map mapHeld = medPawn.MapHeld;
+				if (!(from p in mapHeld.mapPawns.PawnsInFaction(Faction.OfPlayer)
+					where p.IsFreeColonist || p.IsColonyMechPlayerControlled
+					select p).Any((Pawn col) => recipe.PawnSatisfiesSkillRequirements(col)))
 				{
-					if (!map.listerBuildings.allBuildingsColonist.Any((Building x) => x is Building_Bed && RestUtility.CanUseBedEver(medPawn, x.def) && ((Building_Bed)x).Medical))
+					Bill.CreateNoPawnsWithSkillDialog(recipe);
+				}
+				if (!medPawn.InBed() && medPawn.RaceProps.IsFlesh)
+				{
+					if (medPawn.RaceProps.Humanlike)
 					{
-						Messages.Message("MessageNoMedicalBeds".Translate(), medPawn, MessageTypeDefOf.CautionInput, historical: false);
+						if (!mapHeld.listerBuildings.allBuildingsColonist.Any((Building x) => x is Building_Bed && RestUtility.CanUseBedEver(medPawn, x.def) && ((Building_Bed)x).Medical))
+						{
+							Messages.Message("MessageNoMedicalBeds".Translate(), medPawn, MessageTypeDefOf.CautionInput, historical: false);
+						}
+					}
+					else if (!mapHeld.listerBuildings.allBuildingsColonist.Any((Building x) => x is Building_Bed && RestUtility.CanUseBedEver(medPawn, x.def)))
+					{
+						Messages.Message("MessageNoAnimalBeds".Translate(), medPawn, MessageTypeDefOf.CautionInput, historical: false);
 					}
 				}
-				else if (!map.listerBuildings.allBuildingsColonist.Any((Building x) => x is Building_Bed && RestUtility.CanUseBedEver(medPawn, x.def)))
+				if (medPawn.Faction != null && !medPawn.Faction.Hidden && !medPawn.Faction.HostileTo(Faction.OfPlayer) && recipe.Worker.IsViolationOnPawn(medPawn, part, Faction.OfPlayer))
 				{
-					Messages.Message("MessageNoAnimalBeds".Translate(), medPawn, MessageTypeDefOf.CautionInput, historical: false);
+					Messages.Message("MessageMedicalOperationWillAngerFaction".Translate(medPawn.HomeFaction), medPawn, MessageTypeDefOf.CautionInput, historical: false);
 				}
+				if (!CanDoRecipeWithMedicineRestriction(medPawn, recipe))
+				{
+					Messages.Message("MessageWarningNoMedicineForRestriction".Translate(medPawn.Named("PAWN"), medPawn.playerSettings.medCare.GetLabel().Named("RESTRICTIONLABEL")), medPawn, MessageTypeDefOf.CautionInput, historical: false);
+				}
+				recipe.Worker.CheckForWarnings(medPawn);
 			}
-			if (medPawn.Faction != null && !medPawn.Faction.Hidden && !medPawn.Faction.HostileTo(Faction.OfPlayer) && recipe.Worker.IsViolationOnPawn(medPawn, part, Faction.OfPlayer))
-			{
-				Messages.Message("MessageMedicalOperationWillAngerFaction".Translate(medPawn.FactionOrExtraMiniOrHomeFaction), medPawn, MessageTypeDefOf.CautionInput, historical: false);
-			}
-			ThingDef minRequiredMedicine = GetMinRequiredMedicine(recipe);
-			if (minRequiredMedicine != null && medPawn.playerSettings != null && !medPawn.playerSettings.medCare.AllowsMedicine(minRequiredMedicine))
-			{
-				Messages.Message("MessageTooLowMedCare".Translate(minRequiredMedicine.label, medPawn.LabelShort, medPawn.playerSettings.medCare.GetLabel(), medPawn.Named("PAWN")), medPawn, MessageTypeDefOf.CautionInput, historical: false);
-			}
-			recipe.Worker.CheckForWarnings(medPawn);
+			return bill_Medical;
 		}
 
-		private static ThingDef GetMinRequiredMedicine(RecipeDef recipe)
-		{
-			tmpMedicineBestToWorst.Clear();
-			List<ThingDef> allDefsListForReading = DefDatabase<ThingDef>.AllDefsListForReading;
-			for (int i = 0; i < allDefsListForReading.Count; i++)
-			{
-				if (allDefsListForReading[i].IsMedicine)
-				{
-					tmpMedicineBestToWorst.Add(allDefsListForReading[i]);
-				}
-			}
-			tmpMedicineBestToWorst.SortByDescending((ThingDef x) => x.GetStatValueAbstract(StatDefOf.MedicalPotency));
-			ThingDef thingDef = null;
-			for (int j = 0; j < recipe.ingredients.Count; j++)
-			{
-				ThingDef thingDef2 = null;
-				for (int k = 0; k < tmpMedicineBestToWorst.Count; k++)
-				{
-					if (recipe.ingredients[j].filter.Allows(tmpMedicineBestToWorst[k]))
-					{
-						thingDef2 = tmpMedicineBestToWorst[k];
-					}
-				}
-				if (thingDef2 != null && (thingDef == null || thingDef2.GetStatValueAbstract(StatDefOf.MedicalPotency) > thingDef.GetStatValueAbstract(StatDefOf.MedicalPotency)))
-				{
-					thingDef = thingDef2;
-				}
-			}
-			tmpMedicineBestToWorst.Clear();
-			return thingDef;
-		}
-
-		private static float DrawOverviewTab(Rect leftRect, Pawn pawn, float curY)
+		private static float DrawOverviewTab(Rect rect, Pawn pawn, float curY)
 		{
 			curY += 4f;
-			Text.Font = GameFont.Tiny;
+			bool flag = false;
+			Text.Font = GameFont.Small;
 			Text.Anchor = TextAnchor.UpperLeft;
 			GUI.color = new Color(0.9f, 0.9f, 0.9f);
-			string str = ((pawn.gender == Gender.None) ? ((string)"PawnSummary".Translate(pawn.Named("PAWN"))) : ((string)"PawnSummaryWithGender".Translate(pawn.Named("PAWN"))));
-			Rect rect = new Rect(0f, curY, leftRect.width, 34f);
-			Widgets.Label(rect, str.CapitalizeFirst());
-			if (Mouse.IsOver(rect))
+			if (pawn.foodRestriction != null && pawn.foodRestriction.Configurable && !pawn.DevelopmentalStage.Baby() && pawn.needs?.food != null && (!pawn.IsMutant || !pawn.mutant.Def.disablePolicies))
 			{
-				TooltipHandler.TipRegion(rect, () => pawn.ageTracker.AgeTooltipString, 73412);
-				Widgets.DrawHighlight(rect);
-			}
-			GUI.color = Color.white;
-			curY += 34f;
-			bool flag = pawn.RaceProps.IsFlesh && (pawn.Faction == Faction.OfPlayer || pawn.HostFaction == Faction.OfPlayer || (pawn.NonHumanlikeOrWildMan() && pawn.InBed() && pawn.CurrentBed().Faction == Faction.OfPlayer));
-			if (pawn.foodRestriction != null && pawn.foodRestriction.Configurable)
-			{
-				Rect rect2 = new Rect(0f, curY, leftRect.width * 0.42f, 23f);
+				Rect rect2 = new Rect(0f, curY, rect.width, 23f);
+				flag = true;
+				TooltipHandler.TipRegionByKey(rect2, "FoodRestrictionDescription");
+				Widgets.DrawHighlightIfMouseover(rect2);
+				Rect rect3 = rect2;
+				rect3.xMax = rect2.center.x - 4f;
+				Rect rect4 = rect2;
+				rect4.xMin = rect2.center.x + 4f;
 				Text.Anchor = TextAnchor.MiddleLeft;
-				Widgets.Label(rect2, "FoodRestriction".Translate());
-				GenUI.ResetLabelAlign();
-				if (Widgets.ButtonText(new Rect(rect2.width, curY, leftRect.width - rect2.width, 23f), pawn.foodRestriction.CurrentFoodRestriction.label))
+				Widgets.Label(rect3, string.Format("{0}:", "AllowFood".Translate()));
+				Text.Anchor = TextAnchor.UpperLeft;
+				if (Widgets.ButtonText(rect4, pawn.foodRestriction.CurrentFoodPolicy.label))
 				{
 					List<FloatMenuOption> list = new List<FloatMenuOption>();
-					List<FoodRestriction> allFoodRestrictions = Current.Game.foodRestrictionDatabase.AllFoodRestrictions;
-					for (int i = 0; i < allFoodRestrictions.Count; i++)
+					foreach (FoodPolicy restriction in Current.Game.foodRestrictionDatabase.AllFoodRestrictions)
 					{
-						FoodRestriction localRestriction = allFoodRestrictions[i];
-						list.Add(new FloatMenuOption(localRestriction.label, delegate
+						list.Add(new FloatMenuOption(restriction.label, delegate
 						{
-							pawn.foodRestriction.CurrentFoodRestriction = localRestriction;
+							pawn.foodRestriction.CurrentFoodPolicy = restriction;
 						}));
 					}
-					list.Add(new FloatMenuOption("ManageFoodRestrictions".Translate(), delegate
+					list.Add(new FloatMenuOption("ManageFoodPolicies".Translate() + "...", delegate
 					{
-						Find.WindowStack.Add(new Dialog_ManageFoodRestrictions(null));
+						Find.WindowStack.Add(new Dialog_ManageFoodPolicies(pawn.foodRestriction.CurrentFoodPolicy));
 					}));
 					Find.WindowStack.Add(new FloatMenu(list));
 				}
-				curY += 23f;
+				curY += rect2.height + 4f;
 			}
-			if (pawn.IsColonist && !pawn.Dead)
+			bool flag2 = pawn.Faction == Faction.OfPlayer || pawn.HostFaction == Faction.OfPlayer;
+			bool flag3 = pawn.NonHumanlikeOrWildMan() && pawn.InBed() && pawn.CurrentBed().Faction == Faction.OfPlayer;
+			if (pawn.RaceProps.IsFlesh && (flag2 || flag3) && (!pawn.IsMutant || pawn.mutant.Def.entitledToMedicalCare) && pawn.playerSettings != null && !pawn.Dead && Current.ProgramState == ProgramState.Playing)
 			{
+				Rect rect5 = new Rect(0f, curY, rect.width, 23f);
+				flag = true;
+				TooltipHandler.TipRegionByKey(rect5, "MedicineQualityDescription");
+				Widgets.DrawHighlightIfMouseover(rect5);
+				Rect rect6 = rect5;
+				rect6.xMax = rect5.center.x - 4f;
+				Rect rect7 = rect5;
+				rect7.xMin = rect5.center.x + 4f;
+				Text.Anchor = TextAnchor.MiddleLeft;
+				Widgets.Label(rect6, string.Format("{0}:", "AllowMedicine".Translate()));
+				Text.Anchor = TextAnchor.UpperLeft;
+				Widgets.DrawButtonGraphic(rect7);
+				MedicalCareUtility.MedicalCareSelectButton(rect7, pawn);
+				curY += rect5.height + 4f;
+			}
+			if (Current.ProgramState == ProgramState.Playing && pawn.IsColonist && !pawn.Dead && !pawn.DevelopmentalStage.Baby() && pawn.playerSettings != null)
+			{
+				Rect rect8 = new Rect(0f, curY, rect.width, 23f);
+				flag = true;
+				TooltipHandler.TipRegion(rect8, "AllowSelfTendTip".Translate(Faction.OfPlayer.def.pawnsPlural, 0.7f.ToStringPercent()).CapitalizeFirst());
+				Widgets.DrawHighlightIfMouseover(rect8);
+				Rect rect9 = rect8;
+				rect9.xMax = rect8.center.x - 4f;
+				Rect rect10 = rect8;
+				rect10.xMin = rect8.center.x + 4f;
+				rect10.width = rect10.height;
+				rect10.ContractedBy(4f);
+				Text.Anchor = TextAnchor.MiddleLeft;
+				Widgets.Label(rect9, string.Format("{0}:", "AllowSelfTend".Translate()));
+				Text.Anchor = TextAnchor.UpperLeft;
 				bool selfTend = pawn.playerSettings.selfTend;
-				Rect rect3 = new Rect(0f, curY, leftRect.width, 24f);
-				Widgets.CheckboxLabeled(rect3, "SelfTend".Translate(), ref pawn.playerSettings.selfTend);
+				Widgets.Checkbox(rect10.x, rect10.y, ref pawn.playerSettings.selfTend, rect10.height);
 				if (pawn.playerSettings.selfTend && !selfTend)
 				{
 					if (pawn.WorkTypeIsDisabled(WorkTypeDefOf.Doctor))
@@ -470,70 +534,71 @@ namespace RimWorld
 						Messages.Message("MessageSelfTendUnsatisfied".Translate(pawn.LabelShort, pawn), MessageTypeDefOf.CautionInput, historical: false);
 					}
 				}
-				if (Mouse.IsOver(rect3))
-				{
-					TooltipHandler.TipRegion(rect3, "SelfTendTip".Translate(Faction.OfPlayer.def.pawnsPlural, 0.7f.ToStringPercent()).CapitalizeFirst());
-				}
-				curY += 28f;
+				curY += rect8.height + 10f;
 			}
-			if (flag && pawn.playerSettings != null && !pawn.Dead && Current.ProgramState == ProgramState.Playing)
+			if (flag)
 			{
-				MedicalCareUtility.MedicalCareSetter(new Rect(0f, curY, 140f, 28f), ref pawn.playerSettings.medCare);
-				if (Widgets.ButtonText(new Rect(leftRect.width - 70f, curY, 70f, 28f), "MedGroupDefaults".Translate()))
-				{
-					Find.WindowStack.Add(new Dialog_MedicalDefaults());
-				}
-				curY += 32f;
+				Widgets.DrawLineHorizontal(rect.x - 8f, curY, rect.width, Color.gray);
 			}
-			Text.Font = GameFont.Small;
+			curY += 10f;
 			if (pawn.def.race.IsFlesh)
 			{
 				Pair<string, Color> painLabel = GetPainLabel(pawn);
 				string painTip = GetPainTip(pawn);
-				curY = DrawLeftRow(leftRect, curY, "PainLevel".Translate(), painLabel.First, painLabel.Second, painTip);
+				DrawLeftRow(rect, ref curY, "PainLevel".Translate(), painLabel.First, painLabel.Second, painTip);
 			}
+			curY += 6f;
 			if (!pawn.Dead)
 			{
-				IEnumerable<PawnCapacityDef> source = (pawn.def.race.Humanlike ? DefDatabase<PawnCapacityDef>.AllDefs.Where((PawnCapacityDef x) => x.showOnHumanlikes) : ((!pawn.def.race.Animal) ? DefDatabase<PawnCapacityDef>.AllDefs.Where((PawnCapacityDef x) => x.showOnMechanoids) : DefDatabase<PawnCapacityDef>.AllDefs.Where((PawnCapacityDef x) => x.showOnAnimals)));
+				IEnumerable<PawnCapacityDef> source = (pawn.def.race.Humanlike ? DefDatabase<PawnCapacityDef>.AllDefs.Where((PawnCapacityDef x) => x.showOnHumanlikes) : (pawn.def.race.Animal ? DefDatabase<PawnCapacityDef>.AllDefs.Where((PawnCapacityDef x) => x.showOnAnimals) : (pawn.def.race.IsAnomalyEntity ? DefDatabase<PawnCapacityDef>.AllDefs.Where((PawnCapacityDef x) => x.showOnAnomalyEntities) : ((!pawn.def.race.IsDrone) ? DefDatabase<PawnCapacityDef>.AllDefs.Where((PawnCapacityDef x) => x.showOnMechanoids) : DefDatabase<PawnCapacityDef>.AllDefs.Where((PawnCapacityDef x) => x.showOnDrones)))));
+				foreach (PawnCapacityDef item in source.OrderBy((PawnCapacityDef act) => act.listOrder))
 				{
-					foreach (PawnCapacityDef item in source.OrderBy((PawnCapacityDef act) => act.listOrder))
+					PawnCapacityDef activityLocal;
+					if (PawnCapacityUtility.BodyCanEverDoCapacity(pawn.RaceProps.body, item))
 					{
-						if (PawnCapacityUtility.BodyCanEverDoCapacity(pawn.RaceProps.body, item))
-						{
-							PawnCapacityDef activityLocal = item;
-							Pair<string, Color> efficiencyLabel = GetEfficiencyLabel(pawn, item);
-							Func<string> textGetter = () => (!pawn.Dead) ? GetPawnCapacityTip(pawn, activityLocal) : "";
-							curY = DrawLeftRow(leftRect, curY, item.GetLabelFor(pawn.RaceProps.IsFlesh, pawn.RaceProps.Humanlike).CapitalizeFirst(), efficiencyLabel.First, efficiencyLabel.Second, new TipSignal(textGetter, pawn.thingIDNumber ^ item.index));
-						}
+						activityLocal = item;
+						Pair<string, Color> efficiencyLabel = GetEfficiencyLabel(pawn, item);
+						DrawLeftRow(rect, ref curY, item.GetLabelFor(pawn).CapitalizeFirst(), efficiencyLabel.First, efficiencyLabel.Second, new TipSignal(TipGetter, pawn.thingIDNumber ^ item.index));
 					}
-					return curY;
+					string TipGetter()
+					{
+						if (!pawn.Dead)
+						{
+							return GetPawnCapacityTip(pawn, activityLocal);
+						}
+						return "";
+					}
 				}
 			}
 			return curY;
 		}
 
-		private static float DrawLeftRow(Rect leftRect, float curY, string leftLabel, string rightLabel, Color rightLabelColor, TipSignal tipSignal)
+		private static void DrawLeftRow(Rect rect, ref float curY, string leftLabel, string rightLabel, Color rightLabelColor, TipSignal tipSignal)
 		{
-			Rect rect = new Rect(0f, curY, leftRect.width, 20f);
-			if (Mouse.IsOver(rect))
-			{
-				GUI.color = HighlightColor;
-				GUI.DrawTexture(rect, TexUI.HighlightTex);
-			}
-			GUI.color = Color.white;
-			Widgets.Label(new Rect(0f, curY, leftRect.width * 0.65f, 30f), leftLabel);
-			GUI.color = rightLabelColor;
-			Widgets.Label(new Rect(leftRect.width * 0.65f, curY, leftRect.width * 0.35f, 30f), rightLabel);
-			Rect rect2 = new Rect(0f, curY, leftRect.width, 20f);
+			Rect rect2 = new Rect(17f, curY, rect.width - 34f - 10f, 22f);
 			if (Mouse.IsOver(rect2))
 			{
-				TooltipHandler.TipRegion(rect2, tipSignal);
+				using (new TextBlock(HighlightColor))
+				{
+					GUI.DrawTexture(rect2, TexUI.HighlightTex);
+				}
 			}
-			curY += 20f;
-			return curY;
+			Text.Anchor = TextAnchor.MiddleLeft;
+			Widgets.Label(rect2, leftLabel);
+			GUI.color = rightLabelColor;
+			Text.Anchor = TextAnchor.MiddleRight;
+			Widgets.Label(rect2, rightLabel);
+			GUI.color = Color.white;
+			Text.Anchor = TextAnchor.UpperLeft;
+			Rect rect3 = new Rect(0f, curY, rect.width, 20f);
+			if (Mouse.IsOver(rect3))
+			{
+				TooltipHandler.TipRegion(rect3, tipSignal);
+			}
+			curY += rect2.height;
 		}
 
-		private static void DrawHediffRow(Rect rect, Pawn pawn, IEnumerable<Hediff> diffs, ref float curY)
+		private static void DrawHediffRow(Rect rect, Pawn pawn, IEnumerable<Hediff> diffs, ref float curY, float rowLeftPad = 0f)
 		{
 			float num = rect.width * 0.375f;
 			float width = rect.width - num - lastMaxIconsTotalWidth;
@@ -554,17 +619,16 @@ namespace RimWorld
 				num4 += Text.CalcHeight(text, width);
 			}
 			num2 = num4;
-			Rect rect2 = new Rect(0f, curY, rect.width, Mathf.Max(a, num2));
-			DoRightRowHighlight(rect2);
+			DoRightRowHighlight(new Rect(0f, curY, rect.width, Mathf.Max(a, num2)));
 			if (part != null)
 			{
 				GUI.color = HealthUtility.GetPartConditionLabel(pawn, part).Second;
-				Widgets.Label(new Rect(0f, curY, num, 100f), part.LabelCap);
+				Widgets.Label(new Rect(rowLeftPad, curY, num, 100f), part.LabelCap);
 			}
 			else
 			{
 				GUI.color = HealthUtility.RedColor;
-				Widgets.Label(new Rect(0f, curY, num, 100f), "WholeBody".Translate());
+				Widgets.Label(new Rect(rowLeftPad, curY, num, 100f), "WholeBody".Translate());
 			}
 			GUI.color = Color.white;
 			foreach (IGrouping<int, Hediff> item2 in from x in diffs
@@ -594,27 +658,82 @@ namespace RimWorld
 				{
 					text2 = text2 + " x" + num6.ToStringCached();
 				}
-				GUI.color = hediff.LabelColor;
 				float num7 = Text.CalcHeight(text2, width);
-				Rect rect3 = new Rect(num, curY, width, num7);
-				Widgets.Label(rect3, text2);
+				Rect rect2 = new Rect(num, curY, width, num7);
+				Widgets.DrawHighlightIfMouseover(rect2);
+				GUI.color = hediff.LabelColor;
+				Widgets.Label(rect2, text2);
 				GUI.color = Color.white;
-				Rect iconsRect = new Rect(rect3.x + 10f, rect3.y, rect.width - num - 10f, rect3.height);
+				Rect iconsRect = new Rect(rect2.x + 10f, rect2.y, rect.width - num - 10f, rect2.height);
 				List<GenUI.AnonymousStackElement> list = new List<GenUI.AnonymousStackElement>();
-				foreach (HediffDef item4 in item2.Select((Hediff h) => h.def).Distinct())
+				Hediff localHediff = hediff;
+				if (DebugSettings.ShowDevGizmos && Current.ProgramState == ProgramState.Playing)
 				{
-					HediffDef localHediffDef = item4;
 					list.Add(new GenUI.AnonymousStackElement
 					{
 						drawer = delegate(Rect r)
 						{
-							float num10 = iconsRect.width - (r.x - iconsRect.x) - 20f;
-							r = new Rect(iconsRect.x + num10, r.y, 20f, 20f);
-							Widgets.InfoCardButton(r.x, r.y, localHediffDef);
+							float num9 = iconsRect.width - (r.x - iconsRect.x) - 20f;
+							r = new Rect(iconsRect.x + num9, r.y, 20f, 20f);
+							GUI.color = Color.red;
+							TooltipHandler.TipRegion(r, () => "DEV: Remove hediff", 1071045645);
+							if (GUI.Button(r, TexButton.Delete))
+							{
+								pawn.health.RemoveHediff(localHediff);
+							}
+							GUI.color = Color.white;
 						},
 						width = 20f
 					});
+					if (localHediff.def.maxSeverity < float.MaxValue || localHediff.def.lethalSeverity > 0f)
+					{
+						list.Add(new GenUI.AnonymousStackElement
+						{
+							drawer = delegate(Rect r)
+							{
+								float num9 = iconsRect.width - (r.x - iconsRect.x) - 20f;
+								r = new Rect(iconsRect.x + num9, r.y, 20f, 20f);
+								GUI.color = Color.cyan;
+								TooltipHandler.TipRegion(r, () => "DEV: Set severity", 2131648723);
+								if (GUI.Button(r, TexButton.Save))
+								{
+									Find.WindowStack.Add(new Dialog_DebugSetSeverity(localHediff));
+								}
+								GUI.color = Color.white;
+							},
+							width = 20f
+						});
+					}
+					if (localHediff.TryGetComp<HediffComp_Disappears>() != null)
+					{
+						list.Add(new GenUI.AnonymousStackElement
+						{
+							drawer = delegate(Rect r)
+							{
+								float num9 = iconsRect.width - (r.x - iconsRect.x) - 20f;
+								r = new Rect(iconsRect.x + num9, r.y, 20f, 20f);
+								GUI.color = Color.yellow;
+								TooltipHandler.TipRegion(r, () => "DEV: Set remaining time", 6234623);
+								if (GUI.Button(r, TexButton.Save))
+								{
+									Find.WindowStack.Add(new Dialog_DebugSetHediffRemaining(localHediff));
+								}
+								GUI.color = Color.white;
+							},
+							width = 20f
+						});
+					}
 				}
+				list.Add(new GenUI.AnonymousStackElement
+				{
+					drawer = delegate(Rect r)
+					{
+						float num9 = iconsRect.width - (r.x - iconsRect.x) - 20f;
+						r = new Rect(iconsRect.x + num9, r.y, 20f, 20f);
+						Widgets.InfoCardButton(r, localHediff);
+					},
+					width = 20f
+				});
 				if ((bool)bleedingIcon)
 				{
 					list.Add(new GenUI.AnonymousStackElement
@@ -634,8 +753,8 @@ namespace RimWorld
 					{
 						drawer = delegate(Rect r)
 						{
-							float num8 = iconsRect.width - (r.x - iconsRect.x) - 20f;
-							r = new Rect(iconsRect.x + num8, r.y, 20f, 20f);
+							float num9 = iconsRect.width - (r.x - iconsRect.x) - 20f;
+							r = new Rect(iconsRect.x + num9, r.y, 20f, 20f);
 							GUI.color = stateIcon.Color;
 							GUI.DrawTexture(r, stateIcon.Texture);
 							GUI.color = Color.white;
@@ -648,18 +767,57 @@ namespace RimWorld
 					obj.drawer(r);
 				}, (GenUI.AnonymousStackElement obj) => obj.width);
 				lastMaxIconsTotalWidth = Mathf.Max(lastMaxIconsTotalWidth, list.Sum((GenUI.AnonymousStackElement x) => x.width + 5f) - 5f);
+				if (Mouse.IsOver(rect2))
+				{
+					int num8 = 0;
+					foreach (Hediff hediff2 in item2)
+					{
+						TooltipHandler.TipRegion(rect2, new TipSignal(() => hediff2.GetTooltip(pawn, showHediffsDebugInfo), (int)curY + 7857 + num8++, TooltipPriority.Default));
+					}
+					if (part != null)
+					{
+						TooltipHandler.TipRegion(rect2, new TipSignal(() => GetTooltip(pawn, part), (int)curY + 7857 + ++num8, TooltipPriority.Pawn));
+						if (DebugViewSettings.drawWoundAnchorsOnHover && pawn.Drawer.renderer.WoundOverlays.debugDrawPart != part)
+						{
+							pawn.Drawer.renderer.WoundOverlays.debugDrawPart = part;
+							pawn.Drawer.renderer.WoundOverlays.ClearCache();
+							PortraitsCache.SetDirty(pawn);
+							GlobalTextureAtlasManager.TryMarkPawnFrameSetDirty(pawn);
+						}
+					}
+				}
+				if (Widgets.ButtonInvisible(rect2, CanEntryBeClicked(item2, pawn)))
+				{
+					EntryClicked(item2, pawn);
+				}
 				curY += num7;
 			}
 			GUI.color = Color.white;
 			curY = num3 + Mathf.Max(a, num2);
-			if (Widgets.ButtonInvisible(rect2, CanEntryBeClicked(diffs, pawn)))
+		}
+
+		private static bool CanDoRecipeWithMedicineRestriction(IBillGiver giver, RecipeDef recipe)
+		{
+			if (!(giver is Pawn { playerSettings: not null } pawn))
 			{
-				EntryClicked(diffs, pawn);
+				return true;
 			}
-			if (Mouse.IsOver(rect2))
+			if (!recipe.ingredients.Any((IngredientCount x) => x.filter.AnyAllowedDef.IsMedicine))
 			{
-				TooltipHandler.TipRegion(rect2, new TipSignal(() => GetTooltip(diffs, pawn, part), (int)curY + 7857));
+				return true;
 			}
+			MedicalCareCategory medicalCareCategory = WorkGiver_DoBill.GetMedicalCareCategory(pawn);
+			foreach (Thing item in pawn.MapHeld.listerThings.ThingsInGroup(ThingRequestGroup.Medicine))
+			{
+				foreach (IngredientCount ingredient in recipe.ingredients)
+				{
+					if (ingredient.filter.Allows(item) && medicalCareCategory.AllowsMedicine(item.def))
+					{
+						return true;
+					}
+				}
+			}
+			return false;
 		}
 
 		public static string GetPainTip(Pawn pawn)
@@ -667,99 +825,73 @@ namespace RimWorld
 			return "PainLevel".Translate() + ": " + (pawn.health.hediffSet.PainTotal * 100f).ToString("F0") + "%";
 		}
 
+		private static string GetTooltip(Pawn pawn, BodyPartRecord part)
+		{
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.Append(part.LabelCap + ": ");
+			stringBuilder.AppendLine(" " + pawn.health.hediffSet.GetPartHealth(part) + " / " + part.def.GetMaxHealth(pawn));
+			float num = PawnCapacityUtility.CalculatePartEfficiency(pawn.health.hediffSet, part);
+			if (num != 1f)
+			{
+				stringBuilder.AppendLine("Efficiency".Translate() + ": " + num.ToStringPercent());
+			}
+			return stringBuilder.ToString();
+		}
+
 		public static string GetPawnCapacityTip(Pawn pawn, PawnCapacityDef capacity)
 		{
 			List<PawnCapacityUtility.CapacityImpactor> list = new List<PawnCapacityUtility.CapacityImpactor>();
 			float eff = PawnCapacityUtility.CalculateCapacityLevel(pawn.health.hediffSet, capacity, list);
-			PawnCapacityUtility.CapacityImpactorCapacity capacityImpactorCapacity;
-			list.RemoveAll((PawnCapacityUtility.CapacityImpactor x) => (capacityImpactorCapacity = x as PawnCapacityUtility.CapacityImpactorCapacity) != null && !capacityImpactorCapacity.capacity.CanShowOnPawn(pawn));
+			list.RemoveAll((PawnCapacityUtility.CapacityImpactor x) => x is PawnCapacityUtility.CapacityImpactorCapacity capacityImpactorCapacity && !capacityImpactorCapacity.capacity.CanShowOnPawn(pawn));
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.AppendLine(capacity.GetLabelFor(pawn).CapitalizeFirst() + ": " + GetEfficiencyEstimateLabel(eff));
 			if (list.Count > 0)
 			{
 				stringBuilder.AppendLine();
 				stringBuilder.AppendLine("AffectedBy".Translate());
-				for (int i = 0; i < list.Count; i++)
+				for (int num = 0; num < list.Count; num++)
 				{
-					if (list[i] is PawnCapacityUtility.CapacityImpactorHediff)
+					if (list[num] is PawnCapacityUtility.CapacityImpactorHediff capacityImpactorHediff && !tmpHediffImpactors.Contains(capacityImpactorHediff.hediff))
 					{
-						stringBuilder.AppendLine($"  {list[i].Readable(pawn)}");
+						stringBuilder.AppendLine($"  {list[num].Readable(pawn)}");
+						tmpHediffImpactors.Add(capacityImpactorHediff.hediff);
 					}
 				}
-				for (int j = 0; j < list.Count; j++)
+				tmpHediffImpactors.Clear();
+				for (int num2 = 0; num2 < list.Count; num2++)
 				{
-					if (list[j] is PawnCapacityUtility.CapacityImpactorBodyPartHealth)
+					if (list[num2] is PawnCapacityUtility.CapacityImpactorBodyPartHealth capacityImpactorBodyPartHealth && !tmpBodyPartImpactors.Contains(capacityImpactorBodyPartHealth.bodyPart))
 					{
-						stringBuilder.AppendLine($"  {list[j].Readable(pawn)}");
+						stringBuilder.AppendLine($"  {list[num2].Readable(pawn)}");
+						tmpBodyPartImpactors.Add(capacityImpactorBodyPartHealth.bodyPart);
 					}
 				}
-				for (int k = 0; k < list.Count; k++)
+				tmpBodyPartImpactors.Clear();
+				for (int num3 = 0; num3 < list.Count; num3++)
 				{
-					if (list[k] is PawnCapacityUtility.CapacityImpactorCapacity)
+					if (list[num3] is PawnCapacityUtility.CapacityImpactorGene capacityImpactorGene && !tmpGeneImpactors.Contains(capacityImpactorGene.gene))
 					{
-						stringBuilder.AppendLine($"  {list[k].Readable(pawn)}");
+						stringBuilder.AppendLine($"  {list[num3].Readable(pawn)}");
+						tmpGeneImpactors.Add(capacityImpactorGene.gene);
 					}
 				}
-				for (int l = 0; l < list.Count; l++)
+				tmpGeneImpactors.Clear();
+				for (int num4 = 0; num4 < list.Count; num4++)
 				{
-					if (list[l] is PawnCapacityUtility.CapacityImpactorPain)
+					if (list[num4] is PawnCapacityUtility.CapacityImpactorCapacity)
 					{
-						stringBuilder.AppendLine($"  {list[l].Readable(pawn)}");
+						stringBuilder.AppendLine($"  {list[num4].Readable(pawn)}");
+					}
+				}
+				for (int num5 = 0; num5 < list.Count; num5++)
+				{
+					if (list[num5] is PawnCapacityUtility.CapacityImpactorPain)
+					{
+						stringBuilder.AppendLine($"  {list[num5].Readable(pawn)}");
 					}
 				}
 			}
 			return stringBuilder.ToString();
-		}
-
-		private static string GetTooltip(IEnumerable<Hediff> diffs, Pawn pawn, BodyPartRecord part)
-		{
-			StringBuilder stringBuilder = new StringBuilder();
-			if (part != null)
-			{
-				stringBuilder.Append(part.LabelCap + ": ");
-				stringBuilder.AppendLine(" " + pawn.health.hediffSet.GetPartHealth(part) + " / " + part.def.GetMaxHealth(pawn));
-				float num = PawnCapacityUtility.CalculatePartEfficiency(pawn.health.hediffSet, part);
-				if (num != 1f)
-				{
-					stringBuilder.AppendLine("Efficiency".Translate() + ": " + num.ToStringPercent());
-				}
-				stringBuilder.AppendLine("------------------");
-			}
-			foreach (IGrouping<int, Hediff> item in from x in diffs
-				group x by x.UIGroupKey)
-			{
-				foreach (Hediff item2 in item)
-				{
-					string severityLabel = item2.SeverityLabel;
-					bool flag = showHediffsDebugInfo && !item2.DebugString().NullOrEmpty();
-					if (!item2.Label.NullOrEmpty() || !severityLabel.NullOrEmpty() || !item2.CapMods.NullOrEmpty() || flag)
-					{
-						stringBuilder.Append(item2.LabelCap);
-						if (!severityLabel.NullOrEmpty())
-						{
-							stringBuilder.Append(": " + severityLabel);
-						}
-						stringBuilder.AppendLine();
-						string tipStringExtra = item2.TipStringExtra;
-						if (!tipStringExtra.NullOrEmpty())
-						{
-							stringBuilder.AppendLine(tipStringExtra.TrimEndNewlines().Indented());
-						}
-						if (flag)
-						{
-							stringBuilder.AppendLine(item2.DebugString().TrimEndNewlines());
-						}
-					}
-				}
-			}
-			if (GetCombatLogInfo(diffs, out var combatLogText, out var _))
-			{
-				stringBuilder.AppendLine();
-				stringBuilder.Append("Cause".Translate());
-				stringBuilder.AppendLine(":");
-				stringBuilder.AppendLine(combatLogText.Resolve().Indented());
-			}
-			return stringBuilder.ToString().TrimEnd();
 		}
 
 		private static bool CanEntryBeClicked(IEnumerable<Hediff> diffs, Pawn pawn)
@@ -777,18 +909,14 @@ namespace RimWorld
 
 		private static void EntryClicked(IEnumerable<Hediff> diffs, Pawn pawn)
 		{
-			if (GetCombatLogInfo(diffs, out var _, out var combatLogEntry) && combatLogEntry != null && Find.BattleLog.Battles.Any((Battle b) => b.Concerns(pawn) && b.Entries.Any((LogEntry e) => e == combatLogEntry)))
+			if (GetCombatLogInfo(diffs, out var _, out var combatLogEntry) && combatLogEntry != null && Find.BattleLog.Battles.Any((Battle b) => b.Concerns(pawn) && b.Entries.Any((LogEntry e) => e == combatLogEntry)) && InspectPaneUtility.OpenTab(typeof(ITab_Pawn_Log)) is ITab_Pawn_Log tab_Pawn_Log)
 			{
-				ITab_Pawn_Log tab_Pawn_Log = InspectPaneUtility.OpenTab(typeof(ITab_Pawn_Log)) as ITab_Pawn_Log;
-				if (tab_Pawn_Log != null)
-				{
-					tab_Pawn_Log.SeekTo(combatLogEntry);
-					tab_Pawn_Log.Highlight(combatLogEntry);
-				}
+				tab_Pawn_Log.SeekTo(combatLogEntry);
+				tab_Pawn_Log.Highlight(combatLogEntry);
 			}
 		}
 
-		private static bool GetCombatLogInfo(IEnumerable<Hediff> diffs, out TaggedString combatLogText, out LogEntry combatLogEntry)
+		public static bool GetCombatLogInfo(IEnumerable<Hediff> diffs, out TaggedString combatLogText, out LogEntry combatLogEntry)
 		{
 			combatLogText = null;
 			combatLogEntry = null;
@@ -815,174 +943,85 @@ namespace RimWorld
 				GUI.DrawTexture(rowRect, TexUI.HighlightTex);
 			}
 			highlight = !highlight;
-			if (Mouse.IsOver(rowRect))
-			{
-				GUI.color = HighlightColor;
-				GUI.DrawTexture(rowRect, TexUI.HighlightTex);
-			}
 		}
 
 		private static void DoDebugOptions(Rect rightRect, Pawn pawn)
 		{
-			Widgets.CheckboxLabeled(new Rect(rightRect.x, rightRect.y - 25f, 110f, 30f), "Dev: AllDiffs", ref showAllHediffs);
-			Widgets.CheckboxLabeled(new Rect(rightRect.x + 115f, rightRect.y - 25f, 120f, 30f), "DiffsDebugInfo", ref showHediffsDebugInfo);
-			if (!Widgets.ButtonText(new Rect(rightRect.x + 240f, rightRect.y - 27f, 115f, 25f), "Debug info"))
+			if (!Widgets.ButtonText(new Rect(rightRect.x + 240f, rightRect.y - 27f, 115f, 25f), "Dev tool..."))
 			{
 				return;
 			}
-			List<FloatMenuOption> list = new List<FloatMenuOption>();
-			list.Add(new FloatMenuOption("Parts hit chance (this part or any child node)", delegate
+			List<FloatMenuOption> list = new List<FloatMenuOption>(6);
+			list.Add(new FloatMenuOption("Add hediff", delegate
 			{
-				StringBuilder stringBuilder13 = new StringBuilder();
-				foreach (BodyPartRecord item2 in pawn.RaceProps.body.AllParts.OrderByDescending((BodyPartRecord x) => x.coverageAbsWithChildren))
-				{
-					stringBuilder13.AppendLine(item2.LabelCap + " " + item2.coverageAbsWithChildren.ToStringPercent());
-				}
-				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder13.ToString()));
+				Find.WindowStack.Add(new Dialog_DebugOptionListLister(DebugTools_Health.Options_AddHediff(pawn)));
 			}));
-			list.Add(new FloatMenuOption("Parts hit chance (exactly this part)", delegate
+			FloatMenuOption floatMenuOption = FloatMenuOption.CheckboxLabeled("Hediff debug tooltips", delegate
 			{
-				StringBuilder stringBuilder12 = new StringBuilder();
-				float num2 = 0f;
-				foreach (BodyPartRecord item3 in pawn.RaceProps.body.AllParts.OrderByDescending((BodyPartRecord x) => x.coverageAbs))
+				showHediffsDebugInfo = !showHediffsDebugInfo;
+			}, showHediffsDebugInfo);
+			floatMenuOption.tooltip = "Hover over hediffs in the health window to get extra debug information about them.";
+			list.Add(floatMenuOption);
+			list.Add(FloatMenuOption.CheckboxLabeled("Show hidden Hediffs", delegate
+			{
+				showAllHediffs = !showAllHediffs;
+			}, showAllHediffs));
+			list.Add(new FloatMenuOption("Table: BodyPartRecord info", delegate
+			{
+				float totalCorpseNutrition = 0f;
+				if (pawn.RaceProps.hasCorpse)
 				{
-					stringBuilder12.AppendLine(item3.LabelCap + " " + item3.coverageAbs.ToStringPercent());
-					num2 += item3.coverageAbs;
+					totalCorpseNutrition = StatDefOf.Nutrition.Worker.GetValueAbstract(pawn.RaceProps.corpseDef);
 				}
-				stringBuilder12.AppendLine();
-				stringBuilder12.AppendLine("Total " + num2.ToStringPercent());
-				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder12.ToString()));
+				DebugTables.MakeTablesDialog(pawn.RaceProps.body.AllParts, new TableDataGetter<BodyPartRecord>("defName", (BodyPartRecord b) => b.def.defName), new TableDataGetter<BodyPartRecord>("Coverage", (BodyPartRecord b) => pawn.health.hediffSet.GetCoverageOfNotMissingNaturalParts(b).ToStringPercent()), new TableDataGetter<BodyPartRecord>("Hit chance\n(this or any child)", (BodyPartRecord b) => b.coverageAbsWithChildren.ToStringPercent()), new TableDataGetter<BodyPartRecord>("Hit chance\n(this part)", (BodyPartRecord b) => b.coverageAbs.ToStringPercent()), new TableDataGetter<BodyPartRecord>("Efficiency", (BodyPartRecord b) => PawnCapacityUtility.CalculatePartEfficiency(pawn.health.hediffSet, b).ToStringPercent()), new TableDataGetter<BodyPartRecord>("Nutrition", (BodyPartRecord b) => (!(totalCorpseNutrition > 0f)) ? 0f : FoodUtility.GetBodyPartNutrition(totalCorpseNutrition, pawn, b)), new TableDataGetter<BodyPartRecord>("Solid", (BodyPartRecord b) => (!pawn.health.hediffSet.PartIsMissing(b)) ? b.def.IsSolid(b, pawn.health.hediffSet.hediffs).ToStringCheckBlank() : ""), new TableDataGetter<BodyPartRecord>("Skin covered", (BodyPartRecord b) => (!pawn.health.hediffSet.PartIsMissing(b)) ? b.def.IsSkinCovered(b, pawn.health.hediffSet).ToStringCheckBlank() : ""), new TableDataGetter<BodyPartRecord>("Is missing", (BodyPartRecord b) => pawn.health.hediffSet.PartIsMissing(b).ToStringCheckBlank()), new TableDataGetter<BodyPartRecord>("Is missing parts", (BodyPartRecord b) => pawn.health.hediffSet.PartOrAnyAncestorHasDirectlyAddedParts(b).ToStringCheckBlank()));
 			}));
-			list.Add(new FloatMenuOption("Per-part efficiency", delegate
+			list.Add(new FloatMenuOption("Table: BodyPartGroupDef info", delegate
 			{
-				StringBuilder stringBuilder11 = new StringBuilder();
-				foreach (BodyPartRecord allPart in pawn.RaceProps.body.AllParts)
+				DebugTables.MakeTablesDialog(DefDatabase<BodyPartGroupDef>.AllDefs.Where((BodyPartGroupDef x) => pawn.RaceProps.body.AllParts.Any((BodyPartRecord y) => y.groups.Contains(x))), new TableDataGetter<BodyPartGroupDef>("defName", (BodyPartGroupDef b) => b.defName), new TableDataGetter<BodyPartGroupDef>("Efficiency", (BodyPartGroupDef b) => PawnCapacityUtility.CalculateNaturalPartsAverageEfficiency(pawn.health.hediffSet, b).ToStringPercent()));
+			}));
+			list.Add(new FloatMenuOption("Table: HediffGiver_Birthday", delegate
+			{
+				List<TableDataGetter<HediffGiver_Birthday>> list2 = new List<TableDataGetter<HediffGiver_Birthday>>
 				{
-					stringBuilder11.AppendLine(allPart.LabelCap + " " + PawnCapacityUtility.CalculatePartEfficiency(pawn.health.hediffSet, allPart).ToStringPercent());
+					new TableDataGetter<HediffGiver_Birthday>("label", (HediffGiver_Birthday b) => b.hediff.LabelCap)
+				};
+				for (int num = 1; (float)num < pawn.RaceProps.lifeExpectancy + 20f; num++)
+				{
+					int age = num;
+					list2.Add(new TableDataGetter<HediffGiver_Birthday>("Chance at\n" + num, (HediffGiver_Birthday h) => h.DebugChanceToHaveAtAge(pawn, age).ToStringPercent()));
 				}
-				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder11.ToString()));
-			}));
-			list.Add(new FloatMenuOption("BodyPartGroup efficiency (of only natural parts)", delegate
-			{
-				StringBuilder stringBuilder10 = new StringBuilder();
-				foreach (BodyPartGroupDef item4 in DefDatabase<BodyPartGroupDef>.AllDefs.Where((BodyPartGroupDef x) => pawn.RaceProps.body.AllParts.Any((BodyPartRecord y) => y.groups.Contains(x))))
+				list2.Add(new TableDataGetter<HediffGiver_Birthday>("Spacing", (HediffGiver_Birthday h) => ""));
+				for (int num2 = 1; (float)num2 < pawn.RaceProps.lifeExpectancy + 20f; num2++)
 				{
-					stringBuilder10.AppendLine(item4.LabelCap + " " + PawnCapacityUtility.CalculateNaturalPartsAverageEfficiency(pawn.health.hediffSet, item4).ToStringPercent());
-				}
-				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder10.ToString()));
-			}));
-			list.Add(new FloatMenuOption("IsSolid", delegate
-			{
-				StringBuilder stringBuilder9 = new StringBuilder();
-				foreach (BodyPartRecord notMissingPart in pawn.health.hediffSet.GetNotMissingParts())
-				{
-					stringBuilder9.AppendLine(notMissingPart.LabelCap + " " + notMissingPart.def.IsSolid(notMissingPart, pawn.health.hediffSet.hediffs));
-				}
-				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder9.ToString()));
-			}));
-			list.Add(new FloatMenuOption("IsSkinCovered", delegate
-			{
-				StringBuilder stringBuilder8 = new StringBuilder();
-				foreach (BodyPartRecord notMissingPart2 in pawn.health.hediffSet.GetNotMissingParts())
-				{
-					stringBuilder8.AppendLine(notMissingPart2.LabelCap + " " + notMissingPart2.def.IsSkinCovered(notMissingPart2, pawn.health.hediffSet));
-				}
-				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder8.ToString()));
-			}));
-			list.Add(new FloatMenuOption("Immunities", delegate
-			{
-				StringBuilder stringBuilder7 = new StringBuilder();
-				foreach (HediffDef item5 in DefDatabase<HediffDef>.AllDefsListForReading)
-				{
-					ImmunityRecord immunityRecord = pawn.health.immunity.GetImmunityRecord(item5);
-					if (immunityRecord != null)
+					int age2 = num2;
+					list2.Add(new TableDataGetter<HediffGiver_Birthday>("Count at\n" + num2, delegate
 					{
-						stringBuilder7.AppendLine(string.Concat("Hediff: ", immunityRecord.hediffDef, ", Source: ", immunityRecord.source, ", Immunity: ", immunityRecord.immunity));
-					}
-				}
-				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder7.ToString()));
-			}));
-			list.Add(new FloatMenuOption("does have added parts", delegate
-			{
-				StringBuilder stringBuilder6 = new StringBuilder();
-				foreach (BodyPartRecord notMissingPart3 in pawn.health.hediffSet.GetNotMissingParts())
-				{
-					stringBuilder6.AppendLine(notMissingPart3.LabelCap + " " + pawn.health.hediffSet.PartOrAnyAncestorHasDirectlyAddedParts(notMissingPart3));
-				}
-				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder6.ToString()));
-			}));
-			list.Add(new FloatMenuOption("GetNotMissingParts", delegate
-			{
-				StringBuilder stringBuilder5 = new StringBuilder();
-				foreach (BodyPartRecord notMissingPart4 in pawn.health.hediffSet.GetNotMissingParts())
-				{
-					stringBuilder5.AppendLine(notMissingPart4.LabelCap);
-				}
-				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder5.ToString()));
-			}));
-			list.Add(new FloatMenuOption("GetCoverageOfNotMissingNaturalParts", delegate
-			{
-				StringBuilder stringBuilder4 = new StringBuilder();
-				foreach (BodyPartRecord item6 in pawn.RaceProps.body.AllParts.OrderByDescending((BodyPartRecord x) => pawn.health.hediffSet.GetCoverageOfNotMissingNaturalParts(x)))
-				{
-					stringBuilder4.AppendLine(item6.LabelCap + ": " + pawn.health.hediffSet.GetCoverageOfNotMissingNaturalParts(item6).ToStringPercent());
-				}
-				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder4.ToString()));
-			}));
-			list.Add(new FloatMenuOption("parts nutrition (assuming adult)", delegate
-			{
-				StringBuilder stringBuilder3 = new StringBuilder();
-				float totalCorpseNutrition = StatDefOf.Nutrition.Worker.GetValueAbstract(pawn.RaceProps.corpseDef);
-				foreach (BodyPartRecord item7 in pawn.RaceProps.body.AllParts.OrderByDescending((BodyPartRecord x) => FoodUtility.GetBodyPartNutrition(totalCorpseNutrition, pawn, x)))
-				{
-					stringBuilder3.AppendLine(item7.LabelCap + ": " + FoodUtility.GetBodyPartNutrition(totalCorpseNutrition, pawn, item7));
-				}
-				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder3.ToString()));
-			}));
-			list.Add(new FloatMenuOption("HediffGiver_Birthday chance at age", delegate
-			{
-				List<FloatMenuOption> list2 = new List<FloatMenuOption>();
-				HediffGiver_Birthday hLocal = default(HediffGiver_Birthday);
-				foreach (HediffGiverSetDef hediffGiverSet in pawn.RaceProps.hediffGiverSets)
-				{
-					foreach (HediffGiver_Birthday item8 in hediffGiverSet.hediffGivers.OfType<HediffGiver_Birthday>())
-					{
-						hLocal = item8;
-						FloatMenuOption item = new FloatMenuOption(hediffGiverSet.defName + " - " + item8.hediff.defName, delegate
+						float num3 = 0f;
+						foreach (HediffGiverSetDef hediffGiverSet in pawn.RaceProps.hediffGiverSets)
 						{
-							StringBuilder stringBuilder2 = new StringBuilder();
-							stringBuilder2.AppendLine("% of pawns which will have at least 1 " + hLocal.hediff.label + " at age X:");
-							stringBuilder2.AppendLine();
-							for (int j = 1; (float)j < pawn.RaceProps.lifeExpectancy + 20f; j++)
+							foreach (HediffGiver_Birthday item in hediffGiverSet.hediffGivers.OfType<HediffGiver_Birthday>())
 							{
-								stringBuilder2.AppendLine(j + ": " + hLocal.DebugChanceToHaveAtAge(pawn, j).ToStringPercent());
+								num3 += item.DebugChanceToHaveAtAge(pawn, age2);
 							}
-							Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder2.ToString()));
-						});
-						list2.Add(item);
-					}
-				}
-				Find.WindowStack.Add(new FloatMenu(list2));
-			}));
-			list.Add(new FloatMenuOption("HediffGiver_Birthday count at age", delegate
-			{
-				StringBuilder stringBuilder = new StringBuilder();
-				stringBuilder.AppendLine("Average hediffs count (from HediffGiver_Birthday) at age X:");
-				stringBuilder.AppendLine();
-				for (int i = 1; (float)i < pawn.RaceProps.lifeExpectancy + 20f; i++)
-				{
-					float num = 0f;
-					foreach (HediffGiverSetDef hediffGiverSet2 in pawn.RaceProps.hediffGiverSets)
-					{
-						foreach (HediffGiver_Birthday item9 in hediffGiverSet2.hediffGivers.OfType<HediffGiver_Birthday>())
-						{
-							num += item9.DebugChanceToHaveAtAge(pawn, i);
 						}
-					}
-					stringBuilder.AppendLine(i + ": " + num.ToStringDecimalIfSmall());
+						return num3.ToStringDecimalIfSmall();
+					}));
 				}
-				Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder.ToString()));
+				DebugTables.MakeTablesDialog(pawn.RaceProps.hediffGiverSets.SelectMany((HediffGiverSetDef x) => x.hediffGivers.OfType<HediffGiver_Birthday>()), list2.ToArray());
 			}));
+			if (pawn.health.immunity.ImmunityListForReading.Any())
+			{
+				list.Add(new FloatMenuOption("Table: Immunities", delegate
+				{
+					List<TableDataGetter<ImmunityRecord>> list2 = new List<TableDataGetter<ImmunityRecord>>
+					{
+						new TableDataGetter<ImmunityRecord>("hediff", (ImmunityRecord i) => i.hediffDef.LabelCap),
+						new TableDataGetter<ImmunityRecord>("source", (ImmunityRecord i) => i.source.LabelCap),
+						new TableDataGetter<ImmunityRecord>("immunity", (ImmunityRecord i) => i.immunity.ToStringPercent())
+					};
+					DebugTables.MakeTablesDialog(pawn.health.immunity.ImmunityListForReading, list2.ToArray());
+				}));
+			}
 			Find.WindowStack.Add(new FloatMenu(list));
 		}
 
@@ -1053,6 +1092,15 @@ namespace RimWorld
 				white = HealthUtility.RedColor;
 			}
 			return new Pair<string, Color>(text, white);
+		}
+
+		public static bool ShowBloodLoss(Thing thing)
+		{
+			if (thing is Corpse corpse)
+			{
+				return corpse.Age < 60000;
+			}
+			return true;
 		}
 	}
 }

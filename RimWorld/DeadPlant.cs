@@ -1,3 +1,6 @@
+using UnityEngine;
+using Verse;
+
 namespace RimWorld
 {
 	public class DeadPlant : Plant
@@ -19,6 +22,12 @@ namespace RimWorld
 
 		public override string GetInspectString()
 		{
+			float statValue = this.GetStatValue(StatDefOf.DeteriorationRate);
+			if (statValue > 0f)
+			{
+				int numTicks = Mathf.RoundToInt((float)HitPoints / statValue * 60000f);
+				return "DeteriorateInDuration".Translate(numTicks.ToStringTicksToPeriod()).Resolve();
+			}
 			return "";
 		}
 

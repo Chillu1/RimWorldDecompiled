@@ -8,15 +8,19 @@ namespace Verse
 {
 	public class PlayLogEntry_Interaction : LogEntry
 	{
-		private InteractionDef intDef;
+		protected InteractionDef intDef;
 
-		private Pawn initiator;
+		protected Pawn initiator;
 
-		private Pawn recipient;
+		protected Pawn recipient;
 
-		private List<RulePackDef> extraSentencePacks;
+		protected List<RulePackDef> extraSentencePacks;
 
-		private string InitiatorName
+		public Faction initiatorFaction;
+
+		public Ideo initiatorIdeo;
+
+		protected string InitiatorName
 		{
 			get
 			{
@@ -50,6 +54,8 @@ namespace Verse
 			this.initiator = initiator;
 			this.recipient = recipient;
 			this.extraSentencePacks = extraSentencePacks;
+			initiatorFaction = initiator.Faction;
+			initiatorIdeo = initiator.Ideo;
 		}
 
 		public override bool Concerns(Thing t)
@@ -103,7 +109,28 @@ namespace Verse
 
 		public override Texture2D IconFromPOV(Thing pov)
 		{
-			return intDef.Symbol;
+			return intDef.GetSymbol(initiatorFaction, initiatorIdeo);
+		}
+
+		public override Color? IconColorFromPOV(Thing pov)
+		{
+			return intDef.GetSymbolColor(initiatorFaction);
+		}
+
+		public override void Notify_FactionRemoved(Faction faction)
+		{
+			if (initiatorFaction == faction)
+			{
+				initiatorFaction = null;
+			}
+		}
+
+		public override void Notify_IdeoRemoved(Ideo ideo)
+		{
+			if (initiatorIdeo == ideo)
+			{
+				initiatorIdeo = null;
+			}
 		}
 
 		public override string GetTipString()
@@ -170,6 +197,8 @@ namespace Verse
 			Scribe_References.Look(ref initiator, "initiator", saveDestroyedThings: true);
 			Scribe_References.Look(ref recipient, "recipient", saveDestroyedThings: true);
 			Scribe_Collections.Look(ref extraSentencePacks, "extras", LookMode.Undefined);
+			Scribe_References.Look(ref initiatorFaction, "initiatorFaction");
+			Scribe_References.Look(ref initiatorIdeo, "initiatorIdeo");
 		}
 
 		public override string ToString()

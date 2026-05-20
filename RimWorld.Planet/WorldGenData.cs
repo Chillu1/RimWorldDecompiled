@@ -1,22 +1,16 @@
 using System.Collections.Generic;
-using Verse;
 
 namespace RimWorld.Planet
 {
 	public class WorldGenData : WorldComponent
 	{
-		public List<int> roadNodes = new List<int>();
+		public Dictionary<PlanetLayer, List<PlanetTile>> roadNodes = new Dictionary<PlanetLayer, List<PlanetTile>>();
 
-		public List<int> ancientSites = new List<int>();
+		public Dictionary<PlanetLayer, List<PlanetTile>> ancientSites = new Dictionary<PlanetLayer, List<PlanetTile>>();
 
 		public WorldGenData(World world)
 			: base(world)
 		{
-		}
-
-		public override void ExposeData()
-		{
-			Scribe_Collections.Look(ref roadNodes, "roadNodes", LookMode.Undefined);
 		}
 	}
 }

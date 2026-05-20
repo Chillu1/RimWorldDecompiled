@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Verse;
 
 namespace RimWorld
@@ -16,12 +17,17 @@ namespace RimWorld
 
 		public virtual IEnumerable<string> ConfigErrors()
 		{
-			yield break;
+			return Enumerable.Empty<string>();
 		}
 
 		public virtual IEnumerable<Dialog_InfoCard.Hyperlink> GetInfoCardHyperlinks(StatRequest req)
 		{
-			yield break;
+			return Enumerable.Empty<Dialog_InfoCard.Hyperlink>();
+		}
+
+		public virtual bool ForceShow(StatRequest req)
+		{
+			return false;
 		}
 	}
 }

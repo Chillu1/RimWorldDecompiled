@@ -13,10 +13,7 @@ namespace RimWorld
 
 		protected virtual float ExtraTopSpace => 0f;
 
-		protected abstract PawnTableDef PawnTableDef
-		{
-			get;
-		}
+		protected abstract PawnTableDef PawnTableDef { get; }
 
 		protected override float Margin => 6f;
 
@@ -36,6 +33,7 @@ namespace RimWorld
 
 		public override void PostOpen()
 		{
+			base.PostOpen();
 			if (table == null)
 			{
 				table = CreateTable();
@@ -45,7 +43,6 @@ namespace RimWorld
 
 		public override void DoWindowContents(Rect rect)
 		{
-			base.DoWindowContents(rect);
 			table.PawnTableOnGUI(new Vector2(rect.x, rect.y + ExtraTopSpace));
 		}
 

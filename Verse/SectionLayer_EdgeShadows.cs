@@ -1,9 +1,10 @@
 using System;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
 {
-	internal class SectionLayer_EdgeShadows : SectionLayer
+	public class SectionLayer_EdgeShadows : SectionLayer_Dynamic
 	{
 		private const float InDist = 0.45f;
 
@@ -13,12 +14,32 @@ namespace Verse
 
 		private static readonly Color32 Lit = new Color32(byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue);
 
-		public override bool Visible => DebugViewSettings.drawShadows;
+		public override bool Visible
+		{
+			get
+			{
+				if (DebugViewSettings.drawShadows)
+				{
+					return base.Map?.Biome?.disableShadows != true;
+				}
+				return false;
+			}
+		}
 
 		public SectionLayer_EdgeShadows(Section section)
 			: base(section)
 		{
-			relevantChangeTypes = MapMeshFlag.Buildings;
+			relevantChangeTypes = MapMeshFlagDefOf.Buildings;
+		}
+
+		public override bool ShouldDrawDynamic(CellRect view)
+		{
+			return section.CellRect.Overlaps(SectionLayer_SunShadows.GetSunShadowsViewRect(section.map, view));
+		}
+
+		public override CellRect GetBoundaryRect()
+		{
+			return new CellRect(0, 0, section.map.Size.x, section.map.Size.z);
 		}
 
 		public override void Regenerate()
@@ -74,11 +95,11 @@ namespace Verse
 					array3[1] = false;
 					array3[2] = false;
 					array3[3] = false;
-					IntVec3 a = new IntVec3(i, 0, j);
+					IntVec3 intVec = new IntVec3(i, 0, j);
 					IntVec3[] cardinalDirectionsAround = GenAdj.CardinalDirectionsAround;
 					for (int k = 0; k < 4; k++)
 					{
-						IntVec3 c = a + cardinalDirectionsAround[k];
+						IntVec3 c = intVec + cardinalDirectionsAround[k];
 						if (c.InBounds(base.Map))
 						{
 							thing = innerArray[cellIndices.CellToIndex(c)];
@@ -97,7 +118,7 @@ namespace Verse
 						{
 							continue;
 						}
-						IntVec3 c = a + diagonalDirectionsAround[l];
+						IntVec3 c = intVec + diagonalDirectionsAround[l];
 						if (c.InBounds(base.Map))
 						{
 							thing = innerArray[cellIndices.CellToIndex(c)];

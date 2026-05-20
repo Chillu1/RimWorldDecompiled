@@ -12,23 +12,13 @@ namespace Verse.Sound
 
 		public bool testPlay;
 
-		public bool IsOnCamera
-		{
-			get;
-			private set;
-		}
+		public bool forcedPlayOnCamera;
 
-		public TargetInfo Maker
-		{
-			get;
-			private set;
-		}
+		public bool IsOnCamera { get; private set; }
 
-		public MaintenanceType Maintenance
-		{
-			get;
-			private set;
-		}
+		public TargetInfo Maker { get; private set; }
+
+		public MaintenanceType Maintenance { get; private set; }
 
 		public IEnumerable<KeyValuePair<string, float>> DefinedParameters
 		{
@@ -103,7 +93,7 @@ namespace Verse.Sound
 				text2 = Maker.ToString();
 			}
 			string text3 = null;
-			if (Maintenance != 0)
+			if (Maintenance != MaintenanceType.None)
 			{
 				text3 = ", Maint=" + Maintenance;
 			}

@@ -24,13 +24,13 @@ namespace RimWorld
 			Scribe_Deep.Look(ref defData, "defData");
 		}
 
-		protected override IEnumerable<Rule> SpecialTextGenerationRules()
+		protected override IEnumerable<Rule> SpecialTextGenerationRules(Dictionary<string, string> outConstants)
 		{
 			if (def.defSymbol.NullOrEmpty())
 			{
-				Log.Error(string.Concat(def, " uses tale type with def but defSymbol is not set."));
+				Log.Error(def?.ToString() + " uses tale type with def but defSymbol is not set.");
 			}
-			foreach (Rule item in base.SpecialTextGenerationRules())
+			foreach (Rule item in base.SpecialTextGenerationRules(outConstants))
 			{
 				yield return item;
 			}

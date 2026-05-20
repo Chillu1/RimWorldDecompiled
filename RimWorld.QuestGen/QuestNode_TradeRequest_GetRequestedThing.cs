@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -42,16 +41,17 @@ namespace RimWorld.QuestGen
 			return ThingUtility.RoundedResourceStackCount(Mathf.Max(1, Mathf.RoundToInt(num / thingDef.BaseMarketValue)));
 		}
 
-		[Obsolete("Only used for mod compatibility. Will be removed in a future version.")]
-		private static bool TryFindRandomRequestedThingDef(Map map, out ThingDef thingDef, out int count)
-		{
-			return TryFindRandomRequestedThingDef_NewTmp(map, out thingDef, out count, null);
-		}
-
-		private static bool TryFindRandomRequestedThingDef_NewTmp(Map map, out ThingDef thingDef, out int count, List<ThingDef> dontRequest)
+		private static bool TryFindRandomRequestedThingDef(Map map, out ThingDef thingDef, out int count, List<ThingDef> dontRequest)
 		{
 			requestCountDict.Clear();
-			Func<ThingDef, bool> globalValidator = delegate(ThingDef td)
+			if (ThingSetMakerUtility.allGeneratableItems.Where(GlobalValidator).TryRandomElement(out thingDef))
+			{
+				count = requestCountDict[thingDef];
+				return true;
+			}
+			count = 0;
+			return false;
+			bool GlobalValidator(ThingDef td)
 			{
 				if (td.BaseMarketValue / td.BaseMass < 5f)
 				{
@@ -92,21 +92,18 @@ namespace RimWorld.QuestGen
 				{
 					return false;
 				}
-				return (dontRequest.NullOrEmpty() || !dontRequest.Contains(td)) ? true : false;
-			};
-			if (ThingSetMakerUtility.allGeneratableItems.Where((ThingDef td) => globalValidator(td)).TryRandomElement(out thingDef))
-			{
-				count = requestCountDict[thingDef];
+				if (!dontRequest.NullOrEmpty() && dontRequest.Contains(td))
+				{
+					return false;
+				}
 				return true;
 			}
-			count = 0;
-			return false;
 		}
 
 		protected override void RunInt()
 		{
 			Slate slate = QuestGen.slate;
-			if (TryFindRandomRequestedThingDef_NewTmp(slate.Get<Map>("map"), out var thingDef, out var count, dontRequest.GetValue(slate)))
+			if (TryFindRandomRequestedThingDef(slate.Get<Map>("map"), out var thingDef, out var count, dontRequest.GetValue(slate)))
 			{
 				slate.Set(storeThingAs.GetValue(slate), thingDef);
 				slate.Set(storeThingCountAs.GetValue(slate), count);
@@ -117,7 +114,7 @@ namespace RimWorld.QuestGen
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			if (TryFindRandomRequestedThingDef_NewTmp(slate.Get<Map>("map"), out var thingDef, out var count, dontRequest.GetValue(slate)))
+			if (TryFindRandomRequestedThingDef(slate.Get<Map>("map"), out var thingDef, out var count, dontRequest.GetValue(slate)))
 			{
 				slate.Set(storeThingAs.GetValue(slate), thingDef);
 				slate.Set(storeThingCountAs.GetValue(slate), count);

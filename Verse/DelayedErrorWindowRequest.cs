@@ -30,9 +30,11 @@ namespace Verse
 
 		public static void Add(string text, string title = null)
 		{
-			Request item = default(Request);
-			item.text = text;
-			item.title = title;
+			Request item = new Request
+			{
+				text = text,
+				title = title
+			};
 			requests.Add(item);
 		}
 	}

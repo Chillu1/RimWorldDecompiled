@@ -50,9 +50,9 @@ namespace RimWorld.Planet
 			}
 			if (onPlanetSurface)
 			{
-				float averageTileSize = Find.WorldGrid.averageTileSize;
+				float averageTileSize = Find.WorldGrid.AverageTileSize;
 				int num2 = Mathf.Max(Mathf.RoundToInt(num / averageTileSize), 0);
-				float num3 = 0.05f;
+				float num3 = 0.08f;
 				for (int i = 0; i < num2; i++)
 				{
 					Vector3 vector = Vector3.Lerp(a, b, (float)i / (float)num2);

@@ -4,7 +4,7 @@ namespace Verse
 {
 	public class HediffCompProperties_DamageBrain : HediffCompProperties
 	{
-		public IntRange damageAmount = IntRange.zero;
+		public IntRange damageAmount = IntRange.Zero;
 
 		public List<float> mtbDaysPerStage;
 
@@ -19,7 +19,7 @@ namespace Verse
 			{
 				yield return item;
 			}
-			if (damageAmount == IntRange.zero)
+			if (damageAmount == IntRange.Zero)
 			{
 				yield return "damageAmount is not defined";
 			}

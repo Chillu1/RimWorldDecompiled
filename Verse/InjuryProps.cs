@@ -15,5 +15,7 @@ namespace Verse
 		public string destroyedOutLabel;
 
 		public bool useRemovedLabel;
+
+		public bool alwaysUseDestroyedLabel;
 	}
 }

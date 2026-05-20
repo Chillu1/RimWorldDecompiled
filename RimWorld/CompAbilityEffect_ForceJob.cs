@@ -10,8 +10,7 @@ namespace RimWorld
 		public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
 		{
 			base.Apply(target, dest);
-			Pawn pawn = target.Thing as Pawn;
-			if (pawn != null)
+			if (target.Thing is Pawn pawn)
 			{
 				Job job = JobMaker.MakeJob(Props.jobDef, new LocalTargetInfo(GetDestination(target).Cell));
 				float num = 1f;
@@ -19,8 +18,9 @@ namespace RimWorld
 				{
 					num = pawn.GetStatValue(Props.durationMultiplier);
 				}
-				job.expiryInterval = (parent.def.statBases.GetStatValueFromList(StatDefOf.Ability_Duration, 10f) * num).SecondsToTicks();
+				job.expiryInterval = (parent.def.GetStatValueAbstract(StatDefOf.Ability_Duration, parent.pawn) * num).SecondsToTicks();
 				job.mote = MoteMaker.MakeThoughtBubble(pawn, parent.def.iconPath, maintain: true);
+				RestUtility.WakeUp(pawn);
 				pawn.jobs.StopAll();
 				pawn.jobs.StartJob(job, JobCondition.InterruptForced);
 			}

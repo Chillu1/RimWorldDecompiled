@@ -36,7 +36,10 @@ namespace RimWorld
 			{
 				if (!data.knowledge.ContainsKey(allDef.defName))
 				{
-					Log.Warning(string.Concat("Knowledge data was missing key ", allDef, ". Adding it..."));
+					if (allDef != ConceptDefOf.SteamDeckControlsGame && allDef != ConceptDefOf.SteamDeckControlsMainMenu)
+					{
+						Log.Warning("Knowledge data was missing key " + allDef?.ToString() + ". Adding it...");
+					}
 					data.knowledge.Add(allDef.defName, 0f);
 				}
 			}

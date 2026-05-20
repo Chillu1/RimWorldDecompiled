@@ -5,11 +5,38 @@ namespace RimWorld
 {
 	public class Pawn_SkillTracker : IExposable
 	{
+		private const int MinorPassionWeight = 1;
+
+		private const int MajorPassionWeight = 2;
+
 		private Pawn pawn;
 
 		public List<SkillRecord> skills = new List<SkillRecord>();
 
 		private int lastXpSinceMidnightResetTimestamp = -1;
+
+		public int PassionCount
+		{
+			get
+			{
+				int num = 0;
+				foreach (SkillRecord skill in skills)
+				{
+					if (!skill.TotallyDisabled)
+					{
+						if (skill.passion == Passion.Major)
+						{
+							num += 2;
+						}
+						else if (skill.passion == Passion.Minor)
+						{
+							num++;
+						}
+					}
+				}
+				return num;
+			}
+		}
 
 		public Pawn_SkillTracker(Pawn newPawn)
 		{
@@ -37,12 +64,12 @@ namespace RimWorld
 				Log.Error("Some skills had null def after loading for " + pawn.ToStringSafe());
 			}
 			List<SkillDef> allDefsListForReading = DefDatabase<SkillDef>.AllDefsListForReading;
-			for (int i = 0; i < allDefsListForReading.Count; i++)
+			for (int num = 0; num < allDefsListForReading.Count; num++)
 			{
 				bool flag = false;
-				for (int j = 0; j < skills.Count; j++)
+				for (int num2 = 0; num2 < skills.Count; num2++)
 				{
-					if (skills[j].def == allDefsListForReading[i])
+					if (skills[num2].def == allDefsListForReading[num])
 					{
 						flag = true;
 						break;
@@ -50,8 +77,8 @@ namespace RimWorld
 				}
 				if (!flag)
 				{
-					Log.Warning(pawn.ToStringSafe() + " had no " + allDefsListForReading[i].ToStringSafe() + " skill. Adding.");
-					skills.Add(new SkillRecord(pawn, allDefsListForReading[i]));
+					Log.Warning(pawn.ToStringSafe() + " had no " + allDefsListForReading[num].ToStringSafe() + " skill. Adding.");
+					skills.Add(new SkillRecord(pawn, allDefsListForReading[num]));
 				}
 			}
 		}
@@ -65,13 +92,13 @@ namespace RimWorld
 					return skills[i];
 				}
 			}
-			Log.Error(string.Concat("Did not find skill of def ", skillDef, ", returning ", skills[0]));
+			Log.Error("Did not find skill of def " + skillDef?.ToString() + ", returning " + skills[0]);
 			return skills[0];
 		}
 
-		public void SkillsTick()
+		public void SkillsTickInterval(int delta)
 		{
-			if (!pawn.IsHashIntervalTick(200))
+			if (!pawn.IsHashIntervalTick(200, delta) || !CanGainXP())
 			{
 				return;
 			}
@@ -89,9 +116,21 @@ namespace RimWorld
 			}
 		}
 
-		public void Learn(SkillDef sDef, float xp, bool direct = false)
+		private bool CanGainXP()
 		{
-			GetSkill(sDef).Learn(xp, direct);
+			if (ModsConfig.AnomalyActive && pawn.IsMutant && !pawn.mutant.Def.canGainXP)
+			{
+				return false;
+			}
+			return true;
+		}
+
+		public void Learn(SkillDef sDef, float xp, bool direct = false, bool ignoreLearnRate = false)
+		{
+			if (CanGainXP())
+			{
+				GetSkill(sDef).Learn(xp, direct, ignoreLearnRate);
+			}
 		}
 
 		public float AverageOfRelevantSkillsFor(WorkTypeDef workDef)
@@ -131,6 +170,14 @@ namespace RimWorld
 			for (int i = 0; i < skills.Count; i++)
 			{
 				skills[i].Notify_SkillDisablesChanged();
+			}
+		}
+
+		public void DirtyAptitudes()
+		{
+			for (int i = 0; i < skills.Count; i++)
+			{
+				skills[i].DirtyAptitudes();
 			}
 		}
 	}

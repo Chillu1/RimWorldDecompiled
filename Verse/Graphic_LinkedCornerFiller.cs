@@ -37,9 +37,9 @@ namespace Verse
 			};
 		}
 
-		public override void Print(SectionLayer layer, Thing thing)
+		public override void Print(SectionLayer layer, Thing thing, float extraRotation)
 		{
-			base.Print(layer, thing);
+			base.Print(layer, thing, extraRotation);
 			IntVec3 position = thing.Position;
 			for (int i = 0; i < 4; i++)
 			{
@@ -73,7 +73,7 @@ namespace Verse
 						size.y *= 5f;
 					}
 				}
-				Printer_Plane.PrintPlane(layer, center, size, LinkedDrawMatFrom(thing, thing.Position), 0f, flipUv: false, CornerFillUVs);
+				Printer_Plane.PrintPlane(layer, center, size, LinkedDrawMatFrom(thing, thing.Position), extraRotation, flipUv: false, CornerFillUVs);
 			}
 		}
 	}

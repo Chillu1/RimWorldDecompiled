@@ -9,6 +9,8 @@ namespace RimWorld
 
 		private int countToTransfer;
 
+		public bool interactive = true;
+
 		public override Thing AnyThing
 		{
 			get
@@ -37,7 +39,7 @@ namespace RimWorld
 
 		public override string Label => AnyThing.LabelNoCount;
 
-		public override bool Interactive => true;
+		public override bool Interactive => interactive;
 
 		public override TransferablePositiveCountDirection PositiveCountDirection => TransferablePositiveCountDirection.Destination;
 
@@ -103,6 +105,7 @@ namespace RimWorld
 			}
 			Scribe_Values.Look(ref countToTransfer, "countToTransfer", 0);
 			Scribe_Collections.Look(ref things, "things", LookMode.Reference);
+			Scribe_Values.Look(ref interactive, "interactive", defaultValue: true);
 			if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
 				base.EditBuffer = countToTransfer.ToStringCached();

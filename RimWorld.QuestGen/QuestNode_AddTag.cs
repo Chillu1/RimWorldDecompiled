@@ -27,16 +27,17 @@ namespace RimWorld.QuestGen
 			string questTagToAdd = QuestGenUtility.HardcodedTargetQuestTagWithQuestID(tag.GetValue(slate));
 			foreach (object item in targets.GetValue(slate))
 			{
-				Thing thing = item as Thing;
-				if (thing != null)
+				if (item is Thing thing)
 				{
 					QuestUtility.AddQuestTag(ref thing.questTags, questTagToAdd);
-					continue;
 				}
-				WorldObject worldObject = item as WorldObject;
-				if (worldObject != null)
+				else if (item is WorldObject worldObject)
 				{
 					QuestUtility.AddQuestTag(ref worldObject.questTags, questTagToAdd);
+				}
+				else if (item is TransportShip transportShip)
+				{
+					QuestUtility.AddQuestTag(ref transportShip.questTags, questTagToAdd);
 				}
 			}
 		}

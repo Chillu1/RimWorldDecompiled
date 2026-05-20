@@ -120,7 +120,7 @@ namespace Verse
 			}
 			List<Watcher> list = new List<Watcher>();
 			list.Add(root);
-			AppendStringRecursive(stringBuilder, root.Label, root.Children, root.ElapsedMilliseconds, 0, list);
+			AppendStringRecursive(stringBuilder, root.Label, root.Children, root.ElapsedMilliseconds, 0, list, -1.0);
 			stringBuilder.AppendLine();
 			stringBuilder.AppendLine();
 			HotspotAnalysis(stringBuilder, list);
@@ -160,27 +160,24 @@ namespace Verse
 			sb.AppendLine("----------------------------------------");
 			foreach (LabelTimeTuple item3 in list.OrderByDescending((LabelTimeTuple e) => e.selfTime))
 			{
-				string[] obj = new string[6]
-				{
-					item3.label,
-					" -> ",
-					null,
-					null,
-					null,
-					null
-				};
+				string[] obj = new string[6] { item3.label, " -> ", null, null, null, null };
 				double selfTime = item3.selfTime;
-				obj[2] = selfTime.ToString("0.0000");
+				obj[2] = selfTime.ToString("0.000");
 				obj[3] = " ms (total (w/children): ";
 				selfTime = item3.totalTime;
-				obj[4] = selfTime.ToString("0.0000");
+				obj[4] = selfTime.ToString("0.000");
 				obj[5] = " ms)";
 				sb.AppendLine(string.Concat(obj));
 			}
 		}
 
-		private void AppendStringRecursive(StringBuilder sb, string label, List<Watcher> children, double elapsedTime, int depth, List<Watcher> allWatchers)
+		private void AppendStringRecursive(StringBuilder sb, string label, List<Watcher> children, double elapsedTime, int depth, List<Watcher> allWatchers, double parentElapsedTime)
 		{
+			string text = Prefixes[depth] + " " + elapsedTime.ToString("0.000") + "ms";
+			if (depth > 0)
+			{
+				text = text + " (" + ((float)(elapsedTime / parentElapsedTime)).ToStringPercent() + ")";
+			}
 			if (children != null)
 			{
 				double num = elapsedTime;
@@ -188,42 +185,53 @@ namespace Verse
 				{
 					num -= child.ElapsedMilliseconds;
 				}
-				sb.AppendLine(Prefixes[depth] + " " + elapsedTime.ToString("0.0000") + "ms (self: " + num.ToString("0.0000") + " ms) " + label);
+				sb.AppendLine(text + " (self: " + num.ToString("0.000") + " ms) " + label);
 			}
 			else
 			{
-				sb.AppendLine(Prefixes[depth] + " " + elapsedTime.ToString("0.0000") + "ms " + label);
+				sb.AppendLine(text + " " + label);
 			}
 			if (children == null)
 			{
 				return;
 			}
 			allWatchers.AddRange(children);
-			foreach (IGrouping<string, Watcher> item in from c in children
-				group c by c.Label)
+			foreach (var item2 in from x in (from c in children
+					group c by c.Label).Select(delegate(IGrouping<string, Watcher> x)
+				{
+					double num4 = 0.0;
+					foreach (Watcher item in x)
+					{
+						num4 += item.ElapsedMilliseconds;
+					}
+					return (x.ToList(), elapsed: num4);
+				})
+				orderby x.elapsed descending
+				select x)
 			{
 				List<Watcher> list = new List<Watcher>();
 				double num2 = 0.0;
 				int num3 = 0;
-				foreach (Watcher item2 in item)
+				foreach (Watcher item3 in item2.Item1)
 				{
-					if (item2.Children != null)
+					if (item3.Children != null)
 					{
-						foreach (Watcher child2 in item2.Children)
+						foreach (Watcher child2 in item3.Children)
 						{
 							list.Add(child2);
 						}
 					}
-					num2 += item2.ElapsedMilliseconds;
+					num2 += item3.ElapsedMilliseconds;
 					num3++;
 				}
+				string label2 = item2.Item1[0].Label;
 				if (num3 <= 1)
 				{
-					AppendStringRecursive(sb, item.Key, list, num2, depth + 1, allWatchers);
+					AppendStringRecursive(sb, label2, list, num2, depth + 1, allWatchers, elapsedTime);
 				}
 				else
 				{
-					AppendStringRecursive(sb, num3 + "x " + item.Key, list, num2, depth + 1, allWatchers);
+					AppendStringRecursive(sb, num3 + "x " + label2, list, num2, depth + 1, allWatchers, elapsedTime);
 				}
 			}
 		}

@@ -8,25 +8,22 @@ namespace RimWorld
 	{
 		protected string explanationKey;
 
-		private static List<Thought> tmpThoughts = new List<Thought>();
+		private static readonly List<Thought> tmpThoughts = new List<Thought>();
 
-		private List<Pawn> affectedPawnsResult = new List<Pawn>();
+		private readonly List<Pawn> affectedPawnsResult = new List<Pawn>();
 
-		protected abstract ThoughtDef Thought
-		{
-			get;
-		}
+		protected abstract ThoughtDef Thought { get; }
 
 		private List<Pawn> AffectedPawns
 		{
 			get
 			{
 				affectedPawnsResult.Clear();
-				foreach (Pawn item in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep)
+				foreach (Pawn item in PawnsFinder.AllMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists_NoSuspended)
 				{
 					if (item.Dead)
 					{
-						Log.Error("Dead pawn in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists:" + item);
+						Log.Error("Dead pawn in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists:" + item);
 					}
 					else
 					{
@@ -34,22 +31,16 @@ namespace RimWorld
 						{
 							continue;
 						}
-						item.needs.mood.thoughts.GetAllMoodThoughts(tmpThoughts);
-						try
+						item.needs.mood.thoughts.GetMoodThoughtsFor(Thought, tmpThoughts);
+						for (int i = 0; i < tmpThoughts.Count; i++)
 						{
-							ThoughtDef thought = Thought;
-							for (int i = 0; i < tmpThoughts.Count; i++)
+							if (!ThoughtUtility.ThoughtNullified(item, tmpThoughts[i].def))
 							{
-								if (tmpThoughts[i].def == thought && !ThoughtUtility.ThoughtNullified(item, tmpThoughts[i].def))
-								{
-									affectedPawnsResult.Add(item);
-								}
+								affectedPawnsResult.Add(item);
+								break;
 							}
 						}
-						finally
-						{
-							tmpThoughts.Clear();
-						}
+						tmpThoughts.Clear();
 					}
 				}
 				return affectedPawnsResult;
@@ -62,7 +53,7 @@ namespace RimWorld
 			string label = base.GetLabel();
 			if (count > 1)
 			{
-				return $"{label} x{count.ToString()}";
+				return label + " x" + count;
 			}
 			return label;
 		}

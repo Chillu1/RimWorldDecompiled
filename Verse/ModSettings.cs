@@ -2,11 +2,7 @@ namespace Verse
 {
 	public abstract class ModSettings : IExposable
 	{
-		public Mod Mod
-		{
-			get;
-			internal set;
-		}
+		public Mod Mod { get; internal set; }
 
 		public virtual void ExposeData()
 		{

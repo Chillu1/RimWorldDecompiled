@@ -40,7 +40,7 @@ namespace RimWorld
 
 		public override bool AlertCritical => base.TicksLeft < 60000;
 
-		public override string AlertLabel => "QuestPartShuttleArriveDelay".Translate(base.TicksLeft.ToStringTicksToPeriod());
+		public override string AlertLabel => "QuestPartShuttleArriveDelay".Translate(base.TicksLeft.ToStringTicksToPeriodVerbose());
 
 		public override string AlertExplanation
 		{
@@ -48,16 +48,15 @@ namespace RimWorld
 			{
 				if (quest.hidden)
 				{
-					return "QuestPartShuttleArriveDelayDescHidden".Translate(base.TicksLeft.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor));
+					return "QuestPartShuttleArriveDelayDescHidden".Translate(base.TicksLeft.ToStringTicksToPeriodVerbose().Colorize(ColoredText.DateTimeColor));
 				}
-				return "QuestPartShuttleArriveDelayDesc".Translate(quest.name, base.TicksLeft.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor), lodgers.Select((Pawn p) => p.LabelShort).ToLineList("- "));
+				return "QuestPartShuttleArriveDelayDesc".Translate(quest.name, base.TicksLeft.ToStringTicksToPeriodVerbose().Colorize(ColoredText.DateTimeColor), lodgers.Select((Pawn p) => p.LabelShort).ToLineList("- "));
 			}
 		}
 
 		public override string ExtraInspectString(ISelectable target)
 		{
-			Pawn pawn = target as Pawn;
-			if (pawn != null && lodgers.Contains(pawn))
+			if (target is Pawn item && lodgers.Contains(item))
 			{
 				return "ShuttleDelayInspectString".Translate(base.TicksLeft.ToStringTicksToPeriod());
 			}

@@ -12,6 +12,9 @@ namespace RimWorld
 		public string labelSocial;
 
 		[MustTranslate]
+		public string labelAbstract;
+
+		[MustTranslate]
 		public string description;
 
 		public float baseMoodEffect;
@@ -25,6 +28,9 @@ namespace RimWorld
 
 		[Unsaved(false)]
 		private string cachedLabelSocialCap;
+
+		[Unsaved(false)]
+		private string cachedLabelAbstractCap;
 
 		[Unsaved(false)]
 		[TranslationHandle(Priority = 100)]
@@ -55,6 +61,18 @@ namespace RimWorld
 					cachedLabelSocialCap = labelSocial.CapitalizeFirst();
 				}
 				return cachedLabelSocialCap;
+			}
+		}
+
+		public string LabelAbstractCap
+		{
+			get
+			{
+				if (cachedLabelAbstractCap == null)
+				{
+					cachedLabelAbstractCap = ((labelAbstract != null) ? labelAbstract.CapitalizeFirst() : label.CapitalizeFirst());
+				}
+				return cachedLabelAbstractCap;
 			}
 		}
 

@@ -15,6 +15,10 @@ namespace Verse.AI
 			{
 				num *= def.commonalityFactorPerPopulationCurve.Evaluate(PawnsFinder.AllMaps_FreeColonists.Count());
 			}
+			if (pawn.genes != null && def.mentalState != null && def.mentalState.IsAggro)
+			{
+				num *= pawn.genes.AggroMentalBreakSelectionChanceFactor;
+			}
 			return num;
 		}
 
@@ -24,7 +28,23 @@ namespace Verse.AI
 			{
 				return false;
 			}
-			if (def.mentalState != null && pawn.story != null && pawn.story.traits.allTraits.Any((Trait tr) => tr.CurrentData.disallowedMentalStates != null && tr.CurrentData.disallowedMentalStates.Contains(def.mentalState)))
+			if (def.requiredGene != null && (pawn.genes == null || !pawn.genes.HasActiveGene(def.requiredGene)))
+			{
+				return false;
+			}
+			if (def.requiredPrecept != null && (pawn.Ideo == null || !pawn.Ideo.HasPrecept(def.requiredPrecept)))
+			{
+				return false;
+			}
+			if (!def.layerWhitelist.NullOrEmpty() && (!pawn.SpawnedOrAnyParentSpawned || !pawn.MapHeld.Tile.Valid || !def.layerWhitelist.Contains(pawn.MapHeld.Tile.LayerDef)))
+			{
+				return false;
+			}
+			if (def.mentalState != null && pawn.story != null && pawn.story.traits.allTraits.Any((Trait tr) => !tr.Suppressed && tr.CurrentData.disallowedMentalStates != null && tr.CurrentData.disallowedMentalStates.Contains(def.mentalState)))
+			{
+				return false;
+			}
+			if (!def.questLodgersCanDo && pawn.IsQuestLodger())
 			{
 				return false;
 			}
@@ -49,7 +69,11 @@ namespace Verse.AI
 
 		public virtual bool TryStart(Pawn pawn, string reason, bool causedByMood)
 		{
-			return pawn.mindState.mentalStateHandler.TryStartMentalState(def.mentalState, reason, forceWake: false, causedByMood);
+			if (pawn.mindState?.mentalStateHandler == null)
+			{
+				return false;
+			}
+			return pawn.mindState.mentalStateHandler.TryStartMentalState(def.mentalState, reason, forced: false, forceWake: false, causedByMood);
 		}
 
 		protected bool TrySendLetter(Pawn pawn, string textKey, string reason)
@@ -59,7 +83,7 @@ namespace Verse.AI
 				return false;
 			}
 			TaggedString label = def.LabelCap + ": " + pawn.LabelShortCap;
-			TaggedString taggedString = textKey.Translate(pawn.Label, pawn.Named("PAWN")).CapitalizeFirst();
+			TaggedString taggedString = textKey.Translate(pawn.LabelShort, pawn.Named("PAWN")).CapitalizeFirst();
 			if (reason != null)
 			{
 				taggedString += "\n\n" + reason;

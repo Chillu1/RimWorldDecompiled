@@ -1,11 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
+using UnityEngine;
 using Verse;
 using Verse.Sound;
 
 namespace RimWorld
 {
-	public class CompPowerTrader : CompPower
+	public class CompPowerTrader : CompPower, IThingGlower
 	{
 		public Action powerStartedAction;
 
@@ -21,15 +23,25 @@ namespace RimWorld
 
 		protected CompFlickable flickableComp;
 
+		private CompStunnable stunnableComp;
+
 		public const string PowerTurnedOnSignal = "PowerTurnedOn";
 
 		public const string PowerTurnedOffSignal = "PowerTurnedOff";
+
+		private OverlayHandle? overlayPowerOff;
+
+		private OverlayHandle? overlayNeedsPower;
 
 		public float PowerOutput
 		{
 			get
 			{
-				return powerOutputInt;
+				if (!StunnedByEMP)
+				{
+					return powerOutputInt;
+				}
+				return 0f;
 			}
 			set
 			{
@@ -42,6 +54,18 @@ namespace RimWorld
 				{
 					powerLastOutputted = false;
 				}
+			}
+		}
+
+		public bool Off
+		{
+			get
+			{
+				if (parent.Spawned && PowerOn)
+				{
+					return !FlickUtility.WantsToBeOn(parent);
+				}
+				return true;
 			}
 		}
 
@@ -64,12 +88,12 @@ namespace RimWorld
 				{
 					if (!FlickUtility.WantsToBeOn(parent))
 					{
-						Log.Warning(string.Concat("Tried to power on ", parent, " which did not desire it."));
+						Log.Warning("Tried to power on " + parent?.ToString() + " which did not desire it.");
 						return;
 					}
 					if (parent.IsBrokenDown())
 					{
-						Log.Warning(string.Concat("Tried to power on ", parent, " which is broken down."));
+						Log.Warning("Tried to power on " + parent?.ToString() + " which is broken down.");
 						return;
 					}
 					if (powerStartedAction != null)
@@ -82,7 +106,10 @@ namespace RimWorld
 					{
 						soundDef = SoundDefOf.Power_OnSmall;
 					}
-					soundDef.PlayOneShot(new TargetInfo(parent.Position, parent.Map));
+					if (parent.Spawned)
+					{
+						soundDef.PlayOneShot(new TargetInfo(parent.Position, parent.Map));
+					}
 					StartSustainerPoweredIfInactive();
 				}
 				else
@@ -103,6 +130,7 @@ namespace RimWorld
 					}
 					EndSustainerPoweredIfActive();
 				}
+				UpdateOverlays();
 			}
 		}
 
@@ -118,6 +146,27 @@ namespace RimWorld
 			}
 		}
 
+		private bool StunnedByEMP
+		{
+			get
+			{
+				if (stunnableComp != null)
+				{
+					if (stunnableComp.StunHandler.Stunned)
+					{
+						return stunnableComp.StunHandler.StunFromEMP;
+					}
+					return false;
+				}
+				return false;
+			}
+		}
+
+		public bool ShouldBeLitNow()
+		{
+			return PowerOn;
+		}
+
 		public override void ReceiveCompSignal(string signal)
 		{
 			switch (signal)
@@ -125,6 +174,7 @@ namespace RimWorld
 			case "FlickedOff":
 			case "ScheduledOff":
 			case "Breakdown":
+			case "AutoPoweredWantsOff":
 				PowerOn = false;
 				break;
 			}
@@ -132,26 +182,37 @@ namespace RimWorld
 			{
 				PowerOn = false;
 			}
+			UpdateOverlays();
 		}
 
 		public override void PostSpawnSetup(bool respawningAfterLoad)
 		{
 			base.PostSpawnSetup(respawningAfterLoad);
 			flickableComp = parent.GetComp<CompFlickable>();
+			stunnableComp = parent.GetComp<CompStunnable>();
 			if (PowerOn)
 			{
-				LongEventHandler.ExecuteWhenFinished(delegate
-				{
-					StartSustainerPoweredIfInactive();
-				});
+				LongEventHandler.ExecuteWhenFinished(StartSustainerPoweredIfInactive);
+			}
+			UpdateOverlays();
+		}
+
+		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
+		{
+			base.PostDeSpawn(map, mode);
+			EndSustainerPoweredIfActive();
+			if (mode != DestroyMode.WillReplace)
+			{
+				powerOutputInt = 0f;
 			}
 		}
 
-		public override void PostDeSpawn(Map map)
+		public override void PostSwapMap()
 		{
-			base.PostDeSpawn(map);
-			EndSustainerPoweredIfActive();
-			powerOutputInt = 0f;
+			if (base.PowerNet == null)
+			{
+				PowerOn = false;
+			}
 		}
 
 		public override void PostExposeData()
@@ -160,18 +221,23 @@ namespace RimWorld
 			Scribe_Values.Look(ref powerOnInt, "powerOn", defaultValue: true);
 		}
 
-		public override void PostDraw()
+		private void UpdateOverlays()
 		{
-			base.PostDraw();
+			if (!parent.Spawned)
+			{
+				return;
+			}
+			parent.Map.overlayDrawer.Disable(parent, ref overlayPowerOff);
+			parent.Map.overlayDrawer.Disable(parent, ref overlayNeedsPower);
 			if (!parent.IsBrokenDown())
 			{
-				if (flickableComp != null && !flickableComp.SwitchIsOn)
+				if (flickableComp != null && !flickableComp.SwitchIsOn && !overlayPowerOff.HasValue)
 				{
-					parent.Map.overlayDrawer.DrawOverlay(parent, OverlayTypes.PowerOff);
+					overlayPowerOff = parent.Map.overlayDrawer.Enable(parent, OverlayTypes.PowerOff);
 				}
-				else if (FlickUtility.WantsToBeOn(parent) && !PowerOn)
+				else if (FlickUtility.WantsToBeOn(parent) && !PowerOn && !overlayNeedsPower.HasValue && base.Props.showPowerNeededIfOff)
 				{
-					parent.Map.overlayDrawer.DrawOverlay(parent, OverlayTypes.NeedsPower);
+					overlayNeedsPower = parent.Map.overlayDrawer.Enable(parent, OverlayTypes.NeedsPower);
 				}
 			}
 		}
@@ -179,9 +245,16 @@ namespace RimWorld
 		public override void SetUpPowerVars()
 		{
 			base.SetUpPowerVars();
-			CompProperties_Power props = base.Props;
-			PowerOutput = -1f * props.basePowerConsumption;
-			powerLastOutputted = props.basePowerConsumption <= 0f;
+			CompProperties_Power compProperties_Power = base.Props;
+			if (!PowerOn && !Mathf.Approximately(compProperties_Power.idlePowerDraw, -1f))
+			{
+				PowerOutput = 0f - compProperties_Power.idlePowerDraw;
+			}
+			else
+			{
+				PowerOutput = 0f - compProperties_Power.PowerConsumption;
+			}
+			powerLastOutputted = compProperties_Power.PowerConsumption <= 0f;
 		}
 
 		public override void ResetPowerVars()
@@ -191,7 +264,7 @@ namespace RimWorld
 			powerOutputInt = 0f;
 			powerLastOutputted = false;
 			sustainerPowered = null;
-			if (flickableComp != null)
+			if (flickableComp != null && !parent.BeingTransportedOnGravship)
 			{
 				flickableComp.ResetToOn();
 			}
@@ -205,17 +278,24 @@ namespace RimWorld
 
 		public override string CompInspectStringExtra()
 		{
-			string str = ((!powerLastOutputted) ? ((string)("PowerNeeded".Translate() + ": " + (0f - PowerOutput).ToString("#####0") + " W")) : ((string)("PowerOutput".Translate() + ": " + PowerOutput.ToString("#####0") + " W")));
-			return str + "\n" + base.CompInspectStringExtra();
+			if (Off && (base.Props.idlePowerDraw > 0f || base.Props.alwaysDisplayAsUsingPower))
+			{
+				return null;
+			}
+			string text = ((!powerLastOutputted || base.Props.alwaysDisplayAsUsingPower) ? ((string)("PowerNeeded".Translate() + ": " + (0f - PowerOutput).ToString("#####0") + " W")) : ((string)("PowerOutput".Translate() + ": " + PowerOutput.ToString("#####0") + " W")));
+			if (base.Props.idlePowerDraw > 0f || base.Props.alwaysDisplayAsUsingPower)
+			{
+				text += " (" + "PowerActiveNeeded".Translate(base.Props.PowerConsumption.ToString("#####0")) + ")";
+			}
+			return text + "\n" + base.CompInspectStringExtra();
 		}
 
 		private void StartSustainerPoweredIfInactive()
 		{
-			CompProperties_Power props = base.Props;
-			if (!props.soundAmbientPowered.NullOrUndefined() && sustainerPowered == null)
+			if (!base.Props.soundAmbientPowered.NullOrUndefined() && sustainerPowered == null)
 			{
 				SoundInfo info = SoundInfo.InMap(parent);
-				sustainerPowered = props.soundAmbientPowered.TrySpawnSustainer(info);
+				sustainerPowered = base.Props.soundAmbientPowered.TrySpawnSustainer(info);
 			}
 		}
 
@@ -225,6 +305,25 @@ namespace RimWorld
 			{
 				sustainerPowered.End();
 				sustainerPowered = null;
+			}
+		}
+
+		public override IEnumerable<Gizmo> CompGetGizmosExtra()
+		{
+			foreach (Gizmo item in base.CompGetGizmosExtra())
+			{
+				yield return item;
+			}
+			if (DebugSettings.ShowDevGizmos)
+			{
+				yield return new Command_Action
+				{
+					defaultLabel = "DEV: Toggle power on",
+					action = delegate
+					{
+						PowerOn = !PowerOn;
+					}
+				};
 			}
 		}
 	}

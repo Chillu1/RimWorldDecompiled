@@ -10,6 +10,14 @@ namespace RimWorld
 
 		public float moteOnUsedScale = 1f;
 
+		public FleckDef fleckOnUsed;
+
+		public float fleckOnUsedScale = 1f;
+
+		public EffecterDef effecterOnUsed;
+
+		public EffecterDef warmupEffecter;
+
 		public CompProperties_UseEffect()
 		{
 			compClass = typeof(CompUseEffect);

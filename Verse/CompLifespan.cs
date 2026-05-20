@@ -39,7 +39,7 @@ namespace Verse
 			int num = Props.lifespanTicks - age;
 			if (num > 0)
 			{
-				result = "LifespanExpiry".Translate() + " " + num.ToStringTicksToPeriod();
+				result = "LifespanExpiry".Translate() + " " + num.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor);
 				if (!text.NullOrEmpty())
 				{
 					result = "\n" + text;
@@ -50,11 +50,18 @@ namespace Verse
 
 		protected void Expire()
 		{
-			if (Props.expireEffect != null)
+			if (parent.Spawned)
 			{
-				Props.expireEffect.Spawn(parent.Position, parent.Map).Cleanup();
+				if (Props.expireEffect != null)
+				{
+					Props.expireEffect.Spawn(parent.Position, parent.Map).Cleanup();
+				}
+				if (Props.plantDefToSpawn != null && Props.plantDefToSpawn.CanNowPlantAt(parent.Position, parent.Map))
+				{
+					GenSpawn.Spawn(Props.plantDefToSpawn, parent.Position, parent.Map);
+				}
+				parent.Destroy(DestroyMode.KillFinalize);
 			}
-			parent.Destroy(DestroyMode.KillFinalize);
 		}
 	}
 }

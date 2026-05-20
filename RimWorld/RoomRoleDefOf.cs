@@ -15,16 +15,17 @@ namespace RimWorld
 
 		public static RoomRoleDef PrisonBarracks;
 
-		public static RoomRoleDef DiningRoom;
-
-		public static RoomRoleDef RecRoom;
-
 		public static RoomRoleDef Hospital;
+
+		public static RoomRoleDef Workshop;
 
 		public static RoomRoleDef Laboratory;
 
 		[MayRequireRoyalty]
 		public static RoomRoleDef ThroneRoom;
+
+		[MayRequireIdeology]
+		public static RoomRoleDef WorshipRoom;
 
 		static RoomRoleDefOf()
 		{

@@ -4,10 +4,7 @@ namespace RimWorld
 {
 	public abstract class PawnColumnWorker_Designator : PawnColumnWorker_Checkbox
 	{
-		protected abstract DesignationDef DesignationType
-		{
-			get;
-		}
+		protected abstract DesignationDef DesignationType { get; }
 
 		protected virtual void Notify_DesignationAdded(Pawn pawn)
 		{
@@ -18,23 +15,50 @@ namespace RimWorld
 			return GetDesignation(pawn) != null;
 		}
 
-		protected override void SetValue(Pawn pawn, bool value)
+		protected override void SetValue(Pawn pawn, bool value, PawnTable table)
 		{
 			if (value == GetValue(pawn))
 			{
 				return;
 			}
+			if (table.SortingBy == def)
+			{
+				table.SetDirty();
+			}
 			if (value)
 			{
-				pawn.MapHeld.designationManager.AddDesignation(new Designation(pawn, DesignationType));
-				Notify_DesignationAdded(pawn);
-				return;
+				if (ShouldConfirmDesignation(pawn, out var title))
+				{
+					Find.WindowStack.Add(new Dialog_Confirm(title, delegate
+					{
+						DesignationConfirmed(pawn);
+					}));
+				}
+				else
+				{
+					DesignationConfirmed(pawn);
+				}
 			}
-			Designation designation = GetDesignation(pawn);
-			if (designation != null)
+			else
 			{
-				pawn.MapHeld.designationManager.RemoveDesignation(designation);
+				Designation designation = GetDesignation(pawn);
+				if (designation != null)
+				{
+					pawn.MapHeld.designationManager.RemoveDesignation(designation);
+				}
 			}
+		}
+
+		private void DesignationConfirmed(Pawn pawn)
+		{
+			pawn.MapHeld.designationManager.AddDesignation(new Designation(pawn, DesignationType));
+			Notify_DesignationAdded(pawn);
+		}
+
+		protected virtual bool ShouldConfirmDesignation(Pawn pawn, out string title)
+		{
+			title = "";
+			return false;
 		}
 
 		private Designation GetDesignation(Pawn pawn)

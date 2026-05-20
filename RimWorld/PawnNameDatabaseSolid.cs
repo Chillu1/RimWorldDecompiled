@@ -19,6 +19,14 @@ namespace RimWorld
 			}
 		}
 
+		public static void Clear()
+		{
+			foreach (GenderPossibility value in Enum.GetValues(typeof(GenderPossibility)))
+			{
+				solidNames[value].Clear();
+			}
+		}
+
 		public static void AddPlayerContentName(NameTriple newName, GenderPossibility genderPos)
 		{
 			solidNames[genderPos].Add(newName);

@@ -16,25 +16,23 @@ namespace RimWorld
 
 		public static void ResetStaticData()
 		{
-			TemperatureTrans = "BadTemperature".Translate().ToLower();
+			TemperatureTrans = "BadTemperature".Translate();
 			NoWortTrans = "NoWort".Translate();
 		}
 
 		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			Building_FermentingBarrel building_FermentingBarrel = t as Building_FermentingBarrel;
-			if (building_FermentingBarrel == null || building_FermentingBarrel.Fermented || building_FermentingBarrel.SpaceLeftForWort <= 0)
+			if (!(t is Building_FermentingBarrel { Fermented: false, SpaceLeftForWort: >0, AmbientTemperature: var ambientTemperature } building_FermentingBarrel))
 			{
 				return false;
 			}
-			float ambientTemperature = building_FermentingBarrel.AmbientTemperature;
 			CompProperties_TemperatureRuinable compProperties = building_FermentingBarrel.def.GetCompProperties<CompProperties_TemperatureRuinable>();
 			if (ambientTemperature < compProperties.minSafeTemperature + 2f || ambientTemperature > compProperties.maxSafeTemperature - 2f)
 			{
 				JobFailReason.Is(TemperatureTrans);
 				return false;
 			}
-			if (t.IsForbidden(pawn) || !pawn.CanReserve(t, 1, -1, null, forced))
+			if (!pawn.CanReserve(t, 1, -1, null, forced))
 			{
 				return false;
 			}
@@ -57,8 +55,8 @@ namespace RimWorld
 		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
 			Building_FermentingBarrel barrel = (Building_FermentingBarrel)t;
-			Thing t2 = FindWort(pawn, barrel);
-			return JobMaker.MakeJob(JobDefOf.FillFermentingBarrel, t, t2);
+			Thing thing = FindWort(pawn, barrel);
+			return JobMaker.MakeJob(JobDefOf.FillFermentingBarrel, t, thing);
 		}
 
 		private Thing FindWort(Pawn pawn, Building_FermentingBarrel barrel)

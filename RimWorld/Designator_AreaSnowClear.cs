@@ -2,13 +2,13 @@ using Verse;
 
 namespace RimWorld
 {
-	public abstract class Designator_AreaSnowClear : Designator_Area
+	public abstract class Designator_AreaSnowClear : Designator_Cells
 	{
 		private DesignateMode mode;
 
-		public override int DraggableDimensions => 2;
-
 		public override bool DragDrawMeasurements => true;
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Areas;
 
 		public Designator_AreaSnowClear(DesignateMode mode)
 		{
@@ -26,7 +26,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			bool flag = base.Map.areaManager.SnowClear[c];
+			bool flag = base.Map.areaManager.SnowOrSandClear[c];
 			if (mode == DesignateMode.Add)
 			{
 				return !flag;
@@ -38,18 +38,18 @@ namespace RimWorld
 		{
 			if (mode == DesignateMode.Add)
 			{
-				base.Map.areaManager.SnowClear[c] = true;
+				base.Map.areaManager.SnowOrSandClear[c] = true;
 			}
 			else
 			{
-				base.Map.areaManager.SnowClear[c] = false;
+				base.Map.areaManager.SnowOrSandClear[c] = false;
 			}
 		}
 
 		public override void SelectedUpdate()
 		{
 			GenUI.RenderMouseoverBracket();
-			base.Map.areaManager.SnowClear.MarkForDraw();
+			base.Map.areaManager.SnowOrSandClear.MarkForDraw();
 		}
 	}
 }

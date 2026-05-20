@@ -11,13 +11,19 @@ namespace RimWorld
 
 		protected float bottomAreaHeight;
 
-		protected List<SaveFileInfo> files = new List<SaveFileInfo>();
+		protected readonly List<SaveFileInfo> files = new List<SaveFileInfo>();
 
-		protected Vector2 scrollPosition = Vector2.zero;
+		private readonly QuickSearchWidget search = new QuickSearchWidget();
+
+		private bool focusedSearch;
+
+		private bool focusedNameArea;
+
+		private Vector2 scrollPosition = Vector2.zero;
 
 		protected string typingName = "";
 
-		private bool focusedNameArea;
+		protected string deleteTipKey = "DeleteThisSavegame";
 
 		protected const float EntryHeight = 40f;
 
@@ -33,17 +39,19 @@ namespace RimWorld
 
 		protected const float DeleteButSize = 36f;
 
-		private static readonly Color DefaultFileTextColor = new Color(1f, 1f, 0.6f);
-
 		protected const float NameTextFieldWidth = 400f;
 
 		protected const float NameTextFieldHeight = 35f;
 
 		protected const float NameTextFieldButtonSpace = 20f;
 
+		protected static readonly Color DefaultFileTextColor = new Color(1f, 1f, 0.6f);
+
 		public override Vector2 InitialSize => new Vector2(620f, 700f);
 
 		protected virtual bool ShouldDoTypeInField => false;
+
+		protected virtual bool FocusSearchField => false;
 
 		public Dialog_FileList()
 		{
@@ -58,27 +66,43 @@ namespace RimWorld
 		public override void DoWindowContents(Rect inRect)
 		{
 			Vector2 vector = new Vector2(inRect.width - 16f, 40f);
-			inRect.height -= 45f;
 			float y = vector.y;
-			float height = (float)files.Count * y;
+			float height = (float)FilesMatchingFilter() * y;
 			Rect viewRect = new Rect(0f, 0f, inRect.width - 16f, height);
-			Rect outRect = new Rect(inRect.AtZero());
-			outRect.height -= bottomAreaHeight;
+			Rect rect = inRect.LeftHalf();
+			rect.height = 24f;
+			search.OnGUI(rect);
+			if (!focusedSearch && FocusSearchField)
+			{
+				focusedSearch = true;
+				search.Focus();
+			}
+			Rect outRect = inRect;
+			outRect.yMin = rect.yMax + 10f;
+			outRect.yMax -= Window.CloseButSize.y + bottomAreaHeight + 10f;
+			if (ShouldDoTypeInField)
+			{
+				outRect.yMax -= 53f;
+			}
 			Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
 			float num = 0f;
 			int num2 = 0;
 			foreach (SaveFileInfo file in files)
 			{
+				if (!search.filter.Matches(file.FileName))
+				{
+					continue;
+				}
 				if (num + vector.y >= scrollPosition.y && num <= scrollPosition.y + outRect.height)
 				{
-					Rect rect = new Rect(0f, num, vector.x, vector.y);
-					if (num2 % 2 == 0)
+					Rect rect2 = new Rect(0f, num, vector.x, vector.y);
+					if (num2 % 2 == 1)
 					{
-						Widgets.DrawAltRect(rect);
+						Widgets.DrawAltRect(rect2);
 					}
-					GUI.BeginGroup(rect);
-					Rect rect2 = new Rect(rect.width - 36f, (rect.height - 36f) / 2f, 36f, 36f);
-					if (Widgets.ButtonImage(rect2, TexButton.DeleteX, Color.white, GenUI.SubtleMouseoverColor))
+					Widgets.BeginGroup(rect2);
+					Rect rect3 = new Rect(rect2.width - 36f, (rect2.height - 36f) / 2f, 36f, 36f);
+					if (Widgets.ButtonImage(rect3, TexButton.Delete, Color.white, GenUI.SubtleMouseoverColor))
 					{
 						FileInfo localFile = file.FileInfo;
 						Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("ConfirmDelete".Translate(localFile.Name), delegate
@@ -87,26 +111,26 @@ namespace RimWorld
 							ReloadFiles();
 						}, destructive: true));
 					}
-					TooltipHandler.TipRegionByKey(rect2, "DeleteThisSavegame");
+					TooltipHandler.TipRegionByKey(rect3, deleteTipKey);
 					Text.Font = GameFont.Small;
-					Rect rect3 = new Rect(rect2.x - 100f, (rect.height - 36f) / 2f, 100f, 36f);
-					if (Widgets.ButtonText(rect3, interactButLabel))
+					Rect rect4 = new Rect(rect3.x - 100f, (rect2.height - 36f) / 2f, 100f, 36f);
+					if (Widgets.ButtonText(rect4, interactButLabel))
 					{
-						DoFileInteraction(Path.GetFileNameWithoutExtension(file.FileInfo.Name));
+						DoFileInteraction(Path.GetFileNameWithoutExtension(file.FileName));
 					}
-					Rect rect4 = new Rect(rect3.x - 94f, 0f, 94f, rect.height);
-					DrawDateAndVersion(file, rect4);
+					Rect rect5 = new Rect(rect4.x - 94f, 0f, 94f, rect2.height);
+					DrawDateAndVersion(file, rect5);
 					GUI.color = Color.white;
 					Text.Anchor = TextAnchor.UpperLeft;
 					GUI.color = FileNameColor(file);
-					Rect rect5 = new Rect(8f, 0f, rect4.x - 8f - 4f, rect.height);
+					Rect rect6 = new Rect(8f, 0f, rect5.x - 8f - 4f, rect2.height);
 					Text.Anchor = TextAnchor.MiddleLeft;
 					Text.Font = GameFont.Small;
-					string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file.FileInfo.Name);
-					Widgets.Label(rect5, fileNameWithoutExtension.Truncate(rect5.width * 1.8f));
+					string fileNameWithoutExtension = Path.GetFileNameWithoutExtension(file.FileName);
+					Widgets.Label(rect6, fileNameWithoutExtension.Truncate(rect6.width * 1.8f));
 					GUI.color = Color.white;
 					Text.Anchor = TextAnchor.UpperLeft;
-					GUI.EndGroup();
+					Widgets.EndGroup();
 				}
 				num += vector.y;
 				num2++;
@@ -114,8 +138,21 @@ namespace RimWorld
 			Widgets.EndScrollView();
 			if (ShouldDoTypeInField)
 			{
-				DoTypeInField(inRect.AtZero());
+				DoTypeInField(inRect.TopPartPixels(inRect.height - Window.CloseButSize.y - 18f));
 			}
+		}
+
+		private int FilesMatchingFilter()
+		{
+			int num = 0;
+			for (int i = 0; i < files.Count; i++)
+			{
+				if (search.filter.Matches(files[i].FileName))
+				{
+					num++;
+				}
+			}
+			return num;
 		}
 
 		protected abstract void DoFileInteraction(string fileName);
@@ -124,9 +161,9 @@ namespace RimWorld
 
 		protected virtual void DoTypeInField(Rect rect)
 		{
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			bool flag = Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Return;
-			float y = rect.height - 52f;
+			float y = rect.height - 35f;
 			Text.Font = GameFont.Small;
 			Text.Anchor = TextAnchor.MiddleLeft;
 			GUI.SetNextControlName("MapNameField");
@@ -148,11 +185,11 @@ namespace RimWorld
 				}
 				else
 				{
-					DoFileInteraction(typingName);
+					DoFileInteraction(typingName?.Trim());
 				}
 			}
 			Text.Anchor = TextAnchor.UpperLeft;
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		protected virtual Color FileNameColor(SaveFileInfo sfi)
@@ -162,12 +199,12 @@ namespace RimWorld
 
 		public static void DrawDateAndVersion(SaveFileInfo sfi, Rect rect)
 		{
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			Text.Font = GameFont.Tiny;
 			Text.Anchor = TextAnchor.UpperLeft;
 			Rect rect2 = new Rect(0f, 2f, rect.width, rect.height / 2f);
 			GUI.color = SaveFileInfo.UnimportantTextColor;
-			Widgets.Label(rect2, sfi.FileInfo.LastWriteTime.ToString("yyyy-MM-dd HH:mm"));
+			Widgets.Label(rect2, sfi.LastWriteTime.ToString("yyyy-MM-dd HH:mm"));
 			Rect rect3 = new Rect(0f, rect2.yMax, rect.width, rect.height / 2f);
 			GUI.color = sfi.VersionColor;
 			Widgets.Label(rect3, sfi.GameVersion);
@@ -175,7 +212,7 @@ namespace RimWorld
 			{
 				TooltipHandler.TipRegion(rect3, sfi.CompatibilityTip);
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 	}
 }

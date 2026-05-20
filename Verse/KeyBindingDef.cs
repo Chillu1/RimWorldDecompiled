@@ -14,6 +14,8 @@ namespace Verse
 
 		public bool devModeOnly;
 
+		public List<KeyBindingDef> ignoreConflictsWith;
+
 		[NoTranslate]
 		public List<string> extraConflictTags;
 
@@ -23,11 +25,11 @@ namespace Verse
 			{
 				if (KeyPrefs.KeyPrefsData.keyPrefs.TryGetValue(this, out var value))
 				{
-					if (value.keyBindingA != 0)
+					if (value.keyBindingA != KeyCode.None)
 					{
 						return value.keyBindingA;
 					}
-					if (value.keyBindingB != 0)
+					if (value.keyBindingB != KeyCode.None)
 					{
 						return value.keyBindingB;
 					}
@@ -42,9 +44,13 @@ namespace Verse
 		{
 			get
 			{
-				if (Event.current.type == EventType.KeyDown && Event.current.keyCode != 0 && KeyPrefs.KeyPrefsData.keyPrefs.TryGetValue(this, out var value))
+				if (Event.current.type == EventType.KeyDown && Event.current.keyCode != KeyCode.None && KeyPrefs.KeyPrefsData.keyPrefs.TryGetValue(this, out var value))
 				{
-					if (value.keyBindingA != KeyCode.LeftCommand && value.keyBindingA != KeyCode.RightCommand && value.keyBindingB != KeyCode.LeftCommand && value.keyBindingB != KeyCode.RightCommand && Event.current.command)
+					if (value.keyBindingA != KeyCode.LeftMeta && value.keyBindingA != KeyCode.RightMeta && value.keyBindingB != KeyCode.LeftMeta && value.keyBindingB != KeyCode.RightMeta && Event.current.command)
+					{
+						return false;
+					}
+					if (Find.WindowStack.AnySearchWidgetFocused)
 					{
 						return false;
 					}
@@ -70,6 +76,10 @@ namespace Verse
 				{
 					return false;
 				}
+				if (Find.WindowStack.AnySearchWidgetFocused)
+				{
+					return false;
+				}
 				if (KeyDownEvent)
 				{
 					return true;
@@ -86,7 +96,7 @@ namespace Verse
 				{
 					return true;
 				}
-				if (Event.current.command && (value.keyBindingA == KeyCode.LeftCommand || value.keyBindingA == KeyCode.RightCommand || value.keyBindingB == KeyCode.LeftCommand || value.keyBindingB == KeyCode.RightCommand))
+				if (Event.current.command && (value.keyBindingA == KeyCode.LeftMeta || value.keyBindingA == KeyCode.RightMeta || value.keyBindingB == KeyCode.LeftMeta || value.keyBindingB == KeyCode.RightMeta))
 				{
 					return true;
 				}
@@ -100,6 +110,10 @@ namespace Verse
 			{
 				if (KeyPrefs.KeyPrefsData.keyPrefs.TryGetValue(this, out var value))
 				{
+					if (Find.WindowStack.AnySearchWidgetFocused)
+					{
+						return false;
+					}
 					if (!Input.GetKeyDown(value.keyBindingA))
 					{
 						return Input.GetKeyDown(value.keyBindingB);
@@ -116,6 +130,10 @@ namespace Verse
 			{
 				if (KeyPrefs.KeyPrefsData.keyPrefs.TryGetValue(this, out var value))
 				{
+					if (Find.WindowStack.AnySearchWidgetFocused)
+					{
+						return false;
+					}
 					if (!Input.GetKey(value.keyBindingA))
 					{
 						return Input.GetKey(value.keyBindingB);

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 using Verse;
 
 namespace RimWorld
@@ -17,13 +18,23 @@ namespace RimWorld
 
 		private float cachedInsulationCold;
 
+		private float cachedVacuumResistance;
+
 		private float cachedInsulationHeat;
+
+		private float cachedToxicEnvironmentResistance;
+
+		private static readonly List<ThingDef> tmpUsableStuffs = new List<ThingDef>();
 
 		public float Price => cachedPrice;
 
 		public float InsulationCold => cachedInsulationCold;
 
+		public float VacuumResistance => cachedVacuumResistance;
+
 		public float InsulationHeat => cachedInsulationHeat;
+
+		public float ToxicEnvironmentResistance => cachedToxicEnvironmentResistance;
 
 		public float Commonality
 		{
@@ -50,12 +61,14 @@ namespace RimWorld
 			this.commonalityMultiplier = commonalityMultiplier;
 			if (stuff != null && !thing.MadeFromStuff)
 			{
-				Log.Warning(string.Concat("Created ThingStuffPairWithQuality with stuff ", stuff, " but ", thing, " is not made from stuff."));
+				Log.Warning($"Created ThingStuffPairWithQuality with stuff {stuff} but {thing} is not made from stuff.");
 				stuff = null;
 			}
 			cachedPrice = thing.GetStatValueAbstract(StatDefOf.MarketValue, stuff);
 			cachedInsulationCold = thing.GetStatValueAbstract(StatDefOf.Insulation_Cold, stuff);
 			cachedInsulationHeat = thing.GetStatValueAbstract(StatDefOf.Insulation_Heat, stuff);
+			cachedToxicEnvironmentResistance = (ModsConfig.BiotechActive ? thing.equippedStatOffsets.GetStatOffsetFromList(StatDefOf.ToxicEnvironmentResistance) : 0f);
+			cachedVacuumResistance = (ModsConfig.OdysseyActive ? thing.equippedStatOffsets.GetStatOffsetFromList(StatDefOf.VacuumResistance) : 0f);
 		}
 
 		public static List<ThingStuffPair> AllWith(Predicate<ThingDef> thingValidator)
@@ -74,13 +87,14 @@ namespace RimWorld
 					list.Add(new ThingStuffPair(thingDef, null));
 					continue;
 				}
-				IEnumerable<ThingDef> enumerable = DefDatabase<ThingDef>.AllDefs.Where((ThingDef st) => st.IsStuff && st.stuffProps.CanMake(thingDef));
-				int num = enumerable.Count();
-				float num2 = enumerable.Average((ThingDef st) => st.stuffProps.commonality);
-				float num3 = 1f / (float)num / num2;
-				foreach (ThingDef item in enumerable)
+				tmpUsableStuffs.Clear();
+				tmpUsableStuffs.AddRange(DefDatabase<ThingDef>.AllDefs.Where((ThingDef st) => st.IsStuff && st.stuffProps.CanMake(thingDef)));
+				int count = tmpUsableStuffs.Count;
+				float num = tmpUsableStuffs.Average((ThingDef st) => st.stuffProps.commonality);
+				float num2 = ((!Mathf.Approximately(num, 0f)) ? (1f / (float)count / num) : 1f);
+				foreach (ThingDef tmpUsableStuff in tmpUsableStuffs)
 				{
-					list.Add(new ThingStuffPair(thingDef, item, num3));
+					list.Add(new ThingStuffPair(thingDef, tmpUsableStuff, num2));
 				}
 			}
 			return list.OrderByDescending((ThingStuffPair p) => p.Price).ToList();
@@ -100,7 +114,7 @@ namespace RimWorld
 		{
 			if (a.thing == b.thing && a.stuff == b.stuff)
 			{
-				return a.commonalityMultiplier == b.commonalityMultiplier;
+				return Mathf.Approximately(a.commonalityMultiplier, b.commonalityMultiplier);
 			}
 			return false;
 		}

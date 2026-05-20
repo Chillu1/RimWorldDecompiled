@@ -34,18 +34,18 @@ namespace RimWorld
 			if (!intVec.IsValid)
 			{
 				if (!(from x in pawn.Map.attackTargetsCache.GetPotentialTargetsFor(pawn)
-					where !x.ThreatDisabled(pawn) && x.Thing.Faction == Faction.OfPlayer && pawn.CanReach(x.Thing, PathEndMode.OnCell, Danger.Deadly, canBash: false, TraverseMode.PassAllDestroyableThings)
+					where !x.ThreatDisabled(pawn) && x.Thing.Faction == Faction.OfPlayer && pawn.Position.DistanceToSquared(x.Thing.Position) <= 2500 && pawn.CanReach(x.Thing, PathEndMode.OnCell, Danger.Deadly, canBashDoors: false, canBashFences: false, TraverseMode.PassAllDestroyableThings)
 					select x).TryRandomElement(out var result))
 				{
 					return null;
 				}
 				intVec = result.Thing.Position;
 			}
-			if (!pawn.CanReach(intVec, PathEndMode.OnCell, Danger.Deadly, canBash: false, TraverseMode.PassAllDestroyableThings))
+			if (!pawn.CanReach(intVec, PathEndMode.OnCell, Danger.Deadly, canBashDoors: false, canBashFences: false, TraverseMode.PassAllDestroyableThings))
 			{
 				return null;
 			}
-			using (PawnPath path = pawn.Map.pathFinder.FindPath(pawn.Position, intVec, TraverseParms.For(pawn, Danger.Deadly, TraverseMode.PassAllDestroyableThings)))
+			using (PawnPath path = pawn.Map.pathFinder.FindPathNow(pawn.Position, intVec, TraverseParms.For(pawn, Danger.Deadly, TraverseMode.PassAllDestroyableThings)))
 			{
 				IntVec3 cellBefore;
 				Thing thing = path.FirstBlockingBuilding(out cellBefore, pawn);

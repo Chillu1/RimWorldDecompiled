@@ -10,7 +10,12 @@ namespace RimWorld
 
 		public override IEnumerable<FiringIncident> MakeIntervalIncidents(IIncidentTarget target)
 		{
-			if (!Rand.MTBEventOccurs(Props.mtbDays, 60000f, 1000f))
+			float num = Props.mtbDays;
+			if (target.Tile.Valid && target.Tile.LayerDef.isSpace)
+			{
+				num *= Props.spaceMtbDayFactor;
+			}
+			if (!Rand.MTBEventOccurs(num, 60000f, 1000f) || (target.Tile.Valid && target.Tile.LayerDef.isSpace && GenTicks.TicksGame - Find.Storyteller.LastIncidentTick < GenDate.DaysToTicks(Props.spaceMinSpacingDays)))
 			{
 				yield break;
 			}
@@ -20,11 +25,11 @@ namespace RimWorld
 			{
 				IncidentCategoryDef incidentCategoryDef = ChooseRandomCategory(target, list);
 				IncidentParms parms = GenerateParms(incidentCategoryDef, target);
-				if (UsableIncidentsInCategory(incidentCategoryDef, parms).TryRandomElementByWeight(base.IncidentChanceFinal, out var result))
+				if (TrySelectRandomIncident(UsableIncidentsInCategory(incidentCategoryDef, parms), out var foundDef, target))
 				{
-					if (!(Props.skipThreatBigIfRaidBeacon && flag) || result.category != IncidentCategoryDefOf.ThreatBig)
+					if (!(Props.skipThreatBigIfRaidBeacon && flag) || foundDef.category != IncidentCategoryDefOf.ThreatBig)
 					{
-						yield return new FiringIncident(result, this, parms);
+						yield return new FiringIncident(foundDef, this, parms);
 					}
 					break;
 				}
@@ -35,13 +40,9 @@ namespace RimWorld
 
 		private IncidentCategoryDef ChooseRandomCategory(IIncidentTarget target, List<IncidentCategoryDef> skipCategories)
 		{
-			if (!skipCategories.Contains(IncidentCategoryDefOf.ThreatBig))
+			if (!skipCategories.Contains(IncidentCategoryDefOf.ThreatBig) && (float)(Find.TickManager.TicksGame - target.StoryState.LastThreatBigTick) > 60000f * Props.maxThreatBigIntervalDays)
 			{
-				int num = Find.TickManager.TicksGame - target.StoryState.LastThreatBigTick;
-				if (target.StoryState.LastThreatBigTick >= 0 && (float)num > 60000f * Props.maxThreatBigIntervalDays)
-				{
-					return IncidentCategoryDefOf.ThreatBig;
-				}
+				return IncidentCategoryDefOf.ThreatBig;
 			}
 			return Props.categoryWeights.Where((IncidentCategoryEntry cw) => !skipCategories.Contains(cw.category)).RandomElementByWeight((IncidentCategoryEntry cw) => cw.weight).category;
 		}

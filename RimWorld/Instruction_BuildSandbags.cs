@@ -48,7 +48,7 @@ namespace RimWorld
 				for (int num = thingList.Count - 1; num >= 0; num--)
 				{
 					Thing thing = thingList[num];
-					if (thing.def.passability != 0 && (thing.def.category == ThingCategory.Plant || thing.def.category == ThingCategory.Item))
+					if (thing.def.passability != Traversability.Standable && (thing.def.category == ThingCategory.Plant || thing.def.category == ThingCategory.Item))
 					{
 						thing.Destroy();
 					}

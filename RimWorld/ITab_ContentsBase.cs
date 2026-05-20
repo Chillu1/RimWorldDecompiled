@@ -34,12 +34,13 @@ namespace RimWorld
 
 		public string containedItemsKey;
 
-		public abstract IList<Thing> container
-		{
-			get;
-		}
+		public abstract IList<Thing> container { get; }
 
 		public override bool IsVisible => base.SelThing.Faction == Faction.OfPlayer;
+
+		public virtual IntVec3 DropOffset => IntVec3.Zero;
+
+		public virtual bool UseDiscardMessage => true;
 
 		public ITab_ContentsBase()
 		{
@@ -67,13 +68,13 @@ namespace RimWorld
 
 		protected virtual void DoItemsLists(Rect inRect, ref float curY)
 		{
-			GUI.BeginGroup(inRect);
+			Widgets.BeginGroup(inRect);
 			Widgets.ListSeparator(ref curY, inRect.width, containedItemsKey.Translate());
-			IList<Thing> container = this.container;
+			IList<Thing> list = container;
 			bool flag = false;
-			for (int i = 0; i < container.Count; i++)
+			for (int i = 0; i < list.Count; i++)
 			{
-				Thing t = container[i];
+				Thing t = list[i];
 				if (t != null)
 				{
 					flag = true;
@@ -90,12 +91,12 @@ namespace RimWorld
 			{
 				Widgets.NoneLabel(ref curY, inRect.width);
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		protected virtual void OnDropThing(Thing t, int count)
 		{
-			GenDrop.TryDropSpawn_NewTmp(t.SplitOff(count), base.SelThing.Position, base.SelThing.Map, ThingPlaceMode.Near, out var _);
+			GenDrop.TryDropSpawn(t.SplitOff(count), base.SelThing.Position + DropOffset, base.SelThing.Map, ThingPlaceMode.Near, out var _);
 		}
 
 		protected void DoThingRow(ThingDef thingDef, int count, List<Thing> things, float width, ref float curY, Action<int> discardAction)
@@ -110,15 +111,22 @@ namespace RimWorld
 				rect.width -= 24f;
 				if (Widgets.ButtonImage(new Rect(rect.x + rect.width - 24f, rect.y + (rect.height - 24f) / 2f, 24f, 24f), CaravanThingsTabUtility.AbandonButtonTex))
 				{
-					string value = thingDef.label;
-					if (things.Count == 1 && things[0] is Pawn)
+					if (UseDiscardMessage)
 					{
-						value = ((Pawn)things[0]).LabelShortCap;
+						string text = thingDef.label;
+						if (things.Count == 1 && things[0] is Pawn)
+						{
+							text = ((Pawn)things[0]).LabelShortCap;
+						}
+						Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("ConfirmRemoveItemDialog".Translate(text), delegate
+						{
+							discardAction(count);
+						}));
 					}
-					Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("ConfirmRemoveItemDialog".Translate(value), delegate
+					else
 					{
 						discardAction(count);
-					}));
+					}
 				}
 				rect.width -= 24f;
 			}
@@ -151,21 +159,21 @@ namespace RimWorld
 			Text.Anchor = TextAnchor.MiddleLeft;
 			GUI.color = ThingLabelColor;
 			Rect rect3 = new Rect(36f, curY, rect.width - 36f, rect.height);
-			string str = ((things.Count != 1 || count != things[0].stackCount) ? GenLabel.ThingLabel(thingDef, null, count).CapitalizeFirst() : things[0].LabelCap);
+			string text2 = ((things.Count == 1 && count == things[0].stackCount) ? things[0].LabelCap : ((thingDef != ThingDefOf.MinifiedThing) ? GenLabel.ThingLabel(thingDef, null, count).CapitalizeFirst() : GenLabel.ThingLabel(things[0].GetInnerIfMinified(), count).CapitalizeFirst()));
 			Text.WordWrap = false;
-			Widgets.Label(rect3, str.Truncate(rect3.width));
+			Widgets.Label(rect3, text2.StripTags().Truncate(rect3.width));
 			Text.WordWrap = true;
 			Text.Anchor = TextAnchor.UpperLeft;
-			TooltipHandler.TipRegion(rect, str);
+			TooltipHandler.TipRegion(rect, text2);
 			if (Widgets.ButtonInvisible(rect))
 			{
 				SelectLater(things);
 			}
 			if (Mouse.IsOver(rect))
 			{
-				for (int i = 0; i < things.Count; i++)
+				for (int num = 0; num < things.Count; num++)
 				{
-					TargetHighlighter.Highlight(things[i]);
+					TargetHighlighter.Highlight(things[num]);
 				}
 			}
 			curY += 28f;

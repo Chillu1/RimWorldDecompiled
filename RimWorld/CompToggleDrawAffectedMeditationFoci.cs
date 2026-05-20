@@ -18,7 +18,7 @@ namespace RimWorld
 
 		public override void PostSpawnSetup(bool respawningAfterLoad)
 		{
-			if (!respawningAfterLoad)
+			if (!respawningAfterLoad && !parent.BeingTransportedOnGravship)
 			{
 				enabled = Props.defaultEnabled;
 			}

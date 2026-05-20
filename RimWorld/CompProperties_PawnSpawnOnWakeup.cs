@@ -16,6 +16,7 @@ namespace RimWorld
 
 		public bool shouldJoinParentLord;
 
+		[NoTranslate]
 		public string activatedMessageKey;
 
 		public FloatRange points;
@@ -27,6 +28,10 @@ namespace RimWorld
 		public bool dropInPods;
 
 		public float defendRadius = 21f;
+
+		public MentalStateDef mentalState;
+
+		public bool destroyAfterSpawn;
 
 		public CompProperties_PawnSpawnOnWakeup()
 		{

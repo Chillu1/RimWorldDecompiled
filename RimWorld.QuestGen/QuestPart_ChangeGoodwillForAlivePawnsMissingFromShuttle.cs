@@ -13,7 +13,7 @@ namespace RimWorld.QuestGen
 
 		public int goodwillChange;
 
-		public string reason;
+		public HistoryEventDef historyEvent;
 
 		public override void Notify_QuestSignalReceived(Signal signal)
 		{
@@ -43,7 +43,7 @@ namespace RimWorld.QuestGen
 			}
 			if (num < num2)
 			{
-				faction.TryAffectGoodwillWith(Faction.OfPlayer, goodwillChange * (num2 - num), canSendMessage: true, canSendHostilityLetter: true, reason);
+				Faction.OfPlayer.TryAffectGoodwillWith(faction, goodwillChange * (num2 - num), canSendMessage: true, canSendHostilityLetter: true, historyEvent);
 			}
 		}
 
@@ -54,7 +54,7 @@ namespace RimWorld.QuestGen
 			Scribe_Collections.Look(ref pawns, "pawns", LookMode.Reference);
 			Scribe_References.Look(ref faction, "faction");
 			Scribe_Values.Look(ref goodwillChange, "goodwillChange", 0);
-			Scribe_Values.Look(ref reason, "reason");
+			Scribe_Defs.Look(ref historyEvent, "historyEvent");
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				pawns.RemoveAll((Pawn x) => x == null);

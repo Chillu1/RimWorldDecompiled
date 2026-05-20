@@ -4,6 +4,7 @@ namespace Verse.Sound
 	{
 		None,
 		PerTick,
-		PerFrame
+		PerFrame,
+		PerTickRare
 	}
 }

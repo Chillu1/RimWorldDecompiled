@@ -9,7 +9,7 @@ namespace RimWorld
 	{
 		private static List<int> hits = new List<int>();
 
-		private static int QueueIntervalsPassed => Find.TickManager.TicksGame / 1000;
+		private static int QueueIntervalsPassed => Find.TickManager.TicksSinceSettle / 1000;
 
 		public static int IncidentCountThisInterval(IIncidentTarget target, int randSeedSalt, float minDaysPassed, float onDays, float offDays, float minSpacingDays, float minIncidents, float maxIncidents, float acceptFraction = 1f)
 		{
@@ -31,7 +31,8 @@ namespace RimWorld
 				int start = i * num5;
 				if (hits.Count > 0)
 				{
-					fixedHit = hits[hits.Count - 1];
+					List<int> list = hits;
+					fixedHit = list[list.Count - 1];
 				}
 				hits.Clear();
 				GenerateHitList(seed, start, num3, minIncidents, maxIncidents, minSpacingIntervals, acceptFraction, fixedHit);

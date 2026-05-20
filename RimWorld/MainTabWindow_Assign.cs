@@ -1,4 +1,5 @@
-using RimWorld.Planet;
+using System.Collections.Generic;
+using System.Linq;
 using Verse;
 
 namespace RimWorld
@@ -7,10 +8,6 @@ namespace RimWorld
 	{
 		protected override PawnTableDef PawnTableDef => PawnTableDefOf.Assign;
 
-		public override void PostOpen()
-		{
-			base.PostOpen();
-			Find.World.renderer.wantedMode = WorldRenderMode.None;
-		}
+		protected override IEnumerable<Pawn> Pawns => PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists.Where((Pawn pawn) => !pawn.DevelopmentalStage.Baby());
 	}
 }

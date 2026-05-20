@@ -11,6 +11,8 @@ namespace RimWorld
 
 		public Thing conditionCauser;
 
+		public bool hideSource;
+
 		public GameConditionDef def;
 
 		public int uniqueID = -1;
@@ -23,11 +25,15 @@ namespace RimWorld
 
 		private bool permanent;
 
+		public bool forceDisplayAsDuration;
+
 		private List<Map> cachedAffectedMaps = new List<Map>();
 
 		private List<Map> cachedAffectedMapsForMaps = new List<Map>();
 
 		public Quest quest;
+
+		public PsychicRitualDef psychicRitualDef;
 
 		private static List<GameConditionManager> tmpGameConditionManagers = new List<GameConditionManager>();
 
@@ -114,30 +120,46 @@ namespace RimWorld
 		{
 			get
 			{
-				string t = def.LabelCap;
-				if (Permanent)
+				string text = def.LabelCap.ToString();
+				Map map = null;
+				map = ((SingleMap != null) ? SingleMap : ((Find.CurrentMap == null) ? Find.AnyPlayerHomeMap : Find.CurrentMap));
+				if (Permanent && !forceDisplayAsDuration && def.showPermanentInTooltip)
 				{
-					t += "\n" + "Permanent".Translate().CapitalizeFirst();
+					text += "\n" + "Permanent".Translate().CapitalizeFirst();
 				}
 				else
 				{
-					Vector2 location = ((SingleMap != null) ? Find.WorldGrid.LongLatOf(SingleMap.Tile) : ((Find.CurrentMap != null) ? Find.WorldGrid.LongLatOf(Find.CurrentMap.Tile) : ((Find.AnyPlayerHomeMap == null) ? Vector2.zero : Find.WorldGrid.LongLatOf(Find.AnyPlayerHomeMap.Tile))));
-					t += "\n" + "Started".Translate() + ": " + GenDate.DateFullStringAt(GenDate.TickGameToAbs(startTick), location);
-					t += "\n" + "Lasted".Translate() + ": " + TicksPassed.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor);
+					Vector2 location = ((map != null) ? Find.WorldGrid.LongLatOf(map.Tile) : Vector2.zero);
+					text = string.Concat(text, "\n", "Started".Translate(), ": ", GenDate.DateFullStringAt(GenDate.TickGameToAbs(startTick), location).Colorize(ColoredText.DateTimeColor));
+					text = string.Concat(text, "\n", "Lasted".Translate(), ": ", TicksPassed.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor));
 				}
-				t += "\n";
-				t = t + "\n" + Description;
-				t += "\n";
-				t += "\n";
-				if (conditionCauser != null && CameraJumper.CanJump(conditionCauser))
+				text += "\n";
+				text = text + "\n" + Description.ResolveTags();
+				if (conditionCauser != null && !hideSource && CameraJumper.CanJump(conditionCauser))
 				{
-					return t + def.jumpToSourceKey.Translate();
+					text = text + "\n\n" + def.jumpToSourceKey.Translate().Resolve();
 				}
-				if (quest != null)
+				else
 				{
-					return t + "CausedByQuest".Translate(quest.name);
+					Quest quest = this.quest;
+					if (quest != null && !quest.hidden)
+					{
+						text = text + "\n\n" + "CausedByQuest".Translate(this.quest.name).Resolve();
+					}
+					else if (psychicRitualDef != null)
+					{
+						text += string.Format("\n\n{0}: {1}", "CausedByPsychicRitual".Translate(), psychicRitualDef.label.CapitalizeFirst());
+					}
+					else if (!def.natural)
+					{
+						text += string.Format("\n\n{0}", "SourceUnknown".Translate());
+					}
 				}
-				return t + "SourceUnknown".Translate();
+				if (map != null && MapExcludedByFilter(def, map))
+				{
+					text += string.Format("\n\n{0}", "ThisWillNotAffectLayer".Translate(map.Tile.LayerDef.gerundLabel.Named("GERUND"), map.Tile.LayerDef.label.Named("LAYER")));
+				}
+				return text;
 			}
 		}
 
@@ -150,7 +172,7 @@ namespace RimWorld
 					cachedAffectedMapsForMaps.Clear();
 					cachedAffectedMapsForMaps.AddRange(Find.Maps);
 					cachedAffectedMaps.Clear();
-					if (gameConditionManager.ownerMap != null)
+					if (CanApplyOnMap(gameConditionManager.ownerMap))
 					{
 						cachedAffectedMaps.Add(gameConditionManager.ownerMap);
 					}
@@ -158,7 +180,7 @@ namespace RimWorld
 					gameConditionManager.GetChildren(tmpGameConditionManagers);
 					for (int i = 0; i < tmpGameConditionManagers.Count; i++)
 					{
-						if (tmpGameConditionManagers[i].ownerMap != null)
+						if (CanApplyOnMap(tmpGameConditionManagers[i].ownerMap))
 						{
 							cachedAffectedMaps.Add(tmpGameConditionManagers[i].ownerMap);
 						}
@@ -178,6 +200,9 @@ namespace RimWorld
 			Scribe_Values.Look(ref duration, "duration", 0);
 			Scribe_Values.Look(ref permanent, "permanent", defaultValue: false);
 			Scribe_References.Look(ref quest, "quest");
+			Scribe_Values.Look(ref forceDisplayAsDuration, "forceDisplayAsDuration", defaultValue: false);
+			Scribe_Values.Look(ref hideSource, "hideSource", defaultValue: false);
+			Scribe_Defs.Look(ref psychicRitualDef, "psychicRitualDef");
 			BackCompatibility.PostExposeData(this);
 		}
 
@@ -191,15 +216,81 @@ namespace RimWorld
 
 		public virtual void Init()
 		{
+			if (!def.startMessage.NullOrEmpty())
+			{
+				Messages.Message(def.startMessage, MessageTypeDefOf.NeutralEvent);
+			}
 		}
 
 		public virtual void End()
 		{
-			if (!suppressEndMessage && def.endMessage != null)
+			if (!suppressEndMessage && def.endMessage != null && !cachedAffectedMaps.Any(HiddenByOtherCondition))
 			{
 				Messages.Message(def.endMessage, MessageTypeDefOf.NeutralEvent);
 			}
-			gameConditionManager.ActiveConditions.Remove(this);
+			gameConditionManager.OnConditionEnd(this);
+		}
+
+		public bool CanApplyOnMap(Map map)
+		{
+			if (map == null)
+			{
+				return false;
+			}
+			if (map.generatorDef.isUnderground && !def.allowUnderground)
+			{
+				return false;
+			}
+			if (MapExcludedByFilter(def, map))
+			{
+				return false;
+			}
+			if (ModsConfig.OdysseyActive && def.requireFish)
+			{
+				WaterBodyTracker waterBodyTracker = map.waterBodyTracker;
+				if (waterBodyTracker == null || !waterBodyTracker.AnyBodyContainsFish)
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
+		public static bool MapExcludedByFilter(GameConditionDef def, Map map)
+		{
+			if (!map.Tile.Valid)
+			{
+				return false;
+			}
+			if (!def.layerWhitelist.NullOrEmpty() && !def.layerWhitelist.Contains(map.Tile.LayerDef))
+			{
+				return true;
+			}
+			if (!def.layerBlacklist.NullOrEmpty() && def.layerBlacklist.Contains(map.Tile.LayerDef))
+			{
+				return true;
+			}
+			if (!def.canAffectAllPlanetLayers && map.Tile.LayerDef.onlyAllowWhitelistedGameConditions && (def.layerWhitelist.NullOrEmpty() || !def.layerWhitelist.Contains(map.Tile.LayerDef)))
+			{
+				return true;
+			}
+			return false;
+		}
+
+		public bool HiddenByOtherCondition(Map map)
+		{
+			if (def.silencedByConditions.NullOrEmpty())
+			{
+				return false;
+			}
+			for (int i = 0; i < def.silencedByConditions.Count; i++)
+			{
+				if (map.gameConditionManager.ConditionIsActive(def.silencedByConditions[i]))
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 
 		public virtual float SkyGazeChanceFactor(Map map)
@@ -256,6 +347,16 @@ namespace RimWorld
 			return null;
 		}
 
+		public virtual float MinWindSpeed()
+		{
+			return 0f;
+		}
+
+		public virtual float WeatherCommonalityFactor(WeatherDef weather, Map map)
+		{
+			return 1f;
+		}
+
 		public virtual void PostMake()
 		{
 			uniqueID = Find.UniqueIDsManager.GetNextGameConditionID();
@@ -267,7 +368,7 @@ namespace RimWorld
 
 		public string GetUniqueLoadID()
 		{
-			return $"{GetType().Name}_{uniqueID.ToString()}";
+			return GetType().Name + "_" + uniqueID;
 		}
 	}
 }

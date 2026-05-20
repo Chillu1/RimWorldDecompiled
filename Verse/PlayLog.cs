@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse
 {
@@ -49,10 +50,26 @@ namespace Verse
 				{
 					if (!silentlyRemoveReferences)
 					{
-						Log.Warning(string.Concat("Discarding pawn ", p, ", but he is referenced by a play log entry ", entries[num], "."));
+						Log.Warning("Discarding pawn " + p?.ToString() + ", but he is referenced by a play log entry " + entries[num]?.ToString() + ".");
 					}
 					RemoveEntry(entries[num]);
 				}
+			}
+		}
+
+		public void Notify_FactionRemoved(Faction faction)
+		{
+			for (int i = 0; i < entries.Count; i++)
+			{
+				entries[i].Notify_FactionRemoved(faction);
+			}
+		}
+
+		public void Notify_IdeoRemoved(Ideo ideo)
+		{
+			for (int i = 0; i < entries.Count; i++)
+			{
+				entries[i].Notify_IdeoRemoved(ideo);
 			}
 		}
 

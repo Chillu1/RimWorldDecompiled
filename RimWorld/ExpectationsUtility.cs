@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Verse;
@@ -8,10 +9,16 @@ namespace RimWorld
 	{
 		private static List<ExpectationDef> wealthExpectationsInOrder;
 
+		private static List<ExpectationDef> roleExpectationsInOrder;
+
 		public static void Reset()
 		{
 			wealthExpectationsInOrder = (from ed in DefDatabase<ExpectationDef>.AllDefs
 				where ed.WealthTriggered
+				orderby ed.order
+				select ed).ToList();
+			roleExpectationsInOrder = (from ed in DefDatabase<ExpectationDef>.AllDefs
+				where ed.forRoles
 				orderby ed.order
 				select ed).ToList();
 		}
@@ -39,7 +46,18 @@ namespace RimWorld
 							expectationDef = currentTitleInFaction.def.minExpectation;
 						}
 					}
-					return expectationDef;
+				}
+				if (ModsConfig.IdeologyActive)
+				{
+					Precept_Role precept_Role = p.Ideo?.GetRole(p);
+					if (precept_Role != null && precept_Role.def.expectationsOffset != 0 && !MoveColonyUtility.TitleAndRoleRequirementsGracePeriodActive)
+					{
+						ExpectationDef expectationDef2 = ExpectationForOrder(Math.Max(expectationDef.order + precept_Role.def.expectationsOffset, 0), forRole: true);
+						if (expectationDef2 != null)
+						{
+							expectationDef = expectationDef2;
+						}
+					}
 				}
 				return expectationDef;
 			}
@@ -57,7 +75,45 @@ namespace RimWorld
 					return expectationDef;
 				}
 			}
-			return wealthExpectationsInOrder[wealthExpectationsInOrder.Count - 1];
+			List<ExpectationDef> list = wealthExpectationsInOrder;
+			return list[list.Count - 1];
+		}
+
+		public static ExpectationDef ExpectationForOrder(int order, bool forRole = false)
+		{
+			for (int i = 0; i < wealthExpectationsInOrder.Count; i++)
+			{
+				ExpectationDef expectationDef = wealthExpectationsInOrder[i];
+				if (order == expectationDef.order)
+				{
+					return expectationDef;
+				}
+			}
+			if (forRole)
+			{
+				for (int j = 0; j < roleExpectationsInOrder.Count; j++)
+				{
+					ExpectationDef expectationDef2 = roleExpectationsInOrder[j];
+					if (order == expectationDef2.order)
+					{
+						return expectationDef2;
+					}
+				}
+			}
+			return null;
+		}
+
+		public static bool OffsetByRole(Pawn p)
+		{
+			if (ModsConfig.IdeologyActive && p.ideo != null)
+			{
+				Precept_Role role = p.Ideo.GetRole(p);
+				if (role != null && role.def.expectationsOffset != 0)
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 }

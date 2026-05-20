@@ -30,10 +30,6 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (c.IsForbidden(pawn))
-			{
-				return false;
-			}
 			if (!pawn.CanReserve(c, 1, -1, ReservationLayerDefOf.Ceiling, forced))
 			{
 				return false;

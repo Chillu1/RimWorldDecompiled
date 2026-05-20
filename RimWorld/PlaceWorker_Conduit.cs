@@ -10,14 +10,14 @@ namespace RimWorld
 			List<Thing> thingList = loc.GetThingList(map);
 			for (int i = 0; i < thingList.Count; i++)
 			{
-				if (thingList[i].def.EverTransmitsPower)
+				Thing thing2 = thingList[i];
+				if (!GenConstruct.CanReplace(checkingDef, thing2.def))
 				{
-					return false;
-				}
-				if (thingList[i].def.entityDefToBuild != null)
-				{
-					ThingDef thingDef = thingList[i].def.entityDefToBuild as ThingDef;
-					if (thingDef != null && thingDef.EverTransmitsPower)
+					if (thing2.def.EverTransmitsPower)
+					{
+						return false;
+					}
+					if (thing2.def.entityDefToBuild != null && thing2.def.entityDefToBuild is ThingDef { EverTransmitsPower: not false })
 					{
 						return false;
 					}

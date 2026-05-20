@@ -28,7 +28,7 @@ namespace RimWorld
 					continue;
 				}
 				Room ownedRoom2 = list[i].ownership.OwnedRoom;
-				if (ownedRoom2 != null)
+				if (ownedRoom2 != null && ownedRoom2 != ownedRoom)
 				{
 					float stat = ownedRoom2.GetStat(RoomStatDefOf.Impressiveness);
 					if (stat - num >= Mathf.Abs(num * 0.1f) && (pawn == null || stat > num2))

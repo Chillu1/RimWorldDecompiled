@@ -48,7 +48,7 @@ namespace RimWorld
 				{
 					return false;
 				}
-				return (!t.IsBurning()) ? true : false;
+				return !t.IsBurning();
 			};
 			item = GenClosest.ClosestThing_Regionwise_ReachablePrioritized(root, map, ThingRequest.ForGroup(ThingRequestGroup.HaulableEverOrMinifiable), PathEndMode.ClosestTouch, TraverseParms.For(TraverseMode.NoPassClosedDoors, Danger.Some), maxDist, validator, (Thing x) => GetValue(x), 15, 15);
 			if (item != null && GetValue(item) < 320f)

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -10,11 +11,27 @@ namespace RimWorld
 
 		public PawnKindDef slaveKindDef;
 
-		public override IEnumerable<Thing> GenerateThings(int forTile, Faction faction = null)
+		public override IEnumerable<Thing> GenerateThings(PlanetTile forTile, Faction faction = null)
 		{
 			if (respectPopulationIntent && Rand.Value > StorytellerUtilityPopulation.PopulationIntent)
 			{
 				yield break;
+			}
+			if (faction != null && faction.ideos != null)
+			{
+				bool flag = true;
+				foreach (Ideo allIdeo in faction.ideos.AllIdeos)
+				{
+					if (!allIdeo.IdeoApprovesOfSlavery())
+					{
+						flag = false;
+						break;
+					}
+				}
+				if (!flag)
+				{
+					yield break;
+				}
 			}
 			int count = countRange.RandomInRange;
 			for (int i = 0; i < count; i++)
@@ -23,12 +40,13 @@ namespace RimWorld
 				{
 					break;
 				}
-				PawnGenerationRequest request = PawnGenerationRequest.MakeDefault();
-				request.KindDef = ((slaveKindDef != null) ? slaveKindDef : PawnKindDefOf.Slave);
-				request.Faction = result;
-				request.Tile = forTile;
-				request.ForceAddFreeWarmLayerIfNeeded = !trader.orbital;
-				request.RedressValidator = (Pawn x) => x.royalty == null || !x.royalty.AllTitlesForReading.Any();
+				DevelopmentalStage developmentalStage = (Find.Storyteller.difficulty.ChildrenAllowed ? (DevelopmentalStage.Child | DevelopmentalStage.Adult) : DevelopmentalStage.Adult);
+				PawnKindDef kind = ((slaveKindDef != null) ? slaveKindDef : PawnKindDefOf.Slave);
+				Faction faction2 = result;
+				PlanetTile? tile = forTile;
+				bool forceAddFreeWarmLayerIfNeeded = !trader.orbital;
+				DevelopmentalStage developmentalStages = developmentalStage;
+				PawnGenerationRequest request = new PawnGenerationRequest(kind, faction2, PawnGenerationContext.NonPlayer, tile, forceGenerateNewPawn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: false, 1f, forceAddFreeWarmLayerIfNeeded, allowGay: true, allowPregnant: false, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, 0f, null, 1f, null, null, null, null, null, null, null, null, null, null, null, null, forceNoIdeo: false, forceNoBackstory: false, forbidAnyTitle: false, forceDead: false, null, null, null, null, null, 0f, developmentalStages);
 				yield return PawnGenerator.GeneratePawn(request);
 			}
 		}

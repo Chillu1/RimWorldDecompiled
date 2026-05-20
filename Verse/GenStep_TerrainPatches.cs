@@ -15,16 +15,19 @@ namespace Verse
 		public override void Generate(Map map, GenStepParams parms)
 		{
 			int num = Mathf.RoundToInt((float)map.Area / 10000f * patchesPer10kCellsRange.RandomInRange);
-			for (int i = 0; i < num; i++)
+			using (map.pathing.DisableIncrementalScope())
 			{
-				float randomInRange = patchSizeRange.RandomInRange;
-				IntVec3 a = CellFinder.RandomCell(map);
-				foreach (IntVec3 item in GenRadial.RadialPatternInRadius(randomInRange / 2f))
+				for (int i = 0; i < num; i++)
 				{
-					IntVec3 c = a + item;
-					if (c.InBounds(map))
+					float randomInRange = patchSizeRange.RandomInRange;
+					IntVec3 intVec = CellFinder.RandomCell(map);
+					foreach (IntVec3 item in GenRadial.RadialPatternInRadius(randomInRange / 2f))
 					{
-						map.terrainGrid.SetTerrain(c, terrainDef);
+						IntVec3 c = intVec + item;
+						if (c.InBounds(map))
+						{
+							map.terrainGrid.SetTerrain(c, terrainDef);
+						}
 					}
 				}
 			}

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using Verse;
 
@@ -18,9 +17,9 @@ namespace RimWorld
 			}
 			Faction first = minTitleForImplantAllFactions.First;
 			StringBuilder stringBuilder = new StringBuilder("Stat_Thing_MinimumRoyalTitle_Desc".Translate(first.Named("FACTION")));
-			if (typeof(Hediff_ImplantWithLevel).IsAssignableFrom(Props.implantHediff.hediffClass))
+			if (typeof(Hediff_Level).IsAssignableFrom(Props.implantHediff.hediffClass))
 			{
-				stringBuilder.Append("\n\n" + "Stat_Thing_MinimumRoyalTitle_ImplantWithLevel_Desc".Translate(first.Named("FACTION")) + ":\n\n");
+				stringBuilder.Append("\n\n" + "Stat_Thing_MinimumRoyalTitle_Level_Desc".Translate(first.Named("FACTION")) + ":\n\n");
 				for (int i = 1; (float)i <= Props.implantHediff.maxSeverity; i++)
 				{
 					stringBuilder.Append(" -  x" + i + ", " + first.GetMinTitleForImplant(Props.implantHediff, i).GetLabelCapForBothGenders() + "\n");
@@ -54,8 +53,8 @@ namespace RimWorld
 			{
 				return "";
 			}
-			Hediff_ImplantWithLevel hediff_ImplantWithLevel = (Hediff_ImplantWithLevel)pawn.health.hediffSet.hediffs.FirstOrDefault((Hediff h) => h.def == hediff);
-			int num = ((levelOffset != 0 && hediff_ImplantWithLevel != null) ? (hediff_ImplantWithLevel.level + levelOffset) : 0);
+			Hediff_Level hediff_Level = (Hediff_Level)pawn.health.hediffSet.hediffs.FirstOrDefault((Hediff h) => h.def == hediff);
+			int num = ((levelOffset != 0 && hediff_Level != null) ? (hediff_Level.level + levelOffset) : 0);
 			foreach (Faction item in Find.FactionManager.AllFactionsListForReading)
 			{
 				if (pawn.Faction != null && !item.Hidden && !item.HostileTo(Faction.OfPlayer) && ThingRequiringRoyalPermissionUtility.IsViolatingRulesOf(hediff, pawn, item, num))
@@ -64,12 +63,12 @@ namespace RimWorld
 					HediffCompProperties_RoyalImplant hediffCompProperties_RoyalImplant = hediff.CompProps<HediffCompProperties_RoyalImplant>();
 					string arg = hediff.label + ((num == 0) ? "" : (" (" + num + "x)"));
 					TaggedString taggedString = hediffCompProperties_RoyalImplant.violationTriggerDescriptionKey.Translate(pawn.Named("PAWN"));
-					TaggedString t = "RoyalImplantIllegalUseWarning".Translate(pawn.Named("PAWN"), arg.Named("IMPLANT"), item.Named("FACTION"), minTitleForImplant.GetLabelCapFor(pawn).Named("TITLE"), taggedString.Named("VIOLATIONTRIGGER"));
+					TaggedString taggedString2 = "RoyalImplantIllegalUseWarning".Translate(pawn.Named("PAWN"), arg.Named("IMPLANT"), item.Named("FACTION"), minTitleForImplant.GetLabelCapFor(pawn).Named("TITLE"), taggedString.Named("VIOLATIONTRIGGER"));
 					if (levelOffset != 0)
 					{
-						return t + ("\n\n" + "RoyalImplantUpgradeConfirmation".Translate());
+						return taggedString2 + ("\n\n" + "RoyalImplantUpgradeConfirmation".Translate());
 					}
-					return t + ("\n\n" + "RoyalImplantInstallConfirmation".Translate());
+					return taggedString2 + ("\n\n" + "RoyalImplantInstallConfirmation".Translate());
 				}
 			}
 			return "";

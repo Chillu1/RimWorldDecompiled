@@ -10,7 +10,7 @@ namespace Verse
 
 		public static Vector3 PawnCollisionPosOffsetFor(Pawn pawn)
 		{
-			if (pawn.GetPosture() != 0)
+			if (pawn.GetPosture() != PawnPosture.Standing)
 			{
 				return Vector3.zero;
 			}
@@ -64,8 +64,7 @@ namespace Verse
 				List<Thing> thingList = item.GetThingList(map);
 				for (int i = 0; i < thingList.Count; i++)
 				{
-					Pawn pawn = thingList[i] as Pawn;
-					if (pawn == null || pawn.GetPosture() != 0)
+					if (!(thingList[i] is Pawn pawn) || pawn.GetPosture() != PawnPosture.Standing || pawn.Flying != forPawn.Flying)
 					{
 						continue;
 					}
@@ -105,8 +104,7 @@ namespace Verse
 				List<Thing> thingList = item.GetThingList(pawn.Map);
 				for (int i = 0; i < thingList.Count; i++)
 				{
-					Pawn pawn2 = thingList[i] as Pawn;
-					if (pawn2 == null || pawn2 == pawn || pawn2.GetPosture() != 0)
+					if (!(thingList[i] is Pawn pawn2) || pawn2 == pawn || pawn2.GetPosture() != PawnPosture.Standing || pawn2.Flying != pawn.Flying)
 					{
 						continue;
 					}
@@ -128,7 +126,7 @@ namespace Verse
 
 		private static bool WillBeFasterOnNextCell(Pawn p1, Pawn p2)
 		{
-			if (p1.pather.nextCellCostLeft == p2.pather.nextCellCostLeft)
+			if (Mathf.Approximately(p1.pather.nextCellCostLeft, p2.pather.nextCellCostLeft))
 			{
 				return p1.thingIDNumber < p2.thingIDNumber;
 			}

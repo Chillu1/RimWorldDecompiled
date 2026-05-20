@@ -2,7 +2,7 @@ namespace Verse.Grammar
 {
 	public class Rule_Number : Rule
 	{
-		private IntRange range = IntRange.zero;
+		private IntRange range = IntRange.Zero;
 
 		public int selectionWeight = 1;
 

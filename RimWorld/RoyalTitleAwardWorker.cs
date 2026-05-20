@@ -2,7 +2,7 @@ using Verse;
 
 namespace RimWorld
 {
-	public abstract class RoyalTitleAwardWorker
+	public class RoyalTitleAwardWorker
 	{
 		public RoyalTitleDef def;
 
@@ -10,6 +10,8 @@ namespace RimWorld
 		{
 		}
 
-		public abstract void DoAward(Pawn pawn, Faction faction, RoyalTitleDef currentTitle, RoyalTitleDef newTitle);
+		public virtual void DoAward(Pawn pawn, Faction faction, RoyalTitleDef currentTitle, RoyalTitleDef newTitle)
+		{
+		}
 	}
 }

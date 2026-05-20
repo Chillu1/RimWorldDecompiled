@@ -11,6 +11,9 @@ namespace Verse
 		private List<GameConditionDef> exclusiveConditions;
 
 		[MustTranslate]
+		public string startMessage;
+
+		[MustTranslate]
 		public string endMessage;
 
 		[MustTranslate]
@@ -22,11 +25,41 @@ namespace Verse
 
 		public bool canBePermanent;
 
+		public bool showPermanentInTooltip = true;
+
+		public bool allowUnderground = true;
+
+		public bool requireFish;
+
 		[MustTranslate]
 		public string descriptionFuture;
 
 		[NoTranslate]
 		public string jumpToSourceKey = "ClickToJumpToSource";
+
+		public List<GameConditionDef> silencedByConditions;
+
+		public bool natural = true;
+
+		public bool preventNeutralVisitors;
+
+		public bool preventShuttleLaunch;
+
+		public bool causesTraderCaravanExit;
+
+		public bool preventIncidents;
+
+		public bool displayOnUI = true;
+
+		public bool pennedAnimalsSeekShelter;
+
+		public ThingDef spreadsFilth;
+
+		public bool canAffectAllPlanetLayers;
+
+		public List<PlanetLayerDef> layerWhitelist;
+
+		public List<PlanetLayerDef> layerBlacklist;
 
 		public PsychicDroneLevel defaultDroneLevel = PsychicDroneLevel.BadMedium;
 
@@ -36,9 +69,19 @@ namespace Verse
 
 		public float temperatureOffset = -10f;
 
+		public float minNearbyPollution;
+
+		public SimpleCurve mtbOverNearbyPollutionCurve;
+
+		public float fishPopulationOffsetPerDay;
+
 		public bool CanCoexistWith(GameConditionDef other)
 		{
 			if (this == other)
+			{
+				return false;
+			}
+			if (ModsConfig.AnomalyActive && this != GameConditionDefOf.UnnaturalDarkness && other == GameConditionDefOf.UnnaturalDarkness)
 			{
 				return false;
 			}
@@ -63,6 +106,10 @@ namespace Verse
 			if (conditionClass == null)
 			{
 				yield return "conditionClass is null";
+			}
+			if (!layerBlacklist.NullOrEmpty() && !layerWhitelist.NullOrEmpty())
+			{
+				yield return "Both layerBlacklist and layerWhitelist are used, this will lead to unexpected behaviour. Use one or the other.";
 			}
 		}
 	}

@@ -5,45 +5,21 @@ namespace RimWorld
 {
 	public interface ITrader
 	{
-		TraderKindDef TraderKind
-		{
-			get;
-		}
+		TraderKindDef TraderKind { get; }
 
-		IEnumerable<Thing> Goods
-		{
-			get;
-		}
+		IEnumerable<Thing> Goods { get; }
 
-		int RandomPriceFactorSeed
-		{
-			get;
-		}
+		int RandomPriceFactorSeed { get; }
 
-		string TraderName
-		{
-			get;
-		}
+		string TraderName { get; }
 
-		bool CanTradeNow
-		{
-			get;
-		}
+		bool CanTradeNow { get; }
 
-		float TradePriceImprovementOffsetForPlayer
-		{
-			get;
-		}
+		float TradePriceImprovementOffsetForPlayer { get; }
 
-		Faction Faction
-		{
-			get;
-		}
+		Faction Faction { get; }
 
-		TradeCurrency TradeCurrency
-		{
-			get;
-		}
+		TradeCurrency TradeCurrency { get; }
 
 		IEnumerable<Thing> ColonyThingsWillingToBuy(Pawn playerNegotiator);
 

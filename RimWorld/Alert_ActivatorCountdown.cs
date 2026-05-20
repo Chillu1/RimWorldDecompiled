@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using Verse;
 
 namespace RimWorld
@@ -35,42 +34,39 @@ namespace RimWorld
 		public Alert_ActivatorCountdown()
 		{
 			defaultPriority = AlertPriority.High;
+			requireRoyalty = true;
 		}
 
 		public override AlertReport GetReport()
 		{
-			if (!ModsConfig.RoyaltyActive)
-			{
-				return false;
-			}
 			return AlertReport.CulpritsAre(ActivatorCountdowns);
 		}
 
 		public override string GetLabel()
 		{
-			int count = ActivatorCountdowns.Count;
+			int count = activatorCountdownsResult.Count;
 			if (count > 1)
 			{
 				return "ActivatorCountdownMultiple".Translate(count);
 			}
 			if (count == 0)
 			{
-				return "";
+				return string.Empty;
 			}
-			CompSendSignalOnCountdown compSendSignalOnCountdown = ActivatorCountdowns[0].TryGetComp<CompSendSignalOnCountdown>();
-			return "ActivatorCountdown".Translate(compSendSignalOnCountdown.ticksLeft.ToStringTicksToPeriod());
+			CompSendSignalOnCountdown compSendSignalOnCountdown = activatorCountdownsResult[0].TryGetComp<CompSendSignalOnCountdown>();
+			return "ActivatorCountdown".Translate(compSendSignalOnCountdown.ticksLeft.ToStringTicksToPeriodVerbose());
 		}
 
 		public override TaggedString GetExplanation()
 		{
-			int num = ActivatorCountdowns.Count();
-			if (num > 1)
+			int count = activatorCountdownsResult.Count;
+			if (count > 1)
 			{
-				return "ActivatorCountdownDescMultiple".Translate(num);
+				return "ActivatorCountdownDescMultiple".Translate(count);
 			}
-			if (num == 0)
+			if (count == 0)
 			{
-				return "";
+				return string.Empty;
 			}
 			return "ActivatorCountdownDesc".Translate();
 		}

@@ -62,14 +62,14 @@ namespace RimWorld
 					simpleCurveDrawInfo.curve.SortPoints();
 					if (historyAutoRecorder.records.Count == 1)
 					{
-						simpleCurveDrawInfo.curve.Add(new CurvePoint(1.66666669E-05f, historyAutoRecorder.records[0]));
+						simpleCurveDrawInfo.curve.Add(new CurvePoint(1.6666667E-05f, historyAutoRecorder.records[0]));
 					}
 					curves.Add(simpleCurveDrawInfo);
 				}
 			}
 			if (Mathf.Approximately(section.min, section.max))
 			{
-				section.max += 1.66666669E-05f;
+				section.max += 1.6666667E-05f;
 			}
 			SimpleCurveDrawerStyle curveDrawerStyle = Find.History.curveDrawerStyle;
 			curveDrawerStyle.FixedSection = section;

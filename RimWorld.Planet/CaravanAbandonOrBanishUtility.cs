@@ -29,10 +29,10 @@ namespace RimWorld.Planet
 				}
 				else
 				{
+					t.Notify_AbandonedAtTile(caravan.GetTileCurrentlyOver());
 					ownerOf.inventory.innerContainer.Remove(t);
 					t.Destroy();
-					caravan.RecacheImmobilizedNow();
-					caravan.RecacheDaysWorthOfFood();
+					caravan.RecacheInventory();
 				}
 			}, destructive: true);
 			Find.WindowStack.Add(window);
@@ -40,10 +40,9 @@ namespace RimWorld.Planet
 
 		public static void TryAbandonOrBanishViaInterface(TransferableImmutable t, Caravan caravan)
 		{
-			Pawn pawn = t.AnyThing as Pawn;
-			if (pawn != null)
+			if (t.AnyThing is Pawn t2)
 			{
-				TryAbandonOrBanishViaInterface(pawn, caravan);
+				TryAbandonOrBanishViaInterface(t2, caravan);
 				return;
 			}
 			Dialog_MessageBox window = Dialog_MessageBox.CreateConfirmation("ConfirmAbandonItemDialog".Translate(t.LabelWithTotalStackCount), delegate
@@ -57,11 +56,11 @@ namespace RimWorld.Planet
 						Log.Error("Could not find owner of " + thing);
 						return;
 					}
+					thing.Notify_AbandonedAtTile(caravan.GetTileCurrentlyOver());
 					ownerOf.inventory.innerContainer.Remove(thing);
 					thing.Destroy();
 				}
-				caravan.RecacheImmobilizedNow();
-				caravan.RecacheDaysWorthOfFood();
+				caravan.RecacheInventory();
 			}, destructive: true);
 			Find.WindowStack.Add(window);
 		}
@@ -79,15 +78,17 @@ namespace RimWorld.Planet
 				{
 					if (x >= t.stackCount)
 					{
+						t.Notify_AbandonedAtTile(caravan.GetTileCurrentlyOver());
 						ownerOf.inventory.innerContainer.Remove(t);
 						t.Destroy();
 					}
 					else
 					{
-						t.SplitOff(x).Destroy();
+						Thing thing = t.SplitOff(x);
+						thing.Notify_AbandonedAtTile(caravan.GetTileCurrentlyOver());
+						thing.Destroy();
 					}
-					caravan.RecacheImmobilizedNow();
-					caravan.RecacheDaysWorthOfFood();
+					caravan.RecacheInventory();
 				}
 			}));
 		}
@@ -113,24 +114,25 @@ namespace RimWorld.Planet
 					if (num >= thing.stackCount)
 					{
 						num -= thing.stackCount;
+						thing.Notify_AbandonedAtTile(caravan.GetTileCurrentlyOver());
 						ownerOf.inventory.innerContainer.Remove(thing);
 						thing.Destroy();
 					}
 					else
 					{
-						thing.SplitOff(num).Destroy();
+						Thing thing2 = thing.SplitOff(num);
+						thing2.Notify_AbandonedAtTile(caravan.GetTileCurrentlyOver());
+						thing2.Destroy();
 						num = 0;
 					}
 				}
-				caravan.RecacheImmobilizedNow();
-				caravan.RecacheDaysWorthOfFood();
+				caravan.RecacheInventory();
 			}));
 		}
 
 		public static string GetAbandonOrBanishButtonTooltip(Thing t, bool abandonSpecificCount)
 		{
-			Pawn pawn = t as Pawn;
-			if (pawn != null)
+			if (t is Pawn pawn)
 			{
 				return PawnBanishUtility.GetBanishButtonTip(pawn);
 			}
@@ -139,8 +141,7 @@ namespace RimWorld.Planet
 
 		public static string GetAbandonOrBanishButtonTooltip(TransferableImmutable t, bool abandonSpecificCount)
 		{
-			Pawn pawn = t.AnyThing as Pawn;
-			if (pawn != null)
+			if (t.AnyThing is Pawn pawn)
 			{
 				return PawnBanishUtility.GetBanishButtonTip(pawn);
 			}

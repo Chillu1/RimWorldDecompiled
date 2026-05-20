@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
 
@@ -6,7 +7,30 @@ namespace Verse
 {
 	public struct Rot4 : IEquatable<Rot4>
 	{
+		public const int NorthInt = 0;
+
+		public const int EastInt = 1;
+
+		public const int SouthInt = 2;
+
+		public const int WestInt = 3;
+
+		public const int RotationCount = 4;
+
 		private byte rotInt;
+
+		public static readonly Rot4 North = new Rot4(0);
+
+		public static readonly Rot4 East = new Rot4(1);
+
+		public static readonly Rot4 South = new Rot4(2);
+
+		public static readonly Rot4 West = new Rot4(3);
+
+		public static readonly Rot4 Invalid = new Rot4
+		{
+			rotInt = 200
+		};
 
 		public bool IsValid => rotInt < 100;
 
@@ -18,7 +42,7 @@ namespace Verse
 			}
 			set
 			{
-				rotInt = (byte)((int)value % 4);
+				rotInt = (byte)GenMath.PositiveMod(value, 4);
 			}
 		}
 
@@ -30,11 +54,7 @@ namespace Verse
 			}
 			set
 			{
-				if (value < 0)
-				{
-					value += 4000;
-				}
-				rotInt = (byte)(value % 4);
+				rotInt = (byte)GenMath.PositiveMod(value, 4);
 			}
 		}
 
@@ -86,6 +106,15 @@ namespace Verse
 			_ => throw new Exception("rotInt's value cannot be >3 but it is:" + rotInt), 
 		};
 
+		public IntVec3 AsIntVec3 => rotInt switch
+		{
+			0 => IntVec3.North, 
+			1 => IntVec3.East, 
+			2 => IntVec3.South, 
+			3 => IntVec3.West, 
+			_ => throw new Exception("rotInt's value cannot be >3 but it is:" + rotInt), 
+		};
+
 		public bool IsHorizontal
 		{
 			get
@@ -98,23 +127,28 @@ namespace Verse
 			}
 		}
 
-		public static Rot4 North => new Rot4(0);
-
-		public static Rot4 East => new Rot4(1);
-
-		public static Rot4 South => new Rot4(2);
-
-		public static Rot4 West => new Rot4(3);
-
-		public static Rot4 Random => new Rot4(Rand.RangeInclusive(0, 3));
-
-		public static Rot4 Invalid
+		public bool IsVertical
 		{
 			get
 			{
-				Rot4 result = default(Rot4);
-				result.rotInt = 200;
-				return result;
+				if (rotInt != 0)
+				{
+					return rotInt == 2;
+				}
+				return true;
+			}
+		}
+
+		public static Rot4 Random => new Rot4(Rand.RangeInclusive(0, 3));
+
+		public static IEnumerable<Rot4> AllRotations
+		{
+			get
+			{
+				yield return North;
+				yield return East;
+				yield return South;
+				yield return West;
 			}
 		}
 
@@ -145,26 +179,47 @@ namespace Verse
 			_ => default(Rot4), 
 		};
 
+		public static implicit operator Rot4(RotEnum rot)
+		{
+			return rot switch
+			{
+				RotEnum.East => East, 
+				RotEnum.South => South, 
+				RotEnum.West => West, 
+				_ => North, 
+			};
+		}
+
+		public static implicit operator RotEnum(Rot4 rot)
+		{
+			if (rot == East)
+			{
+				return RotEnum.East;
+			}
+			if (rot == South)
+			{
+				return RotEnum.South;
+			}
+			if (rot == West)
+			{
+				return RotEnum.West;
+			}
+			return RotEnum.North;
+		}
+
 		public Rot4(byte newRot)
 		{
-			rotInt = newRot;
+			rotInt = (byte)GenMath.PositiveMod(newRot, 4);
 		}
 
 		public Rot4(int newRot)
 		{
-			rotInt = (byte)(newRot % 4);
+			rotInt = (byte)GenMath.PositiveMod(newRot, 4);
 		}
 
 		public void Rotate(RotationDirection RotDir)
 		{
-			if (RotDir == RotationDirection.Clockwise)
-			{
-				AsInt++;
-			}
-			if (RotDir == RotationDirection.Counterclockwise)
-			{
-				AsInt--;
-			}
+			AsByte += (byte)RotDir;
 		}
 
 		public Rot4 Rotated(RotationDirection RotDir)
@@ -214,13 +269,24 @@ namespace Verse
 			{
 				return South;
 			}
-			Log.Error("FromIntVec3 with bad offset " + offset);
+			IntVec3 intVec = offset;
+			Log.Error("FromIntVec3 with bad offset " + intVec.ToString());
 			return North;
 		}
 
 		public static Rot4 FromIntVec2(IntVec2 offset)
 		{
 			return FromIntVec3(offset.ToIntVec3);
+		}
+
+		public static RotationDirection GetRelativeRotation(Rot4 from, Rot4 to)
+		{
+			if (!from.IsValid || !to.IsValid)
+			{
+				Log.Error($"Both from ({from}) and to ({to}) must be valid.");
+				return RotationDirection.None;
+			}
+			return (RotationDirection)GenMath.PositiveMod(to.AsByte - from.AsByte, 4);
 		}
 
 		public static bool operator ==(Rot4 a, Rot4 b)

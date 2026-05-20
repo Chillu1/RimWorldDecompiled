@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Verse
 {
@@ -11,41 +13,47 @@ namespace Verse
 		public static void GiveAllShortHashes()
 		{
 			takenHashesPerDeftype.Clear();
-			List<Def> list = new List<Def>();
-			foreach (Type item2 in GenDefDatabase.AllDefTypesWithDatabases())
+			Parallel.ForEach(GenDefDatabase.AllDefTypesWithDatabases().Select(delegate(Type defType)
 			{
-				IEnumerable obj = (IEnumerable)typeof(DefDatabase<>).MakeGenericType(item2).GetProperty("AllDefs").GetGetMethod()
-					.Invoke(null, null);
-				list.Clear();
+				if (!takenHashesPerDeftype.TryGetValue(defType, out var value))
+				{
+					value = new HashSet<ushort>();
+					takenHashesPerDeftype.Add(defType, value);
+				}
+				return (defType: defType, takenHashes: value);
+			}).ToArray(), delegate((Type defType, HashSet<ushort> takenHashes) pair)
+			{
+				(Type defType, HashSet<ushort> takenHashes) tuple = pair;
+				Type item = tuple.defType;
+				HashSet<ushort> item2 = tuple.takenHashes;
+				Type type = typeof(DefDatabase<>).MakeGenericType(item);
+				IEnumerable obj = (IEnumerable)type.GetProperty("AllDefs").GetGetMethod().Invoke(null, null);
+				List<Def> list = new List<Def>();
 				foreach (Def item3 in obj)
 				{
 					list.Add(item3);
 				}
 				list.SortBy((Def d) => d.defName);
-				for (int i = 0; i < list.Count; i++)
+				for (int num = 0; num < list.Count; num++)
 				{
-					GiveShortHash(list[i], item2);
+					GiveShortHash(list[num], item, item2);
 				}
-			}
+				type.GetMethod("InitializeShortHashDictionary").Invoke(null, null);
+			});
 		}
 
-		private static void GiveShortHash(Def def, Type defType)
+		private static void GiveShortHash(Def def, Type defType, HashSet<ushort> takenHashes)
 		{
 			if (def.shortHash != 0)
 			{
-				Log.Error(string.Concat(def, " already has short hash."));
+				Log.Error(def?.ToString() + " already has short hash.");
 				return;
-			}
-			if (!takenHashesPerDeftype.TryGetValue(defType, out var value))
-			{
-				value = new HashSet<ushort>();
-				takenHashesPerDeftype.Add(defType, value);
 			}
 			ushort num = (ushort)(GenText.StableStringHash(def.defName) % 65535);
 			int num2 = 0;
-			while (num == 0 || value.Contains(num))
+			while (num == 0 || takenHashes.Contains(num))
 			{
-				num = (ushort)(num + 1);
+				num++;
 				num2++;
 				if (num2 > 5000)
 				{
@@ -53,7 +61,7 @@ namespace Verse
 				}
 			}
 			def.shortHash = num;
-			value.Add(num);
+			takenHashes.Add(num);
 		}
 	}
 }

@@ -17,7 +17,7 @@ namespace Verse.Sound
 		private static void DisableFilterOn<T>(AudioSource source) where T : Behaviour
 		{
 			T component = source.GetComponent<T>();
-			if ((Object)component != (Object)null)
+			if (component != null)
 			{
 				component.enabled = false;
 			}

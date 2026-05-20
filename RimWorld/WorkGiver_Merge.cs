@@ -32,18 +32,16 @@ namespace RimWorld
 			{
 				return null;
 			}
-			SlotGroup slotGroup = t.GetSlotGroup();
-			if (slotGroup == null)
-			{
-				return null;
-			}
+			ISlotGroup slotGroup = t.GetSlotGroup();
+			ISlotGroup storageGroup = slotGroup.StorageGroup;
+			slotGroup = storageGroup ?? slotGroup;
 			if (!pawn.CanReserve(t.Position, 1, -1, null, forced))
 			{
 				return null;
 			}
 			foreach (Thing heldThing in slotGroup.HeldThings)
 			{
-				if (heldThing != t && heldThing.CanStackWith(t) && (forced || heldThing.stackCount >= t.stackCount) && heldThing.stackCount < heldThing.def.stackLimit && pawn.CanReserve(heldThing.Position, 1, -1, null, forced) && pawn.CanReserve(heldThing) && heldThing.Position.IsValidStorageFor(heldThing.Map, t))
+				if (heldThing != t && heldThing.CanStackWith(t) && (forced || heldThing.stackCount >= t.stackCount) && heldThing.stackCount < heldThing.def.stackLimit && !heldThing.IsForbidden(pawn.Faction) && heldThing.Position.InAllowedArea(pawn) && pawn.CanReserve(heldThing.Position, 1, -1, null, forced) && pawn.CanReserve(heldThing) && heldThing.Position.IsValidStorageFor(heldThing.Map, t) && !heldThing.Position.ContainsStaticFire(heldThing.Map))
 				{
 					Job job = JobMaker.MakeJob(JobDefOf.HaulToCell, t, heldThing.Position);
 					job.count = Mathf.Min(heldThing.def.stackLimit - heldThing.stackCount, t.stackCount);

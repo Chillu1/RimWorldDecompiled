@@ -29,7 +29,7 @@ namespace Verse
 			return SubGraphicFor(thing).MatSingle;
 		}
 
-		public Graphic SubGraphicFor(Thing thing)
+		public virtual Graphic SubGraphicFor(Thing thing)
 		{
 			return SubGraphicForStackCount(thing.stackCount, thing.def);
 		}

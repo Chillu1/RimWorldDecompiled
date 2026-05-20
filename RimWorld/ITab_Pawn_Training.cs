@@ -9,9 +9,13 @@ namespace RimWorld
 		{
 			get
 			{
-				if (base.SelPawn.training != null)
+				if (SelPawn.training != null && SelPawn.Faction == Faction.OfPlayer && !SelPawn.RaceProps.hideTrainingTab)
 				{
-					return base.SelPawn.Faction == Faction.OfPlayer;
+					if (SelPawn.IsMutant)
+					{
+						return SelPawn.mutant.Def.tameable;
+					}
+					return true;
 				}
 				return false;
 			}
@@ -27,13 +31,13 @@ namespace RimWorld
 		{
 			Rect rect = new Rect(0f, 0f, size.x, size.y).ContractedBy(17f);
 			rect.yMin += 10f;
-			TrainingCardUtility.DrawTrainingCard(rect, base.SelPawn);
+			TrainingCardUtility.DrawTrainingCard(rect, SelPawn);
 		}
 
 		protected override void UpdateSize()
 		{
 			base.UpdateSize();
-			size = new Vector2(300f, TrainingCardUtility.TotalHeightForPawn(base.SelPawn));
+			size = new Vector2(300f, TrainingCardUtility.TotalHeightForPawn(SelPawn));
 		}
 	}
 }

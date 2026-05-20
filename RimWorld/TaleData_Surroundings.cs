@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 using Verse.Grammar;
 
@@ -6,7 +7,9 @@ namespace RimWorld
 {
 	public class TaleData_Surroundings : TaleData
 	{
-		public int tile;
+		public PlanetTile tile;
+
+		public BiomeDef biome;
 
 		public float temperature;
 
@@ -26,19 +29,27 @@ namespace RimWorld
 
 		public override void ExposeData()
 		{
-			Scribe_Values.Look(ref tile, "tile", 0);
+			Scribe_Values.Look(ref tile, "tile");
 			Scribe_Values.Look(ref temperature, "temperature", 0f);
 			Scribe_Values.Look(ref snowDepth, "snowDepth", 0f);
 			Scribe_Defs.Look(ref weather, "weather");
 			Scribe_Defs.Look(ref roomRole, "roomRole");
+			Scribe_Defs.Look(ref biome, "biome");
 			Scribe_Values.Look(ref roomImpressiveness, "roomImpressiveness", 0f);
 			Scribe_Values.Look(ref roomBeauty, "roomBeauty", 0f);
 			Scribe_Values.Look(ref roomCleanliness, "roomCleanliness", 0f);
 		}
 
-		public override IEnumerable<Rule> GetRules()
+		public override IEnumerable<Rule> GetRules(Dictionary<string, string> constants = null)
 		{
-			yield return new Rule_String("BIOME", Find.WorldGrid[tile].biome.label);
+			if (biome == null)
+			{
+				yield return new Rule_String("BIOME", Find.WorldGrid[tile].PrimaryBiome.label);
+			}
+			else
+			{
+				yield return new Rule_String("BIOME", biome.label);
+			}
 			if (roomRole != null && roomRole != RoomRoleDefOf.None)
 			{
 				yield return new Rule_String("ROOM_role", roomRole.label);
@@ -58,8 +69,11 @@ namespace RimWorld
 
 		public static TaleData_Surroundings GenerateFrom(IntVec3 c, Map map)
 		{
-			TaleData_Surroundings taleData_Surroundings = new TaleData_Surroundings();
-			taleData_Surroundings.tile = map.Tile;
+			TaleData_Surroundings taleData_Surroundings = new TaleData_Surroundings
+			{
+				tile = map.Tile,
+				biome = map.Biome
+			};
 			Room roomOrAdjacent = c.GetRoomOrAdjacent(map, RegionType.Set_All);
 			if (roomOrAdjacent != null)
 			{

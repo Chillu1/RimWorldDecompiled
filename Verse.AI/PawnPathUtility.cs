@@ -5,7 +5,7 @@ namespace Verse.AI
 {
 	public static class PawnPathUtility
 	{
-		public static Thing FirstBlockingBuilding(this PawnPath path, out IntVec3 cellBefore, Pawn pawn = null)
+		public static Thing FirstBlockingBuilding(this PawnPath path, out IntVec3 cellBefore, Pawn pawn)
 		{
 			if (!path.Found)
 			{
@@ -13,9 +13,9 @@ namespace Verse.AI
 				return null;
 			}
 			List<IntVec3> nodesReversed = path.NodesReversed;
-			if (nodesReversed.Count == 1)
+			if (nodesReversed.Count <= 1)
 			{
-				cellBefore = nodesReversed[0];
+				cellBefore = ((nodesReversed.Count == 1) ? nodesReversed[0] : IntVec3.Invalid);
 				return null;
 			}
 			Building building = null;
@@ -25,8 +25,9 @@ namespace Verse.AI
 				Building edifice = nodesReversed[num].GetEdifice(pawn.Map);
 				if (edifice != null)
 				{
-					Building_Door building_Door = edifice as Building_Door;
-					if ((building_Door != null && !building_Door.FreePassage && (pawn == null || !building_Door.PawnCanOpen(pawn))) || edifice.def.passability == Traversability.Impassable)
+					bool num2 = edifice is Building_Door { FreePassage: false } building_Door && !building_Door.PawnCanOpen(pawn);
+					bool flag = edifice.def.IsFence && !pawn.CanPassFences;
+					if (num2 || flag || edifice.def.passability == Traversability.Impassable)
 					{
 						if (building != null)
 						{
@@ -54,54 +55,6 @@ namespace Verse.AI
 			return null;
 		}
 
-		public static IntVec3 FinalWalkableNonDoorCell(this PawnPath path, Map map)
-		{
-			if (path.NodesReversed.Count == 1)
-			{
-				return path.NodesReversed[0];
-			}
-			List<IntVec3> nodesReversed = path.NodesReversed;
-			for (int i = 0; i < nodesReversed.Count; i++)
-			{
-				Building edifice = nodesReversed[i].GetEdifice(map);
-				if (edifice == null || edifice.def.passability != Traversability.Impassable)
-				{
-					Building_Door building_Door = edifice as Building_Door;
-					if (building_Door == null || building_Door.FreePassage)
-					{
-						return nodesReversed[i];
-					}
-				}
-			}
-			return nodesReversed[0];
-		}
-
-		public static IntVec3 LastCellBeforeBlockerOrFinalCell(this PawnPath path, Map map)
-		{
-			if (path.NodesReversed.Count == 1)
-			{
-				return path.NodesReversed[0];
-			}
-			List<IntVec3> nodesReversed = path.NodesReversed;
-			for (int num = nodesReversed.Count - 2; num >= 1; num--)
-			{
-				Building edifice = nodesReversed[num].GetEdifice(map);
-				if (edifice != null)
-				{
-					if (edifice.def.passability == Traversability.Impassable)
-					{
-						return nodesReversed[num + 1];
-					}
-					Building_Door building_Door = edifice as Building_Door;
-					if (building_Door != null && !building_Door.FreePassage)
-					{
-						return nodesReversed[num + 1];
-					}
-				}
-			}
-			return nodesReversed[0];
-		}
-
 		public static bool TryFindLastCellBeforeBlockingDoor(this PawnPath path, Pawn pawn, out IntVec3 result)
 		{
 			if (path.NodesReversed.Count == 1)
@@ -112,8 +65,7 @@ namespace Verse.AI
 			List<IntVec3> nodesReversed = path.NodesReversed;
 			for (int num = nodesReversed.Count - 2; num >= 1; num--)
 			{
-				Building_Door building_Door = nodesReversed[num].GetEdifice(pawn.Map) as Building_Door;
-				if (building_Door != null && !building_Door.CanPhysicallyPass(pawn))
+				if (nodesReversed[num].GetEdifice(pawn.Map) is Building_Door building_Door && !building_Door.CanPhysicallyPass(pawn))
 				{
 					result = nodesReversed[num + 1];
 					return true;

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.AI.Group;
@@ -18,6 +19,8 @@ namespace RimWorld
 
 		public bool spawnPawnsOnEdge;
 
+		public bool useDropPods;
+
 		private const int PawnsDelayAfterSpawnTicks = 120;
 
 		public override void ExposeData()
@@ -28,6 +31,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref spawnNear, "spawnNear");
 			Scribe_Values.Look(ref spawnAround, "spawnAround");
 			Scribe_Values.Look(ref spawnPawnsOnEdge, "spawnPawnsOnEdge", defaultValue: false);
+			Scribe_Values.Look(ref useDropPods, "useDropPods", defaultValue: false);
 		}
 
 		protected override void DoAction(SignalArgs args)
@@ -53,12 +57,19 @@ namespace RimWorld
 					Find.WorldPawns.PassToWorld(item);
 					break;
 				}
-				GenSpawn.Spawn(item, result, base.Map);
-				if (!spawnPawnsOnEdge)
+				if (useDropPods)
 				{
-					for (int i = 0; i < 10; i++)
+					DropPodUtility.DropThingsNear(result, base.Map, Gen.YieldSingle(item));
+				}
+				else
+				{
+					GenSpawn.Spawn(item, result, base.Map);
+					if (!spawnPawnsOnEdge)
 					{
-						MoteMaker.ThrowAirPuffUp(item.DrawPos, base.Map);
+						for (int num = 0; num < 10; num++)
+						{
+							FleckMaker.ThrowAirPuffUp(item.DrawPos, base.Map);
+						}
 					}
 				}
 				list.Add(item);
@@ -69,10 +80,10 @@ namespace RimWorld
 			}
 			if (ambushType == SignalActionAmbushType.Manhunters)
 			{
-				for (int j = 0; j < list.Count; j++)
+				for (int num2 = 0; num2 < list.Count; num2++)
 				{
-					list[j].health.AddHediff(HediffDefOf.Scaria);
-					list[j].mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.ManhunterPermanent);
+					list[num2].health.AddHediff(HediffDefOf.Scaria);
+					list[num2].mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.ManhunterPermanent);
 				}
 			}
 			else
@@ -80,28 +91,28 @@ namespace RimWorld
 				Faction faction = list[0].Faction;
 				LordMaker.MakeNewLord(faction, new LordJob_AssaultColony(faction), base.Map, list);
 			}
-			if (!spawnPawnsOnEdge)
+			if (!spawnPawnsOnEdge && !useDropPods)
 			{
-				for (int k = 0; k < list.Count; k++)
+				for (int num3 = 0; num3 < list.Count; num3++)
 				{
-					list[k].jobs.StartJob(JobMaker.MakeJob(JobDefOf.Wait, 120));
-					list[k].Rotation = Rot4.Random;
+					list[num3].jobs.StartJob(JobMaker.MakeJob(JobDefOf.Wait, 120));
+					list[num3].Rotation = Rot4.Random;
 				}
 			}
-			Find.LetterStack.ReceiveLetter("LetterLabelAmbushInExistingMap".Translate(), "LetterAmbushInExistingMap".Translate(Faction.OfPlayer.def.pawnsPlural).CapitalizeFirst(), LetterDefOf.ThreatBig, list[0]);
+			Find.LetterStack.ReceiveLetter("LetterLabelAmbushInExistingMap".Translate(), "LetterAmbushInExistingMap".Translate(Faction.OfPlayer.def.pawnsPlural).CapitalizeFirst(), LetterDefOf.ThreatBig, list);
 		}
 
 		private IEnumerable<Pawn> GenerateAmbushPawns()
 		{
 			if (ambushType == SignalActionAmbushType.Manhunters)
 			{
-				if (!ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(points, base.Map.Tile, out var animalKind) && !ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(points, -1, out animalKind))
+				if (!AggressiveAnimalIncidentUtility.TryFindAggressiveAnimalKind(points, base.Map.Tile, out var animalKind) && !AggressiveAnimalIncidentUtility.TryFindAggressiveAnimalKind(points, PlanetTile.Invalid, out animalKind))
 				{
 					return Enumerable.Empty<Pawn>();
 				}
-				return ManhunterPackIncidentUtility.GenerateAnimals_NewTmp(animalKind, base.Map.Tile, points);
+				return AggressiveAnimalIncidentUtility.GenerateAnimals(animalKind, base.Map.Tile, points);
 			}
-			Faction faction = ((ambushType != SignalActionAmbushType.Mechanoids) ? (base.Map.ParentFaction ?? Find.FactionManager.RandomEnemyFaction(allowHidden: false, allowDefeated: false, allowNonHumanlike: false)) : Faction.OfMechanoids);
+			Faction faction = ((ambushType != SignalActionAmbushType.Mechanoids) ? ((base.Map.ParentFaction != null && base.Map.ParentFaction.HostileTo(Faction.OfPlayer)) ? base.Map.ParentFaction : Find.FactionManager.RandomEnemyFaction(allowHidden: false, allowDefeated: false, allowNonHumanlike: false)) : Faction.OfMechanoids);
 			if (faction == null)
 			{
 				return Enumerable.Empty<Pawn>();

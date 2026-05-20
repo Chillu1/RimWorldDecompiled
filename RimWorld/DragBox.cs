@@ -25,25 +25,26 @@ namespace RimWorld
 			get
 			{
 				Vector2 vector = start.MapToUIPosition();
-				Vector2 mousePosition = Event.current.mousePosition;
-				if (mousePosition.x < vector.x)
+				Vector2 mousePositionOnUIInverted = UI.MousePositionOnUIInverted;
+				if (mousePositionOnUIInverted.x < vector.x)
 				{
-					float x = mousePosition.x;
-					mousePosition.x = vector.x;
+					float x = mousePositionOnUIInverted.x;
+					mousePositionOnUIInverted.x = vector.x;
 					vector.x = x;
 				}
-				if (mousePosition.y < vector.y)
+				if (mousePositionOnUIInverted.y < vector.y)
 				{
-					float y = mousePosition.y;
-					mousePosition.y = vector.y;
+					float y = mousePositionOnUIInverted.y;
+					mousePositionOnUIInverted.y = vector.y;
 					vector.y = y;
 				}
-				Rect result = default(Rect);
-				result.xMin = vector.x;
-				result.xMax = mousePosition.x;
-				result.yMin = vector.y;
-				result.yMax = mousePosition.y;
-				return result;
+				return new Rect
+				{
+					xMin = vector.x,
+					xMax = mousePositionOnUIInverted.x,
+					yMin = vector.y,
+					yMax = mousePositionOnUIInverted.y
+				};
 			}
 		}
 

@@ -57,17 +57,17 @@ namespace RimWorld
 		public static void Notify_PawnsSeenByPlayer(IEnumerable<Pawn> seenPawns, out string pawnRelationsInfo, bool informEvenIfSeenBefore = false, bool writeSeenPawnsNames = true)
 		{
 			StringBuilder stringBuilder = new StringBuilder();
-			IEnumerable<Pawn> enumerable = PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners.Where((Pawn x) => x.relations.everSeenByPlayer);
+			List<Pawn> list = PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners.Where((Pawn x) => x.relations.everSeenByPlayer).ToList();
 			bool flag = false;
 			foreach (Pawn seenPawn in seenPawns)
 			{
-				if (!seenPawn.RaceProps.IsFlesh || (!informEvenIfSeenBefore && seenPawn.relations.everSeenByPlayer))
+				if (!seenPawn.RaceProps.IsFlesh || (!informEvenIfSeenBefore && seenPawn.relations.everSeenByPlayer) || (seenPawn.Spawned && seenPawn.Fogged()))
 				{
 					continue;
 				}
 				seenPawn.relations.everSeenByPlayer = true;
 				bool flag2 = false;
-				foreach (Pawn item in enumerable)
+				foreach (Pawn item in list)
 				{
 					if (seenPawn == item)
 					{
@@ -87,7 +87,7 @@ namespace RimWorld
 						}
 						if (writeSeenPawnsNames)
 						{
-							stringBuilder.AppendLine(seenPawn.KindLabel.CapitalizeFirst() + " " + seenPawn.NameShortColored.Resolve() + ":");
+							stringBuilder.AppendLine(seenPawn.KindLabel.CapitalizeFirst() + " " + seenPawn.Name.ToStringShort.Colorize(ColoredText.NameColor) + ":");
 						}
 					}
 					flag = true;
@@ -129,6 +129,7 @@ namespace RimWorld
 		{
 			TaggedString letterLabel = "";
 			TaggedString letterText = "";
+			seenPawns = seenPawns.ToList();
 			Notify_PawnsSeenByPlayer_Letter(seenPawns, ref letterLabel, ref letterText, relationsInfoHeader, informEvenIfSeenBefore, writeSeenPawnsNames);
 			if (letterText.NullOrEmpty())
 			{
@@ -167,14 +168,18 @@ namespace RimWorld
 			{
 				title += " (" + "RelationshipAppendedLetterSuffix".Translate() + ")";
 			}
-			string genderSpecificLabel = mostImportantColonyRelative.GetMostImportantRelation(pawn).GetGenderSpecificLabel(pawn);
+			string text2 = mostImportantColonyRelative.GetMostImportantRelation(pawn)?.GetGenderSpecificLabel(pawn);
+			if (text2 == null)
+			{
+				return false;
+			}
 			if (mostImportantColonyRelative.IsColonist)
 			{
-				text += "\n\n" + "RelationshipAppendedLetterTextColonist".Translate(mostImportantColonyRelative.LabelShort, genderSpecificLabel, mostImportantColonyRelative.Named("RELATIVE"), pawn.Named("PAWN")).AdjustedFor(pawn, "PAWN", addRelationInfoSymbol: false);
+				text += "\n\n" + "RelationshipAppendedLetterTextColonist".Translate(mostImportantColonyRelative.LabelShort, text2, mostImportantColonyRelative.Named("RELATIVE"), pawn.Named("PAWN")).AdjustedFor(pawn, "PAWN", addRelationInfoSymbol: false);
 			}
 			else
 			{
-				text += "\n\n" + "RelationshipAppendedLetterTextPrisoner".Translate(mostImportantColonyRelative.LabelShort, genderSpecificLabel, mostImportantColonyRelative.Named("RELATIVE"), pawn.Named("PAWN")).AdjustedFor(pawn, "PAWN", addRelationInfoSymbol: false);
+				text += "\n\n" + "RelationshipAppendedLetterTextPrisoner".Translate(mostImportantColonyRelative.LabelShort, text2, mostImportantColonyRelative.Named("RELATIVE"), pawn.Named("PAWN")).AdjustedFor(pawn, "PAWN", addRelationInfoSymbol: false);
 			}
 			return true;
 		}
@@ -185,7 +190,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			IEnumerable<Pawn> enumerable = PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners.Where((Pawn x) => x.relations.everSeenByPlayer);
+			IEnumerable<Pawn> enumerable = PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners.Where((Pawn x) => x.relations.everSeenByPlayer);
 			float num = 0f;
 			Pawn pawn2 = null;
 			foreach (Pawn item in enumerable)

@@ -9,13 +9,13 @@ namespace RimWorld
 
 		public CompProperties_StatOffsetBase Props => (CompProperties_StatOffsetBase)props;
 
-		public Pawn LastUser => lastUser;
+		public virtual Pawn LastUser => lastUser;
 
 		public abstract float GetStatOffset(Pawn pawn = null);
 
 		public abstract IEnumerable<string> GetExplanation();
 
-		public void Used(Pawn pawn)
+		public virtual void Used(Pawn pawn)
 		{
 			lastUser = pawn;
 		}

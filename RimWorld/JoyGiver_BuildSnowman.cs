@@ -10,6 +10,8 @@ namespace RimWorld
 
 		private const float MinDistBetweenSnowmen = 12f;
 
+		private const float MinSnowDepth = 200f;
+
 		public override Job TryGiveJob(Pawn pawn)
 		{
 			if (pawn.WorkTypeIsDisabled(WorkTypeDefOf.Construction))
@@ -24,12 +26,12 @@ namespace RimWorld
 			{
 				return null;
 			}
-			IntVec3 c = TryFindSnowmanBuildCell(pawn);
-			if (!c.IsValid)
+			IntVec3 intVec = TryFindSnowmanBuildCell(pawn);
+			if (!intVec.IsValid)
 			{
 				return null;
 			}
-			return JobMaker.MakeJob(def.jobDef, c);
+			return JobMaker.MakeJob(def.jobDef, intVec);
 		}
 
 		private static IntVec3 TryFindSnowmanBuildCell(Pawn pawn)
@@ -39,11 +41,11 @@ namespace RimWorld
 				return IntVec3.Invalid;
 			}
 			IntVec3 result = IntVec3.Invalid;
-			RegionTraverser.BreadthFirstTraverse(rootReg, (Region from, Region r) => r.Room == rootReg.Room, delegate(Region r)
+			RegionTraverser.BreadthFirstTraverse(rootReg, (Region from, Region region) => region.District == rootReg.District, delegate(Region region)
 			{
 				for (int i = 0; i < 5; i++)
 				{
-					IntVec3 randomCell = r.RandomCell;
+					IntVec3 randomCell = region.RandomCell;
 					if (IsGoodSnowmanCell(randomCell, pawn))
 					{
 						result = randomCell;
@@ -61,7 +63,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (c.IsForbidden(pawn))
+			if (c.Fogged(pawn.Map))
 			{
 				return false;
 			}
@@ -69,18 +71,22 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (c.IsForbidden(pawn))
+			{
+				return false;
+			}
 			for (int i = 0; i < 9; i++)
 			{
-				IntVec3 c2 = c + GenAdj.AdjacentCellsAndInside[i];
-				if (!c2.InBounds(pawn.Map))
+				IntVec3 intVec = c + GenAdj.AdjacentCellsAndInside[i];
+				if (!intVec.InBounds(pawn.Map))
 				{
 					return false;
 				}
-				if (!c2.Standable(pawn.Map))
+				if (!intVec.Standable(pawn.Map))
 				{
 					return false;
 				}
-				if (pawn.Map.reservationManager.IsReservedAndRespected(c2, pawn))
+				if (pawn.Map.reservationManager.IsReservedAndRespected(intVec, pawn))
 				{
 					return false;
 				}

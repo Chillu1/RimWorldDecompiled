@@ -17,7 +17,7 @@ namespace RimWorld
 		{
 			this.FailOnDespawnedOrNull(TargetIndex.A);
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch).FailOn(() => !Trader.CanTradeNow);
-			Toil trade = new Toil();
+			Toil trade = ToilMaker.MakeToil("MakeNewToils");
 			trade.initAction = delegate
 			{
 				Pawn actor = trade.actor;

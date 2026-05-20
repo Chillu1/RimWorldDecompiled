@@ -9,6 +9,8 @@ namespace RimWorld
 {
 	public class LordJob_SleepThenMechanoidsDefend : LordJob_MechanoidDefendBase
 	{
+		public bool awakeOnClamor;
+
 		public override bool GuiltyOnDowned => true;
 
 		public LordJob_SleepThenMechanoidsDefend()
@@ -34,8 +36,10 @@ namespace RimWorld
 			LordToil_Sleep firstSource = (LordToil_Sleep)(stateGraph.StartingToil = new LordToil_Sleep());
 			LordToil startingToil = stateGraph.AttachSubgraph(new LordJob_MechanoidsDefend(things, faction, defendRadius, defSpot, canAssaultColony, isMechCluster).CreateGraph()).StartingToil;
 			Transition transition = new Transition(firstSource, startingToil);
-			transition.AddTrigger(new Trigger_Custom((TriggerSignal signal) => signal.type == TriggerSignalType.DormancyWakeup));
+			transition.AddTrigger(new Trigger_Custom((TriggerSignal signal) => signal.type == TriggerSignalType.DormancyWakeup || (awakeOnClamor && signal.type == TriggerSignalType.Clamor)));
 			transition.AddTrigger(new Trigger_OnHumanlikeHarmAnyThing(things));
+			transition.AddTrigger(new Trigger_OnPlayerMechHarmAnything(things));
+			transition.AddTrigger(new Trigger_PawnHarmed(1f, requireInstigatorWithFaction: true));
 			transition.AddPreAction(new TransitionAction_Message("MessageSleepingPawnsWokenUp".Translate(faction.def.pawnsPlural).CapitalizeFirst(), MessageTypeDefOf.ThreatBig));
 			transition.AddPostAction(new TransitionAction_WakeAll());
 			transition.AddPostAction(new TransitionAction_Custom((Action)delegate
@@ -45,6 +49,25 @@ namespace RimWorld
 			}));
 			stateGraph.AddTransition(transition);
 			return stateGraph;
+		}
+
+		public override bool ShouldRemovePawn(Pawn p, PawnLostCondition reason)
+		{
+			if (!p.Dead)
+			{
+				CompCanBeDormant compCanBeDormant = p.TryGetComp<CompCanBeDormant>();
+				if (compCanBeDormant != null && !compCanBeDormant.Awake)
+				{
+					return false;
+				}
+			}
+			return base.ShouldRemovePawn(p, reason);
+		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_Values.Look(ref awakeOnClamor, "awakeOnClamor", defaultValue: false);
 		}
 	}
 }

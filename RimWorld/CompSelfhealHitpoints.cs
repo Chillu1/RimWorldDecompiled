@@ -13,22 +13,22 @@ namespace RimWorld
 			Scribe_Values.Look(ref ticksPassedSinceLastHeal, "ticksPassedSinceLastHeal", 0);
 		}
 
-		public override void CompTick()
+		public override void CompTickInterval(int delta)
 		{
-			Tick(1);
+			TickInterval(delta);
 		}
 
 		public override void CompTickRare()
 		{
-			Tick(250);
+			TickInterval(250);
 		}
 
 		public override void CompTickLong()
 		{
-			Tick(2000);
+			TickInterval(2000);
 		}
 
-		private void Tick(int ticks)
+		private void TickInterval(int ticks)
 		{
 			ticksPassedSinceLastHeal += ticks;
 			if (ticksPassedSinceLastHeal >= Props.ticksPerHeal)

@@ -28,7 +28,7 @@ namespace RimWorld.QuestGen
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			if (!Find.Storyteller.difficultyValues.allowViolentQuests)
+			if (!Find.Storyteller.difficulty.allowViolentQuests)
 			{
 				return false;
 			}
@@ -36,7 +36,7 @@ namespace RimWorld.QuestGen
 			{
 				return false;
 			}
-			if (!ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(slate.Get("points", 0f), slate.Get<Map>("map").Tile, out var _))
+			if (!AggressiveAnimalIncidentUtility.TryFindAggressiveAnimalKind(slate.Get("points", 0f), slate.Get<Map>("map"), out var _))
 			{
 				return false;
 			}
@@ -57,12 +57,12 @@ namespace RimWorld.QuestGen
 			incidentParms.questTag = QuestGenUtility.HardcodedTargetQuestTagWithQuestID(tag.GetValue(slate));
 			incidentParms.spawnCenter = walkInSpot.GetValue(slate) ?? QuestGen.slate.Get<IntVec3?>("walkInSpot") ?? IntVec3.Invalid;
 			incidentParms.pawnCount = animalCount.GetValue(slate);
-			if (ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(points, map.Tile, out var animalKind))
+			if (AggressiveAnimalIncidentUtility.TryFindAggressiveAnimalKind(points, map, out var animalKind))
 			{
 				incidentParms.pawnKind = animalKind;
 			}
 			slate.Set("animalKindDef", animalKind);
-			int num = ((incidentParms.pawnCount > 0) ? incidentParms.pawnCount : ManhunterPackIncidentUtility.GetAnimalsCount(animalKind, points));
+			int num = ((incidentParms.pawnCount > 0) ? incidentParms.pawnCount : AggressiveAnimalIncidentUtility.GetAnimalsCount(animalKind, points));
 			QuestGen.slate.Set("animalCount", num);
 			if (!customLetterLabel.GetValue(slate).NullOrEmpty() || customLetterLabelRules.GetValue(slate) != null)
 			{

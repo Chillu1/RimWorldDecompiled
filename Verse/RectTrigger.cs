@@ -1,17 +1,14 @@
 using System.Collections.Generic;
-using RimWorld;
 
 namespace Verse
 {
-	public class RectTrigger : Thing
+	public class RectTrigger : PawnTrigger
 	{
 		private CellRect rect;
 
 		public bool destroyIfUnfogged;
 
 		public bool activateOnExplosion;
-
-		public string signalTag;
 
 		public CellRect Rect
 		{
@@ -35,7 +32,7 @@ namespace Verse
 			rect.ClipInsideMap(base.Map);
 		}
 
-		public override void Tick()
+		protected override void Tick()
 		{
 			if (destroyIfUnfogged && !rect.CenterCell.Fogged(base.Map))
 			{
@@ -43,7 +40,7 @@ namespace Verse
 			}
 			else
 			{
-				if (!this.IsHashIntervalTick(60))
+				if (!this.IsHashIntervalTick(60) || base.Destroyed)
 				{
 					return;
 				}
@@ -55,7 +52,7 @@ namespace Verse
 						List<Thing> thingList = new IntVec3(j, 0, i).GetThingList(map);
 						for (int k = 0; k < thingList.Count; k++)
 						{
-							if (thingList[k].def.category == ThingCategory.Pawn && thingList[k].def.race.intelligence == Intelligence.Humanlike && thingList[k].Faction == Faction.OfPlayer)
+							if (TriggeredBy(thingList[k]))
 							{
 								ActivatedBy((Pawn)thingList[k]);
 								return;
@@ -66,22 +63,12 @@ namespace Verse
 			}
 		}
 
-		public void ActivatedBy(Pawn p)
-		{
-			Find.SignalManager.SendSignal(new Signal(signalTag, p.Named("SUBJECT")));
-			if (!base.Destroyed)
-			{
-				Destroy();
-			}
-		}
-
 		public override void ExposeData()
 		{
 			base.ExposeData();
 			Scribe_Values.Look(ref rect, "rect");
 			Scribe_Values.Look(ref destroyIfUnfogged, "destroyIfUnfogged", defaultValue: false);
 			Scribe_Values.Look(ref activateOnExplosion, "activateOnExplosion", defaultValue: false);
-			Scribe_Values.Look(ref signalTag, "signalTag");
 		}
 	}
 }

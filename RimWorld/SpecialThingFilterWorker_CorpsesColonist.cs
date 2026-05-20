@@ -6,12 +6,19 @@ namespace RimWorld
 	{
 		public override bool Matches(Thing t)
 		{
-			Corpse corpse = t as Corpse;
-			if (corpse == null)
+			if (!(t is Corpse corpse))
 			{
 				return false;
 			}
 			if (!corpse.InnerPawn.def.race.Humanlike)
+			{
+				return false;
+			}
+			if (ModsConfig.IdeologyActive && corpse.InnerPawn.IsSlave)
+			{
+				return false;
+			}
+			if (ModsConfig.AnomalyActive && t is UnnaturalCorpse)
 			{
 				return false;
 			}

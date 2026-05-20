@@ -19,6 +19,8 @@ namespace Verse
 
 		public float workLeft = -10000f;
 
+		public bool debugCompleted;
+
 		private const float CancelIngredientRecoveryFraction = 0.75f;
 
 		public Pawn Creator
@@ -183,6 +185,16 @@ namespace Verse
 				Destroy(DestroyMode.Cancel);
 			};
 			yield return command_Action;
+			if (Initialized && DebugSettings.ShowDevGizmos && !debugCompleted)
+			{
+				Command_Action command_Action2 = new Command_Action();
+				command_Action2.defaultLabel = "DEV: Complete";
+				command_Action2.action = delegate
+				{
+					debugCompleted = true;
+				};
+				yield return command_Action2;
+			}
 		}
 
 		public Bill_ProductionWithUft BillOnTableForMe(Thing workTable)
@@ -192,8 +204,7 @@ namespace Verse
 				IBillGiver billGiver = (IBillGiver)workTable;
 				for (int i = 0; i < billGiver.BillStack.Count; i++)
 				{
-					Bill_ProductionWithUft bill_ProductionWithUft = billGiver.BillStack[i] as Bill_ProductionWithUft;
-					if (bill_ProductionWithUft != null && bill_ProductionWithUft.ShouldDoNow() && bill_ProductionWithUft != null && bill_ProductionWithUft.recipe == Recipe)
+					if (billGiver.BillStack[i] is Bill_ProductionWithUft bill_ProductionWithUft && bill_ProductionWithUft.ShouldDoNow() && bill_ProductionWithUft != null && bill_ProductionWithUft.recipe == Recipe)
 					{
 						return bill_ProductionWithUft;
 					}
@@ -219,7 +230,24 @@ namespace Verse
 				text += "\n";
 			}
 			text += "Author".Translate() + ": " + creatorName;
-			return text + ("\n" + "WorkLeft".Translate() + ": " + workLeft.ToStringWorkAmount());
+			text += "\n" + "WorkLeft".Translate() + ": " + workLeft.ToStringWorkAmount();
+			if (BoundBill?.style?.Category != null && base.StyleSourcePrecept == null)
+			{
+				text += "\n" + "Style".Translate() + ": " + BoundBill.style.Category.LabelCap;
+			}
+			return text;
+		}
+
+		public override IEnumerable<StatDrawEntry> SpecialDisplayStats()
+		{
+			foreach (StatDrawEntry item in base.SpecialDisplayStats())
+			{
+				yield return item;
+			}
+			if (BoundBill?.style?.Category != null && base.StyleSourcePrecept == null)
+			{
+				yield return new StatDrawEntry(StatCategoryDefOf.BasicsNonPawn, "Stat_Thing_StyleLabel".Translate(), BoundBill.style.Category.LabelCap, "Stat_Thing_StyleDesc".Translate(), 1108);
+			}
 		}
 	}
 }

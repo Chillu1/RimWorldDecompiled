@@ -1,3 +1,4 @@
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -20,27 +21,31 @@ namespace Verse
 			this.pawn = pawn;
 		}
 
-		public void RenderStatusOverlays(Vector3 bodyLoc, Quaternion quat, Mesh headMesh)
+		public void RenderStatusOverlays(Vector3 offset, Quaternion quat, Mesh headMesh)
 		{
-			if (!pawn.IsColonistPlayerControlled)
+			Vector3 vector = pawn.DrawPos + offset + new Vector3(0f, 0f, 0.32f);
+			if (pawn.needs?.mood == null || pawn.Downed)
 			{
 				return;
 			}
-			Vector3 headLoc = bodyLoc + new Vector3(0f, 0f, 0.32f);
-			if (pawn.needs.mood == null || pawn.Downed || pawn.HitPoints <= 0)
+			if (pawn.HitPoints > 0 && pawn.IsColonistPlayerControlled)
 			{
-				return;
-			}
-			if (pawn.mindState.mentalBreaker.BreakExtremeIsImminent)
-			{
-				if (Time.time % 1.2f < 0.4f)
+				if (pawn.mindState.mentalBreaker.BreakExtremeIsImminent)
 				{
-					DrawHeadGlow(headLoc, MentalStateImminentMat);
+					if (Time.time % 1.2f < 0.4f)
+					{
+						DrawHeadGlow(vector, MentalStateImminentMat);
+					}
+				}
+				else if (pawn.mindState.mentalBreaker.BreakExtremeIsApproaching && Time.time % 1.2f < 0.4f)
+				{
+					DrawHeadGlow(vector, UnhappyMat);
 				}
 			}
-			else if (pawn.mindState.mentalBreaker.BreakExtremeIsApproaching && Time.time % 1.2f < 0.4f)
+			MentalStateDef mentalStateDef = pawn.mindState?.mentalStateHandler?.CurStateDef;
+			if ((ModsConfig.OdysseyActive && mentalStateDef == MentalStateDefOf.Terror) || (ModsConfig.BiotechActive && mentalStateDef == MentalStateDefOf.PanicFleeFire))
 			{
-				DrawHeadGlow(headLoc, UnhappyMat);
+				ThingDefOf.Mote_TerrorHalo.graphicData.Graphic.DrawWorker(vector, pawn.Rotation, null, null, 0f);
 			}
 		}
 

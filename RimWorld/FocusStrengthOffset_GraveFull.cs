@@ -26,8 +26,7 @@ namespace RimWorld
 
 		public override bool CanApply(Thing parent, Pawn user = null)
 		{
-			Building_Grave building_Grave;
-			if (parent.Spawned && (building_Grave = parent as Building_Grave) != null && building_Grave.HasCorpse)
+			if (parent.Spawned && parent is Building_Grave { HasCorpse: not false } building_Grave)
 			{
 				return building_Grave.Corpse.InnerPawn.RaceProps.Humanlike;
 			}

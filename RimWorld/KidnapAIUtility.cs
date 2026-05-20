@@ -37,7 +37,11 @@ namespace RimWorld
 				{
 					return false;
 				}
-				return (disallowed == null || !disallowed.Contains(pawn)) ? true : false;
+				if (disallowed != null && disallowed.Contains(pawn))
+				{
+					return false;
+				}
+				return (!ModsConfig.AnomalyActive || !pawn.IsSubhuman) ? true : false;
 			};
 			victim = (Pawn)GenClosest.ClosestThingReachable(kidnapper.Position, kidnapper.Map, ThingRequest.ForGroup(ThingRequestGroup.Pawn), PathEndMode.OnCell, TraverseParms.For(TraverseMode.NoPassClosedDoors, Danger.Some), maxDist, validator);
 			return victim != null;

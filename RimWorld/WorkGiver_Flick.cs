@@ -15,13 +15,9 @@ namespace RimWorld
 
 		public override IEnumerable<Thing> PotentialWorkThingsGlobal(Pawn pawn)
 		{
-			List<Designation> desList = pawn.Map.designationManager.allDesignations;
-			for (int i = 0; i < desList.Count; i++)
+			foreach (Designation item in pawn.Map.designationManager.designationsByDef[DesignationDefOf.Flick])
 			{
-				if (desList[i].def == DesignationDefOf.Flick)
-				{
-					yield return desList[i].target.Thing;
-				}
+				yield return item.target.Thing;
 			}
 		}
 

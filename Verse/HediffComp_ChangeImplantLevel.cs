@@ -8,22 +8,17 @@ namespace Verse
 
 		public HediffCompProperties_ChangeImplantLevel Props => (HediffCompProperties_ChangeImplantLevel)props;
 
-		public override void CompPostTick(ref float severityAdjustment)
+		public override void CompPostTickInterval(ref float severityAdjustment, int delta)
 		{
 			float mtbDays = Props.probabilityPerStage[parent.CurStageIndex].mtbDays;
-			if (!(mtbDays > 0f) || !base.Pawn.IsHashIntervalTick(60))
+			if (!(mtbDays <= 0f) && base.Pawn.IsHashIntervalTick(60, delta))
 			{
-				return;
-			}
-			ChangeImplantLevel_Probability changeImplantLevel_Probability = Props.probabilityPerStage[parent.CurStageIndex];
-			if ((lastChangeLevelTick < 0 || (float)(Find.TickManager.TicksGame - lastChangeLevelTick) >= changeImplantLevel_Probability.minIntervalDays * 60000f) && Rand.MTBEventOccurs(mtbDays, 60000f, 60f))
-			{
-				Hediff_ImplantWithLevel hediff_ImplantWithLevel = parent.pawn.health.hediffSet.GetFirstHediffOfDef(Props.implant) as Hediff_ImplantWithLevel;
-				if (hediff_ImplantWithLevel != null)
+				ChangeImplantLevel_Probability changeImplantLevel_Probability = Props.probabilityPerStage[parent.CurStageIndex];
+				if ((lastChangeLevelTick < 0 || (float)(Find.TickManager.TicksGame - lastChangeLevelTick) >= changeImplantLevel_Probability.minIntervalDays * 60000f) && Rand.MTBEventOccurs(mtbDays, 60000f, 60f) && parent.pawn.health.hediffSet.GetFirstHediffOfDef(Props.implant) is Hediff_Level hediff_Level)
 				{
-					hediff_ImplantWithLevel.ChangeLevel(Props.levelOffset);
+					hediff_Level.ChangeLevel(Props.levelOffset);
 					lastChangeLevelTick = Find.TickManager.TicksGame;
-					Messages.Message("MessageLostImplantLevelFromHediff".Translate(parent.pawn.Named("PAWN"), hediff_ImplantWithLevel.LabelBase, parent.Label), parent.pawn, MessageTypeDefOf.NegativeEvent);
+					Messages.Message("MessageLostImplantLevelFromHediff".Translate(parent.pawn.Named("PAWN"), hediff_Level.LabelBase, parent.Label), parent.pawn, MessageTypeDefOf.NegativeEvent);
 				}
 			}
 		}

@@ -30,5 +30,11 @@ namespace RimWorld
 				yield return "No comp glower on thingDef";
 			}
 		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_Defs.Look(ref thingDef, "thingDef");
+		}
 	}
 }

@@ -26,6 +26,11 @@ namespace RimWorld
 			MakeColony(default(ColonyMakerFlag));
 		}
 
+		public static void MakeColony_AncientJunk()
+		{
+			MakeColony(ColonyMakerFlag.AllAncientJunk);
+		}
+
 		public static void MakeColony(params ColonyMakerFlag[] flags)
 		{
 			bool godMode = DebugSettings.godMode;
@@ -76,18 +81,18 @@ namespace RimWorld
 			if (flags.Contains(ColonyMakerFlag.ConduitGrid))
 			{
 				Designator_Build designator_Build = new Designator_Build(ThingDefOf.PowerConduit);
-				for (int i = overRect.minX; i < overRect.maxX; i++)
+				for (int num = overRect.minX; num < overRect.maxX; num++)
 				{
-					for (int j = overRect.minZ; j < overRect.maxZ; j += 7)
+					for (int num2 = overRect.minZ; num2 < overRect.maxZ; num2 += 7)
 					{
-						designator_Build.DesignateSingleCell(new IntVec3(i, 0, j));
+						designator_Build.DesignateSingleCell(new IntVec3(num, 0, num2));
 					}
 				}
-				for (int l = overRect.minZ; l < overRect.maxZ; l++)
+				for (int num3 = overRect.minZ; num3 < overRect.maxZ; num3++)
 				{
-					for (int m = overRect.minX; m < overRect.maxX; m += 7)
+					for (int num4 = overRect.minX; num4 < overRect.maxX; num4 += 7)
 					{
-						designator_Build.DesignateSingleCell(new IntVec3(m, 0, l));
+						designator_Build.DesignateSingleCell(new IntVec3(num4, 0, num3));
 					}
 				}
 			}
@@ -98,9 +103,9 @@ namespace RimWorld
 					ThingDefOf.SolarGenerator,
 					ThingDefOf.WindTurbine
 				};
-				for (int n = 0; n < 8; n++)
+				for (int num5 = 0; num5 < 8; num5++)
 				{
-					if (TryMakeBuilding(list[n % list.Count]) == null)
+					if (TryMakeBuilding(list[num5 % list.Count]) == null)
 					{
 						Log.Message("Could not make solar generator.");
 						break;
@@ -109,7 +114,7 @@ namespace RimWorld
 			}
 			if (flags.Contains(ColonyMakerFlag.Batteries))
 			{
-				for (int num = 0; num < 6; num++)
+				for (int num6 = 0; num6 < 6; num6++)
 				{
 					Thing thing = TryMakeBuilding(ThingDefOf.Battery);
 					if (thing == null)
@@ -130,8 +135,7 @@ namespace RimWorld
 						Log.Message("Could not make worktable: " + item3.defName);
 						break;
 					}
-					Building_WorkTable building_WorkTable = thing2 as Building_WorkTable;
-					if (building_WorkTable == null)
+					if (!(thing2 is Building_WorkTable building_WorkTable))
 					{
 						continue;
 					}
@@ -148,7 +152,16 @@ namespace RimWorld
 					if (item4 != ThingDefOf.PowerConduit && TryMakeBuilding(item4) == null)
 					{
 						Log.Message("Could not make building: " + item4.defName);
-						break;
+					}
+				}
+			}
+			if (flags.Contains(ColonyMakerFlag.AllAncientJunk))
+			{
+				foreach (ThingDef item5 in DefDatabase<ThingDef>.AllDefs.Where((ThingDef def) => def.defName.StartsWith("Ancient")))
+				{
+					if (TryMakeBuilding(item5) == null)
+					{
+						Log.Message("Could not make building: " + item5.defName);
 					}
 				}
 			}
@@ -170,9 +183,9 @@ namespace RimWorld
 			}
 			if (flags.Contains(ColonyMakerFlag.Filth))
 			{
-				foreach (IntVec3 item5 in result2)
+				foreach (IntVec3 item6 in result2)
 				{
-					GenSpawn.Spawn(ThingDefOf.Filth_Dirt, item5, Map);
+					GenSpawn.Spawn(ThingDefOf.Filth_Dirt, item6, Map);
 				}
 			}
 			if (flags.Contains(ColonyMakerFlag.ItemsWall))
@@ -200,15 +213,15 @@ namespace RimWorld
 					Log.Error("Could not get free rect for fire.");
 				}
 				ThingDef plant_TreeOak = ThingDefOf.Plant_TreeOak;
-				foreach (IntVec3 item6 in result3)
-				{
-					GenSpawn.Spawn(plant_TreeOak, item6, Map);
-				}
 				foreach (IntVec3 item7 in result3)
 				{
-					if (item7.x % 7 == 0 && item7.z % 7 == 0)
+					GenSpawn.Spawn(plant_TreeOak, item7, Map);
+				}
+				foreach (IntVec3 item8 in result3)
+				{
+					if (item8.x % 7 == 0 && item8.z % 7 == 0)
 					{
-						GenExplosion.DoExplosion(item7, Find.CurrentMap, 3.9f, DamageDefOf.Flame, null);
+						GenExplosion.DoExplosion(item8, Find.CurrentMap, 3.9f, DamageDefOf.Flame, null);
 					}
 				}
 			}
@@ -230,25 +243,25 @@ namespace RimWorld
 			{
 				DoToColonists(0.4f, delegate(Pawn col)
 				{
-					DamageDef def2 = DefDatabase<DamageDef>.AllDefs.Where((DamageDef d) => d.ExternalViolenceFor(null)).RandomElement();
-					col.TakeDamage(new DamageInfo(def2, 10f));
+					DamageDef def = DefDatabase<DamageDef>.AllDefs.Where((DamageDef d) => d.ExternalViolenceFor(null)).RandomElement();
+					col.TakeDamage(new DamageInfo(def, 10f));
 				});
 			}
 			if (flags.Contains(ColonyMakerFlag.ColonistsDiseased))
 			{
-				foreach (HediffDef item8 in DefDatabase<HediffDef>.AllDefs.Where((HediffDef d) => d.hediffClass != typeof(Hediff_AddedPart) && (d.HasComp(typeof(HediffComp_Immunizable)) || d.HasComp(typeof(HediffComp_GrowthMode)))))
+				foreach (HediffDef item9 in DefDatabase<HediffDef>.AllDefs.Where((HediffDef d) => d.hediffClass != typeof(Hediff_AddedPart) && (d.HasComp(typeof(HediffComp_Immunizable)) || d.HasComp(typeof(HediffComp_GrowthMode)))))
 				{
 					Pawn pawn = PawnGenerator.GeneratePawn(Faction.OfPlayer.def.basicMemberKind, Faction.OfPlayer);
 					TryGetFreeRect(1, 1, out var result4);
 					GenSpawn.Spawn(pawn, result4.CenterCell, Map);
-					pawn.health.AddHediff(item8);
+					pawn.health.AddHediff(item9);
 				}
 			}
 			if (flags.Contains(ColonyMakerFlag.Beds))
 			{
 				IEnumerable<ThingDef> source = DefDatabase<ThingDef>.AllDefs.Where((ThingDef def) => def.thingClass == typeof(Building_Bed));
 				int freeColonistsCount = Map.mapPawns.FreeColonistsCount;
-				for (int num2 = 0; num2 < freeColonistsCount; num2++)
+				for (int num7 = 0; num7 < freeColonistsCount; num7++)
 				{
 					if (TryMakeBuilding(source.RandomElement()) == null)
 					{
@@ -272,19 +285,22 @@ namespace RimWorld
 			{
 				Zone_Growing dummyZone = new Zone_Growing(Map.zoneManager);
 				Map.zoneManager.RegisterZone(dummyZone);
-				foreach (ThingDef item9 in DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.plant != null && PlantUtility.CanSowOnGrower(d, dummyZone)))
+				foreach (ThingDef item10 in DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.plant != null && PlantUtility.CanSowOnGrower(d, dummyZone)))
 				{
 					if (!TryGetFreeRect(6, 6, out var result6))
 					{
 						Log.Error("Could not get growing zone rect.");
 					}
 					result6 = result6.ContractedBy(1);
-					foreach (IntVec3 item10 in result6)
+					foreach (IntVec3 item11 in result6)
 					{
-						Map.terrainGrid.SetTerrain(item10, TerrainDefOf.Soil);
+						Map.terrainGrid.SetTerrain(item11, TerrainDefOf.Soil);
 					}
 					new Designator_ZoneAdd_Growing().DesignateMultiCell(result6.Cells);
-					(Map.zoneManager.ZoneAt(result6.CenterCell) as Zone_Growing)?.SetPlantDefToGrow(item9);
+					if (Map.zoneManager.ZoneAt(result6.CenterCell) is Zone_Growing zone_Growing)
+					{
+						zone_Growing.SetPlantDefToGrow(item10);
+					}
 				}
 				dummyZone.Delete();
 			}
@@ -409,7 +425,7 @@ namespace RimWorld
 			foreach (Pawn item in Map.mapPawns.AllPawnsSpawned.ToList())
 			{
 				item.Destroy();
-				item.relations.ClearAllRelations();
+				item.relations?.ClearAllRelations();
 			}
 			Find.GameEnder.gameEnding = false;
 		}

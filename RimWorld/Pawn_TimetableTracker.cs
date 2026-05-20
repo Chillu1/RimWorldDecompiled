@@ -13,7 +13,7 @@ namespace RimWorld
 		{
 			get
 			{
-				if (!pawn.IsColonist)
+				if (!pawn.IsColonist || pawn.IsPrisonerOfColony)
 				{
 					return TimeAssignmentDefOf.Anything;
 				}

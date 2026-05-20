@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
@@ -9,9 +10,11 @@ namespace RimWorld
 	{
 		private List<Thing> linkedBuildings = new List<Thing>();
 
+		private const int UpdateRateIntervalTicks = 120;
+
 		private HashSet<Thing> thingsToNotify = new HashSet<Thing>();
 
-		public bool CanBeActive
+		public virtual bool CanBeActive
 		{
 			get
 			{
@@ -24,11 +27,25 @@ namespace RimWorld
 			}
 		}
 
+		public List<Thing> LinkedBuildings => linkedBuildings;
+
+		public virtual List<StatModifier> StatOffsets => Props.statOffsets;
+
 		public CompProperties_Facility Props => (CompProperties_Facility)props;
+
+		protected virtual string MaxConnectedString => "FacilityMaxSimultaneousConnections".Translate();
+
+		public event Action<CompFacility, Thing> OnLinkAdded;
+
+		public event Action<CompFacility, Thing> OnLinkRemoved;
 
 		public static void DrawLinesToPotentialThingsToLinkTo(ThingDef myDef, IntVec3 myPos, Rot4 myRot, Map map)
 		{
 			CompProperties_Facility compProperties = myDef.GetCompProperties<CompProperties_Facility>();
+			if (compProperties?.linkableBuildings == null)
+			{
+				return;
+			}
 			Vector3 a = GenThing.TrueCenter(myPos, myRot, myDef.size, myDef.Altitude);
 			for (int i = 0; i < compProperties.linkableBuildings.Count; i++)
 			{
@@ -44,6 +61,56 @@ namespace RimWorld
 			}
 		}
 
+		public static void DrawPlaceMouseAttachmentsToPotentialThingsToLinkTo(float curX, ref float curY, ThingDef myDef, IntVec3 myPos, Rot4 myRot, Map map)
+		{
+			CompProperties_Facility compProperties = myDef.GetCompProperties<CompProperties_Facility>();
+			int num = 0;
+			for (int i = 0; i < compProperties.linkableBuildings.Count; i++)
+			{
+				foreach (Thing item in map.listerThings.ThingsOfDef(compProperties.linkableBuildings[i]))
+				{
+					CompAffectedByFacilities compAffectedByFacilities = item.TryGetComp<CompAffectedByFacilities>();
+					if (compAffectedByFacilities != null && compAffectedByFacilities.CanPotentiallyLinkTo(myDef, myPos, myRot))
+					{
+						num++;
+						if (num == 1)
+						{
+							DrawTextLine(ref curY, "FacilityPotentiallyLinkedTo".Translate() + ":");
+						}
+						DrawTextLine(ref curY, "  - " + item.LabelCap);
+					}
+				}
+			}
+			if (num == 0)
+			{
+				DrawTextLine(ref curY, "FacilityNoPotentialLinks".Translate());
+			}
+			void DrawTextLine(ref float y, string text)
+			{
+				float lineHeight = Text.LineHeight;
+				Widgets.Label(new Rect(curX, y, 999f, lineHeight), text);
+				y += lineHeight;
+			}
+		}
+
+		public override void CompTick()
+		{
+			base.CompTick();
+			if (Props.mustBePlacedFacingThingLinear && parent.Spawned && parent.IsHashIntervalTick(120))
+			{
+				bool flag = ContainmentUtility.IsLinearBuildingBlocked(parent.def, parent.Position, parent.Rotation, parent.Map);
+				if ((linkedBuildings.Any() && flag) || (linkedBuildings.Empty() && !flag))
+				{
+					RelinkAll();
+				}
+			}
+		}
+
+		public virtual bool CanLink()
+		{
+			return true;
+		}
+
 		public void Notify_NewLink(Thing thing)
 		{
 			for (int i = 0; i < linkedBuildings.Count; i++)
@@ -55,6 +122,7 @@ namespace RimWorld
 				}
 			}
 			linkedBuildings.Add(thing);
+			this.OnLinkAdded?.Invoke(this, thing);
 		}
 
 		public void Notify_LinkRemoved(Thing thing)
@@ -64,6 +132,7 @@ namespace RimWorld
 				if (linkedBuildings[i] == thing)
 				{
 					linkedBuildings.RemoveAt(i);
+					this.OnLinkRemoved?.Invoke(this, thing);
 					return;
 				}
 			}
@@ -85,7 +154,12 @@ namespace RimWorld
 			LinkToNearbyBuildings();
 		}
 
-		public override void PostDeSpawn(Map map)
+		public override void PostMapInit()
+		{
+			RelinkAll();
+		}
+
+		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
 		{
 			thingsToNotify.Clear();
 			for (int i = 0; i < linkedBuildings.Count; i++)
@@ -116,32 +190,40 @@ namespace RimWorld
 
 		public override string CompInspectStringExtra()
 		{
-			CompProperties_Facility props = Props;
-			if (props.statOffsets == null)
-			{
-				return null;
-			}
-			bool flag = AmIActiveForAnyone();
 			StringBuilder stringBuilder = new StringBuilder();
-			for (int i = 0; i < props.statOffsets.Count; i++)
+			if (StatOffsets != null)
 			{
-				StatModifier statModifier = props.statOffsets[i];
-				StatDef stat = statModifier.stat;
-				stringBuilder.Append(stat.LabelCap);
-				stringBuilder.Append(": ");
-				stringBuilder.Append(statModifier.value.ToStringByStyle(stat.toStringStyle, ToStringNumberSense.Offset));
-				if (!flag)
+				bool flag = AmIActiveForAnyone();
+				for (int i = 0; i < StatOffsets.Count; i++)
 				{
-					stringBuilder.Append(" (");
-					stringBuilder.Append("InactiveFacility".Translate());
-					stringBuilder.Append(")");
+					StatDef stat = StatOffsets[i].stat;
+					stringBuilder.Append(stat.OffsetLabelCap);
+					stringBuilder.Append(": ");
+					stringBuilder.Append(StatOffsets[i].ValueToStringAsOffset);
+					if (!flag)
+					{
+						stringBuilder.Append(" (");
+						stringBuilder.Append("InactiveFacility".Translate());
+						stringBuilder.Append(")");
+					}
+					if (i < StatOffsets.Count - 1)
+					{
+						stringBuilder.AppendLine();
+					}
 				}
-				if (i < props.statOffsets.Count - 1)
-				{
-					stringBuilder.AppendLine();
-				}
+				stringBuilder.Append("\n");
 			}
-			return stringBuilder.ToString();
+			CompProperties_Facility compProperties_Facility = Props;
+			if (compProperties_Facility.showMaxSimultaneous)
+			{
+				stringBuilder.Append(MaxConnectedString);
+				stringBuilder.Append(": " + compProperties_Facility.maxSimultaneous);
+			}
+			if (compProperties_Facility.mustBePlacedFacingThingLinear && parent.Spawned && ContainmentUtility.IsLinearBuildingBlocked(parent.def, parent.Position, parent.Rotation, parent.Map))
+			{
+				stringBuilder.AppendInNewLine("FacilityFrontBlocked".Translate());
+			}
+			return stringBuilder.ToString().TrimEndNewlines();
 		}
 
 		private void RelinkAll()
@@ -152,20 +234,21 @@ namespace RimWorld
 		private void LinkToNearbyBuildings()
 		{
 			UnlinkAll();
-			CompProperties_Facility props = Props;
-			if (props.linkableBuildings == null)
+			CompProperties_Facility compProperties_Facility = Props;
+			if (compProperties_Facility.linkableBuildings == null)
 			{
 				return;
 			}
-			for (int i = 0; i < props.linkableBuildings.Count; i++)
+			for (int i = 0; i < compProperties_Facility.linkableBuildings.Count; i++)
 			{
-				foreach (Thing item in parent.Map.listerThings.ThingsOfDef(props.linkableBuildings[i]))
+				foreach (Thing item in parent.Map.listerThings.ThingsOfDef(compProperties_Facility.linkableBuildings[i]))
 				{
 					CompAffectedByFacilities compAffectedByFacilities = item.TryGetComp<CompAffectedByFacilities>();
 					if (compAffectedByFacilities != null && compAffectedByFacilities.CanLinkTo(parent))
 					{
 						linkedBuildings.Add(item);
 						compAffectedByFacilities.Notify_NewLink(parent);
+						this.OnLinkAdded?.Invoke(this, compAffectedByFacilities.parent);
 					}
 				}
 			}
@@ -188,6 +271,7 @@ namespace RimWorld
 			for (int i = 0; i < linkedBuildings.Count; i++)
 			{
 				linkedBuildings[i].TryGetComp<CompAffectedByFacilities>().Notify_LinkRemoved(parent);
+				this.OnLinkRemoved?.Invoke(this, linkedBuildings[i]);
 			}
 			linkedBuildings.Clear();
 		}

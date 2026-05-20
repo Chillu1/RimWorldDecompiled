@@ -12,13 +12,13 @@ namespace RimWorld.QuestGen
 		[NoTranslate]
 		public SlateRef<string> storeAs;
 
-		private bool TryFindRootTile(out int tile)
+		private bool TryFindRootTile(out PlanetTile tile)
 		{
-			int tile2;
-			return TileFinder.TryFindRandomPlayerTile(out tile, allowCaravans: false, (int x) => TryFindDestinationTileActual(x, 180, out tile2));
+			PlanetTile tile2;
+			return TileFinder.TryFindRandomPlayerTile(out tile, allowCaravans: false, (PlanetTile x) => TryFindDestinationTileActual(x, 180, out tile2));
 		}
 
-		private bool TryFindDestinationTile(int rootTile, out int tile)
+		private bool TryFindDestinationTile(PlanetTile rootTile, out PlanetTile tile)
 		{
 			int num = 800;
 			for (int i = 0; i < 1000; i++)
@@ -37,21 +37,21 @@ namespace RimWorld.QuestGen
 					return false;
 				}
 			}
-			tile = -1;
+			tile = PlanetTile.Invalid;
 			return false;
 		}
 
-		private bool TryFindDestinationTileActual(int rootTile, int minDist, out int tile)
+		private bool TryFindDestinationTileActual(PlanetTile rootTile, int minDist, out PlanetTile tile)
 		{
 			for (int i = 0; i < 2; i++)
 			{
 				bool canTraverseImpassable = i == 1;
-				if (TileFinder.TryFindPassableTileWithTraversalDistance(rootTile, minDist, 800, out tile, (int x) => !Find.WorldObjects.AnyWorldObjectAt(x) && Find.WorldGrid[x].biome.canBuildBase && Find.WorldGrid[x].biome.canAutoChoose, ignoreFirstTilePassability: true, preferCloserTiles: true, canTraverseImpassable))
+				if (TileFinder.TryFindPassableTileWithTraversalDistance(rootTile, minDist, 800, out tile, (PlanetTile x) => !Find.WorldObjects.AnyWorldObjectAt(x) && Find.WorldGrid[x].PrimaryBiome.canBuildBase && Find.WorldGrid[x].PrimaryBiome.canAutoChoose, ignoreFirstTilePassability: true, TileFinderMode.Near, canTraverseImpassable))
 				{
 					return true;
 				}
 			}
-			tile = -1;
+			tile = PlanetTile.Invalid;
 			return false;
 		}
 
@@ -65,7 +65,7 @@ namespace RimWorld.QuestGen
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			int tile2;
+			PlanetTile tile2;
 			if (TryFindRootTile(out var tile))
 			{
 				return TryFindDestinationTile(tile, out tile2);

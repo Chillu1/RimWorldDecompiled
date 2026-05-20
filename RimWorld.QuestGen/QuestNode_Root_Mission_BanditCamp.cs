@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld.Planet;
@@ -9,6 +10,8 @@ namespace RimWorld.QuestGen
 	{
 		private const float LeaderChance = 0.1f;
 
+		private const float MinSiteThreatPoints = 200f;
+
 		private static readonly SimpleCurve PawnCountToSitePointsFactorCurve = new SimpleCurve
 		{
 			new CurvePoint(1f, 0.33f),
@@ -17,15 +20,20 @@ namespace RimWorld.QuestGen
 			new CurvePoint(10f, 0.5f)
 		};
 
-		private const float MinSiteThreatPoints = 200f;
-
 		public List<FactionDef> factionsToDrawLeaderFrom;
 
-		public FactionDef siteFaction;
+		public List<FactionDef> siteFactions;
 
 		protected override string QuestTag => "BanditCamp";
 
 		protected override bool AddCampLootReward => true;
+
+		private QuestGen_Pawns.GetPawnParms GetAskerParms => new QuestGen_Pawns.GetPawnParms
+		{
+			mustBeOfKind = PawnKindDefOf.Empire_Royal_NobleWimp,
+			mustHaveRoyalTitleInCurrentFaction = true,
+			canGeneratePawn = true
+		};
 
 		protected override Pawn GetAsker(Quest quest)
 		{
@@ -33,12 +41,13 @@ namespace RimWorld.QuestGen
 			{
 				return Find.FactionManager.AllFactions.Where((Faction f) => factionsToDrawLeaderFrom.Contains(f.def)).RandomElement().leader;
 			}
-			return quest.GetPawn(new QuestGen_Pawns.GetPawnParms
-			{
-				mustBeOfKind = PawnKindDefOf.Empire_Royal_NobleWimp,
-				mustHaveRoyalTitleInCurrentFaction = true,
-				canGeneratePawn = true
-			});
+			return quest.GetPawn(GetAskerParms);
+		}
+
+		protected override bool CanGetAsker()
+		{
+			Pawn pawn;
+			return QuestGen_Pawns.GetPawnTest(GetAskerParms, out pawn);
 		}
 
 		private float GetSiteThreatPoints(float threatPoints, int population, int pawnCount)
@@ -53,7 +62,7 @@ namespace RimWorld.QuestGen
 				return -1;
 			}
 			int num = -1;
-			for (int i = 1; i <= population; i++)
+			for (int i = 1; i < population; i++)
 			{
 				if (GetSiteThreatPoints(threatPoints, population, i) >= 200f)
 				{
@@ -65,42 +74,44 @@ namespace RimWorld.QuestGen
 			{
 				return -1;
 			}
-			return Rand.RangeInclusive(num, population);
+			int maxInclusive = Math.Max(num, (int)(0.5f * (float)population));
+			return Rand.RangeInclusive(num, maxInclusive);
 		}
 
-		protected override Site GenerateSite(Pawn asker, float threatPoints, int pawnCount, int population, int tile)
+		protected override Site GenerateSite(Pawn asker, float threatPoints, int pawnCount, int population, PlanetTile tile)
 		{
+			TryGetSiteFaction(out var faction);
 			Site site = QuestGen_Sites.GenerateSite(new SitePartDefWithParams[1]
 			{
 				new SitePartDefWithParams(SitePartDefOf.BanditCamp, new SitePartParams
 				{
 					threatPoints = GetSiteThreatPoints(threatPoints, population, pawnCount)
 				})
-			}, tile, Find.FactionManager.AllFactions.Where((Faction f) => f.def == siteFaction).FirstOrDefault());
+			}, tile, faction);
 			site.factionMustRemainHostile = true;
 			site.desiredThreatPoints = site.ActualThreatPoints;
+			site.preventGravshipLanding = true;
 			return site;
+		}
+
+		private bool TryGetSiteFaction(out Faction faction)
+		{
+			return Find.FactionManager.AllFactions.Where((Faction f) => !f.temporary && siteFactions.Contains(f.def)).TryRandomElement(out faction);
 		}
 
 		protected override bool DoesPawnCountAsAvailableForFight(Pawn p)
 		{
-			if (p.Downed)
+			return QuestNode_Root_Mission.PawnCanFight(p);
+		}
+
+		protected override bool TestRunInt(Slate slate)
+		{
+			if (!base.TestRunInt(slate))
 			{
 				return false;
 			}
-			if (p.health.hediffSet.BleedRateTotal > 0f)
-			{
-				return false;
-			}
-			if (p.health.hediffSet.HasTendableNonInjuryNonMissingPartHediff())
-			{
-				return false;
-			}
-			if (p.IsQuestLodger())
-			{
-				return false;
-			}
-			return true;
+			Faction faction;
+			return TryGetSiteFaction(out faction);
 		}
 	}
 }

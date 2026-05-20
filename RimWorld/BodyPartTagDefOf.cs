@@ -51,6 +51,10 @@ namespace RimWorld
 
 		public static BodyPartTagDef TalkingPathway;
 
+		public static BodyPartTagDef Tongue;
+
+		public static BodyPartTagDef Mirrored;
+
 		static BodyPartTagDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(BodyPartTagDefOf));

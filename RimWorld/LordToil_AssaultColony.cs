@@ -1,3 +1,4 @@
+using Verse;
 using Verse.AI;
 using Verse.AI.Group;
 
@@ -7,13 +8,16 @@ namespace RimWorld
 	{
 		private bool attackDownedIfStarving;
 
+		private bool canPickUpOpportunisticWeapons;
+
 		public override bool ForceHighStoryDanger => true;
 
 		public override bool AllowSatisfyLongNeeds => false;
 
-		public LordToil_AssaultColony(bool attackDownedIfStarving = false)
+		public LordToil_AssaultColony(bool attackDownedIfStarving = false, bool canPickUpOpportunisticWeapons = false)
 		{
 			this.attackDownedIfStarving = attackDownedIfStarving;
+			this.canPickUpOpportunisticWeapons = canPickUpOpportunisticWeapons;
 		}
 
 		public override void Init()
@@ -26,8 +30,13 @@ namespace RimWorld
 		{
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
-				lord.ownedPawns[i].mindState.duty = new PawnDuty(DutyDefOf.AssaultColony);
-				lord.ownedPawns[i].mindState.duty.attackDownedIfStarving = attackDownedIfStarving;
+				if (lord.ownedPawns[i].mindState != null)
+				{
+					lord.ownedPawns[i].mindState.duty = new PawnDuty(DutyDefOf.AssaultColony);
+					lord.ownedPawns[i].mindState.duty.attackDownedIfStarving = attackDownedIfStarving;
+					lord.ownedPawns[i].mindState.duty.pickupOpportunisticWeapon = canPickUpOpportunisticWeapons;
+					lord.ownedPawns[i].TryGetComp<CompCanBeDormant>()?.WakeUp();
+				}
 			}
 		}
 	}

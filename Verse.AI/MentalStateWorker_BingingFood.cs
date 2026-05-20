@@ -8,6 +8,10 @@ namespace Verse.AI
 			{
 				return false;
 			}
+			if (pawn.needs.food == null)
+			{
+				return false;
+			}
 			if (!pawn.Spawned)
 			{
 				return true;

@@ -87,6 +87,18 @@ namespace RimWorld
 			return stringBuilder.ToString().TrimEndNewlines();
 		}
 
+		public bool BoredOfKinds(List<JoyKindDef> kindsAvailable)
+		{
+			for (int i = 0; i < kindsAvailable.Count; i++)
+			{
+				if (!bored[kindsAvailable[i]])
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
 		public bool BoredOfAllAvailableJoyKinds(Pawn pawn)
 		{
 			List<JoyKindDef> list = JoyUtility.JoyKindsOnMapTempList(pawn.MapHeld);

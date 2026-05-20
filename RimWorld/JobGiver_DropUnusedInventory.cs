@@ -35,12 +35,21 @@ namespace RimWorld
 			for (int num2 = pawn.inventory.innerContainer.Count - 1; num2 >= 0; num2--)
 			{
 				Thing thing2 = pawn.inventory.innerContainer[num2];
-				if (thing2.def.IsDrug && pawn.drugs != null && !pawn.drugs.AllowedToTakeScheduledEver(thing2.def) && pawn.drugs.CurrentPolicy[thing2.def].takeToInventory == 0 && !AddictionUtility.IsAddicted(pawn, thing2))
+				if (!ShouldKeepDrugInInventory(pawn, thing2))
 				{
 					Drop(pawn, thing2);
 				}
 			}
 			return null;
+		}
+
+		public static bool ShouldKeepDrugInInventory(Pawn pawn, Thing drug)
+		{
+			if (drug.def.IsDrug && pawn.drugs != null && !pawn.drugs.AllowedToTakeScheduledEver(drug.def) && (pawn.drugs.CurrentPolicy == null || pawn.drugs.CurrentPolicy[drug.def].takeToInventory == 0) && !AddictionUtility.IsAddicted(pawn, drug) && !AddictionUtility.HasChemicalDependency(pawn, drug))
+			{
+				return false;
+			}
+			return true;
 		}
 
 		private void Drop(Pawn pawn, Thing thing)

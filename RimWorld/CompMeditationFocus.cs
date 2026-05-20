@@ -7,13 +7,26 @@ namespace RimWorld
 {
 	public class CompMeditationFocus : CompStatOffsetBase
 	{
+		private int lastUsedTick = -1;
+
 		public new CompProperties_MeditationFocus Props => (CompProperties_MeditationFocus)props;
+
+		public override Pawn LastUser
+		{
+			get
+			{
+				if (lastUsedTick < 0 || Find.TickManager.TicksGame - lastUsedTick > 5)
+				{
+					return null;
+				}
+				return base.LastUser;
+			}
+		}
 
 		public override float GetStatOffset(Pawn pawn = null)
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (!ModLister.CheckRoyalty("Meditation focus"))
 			{
-				Log.ErrorOnce("Meditation foci are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it.", 657117);
 				return 0f;
 			}
 			float num = 0f;
@@ -56,13 +69,18 @@ namespace RimWorld
 			CellRect cellRect = GenAdj.OccupiedRect(pos, rotation, def.size);
 			foreach (FocusStrengthOffset offset in Props.offsets)
 			{
-				FocusStrengthOffset_ArtificialBuildings focusStrengthOffset_ArtificialBuildings;
-				if ((focusStrengthOffset_ArtificialBuildings = offset as FocusStrengthOffset_ArtificialBuildings) != null && MeditationUtility.CountsAsArtificialBuilding(def, faction) && cellRect.ClosestCellTo(parent.Position).DistanceTo(parent.Position) <= focusStrengthOffset_ArtificialBuildings.radius)
+				if (offset is FocusStrengthOffset_ArtificialBuildings focusStrengthOffset_ArtificialBuildings && MeditationUtility.CountsAsArtificialBuilding(def, faction) && cellRect.ClosestCellTo(parent.Position).DistanceTo(parent.Position) <= focusStrengthOffset_ArtificialBuildings.radius)
 				{
 					return true;
 				}
 			}
 			return false;
+		}
+
+		public override void Used(Pawn pawn)
+		{
+			base.Used(pawn);
+			lastUsedTick = Find.TickManager.TicksGame;
 		}
 
 		public override string CompInspectStringExtra()
@@ -72,9 +90,9 @@ namespace RimWorld
 				return null;
 			}
 			StringBuilder stringBuilder = new StringBuilder();
-			if (base.LastUser != null)
+			if (LastUser != null)
 			{
-				stringBuilder.Append("UserMeditationFocusStrength".Translate(base.LastUser.Named("LASTUSER")) + ": " + Props.statDef.ValueToString(parent.GetStatValueForPawn(Props.statDef, base.LastUser)));
+				stringBuilder.Append("UserMeditationFocusStrength".Translate(LastUser.Named("LASTUSER")) + ": " + Props.statDef.ValueToString(parent.GetStatValueForPawn(Props.statDef, LastUser)));
 			}
 			for (int i = 0; i < Props.offsets.Count; i++)
 			{
@@ -95,20 +113,30 @@ namespace RimWorld
 		{
 			if (ModsConfig.RoyaltyActive)
 			{
-				yield return new StatDrawEntry(StatCategoryDefOf.Meditation, "MeditationFocuses".Translate(), Props.focusTypes.Select((MeditationFocusDef f) => f.label).ToCommaList().CapitalizeFirst(), "MeditationFocusesDesc".Translate(), 99995);
+				yield return new StatDrawEntry(StatCategoryDefOf.Meditation, "MeditationFocuses".Translate(), Props.focusTypes.Select((MeditationFocusDef f) => f.label).ToCommaList().CapitalizeFirst(), "MeditationFocusesDesc".Translate(), 4011);
 			}
 		}
 
 		public override void PostDrawExtraSelectionOverlays()
 		{
+			if (!parent.Spawned)
+			{
+				return;
+			}
 			base.PostDrawExtraSelectionOverlays();
 			if (ModsConfig.RoyaltyActive)
 			{
 				for (int i = 0; i < Props.offsets.Count; i++)
 				{
-					Props.offsets[i].PostDrawExtraSelectionOverlays(parent, base.LastUser);
+					Props.offsets[i].PostDrawExtraSelectionOverlays(parent, LastUser);
 				}
 			}
+		}
+
+		public override void PostExposeData()
+		{
+			base.PostExposeData();
+			Scribe_Values.Look(ref lastUsedTick, "lastUsedTick", -1);
 		}
 	}
 }

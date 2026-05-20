@@ -35,9 +35,31 @@ namespace Verse
 			case Type.Texture:
 				if (valueTex == null)
 				{
-					Log.ErrorOnce($"Texture for {name} is not yet loaded; file may be invalid, or main thread may not have loaded it yet", 27929440);
+					Log.ErrorOnce("Texture for " + name + " is not yet loaded; file may be invalid, or main thread may not have loaded it yet", 27929440);
 				}
 				mat.SetTexture(name, valueTex);
+				break;
+			case Type.Matrix:
+				break;
+			}
+		}
+
+		public void Apply(MaterialPropertyBlock block)
+		{
+			switch (type)
+			{
+			case Type.Float:
+				block.SetFloat(name, value.x);
+				break;
+			case Type.Vector:
+				block.SetVector(name, value);
+				break;
+			case Type.Texture:
+				if (valueTex == null)
+				{
+					Log.ErrorOnce("Texture for " + name + " is not yet loaded; file may be invalid, or main thread may not have loaded it yet", 27929440);
+				}
+				block.SetTexture(name, valueTex);
 				break;
 			case Type.Matrix:
 				break;

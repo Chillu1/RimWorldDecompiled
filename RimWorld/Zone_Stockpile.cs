@@ -19,7 +19,15 @@ namespace RimWorld
 
 		public bool IgnoreStoredThingsBeauty => false;
 
+		public bool HaulDestinationEnabled => true;
+
 		protected override Color NextZoneColor => ZoneColorUtility.NextStorageZoneColor();
+
+		public int SpaceRemaining => base.CellCount - base.HeldThingsCount;
+
+		public string GroupingLabel => "StockpilePlural".Translate();
+
+		public int GroupingOrder => -50;
 
 		public Zone_Stockpile()
 		{
@@ -43,10 +51,8 @@ namespace RimWorld
 		public override void AddCell(IntVec3 sq)
 		{
 			base.AddCell(sq);
-			if (slotGroup != null)
-			{
-				slotGroup.Notify_AddedCell(sq);
-			}
+			slotGroup?.Notify_AddedCell(sq);
+			LessonAutoActivator.TeachOpportunity(ConceptDefOf.Shelves, OpportunityType.GoodToKnow);
 		}
 
 		public override void RemoveCell(IntVec3 sq)
@@ -58,7 +64,7 @@ namespace RimWorld
 		public override void PostDeregister()
 		{
 			base.PostDeregister();
-			BillUtility.Notify_ZoneStockpileRemoved(this);
+			BillUtility.Notify_ISlotGroupRemoved(slotGroup);
 		}
 
 		public override IEnumerable<InspectTabBase> GetInspectTabs()
@@ -68,6 +74,7 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> GetGizmos()
 		{
+			yield return new Command_Hide_ZoneStockpile(this);
 			foreach (Gizmo gizmo in base.GetGizmos())
 			{
 				yield return gizmo;
@@ -103,12 +110,20 @@ namespace RimWorld
 
 		public StorageSettings GetParentStoreSettings()
 		{
-			return null;
+			return StorageSettings.EverStorableFixedSettings();
 		}
 
 		public StorageSettings GetStoreSettings()
 		{
 			return settings;
+		}
+
+		public void Notify_SettingsChanged()
+		{
+			if (base.Map != null && slotGroup != null)
+			{
+				base.Map.listerHaulables.Notify_SlotGroupChanged(slotGroup);
+			}
 		}
 
 		public bool Accepts(Thing t)

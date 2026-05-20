@@ -91,12 +91,10 @@ namespace RimWorld
 
 		public override bool ValidateAttackTarget(Pawn searcher, Thing target)
 		{
-			Pawn pawn = target as Pawn;
-			if (pawn == null)
+			if (!(target is Pawn { MentalStateDef: var mentalStateDef }))
 			{
 				return true;
 			}
-			MentalStateDef mentalStateDef = pawn.MentalStateDef;
 			if (mentalStateDef == null)
 			{
 				return true;

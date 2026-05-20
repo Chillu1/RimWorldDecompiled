@@ -6,32 +6,40 @@ namespace RimWorld
 	{
 		public override void PostPlace(Map map, BuildableDef def, IntVec3 loc, Rot4 rot)
 		{
-			ThingDef thingDef = def as ThingDef;
-			if (thingDef == null)
+			if (!(def is ThingDef thingDef))
 			{
 				return;
 			}
 			bool flag = StatPart_WorkTableOutdoors.Applies(thingDef, map, loc);
 			bool flag2 = StatPart_WorkTableTemperature.Applies(thingDef, map, loc);
-			if (!(flag || flag2))
+			bool flag3 = StatPart_WorkTableRoomRole.WouldApplyToBuildingIfPlaced(thingDef, map, loc);
+			if (!(flag || flag2 || flag3))
 			{
 				return;
 			}
-			string str = "WillGetWorkSpeedPenalty".Translate(def.label).CapitalizeFirst() + ": ";
-			string text = "";
+			string text = "WillGetWorkSpeedPenalty".Translate(def.label).CapitalizeFirst() + ": ";
+			string text2 = "";
 			if (flag)
 			{
-				text += "Outdoors".Translate();
+				text2 += "Outdoors".Translate().CapitalizeFirst();
 			}
 			if (flag2)
 			{
-				if (!text.NullOrEmpty())
+				if (!text2.NullOrEmpty())
 				{
-					text += ", ";
+					text2 += ", ";
 				}
-				text += "BadTemperature".Translate();
+				text2 += "BadTemperature".Translate();
 			}
-			Messages.Message(string.Concat(str + text.CapitalizeFirst(), "."), new TargetInfo(loc, map), MessageTypeDefOf.CautionInput, historical: false);
+			if (flag3)
+			{
+				if (!text2.NullOrEmpty())
+				{
+					text2 += ", ";
+				}
+				text2 += "NotInRoomRole".Translate(thingDef.building.workTableRoomRole.label);
+			}
+			Messages.Message(string.Concat(text + text2.CapitalizeFirst(), "."), new TargetInfo(loc, map), MessageTypeDefOf.CautionInput, historical: false);
 		}
 	}
 }

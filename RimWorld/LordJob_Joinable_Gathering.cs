@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Verse;
 using Verse.AI.Group;
 
@@ -11,9 +12,17 @@ namespace RimWorld
 
 		protected GatheringDef gatheringDef;
 
+		protected int durationTicks;
+
 		protected Trigger_TicksPassed timeoutTrigger;
 
 		public Pawn Organizer => organizer;
+
+		public int DurationTicks => durationTicks;
+
+		public virtual int TicksLeft => timeoutTrigger.TicksLeft;
+
+		public virtual IntVec3 Spot => spot;
 
 		public LordJob_Joinable_Gathering()
 		{
@@ -30,7 +39,7 @@ namespace RimWorld
 
 		protected virtual bool ShouldBeCalledOff()
 		{
-			if (!GatheringsUtility.PawnCanStartOrContinueGathering(organizer))
+			if (organizer != null && !GatheringsUtility.PawnCanStartOrContinueGathering(organizer))
 			{
 				return true;
 			}
@@ -57,28 +66,42 @@ namespace RimWorld
 				{
 					return 0f;
 				}
+				List<Hediff> hediffs = p.health.hediffSet.hediffs;
+				for (int i = 0; i < hediffs.Count; i++)
+				{
+					if (hediffs[i].def.blocksSocialInteraction)
+					{
+						return 0f;
+					}
+				}
 				return VoluntarilyJoinableLordJobJoinPriorities.SocialGathering;
 			}
 			return 0f;
 		}
 
+		protected virtual Trigger_TicksPassed GetTimeoutTrigger()
+		{
+			return new Trigger_TicksPassed(durationTicks);
+		}
+
 		public override void ExposeData()
 		{
 			Scribe_Values.Look(ref spot, "spot");
+			Scribe_Values.Look(ref durationTicks, "durationTicks", 0);
 			Scribe_References.Look(ref organizer, "organizer");
 			Scribe_Defs.Look(ref gatheringDef, "gatheringDef");
 		}
 
-		private bool IsGatheringAboutToEnd()
+		protected bool IsGatheringAboutToEnd()
 		{
-			if (timeoutTrigger.TicksLeft < 1200)
+			if (TicksLeft < 1200)
 			{
 				return true;
 			}
 			return false;
 		}
 
-		private bool IsInvited(Pawn p)
+		protected virtual bool IsInvited(Pawn p)
 		{
 			if (lord.faction != null)
 			{

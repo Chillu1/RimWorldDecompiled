@@ -35,9 +35,11 @@ namespace Verse
 
 		private static readonly Vector2 InitialPositionShift = new Vector2(4f, 0f);
 
-		private const float FadeStartMouseDist = 5f;
+		public const float FadeStartMouseDist = 5f;
 
 		private const float FadeFinishMouseDist = 100f;
+
+		public const float FinishDistFromStartDist = 95f;
 
 		protected override float Margin => 0f;
 
@@ -187,10 +189,12 @@ namespace Verse
 				Log.Error("Created FloatMenu with no options. Closing.");
 				Close();
 			}
-			this.options = options.OrderByDescending((FloatMenuOption op) => op.Priority).ToList();
-			for (int i = 0; i < options.Count; i++)
+			this.options = (from op in options
+				orderby op.Priority descending, op.orderInPriority descending
+				select op).ToList();
+			for (int num = 0; num < options.Count; num++)
 			{
-				options[i].SetSizeMode(SizeMode);
+				options[num].SetSizeMode(SizeMode);
 			}
 			layer = WindowLayer.Super;
 			closeOnClickedOutside = true;

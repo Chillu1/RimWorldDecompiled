@@ -16,6 +16,8 @@ namespace RimWorld
 
 		public bool colonistOnly = true;
 
+		public bool usableWithChildren = true;
+
 		public int maxPerPawn = -1;
 
 		public float ignoreChance;

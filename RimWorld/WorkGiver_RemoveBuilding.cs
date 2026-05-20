@@ -6,15 +6,9 @@ namespace RimWorld
 {
 	public abstract class WorkGiver_RemoveBuilding : WorkGiver_Scanner
 	{
-		protected abstract DesignationDef Designation
-		{
-			get;
-		}
+		protected abstract DesignationDef Designation { get; }
 
-		protected abstract JobDef RemoveBuildingJob
-		{
-			get;
-		}
+		protected abstract JobDef RemoveBuildingJob { get; }
 
 		public override PathEndMode PathEndMode => PathEndMode.Touch;
 
@@ -39,6 +33,11 @@ namespace RimWorld
 			}
 			if (pawn.Map.designationManager.DesignationOn(t, Designation) == null)
 			{
+				return false;
+			}
+			if (t.TryGetComp(out CompExplosive comp) && comp.wickStarted)
+			{
+				JobFailReason.Is("AboutToExplode".Translate());
 				return false;
 			}
 			return true;

@@ -7,56 +7,31 @@ namespace RimWorld
 	{
 		private string editBuffer = "0";
 
-		public abstract Thing AnyThing
-		{
-			get;
-		}
+		public abstract Thing AnyThing { get; }
 
-		public abstract ThingDef ThingDef
-		{
-			get;
-		}
+		public abstract ThingDef ThingDef { get; }
 
-		public abstract bool Interactive
-		{
-			get;
-		}
+		public abstract bool Interactive { get; }
 
-		public abstract bool HasAnyThing
-		{
-			get;
-		}
+		public abstract bool HasAnyThing { get; }
 
 		public virtual bool IsThing => true;
 
-		public abstract string Label
-		{
-			get;
-		}
+		public abstract string Label { get; }
 
 		public string LabelCap => Label.CapitalizeFirst(ThingDef);
 
-		public abstract string TipDescription
-		{
-			get;
-		}
+		public abstract string TipDescription { get; }
 
-		public abstract TransferablePositiveCountDirection PositiveCountDirection
-		{
-			get;
-		}
+		public abstract TransferablePositiveCountDirection PositiveCountDirection { get; }
 
-		public abstract int CountToTransfer
-		{
-			get;
-			protected set;
-		}
+		public abstract int CountToTransfer { get; protected set; }
 
 		public int CountToTransferToSource
 		{
 			get
 			{
-				if (PositiveCountDirection != 0)
+				if (PositiveCountDirection != TransferablePositiveCountDirection.Source)
 				{
 					return -CountToTransfer;
 				}
@@ -68,7 +43,7 @@ namespace RimWorld
 		{
 			get
 			{
-				if (PositiveCountDirection != 0)
+				if (PositiveCountDirection != TransferablePositiveCountDirection.Source)
 				{
 					return CountToTransfer;
 				}

@@ -16,6 +16,8 @@ namespace RimWorld
 
 		private Vector2 scrollPosition = Vector2.zero;
 
+		private QuickSearchWidget quickSearchWidget = new QuickSearchWidget();
+
 		public static float lastCurrencyFlashTime = -100f;
 
 		private List<Tradeable> cachedTradeables;
@@ -27,6 +29,8 @@ namespace RimWorld
 		private TransferableSorterDef sorter2;
 
 		private bool playerIsCaravan;
+
+		private bool isShuttleCaravan;
 
 		private List<Thing> playerCaravanAllPawnsAndItems;
 
@@ -48,11 +52,11 @@ namespace RimWorld
 
 		private bool daysWorthOfFoodDirty = true;
 
-		private Pair<float, float> cachedDaysWorthOfFood;
+		private (float days, float tillRot) cachedDaysWorthOfFood;
 
 		private bool foragedFoodPerDayDirty = true;
 
-		private Pair<ThingDef, float> cachedForagedFoodPerDay;
+		private (ThingDef food, float perDay) cachedForagedFoodPerDay;
 
 		private string cachedForagedFoodPerDayExplanation;
 
@@ -92,9 +96,9 @@ namespace RimWorld
 
 		public override Vector2 InitialSize => new Vector2(1024f, UI.screenHeight);
 
-		private int Tile => TradeSession.playerNegotiator.Tile;
+		private PlanetTile Tile => TradeSession.playerNegotiator.Tile;
 
-		private BiomeDef Biome => Find.WorldGrid[Tile].biome;
+		private BiomeDef Biome => Find.WorldGrid[Tile].PrimaryBiome;
 
 		private float MassUsage
 		{
@@ -108,7 +112,16 @@ namespace RimWorld
 					{
 						cachedTradeables.Add(cachedCurrencyTradeable);
 					}
-					cachedMassUsage = CollectionsMassCalculator.MassUsageLeftAfterTradeableTransfer(playerCaravanAllPawnsAndItems, cachedTradeables, IgnorePawnsInventoryMode.Ignore);
+					Building_PassengerShuttle shuttle = TradeSession.playerNegotiator.GetCaravan().Shuttle;
+					if (shuttle != null)
+					{
+						cachedMassUsage = CollectionsMassCalculator.MassUsageLeftAfterTradeableTransfer(playerCaravanAllPawnsAndItems, cachedTradeables, IgnorePawnsInventoryMode.Ignore, includePawnsMass: true);
+						cachedMassUsage -= shuttle.GetStatValue(StatDefOf.Mass);
+					}
+					else
+					{
+						cachedMassUsage = CollectionsMassCalculator.MassUsageLeftAfterTradeableTransfer(playerCaravanAllPawnsAndItems, cachedTradeables, IgnorePawnsInventoryMode.Ignore);
+					}
 					if (cachedCurrencyTradeable != null)
 					{
 						cachedTradeables.RemoveLast();
@@ -125,6 +138,12 @@ namespace RimWorld
 				if (massCapacityDirty)
 				{
 					massCapacityDirty = false;
+					Building_PassengerShuttle shuttle = TradeSession.playerNegotiator.GetCaravan().Shuttle;
+					if (shuttle != null)
+					{
+						cachedMassCapacity = shuttle.TransporterComp.MassCapacity;
+						return cachedMassCapacity;
+					}
 					TradeSession.deal.UpdateCurrencyCount();
 					if (cachedCurrencyTradeable != null)
 					{
@@ -151,15 +170,20 @@ namespace RimWorld
 					tilesPerDayDirty = false;
 					TradeSession.deal.UpdateCurrencyCount();
 					Caravan caravan = TradeSession.playerNegotiator.GetCaravan();
+					if (caravan.Shuttle != null)
+					{
+						cachedTilesPerDayExplanation = "CaravanMovementSpeedShuttle".Translate();
+						return 0f;
+					}
 					StringBuilder stringBuilder = new StringBuilder();
-					cachedTilesPerDay = TilesPerDayCalculator.ApproxTilesPerDayLeftAfterTradeableTransfer(playerCaravanAllPawnsAndItems, cachedTradeables, MassUsage, MassCapacity, Tile, (caravan != null && caravan.pather.Moving) ? caravan.pather.nextTile : (-1), stringBuilder);
+					cachedTilesPerDay = TilesPerDayCalculator.ApproxTilesPerDayLeftAfterTradeableTransfer(playerCaravanAllPawnsAndItems, cachedTradeables, MassUsage, MassCapacity, Tile, caravan.pather.Moving ? caravan.pather.nextTile : PlanetTile.Invalid, TradeSession.playerNegotiator.GetCaravan().Shuttle != null, stringBuilder);
 					cachedTilesPerDayExplanation = stringBuilder.ToString();
 				}
 				return cachedTilesPerDay;
 			}
 		}
 
-		private Pair<float, float> DaysWorthOfFood
+		private (float days, float tillRot) DaysWorthOfFood
 		{
 			get
 			{
@@ -167,14 +191,14 @@ namespace RimWorld
 				{
 					daysWorthOfFoodDirty = false;
 					TradeSession.deal.UpdateCurrencyCount();
-					float first = DaysWorthOfFoodCalculator.ApproxDaysWorthOfFoodLeftAfterTradeableTransfer(playerCaravanAllPawnsAndItems, cachedTradeables, Tile, IgnorePawnsInventoryMode.Ignore, Faction.OfPlayer);
-					cachedDaysWorthOfFood = new Pair<float, float>(first, DaysUntilRotCalculator.ApproxDaysUntilRotLeftAfterTradeableTransfer(playerCaravanAllPawnsAndItems, cachedTradeables, Tile, IgnorePawnsInventoryMode.Ignore));
+					float item = DaysWorthOfFoodCalculator.ApproxDaysWorthOfFoodLeftAfterTradeableTransfer(playerCaravanAllPawnsAndItems, cachedTradeables, Tile, IgnorePawnsInventoryMode.Ignore, Faction.OfPlayer);
+					cachedDaysWorthOfFood = (days: item, tillRot: DaysUntilRotCalculator.ApproxDaysUntilRotLeftAfterTradeableTransfer(playerCaravanAllPawnsAndItems, cachedTradeables, Tile, IgnorePawnsInventoryMode.Ignore));
 				}
 				return cachedDaysWorthOfFood;
 			}
 		}
 
-		private Pair<ThingDef, float> ForagedFoodPerDay
+		private (ThingDef food, float perDay) ForagedFoodPerDay
 		{
 			get
 			{
@@ -206,6 +230,8 @@ namespace RimWorld
 			}
 		}
 
+		public override QuickSearchWidget CommonSearchWidget => quickSearchWidget;
+
 		public Dialog_Trade(Pawn playerNegotiator, ITrader trader, bool giftsOnly = false)
 		{
 			this.giftsOnly = giftsOnly;
@@ -219,8 +245,16 @@ namespace RimWorld
 			{
 				soundAmbient = SoundDefOf.RadioComms_Ambience;
 			}
+			commonSearchWidgetOffset.x += 18f;
+			commonSearchWidgetOffset.y -= 18f;
 			sorter1 = TransferableSorterDefOf.Category;
 			sorter2 = TransferableSorterDefOf.MarketValue;
+		}
+
+		public override void PreOpen()
+		{
+			base.PreOpen();
+			quickSearchWidget.Reset();
 		}
 
 		public override void PostOpen()
@@ -246,12 +280,14 @@ namespace RimWorld
 			cachedCurrencyTradeable = TradeSession.deal.AllTradeables.FirstOrDefault((Tradeable x) => x.IsCurrency && (TradeSession.TradeCurrency != TradeCurrency.Favor || x.IsFavor));
 			cachedTradeables = (from tr in TradeSession.deal.AllTradeables
 				where !tr.IsCurrency && (tr.TraderWillTrade || !TradeSession.trader.TraderKind.hideThingsNotWillingToTrade)
+				where quickSearchWidget.filter.Matches(tr.Label)
 				orderby (!tr.TraderWillTrade) ? (-1) : 0 descending
 				select tr).ThenBy((Tradeable tr) => tr, sorter1.Comparer).ThenBy((Tradeable tr) => tr, sorter2.Comparer).ThenBy((Tradeable tr) => TransferableUIUtility.DefaultListOrderPriority(tr))
 				.ThenBy((Tradeable tr) => tr.ThingDef.label)
 				.ThenBy((Tradeable tr) => tr.AnyThing.TryGetQuality(out var qc) ? ((int)qc) : (-1))
 				.ThenBy((Tradeable tr) => tr.AnyThing.HitPoints)
 				.ToList();
+			quickSearchWidget.noResultsMatched = !cachedTradeables.Any();
 		}
 
 		public override void DoWindowContents(Rect inRect)
@@ -262,7 +298,7 @@ namespace RimWorld
 				inRect.yMin += 52f;
 			}
 			TradeSession.deal.UpdateCurrencyCount();
-			GUI.BeginGroup(inRect);
+			Widgets.BeginGroup(inRect);
 			inRect = inRect.AtZero();
 			TransferableUIUtility.DoTransferableSorters(sorter1, sorter2, delegate(TransferableSorterDef x)
 			{
@@ -277,41 +313,47 @@ namespace RimWorld
 			Text.Anchor = TextAnchor.UpperLeft;
 			Widgets.Label(new Rect(0f, 27f, inRect.width / 2f, inRect.height / 2f), "NegotiatorTradeDialogInfo".Translate(TradeSession.playerNegotiator.Name.ToStringFull, TradeSession.playerNegotiator.GetStatValue(StatDefOf.TradePriceImprovement).ToStringPercent()));
 			float num = inRect.width - 590f;
-			Rect position = new Rect(num, 0f, inRect.width - num, 58f);
-			GUI.BeginGroup(position);
+			Rect rect = new Rect(num, 0f, inRect.width - num, 58f);
+			Widgets.BeginGroup(rect);
 			Text.Font = GameFont.Medium;
-			Rect rect = new Rect(0f, 0f, position.width / 2f, position.height);
+			Rect rect2 = new Rect(0f, 0f, rect.width / 2f, rect.height);
 			Text.Anchor = TextAnchor.UpperLeft;
-			Widgets.Label(rect, Faction.OfPlayer.Name.Truncate(rect.width));
-			Rect rect2 = new Rect(position.width / 2f, 0f, position.width / 2f, position.height);
+			Widgets.Label(rect2, Faction.OfPlayer.Name.Truncate(rect2.width));
+			Rect rect3 = new Rect(rect.width / 2f, 0f, rect.width / 2f, rect.height);
 			Text.Anchor = TextAnchor.UpperRight;
 			string text = TradeSession.trader.TraderName;
-			if (Text.CalcSize(text).x > rect2.width)
+			if (Text.CalcSize(text).x > rect3.width)
 			{
 				Text.Font = GameFont.Small;
-				text = text.Truncate(rect2.width);
+				text = text.Truncate(rect3.width);
 			}
-			Widgets.Label(rect2, text);
+			Widgets.Label(rect3, text);
 			Text.Font = GameFont.Small;
 			Text.Anchor = TextAnchor.UpperRight;
-			Widgets.Label(new Rect(position.width / 2f, 27f, position.width / 2f, position.height / 2f), TradeSession.trader.TraderKind.LabelCap);
+			Widgets.Label(new Rect(rect.width / 2f, 27f, rect.width / 2f, rect.height / 2f), TradeSession.trader.TraderKind.LabelCap);
 			Text.Anchor = TextAnchor.UpperLeft;
 			if (!TradeSession.giftMode)
 			{
 				GUI.color = new Color(1f, 1f, 1f, 0.6f);
 				Text.Font = GameFont.Tiny;
-				Rect rect3 = new Rect(position.width / 2f - 100f - 30f, 0f, 200f, position.height);
+				Rect rect4 = new Rect(rect.width / 2f - 100f - 30f, 0f, 200f, rect.height);
 				Text.Anchor = TextAnchor.LowerCenter;
-				Widgets.Label(rect3, "PositiveBuysNegativeSells".Translate());
+				Widgets.Label(rect4, "PositiveBuysNegativeSells".Translate());
 				Text.Anchor = TextAnchor.UpperLeft;
 				GUI.color = Color.white;
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			float num2 = 0f;
 			if (cachedCurrencyTradeable != null)
 			{
 				float num3 = inRect.width - 16f;
-				TradeUI.DrawTradeableRow(new Rect(0f, 58f, num3, 30f), cachedCurrencyTradeable, 1);
+				Rect rect5 = new Rect(0f, 58f, num3, 30f);
+				int countToTransfer = cachedCurrencyTradeable.CountToTransfer;
+				TradeUI.DrawTradeableRow(rect5, cachedCurrencyTradeable, 1);
+				if (countToTransfer != cachedCurrencyTradeable.CountToTransfer)
+				{
+					CountToTransferChanged();
+				}
 				GUI.color = Color.gray;
 				Widgets.DrawLineHorizontal(0f, 87f, num3);
 				GUI.color = Color.white;
@@ -319,8 +361,9 @@ namespace RimWorld
 			}
 			Rect mainRect = new Rect(0f, 58f + num2, inRect.width, inRect.height - 58f - 38f - num2 - 20f);
 			FillMainRect(mainRect);
-			Rect rect4 = new Rect(inRect.width / 2f - AcceptButtonSize.x / 2f, inRect.height - 55f, AcceptButtonSize.x, AcceptButtonSize.y);
-			if (Widgets.ButtonText(rect4, TradeSession.giftMode ? ("OfferGifts".Translate() + " (" + FactionGiftUtility.GetGoodwillChange(TradeSession.deal.AllTradeables, TradeSession.trader.Faction).ToStringWithSign() + ")") : "AcceptButton".Translate()))
+			Text.Font = GameFont.Small;
+			Rect rect6 = new Rect(inRect.width / 2f - AcceptButtonSize.x / 2f, inRect.height - 55f, AcceptButtonSize.x, AcceptButtonSize.y);
+			if (Widgets.ButtonText(rect6, TradeSession.giftMode ? ("OfferGifts".Translate() + " (" + FactionGiftUtility.GetGoodwillChange(TradeSession.deal.AllTradeables, TradeSession.trader.Faction).ToStringWithSign() + ")") : "AcceptButton".Translate()))
 			{
 				Action action = delegate
 				{
@@ -329,6 +372,7 @@ namespace RimWorld
 						if (actuallyTraded)
 						{
 							SoundDefOf.ExecuteTrade.PlayOneShotOnCamera();
+							TradeSession.playerNegotiator.GetCaravan()?.RecacheInventory();
 							Close(doCloseSound: false);
 						}
 						else
@@ -349,32 +393,32 @@ namespace RimWorld
 				}
 				Event.current.Use();
 			}
-			if (Widgets.ButtonText(new Rect(rect4.x - 10f - OtherBottomButtonSize.x, rect4.y, OtherBottomButtonSize.x, OtherBottomButtonSize.y), "ResetButton".Translate()))
+			if (Widgets.ButtonText(new Rect(rect6.x - 10f - OtherBottomButtonSize.x, rect6.y, OtherBottomButtonSize.x, OtherBottomButtonSize.y), "ResetButton".Translate()))
 			{
 				SoundDefOf.Tick_Low.PlayOneShotOnCamera();
 				TradeSession.deal.Reset();
 				CacheTradeables();
 				CountToTransferChanged();
 			}
-			if (Widgets.ButtonText(new Rect(rect4.xMax + 10f, rect4.y, OtherBottomButtonSize.x, OtherBottomButtonSize.y), "CancelButton".Translate()))
+			if (Widgets.ButtonText(new Rect(rect6.xMax + 10f, rect6.y, OtherBottomButtonSize.x, OtherBottomButtonSize.y), "CancelButton".Translate()))
 			{
 				Close();
 				Event.current.Use();
 			}
 			float y = OtherBottomButtonSize.y;
-			Rect rect5 = new Rect(inRect.width - y, rect4.y, y, y);
-			if (Widgets.ButtonImageWithBG(rect5, ShowSellableItemsIcon, new Vector2(32f, 32f)))
+			Rect rect7 = new Rect(inRect.width - y, rect6.y, y, y);
+			if (Widgets.ButtonImageWithBG(rect7, ShowSellableItemsIcon, new Vector2(32f, 32f)))
 			{
 				Find.WindowStack.Add(new Dialog_SellableItems(TradeSession.trader));
 			}
-			TooltipHandler.TipRegionByKey(rect5, "CommandShowSellableItemsDesc");
+			TooltipHandler.TipRegionByKey(rect7, "CommandShowSellableItemsDesc");
 			Faction faction = TradeSession.trader.Faction;
-			if (faction != null && !giftsOnly && !faction.def.permanentEnemy)
+			if (faction != null && !giftsOnly && !faction.def.permanentEnemy && TradeSession.trader.TradeCurrency != TradeCurrency.Favor)
 			{
-				Rect rect6 = new Rect(rect5.x - y - 4f, rect4.y, y, y);
+				Rect rect8 = new Rect(rect7.x - y - 4f, rect6.y, y, y);
 				if (TradeSession.giftMode)
 				{
-					if (Widgets.ButtonImageWithBG(rect6, TradeModeIcon, new Vector2(32f, 32f)))
+					if (Widgets.ButtonImageWithBG(rect8, TradeModeIcon, new Vector2(32f, 32f)))
 					{
 						TradeSession.giftMode = false;
 						TradeSession.deal.Reset();
@@ -382,11 +426,11 @@ namespace RimWorld
 						CountToTransferChanged();
 						SoundDefOf.Tick_High.PlayOneShotOnCamera();
 					}
-					TooltipHandler.TipRegionByKey(rect6, "TradeModeTip");
+					TooltipHandler.TipRegionByKey(rect8, "TradeModeTip");
 				}
 				else
 				{
-					if (Widgets.ButtonImageWithBG(rect6, GiftModeIcon, new Vector2(32f, 32f)))
+					if (Widgets.ButtonImageWithBG(rect8, GiftModeIcon, new Vector2(32f, 32f)))
 					{
 						TradeSession.giftMode = true;
 						TradeSession.deal.Reset();
@@ -394,16 +438,20 @@ namespace RimWorld
 						CountToTransferChanged();
 						SoundDefOf.Tick_High.PlayOneShotOnCamera();
 					}
-					TooltipHandler.TipRegionByKey(rect6, "GiftModeTip", faction.Name);
+					TooltipHandler.TipRegionByKey(rect8, "GiftModeTip", faction.Name);
 				}
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		public override void Close(bool doCloseSound = true)
 		{
 			DragSliderManager.ForceStop();
 			base.Close(doCloseSound);
+			if (TradeSession.trader is Pawn pawn && pawn.mindState.hasQuest)
+			{
+				TradeUtility.ReceiveQuestFromTrader(pawn, TradeSession.playerNegotiator);
+			}
 		}
 
 		private void FillMainRect(Rect mainRect)
@@ -473,6 +521,11 @@ namespace RimWorld
 			daysWorthOfFoodDirty = true;
 			foragedFoodPerDayDirty = true;
 			visibilityDirty = true;
+		}
+
+		public override void Notify_CommonSearchChanged()
+		{
+			CacheTradeables();
 		}
 	}
 }

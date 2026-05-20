@@ -15,17 +15,17 @@ namespace RimWorld
 				return false;
 			}
 			PawnKindDef animalKind;
-			return ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(AdjustedPoints(parms.points), -1, out animalKind);
+			return AggressiveAnimalIncidentUtility.TryFindAggressiveAnimalKind(AdjustedPoints(parms.points), PlanetTile.Invalid, out animalKind);
 		}
 
 		protected override List<Pawn> GeneratePawns(IncidentParms parms)
 		{
-			if (!ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(AdjustedPoints(parms.points), parms.target.Tile, out var animalKind) && !ManhunterPackIncidentUtility.TryFindManhunterAnimalKind(AdjustedPoints(parms.points), -1, out animalKind))
+			if (!AggressiveAnimalIncidentUtility.TryFindAggressiveAnimalKind(AdjustedPoints(parms.points), parms.target.Tile, out var animalKind) && !AggressiveAnimalIncidentUtility.TryFindAggressiveAnimalKind(AdjustedPoints(parms.points), PlanetTile.Invalid, out animalKind))
 			{
-				Log.Error(string.Concat("Could not find any valid animal kind for ", def, " incident."));
+				Log.Error("Could not find any valid animal kind for " + def?.ToString() + " incident.");
 				return new List<Pawn>();
 			}
-			return ManhunterPackIncidentUtility.GenerateAnimals_NewTmp(animalKind, parms.target.Tile, AdjustedPoints(parms.points));
+			return AggressiveAnimalIncidentUtility.GenerateAnimals(animalKind, parms.target.Tile, AdjustedPoints(parms.points));
 		}
 
 		protected override void PostProcessGeneratedPawnsAfterSpawning(List<Pawn> generatedPawns)
@@ -45,7 +45,7 @@ namespace RimWorld
 		protected override string GetLetterText(Pawn anyPawn, IncidentParms parms)
 		{
 			Caravan caravan = parms.target as Caravan;
-			return string.Format(def.letterText, (caravan != null) ? caravan.Name : "yourCaravan".TranslateSimple(), anyPawn.GetKindLabelPlural()).CapitalizeFirst();
+			return def.letterText.Formatted((caravan != null) ? caravan.Name : "yourCaravan".TranslateSimple(), anyPawn.GetKindLabelPlural()).CapitalizeFirst();
 		}
 	}
 }

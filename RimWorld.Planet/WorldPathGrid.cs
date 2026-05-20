@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
 using Verse;
@@ -6,11 +7,11 @@ namespace RimWorld.Planet
 {
 	public class WorldPathGrid
 	{
-		public float[] movementDifficulty;
+		public readonly Dictionary<PlanetLayer, float[]> layerMovementDifficulty = new Dictionary<PlanetLayer, float[]>();
 
-		private int allPathCostsRecalculatedDayOfYear = -1;
+		private readonly Dictionary<PlanetLayer, int> layerAllPathCostsRecalculatedDayOfYear = new Dictionary<PlanetLayer, int>();
 
-		private const float ImpassableMovemenetDificulty = 1000f;
+		private const float ImpassableMovementDifficulty = 1000f;
 
 		public const float WinterMovementDifficultyOffset = 2f;
 
@@ -20,83 +21,114 @@ namespace RimWorld.Planet
 
 		public WorldPathGrid()
 		{
-			ResetPathGrid();
-		}
-
-		public void ResetPathGrid()
-		{
-			movementDifficulty = new float[Find.WorldGrid.TilesCount];
+			foreach (var (_, layer) in Find.WorldGrid.PlanetLayers)
+			{
+				OnPlanetLayerAdded(layer);
+			}
+			Find.WorldGrid.OnPlanetLayerAdded += OnPlanetLayerAdded;
+			Find.WorldGrid.OnPlanetLayerRemoved += OnPlanetLayerRemoved;
 		}
 
 		public void WorldPathGridTick()
 		{
-			if (allPathCostsRecalculatedDayOfYear != DayOfYearAt0Long)
+			foreach (var (_, planetLayer2) in Find.WorldGrid.PlanetLayers)
 			{
-				RecalculateAllPerceivedPathCosts();
+				if (layerAllPathCostsRecalculatedDayOfYear[planetLayer2] != DayOfYearAt0Long)
+				{
+					RecalculateLayerPerceivedPathCosts(planetLayer2);
+				}
 			}
 		}
 
-		public bool Passable(int tile)
+		private void OnPlanetLayerAdded(PlanetLayer layer)
+		{
+			layerMovementDifficulty[layer] = new float[layer.TilesCount];
+			layerAllPathCostsRecalculatedDayOfYear[layer] = -1;
+		}
+
+		private void OnPlanetLayerRemoved(PlanetLayer layer)
+		{
+			layerMovementDifficulty.Remove(layer);
+			layerAllPathCostsRecalculatedDayOfYear.Remove(layer);
+		}
+
+		public bool Passable(PlanetTile tile)
 		{
 			if (!Find.WorldGrid.InBounds(tile))
 			{
 				return false;
 			}
-			return movementDifficulty[tile] < 1000f;
+			return layerMovementDifficulty[tile.Layer][tile.tileId] < 1000f;
 		}
 
-		public bool PassableFast(int tile)
+		public bool PassableFast(PlanetTile tile)
 		{
-			return movementDifficulty[tile] < 1000f;
+			return layerMovementDifficulty[tile.Layer][tile.tileId] < 1000f;
 		}
 
-		public float PerceivedMovementDifficultyAt(int tile)
+		public float PerceivedMovementDifficultyAt(PlanetTile tile)
 		{
-			return movementDifficulty[tile];
+			return layerMovementDifficulty[tile.Layer][tile.tileId];
 		}
 
-		public void RecalculatePerceivedMovementDifficultyAt(int tile, int? ticksAbs = null)
+		public void RecalculatePerceivedMovementDifficultyAt(PlanetTile tile, out bool needsRecache, int? ticksAbs = null)
 		{
+			needsRecache = false;
 			if (Find.WorldGrid.InBounds(tile))
 			{
 				bool num = PassableFast(tile);
-				movementDifficulty[tile] = CalculatedMovementDifficultyAt(tile, perceivedStatic: true, ticksAbs);
+				layerMovementDifficulty[tile.Layer][tile.tileId] = CalculatedMovementDifficultyAt(tile, perceivedStatic: true, ticksAbs);
 				if (num != PassableFast(tile))
 				{
-					Find.WorldReachability.ClearCache();
+					needsRecache = true;
 				}
 			}
 		}
 
-		public void RecalculateAllPerceivedPathCosts()
+		public void RecalculateAllLayersPathCosts()
 		{
-			RecalculateAllPerceivedPathCosts(null);
-			allPathCostsRecalculatedDayOfYear = DayOfYearAt0Long;
-		}
-
-		public void RecalculateAllPerceivedPathCosts(int? ticksAbs)
-		{
-			allPathCostsRecalculatedDayOfYear = -1;
-			for (int i = 0; i < movementDifficulty.Length; i++)
+			foreach (var (layer, _) in layerMovementDifficulty)
 			{
-				RecalculatePerceivedMovementDifficultyAt(i, ticksAbs);
+				RecalculateLayerPerceivedPathCosts(layer);
 			}
 		}
 
-		public static float CalculatedMovementDifficultyAt(int tile, bool perceivedStatic, int? ticksAbs = null, StringBuilder explanation = null)
+		public void RecalculateLayerPerceivedPathCosts(PlanetLayer layer)
+		{
+			RecalculateLayerPerceivedPathCosts(layer, null);
+			layerAllPathCostsRecalculatedDayOfYear[layer] = DayOfYearAt0Long;
+		}
+
+		public void RecalculateLayerPerceivedPathCosts(PlanetLayer layer, int? ticksAbs)
+		{
+			bool flag = false;
+			layerAllPathCostsRecalculatedDayOfYear[layer] = -1;
+			float[] array = layerMovementDifficulty[layer];
+			for (int i = 0; i < array.Length; i++)
+			{
+				RecalculatePerceivedMovementDifficultyAt(new PlanetTile(i, layer), out var needsRecache, ticksAbs);
+				flag = flag || needsRecache;
+			}
+			if (flag)
+			{
+				Find.WorldReachability.ClearCache();
+			}
+		}
+
+		public static float CalculatedMovementDifficultyAt(PlanetTile tile, bool perceivedStatic, int? ticksAbs = null, StringBuilder explanation = null)
 		{
 			Tile tile2 = Find.WorldGrid[tile];
 			if (explanation != null && explanation.Length > 0)
 			{
 				explanation.AppendLine();
 			}
-			if (tile2.biome.impassable || tile2.hilliness == Hilliness.Impassable)
+			if (tile2.PrimaryBiome.impassable || tile2.hilliness == Hilliness.Impassable)
 			{
 				explanation?.Append("Impassable".Translate());
 				return 1000f;
 			}
-			float num = 0f + tile2.biome.movementDifficulty;
-			explanation?.Append(tile2.biome.LabelCap + ": " + tile2.biome.movementDifficulty.ToStringWithSign("0.#"));
+			float num = 0f + tile2.PrimaryBiome.movementDifficulty;
+			explanation?.Append(tile2.PrimaryBiome.LabelCap + ": " + tile2.PrimaryBiome.movementDifficulty.ToStringWithSign("0.#"));
 			float num2 = HillinessMovementDifficultyOffset(tile2.hilliness);
 			float num3 = num + num2;
 			if (explanation != null && num2 != 0f)
@@ -107,7 +139,7 @@ namespace RimWorld.Planet
 			return num3 + GetCurrentWinterMovementDifficultyOffset(tile, ticksAbs ?? GenTicks.TicksAbs, explanation);
 		}
 
-		public static float GetCurrentWinterMovementDifficultyOffset(int tile, int? ticksAbs = null, StringBuilder explanation = null)
+		public static float GetCurrentWinterMovementDifficultyOffset(PlanetTile tile, int? ticksAbs = null, StringBuilder explanation = null)
 		{
 			if (!ticksAbs.HasValue)
 			{
@@ -136,7 +168,7 @@ namespace RimWorld.Planet
 			return 0f;
 		}
 
-		public static bool WillWinterEverAffectMovementDifficulty(int tile)
+		public static bool WillWinterEverAffectMovementDifficulty(PlanetTile tile)
 		{
 			int ticksAbs = GenTicks.TicksAbs;
 			for (int i = 0; i < 3600000; i += 60000)

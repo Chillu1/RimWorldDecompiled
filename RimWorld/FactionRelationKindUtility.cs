@@ -9,6 +9,17 @@ namespace RimWorld
 		{
 			return kind switch
 			{
+				FactionRelationKind.Hostile => "HostileLower".Translate(), 
+				FactionRelationKind.Neutral => "NeutralLower".Translate(), 
+				FactionRelationKind.Ally => "AllyLower".Translate(), 
+				_ => "error", 
+			};
+		}
+
+		public static string GetLabelCap(this FactionRelationKind kind)
+		{
+			return kind switch
+			{
 				FactionRelationKind.Hostile => "Hostile".Translate(), 
 				FactionRelationKind.Neutral => "Neutral".Translate(), 
 				FactionRelationKind.Ally => "Ally".Translate(), 
@@ -20,7 +31,7 @@ namespace RimWorld
 		{
 			return kind switch
 			{
-				FactionRelationKind.Hostile => ColoredText.RedReadable, 
+				FactionRelationKind.Hostile => ColorLibrary.RedReadable, 
 				FactionRelationKind.Neutral => new Color(0f, 0.75f, 1f), 
 				FactionRelationKind.Ally => Color.green, 
 				_ => Color.white, 

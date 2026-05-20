@@ -6,7 +6,7 @@ using Verse;
 namespace RimWorld
 {
 	[StaticConstructorOnStartup]
-	public class CompRefuelable : ThingComp
+	public class CompRefuelable : ThingComp_VacuumAware, IThingGlower
 	{
 		private float fuel;
 
@@ -15,6 +15,8 @@ namespace RimWorld
 		public bool allowAutoRefuel = true;
 
 		private CompFlickable flickComp;
+
+		private CompExplosive explosiveComp;
 
 		public const string RefueledSignal = "Refueled";
 
@@ -27,6 +29,8 @@ namespace RimWorld
 		private static readonly Material FuelBarFilledMat = SolidColorMaterials.SimpleSolidColorMaterial(new Color(0.6f, 0.56f, 0.13f));
 
 		private static readonly Material FuelBarUnfilledMat = SolidColorMaterials.SimpleSolidColorMaterial(new Color(0.3f, 0.3f, 0.3f));
+
+		protected override bool FunctionsInVacuum => Props.functionsInVacuum;
 
 		public float TargetFuelLevel
 		{
@@ -56,15 +60,19 @@ namespace RimWorld
 
 		public float FuelPercentOfMax => fuel / Props.fuelCapacity;
 
-		public bool IsFull => TargetFuelLevel - fuel < 1f;
+		public bool IsFull => TargetFuelLevel - fuel < 1f * Props.FuelMultiplierCurrentDifficulty;
 
 		public bool HasFuel
 		{
 			get
 			{
-				if (fuel > 0f)
+				if (fuel > 0f && fuel >= Props.minimumFueledThreshold)
 				{
-					return fuel >= Props.minimumFueledThreshold;
+					if (!FunctionsInVacuum)
+					{
+						return !base.InVacuum;
+					}
+					return true;
 				}
 				return false;
 			}
@@ -96,12 +104,22 @@ namespace RimWorld
 			}
 		}
 
+		public bool ShouldBeLitNow()
+		{
+			return HasFuel;
+		}
+
 		public override void Initialize(CompProperties props)
 		{
 			base.Initialize(props);
 			allowAutoRefuel = Props.initialAllowAutoRefuel;
 			fuel = Props.fuelCapacity * Props.initialFuelPercent;
+		}
+
+		public override void PostSpawnSetup(bool respawningAfterLoad)
+		{
 			flickComp = parent.GetComp<CompFlickable>();
+			explosiveComp = parent.GetComp<CompExplosive>();
 		}
 
 		public override void PostExposeData()
@@ -129,13 +147,15 @@ namespace RimWorld
 			}
 			if (Props.drawFuelGaugeInMap)
 			{
-				GenDraw.FillableBarRequest r = default(GenDraw.FillableBarRequest);
-				r.center = parent.DrawPos + Vector3.up * 0.1f;
-				r.size = FuelBarSize;
-				r.fillPercent = FuelPercentOfMax;
-				r.filledMat = FuelBarFilledMat;
-				r.unfilledMat = FuelBarUnfilledMat;
-				r.margin = 0.15f;
+				GenDraw.FillableBarRequest r = new GenDraw.FillableBarRequest
+				{
+					center = parent.DrawPos + Vector3.up * 0.1f,
+					size = FuelBarSize,
+					fillPercent = FuelPercentOfMax,
+					filledMat = FuelBarFilledMat,
+					unfilledMat = FuelBarUnfilledMat,
+					margin = 0.15f
+				};
 				Rot4 rotation = parent.Rotation;
 				rotation.Rotate(RotationDirection.Clockwise);
 				r.rotation = rotation;
@@ -146,10 +166,10 @@ namespace RimWorld
 		public override void PostDestroy(DestroyMode mode, Map previousMap)
 		{
 			base.PostDestroy(mode, previousMap);
-			if (previousMap != null && Props.fuelFilter.AllowedDefCount == 1 && Props.initialFuelPercent == 0f)
+			if ((!Props.fuelIsMortarBarrel || !Find.Storyteller.difficulty.classicMortars) && mode != DestroyMode.Vanish && previousMap != null && Props.fuelFilter.AllowedDefCount == 1 && Props.initialFuelPercent == 0f)
 			{
 				ThingDef thingDef = Props.fuelFilter.AllowedThingDefs.First();
-				int num = GenMath.RoundRandom(1f * fuel);
+				int num = Mathf.FloorToInt(1f * fuel);
 				while (num > 0)
 				{
 					Thing thing = ThingMaker.MakeThing(thingDef);
@@ -162,7 +182,13 @@ namespace RimWorld
 
 		public override string CompInspectStringExtra()
 		{
-			string text = Props.FuelLabel + ": " + fuel.ToStringDecimalIfSmall() + " / " + Props.fuelCapacity.ToStringDecimalIfSmall();
+			if (Props.fuelIsMortarBarrel && Find.Storyteller.difficulty.classicMortars)
+			{
+				return string.Empty;
+			}
+			string text = base.CompInspectStringExtra();
+			text = ((text != null) ? (text + "\n") : string.Empty);
+			text = text + Props.FuelLabel + ": " + fuel.ToStringDecimalIfSmall() + " / " + Props.fuelCapacity.ToStringDecimalIfSmall();
 			if (!Props.consumeFuelOnlyWhenUsed && HasFuel)
 			{
 				int numTicks = (int)(fuel / Props.fuelConsumptionRate * 60000f);
@@ -170,7 +196,8 @@ namespace RimWorld
 			}
 			if (!HasFuel && !Props.outOfFuelMessage.NullOrEmpty())
 			{
-				text += $"\n{Props.outOfFuelMessage} ({GetFuelCountToFullyRefuel()}x {Props.fuelFilter.AnyAllowedDef.label})";
+				string arg = ((parent.def.building != null && parent.def.building.IsTurret) ? ("CannotShoot".Translate() + ": " + Props.outOfFuelMessage).Resolve() : Props.outOfFuelMessage);
+				text += $"\n{arg} ({GetFuelCountToFullyRefuel()}x {Props.fuelFilter.AnyAllowedDef.label})";
 			}
 			if (Props.targetFuelLevelConfigurable)
 			{
@@ -179,14 +206,29 @@ namespace RimWorld
 			return text;
 		}
 
+		public override IEnumerable<StatDrawEntry> SpecialDisplayStats()
+		{
+			if (parent.def.building != null && parent.def.building.IsTurret)
+			{
+				TaggedString taggedString = "RearmCostExplanation".Translate();
+				if (Props.factorByDifficulty)
+				{
+					taggedString += " (" + "RearmCostExplanationDifficulty".Translate() + ")";
+				}
+				taggedString += ".";
+				yield return new StatDrawEntry(StatCategoryDefOf.Building, "RearmCost".Translate(), GenLabel.ThingLabel(Props.fuelFilter.AnyAllowedDef, null, GetFuelCountToFullyRefuel()).CapitalizeFirst(), taggedString, 3171);
+			}
+		}
+
 		public override void CompTick()
 		{
 			base.CompTick();
-			if (!Props.consumeFuelOnlyWhenUsed && (flickComp == null || flickComp.SwitchIsOn))
+			CompPowerTrader comp = parent.GetComp<CompPowerTrader>();
+			if (!Props.consumeFuelOnlyWhenUsed && (flickComp == null || flickComp.SwitchIsOn) && (!Props.consumeFuelOnlyWhenPowered || (comp != null && comp.PowerOn)) && !Props.externalTicking)
 			{
 				ConsumeFuel(ConsumptionRatePerTick);
 			}
-			if (Props.fuelConsumptionPerTickInRain > 0f && parent.Spawned && parent.Map.weatherManager.RainRate > 0.4f && !parent.Map.roofGrid.Roofed(parent.Position))
+			if (Props.fuelConsumptionPerTickInRain > 0f && parent.Spawned && parent.Map.weatherManager.RainRate > 0.4f && !parent.Map.roofGrid.Roofed(parent.Position) && !Props.externalTicking)
 			{
 				ConsumeFuel(Props.fuelConsumptionPerTickInRain);
 			}
@@ -194,20 +236,24 @@ namespace RimWorld
 
 		public void ConsumeFuel(float amount)
 		{
-			if (fuel <= 0f)
+			if ((!Props.fuelIsMortarBarrel || !Find.Storyteller.difficulty.classicMortars) && !(fuel <= 0f))
 			{
-				return;
-			}
-			fuel -= amount;
-			if (fuel <= 0f)
-			{
-				fuel = 0f;
-				if (Props.destroyOnNoFuel)
+				fuel -= amount;
+				if (fuel <= 0f)
 				{
-					parent.Destroy();
+					fuel = 0f;
+					Notify_RanOutOfFuel();
 				}
-				parent.BroadcastCompSignal("RanOutOfFuel");
 			}
+		}
+
+		private void Notify_RanOutOfFuel()
+		{
+			if (Props.destroyOnNoFuel)
+			{
+				parent.Destroy();
+			}
+			parent.BroadcastCompSignal("RanOutOfFuel");
 		}
 
 		public void Refuel(List<Thing> fuelThings)
@@ -238,6 +284,40 @@ namespace RimWorld
 			parent.BroadcastCompSignal("Refueled");
 		}
 
+		public AcceptanceReport CanEjectFuel()
+		{
+			if (!Props.canEjectFuel)
+			{
+				return false;
+			}
+			CompExplosive compExplosive = explosiveComp;
+			if (compExplosive != null && compExplosive.wickStarted)
+			{
+				return "AboutToExplode".Translate();
+			}
+			if (Fuel == 0f)
+			{
+				return "RefuelableNoFuelToEject".Translate();
+			}
+			return true;
+		}
+
+		public void EjectFuel()
+		{
+			ThingDef thingDef = Props.fuelFilter.AllowedThingDefs.First();
+			int num = Mathf.FloorToInt(fuel);
+			while (num > 0)
+			{
+				Thing thing = ThingMaker.MakeThing(thingDef);
+				thing.stackCount = Mathf.Min(num, thingDef.stackLimit);
+				num -= thing.stackCount;
+				GenPlace.TryPlaceThing(thing, parent.Position, parent.Map, ThingPlaceMode.Near);
+				thing.SetForbidden(value: true);
+			}
+			fuel = 0f;
+			Notify_RanOutOfFuel();
+		}
+
 		public void Notify_UsedThisTick()
 		{
 			ConsumeFuel(ConsumptionRatePerTick);
@@ -254,39 +334,49 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (Props.targetFuelLevelConfigurable)
+			if (Props.fuelIsMortarBarrel && Find.Storyteller.difficulty.classicMortars)
 			{
-				Command_SetTargetFuelLevel command_SetTargetFuelLevel = new Command_SetTargetFuelLevel();
-				command_SetTargetFuelLevel.refuelable = this;
-				command_SetTargetFuelLevel.defaultLabel = "CommandSetTargetFuelLevel".Translate();
-				command_SetTargetFuelLevel.defaultDesc = "CommandSetTargetFuelLevelDesc".Translate();
-				command_SetTargetFuelLevel.icon = SetTargetFuelLevelCommand;
-				yield return command_SetTargetFuelLevel;
+				yield break;
 			}
-			if (Props.showFuelGizmo && Find.Selector.SingleSelectedThing == parent)
+			if (!Props.hideGizmosIfNotPlayerFaction || parent.Faction == Faction.OfPlayer)
 			{
-				Gizmo_RefuelableFuelStatus gizmo_RefuelableFuelStatus = new Gizmo_RefuelableFuelStatus();
-				gizmo_RefuelableFuelStatus.refuelable = this;
-				yield return gizmo_RefuelableFuelStatus;
-			}
-			if (Props.showAllowAutoRefuelToggle)
-			{
-				Command_Toggle command_Toggle = new Command_Toggle();
-				command_Toggle.defaultLabel = "CommandToggleAllowAutoRefuel".Translate();
-				command_Toggle.defaultDesc = "CommandToggleAllowAutoRefuelDesc".Translate();
-				command_Toggle.hotKey = KeyBindingDefOf.Command_ItemForbid;
-				command_Toggle.icon = (allowAutoRefuel ? TexCommand.ForbidOff : TexCommand.ForbidOn);
-				command_Toggle.isActive = () => allowAutoRefuel;
-				command_Toggle.toggleAction = delegate
+				if (Find.Selector.SelectedObjects.Count == 1)
 				{
-					allowAutoRefuel = !allowAutoRefuel;
-				};
-				yield return command_Toggle;
+					yield return new Gizmo_SetFuelLevel(this);
+				}
+				else
+				{
+					if (Props.targetFuelLevelConfigurable)
+					{
+						Command_SetTargetFuelLevel command_SetTargetFuelLevel = new Command_SetTargetFuelLevel();
+						command_SetTargetFuelLevel.refuelable = this;
+						command_SetTargetFuelLevel.defaultLabel = "CommandSetTargetFuelLevel".Translate();
+						command_SetTargetFuelLevel.defaultDesc = "CommandSetTargetFuelLevelDesc".Translate();
+						command_SetTargetFuelLevel.icon = SetTargetFuelLevelCommand;
+						yield return command_SetTargetFuelLevel;
+					}
+					if (Props.showAllowAutoRefuelToggle)
+					{
+						string str = (allowAutoRefuel ? "On".Translate() : "Off".Translate());
+						Command_Toggle command_Toggle = new Command_Toggle();
+						command_Toggle.isActive = () => allowAutoRefuel;
+						command_Toggle.toggleAction = delegate
+						{
+							allowAutoRefuel = !allowAutoRefuel;
+						};
+						command_Toggle.defaultLabel = "CommandToggleAllowAutoRefuel".Translate();
+						command_Toggle.defaultDesc = "CommandToggleAllowAutoRefuelDescMult".Translate(str.UncapitalizeFirst().Named("ONOFF"));
+						command_Toggle.icon = (allowAutoRefuel ? TexCommand.ForbidOn : TexCommand.ForbidOff);
+						command_Toggle.Order = 20f;
+						command_Toggle.hotKey = KeyBindingDefOf.Command_ItemForbid;
+						yield return command_Toggle;
+					}
+				}
 			}
-			if (Prefs.DevMode)
+			if (DebugSettings.ShowDevGizmos)
 			{
 				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "Debug: Set fuel to 0";
+				command_Action.defaultLabel = "DEV: Set fuel to 0";
 				command_Action.action = delegate
 				{
 					fuel = 0f;
@@ -294,7 +384,7 @@ namespace RimWorld
 				};
 				yield return command_Action;
 				Command_Action command_Action2 = new Command_Action();
-				command_Action2.defaultLabel = "Debug: Set fuel to 0.1";
+				command_Action2.defaultLabel = "DEV: Set fuel to 0.1";
 				command_Action2.action = delegate
 				{
 					fuel = 0.1f;
@@ -302,13 +392,20 @@ namespace RimWorld
 				};
 				yield return command_Action2;
 				Command_Action command_Action3 = new Command_Action();
-				command_Action3.defaultLabel = "Debug: Set fuel to max";
+				command_Action3.defaultLabel = "DEV: Fuel -20%";
 				command_Action3.action = delegate
+				{
+					ConsumeFuel(Props.fuelCapacity * 0.2f);
+				};
+				yield return command_Action3;
+				Command_Action command_Action4 = new Command_Action();
+				command_Action4.defaultLabel = "DEV: Set fuel to max";
+				command_Action4.action = delegate
 				{
 					fuel = Props.fuelCapacity;
 					parent.BroadcastCompSignal("Refueled");
 				};
-				yield return command_Action3;
+				yield return command_Action4;
 			}
 		}
 	}

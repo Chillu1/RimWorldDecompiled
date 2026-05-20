@@ -5,9 +5,9 @@ namespace RimWorld
 {
 	public class IntermittentSteamSprayer
 	{
-		private Thing parent;
+		private readonly Thing parent;
 
-		private int ticksUntilSpray = 500;
+		private int ticksUntilSpray;
 
 		private int sprayTicksLeft;
 
@@ -15,19 +15,22 @@ namespace RimWorld
 
 		public Action endSprayCallback;
 
-		private const int MinTicksBetweenSprays = 500;
+		public int MinTicksBetweenSprays { get; set; } = 500;
 
-		private const int MaxTicksBetweenSprays = 2000;
+		public int MaxTicksBetweenSprays { get; set; } = 2000;
 
-		private const int MinSprayDuration = 200;
+		public int MinSprayDuration { get; set; } = 200;
 
-		private const int MaxSprayDuration = 500;
+		public int MaxSprayDuration { get; set; } = 500;
 
-		private const float SprayThickness = 0.6f;
+		public int PushHeatInterval { get; set; } = 20;
+
+		public float SprayThickness { get; set; } = 0.6f;
 
 		public IntermittentSteamSprayer(Thing parent)
 		{
 			this.parent = parent;
+			ticksUntilSpray = MinTicksBetweenSprays;
 		}
 
 		public void SteamSprayerTick()
@@ -35,11 +38,11 @@ namespace RimWorld
 			if (sprayTicksLeft > 0)
 			{
 				sprayTicksLeft--;
-				if (Rand.Value < 0.6f)
+				if (Rand.Value < SprayThickness)
 				{
-					MoteMaker.ThrowAirPuffUp(parent.TrueCenter(), parent.Map);
+					FleckMaker.ThrowAirPuffUp(parent.TrueCenter(), parent.Map);
 				}
-				if (Find.TickManager.TicksGame % 20 == 0)
+				if (parent.IsHashIntervalTick(PushHeatInterval))
 				{
 					GenTemperature.PushHeat(parent, 40f);
 				}
@@ -49,7 +52,7 @@ namespace RimWorld
 					{
 						endSprayCallback();
 					}
-					ticksUntilSpray = Rand.RangeInclusive(500, 2000);
+					ticksUntilSpray = Rand.RangeInclusive(MinTicksBetweenSprays, MaxTicksBetweenSprays);
 				}
 				return;
 			}
@@ -60,7 +63,7 @@ namespace RimWorld
 				{
 					startSprayCallback();
 				}
-				sprayTicksLeft = Rand.RangeInclusive(200, 500);
+				sprayTicksLeft = Rand.RangeInclusive(MinSprayDuration, MaxSprayDuration);
 			}
 		}
 	}

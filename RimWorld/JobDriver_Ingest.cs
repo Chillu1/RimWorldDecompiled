@@ -5,11 +5,13 @@ using Verse.AI;
 
 namespace RimWorld
 {
-	public class JobDriver_Ingest : JobDriver
+	public class JobDriver_Ingest : JobDriver, IEatingDriver
 	{
 		private bool usingNutrientPasteDispenser;
 
 		private bool eatingFromInventory;
+
+		private Toil chewing;
 
 		public const float EatCorpseBodyPartsUntilFoodLevelPct = 0.9f;
 
@@ -20,6 +22,21 @@ namespace RimWorld
 		private const TargetIndex ExtraIngestiblesToCollectInd = TargetIndex.C;
 
 		private Thing IngestibleSource => job.GetTarget(TargetIndex.A).Thing;
+
+		public bool EatingFromInventory => eatingFromInventory;
+
+		public bool GainingNutritionNow
+		{
+			get
+			{
+				Thing ingestibleSource = IngestibleSource;
+				if (ingestibleSource.DestroyedOrNull() || !ingestibleSource.def.IsNutritionGivingIngestible)
+				{
+					return false;
+				}
+				return base.CurToil == chewing;
+			}
+		}
 
 		private float ChewDurationMultiplier
 		{
@@ -48,7 +65,7 @@ namespace RimWorld
 				return JobUtility.GetResolvedJobReportRaw(job.def.reportString, ThingDefOf.MealNutrientPaste.label, ThingDefOf.MealNutrientPaste, "", "", "", "");
 			}
 			Thing thing = job.targetA.Thing;
-			if (thing != null && thing.def.ingestible != null)
+			if (thing?.def.ingestible != null)
 			{
 				if (!thing.def.ingestible.ingestReportStringEat.NullOrEmpty() && (thing.def.ingestible.ingestReportString.NullOrEmpty() || (int)pawn.RaceProps.intelligence < 1))
 				{
@@ -74,7 +91,8 @@ namespace RimWorld
 			if (pawn.Faction != null && !(IngestibleSource is Building_NutrientPasteDispenser))
 			{
 				Thing ingestibleSource = IngestibleSource;
-				if (!pawn.Reserve(ingestibleSource, job, 10, FoodUtility.GetMaxAmountToPickup(ingestibleSource, pawn, job.count), null, errorOnFailed))
+				int maxAmountToPickup = FoodUtility.GetMaxAmountToPickup(ingestibleSource, pawn, job.count);
+				if (!pawn.Reserve(ingestibleSource, job, 10, maxAmountToPickup, null, errorOnFailed))
 				{
 					return false;
 				}
@@ -88,14 +106,14 @@ namespace RimWorld
 			{
 				this.FailOn(() => !IngestibleSource.Destroyed && !IngestibleSource.IngestibleNow);
 			}
-			Toil chew = Toils_Ingest.ChewIngestible(pawn, ChewDurationMultiplier, TargetIndex.A, TargetIndex.B).FailOn((Toil x) => !IngestibleSource.Spawned && (pawn.carryTracker == null || pawn.carryTracker.CarriedThing != IngestibleSource)).FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
-			foreach (Toil item in PrepareToIngestToils(chew))
+			chewing = Toils_Ingest.ChewIngestible(pawn, ChewDurationMultiplier, TargetIndex.A, TargetIndex.B).FailOn((Toil x) => !IngestibleSource.Spawned && (pawn.carryTracker == null || pawn.carryTracker.CarriedThing != IngestibleSource)).FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
+			foreach (Toil item in PrepareToIngestToils(chewing))
 			{
 				yield return item;
 			}
-			yield return chew;
+			yield return chewing;
 			yield return Toils_Ingest.FinalizeIngest(pawn, TargetIndex.A);
-			yield return Toils_Jump.JumpIf(chew, () => job.GetTarget(TargetIndex.A).Thing is Corpse && pawn.needs.food.CurLevelPercentage < 0.9f);
+			yield return Toils_Jump.JumpIf(chewing, () => job.GetTarget(TargetIndex.A).Thing is Corpse && pawn.needs.food.CurLevelPercentage < 0.9f);
 		}
 
 		private IEnumerable<Toil> PrepareToIngestToils(Toil chewToil)
@@ -104,7 +122,7 @@ namespace RimWorld
 			{
 				return PrepareToIngestToils_Dispenser();
 			}
-			if (pawn.RaceProps.ToolUser)
+			if (pawn.RaceProps.ToolUser && (!pawn.IsMutant || !pawn.mutant.Def.disableEatingAtTable))
 			{
 				return PrepareToIngestToils_ToolUser(chewToil);
 			}
@@ -162,22 +180,20 @@ namespace RimWorld
 				yield break;
 			}
 			Toil reserveExtraFoodToCollect = Toils_Ingest.ReserveFoodFromStackForIngesting(TargetIndex.C);
-			Toil findExtraFoodToCollect = new Toil
+			Toil findExtraFoodToCollect = ToilMaker.MakeToil("TakeExtraIngestibles");
+			findExtraFoodToCollect.initAction = delegate
 			{
-				initAction = delegate
+				if (pawn.inventory.innerContainer.TotalStackCountOfDef(IngestibleSource.def) < job.takeExtraIngestibles)
 				{
-					if (pawn.inventory.innerContainer.TotalStackCountOfDef(IngestibleSource.def) < job.takeExtraIngestibles)
+					Thing thing = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(IngestibleSource.def), PathEndMode.Touch, TraverseParms.For(pawn), 30f, (Thing x) => pawn.CanReserve(x, 10, 1) && !x.IsForbidden(pawn) && x.IsSociallyProper(pawn));
+					if (thing != null)
 					{
-						Thing thing = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(IngestibleSource.def), PathEndMode.Touch, TraverseParms.For(pawn), 30f, (Thing x) => pawn.CanReserve(x, 10, 1) && !x.IsForbidden(pawn) && x.IsSociallyProper(pawn));
-						if (thing != null)
-						{
-							job.SetTarget(TargetIndex.C, thing);
-							JumpToToil(reserveExtraFoodToCollect);
-						}
+						job.SetTarget(TargetIndex.C, thing);
+						JumpToToil(reserveExtraFoodToCollect);
 					}
-				},
-				defaultCompleteMode = ToilCompleteMode.Instant
+				}
 			};
+			findExtraFoodToCollect.defaultCompleteMode = ToilCompleteMode.Instant;
 			yield return Toils_Jump.Jump(findExtraFoodToCollect);
 			yield return reserveExtraFoodToCollect;
 			yield return Toils_Goto.GotoThing(TargetIndex.C, PathEndMode.Touch);
@@ -187,40 +203,39 @@ namespace RimWorld
 
 		private Toil ReserveFood()
 		{
-			return new Toil
+			Toil toil = ToilMaker.MakeToil("ReserveFood");
+			toil.initAction = delegate
 			{
-				initAction = delegate
+				if (pawn.Faction != null)
 				{
-					if (pawn.Faction != null)
+					Thing thing = job.GetTarget(TargetIndex.A).Thing;
+					if (pawn.carryTracker.CarriedThing != thing)
 					{
-						Thing thing = job.GetTarget(TargetIndex.A).Thing;
-						if (pawn.carryTracker.CarriedThing != thing)
+						int maxAmountToPickup = FoodUtility.GetMaxAmountToPickup(thing, pawn, job.count);
+						if (maxAmountToPickup != 0)
 						{
-							int maxAmountToPickup = FoodUtility.GetMaxAmountToPickup(thing, pawn, job.count);
-							if (maxAmountToPickup != 0)
+							if (!pawn.Reserve(thing, job, 10, maxAmountToPickup))
 							{
-								if (!pawn.Reserve(thing, job, 10, maxAmountToPickup))
-								{
-									Log.Error(string.Concat("Pawn food reservation for ", pawn, " on job ", this, " failed, because it could not register food from ", thing, " - amount: ", maxAmountToPickup));
-									pawn.jobs.EndCurrentJob(JobCondition.Errored);
-								}
-								job.count = maxAmountToPickup;
+								Log.Error("Pawn food reservation for " + pawn?.ToString() + " on job " + this?.ToString() + " failed, because it could not register food from " + thing?.ToString() + " - amount: " + maxAmountToPickup);
+								pawn.jobs.EndCurrentJob(JobCondition.Errored);
 							}
+							job.count = maxAmountToPickup;
 						}
 					}
-				},
-				defaultCompleteMode = ToilCompleteMode.Instant,
-				atomicWithPrevious = true
+				}
 			};
+			toil.defaultCompleteMode = ToilCompleteMode.Instant;
+			toil.atomicWithPrevious = true;
+			return toil;
 		}
 
-		public override bool ModifyCarriedThingDrawPos(ref Vector3 drawPos, ref bool behind, ref bool flip)
+		public override bool ModifyCarriedThingDrawPos(ref Vector3 drawPos, ref bool flip)
 		{
 			IntVec3 cell = job.GetTarget(TargetIndex.B).Cell;
-			return ModifyCarriedThingDrawPosWorker(ref drawPos, ref behind, ref flip, cell, pawn);
+			return ModifyCarriedThingDrawPosWorker(ref drawPos, ref flip, cell, pawn);
 		}
 
-		public static bool ModifyCarriedThingDrawPosWorker(ref Vector3 drawPos, ref bool behind, ref bool flip, IntVec3 placeCell, Pawn pawn)
+		public static bool ModifyCarriedThingDrawPosWorker(ref Vector3 drawPos, ref bool flip, IntVec3 placeCell, Pawn pawn)
 		{
 			if (pawn.pather.Moving)
 			{
@@ -236,16 +251,12 @@ namespace RimWorld
 				drawPos = new Vector3((float)placeCell.x + 0.5f, drawPos.y, (float)placeCell.z + 0.5f);
 				return true;
 			}
-			if (carriedThing.def.ingestible.ingestHoldOffsetStanding != null)
+			HoldOffset holdOffset = carriedThing.def.ingestible.ingestHoldOffsetStanding?.Pick(pawn.Rotation);
+			if (holdOffset != null)
 			{
-				HoldOffset holdOffset = carriedThing.def.ingestible.ingestHoldOffsetStanding.Pick(pawn.Rotation);
-				if (holdOffset != null)
-				{
-					drawPos += holdOffset.offset;
-					behind = holdOffset.behind;
-					flip = holdOffset.flip;
-					return true;
-				}
+				drawPos += holdOffset.offset;
+				flip = holdOffset.flip;
+				return true;
 			}
 			return false;
 		}

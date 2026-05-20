@@ -6,16 +6,13 @@ namespace Verse.AI.Group
 	{
 		public static Lord GetLord(this Pawn p)
 		{
-			List<Map> maps = Find.Maps;
-			for (int i = 0; i < maps.Count; i++)
-			{
-				Lord lord = maps[i].lordManager.LordOf(p);
-				if (lord != null)
-				{
-					return lord;
-				}
-			}
-			return null;
+			return p.lord;
+		}
+
+		public static bool TryGetLord(this Pawn p, out Lord lord)
+		{
+			lord = p.GetLord();
+			return lord != null;
 		}
 
 		public static Lord GetLord(this Building b)
@@ -24,6 +21,20 @@ namespace Verse.AI.Group
 			for (int i = 0; i < maps.Count; i++)
 			{
 				Lord lord = maps[i].lordManager.LordOf(b);
+				if (lord != null)
+				{
+					return lord;
+				}
+			}
+			return null;
+		}
+
+		public static Lord GetLord(this Corpse c)
+		{
+			List<Map> maps = Find.Maps;
+			for (int i = 0; i < maps.Count; i++)
+			{
+				Lord lord = maps[i].lordManager.LordOf(c);
 				if (lord != null)
 				{
 					return lord;

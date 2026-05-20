@@ -8,13 +8,25 @@ namespace RimWorld.BaseGen
 	{
 		private const float DefaultPoints = 250f;
 
+		public static PawnGroupMakerParms GetGroupMakerParms(Map map, ResolveParams rp)
+		{
+			PawnGroupMakerParms obj = rp.pawnGroupMakerParams ?? new PawnGroupMakerParms
+			{
+				tile = map.Tile,
+				faction = Find.FactionManager.RandomRaidableEnemyFaction(),
+				points = 250f
+			};
+			obj.groupKind = rp.pawnGroupKindDef ?? PawnGroupKindDefOf.Combat;
+			return obj;
+		}
+
 		public override bool CanResolve(ResolveParams rp)
 		{
 			if (!base.CanResolve(rp))
 			{
 				return false;
 			}
-			if (!rp.rect.Cells.Where((IntVec3 x) => x.Standable(BaseGen.globalSettings.map)).Any())
+			if (!rp.rect.Cells.Any((IntVec3 x) => x.Standable(BaseGen.globalSettings.map)))
 			{
 				return false;
 			}
@@ -23,18 +35,9 @@ namespace RimWorld.BaseGen
 
 		public override void Resolve(ResolveParams rp)
 		{
-			Map map = BaseGen.globalSettings.map;
-			PawnGroupMakerParms pawnGroupMakerParms = rp.pawnGroupMakerParams;
-			if (pawnGroupMakerParms == null)
-			{
-				pawnGroupMakerParms = new PawnGroupMakerParms();
-				pawnGroupMakerParms.tile = map.Tile;
-				pawnGroupMakerParms.faction = Find.FactionManager.RandomEnemyFaction();
-				pawnGroupMakerParms.points = 250f;
-			}
-			pawnGroupMakerParms.groupKind = rp.pawnGroupKindDef ?? PawnGroupKindDefOf.Combat;
+			PawnGroupMakerParms groupMakerParms = GetGroupMakerParms(BaseGen.globalSettings.map, rp);
 			List<PawnKindDef> list = new List<PawnKindDef>();
-			foreach (Pawn item in PawnGroupMakerUtility.GeneratePawns(pawnGroupMakerParms))
+			foreach (Pawn item in PawnGroupMakerUtility.GeneratePawns(groupMakerParms))
 			{
 				list.Add(item.kindDef);
 				ResolveParams resolveParams = rp;

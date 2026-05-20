@@ -13,7 +13,7 @@ namespace RimWorld
 
 		protected override bool HasCheckbox(Pawn pawn)
 		{
-			if (pawn.AnimalOrWildMan() && pawn.RaceProps.IsFlesh && (pawn.Faction == null || !pawn.Faction.def.humanlikeFaction))
+			if (TameUtility.CanTame(pawn))
 			{
 				return pawn.SpawnedOrAnyParentSpawned;
 			}
@@ -23,7 +23,7 @@ namespace RimWorld
 		protected override void Notify_DesignationAdded(Pawn pawn)
 		{
 			pawn.MapHeld.designationManager.TryRemoveDesignationOn(pawn, DesignationDefOf.Hunt);
-			TameUtility.ShowDesignationWarnings(pawn, showManhunterOnTameFailWarning: false);
+			TameUtility.ShowDesignationWarnings(pawn);
 		}
 	}
 }

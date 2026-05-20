@@ -10,7 +10,7 @@ namespace RimWorld.Planet
 
 		private static Caravan cachedForCaravan;
 
-		private static int cachedForDest = -1;
+		private static PlanetTile cachedForDest = PlanetTile.Invalid;
 
 		private static int cachedResult = -1;
 
@@ -18,7 +18,7 @@ namespace RimWorld.Planet
 
 		private const int MaxIterations = 10000;
 
-		private static List<Pair<int, int>> tmpTicksToArrive = new List<Pair<int, int>>();
+		private static readonly List<(PlanetTile tile, int ticks)> tmpTicksToArrive = new List<(PlanetTile, int)>();
 
 		public static int EstimatedTicksToArrive(Caravan caravan, bool allowCaching)
 		{
@@ -26,11 +26,11 @@ namespace RimWorld.Planet
 			{
 				return cachedResult;
 			}
-			int to;
+			PlanetTile to;
 			int result;
 			if (!caravan.Spawned || !caravan.pather.Moving || caravan.pather.curPath == null)
 			{
-				to = -1;
+				to = PlanetTile.Invalid;
 				result = 0;
 			}
 			else
@@ -48,9 +48,9 @@ namespace RimWorld.Planet
 			return result;
 		}
 
-		public static int EstimatedTicksToArrive(int from, int to, Caravan caravan)
+		public static int EstimatedTicksToArrive(PlanetTile from, PlanetTile to, Caravan caravan)
 		{
-			using WorldPath worldPath = Find.WorldPathFinder.FindPath(from, to, caravan);
+			using WorldPath worldPath = from.Layer.Pather.FindPath(from, to, caravan);
 			if (!worldPath.Found)
 			{
 				return 0;
@@ -58,96 +58,96 @@ namespace RimWorld.Planet
 			return EstimatedTicksToArrive(from, to, worldPath, 0f, caravan?.TicksPerMove ?? 3300, Find.TickManager.TicksAbs);
 		}
 
-		public static int EstimatedTicksToArrive(int from, int to, WorldPath path, float nextTileCostLeft, int caravanTicksPerMove, int curTicksAbs)
+		public static int EstimatedTicksToArrive(PlanetTile from, PlanetTile to, WorldPath path, float nextTileCostLeft, int caravanTicksPerMove, int curTicksAbs)
 		{
 			tmpTicksToArrive.Clear();
 			EstimatedTicksToArriveToEvery(from, to, path, nextTileCostLeft, caravanTicksPerMove, curTicksAbs, tmpTicksToArrive);
 			return EstimatedTicksToArrive(to, tmpTicksToArrive);
 		}
 
-		public static void EstimatedTicksToArriveToEvery(int from, int to, WorldPath path, float nextTileCostLeft, int caravanTicksPerMove, int curTicksAbs, List<Pair<int, int>> outTicksToArrive)
+		public static void EstimatedTicksToArriveToEvery(PlanetTile from, PlanetTile to, WorldPath path, float nextTileCostLeft, int caravanTicksPerMove, int curTicksAbs, List<(PlanetTile tile, int ticks)> outTicksToArrive)
 		{
 			outTicksToArrive.Clear();
-			outTicksToArrive.Add(new Pair<int, int>(from, 0));
-			if (from == to)
+			outTicksToArrive.Add((from, 0));
+			if (from == to || !from.Valid || !from.LayerDef.SurfaceTiles)
 			{
-				outTicksToArrive.Add(new Pair<int, int>(to, 0));
+				outTicksToArrive.Add((to, 0));
 				return;
 			}
 			int num = 0;
-			int num2 = from;
-			int num3 = from;
-			int num4 = 0;
-			int num5 = Mathf.CeilToInt(20000f) - 1;
-			int num6 = 60000 - num5;
-			int num7 = 0;
-			int num8 = 0;
-			int num10;
+			PlanetTile planetTile = from;
+			PlanetTile planetTile2 = from;
+			int num2 = 0;
+			int num3 = Mathf.CeilToInt(20000f) - 1;
+			int num4 = 60000 - num3;
+			int num5 = 0;
+			int num6 = 0;
+			int num8;
 			if (CaravanNightRestUtility.WouldBeRestingAt(from, curTicksAbs))
 			{
 				if (Caravan_PathFollower.IsValidFinalPushDestination(to) && (path.Peek(0) == to || (nextTileCostLeft <= 0f && path.NodesLeftCount >= 2 && path.Peek(1) == to)))
 				{
-					int num9 = Mathf.CeilToInt(GetCostToMove(nextTileCostLeft, path.Peek(0) == to, curTicksAbs, num, caravanTicksPerMove, from, to) / 1f);
-					if (num9 <= 10000)
+					int num7 = Mathf.CeilToInt(GetCostToMove(nextTileCostLeft, path.Peek(0) == to, curTicksAbs, num, caravanTicksPerMove, from, to) / 1f);
+					if (num7 <= 10000)
 					{
-						num += num9;
-						outTicksToArrive.Add(new Pair<int, int>(to, num));
+						num += num7;
+						outTicksToArrive.Add((to, num));
 						return;
 					}
 				}
 				num += CaravanNightRestUtility.LeftRestTicksAt(from, curTicksAbs);
-				num10 = num6;
+				num8 = num4;
 			}
 			else
 			{
-				num10 = CaravanNightRestUtility.LeftNonRestTicksAt(from, curTicksAbs);
+				num8 = CaravanNightRestUtility.LeftNonRestTicksAt(from, curTicksAbs);
 			}
 			while (true)
 			{
-				num8++;
-				if (num8 >= 10000)
+				num6++;
+				if (num6 >= 10000)
 				{
 					Log.ErrorOnce("Could not calculate estimated ticks to arrive. Too many iterations.", 1837451324);
-					outTicksToArrive.Add(new Pair<int, int>(to, num));
+					outTicksToArrive.Add((to, num));
 					return;
 				}
-				if (num7 <= 0)
+				if (num5 <= 0)
 				{
-					if (num3 == to)
+					if (planetTile2 == to)
 					{
-						outTicksToArrive.Add(new Pair<int, int>(to, num));
+						outTicksToArrive.Add((to, num));
 						return;
 					}
-					bool firstInPath = num4 == 0;
-					num2 = num3;
-					num3 = path.Peek(num4);
-					num4++;
-					outTicksToArrive.Add(new Pair<int, int>(num2, num));
-					num7 = Mathf.CeilToInt(GetCostToMove(nextTileCostLeft, firstInPath, curTicksAbs, num, caravanTicksPerMove, num2, num3) / 1f);
+					bool firstInPath = num2 == 0;
+					planetTile = planetTile2;
+					planetTile2 = path.Peek(num2);
+					num2++;
+					outTicksToArrive.Add((planetTile, num));
+					num5 = Mathf.CeilToInt(GetCostToMove(nextTileCostLeft, firstInPath, curTicksAbs, num, caravanTicksPerMove, planetTile, planetTile2) / 1f);
 				}
-				if (num10 < num7)
+				if (num8 < num5)
 				{
-					num += num10;
-					num7 -= num10;
-					if (num3 == to && num7 <= 10000 && Caravan_PathFollower.IsValidFinalPushDestination(to))
+					num += num8;
+					num5 -= num8;
+					if (planetTile2 == to && num5 <= 10000 && Caravan_PathFollower.IsValidFinalPushDestination(to))
 					{
 						break;
 					}
-					num += num5;
-					num10 = num6;
+					num += num3;
+					num8 = num4;
 				}
 				else
 				{
-					num += num7;
-					num10 -= num7;
-					num7 = 0;
+					num += num5;
+					num8 -= num5;
+					num5 = 0;
 				}
 			}
-			num += num7;
-			outTicksToArrive.Add(new Pair<int, int>(to, num));
+			num += num5;
+			outTicksToArrive.Add((to, num));
 		}
 
-		private static float GetCostToMove(float initialNextTileCostLeft, bool firstInPath, int initialTicksAbs, int curResult, int caravanTicksPerMove, int curTile, int nextTile)
+		private static float GetCostToMove(float initialNextTileCostLeft, bool firstInPath, int initialTicksAbs, int curResult, int caravanTicksPerMove, PlanetTile curTile, PlanetTile nextTile)
 		{
 			if (firstInPath)
 			{
@@ -157,37 +157,37 @@ namespace RimWorld.Planet
 			return Caravan_PathFollower.CostToMove(caravanTicksPerMove, curTile, nextTile, value);
 		}
 
-		public static int EstimatedTicksToArrive(int destinationTile, List<Pair<int, int>> estimatedTicksToArriveToEvery)
+		public static int EstimatedTicksToArrive(PlanetTile destinationTile, List<(PlanetTile tile, int ticks)> estimatedTicksToArriveToEvery)
 		{
-			if (destinationTile == -1)
+			if (!destinationTile.Valid)
 			{
 				return 0;
 			}
 			for (int i = 0; i < estimatedTicksToArriveToEvery.Count; i++)
 			{
-				if (destinationTile == estimatedTicksToArriveToEvery[i].First)
+				if (destinationTile == estimatedTicksToArriveToEvery[i].tile)
 				{
-					return estimatedTicksToArriveToEvery[i].Second;
+					return estimatedTicksToArriveToEvery[i].ticks;
 				}
 			}
 			return 0;
 		}
 
-		public static int TileIllBeInAt(int ticksAbs, List<Pair<int, int>> estimatedTicksToArriveToEvery, int ticksAbsUsedToCalculateEstimatedTicksToArriveToEvery)
+		public static PlanetTile TileIllBeInAt(int ticksAbs, List<(PlanetTile tile, int ticks)> estimatedTicksToArriveToEvery, int ticksAbsUsedToCalculateEstimatedTicksToArriveToEvery)
 		{
 			if (!estimatedTicksToArriveToEvery.Any())
 			{
-				return -1;
+				return PlanetTile.Invalid;
 			}
 			for (int num = estimatedTicksToArriveToEvery.Count - 1; num >= 0; num--)
 			{
-				int num2 = ticksAbsUsedToCalculateEstimatedTicksToArriveToEvery + estimatedTicksToArriveToEvery[num].Second;
+				int num2 = ticksAbsUsedToCalculateEstimatedTicksToArriveToEvery + estimatedTicksToArriveToEvery[num].ticks;
 				if (ticksAbs >= num2)
 				{
-					return estimatedTicksToArriveToEvery[num].First;
+					return estimatedTicksToArriveToEvery[num].tile;
 				}
 			}
-			return estimatedTicksToArriveToEvery[0].First;
+			return estimatedTicksToArriveToEvery[0].tile;
 		}
 	}
 }

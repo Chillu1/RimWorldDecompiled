@@ -65,7 +65,7 @@ namespace RimWorld
 				{
 					if (queuedIncident.FireTick <= Find.TickManager.TicksGame)
 					{
-						bool num2 = Find.Storyteller.TryFire(queuedIncident.FiringIncident);
+						bool num2 = Find.Storyteller.TryFire(queuedIncident.FiringIncident, queued: true);
 						queuedIncident.Notify_TriedToFire();
 						if (num2 || queuedIncident.RetryDurationTicks == 0)
 						{
@@ -79,7 +79,7 @@ namespace RimWorld
 				}
 				else if (Find.TickManager.TicksGame % 833 == Rand.RangeSeeded(0, 833, queuedIncident.FireTick))
 				{
-					bool num3 = Find.Storyteller.TryFire(queuedIncident.FiringIncident);
+					bool num3 = Find.Storyteller.TryFire(queuedIncident.FiringIncident, queued: true);
 					queuedIncident.Notify_TriedToFire();
 					if (num3)
 					{

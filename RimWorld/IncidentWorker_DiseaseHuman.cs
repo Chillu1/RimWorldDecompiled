@@ -10,10 +10,9 @@ namespace RimWorld
 	{
 		protected override IEnumerable<Pawn> PotentialVictimCandidates(IIncidentTarget target)
 		{
-			Map map = target as Map;
-			if (map != null)
+			if (target is Map map)
 			{
-				return map.mapPawns.FreeColonistsAndPrisoners;
+				return map.mapPawns.FreeColonistsAndPrisoners.Where((Pawn x) => x.ParentHolder == null || !(x.ParentHolder is CompBiosculpterPod));
 			}
 			return ((Caravan)target).PawnsListForReading.Where((Pawn x) => x.IsFreeColonist || x.IsPrisonerOfColony);
 		}

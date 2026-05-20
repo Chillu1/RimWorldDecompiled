@@ -18,6 +18,8 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<Thing> goodwillChangeFactionOf;
 
+		public SlateRef<HistoryEventDef> goodwillChangeReason;
+
 		protected override bool TestRunInt(Slate slate)
 		{
 			return true;
@@ -34,14 +36,15 @@ namespace RimWorld.QuestGen
 				questPart_FactionGoodwillChange.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 				questPart_FactionGoodwillChange.faction = value2.Faction;
 				questPart_FactionGoodwillChange.change = value;
+				questPart_FactionGoodwillChange.historyEvent = goodwillChangeReason.GetValue(slate);
 				slate.Set("goodwillPenalty", Mathf.Abs(value).ToString());
 				QuestGen.quest.AddPart(questPart_FactionGoodwillChange);
 			}
 			QuestPart_QuestEnd questPart_QuestEnd = new QuestPart_QuestEnd();
 			questPart_QuestEnd.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal.GetValue(slate)) ?? QuestGen.slate.Get<string>("inSignal");
 			questPart_QuestEnd.outcome = outcome.GetValue(slate);
-			questPart_QuestEnd.signalListenMode = signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly;
-			questPart_QuestEnd.sendLetter = sendStandardLetter.GetValue(slate) ?? false;
+			questPart_QuestEnd.signalListenMode = signalListenMode.GetValue(slate).GetValueOrDefault();
+			questPart_QuestEnd.sendLetter = sendStandardLetter.GetValue(slate) == true;
 			QuestGen.quest.AddPart(questPart_QuestEnd);
 		}
 	}

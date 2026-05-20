@@ -119,13 +119,9 @@ namespace RimWorld.Planet
 			tmpPawns.Clear();
 			for (int i = 0; i < thingCounts.Count; i++)
 			{
-				if (thingCounts[i].Count > 0)
+				if (thingCounts[i].Count > 0 && thingCounts[i].Thing is Pawn item)
 				{
-					Pawn pawn = thingCounts[i].Thing as Pawn;
-					if (pawn != null)
-					{
-						tmpPawns.Add(pawn);
-					}
+					tmpPawns.Add(item);
 				}
 			}
 			float result = Visibility(tmpPawns, caravanMovingNow: true, explanation);

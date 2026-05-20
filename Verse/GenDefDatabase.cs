@@ -2,14 +2,33 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace Verse
 {
 	public static class GenDefDatabase
 	{
+		private static readonly Dictionary<Type, Func<string, bool, Def>> cachedGetNamed = new Dictionary<Type, Func<string, bool, Def>>();
+
+		private static readonly object cachedGetNamedLock = new object();
+
+		private static readonly Dictionary<Type, Func<string, Def>> cachedGetNamedSilentFail = new Dictionary<Type, Func<string, Def>>();
+
+		private static readonly object cachedGetNamedSilentFailLock = new object();
+
 		public static Def GetDef(Type defType, string defName, bool errorOnFail = true)
 		{
-			return (Def)GenGeneric.InvokeStaticMethodOnGenericType(typeof(DefDatabase<>), defType, "GetNamed", defName, errorOnFail);
+			Func<string, bool, Def> value;
+			lock (cachedGetNamedLock)
+			{
+				if (!cachedGetNamed.TryGetValue(defType, out value))
+				{
+					MethodInfo method = GenGeneric.MethodOnGenericType(typeof(DefDatabase<>), defType, "GetNamed");
+					value = (Func<string, bool, Def>)Delegate.CreateDelegate(typeof(Func<string, bool, Def>), method);
+					cachedGetNamed.Add(defType, value);
+				}
+			}
+			return value(defName, errorOnFail);
 		}
 
 		public static Def GetDefSilentFail(Type type, string targetDefName, bool specialCaseForSoundDefs = true)
@@ -18,7 +37,17 @@ namespace Verse
 			{
 				return SoundDef.Named(targetDefName);
 			}
-			return (Def)GenGeneric.InvokeStaticMethodOnGenericType(typeof(DefDatabase<>), type, "GetNamedSilentFail", targetDefName);
+			Func<string, Def> value;
+			lock (cachedGetNamedSilentFailLock)
+			{
+				if (!cachedGetNamedSilentFail.TryGetValue(type, out value))
+				{
+					MethodInfo method = GenGeneric.MethodOnGenericType(typeof(DefDatabase<>), type, "GetNamedSilentFail");
+					value = (Func<string, Def>)Delegate.CreateDelegate(typeof(Func<string, Def>), method);
+					cachedGetNamedSilentFail.Add(type, value);
+				}
+			}
+			return value(targetDefName);
 		}
 
 		public static IEnumerable<Def> GetAllDefsInDatabaseForDef(Type defType)

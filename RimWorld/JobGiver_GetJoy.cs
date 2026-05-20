@@ -10,6 +10,8 @@ namespace RimWorld
 		[Unsaved(false)]
 		private DefMap<JoyGiverDef, float> joyGiverChances;
 
+		private const float JoyBuffer = 0.99f;
+
 		protected virtual bool CanDoDuringMedicalRest => false;
 
 		protected virtual bool JoyGiverAllowed(JoyGiverDef def)
@@ -30,6 +32,10 @@ namespace RimWorld
 		protected override Job TryGiveJob(Pawn pawn)
 		{
 			if (!CanDoDuringMedicalRest && pawn.InBed() && HealthAIUtility.ShouldSeekMedicalRest(pawn))
+			{
+				return null;
+			}
+			if (pawn.needs.joy.CurLevel >= 0.99f)
 			{
 				return null;
 			}

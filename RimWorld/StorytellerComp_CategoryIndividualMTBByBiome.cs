@@ -23,7 +23,7 @@ namespace RimWorld
 				{
 					continue;
 				}
-				BiomeDef biome = Find.WorldGrid[target.Tile].biome;
+				BiomeDef biome = Find.WorldGrid[target.Tile].PrimaryBiome;
 				if (incidentDef.mtbDaysByBiome == null)
 				{
 					continue;
@@ -36,19 +36,14 @@ namespace RimWorld
 				float num = mTBByBiome.mtbDays;
 				if (Props.applyCaravanVisibility)
 				{
-					Caravan caravan = target as Caravan;
-					if (caravan != null)
+					if (target is Caravan caravan)
 					{
 						num /= caravan.Visibility;
 					}
-					else
+					else if (target is Map map && map.Parent.def.isTempIncidentMapOwner)
 					{
-						Map map = target as Map;
-						if (map != null && map.Parent.def.isTempIncidentMapOwner)
-						{
-							IEnumerable<Pawn> pawns = map.mapPawns.SpawnedPawnsInFaction(Faction.OfPlayer).Concat(map.mapPawns.PrisonersOfColonySpawned);
-							num /= CaravanVisibilityCalculator.Visibility(pawns, caravanMovingNow: false);
-						}
+						IEnumerable<Pawn> pawns = map.mapPawns.SpawnedPawnsInFaction(Faction.OfPlayer).Concat(map.mapPawns.PrisonersOfColonySpawned);
+						num /= CaravanVisibilityCalculator.Visibility(pawns, caravanMovingNow: false);
 					}
 				}
 				if (Rand.MTBEventOccurs(num, 60000f, 1000f))

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
@@ -17,18 +16,18 @@ namespace RimWorld
 
 		private static Vector3 MoteCastOffset = new Vector3(0f, 0f, 0.48f);
 
-		public override bool CanCast
+		public override AcceptanceReport CanCast
 		{
 			get
 			{
-				if (!base.CanCast)
+				AcceptanceReport canCast = base.CanCast;
+				if (!canCast)
 				{
-					return false;
+					return canCast;
 				}
 				if (def.EntropyGain > float.Epsilon)
 				{
-					Hediff hediff = pawn.health.hediffSet.hediffs.FirstOrDefault((Hediff h) => h.def == HediffDefOf.PsychicAmplifier);
-					if ((hediff == null || hediff.Severity < (float)def.level) && def.level > 0)
+					if (pawn.GetPsylinkLevel() < def.level && def.level > 0)
 					{
 						return false;
 					}
@@ -58,7 +57,7 @@ namespace RimWorld
 			{
 				if (gizmo == null)
 				{
-					gizmo = new Command_Psycast(this);
+					gizmo = new Command_Psycast(this, pawn);
 				}
 				yield return gizmo;
 			}
@@ -66,9 +65,8 @@ namespace RimWorld
 
 		public override bool Activate(LocalTargetInfo target, LocalTargetInfo dest)
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (!ModLister.CheckRoyalty("Psycast"))
 			{
-				Log.ErrorOnce("Psycasts are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 324345643);
 				return false;
 			}
 			if (def.EntropyGain > float.Epsilon && !pawn.psychicEntropy.TryAddEntropy(def.EntropyGain))
@@ -86,7 +84,7 @@ namespace RimWorld
 				{
 					if (def.HasAreaOfEffect)
 					{
-						MoteMaker.MakeStaticMote(target.Cell, pawn.Map, ThingDefOf.Mote_PsycastAreaEffect, def.EffectRadius);
+						FleckMaker.Static(target.Cell, pawn.Map, FleckDefOf.PsycastAreaEffect, def.EffectRadius);
 						SoundDefOf.PsycastPsychicPulse.PlayOneShot(new TargetInfo(target.Cell, pawn.Map));
 					}
 					else
@@ -124,11 +122,9 @@ namespace RimWorld
 				{
 					effect.Apply(target, dest);
 				}
+				return;
 			}
-			else
-			{
-				MoteMaker.ThrowText(target.CenterVector3, pawn.Map, "TextMote_Immune".Translate());
-			}
+			MoteMaker.ThrowText(target.CenterVector3, pawn.Map, "TextMote_Immune".Translate());
 		}
 
 		public bool CanApplyPsycastTo(LocalTargetInfo target)
@@ -144,7 +140,7 @@ namespace RimWorld
 				{
 					return false;
 				}
-				if (pawn.Faction == Faction.OfMechanoids && base.EffectComps.Any((CompAbilityEffect e) => !e.Props.applicableToMechs))
+				if (pawn.Faction != null && pawn.Faction == Faction.OfMechanoids && base.EffectComps.Any((CompAbilityEffect e) => !e.Props.applicableToMechs))
 				{
 					return false;
 				}

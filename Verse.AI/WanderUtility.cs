@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
@@ -17,7 +18,7 @@ namespace Verse.AI
 			for (int i = 0; i < 50; i++)
 			{
 				IntVec3 intVec = ((i >= 8) ? (trueWanderRoot + GenRadial.RadialPattern[i - 8 + 1] * 7) : (trueWanderRoot + GenRadial.RadialPattern[i]));
-				if (intVec.InBounds(pawn.Map) && intVec.Walkable(pawn.Map) && pawn.CanReach(intVec, PathEndMode.OnCell, Danger.Some))
+				if (intVec.InBounds(pawn.Map) && intVec.WalkableBy(pawn.Map, pawn) && pawn.CanReach(intVec, PathEndMode.OnCell, Danger.Some))
 				{
 					return intVec;
 				}
@@ -27,17 +28,17 @@ namespace Verse.AI
 
 		public static bool InSameRoom(IntVec3 locA, IntVec3 locB, Map map)
 		{
-			Room room = locA.GetRoom(map, RegionType.Set_All);
+			Room room = locA.GetRoom(map);
 			if (room == null)
 			{
 				return true;
 			}
-			return room == locB.GetRoom(map, RegionType.Set_All);
+			return room == locB.GetRoom(map);
 		}
 
 		public static IntVec3 GetColonyWanderRoot(Pawn pawn)
 		{
-			if (pawn.RaceProps.Humanlike)
+			if (pawn.RaceProps.Humanlike && !pawn.IsSubhuman)
 			{
 				gatherSpots.Clear();
 				for (int i = 0; i < pawn.Map.gatherSpotLister.activeSpots.Count; i++)
@@ -86,6 +87,23 @@ namespace Verse.AI
 				return result.Position;
 			}
 			return pawn.Position;
+		}
+
+		public static IntVec3 GetHerdWanderRoot(Pawn pawn, Predicate<Thing> isHerdValidator)
+		{
+			Predicate<Thing> validator = delegate(Thing t)
+			{
+				if (t.Position.IsForbidden(pawn))
+				{
+					return false;
+				}
+				if (!pawn.CanReach(t, PathEndMode.OnCell, Danger.Deadly))
+				{
+					return false;
+				}
+				return !(Rand.Value < 0.5f) && isHerdValidator(t);
+			};
+			return GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.Pawn), PathEndMode.OnCell, TraverseParms.For(pawn), 35f, validator, null, 13)?.Position ?? pawn.Position;
 		}
 	}
 }

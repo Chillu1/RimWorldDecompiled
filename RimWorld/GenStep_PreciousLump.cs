@@ -36,6 +36,10 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (map.wasSpawnedViaGravShipLanding && CellRect.CenteredOn(MapGenerator.PlayerStartSpot, Find.CurrentGravship.Bounds.Size).ExpandedBy(10).Contains(c))
+			{
+				return false;
+			}
 			return map.reachability.CanReachMapEdge(c, TraverseParms.For(TraverseMode.PassDoors));
 		}
 

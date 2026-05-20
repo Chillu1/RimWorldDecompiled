@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Reflection;
 using System.Xml;
 using RimWorld;
 using RimWorld.Planet;
@@ -7,6 +9,8 @@ namespace Verse
 {
 	public static class ScribeExtractor
 	{
+		private static readonly Dictionary<Type, Func<XmlNode, Def>> defFromNodeCached = new Dictionary<Type, Func<XmlNode, Def>>();
+
 		public static T ValueFromNode<T>(XmlNode subNode, T defaultValue)
 		{
 			if (subNode == null)
@@ -14,7 +18,7 @@ namespace Verse
 				return defaultValue;
 			}
 			XmlAttribute xmlAttribute = subNode.Attributes["IsNull"];
-			if (xmlAttribute != null && xmlAttribute.Value.ToLower() == "true")
+			if (xmlAttribute != null && xmlAttribute.Value.Equals("true", StringComparison.InvariantCultureIgnoreCase))
 			{
 				return default(T);
 			}
@@ -26,13 +30,13 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					Log.Error(string.Concat("Exception parsing node ", subNode.OuterXml, " into a ", typeof(T), ":\n", ex.ToString()));
+					Log.Error("Exception parsing node " + subNode.OuterXml + " into a " + typeof(T)?.ToString() + ":\n" + ex.ToString());
 				}
 				return default(T);
 			}
-			catch (Exception arg)
+			catch (Exception ex2)
 			{
-				Log.Error("Exception loading XML: " + arg);
+				Log.Error("Exception loading XML: " + ex2);
 				return defaultValue;
 			}
 		}
@@ -49,11 +53,11 @@ namespace Verse
 			{
 				if (text == subNode.InnerText)
 				{
-					Log.Error(string.Concat("Could not load reference to ", typeof(T), " named ", subNode.InnerText));
+					Log.Error("Could not load reference to " + typeof(T)?.ToString() + " named " + subNode.InnerText);
 				}
 				else
 				{
-					Log.Error(string.Concat("Could not load reference to ", typeof(T), " named ", subNode.InnerText, " after compatibility-conversion to ", text));
+					Log.Error("Could not load reference to " + typeof(T)?.ToString() + " named " + subNode.InnerText + " after compatibility-conversion to " + text);
 				}
 				BackCompatibility.PostCouldntLoadDef(subNode.InnerText);
 			}
@@ -62,7 +66,19 @@ namespace Verse
 
 		public static T DefFromNodeUnsafe<T>(XmlNode subNode)
 		{
-			return (T)GenGeneric.InvokeStaticGenericMethod(typeof(ScribeExtractor), typeof(T), "DefFromNode", subNode);
+			if (!defFromNodeCached.TryGetValue(typeof(T), out var value))
+			{
+				MethodInfo method = typeof(ScribeExtractor).GetMethod("DefFromNode", BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).MakeGenericMethod(typeof(T));
+				value = (Func<XmlNode, Def>)Delegate.CreateDelegate(typeof(Func<XmlNode, Def>), method);
+				defFromNodeCached.Add(typeof(T), value);
+			}
+			return (T)(object)value(subNode);
+		}
+
+		private static IExposable CreateInstance(Type type, object[] ctorArgs)
+		{
+			BindingFlags bindingAttr = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+			return (IExposable)Activator.CreateInstance(type, bindingAttr, null, ctorArgs, null, null);
 		}
 
 		public static T SaveableFromNode<T>(XmlNode subNode, object[] ctorArgs)
@@ -77,59 +93,63 @@ namespace Verse
 				return default(T);
 			}
 			XmlAttribute xmlAttribute = subNode.Attributes["IsNull"];
-			if (xmlAttribute != null && xmlAttribute.Value.ToLower() == "true")
+			T result;
+			if (xmlAttribute != null && xmlAttribute.Value.Equals("true", StringComparison.InvariantCultureIgnoreCase))
 			{
-				return default(T);
+				result = default(T);
 			}
-			try
+			else
 			{
-				XmlAttribute xmlAttribute2 = subNode.Attributes["Class"];
-				string text = ((xmlAttribute2 != null) ? xmlAttribute2.Value : typeof(T).FullName);
-				Type type = BackCompatibility.GetBackCompatibleType(typeof(T), text, subNode);
-				if (type == null)
-				{
-					Type bestFallbackType = GetBestFallbackType<T>(subNode);
-					Log.Error(string.Concat("Could not find class ", text, " while resolving node ", subNode.Name, ". Trying to use ", bestFallbackType, " instead. Full node: ", subNode.OuterXml));
-					type = bestFallbackType;
-				}
-				if (type.IsAbstract)
-				{
-					throw new ArgumentException("Can't load abstract class " + type);
-				}
-				IExposable exposable = (IExposable)Activator.CreateInstance(type, ctorArgs);
-				bool flag = typeof(T).IsValueType || typeof(Name).IsAssignableFrom(typeof(T));
-				if (!flag)
-				{
-					Scribe.loader.crossRefs.RegisterForCrossRefResolve(exposable);
-				}
-				XmlNode curXmlParent = Scribe.loader.curXmlParent;
-				IExposable curParent = Scribe.loader.curParent;
-				string curPathRelToParent = Scribe.loader.curPathRelToParent;
-				Scribe.loader.curXmlParent = subNode;
-				Scribe.loader.curParent = exposable;
-				Scribe.loader.curPathRelToParent = null;
 				try
 				{
-					exposable.ExposeData();
+					XmlAttribute xmlAttribute2 = subNode.Attributes["Class"];
+					string text = ((xmlAttribute2 != null) ? xmlAttribute2.Value : typeof(T).FullName);
+					Type type = BackCompatibility.GetBackCompatibleType(typeof(T), text, subNode);
+					if (type == null)
+					{
+						Type bestFallbackType = GetBestFallbackType<T>(subNode);
+						Log.Error("Could not find class " + text + " while resolving node " + subNode.Name + ". Trying to use " + bestFallbackType?.ToString() + " instead. Full node: " + subNode.OuterXml);
+						type = bestFallbackType;
+					}
+					if (type.IsAbstract)
+					{
+						throw new ArgumentException("Can't load abstract class " + type);
+					}
+					IExposable exposable = CreateInstance(type, ctorArgs);
+					bool flag = typeof(T).IsValueType || typeof(Name).IsAssignableFrom(typeof(T));
+					if (!flag)
+					{
+						Scribe.loader.crossRefs.RegisterForCrossRefResolve(exposable);
+					}
+					XmlNode curXmlParent = Scribe.loader.curXmlParent;
+					IExposable curParent = Scribe.loader.curParent;
+					string curPathRelToParent = Scribe.loader.curPathRelToParent;
+					Scribe.loader.curXmlParent = subNode;
+					Scribe.loader.curParent = exposable;
+					Scribe.loader.curPathRelToParent = null;
+					try
+					{
+						exposable.ExposeData();
+					}
+					finally
+					{
+						Scribe.loader.curXmlParent = curXmlParent;
+						Scribe.loader.curParent = curParent;
+						Scribe.loader.curPathRelToParent = curPathRelToParent;
+					}
+					if (!flag)
+					{
+						Scribe.loader.initer.RegisterForPostLoadInit(exposable);
+					}
+					return (T)exposable;
 				}
-				finally
+				catch (Exception ex)
 				{
-					Scribe.loader.curXmlParent = curXmlParent;
-					Scribe.loader.curParent = curParent;
-					Scribe.loader.curPathRelToParent = curPathRelToParent;
+					result = default(T);
+					Log.Error("SaveableFromNode exception: " + ex?.ToString() + "\nSubnode:\n" + subNode.OuterXml);
 				}
-				if (!flag)
-				{
-					Scribe.loader.initer.RegisterForPostLoadInit(exposable);
-				}
-				return (T)exposable;
 			}
-			catch (Exception ex)
-			{
-				T result = default(T);
-				Log.Error(string.Concat("SaveableFromNode exception: ", ex, "\nSubnode:\n", subNode.OuterXml));
-				return result;
-			}
+			return result;
 		}
 
 		private static Type GetBestFallbackType<T>(XmlNode node)
@@ -249,12 +269,12 @@ namespace Verse
 						loadIDs.RegisterLoadIDReadFromXml(null, typeof(WorldObject), "worldObject");
 						return new GlobalTargetInfo(IntVec3.FromString(cell), null, allowNullMap: true);
 					}
-					if (int.TryParse(innerText, out var result))
+					if (PlanetTile.TryParse(innerText, out var tile))
 					{
 						loadIDs.RegisterLoadIDReadFromXml(null, typeof(Thing), "thing");
 						loadIDs.RegisterLoadIDReadFromXml(null, typeof(Map), "map");
 						loadIDs.RegisterLoadIDReadFromXml(null, typeof(WorldObject), "worldObject");
-						return new GlobalTargetInfo(result);
+						return new GlobalTargetInfo(tile);
 					}
 					if (innerText.Length != 0 && innerText[0] == '@')
 					{
@@ -338,7 +358,7 @@ namespace Verse
 					Map map = Scribe.loader.crossRefs.TakeResolvedRef<Map>("map");
 					WorldObject worldObject = Scribe.loader.crossRefs.TakeResolvedRef<WorldObject>("worldObject");
 					IntVec3 cell = loaded.Cell;
-					int tile = loaded.Tile;
+					PlanetTile tile = loaded.Tile;
 					if (thing != null)
 					{
 						return new GlobalTargetInfo(thing);
@@ -355,7 +375,7 @@ namespace Verse
 						}
 						return GlobalTargetInfo.Invalid;
 					}
-					if (tile >= 0)
+					if (tile.Valid)
 					{
 						return new GlobalTargetInfo(tile);
 					}
@@ -376,7 +396,7 @@ namespace Verse
 				try
 				{
 					XmlAttribute xmlAttribute = node.Attributes["IsNull"];
-					if (xmlAttribute != null && xmlAttribute.Value.ToLower() == "true")
+					if (xmlAttribute != null && xmlAttribute.Value.Equals("true", StringComparison.InvariantCultureIgnoreCase))
 					{
 						return null;
 					}

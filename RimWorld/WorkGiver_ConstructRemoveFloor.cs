@@ -38,7 +38,11 @@ namespace RimWorld
 			Building firstBuilding = c.GetFirstBuilding(map);
 			if (firstBuilding != null && firstBuilding.def.terrainAffordanceNeeded != null)
 			{
-				return !map.terrainGrid.UnderTerrainAt(c).affordances.Contains(firstBuilding.def.terrainAffordanceNeeded);
+				if (map.terrainGrid.FoundationAt(c) == null)
+				{
+					return !map.terrainGrid.UnderTerrainAt(c).affordances.Contains(firstBuilding.def.terrainAffordanceNeeded);
+				}
+				return !map.terrainGrid.FoundationAt(c).affordances.Contains(firstBuilding.def.terrainAffordanceNeeded);
 			}
 			return false;
 		}

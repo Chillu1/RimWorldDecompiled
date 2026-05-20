@@ -33,7 +33,7 @@ namespace RimWorld
 			{
 				float? maxTotalMass = parms.maxTotalMass;
 				totalMarketValue = float.MaxValue;
-				if (!(maxTotalMass == totalMarketValue) && !ThingSetMakerUtility.PossibleToWeighNoMoreThan(list, parms.techLevel ?? TechLevel.Undefined, parms.maxTotalMass.Value, (!parms.countRange.HasValue) ? 1 : parms.countRange.Value.min))
+				if (maxTotalMass != totalMarketValue && !ThingSetMakerUtility.PossibleToWeighNoMoreThan(list, parms.techLevel.GetValueOrDefault(), parms.maxTotalMass.Value, (!parms.countRange.HasValue) ? 1 : parms.countRange.Value.min))
 				{
 					return false;
 				}
@@ -54,7 +54,7 @@ namespace RimWorld
 			{
 				outThings.Add(list[i].MakeThing());
 			}
-			ThingSetMakerByTotalStatUtility.IncreaseStackCountsToTotalValue_NewTemp(outThings, totalMarketValue, (Thing x) => x.MarketValue, maxMass, satisfyMinRewardCount: true);
+			ThingSetMakerByTotalStatUtility.IncreaseStackCountsToTotalValue(outThings, totalMarketValue, (Thing x) => x.MarketValue, maxMass, satisfyMinRewardCount: true);
 			nextSeed++;
 		}
 
@@ -94,18 +94,18 @@ namespace RimWorld
 				totalMarketValue = 0f;
 				return new List<ThingStuffPairWithQuality>();
 			}
-			TechLevel techLevel = parms.techLevel ?? TechLevel.Undefined;
+			TechLevel valueOrDefault = parms.techLevel.GetValueOrDefault();
 			IntRange countRange = parms.countRange ?? new IntRange(1, int.MaxValue);
 			FloatRange floatRange = parms.totalMarketValueRange ?? FloatRange.Zero;
 			float maxMass = parms.maxTotalMass ?? float.MaxValue;
-			QualityGenerator qualityGenerator = parms.qualityGenerator ?? QualityGenerator.BaseGen;
+			QualityGenerator valueOrDefault2 = parms.qualityGenerator.GetValueOrDefault();
 			totalMarketValue = floatRange.RandomInRange;
-			return ThingSetMakerByTotalStatUtility.GenerateDefsWithPossibleTotalValue_NewTmp3(countRange, totalMarketValue, enumerable, techLevel, qualityGenerator, GetMinValue, GetMaxValue, GetSingleThingValue, null, 100, maxMass, parms.allowNonStackableDuplicates.GetValueOrDefault(true), totalMarketValue * (parms.minSingleItemMarketValuePct ?? 0f));
+			return ThingSetMakerByTotalStatUtility.GenerateDefsWithPossibleTotalValue(countRange, totalMarketValue, enumerable, valueOrDefault, valueOrDefault2, GetMinValue, GetMaxValue, GetSingleThingValue, null, 100, maxMass, parms.allowNonStackableDuplicates ?? true, totalMarketValue * parms.minSingleItemMarketValuePct.GetValueOrDefault());
 		}
 
 		protected override IEnumerable<ThingDef> AllGeneratableThingsDebugSub(ThingSetMakerParams parms)
 		{
-			TechLevel techLevel = parms.techLevel ?? TechLevel.Undefined;
+			TechLevel techLevel = parms.techLevel.GetValueOrDefault();
 			foreach (ThingDef item in AllowedThingDefs(parms))
 			{
 				if ((!parms.maxTotalMass.HasValue || parms.maxTotalMass == float.MaxValue || !(ThingSetMakerUtility.GetMinMass(item, techLevel) > parms.maxTotalMass)) && (!parms.totalMarketValueRange.HasValue || parms.totalMarketValueRange.Value.max == float.MaxValue || !(ThingSetMakerUtility.GetMinMarketValue(item, techLevel) > parms.totalMarketValueRange.Value.max)))

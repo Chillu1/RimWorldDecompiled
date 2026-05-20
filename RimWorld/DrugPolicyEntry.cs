@@ -22,6 +22,18 @@ namespace RimWorld
 
 		public string takeToInventoryTempBuffer;
 
+		public void CopyFrom(DrugPolicyEntry other)
+		{
+			drug = other.drug;
+			allowedForAddiction = other.allowedForAddiction;
+			allowedForJoy = other.allowedForJoy;
+			allowScheduled = other.allowScheduled;
+			daysFrequency = other.daysFrequency;
+			onlyIfMoodBelow = other.onlyIfMoodBelow;
+			onlyIfJoyBelow = other.onlyIfJoyBelow;
+			takeToInventory = other.takeToInventory;
+		}
+
 		public void ExposeData()
 		{
 			Scribe_Defs.Look(ref drug, "drug");

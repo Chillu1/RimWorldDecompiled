@@ -7,21 +7,31 @@ namespace Verse
 {
 	public class SkyManager
 	{
-		private Map map;
+		private readonly Map map;
 
 		private float curSkyGlowInt;
 
-		private List<Pair<SkyOverlay, float>> tempOverlays = new List<Pair<SkyOverlay, float>>();
+		private SkyTarget curSky;
 
-		private static readonly Color FogOfWarBaseColor = new Color32(77, 69, 66, byte.MaxValue);
+		private readonly List<Pair<SkyOverlay, float>> tempOverlays = new List<Pair<SkyOverlay, float>>();
 
 		public const float NightMaxCelGlow = 0.1f;
 
 		public const float DuskMaxCelGlow = 0.6f;
 
-		private List<GameCondition> tempAllGameConditionsAffectingMap = new List<GameCondition>();
+		private static readonly Color FogOfWarBaseColor = new Color32(77, 69, 66, byte.MaxValue);
+
+		private readonly List<GameCondition> tempAllGameConditionsAffectingMap = new List<GameCondition>();
+
+		private static readonly int LightsourceShineIntensity = Shader.PropertyToID("_LightsourceShineIntensity");
+
+		private static readonly int LightsourceShineSizeReduction = Shader.PropertyToID("_LightsourceShineSizeReduction");
+
+		private static readonly int DayPercent = Shader.PropertyToID("_DayPercent");
 
 		public float CurSkyGlow => curSkyGlowInt;
+
+		public SkyTarget CurSky => curSky;
 
 		public SkyManager(Map map)
 		{
@@ -30,16 +40,24 @@ namespace Verse
 
 		public void SkyManagerUpdate()
 		{
-			SkyTarget curSky = CurrentSkyTarget();
+			curSky = CurrentSkyTarget();
 			curSkyGlowInt = curSky.glow;
 			if (map == Find.CurrentMap)
 			{
-				MatBases.LightOverlay.color = curSky.colors.sky;
-				Find.CameraColor.saturation = curSky.colors.saturation;
-				Color sky = curSky.colors.sky;
-				sky.a = 1f;
-				sky *= FogOfWarBaseColor;
-				MatBases.FogOfWar.color = sky;
+				if (map.Biome != null && map.Biome.disableSkyLighting)
+				{
+					MatBases.LightOverlay.color = new Color(1f, 1f, 1f, 0f);
+					MatBases.FogOfWar.color = map.FogOfWarColor ?? FogOfWarBaseColor;
+				}
+				else
+				{
+					MatBases.LightOverlay.color = curSky.colors.sky;
+					Find.CameraColor.saturation = curSky.colors.saturation;
+					Color sky = curSky.colors.sky;
+					sky.a = 1f;
+					sky *= map.FogOfWarColor ?? FogOfWarBaseColor;
+					MatBases.FogOfWar.color = sky;
+				}
 				Color color = curSky.colors.shadow;
 				Vector3? overridenShadowVector = GetOverridenShadowVector();
 				if (overridenShadowVector.HasValue)
@@ -55,9 +73,11 @@ namespace Verse
 				GenCelestial.LightInfo lightSourceInfo2 = GenCelestial.GetLightSourceInfo(map, GenCelestial.LightType.LightingMoon);
 				Shader.SetGlobalVector(ShaderPropertyIDs.WaterCastVectSun, new Vector4(lightSourceInfo.vector.x, 0f, lightSourceInfo.vector.y, lightSourceInfo.intensity));
 				Shader.SetGlobalVector(ShaderPropertyIDs.WaterCastVectMoon, new Vector4(lightSourceInfo2.vector.x, 0f, lightSourceInfo2.vector.y, lightSourceInfo2.intensity));
-				Shader.SetGlobalFloat("_LightsourceShineSizeReduction", 20f * (1f / curSky.lightsourceShineSize));
-				Shader.SetGlobalFloat("_LightsourceShineIntensity", curSky.lightsourceShineIntensity);
+				Shader.SetGlobalFloat(LightsourceShineSizeReduction, 20f * (1f / curSky.lightsourceShineSize));
+				Shader.SetGlobalFloat(LightsourceShineIntensity, curSky.lightsourceShineIntensity);
+				Shader.SetGlobalFloat(DayPercent, GenLocalDate.DayPercent(map));
 				MatBases.SunShadow.color = color;
+				MatBases.SunShadowFade.color = color;
 				UpdateOverlays(curSky);
 			}
 		}
@@ -94,9 +114,9 @@ namespace Verse
 			}
 			for (int m = 0; m < tempOverlays.Count; m++)
 			{
-				Color overlay = curSky.colors.overlay;
-				overlay.a = tempOverlays[m].Second;
-				tempOverlays[m].First.OverlayColor = overlay;
+				Color overlayColor = ((!tempOverlays[m].First.ForcedOverlayColor.HasValue) ? curSky.colors.overlay : tempOverlays[m].First.ForcedOverlayColor.Value);
+				overlayColor.a = tempOverlays[m].Second;
+				tempOverlays[m].First.SetOverlayColor(overlayColor);
 			}
 		}
 

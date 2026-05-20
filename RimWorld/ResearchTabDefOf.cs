@@ -5,6 +5,9 @@ namespace RimWorld
 	{
 		public static ResearchTabDef Main;
 
+		[MayRequireAnomaly]
+		public static ResearchTabDef Anomaly;
+
 		static ResearchTabDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(ResearchTabDefOf));

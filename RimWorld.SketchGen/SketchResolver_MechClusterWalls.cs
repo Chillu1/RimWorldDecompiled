@@ -26,7 +26,7 @@ namespace RimWorld.SketchGen
 
 		private const int MinWallLengthCorner = 2;
 
-		protected override void ResolveInt(ResolveParams parms)
+		protected override void ResolveInt(SketchResolveParams parms)
 		{
 			IntVec2 value = parms.mechClusterSize.Value;
 			int val = GenMath.RoundRandom((float)GenMath.RoundRandom(WidthToMaxWallsCountCurve.Evaluate(Mathf.Min(value.x, value.z))) * WallCountRandomFactorRange.RandomInRange);
@@ -37,7 +37,7 @@ namespace RimWorld.SketchGen
 			}
 			if (Rand.Bool)
 			{
-				ResolveParams parms2 = parms;
+				SketchResolveParams parms2 = parms;
 				parms2.symmetryVertical = false;
 				parms2.symmetryOrigin = value.x / 2;
 				parms2.symmetryOriginIncluded = value.x % 2 == 1;
@@ -45,7 +45,7 @@ namespace RimWorld.SketchGen
 			}
 			else if (Rand.Bool)
 			{
-				ResolveParams parms3 = parms;
+				SketchResolveParams parms3 = parms;
 				parms3.symmetryVertical = true;
 				parms3.symmetryOrigin = value.z / 2;
 				parms3.symmetryOriginIncluded = value.z % 2 == 1;
@@ -53,7 +53,7 @@ namespace RimWorld.SketchGen
 			}
 		}
 
-		protected override bool CanResolveInt(ResolveParams parms)
+		protected override bool CanResolveInt(SketchResolveParams parms)
 		{
 			return true;
 		}
@@ -64,48 +64,48 @@ namespace RimWorld.SketchGen
 			{
 				if (Rand.Chance(0.8f))
 				{
-					bool @bool = Rand.Bool;
-					int num = (@bool ? size.x : size.z);
-					CellRect rect2;
-					if (!@bool)
+					bool num = Rand.Bool;
+					int num2 = (num ? size.x : size.z);
+					CellRect rect;
+					if (num)
 					{
-						IntVec2 intVec = new IntVec2(Rand.Bool ? (size.x - 1) : 0, 0);
-						rect2 = new CellRect(intVec.x, intVec.z, 1, num);
+						IntVec2 intVec = new IntVec2(1, Rand.Bool ? (size.z - 1) : 0);
+						rect = new CellRect(intVec.x, intVec.z, num2 - 1, 1);
 					}
 					else
 					{
-						IntVec2 intVec2 = new IntVec2(1, Rand.Bool ? (size.z - 1) : 0);
-						rect2 = new CellRect(intVec2.x, intVec2.z, num - 1, 1);
+						IntVec2 intVec2 = new IntVec2(Rand.Bool ? (size.x - 1) : 0, 0);
+						rect = new CellRect(intVec2.x, intVec2.z, 1, num2);
 					}
-					rect2.ClipInsideRect(new CellRect(0, 0, size.x, size.z));
-					if (rect2.Area >= 3 && WallRectIsUsable(rect2, checkAdjacentCells: false))
+					rect.ClipInsideRect(new CellRect(0, 0, size.x, size.z));
+					if (rect.Area >= 3 && WallRectIsUsable(rect, checkAdjacentCells: false))
 					{
-						GenerateWallInRect(rect2, Rand.Bool);
+						GenerateWallInRect(rect, Rand.Bool);
 						break;
 					}
 					continue;
 				}
 				IntVec3 intVec3 = new IntVec3(Rand.RangeInclusive(0, size.x - 1), 0, Rand.RangeInclusive(0, size.z - 1));
-				int num2 = GenMath.RoundRandom(Rand.Range((float)size.x * 0.4f, size.x));
-				CellRect rect3 = (Rand.Bool ? new CellRect(intVec3.x, intVec3.z, num2, 1) : new CellRect(intVec3.x - num2 + 1, intVec3.z, num2, 1));
-				rect3.ClipInsideRect(new CellRect(0, 0, size.x, size.z));
-				if (rect3.Area >= 2)
+				int num3 = GenMath.RoundRandom(Rand.Range((float)size.x * 0.4f, size.x));
+				CellRect rect2 = ((!Rand.Bool) ? new CellRect(intVec3.x - num3 + 1, intVec3.z, num3, 1) : new CellRect(intVec3.x, intVec3.z, num3, 1));
+				rect2.ClipInsideRect(new CellRect(0, 0, size.x, size.z));
+				if (rect2.Area >= 2)
 				{
-					int num3 = GenMath.RoundRandom(Rand.Range((float)size.z * 0.4f, size.z));
-					CellRect rect4 = (Rand.Bool ? new CellRect(intVec3.x, intVec3.z, 1, num3) : new CellRect(intVec3.x, intVec3.z - num3 + 1, 1, num3));
-					rect4.ClipInsideRect(new CellRect(0, 0, size.x, size.z));
-					if (rect4.Area >= 2 && WallRectIsUsable(rect3, checkAdjacentCells: true) && WallRectIsUsable(rect4, checkAdjacentCells: true))
+					int num4 = GenMath.RoundRandom(Rand.Range((float)size.z * 0.4f, size.z));
+					CellRect rect3 = ((!Rand.Bool) ? new CellRect(intVec3.x, intVec3.z - num4 + 1, 1, num4) : new CellRect(intVec3.x, intVec3.z, 1, num4));
+					rect3.ClipInsideRect(new CellRect(0, 0, size.x, size.z));
+					if (rect3.Area >= 2 && WallRectIsUsable(rect2, checkAdjacentCells: true) && WallRectIsUsable(rect3, checkAdjacentCells: true))
 					{
+						GenerateWallInRect(rect2, createRandomGap: false);
 						GenerateWallInRect(rect3, createRandomGap: false);
-						GenerateWallInRect(rect4, createRandomGap: false);
 						break;
 					}
 				}
 			}
-			void GenerateWallInRect(CellRect rect, bool createRandomGap)
+			void GenerateWallInRect(CellRect cellRect, bool createRandomGap)
 			{
-				IntVec3 randomCell = rect.RandomCell;
-				foreach (IntVec3 item in rect)
+				IntVec3 randomCell = cellRect.RandomCell;
+				foreach (IntVec3 item in cellRect)
 				{
 					if (!createRandomGap || !(item == randomCell))
 					{
@@ -113,9 +113,9 @@ namespace RimWorld.SketchGen
 					}
 				}
 			}
-			bool WallRectIsUsable(CellRect rect, bool checkAdjacentCells)
+			bool WallRectIsUsable(CellRect cellRect, bool checkAdjacentCells)
 			{
-				foreach (IntVec3 item2 in rect)
+				foreach (IntVec3 item2 in cellRect)
 				{
 					if (checkAdjacentCells)
 					{

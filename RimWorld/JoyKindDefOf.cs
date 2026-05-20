@@ -9,6 +9,8 @@ namespace RimWorld
 
 		public static JoyKindDef Gluttonous;
 
+		public static JoyKindDef Reading;
+
 		static JoyKindDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(JoyKindDefOf));

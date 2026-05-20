@@ -40,17 +40,13 @@ namespace RimWorld
 
 		public void StartPlaying(Pawn player)
 		{
-			if (!ModLister.RoyaltyInstalled)
-			{
-				Log.ErrorOnce("Musical instruments are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 19285);
-			}
-			else
+			if (ModLister.CheckRoyaltyOrIdeology("Musical instrument"))
 			{
 				currentPlayer = player;
 			}
 		}
 
-		public override void Tick()
+		protected override void Tick()
 		{
 			base.Tick();
 			if (currentPlayer != null)
@@ -64,10 +60,7 @@ namespace RimWorld
 			{
 				soundPlaying = null;
 			}
-			if (soundPlaying != null)
-			{
-				soundPlaying.Maintain();
-			}
+			soundPlaying?.Maintain();
 		}
 
 		public void StopPlaying()
@@ -83,19 +76,18 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> GetGizmos()
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (!ModLister.CheckRoyaltyOrIdeology("Musical instrument"))
 			{
-				Log.ErrorOnce("Musical instruments are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 19285);
 				yield break;
 			}
 			foreach (Gizmo gizmo in base.GetGizmos())
 			{
 				yield return gizmo;
 			}
-			if (Prefs.DevMode)
+			if (DebugSettings.ShowDevGizmos)
 			{
 				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "Debug: Toggle is playing";
+				command_Action.defaultLabel = "DEV: Toggle is playing";
 				command_Action.action = delegate
 				{
 					currentPlayer = ((currentPlayer == null) ? PawnsFinder.AllMaps_FreeColonists.FirstOrDefault() : null);

@@ -101,7 +101,7 @@ namespace RimWorld
 			for (int i = 0; i < items.Count; i++)
 			{
 				Thing innerIfMinified = items[i].GetInnerIfMinified();
-				if (!innerIfMinified.Destroyed)
+				if (innerIfMinified != null && !innerIfMinified.Destroyed)
 				{
 					if (!innerIfMinified.TryGetQuality(out var qc))
 					{
@@ -117,8 +117,8 @@ namespace RimWorld
 		{
 			items.Clear();
 			bool flag = true;
-			float x2 = (Find.TickManager.TicksGame - Find.History.lastPsylinkAvailable).TicksToDays();
-			if (Rand.Chance(QuestTuning.DaysSincePsylinkAvailableToGuaranteedNeuroformerChance.Evaluate(x2)) && ModsConfig.RoyaltyActive && (parms.disallowedThingDefs == null || !parms.disallowedThingDefs.Contains(ThingDefOf.PsychicAmplifier)) && rewardValue >= 600f && parms.giverFaction != Faction.Empire)
+			float x = (Find.TickManager.TicksGame - Find.History.lastPsylinkAvailable).TicksToDays();
+			if (Rand.Chance(QuestTuning.DaysSincePsylinkAvailableToGuaranteedNeuroformerChance.Evaluate(x)) && ModsConfig.RoyaltyActive && (parms.disallowedThingDefs == null || !parms.disallowedThingDefs.Contains(ThingDefOf.PsychicAmplifier)) && rewardValue >= 600f && (Faction.OfEmpire == null || parms.giverFaction != Faction.OfEmpire))
 			{
 				items.Add(ThingMaker.MakeThing(ThingDefOf.PsychicAmplifier));
 				rewardValue -= items[0].MarketValue;
@@ -130,12 +130,14 @@ namespace RimWorld
 			if (flag)
 			{
 				FloatRange value = rewardValue * new FloatRange(0.7f, 1.3f);
-				ThingSetMakerParams parms2 = default(ThingSetMakerParams);
-				parms2.totalMarketValueRange = value;
-				parms2.makingFaction = parms.giverFaction;
+				ThingSetMakerParams parms2 = new ThingSetMakerParams
+				{
+					totalMarketValueRange = value,
+					makingFaction = parms.giverFaction
+				};
 				if (!parms.disallowedThingDefs.NullOrEmpty())
 				{
-					parms2.validator = (ThingDef x) => !parms.disallowedThingDefs.Contains(x);
+					parms2.validator = (ThingDef item) => !parms.disallowedThingDefs.Contains(item);
 				}
 				items.AddRange(ThingSetMakerDefOf.Reward_ItemsStandard.root.Generate(parms2));
 			}
@@ -147,8 +149,7 @@ namespace RimWorld
 			Slate slate = RimWorld.QuestGen.QuestGen.slate;
 			for (int i = 0; i < items.Count; i++)
 			{
-				Pawn pawn = items[i] as Pawn;
-				if (pawn != null)
+				if (items[i] is Pawn pawn)
 				{
 					RimWorld.QuestGen.QuestGen.AddToGeneratedPawns(pawn);
 					if (!pawn.IsWorldPawn())

@@ -4,14 +4,13 @@ namespace Verse.AI
 	{
 		public static Toil TryReserve(TargetIndex ind)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("TryReserve");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;
-				IAttackTarget attackTarget = actor.CurJob.GetTarget(ind).Thing as IAttackTarget;
-				if (attackTarget != null)
+				if (actor.CurJob.GetTarget(ind).Thing is IAttackTarget target)
 				{
-					actor.Map.attackTargetReservationManager.Reserve(actor, toil.actor.CurJob, attackTarget);
+					actor.Map.attackTargetReservationManager.Reserve(actor, toil.actor.CurJob, target);
 				}
 			};
 			toil.defaultCompleteMode = ToilCompleteMode.Instant;

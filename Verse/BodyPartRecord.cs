@@ -27,6 +27,13 @@ namespace Verse
 
 		public List<BodyPartGroupDef> groups = new List<BodyPartGroupDef>();
 
+		[NoTranslate]
+		public string woundAnchorTag;
+
+		public bool flipGraphic;
+
+		public List<Rot4> visibleHediffRots;
+
 		[Unsaved(false)]
 		public BodyPartRecord parent;
 
@@ -109,6 +116,21 @@ namespace Verse
 				foreach (BodyPartRecord childPart in parts[i].GetChildParts(tag))
 				{
 					yield return childPart;
+				}
+				int num = i + 1;
+				i = num;
+			}
+		}
+
+		public IEnumerable<BodyPartRecord> GetPartAndAllChildParts()
+		{
+			yield return this;
+			int i = 0;
+			while (i < parts.Count)
+			{
+				foreach (BodyPartRecord partAndAllChildPart in parts[i].GetPartAndAllChildParts())
+				{
+					yield return partAndAllChildPart;
 				}
 				int num = i + 1;
 				i = num;

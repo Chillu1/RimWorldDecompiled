@@ -41,7 +41,7 @@ namespace RimWorld
 		public override bool Valid(LocalTargetInfo target, bool throwMessages = false)
 		{
 			Pawn pawn = target.Pawn;
-			if (pawn != null && !AbilityUtility.ValidateHasResistance(pawn, throwMessages))
+			if (pawn != null && !AbilityUtility.ValidateHasResistance(pawn, throwMessages, parent))
 			{
 				return false;
 			}

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -6,16 +7,16 @@ namespace RimWorld
 	[StaticConstructorOnStartup]
 	public class SectionLayer_BridgeProps : SectionLayer
 	{
-		private static readonly Material PropsLoopMat = MaterialPool.MatFrom("Terrain/Misc/BridgeProps_Loop", ShaderDatabase.Transparent);
-
-		private static readonly Material PropsRightMat = MaterialPool.MatFrom("Terrain/Misc/BridgeProps_Right", ShaderDatabase.Transparent);
+		private Dictionary<TerrainDef, (Material loop, Material right)> propsMatCache = new Dictionary<TerrainDef, (Material, Material)>();
 
 		public override bool Visible => DebugViewSettings.drawTerrain;
+
+		protected virtual bool UseSpaceGraphics => base.Map.generatorDef.renderWorld;
 
 		public SectionLayer_BridgeProps(Section section)
 			: base(section)
 		{
-			relevantChangeTypes = MapMeshFlag.Terrain;
+			relevantChangeTypes = MapMeshFlagDefOf.Terrain;
 		}
 
 		public override void Regenerate()
@@ -25,19 +26,22 @@ namespace RimWorld
 			TerrainGrid terrainGrid = map.terrainGrid;
 			CellRect cellRect = section.CellRect;
 			float y = AltitudeLayer.TerrainScatter.AltitudeFor();
-			foreach (IntVec3 item in cellRect)
+			foreach (IntVec3 item3 in cellRect)
 			{
-				if (ShouldDrawPropsBelow(item, terrainGrid))
+				if (ShouldDrawPropsBelow(item3, terrainGrid))
 				{
-					IntVec3 c = item;
+					(Material loop, Material right) materials = GetMaterials(terrainGrid.FoundationAt(item3));
+					Material item = materials.loop;
+					Material item2 = materials.right;
+					IntVec3 c = item3;
 					c.x++;
-					Material material = ((!c.InBounds(map) || !ShouldDrawPropsBelow(c, terrainGrid)) ? PropsRightMat : PropsLoopMat);
+					Material material = ((!c.InBounds(map) || !ShouldDrawPropsBelow(c, terrainGrid)) ? item2 : item);
 					LayerSubMesh subMesh = GetSubMesh(material);
 					int count = subMesh.verts.Count;
-					subMesh.verts.Add(new Vector3(item.x, y, item.z - 1));
-					subMesh.verts.Add(new Vector3(item.x, y, item.z));
-					subMesh.verts.Add(new Vector3(item.x + 1, y, item.z));
-					subMesh.verts.Add(new Vector3(item.x + 1, y, item.z - 1));
+					subMesh.verts.Add(new Vector3(item3.x, y, item3.z - 1));
+					subMesh.verts.Add(new Vector3(item3.x, y, item3.z));
+					subMesh.verts.Add(new Vector3(item3.x + 1, y, item3.z));
+					subMesh.verts.Add(new Vector3(item3.x + 1, y, item3.z - 1));
 					subMesh.uvs.Add(new Vector2(0f, 0f));
 					subMesh.uvs.Add(new Vector2(0f, 1f));
 					subMesh.uvs.Add(new Vector2(1f, 1f));
@@ -53,10 +57,21 @@ namespace RimWorld
 			FinalizeMesh(MeshParts.All);
 		}
 
+		public (Material loop, Material right) GetMaterials(TerrainDef def)
+		{
+			if (!propsMatCache.TryGetValue(def, out (Material, Material) value))
+			{
+				Graphic graphic = (UseSpaceGraphics ? def.spaceBridgePropsLoopGraphic : def.bridgePropsLoopGraphic);
+				Graphic graphic2 = (UseSpaceGraphics ? def.spaceBridgePropsRightGraphic : def.bridgePropsRightGraphic);
+				value = (propsMatCache[def] = (graphic.MatSingle, graphic2.MatSingle));
+			}
+			return value;
+		}
+
 		private bool ShouldDrawPropsBelow(IntVec3 c, TerrainGrid terrGrid)
 		{
-			TerrainDef terrainDef = terrGrid.TerrainAt(c);
-			if (terrainDef == null || terrainDef != TerrainDefOf.Bridge)
+			TerrainDef terrainDef = terrGrid.FoundationAt(c);
+			if (terrainDef == null || !terrainDef.bridge)
 			{
 				return false;
 			}
@@ -68,7 +83,7 @@ namespace RimWorld
 				return false;
 			}
 			TerrainDef terrainDef2 = terrGrid.TerrainAt(c2);
-			if (terrainDef2 == TerrainDefOf.Bridge)
+			if (terrGrid.FoundationAt(c2) != null)
 			{
 				return false;
 			}

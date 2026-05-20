@@ -15,5 +15,31 @@ namespace RimWorld
 				}
 			}
 		}
+
+		public static void CheckWarnAboutVeneratedAnimal(Pawn pawn)
+		{
+			if (!ModsConfig.IdeologyActive || !pawn.SpawnedOrAnyParentSpawned || pawn.MapHeld.mapPawns.FreeColonistsSpawned.Count == 0)
+			{
+				return;
+			}
+			bool flag = true;
+			bool flag2 = false;
+			foreach (Pawn item in pawn.MapHeld.mapPawns.FreeColonistsSpawned)
+			{
+				if (!item.WorkTypeIsDisabled(WorkTypeDefOf.Hunting))
+				{
+					flag2 = true;
+					if (item.Ideo == null || !item.Ideo.IsVeneratedAnimal(pawn))
+					{
+						flag = false;
+						break;
+					}
+				}
+			}
+			if (flag2 && flag)
+			{
+				Messages.Message("MessageAnimalIsVeneratedForAllColonists".Translate(pawn.GetKindLabelPlural().CapitalizeFirst().Named("PAWNKINDLABELPLURAL"), Faction.OfPlayer.def.pawnsPlural.Named("PAWNS")), pawn, MessageTypeDefOf.CautionInput, historical: false);
+			}
+		}
 	}
 }

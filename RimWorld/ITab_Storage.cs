@@ -8,7 +8,7 @@ namespace RimWorld
 {
 	public class ITab_Storage : ITab
 	{
-		private Vector2 scrollPosition;
+		private ThingFilterUI.UIState thingFilterState = new ThingFilterUI.UIState();
 
 		private static readonly Vector2 WinSize = new Vector2(300f, 480f);
 
@@ -16,13 +16,38 @@ namespace RimWorld
 		{
 			get
 			{
-				Thing thing = base.SelObject as Thing;
-				if (thing != null)
+				if (base.SelObject is Thing t)
 				{
-					IStoreSettingsParent thingOrThingCompStoreSettingsParent = GetThingOrThingCompStoreSettingsParent(thing);
+					IStoreSettingsParent thingOrThingCompStoreSettingsParent = GetThingOrThingCompStoreSettingsParent(t);
 					if (thingOrThingCompStoreSettingsParent != null)
 					{
 						return thingOrThingCompStoreSettingsParent;
+					}
+					return null;
+				}
+				if (base.AllSelObjects.Count > 1)
+				{
+					bool flag = true;
+					StorageGroup storageGroup = (base.AllSelObjects.First() as IStorageGroupMember)?.Group;
+					if (storageGroup != null)
+					{
+						foreach (object allSelObject in base.AllSelObjects)
+						{
+							if (!(allSelObject is IStorageGroupMember storageGroupMember))
+							{
+								flag = false;
+								break;
+							}
+							if (storageGroupMember.Group != storageGroup)
+							{
+								flag = false;
+								break;
+							}
+						}
+						if (flag)
+						{
+							return (base.AllSelObjects.First() as IStorageGroupMember)?.Group;
+						}
 					}
 					return null;
 				}
@@ -34,10 +59,26 @@ namespace RimWorld
 		{
 			get
 			{
-				Thing thing = base.SelObject as Thing;
-				if (thing != null && thing.Faction != null && thing.Faction != Faction.OfPlayer)
+				if (base.SelObject != null)
 				{
-					return false;
+					if (base.SelObject is Thing { Faction: not null } thing && thing.Faction != Faction.OfPlayer)
+					{
+						return false;
+					}
+				}
+				else
+				{
+					if (base.AllSelObjects.Count <= 1)
+					{
+						return false;
+					}
+					foreach (object allSelObject in base.AllSelObjects)
+					{
+						if (allSelObject is Thing { Faction: not null } thing2 && thing2.Faction != Faction.OfPlayer)
+						{
+							return false;
+						}
+					}
 				}
 				return SelStoreSettingsParent?.StorageTabVisible ?? false;
 			}
@@ -54,22 +95,28 @@ namespace RimWorld
 			tutorTag = "Storage";
 		}
 
+		public override void OnOpen()
+		{
+			base.OnOpen();
+			thingFilterState.quickSearch.Reset();
+		}
+
 		protected override void FillTab()
 		{
 			IStoreSettingsParent storeSettingsParent = SelStoreSettingsParent;
 			StorageSettings settings = storeSettingsParent.GetStoreSettings();
-			Rect position = new Rect(0f, 0f, WinSize.x, WinSize.y).ContractedBy(10f);
-			GUI.BeginGroup(position);
+			Rect rect = new Rect(0f, 0f, WinSize.x, WinSize.y).ContractedBy(10f);
+			Widgets.BeginGroup(rect);
 			if (IsPrioritySettingVisible)
 			{
 				Text.Font = GameFont.Small;
-				Rect rect = new Rect(0f, 0f, 160f, TopAreaHeight - 6f);
-				if (Widgets.ButtonText(rect, "Priority".Translate() + ": " + settings.Priority.Label().CapitalizeFirst()))
+				Rect rect2 = new Rect(0f, 0f, 160f, TopAreaHeight - 6f);
+				if (Widgets.ButtonText(rect2, "Priority".Translate() + ": " + settings.Priority.Label().CapitalizeFirst()))
 				{
 					List<FloatMenuOption> list = new List<FloatMenuOption>();
 					foreach (StoragePriority value in Enum.GetValues(typeof(StoragePriority)))
 					{
-						if (value != 0)
+						if (value != StoragePriority.Unstored)
 						{
 							StoragePriority localPr = value;
 							list.Add(new FloatMenuOption(localPr.Label().CapitalizeFirst(), delegate
@@ -80,50 +127,63 @@ namespace RimWorld
 					}
 					Find.WindowStack.Add(new FloatMenu(list));
 				}
-				UIHighlighter.HighlightOpportunity(rect, "StoragePriority");
+				UIHighlighter.HighlightOpportunity(rect2, "StoragePriority");
 			}
 			ThingFilter parentFilter = null;
 			if (storeSettingsParent.GetParentStoreSettings() != null)
 			{
 				parentFilter = storeSettingsParent.GetParentStoreSettings().filter;
 			}
-			Rect rect2 = new Rect(0f, TopAreaHeight, position.width, position.height - TopAreaHeight);
+			Rect rect3 = new Rect(0f, TopAreaHeight, rect.width, rect.height - TopAreaHeight);
 			Bill[] first = (from b in BillUtility.GlobalBills()
-				where b is Bill_Production && b.GetStoreZone() == storeSettingsParent && b.recipe.WorkerCounter.CanPossiblyStoreInStockpile((Bill_Production)b, b.GetStoreZone())
+				where b is Bill_Production && b.GetSlotGroup() == storeSettingsParent && b.recipe.WorkerCounter.CanPossiblyStore((Bill_Production)b, b.GetSlotGroup())
 				select b).ToArray();
-			ThingFilterUI.DoThingFilterConfigWindow(rect2, ref scrollPosition, settings.filter, parentFilter, 8);
+			ThingFilterUI.DoThingFilterConfigWindow(rect3, thingFilterState, settings.filter, parentFilter, 8, null, HiddenSpecialThingFilters());
 			Bill[] second = (from b in BillUtility.GlobalBills()
-				where b is Bill_Production && b.GetStoreZone() == storeSettingsParent && b.recipe.WorkerCounter.CanPossiblyStoreInStockpile((Bill_Production)b, b.GetStoreZone())
+				where b is Bill_Production && b.GetSlotGroup() == storeSettingsParent && b.recipe.WorkerCounter.CanPossiblyStore((Bill_Production)b, b.GetSlotGroup())
 				select b).ToArray();
 			foreach (Bill item in first.Except(second))
 			{
-				Messages.Message("MessageBillValidationStoreZoneInsufficient".Translate(item.LabelCap, item.billStack.billGiver.LabelShort.CapitalizeFirst(), item.GetStoreZone().label), item.billStack.billGiver as Thing, MessageTypeDefOf.RejectInput, historical: false);
+				Messages.Message("MessageBillValidationStoreZoneInsufficient".Translate(item.LabelCap, item.billStack.billGiver.LabelShort.CapitalizeFirst(), SlotGroup.GetGroupLabel(item.GetSlotGroup())), item.billStack.billGiver as Thing, MessageTypeDefOf.RejectInput, historical: false);
 			}
 			PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.StorageTab, KnowledgeAmount.FrameDisplayed);
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		protected IStoreSettingsParent GetThingOrThingCompStoreSettingsParent(Thing t)
 		{
-			IStoreSettingsParent storeSettingsParent = t as IStoreSettingsParent;
-			if (storeSettingsParent != null)
+			if (t is IStoreSettingsParent result)
 			{
-				return storeSettingsParent;
+				return result;
 			}
-			ThingWithComps thingWithComps = t as ThingWithComps;
-			if (thingWithComps != null)
+			if (t is ThingWithComps { AllComps: var allComps })
 			{
-				List<ThingComp> allComps = thingWithComps.AllComps;
 				for (int i = 0; i < allComps.Count; i++)
 				{
-					storeSettingsParent = allComps[i] as IStoreSettingsParent;
-					if (storeSettingsParent != null)
+					if (allComps[i] is IStoreSettingsParent result2)
 					{
-						return storeSettingsParent;
+						return result2;
 					}
 				}
 			}
 			return null;
+		}
+
+		public override void Notify_ClickOutsideWindow()
+		{
+			base.Notify_ClickOutsideWindow();
+			thingFilterState.quickSearch.Unfocus();
+		}
+
+		private IEnumerable<SpecialThingFilterDef> HiddenSpecialThingFilters()
+		{
+			if (ModsConfig.IdeologyActive)
+			{
+				yield return SpecialThingFilterDefOf.AllowVegetarian;
+				yield return SpecialThingFilterDefOf.AllowCarnivore;
+				yield return SpecialThingFilterDefOf.AllowCannibal;
+				yield return SpecialThingFilterDefOf.AllowInsectMeat;
+			}
 		}
 	}
 }

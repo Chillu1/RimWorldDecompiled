@@ -22,7 +22,7 @@ namespace Verse
 
 		protected float minOptionsAreaHeight;
 
-		private const float InteractivityDelay = 0.5f;
+		private const float InteractivityDelay = 1f;
 
 		private const float TitleHeight = 36f;
 
@@ -62,7 +62,7 @@ namespace Verse
 			closeOnCancel = false;
 			if (delayInteractivity)
 			{
-				makeInteractiveAtTime = RealTime.LastRealTime + 0.5f;
+				makeInteractiveAtTime = RealTime.LastRealTime + 1f;
 			}
 			soundAppear = SoundDefOf.CommsWindow_Open;
 			soundClose = SoundDefOf.CommsWindow_Close;
@@ -117,7 +117,7 @@ namespace Verse
 
 		protected void DrawNode(Rect rect)
 		{
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			Text.Font = GameFont.Small;
 			float num = Mathf.Min(optTotalHeight, rect.height - 100f - Margin * 2f);
 			Rect outRect = new Rect(0f, 0f, rect.width, rect.height - Mathf.Max(num, minOptionsAreaHeight));
@@ -141,7 +141,7 @@ namespace Verse
 				optTotalHeight = num3;
 			}
 			Widgets.EndScrollView();
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		public void GotoNode(DiaNode node)

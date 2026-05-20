@@ -10,58 +10,46 @@ namespace RimWorld
 		{
 			private List<GlobalTargetInfo> targets = new List<GlobalTargetInfo>();
 
-			private List<GlobalTargetInfo> Targets
-			{
-				get
-				{
-					targets.Clear();
-					foreach (Pawn item in PawnsFinder.HomeMaps_FreeColonistsSpawned)
-					{
-						if (item.royalty != null && item.royalty.PermitPointsAvailable)
-						{
-							targets.Add(item);
-						}
-					}
-					return targets;
-				}
-			}
-
-			private Pawn FirstPawn
-			{
-				get
-				{
-					List<GlobalTargetInfo> list = Targets;
-					if (!list.Any())
-					{
-						return null;
-					}
-					return (Pawn)(Thing)list[0];
-				}
-			}
+			private Pawn target;
 
 			public Alert_PermitAvailable()
 			{
 				defaultLabel = "PermitChoiceReadyAlert".Translate();
+				requireRoyalty = true;
+			}
+
+			private void CalculateTargets()
+			{
+				targets.Clear();
+				target = null;
+				foreach (Pawn item in PawnsFinder.HomeMaps_FreeColonistsSpawned)
+				{
+					if (item.royalty != null && item.royalty.PermitPointsAvailable)
+					{
+						if (target == null)
+						{
+							target = item;
+						}
+						targets.Add(item);
+					}
+				}
 			}
 
 			public override AlertReport GetReport()
 			{
-				if (!ModsConfig.RoyaltyActive)
-				{
-					return false;
-				}
-				return AlertReport.CulpritsAre(Targets);
+				CalculateTargets();
+				return AlertReport.CulpritsAre(targets);
 			}
 
 			public override TaggedString GetExplanation()
 			{
-				return "PermitChoiceReadyAlertDesc".Translate(FirstPawn.Named("PAWN"));
+				return "PermitChoiceReadyAlertDesc".Translate(target.Named("PAWN"));
 			}
 
 			protected override void OnClick()
 			{
 				base.OnClick();
-				FirstPawn.royalty.OpenPermitWindow();
+				target?.royalty?.OpenPermitWindow();
 			}
 		}
 
@@ -77,12 +65,7 @@ namespace RimWorld
 				pawnEntries.Clear();
 				foreach (Pawn item in PawnsFinder.HomeMaps_FreeColonistsSpawned)
 				{
-					if (item.timetable == null || item.timetable.CurrentAssignment != TimeAssignmentDefOf.Meditate || !item.psychicEntropy.IsCurrentlyMeditating || MeditationFocusDefOf.Natural.CanPawnUse(item))
-					{
-						continue;
-					}
-					JobDriver_Meditate jobDriver_Meditate = item.jobs.curDriver as JobDriver_Meditate;
-					if (jobDriver_Meditate == null || jobDriver_Meditate.Focus != null || jobDriver_Meditate is JobDriver_Reign)
+					if (item.timetable == null || item.timetable.CurrentAssignment != TimeAssignmentDefOf.Meditate || !item.psychicEntropy.IsCurrentlyMeditating || MeditationFocusDefOf.Natural.CanPawnUse(item) || !(item.jobs.curDriver is JobDriver_Meditate jobDriver_Meditate) || jobDriver_Meditate.Focus != null || jobDriver_Meditate is JobDriver_Reign)
 					{
 						continue;
 					}
@@ -91,7 +74,7 @@ namespace RimWorld
 						if (item2.def == ThingDefOf.Plant_TreeAnima || item2.def == ThingDefOf.AnimusStone || item2.def == ThingDefOf.NatureShrine_Small || item2.def == ThingDefOf.NatureShrine_Large)
 						{
 							targets.Add(item);
-							pawnEntries.Add(item.LabelShort + " (" + item2.LabelShort + ")");
+							pawnEntries.Add(item.NameShortColored.Resolve() + " (" + item2.LabelShort + ")");
 							break;
 						}
 					}
@@ -103,6 +86,7 @@ namespace RimWorld
 		public Alert_UnusableMeditationFocus()
 		{
 			defaultLabel = "UnusableMeditationFocusAlert".Translate();
+			requireRoyalty = true;
 		}
 
 		public override TaggedString GetExplanation()
@@ -112,10 +96,6 @@ namespace RimWorld
 
 		public override AlertReport GetReport()
 		{
-			if (!ModsConfig.RoyaltyActive)
-			{
-				return false;
-			}
 			return AlertReport.CulpritsAre(Targets);
 		}
 	}

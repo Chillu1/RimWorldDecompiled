@@ -11,8 +11,7 @@ namespace RimWorld
 				{
 					return selStoreSettingsParent;
 				}
-				Building_TurretGun building_TurretGun = base.SelObject as Building_TurretGun;
-				if (building_TurretGun != null)
+				if (base.SelObject is Building_TurretGun building_TurretGun)
 				{
 					return GetThingOrThingCompStoreSettingsParent(building_TurretGun.gun);
 				}

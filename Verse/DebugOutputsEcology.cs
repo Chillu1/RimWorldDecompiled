@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using LudeonTK;
 using RimWorld;
 
 namespace Verse
@@ -8,12 +9,28 @@ namespace Verse
 	public static class DebugOutputsEcology
 	{
 		[DebugOutput]
-		public static void PlantsBasics()
+		public static void Plants()
 		{
 			DebugTables.MakeTablesDialog(from d in DefDatabase<ThingDef>.AllDefs
 				where d.category == ThingCategory.Plant
 				orderby d.plant.fertilitySensitivity
-				select d, new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("growDays", (ThingDef d) => d.plant.growDays.ToString("F2")), new TableDataGetter<ThingDef>("nutrition", (ThingDef d) => (d.ingestible == null) ? "-" : d.GetStatValueAbstract(StatDefOf.Nutrition).ToString("F2")), new TableDataGetter<ThingDef>("nut/day", (ThingDef d) => (d.ingestible == null) ? "-" : (d.GetStatValueAbstract(StatDefOf.Nutrition) / d.plant.growDays).ToString("F4")), new TableDataGetter<ThingDef>("fertilityMin", (ThingDef d) => d.plant.fertilityMin.ToString("F2")), new TableDataGetter<ThingDef>("fertilitySensitivity", (ThingDef d) => d.plant.fertilitySensitivity.ToString("F2")));
+				select d, new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("grow days", (ThingDef d) => d.plant.growDays.ToString("F2")), new TableDataGetter<ThingDef>("nutrition", (ThingDef d) => Nutrition(d).ToString("F2")), new TableDataGetter<ThingDef>("nutrition\n/day", (ThingDef d) => (Nutrition(d) / d.plant.growDays).ToString("F4")), new TableDataGetter<ThingDef>("fertility\nmin", (ThingDef d) => d.plant.fertilityMin.ToString("F2")), new TableDataGetter<ThingDef>("fertility\nsensitivity", (ThingDef d) => d.plant.fertilitySensitivity.ToString("F2")), new TableDataGetter<ThingDef>("harvest\nnutrition", (ThingDef d) => HarvestNutrition(d).ToString("F2")), new TableDataGetter<ThingDef>("nutrition\n/ harvest nutrition", (ThingDef d) => (!(HarvestNutrition(d) <= 0f)) ? (Nutrition(d) / HarvestNutrition(d)).ToString("F2") : ""), new TableDataGetter<ThingDef>("tree", (ThingDef d) => (!d.plant.IsTree) ? "" : "yes"), new TableDataGetter<ThingDef>("farm animal edible", (ThingDef d) => (!MapPlantGrowthRateCalculator.IsEdibleByPastureAnimals(d)) ? "" : "yes"), new TableDataGetter<ThingDef>("minifiable", (ThingDef d) => d.Minifiable), new TableDataGetter<ThingDef>("treelovers\ncare", (ThingDef d) => d.plant.treeLoversCareIfChopped));
+			static float HarvestNutrition(ThingDef d)
+			{
+				if (d.plant.harvestedThingDef == null)
+				{
+					return 0f;
+				}
+				return d.plant.harvestYield * d.plant.harvestedThingDef.GetStatValueAbstract(StatDefOf.Nutrition);
+			}
+			static float Nutrition(ThingDef d)
+			{
+				if (d.ingestible == null)
+				{
+					return 0f;
+				}
+				return d.GetStatValueAbstract(StatDefOf.Nutrition);
+			}
 		}
 
 		[DebugOutput(true)]
@@ -25,7 +42,7 @@ namespace Verse
 		[DebugOutput]
 		public static void Biomes()
 		{
-			DebugTables.MakeTablesDialog(DefDatabase<BiomeDef>.AllDefs.OrderByDescending((BiomeDef d) => d.plantDensity), new TableDataGetter<BiomeDef>("defName", (BiomeDef d) => d.defName), new TableDataGetter<BiomeDef>("animalDensity", (BiomeDef d) => d.animalDensity.ToString("F2")), new TableDataGetter<BiomeDef>("plantDensity", (BiomeDef d) => d.plantDensity.ToString("F2")), new TableDataGetter<BiomeDef>("diseaseMtbDays", (BiomeDef d) => d.diseaseMtbDays.ToString("F0")), new TableDataGetter<BiomeDef>("movementDifficulty", (BiomeDef d) => (!d.impassable) ? d.movementDifficulty.ToString("F1") : "-"), new TableDataGetter<BiomeDef>("forageability", (BiomeDef d) => d.forageability.ToStringPercent()), new TableDataGetter<BiomeDef>("forageFood", (BiomeDef d) => (d.foragedFood == null) ? "" : d.foragedFood.label), new TableDataGetter<BiomeDef>("forageable plants", (BiomeDef d) => (from pd in d.AllWildPlants
+			DebugTables.MakeTablesDialog(DefDatabase<BiomeDef>.AllDefs.OrderByDescending((BiomeDef d) => d.plantDensity), new TableDataGetter<BiomeDef>("defName", (BiomeDef d) => d.defName), new TableDataGetter<BiomeDef>("animalDensity", (BiomeDef d) => d.animalDensity.ToString("F2")), new TableDataGetter<BiomeDef>("plantDensity", (BiomeDef d) => d.plantDensity.ToString("F2")), new TableDataGetter<BiomeDef>("tree density", (BiomeDef d) => d.TreeDensity.ToStringPercent()), new TableDataGetter<BiomeDef>("tree sightings\nper hour", (BiomeDef d) => d.TreeSightingsPerHourFromCaravan), new TableDataGetter<BiomeDef>("diseaseMtbDays", (BiomeDef d) => d.diseaseMtbDays.ToString("F0")), new TableDataGetter<BiomeDef>("movementDifficulty", (BiomeDef d) => (!d.impassable) ? d.movementDifficulty.ToString("F1") : "-"), new TableDataGetter<BiomeDef>("forageability", (BiomeDef d) => d.forageability.ToStringPercent()), new TableDataGetter<BiomeDef>("forageFood", (BiomeDef d) => (d.foragedFood == null) ? "" : d.foragedFood.label), new TableDataGetter<BiomeDef>("forageable plants", (BiomeDef d) => (from pd in d.AllWildPlants
 				where pd.plant.harvestedThingDef != null && pd.plant.harvestedThingDef.IsNutritionGivingIngestible
 				select pd.defName).ToCommaList()), new TableDataGetter<BiomeDef>("wildPlantRegrowDays", (BiomeDef d) => d.wildPlantRegrowDays.ToString("F0")), new TableDataGetter<BiomeDef>("wildPlantsCareAboutLocalFertility", (BiomeDef d) => d.wildPlantsCareAboutLocalFertility.ToStringCheckBlank()));
 		}
@@ -43,12 +60,16 @@ namespace Verse
 		[DebugOutput]
 		public static void BiomeAnimalsTypicalCounts()
 		{
-			BiomeAnimalsInternal((PawnKindDef k, BiomeDef b) => ExpectedAnimalCount(k, b).ToStringEmptyZero("F2"));
+			BiomeAnimalsInternal((PawnKindDef k, BiomeDef b) => ExpectedAnimalCount(k, b, null).ToStringEmptyZero("F2"));
 		}
 
-		private static float ExpectedAnimalCount(PawnKindDef k, BiomeDef b)
+		private static float ExpectedAnimalCount(PawnKindDef k, BiomeDef b, Map m)
 		{
 			float num = b.CommonalityOfAnimal(k);
+			if (m != null && m.TileInfo.IsCoastal)
+			{
+				num += b.CommonalityOfCoastalAnimal(k);
+			}
 			if (num == 0f)
 			{
 				return 0f;
@@ -95,9 +116,9 @@ namespace Verse
 		{
 			Map map = Find.CurrentMap;
 			DebugTables.MakeTablesDialog(from k in DefDatabase<PawnKindDef>.AllDefs
-				where k.race != null && k.RaceProps.Animal && ExpectedAnimalCount(k, map.Biome) > 0f
-				orderby ExpectedAnimalCount(k, map.Biome) descending
-				select k, new TableDataGetter<PawnKindDef>("animal", (PawnKindDef k) => k.defName), new TableDataGetter<PawnKindDef>("expected count on map (inaccurate)", (PawnKindDef k) => ExpectedAnimalCount(k, map.Biome).ToString("F2")), new TableDataGetter<PawnKindDef>("actual count on map", (PawnKindDef k) => map.mapPawns.AllPawnsSpawned.Where((Pawn p) => p.kindDef == k).Count().ToString()));
+				where k.race != null && k.RaceProps.Animal && ExpectedAnimalCount(k, map.Biome, map) > 0f
+				orderby ExpectedAnimalCount(k, map.Biome, map) descending
+				select k, new TableDataGetter<PawnKindDef>("animal", (PawnKindDef k) => k.defName), new TableDataGetter<PawnKindDef>("expected count on map (inaccurate)", (PawnKindDef k) => ExpectedAnimalCount(k, map.Biome, map).ToString("F2")), new TableDataGetter<PawnKindDef>("actual count on map", (PawnKindDef k) => map.mapPawns.AllPawnsSpawned.Count((Pawn p) => p.kindDef == k).ToString()));
 		}
 
 		[DebugOutput]
@@ -107,7 +128,7 @@ namespace Verse
 			DebugTables.MakeTablesDialog(from p in DefDatabase<ThingDef>.AllDefs
 				where p.category == ThingCategory.Plant && map.Biome.CommonalityOfPlant(p) > 0f
 				orderby map.Biome.CommonalityOfPlant(p) descending
-				select p, new TableDataGetter<ThingDef>("plant", (ThingDef p) => p.defName), new TableDataGetter<ThingDef>("biome-defined commonality", (ThingDef p) => map.Biome.CommonalityOfPlant(p).ToString("F2")), new TableDataGetter<ThingDef>("expected count (rough)", (ThingDef p) => (map.Biome.CommonalityOfPlant(p) * map.Biome.plantDensity * 4000f).ToString("F0")), new TableDataGetter<ThingDef>("actual count on map", (ThingDef p) => map.AllCells.Where((IntVec3 c) => c.GetPlant(map) != null && c.GetPlant(map).def == p).Count().ToString()));
+				select p, new TableDataGetter<ThingDef>("plant", (ThingDef p) => p.defName), new TableDataGetter<ThingDef>("biome-defined commonality", (ThingDef p) => map.Biome.CommonalityOfPlant(p).ToString("F2")), new TableDataGetter<ThingDef>("expected count (rough)", (ThingDef p) => (map.Biome.CommonalityOfPlant(p) * map.Biome.plantDensity * 4000f).ToString("F0")), new TableDataGetter<ThingDef>("actual count on map", (ThingDef p) => map.AllCells.Count((IntVec3 c) => c.GetPlant(map) != null && c.GetPlant(map).def == p).ToString()));
 		}
 	}
 }

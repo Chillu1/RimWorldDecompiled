@@ -23,8 +23,7 @@ namespace Verse.Sound
 			{
 				return false;
 			}
-			ResolvedGrain_Clip resolvedGrain_Clip = obj as ResolvedGrain_Clip;
-			if (resolvedGrain_Clip == null)
+			if (!(obj is ResolvedGrain_Clip resolvedGrain_Clip))
 			{
 				return false;
 			}

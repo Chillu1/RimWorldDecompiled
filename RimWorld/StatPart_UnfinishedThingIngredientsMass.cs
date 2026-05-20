@@ -23,8 +23,7 @@ namespace RimWorld
 
 		private bool TryGetValue(StatRequest req, out float value)
 		{
-			UnfinishedThing unfinishedThing = req.Thing as UnfinishedThing;
-			if (unfinishedThing == null)
+			if (!(req.Thing is UnfinishedThing unfinishedThing))
 			{
 				value = 0f;
 				return false;

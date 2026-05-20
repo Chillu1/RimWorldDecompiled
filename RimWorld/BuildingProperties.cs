@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using UnityEngine;
 using Verse;
@@ -15,15 +16,25 @@ namespace RimWorld
 
 		public bool isInert;
 
+		public bool isTargetable = true;
+
 		private bool deconstructible = true;
 
 		public bool alwaysDeconstructible;
+
+		public bool alwaysUninstallable;
+
+		public List<ThingDef> leavingsBlacklist;
+
+		public List<ThingDef> forcedCostLeavings;
 
 		public bool claimable = true;
 
 		public bool isSittable;
 
-		public SoundDef soundAmbient;
+		public bool multiSittable;
+
+		public bool sitIgnoreOrientation;
 
 		public ConceptDef spawnedConceptLearnOpportunity;
 
@@ -39,6 +50,16 @@ namespace RimWorld
 
 		public bool forceShowRoomStats;
 
+		public bool neverBuildable;
+
+		public bool isWall;
+
+		public bool alwaysExchangeVacuum;
+
+		public bool canExchangeVacuum;
+
+		public bool draftAttackNonDeconstructable = true;
+
 		public bool wantsHopperAdjacent;
 
 		public bool allowWireConnection = true;
@@ -52,6 +73,8 @@ namespace RimWorld
 		public bool canBuildNonEdificesUnder = true;
 
 		public bool canPlaceOverWall;
+
+		public bool isPlaceOverableWall;
 
 		public bool allowAutoroof = true;
 
@@ -88,11 +111,59 @@ namespace RimWorld
 
 		public SoundDef destroySound;
 
+		public SoundDef soundMeleeHitOverride;
+
 		public EffecterDef destroyEffecter;
 
 		public BuildingSizeCategory buildingSizeCategory;
 
+		public bool isFence;
+
+		public List<ThingDef> relatedBuildCommands;
+
+		public List<TerrainDef> relatedTerrain;
+
+		public bool alwaysShowRelatedBuildCommands;
+
+		public bool useIdeoColor;
+
+		public bool wakeDormantPawnsOnConstruction = true;
+
+		public int maxItemsInCell = 1;
+
+		public bool paintable;
+
+		public bool canBeDamagedByAttacks = true;
+
+		public bool isHopper;
+
+		public bool quickTargetable;
+
+		public bool displayAttackToDestroyOnInspectPane;
+
+		public bool isEscapableContainer;
+
+		public bool isPowerConduit;
+
+		public bool biomeSpecific;
+
+		public bool crater;
+
+		public bool canLandGravshipOn;
+
+		public bool isAirtight;
+
+		public bool isStuffableAirtight;
+
+		public bool canConstructInCorner;
+
+		public bool isAttachment;
+
+		public bool supportsWallAttachments;
+
 		public bool isPlayerEjectable;
+
+		public SoundDef openingStartedSound;
 
 		public GraphicData fullGraveGraphicData;
 
@@ -108,13 +179,31 @@ namespace RimWorld
 
 		public bool bed_caravansCanUse;
 
+		public bool bed_slabBed;
+
+		public bool bed_crib;
+
+		public float bed_pawnDrawOffset;
+
+		public bool bed_canBeMedical = true;
+
+		public bool bed_DisplayOwnerType = true;
+
+		public bool bed_DisplayOwnersInInspectString = true;
+
+		public bool bed_countsForBedroomOrBarracks = true;
+
+		public bool bed_emptyCountsForBarracks = true;
+
+		public bool bed_UseSheetColor = true;
+
 		public float nutritionCostPerDispense;
 
 		public SoundDef soundDispense;
 
 		public ThingDef turretGunDef;
 
-		public float turretBurstWarmupTime;
+		public FloatRange turretBurstWarmupTime = new FloatRange(0.25f, 0.75f);
 
 		public float turretBurstCooldownTime = -1f;
 
@@ -123,15 +212,28 @@ namespace RimWorld
 		[Unsaved(false)]
 		public Material turretTopMat;
 
+		[Unsaved(false)]
+		public Material turretTopLoadedMat;
+
 		public float turretTopDrawSize = 2f;
 
 		public Vector2 turretTopOffset;
+
+		public bool playTargetAcquiredSound = true;
+
+		public GraphicData turretTopLoadedGraphic;
+
+		public List<MechWeightClassDef> requiredMechWeightClasses;
 
 		public bool ai_combatDangerous;
 
 		public bool ai_chillDestination = true;
 
 		public bool ai_neverTrashThis;
+
+		public bool preferConnectingToFences;
+
+		public bool roamerCanOpen;
 
 		public SoundDef soundDoorOpenPowered;
 
@@ -141,6 +243,22 @@ namespace RimWorld
 
 		public SoundDef soundDoorCloseManual;
 
+		public SoundDef soundDoorCloseEnd;
+
+		public float poweredDoorOpenSpeedFactor = 1f;
+
+		public float poweredDoorCloseSpeedFactor = 1f;
+
+		public float unpoweredDoorOpenSpeedFactor = 1f;
+
+		public float unpoweredDoorCloseSpeedFactor = 1f;
+
+		public int doorTempEqualizeIntervalClosed = 375;
+
+		public int doorTempEqualizeIntervalOpen = 34;
+
+		public float doorTempEqualizeRate = 1f;
+
 		[NoTranslate]
 		public string sowTag;
 
@@ -149,6 +267,8 @@ namespace RimWorld
 		public ThingDef mineableThing;
 
 		public int mineableYield = 1;
+
+		public bool veinMineable;
 
 		public float mineableNonMinedEfficiency = 0.7f;
 
@@ -160,11 +280,21 @@ namespace RimWorld
 
 		public IntRange mineableScatterLumpSizeRange = new IntRange(20, 40);
 
+		public bool mineablePreventMeteorite;
+
+		public bool mineablePreventNaturalRockOnSurface;
+
 		public StorageSettings fixedStorageSettings;
 
 		public StorageSettings defaultStorageSettings;
 
 		public bool ignoreStoredThingsBeauty;
+
+		public string storageGroupTag;
+
+		public string groupingLabel;
+
+		public int groupingOrder;
 
 		public bool isTrap;
 
@@ -179,9 +309,15 @@ namespace RimWorld
 		[Unsaved(false)]
 		public Graphic trapUnarmedGraphic;
 
+		public RoomRoleDef workTableRoomRole;
+
+		public float workTableNotInRoomRoleFactor = 1f;
+
 		public float unpoweredWorkTableWorkSpeedFactor;
 
-		public IntRange watchBuildingStandDistanceRange = IntRange.one;
+		public SoundDef workTableCompleteSoundDef;
+
+		public IntRange watchBuildingStandDistanceRange = IntRange.One;
 
 		public int watchBuildingStandRectWidth = 3;
 
@@ -199,9 +335,101 @@ namespace RimWorld
 
 		public EffecterDef effectWatching;
 
+		public GraphicData gibbetCageTopGraphicData;
+
+		public Vector3 gibbetCorposeDrawOffset;
+
+		public EffecterDef gibbetCagePlaceCorpseEffecter;
+
+		public EffecterDef openingEffect;
+
+		public FillableBarRequestWithRotation barDrawData;
+
+		public MoteForRotationData gestatorFormingMote;
+
+		public MoteForRotationData gestatorCycleCompleteMote;
+
+		public MoteForRotationData gestatorFormedMote;
+
+		public GraphicData mechGestatorCylinderGraphic;
+
+		public GraphicData mechGestatorTopGraphic;
+
+		public GraphicData formingGraphicData;
+
+		public float formingMechBobSpeed = 0.001f;
+
+		public float formingMechYBobDistance = 0.1f;
+
+		public List<Vector3> formingMechPerRotationOffset = new List<Vector3>();
+
+		public Vector2 maxFormedMechDrawSize = new Vector2(1.5f, 1.5f);
+
+		public List<IngredientCount> subcoreScannerFixedIngredients;
+
+		public int subcoreScannerTicks = 7500;
+
+		public HediffDef subcoreScannerHediff;
+
+		public bool destroyBrain;
+
+		public ThingDef subcoreScannerOutputDef;
+
+		public EffecterDef subcoreScannerStartEffect;
+
+		public SoundDef subcoreScannerWorking;
+
+		public SoundDef subcoreScannerComplete;
+
+		public bool isInsectCocoon;
+
+		public GraphicData wastepackAtomizerBottomGraphic;
+
+		public GraphicData wastepackAtomizerWindowGraphic;
+
+		public EffecterDef wastepackAtomizerOperationEffecter;
+
+		public GraphicData bookendGraphicEast;
+
+		public GraphicData bookendGraphicNorth;
+
+		public bool isSupportDoor;
+
+		public GraphicData doorTopGraphic;
+
+		public GraphicData doorSupportGraphic;
+
+		public GraphicData upperMoverGraphic;
+
+		public Vector3 doorTopGraphicOffset;
+
+		public Vector3 doorSupportGraphicOffset;
+
+		public Vector3 doorTopHorizontalOffset = new Vector3(0f, 0f, 0.1f);
+
+		public Vector3 doorTopVerticalOffset = new Vector3(0f, 0f, 0f);
+
+		public ThingDef groundSpawnerThingToSpawn;
+
+		public IntRange groundSpawnerSpawnDelay;
+
+		public bool groundSpawnerDestroyAdjacent;
+
+		public SoundDef groundSpawnerSustainerSound;
+
+		public EffecterDef groundSpawnerSustainedEffecter;
+
+		public EffecterDef groundSpawnerCompleteEffecter;
+
+		public string groundSpawnerLetterLabel;
+
+		public string groundSpawnerLetterText;
+
+		private static List<string> tmpFenceBlockedAnimals = new List<string>();
+
 		public bool SupportsPlants => sowTag != null;
 
-		public int EffectiveMineableYield => Mathf.RoundToInt((float)mineableYield * Find.Storyteller.difficultyValues.mineYieldFactor);
+		public int EffectiveMineableYield => Mathf.RoundToInt((float)mineableYield * Find.Storyteller.difficulty.mineYieldFactor);
 
 		public bool IsTurret => turretGunDef != null;
 
@@ -273,6 +501,29 @@ namespace RimWorld
 			{
 				yield return "has MechClusterCombatThreat tag but 0 combatPower and thus no points cost; this will make an infinite loop during mech cluster building selection";
 			}
+			if (parent.IsGibbetCage && gibbetCageTopGraphicData == null)
+			{
+				yield return "Gibbet cage has no graphic data for gibbet cage top set.";
+			}
+			if (parent.IsMechGestator)
+			{
+				if (mechGestatorCylinderGraphic == null)
+				{
+					yield return "Mech gestator has no cylinder graphic set.";
+				}
+				if (mechGestatorTopGraphic == null)
+				{
+					yield return "Mech gestator has no top graphic set.";
+				}
+			}
+			if (isInsectCocoon && combatPower <= 0f)
+			{
+				yield return "Insect cocoon requires combat power value > 0.";
+			}
+			if (typeof(BuildingGroundSpawner).IsAssignableFrom(parent.thingClass) && groundSpawnerThingToSpawn == null)
+			{
+				yield return "Building ground spawner must have thing to spawn.";
+			}
 		}
 
 		public void PostLoadSpecial(ThingDef parent)
@@ -304,6 +555,13 @@ namespace RimWorld
 					turretTopMat = MaterialPool.MatFrom(turretGunDef.graphicData.texPath);
 				});
 			}
+			if (turretTopLoadedGraphic != null)
+			{
+				LongEventHandler.ExecuteWhenFinished(delegate
+				{
+					turretTopLoadedMat = MaterialPool.MatFrom(turretTopLoadedGraphic.texPath);
+				});
+			}
 			if (fixedStorageSettings != null)
 			{
 				fixedStorageSettings.filter.ResolveReferences();
@@ -325,7 +583,7 @@ namespace RimWorld
 			for (int i = 0; i < allDefsListForReading.Count; i++)
 			{
 				ThingDef thingDef = allDefsListForReading[i];
-				if (thingDef.building != null && thingDef.building.smoothedThing != null)
+				if (thingDef.building?.smoothedThing != null)
 				{
 					ThingDef thingDef2 = thingDef.building.smoothedThing;
 					if (thingDef2.building == null)
@@ -368,6 +626,57 @@ namespace RimWorld
 				float f = StatDefOf.TrapMeleeDamage.Worker.GetValue(req) * 0.015f;
 				yield return new StatDrawEntry(StatCategoryDefOf.Building, "TrapArmorPenetration".Translate(), f.ToStringPercent(), "ArmorPenetrationExplanation".Translate(), 3000);
 			}
+			if (isFence)
+			{
+				TaggedString taggedString = "Stat_Thing_Fence_Desc".Translate();
+				tmpFenceBlockedAnimals.Clear();
+				tmpFenceBlockedAnimals.AddRange(from g in DefDatabase<PawnKindDef>.AllDefs
+					where g.RaceProps.Animal && g.RaceProps.FenceBlocked
+					select g.LabelCap.Resolve() into s
+					orderby s
+					select s);
+				taggedString += ":\n\n";
+				taggedString += tmpFenceBlockedAnimals.ToLineList("- ");
+				yield return new StatDrawEntry(StatCategoryDefOf.Building, "StatsReport_Fence".Translate(), "Yes".Translate(), taggedString, 4800);
+				tmpFenceBlockedAnimals.Clear();
+			}
+			if (workTableRoomRole != null && !Mathf.Approximately(workTableNotInRoomRoleFactor, 1f))
+			{
+				yield return new StatDrawEntry(StatCategoryDefOf.Building, "StatsReport_OptimalRoom".Translate(), workTableRoomRole.LabelCap, "Stat_Building_OptimalRoom_Desc".Translate(), 4850);
+			}
+			if (ModsConfig.IdeologyActive)
+			{
+				foreach (Ideo ideo in Faction.OfPlayer.ideos.AllIdeos)
+				{
+					for (int i = 0; i < ideo.PreceptsListForReading.Count; i++)
+					{
+						if (!(ideo.PreceptsListForReading[i] is Precept_Building precept_Building) || precept_Building.ThingDef != parentDef || precept_Building.presenceDemand == null)
+						{
+							continue;
+						}
+						IdeoBuildingPresenceDemand presenceDemand = precept_Building.presenceDemand;
+						if (!presenceDemand.roomRequirements.NullOrEmpty())
+						{
+							string valueString = presenceDemand.roomRequirements.Select((RoomRequirement r) => r.Label()).ToCommaList().CapitalizeFirst();
+							string reportText = presenceDemand.roomRequirements.Select((RoomRequirement r) => r.LabelCap()).ToLineList("  - ");
+							yield return new StatDrawEntry(StatCategoryDefOf.Building, "RoomRequirements".Translate(), valueString, reportText, 2101);
+						}
+					}
+				}
+			}
+			yield return new StatDrawEntry(StatCategoryDefOf.Building, "Stat_Building_Paintable".Translate(), paintable.ToStringYesNo(), "Stat_Building_PaintableDesc".Translate(), 6000);
+		}
+
+		public GenDraw.FillableBarRequest BarDrawDataFor(Rot4 rot)
+		{
+			return rot.AsInt switch
+			{
+				0 => barDrawData.north, 
+				1 => barDrawData.east, 
+				2 => barDrawData.south, 
+				3 => barDrawData.west, 
+				_ => barDrawData.north, 
+			};
 		}
 	}
 }

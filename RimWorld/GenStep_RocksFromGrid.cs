@@ -15,6 +15,10 @@ namespace RimWorld
 
 		private float maxMineableValue = float.MaxValue;
 
+		private bool ignoreMaxIfGravship;
+
+		private float? overrideBlotchesPer10kCells;
+
 		private const int MinRoofedCellsPerGroup = 20;
 
 		public override int SeedPart => 1182952823;
@@ -34,7 +38,8 @@ namespace RimWorld
 			}
 			if (thingDef == null)
 			{
-				Log.ErrorOnce("Did not get rock def to generate at " + c, 50812);
+				IntVec3 intVec = c;
+				Log.ErrorOnce("Did not get rock def to generate at " + intVec.ToString(), 50812);
 				thingDef = ThingDefOf.Sandstone;
 			}
 			return thingDef;
@@ -95,36 +100,50 @@ namespace RimWorld
 				});
 				if (toRemove.Count < 20)
 				{
-					for (int j = 0; j < toRemove.Count; j++)
+					for (int num3 = 0; num3 < toRemove.Count; num3++)
 					{
-						map.roofGrid.SetRoof(toRemove[j], null);
+						map.roofGrid.SetRoof(toRemove[num3], null);
 					}
 				}
 			}
 			GenStep_ScatterLumpsMineable genStep_ScatterLumpsMineable = new GenStep_ScatterLumpsMineable();
-			genStep_ScatterLumpsMineable.maxValue = maxMineableValue;
-			float num3 = 10f;
-			switch (Find.WorldGrid[map.Tile].hilliness)
+			if (!ModsConfig.OdysseyActive || !ignoreMaxIfGravship || !map.wasSpawnedViaGravShipLanding)
 			{
-			case Hilliness.Flat:
-				num3 = 4f;
-				break;
-			case Hilliness.SmallHills:
-				num3 = 8f;
-				break;
-			case Hilliness.LargeHills:
-				num3 = 11f;
-				break;
-			case Hilliness.Mountainous:
-				num3 = 15f;
-				break;
-			case Hilliness.Impassable:
-				num3 = 16f;
-				break;
+				genStep_ScatterLumpsMineable.maxValue = maxMineableValue;
 			}
-			genStep_ScatterLumpsMineable.countPer10kCellsRange = new FloatRange(num3, num3);
+			genStep_ScatterLumpsMineable.useNomadicMineables = true;
+			float num4 = GetResourceBlotchesPer10KCellsForMap(map);
+			if (overrideBlotchesPer10kCells.HasValue)
+			{
+				num4 = overrideBlotchesPer10kCells.Value;
+			}
+			genStep_ScatterLumpsMineable.countPer10kCellsRange = new FloatRange(num4, num4);
 			genStep_ScatterLumpsMineable.Generate(map, parms);
 			map.regionAndRoomUpdater.Enabled = true;
+		}
+
+		public static float GetResourceBlotchesPer10KCellsForMap(Map map)
+		{
+			float result = 10f;
+			switch (map.TileInfo.HillinessForOreGeneration)
+			{
+			case Hilliness.Flat:
+				result = 4f;
+				break;
+			case Hilliness.SmallHills:
+				result = 8f;
+				break;
+			case Hilliness.LargeHills:
+				result = 11f;
+				break;
+			case Hilliness.Mountainous:
+				result = 15f;
+				break;
+			case Hilliness.Impassable:
+				result = 16f;
+				break;
+			}
+			return result;
 		}
 
 		private bool IsNaturalRoofAt(IntVec3 c, Map map)

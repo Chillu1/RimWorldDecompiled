@@ -18,29 +18,26 @@ namespace RimWorld
 
 		public static ThoughtState ActiveDefault => ActiveAtStage(0);
 
-		public static ThoughtState Inactive
+		public static ThoughtState Inactive => new ThoughtState
 		{
-			get
-			{
-				ThoughtState result = default(ThoughtState);
-				result.stageIndex = -99999;
-				return result;
-			}
-		}
+			stageIndex = -99999
+		};
 
 		public static ThoughtState ActiveAtStage(int stageIndex)
 		{
-			ThoughtState result = default(ThoughtState);
-			result.stageIndex = stageIndex;
-			return result;
+			return new ThoughtState
+			{
+				stageIndex = stageIndex
+			};
 		}
 
 		public static ThoughtState ActiveAtStage(int stageIndex, string reason)
 		{
-			ThoughtState result = default(ThoughtState);
-			result.stageIndex = stageIndex;
-			result.reason = reason;
-			return result;
+			return new ThoughtState
+			{
+				stageIndex = stageIndex,
+				reason = reason
+			};
 		}
 
 		public static ThoughtState ActiveWithReason(string reason)

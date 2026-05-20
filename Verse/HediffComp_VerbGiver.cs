@@ -17,7 +17,7 @@ namespace Verse
 
 		Thing IVerbOwner.ConstantCaster => base.Pawn;
 
-		ImplementOwnerTypeDef IVerbOwner.ImplementOwnerTypeDef => ImplementOwnerTypeDefOf.Hediff;
+		ImplementOwnerTypeDef IVerbOwner.ImplementOwnerTypeDef => Props.ownerTypeOverride ?? ImplementOwnerTypeDefOf.Hediff;
 
 		public HediffComp_VerbGiver()
 		{
@@ -34,9 +34,8 @@ namespace Verse
 			}
 		}
 
-		public override void CompPostTick(ref float severityAdjustment)
+		public override void CompPostTick(ref float _)
 		{
-			base.CompPostTick(ref severityAdjustment);
 			verbTracker.VerbsTick();
 		}
 

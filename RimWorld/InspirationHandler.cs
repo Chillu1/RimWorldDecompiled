@@ -12,25 +12,15 @@ namespace RimWorld
 
 		private const int CheckStartInspirationIntervalTicks = 100;
 
-		private const float MinMood = 0.5f;
-
 		private const float StartInspirationMTBDaysAtMaxMood = 10f;
+
+		private const float MinMood = 0.5f;
 
 		public bool Inspired => curState != null;
 
 		public Inspiration CurState => curState;
 
-		public InspirationDef CurStateDef
-		{
-			get
-			{
-				if (curState == null)
-				{
-					return null;
-				}
-				return curState.def;
-			}
-		}
+		public InspirationDef CurStateDef => curState?.def;
 
 		private float StartInspirationMTBDays
 		{
@@ -63,27 +53,25 @@ namespace RimWorld
 			}
 		}
 
-		public void InspirationHandlerTick()
+		public void InspirationHandlerTickInterval(int delta)
 		{
 			if (curState != null)
 			{
-				curState.InspirationTick();
+				curState.InspirationTick(delta);
 			}
-			if (pawn.IsHashIntervalTick(100))
+			if (pawn.IsHashIntervalTick(100, delta))
 			{
 				CheckStartRandomInspiration();
 			}
 		}
 
-		[Obsolete("Will be removed in a future game release and replaced with TryStartInspiration_NewTemp.")]
-		public bool TryStartInspiration(InspirationDef def)
-		{
-			return TryStartInspiration_NewTemp(def);
-		}
-
-		public bool TryStartInspiration_NewTemp(InspirationDef def, string reason = null)
+		public bool TryStartInspiration(InspirationDef def, string reason = null, bool sendLetter = true)
 		{
 			if (Inspired)
+			{
+				return false;
+			}
+			if (BlockedByHediff())
 			{
 				return false;
 			}
@@ -95,7 +83,7 @@ namespace RimWorld
 			curState.def = def;
 			curState.pawn = pawn;
 			curState.reason = reason;
-			curState.PostStart();
+			curState.PostStart(sendLetter);
 			return true;
 		}
 
@@ -138,7 +126,7 @@ namespace RimWorld
 				InspirationDef randomAvailableInspirationDef = GetRandomAvailableInspirationDef();
 				if (randomAvailableInspirationDef != null)
 				{
-					TryStartInspiration_NewTemp(randomAvailableInspirationDef, "LetterInspirationBeginThanksToHighMoodPart".Translate());
+					TryStartInspiration(randomAvailableInspirationDef, "LetterInspirationBeginThanksToHighMoodPart".Translate());
 				}
 			}
 		}
@@ -146,6 +134,18 @@ namespace RimWorld
 		public InspirationDef GetRandomAvailableInspirationDef()
 		{
 			return DefDatabase<InspirationDef>.AllDefsListForReading.Where((InspirationDef x) => x.Worker.InspirationCanOccur(pawn)).RandomElementByWeightWithFallback((InspirationDef x) => x.Worker.CommonalityFor(pawn));
+		}
+
+		private bool BlockedByHediff()
+		{
+			foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
+			{
+				if (hediff.CurStage != null && hediff.CurStage.blocksInspirations)
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 }

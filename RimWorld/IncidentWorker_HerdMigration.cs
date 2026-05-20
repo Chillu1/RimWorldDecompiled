@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 using Verse.AI;
@@ -18,7 +19,7 @@ namespace RimWorld
 			Map map = (Map)parms.target;
 			IntVec3 start;
 			IntVec3 end;
-			if (TryFindAnimalKind(map.Tile, out var _))
+			if (TryFindAnimalKind(map, out var _))
 			{
 				return TryFindStartAndEndCells(map, out start, out end);
 			}
@@ -28,7 +29,7 @@ namespace RimWorld
 		protected override bool TryExecuteWorker(IncidentParms parms)
 		{
 			Map map = (Map)parms.target;
-			if (!TryFindAnimalKind(map.Tile, out var animalKind))
+			if (!TryFindAnimalKind(map, out var animalKind))
 			{
 				return false;
 			}
@@ -45,15 +46,45 @@ namespace RimWorld
 				GenSpawn.Spawn(newThing, loc, map, rot);
 			}
 			LordMaker.MakeNewLord(null, new LordJob_ExitMapNear(end, LocomotionUrgency.Walk), map, list);
-			string str = string.Format(def.letterText, animalKind.GetLabelPlural()).CapitalizeFirst();
-			string str2 = string.Format(def.letterLabel, animalKind.GetLabelPlural().CapitalizeFirst());
-			SendStandardLetter(str2, str, def.letterDef, parms, list[0]);
+			TaggedString baseLetterText = def.letterText.Formatted(animalKind.GetLabelPlural()).CapitalizeFirst();
+			string text = string.Format(def.letterLabel, animalKind.GetLabelPlural().CapitalizeFirst());
+			SendStandardLetter(text, baseLetterText, def.letterDef, parms, list[0]);
 			return true;
 		}
 
-		private bool TryFindAnimalKind(int tile, out PawnKindDef animalKind)
+		private bool TryFindAnimalKind(Map map, out PawnKindDef animalKind)
 		{
-			return DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef k) => k.RaceProps.CanDoHerdMigration && Find.World.tileTemperatures.SeasonAndOutdoorTemperatureAcceptableFor(tile, k.race)).TryRandomElementByWeight((PawnKindDef x) => Mathf.Lerp(0.2f, 1f, x.RaceProps.wildness), out animalKind);
+			bool polluted = ModsConfig.BiotechActive && Rand.Value < WildAnimalSpawner.PollutionAnimalSpawnChanceFromPollutionCurve.Evaluate(Find.WorldGrid[map.Tile].pollution);
+			if ((from k in map.Biomes.SelectMany((BiomeDef b) => b.AllWildAnimals)
+				where IsValidBiomeAnimal(polluted, map, k)
+				select k).TryRandomElementByWeight((PawnKindDef x) => Mathf.Lerp(0.2f, 1f, x.race.GetStatValueAbstract(StatDefOf.Wildness)), out animalKind))
+			{
+				return true;
+			}
+			return DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef k) => IsValidAnimal(polluted, map, k)).TryRandomElementByWeight((PawnKindDef x) => Mathf.Lerp(0.2f, 1f, x.race.GetStatValueAbstract(StatDefOf.Wildness)), out animalKind);
+		}
+
+		private bool IsValidBiomeAnimal(bool polluted, Map map, PawnKindDef k)
+		{
+			if (!k.RaceProps.CanDoHerdMigration)
+			{
+				return false;
+			}
+			bool flag = (polluted ? map.Biomes.Any((BiomeDef b) => b.CommonalityOfPollutionAnimal(k) > 0f) : map.Biomes.Any((BiomeDef b) => b.CommonalityOfAnimal(k) > 0f));
+			if (map.TileInfo.IsCoastal && !polluted)
+			{
+				flag |= map.Biomes.Any((BiomeDef b) => b.CommonalityOfCoastalAnimal(k) > 0f);
+			}
+			return flag;
+		}
+
+		private bool IsValidAnimal(bool polluted, Map map, PawnKindDef k)
+		{
+			if (!map.mapTemperature.SeasonAndOutdoorTemperatureAcceptableFor(k.race))
+			{
+				return false;
+			}
+			return IsValidBiomeAnimal(polluted, map, k);
 		}
 
 		private bool TryFindStartAndEndCells(Map map, out IntVec3 start, out IntVec3 end)
@@ -67,7 +98,7 @@ namespace RimWorld
 			for (int i = 0; i < 8; i++)
 			{
 				IntVec3 startLocal = start;
-				if (!CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => map.reachability.CanReach(startLocal, x, PathEndMode.OnCell, TraverseMode.NoPassClosedDoors, Danger.Deadly), map, CellFinder.EdgeRoadChance_Ignore, out var result))
+				if (!CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => map.reachability.CanReach(startLocal, x, PathEndMode.OnCell, TraverseParms.For(TraverseMode.NoPassClosedDoors).WithFenceblocked(forceFenceblocked: true)), map, CellFinder.EdgeRoadChance_Ignore, out var result))
 				{
 					break;
 				}
@@ -79,7 +110,7 @@ namespace RimWorld
 			return end.IsValid;
 		}
 
-		private List<Pawn> GenerateAnimals(PawnKindDef animalKind, int tile)
+		private List<Pawn> GenerateAnimals(PawnKindDef animalKind, PlanetTile tile)
 		{
 			int randomInRange = AnimalsCount.RandomInRange;
 			randomInRange = Mathf.Max(randomInRange, Mathf.CeilToInt(4f / animalKind.RaceProps.baseBodySize));

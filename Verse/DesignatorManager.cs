@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
 using Verse.Sound;
@@ -8,9 +9,31 @@ namespace Verse
 	{
 		private Designator selectedDesignator;
 
-		private DesignationDragger dragger = new DesignationDragger();
+		private DrawStyleDef selectedStyle;
+
+		private Dictionary<DrawStyleCategoryDef, DrawStyleDef> previouslySelected = new Dictionary<DrawStyleCategoryDef, DrawStyleDef>();
+
+		private readonly DesignationDragger dragger = new DesignationDragger();
 
 		public Designator SelectedDesignator => selectedDesignator;
+
+		public DrawStyleDef SelectedStyle
+		{
+			get
+			{
+				return selectedStyle;
+			}
+			set
+			{
+				selectedStyle = value;
+				dragger.UpdateDragCellsIfNeeded();
+				DrawStyleCategoryDef drawStyleCategory = selectedDesignator.DrawStyleCategory;
+				if (drawStyleCategory != null && drawStyleCategory.styles.Contains(value))
+				{
+					previouslySelected[drawStyleCategory] = value;
+				}
+			}
+		}
 
 		public DesignationDragger Dragger => dragger;
 
@@ -18,6 +41,22 @@ namespace Verse
 		{
 			Deselect();
 			selectedDesignator = des;
+			DrawStyleCategoryDef drawStyleCategory = des.DrawStyleCategory;
+			if (drawStyleCategory != null && !drawStyleCategory.styles.NullOrEmpty())
+			{
+				if (Prefs.RememberDrawStlyes && previouslySelected.TryGetValue(drawStyleCategory, out var value))
+				{
+					selectedStyle = value;
+				}
+				else
+				{
+					selectedStyle = drawStyleCategory.styles[0];
+				}
+			}
+			else
+			{
+				selectedStyle = null;
+			}
 			selectedDesignator.Selected();
 		}
 
@@ -25,6 +64,7 @@ namespace Verse
 		{
 			if (selectedDesignator != null)
 			{
+				selectedDesignator.Deselected();
 				selectedDesignator = null;
 				dragger.EndDrag();
 			}
@@ -52,7 +92,7 @@ namespace Verse
 			}
 			if (Event.current.type == EventType.MouseDown && Event.current.button == 0)
 			{
-				if (selectedDesignator.DraggableDimensions == 0)
+				if (SelectedStyle == null)
 				{
 					Designator designator = selectedDesignator;
 					AcceptanceReport acceptanceReport = selectedDesignator.CanDesignateCell(UI.MouseCell());
@@ -81,7 +121,7 @@ namespace Verse
 				Event.current.Use();
 				TutorSystem.Notify_Event("ClearDesignatorSelection");
 			}
-			if (Event.current.type == EventType.MouseUp && Event.current.button == 0 && dragger.Dragging)
+			if (Event.current.type == EventType.MouseUp && Event.current.button == 0 && (dragger.Dragging || (selectedStyle != null && selectedStyle.DrawStyleWorker.SingleCell)))
 			{
 				selectedDesignator.DesignateMultiCell(dragger.DragCells);
 				dragger.EndDrag();
@@ -95,6 +135,7 @@ namespace Verse
 			if (CheckSelectedDesignatorValid())
 			{
 				selectedDesignator.DrawMouseAttachments();
+				selectedStyle?.DrawStyleWorker.Draw();
 			}
 		}
 
@@ -104,6 +145,26 @@ namespace Verse
 			if (CheckSelectedDesignatorValid())
 			{
 				selectedDesignator.SelectedUpdate();
+			}
+		}
+
+		public void AdvanceDrawStyle()
+		{
+			ChangeDrawStyle(1);
+		}
+
+		public void PreviousDrawStyle()
+		{
+			ChangeDrawStyle(-1);
+		}
+
+		private void ChangeDrawStyle(int delta)
+		{
+			if (SelectedStyle != null && selectedDesignator.DrawStyleCategory != null && !selectedDesignator.DrawStyleCategory.styles.NullOrEmpty())
+			{
+				List<DrawStyleDef> styles = selectedDesignator.DrawStyleCategory.styles;
+				int index = GenMath.PositiveMod(styles.IndexOf(SelectedStyle) + delta, styles.Count);
+				SelectedStyle = styles[index];
 			}
 		}
 	}

@@ -13,8 +13,8 @@ namespace RimWorld.BaseGen
 				rp.thrustAxis = Rot4.Random;
 				rp.thingRot = rp.thrustAxis;
 			}
-			IntVec2 a = IntVec2.Invalid;
-			IntVec2 b = IntVec2.Invalid;
+			IntVec2 intVec = IntVec2.Invalid;
+			IntVec2 intVec2 = IntVec2.Invalid;
 			IntVec2 toIntVec = rp.thingRot.Value.FacingCell.ToIntVec2;
 			int num = 0;
 			while (true)
@@ -22,16 +22,17 @@ namespace RimWorld.BaseGen
 				if (rp.thingRot.Value.IsHorizontal)
 				{
 					int newZ = Rand.Range(rp.rect.minZ + 1, rp.rect.maxZ - 2);
-					a = new IntVec2((rp.thingRot.Value == Rot4.East) ? rp.rect.minX : rp.rect.maxX, newZ);
-					b = new IntVec2((rp.thingRot.Value == Rot4.East) ? rp.rect.maxX : rp.rect.minX, newZ);
+					intVec = new IntVec2((rp.thingRot.Value == Rot4.East) ? rp.rect.minX : rp.rect.maxX, newZ);
+					intVec2 = new IntVec2((rp.thingRot.Value == Rot4.East) ? rp.rect.maxX : rp.rect.minX, newZ);
 				}
 				else
 				{
 					int newX = Rand.Range(rp.rect.minX + 1, rp.rect.maxX - 2);
-					a = new IntVec2(newX, (rp.thingRot.Value == Rot4.North) ? rp.rect.minZ : rp.rect.maxZ);
-					b = new IntVec2(newX, (rp.thingRot.Value == Rot4.North) ? rp.rect.maxZ : rp.rect.minZ);
+					intVec = new IntVec2(newX, (rp.thingRot.Value == Rot4.North) ? rp.rect.minZ : rp.rect.maxZ);
+					intVec2 = new IntVec2(newX, (rp.thingRot.Value == Rot4.North) ? rp.rect.maxZ : rp.rect.minZ);
 				}
-				if ((rp.allowPlacementOffEdge ?? true) || (a - toIntVec).ToIntVec3.GetThingList(map).Any((Thing thing) => thing.def == ThingDefOf.Ship_Beam))
+				bool? allowPlacementOffEdge = rp.allowPlacementOffEdge;
+				if (!allowPlacementOffEdge.HasValue || allowPlacementOffEdge == true || (intVec - toIntVec).ToIntVec3.GetThingList(map).Any((Thing thing2) => thing2.def == ThingDefOf.Ship_Beam))
 				{
 					break;
 				}
@@ -41,8 +42,8 @@ namespace RimWorld.BaseGen
 				}
 				num++;
 			}
-			int magnitudeManhattan = (a - b).MagnitudeManhattan;
-			if (!((a - b).Magnitude < (float)ship_Beam.Size.z))
+			int magnitudeManhattan = (intVec - intVec2).MagnitudeManhattan;
+			if (!((intVec - intVec2).Magnitude < (float)ship_Beam.Size.z))
 			{
 				int num2;
 				int num4;
@@ -55,14 +56,14 @@ namespace RimWorld.BaseGen
 					num4 = (magnitudeManhattan - num2 - num3) / ship_Beam.Size.z;
 				}
 				while (num4 <= 0);
-				IntVec2 intVec = a + toIntVec * (num2 + ship_Beam.Size.z / 2 - 1);
+				IntVec2 intVec3 = intVec + toIntVec * (num2 + ship_Beam.Size.z / 2 - 1);
 				Thing t = null;
-				for (int i = 0; i < num4; i++)
+				for (int num5 = 0; num5 < num4; num5++)
 				{
-					Thing thing2 = ThingMaker.MakeThing(ship_Beam);
-					thing2.SetFaction(rp.faction);
-					t = GenSpawn.Spawn(thing2, intVec.ToIntVec3, map, rp.thingRot.Value);
-					intVec += toIntVec * ship_Beam.Size.z;
+					Thing thing = ThingMaker.MakeThing(ship_Beam);
+					thing.SetFaction(rp.faction);
+					t = GenSpawn.Spawn(thing, intVec3.ToIntVec3, map, rp.thingRot.Value);
+					intVec3 += toIntVec * ship_Beam.Size.z;
 				}
 				if (rp.allowPlacementOffEdge ?? true)
 				{
@@ -90,7 +91,8 @@ namespace RimWorld.BaseGen
 					rect2.minX = t.OccupiedRect().maxX + 1;
 					value2 = Rot4.East;
 				}
-				if ((rp.allowPlacementOffEdge ?? true) || Rand.Value < 0.3f)
+				bool? allowPlacementOffEdge = rp.allowPlacementOffEdge;
+				if (!allowPlacementOffEdge.HasValue || allowPlacementOffEdge == true || Rand.Value < 0.3f)
 				{
 					ResolveParams resolveParams = rp;
 					resolveParams.rect = rect;
@@ -98,7 +100,8 @@ namespace RimWorld.BaseGen
 					resolveParams.allowPlacementOffEdge = false;
 					BaseGen.symbolStack.Push("ship_spine", resolveParams);
 				}
-				if ((rp.allowPlacementOffEdge ?? true) || Rand.Value < 0.3f)
+				allowPlacementOffEdge = rp.allowPlacementOffEdge;
+				if (!allowPlacementOffEdge.HasValue || allowPlacementOffEdge == true || Rand.Value < 0.3f)
 				{
 					ResolveParams resolveParams2 = rp;
 					resolveParams2.rect = rect2;

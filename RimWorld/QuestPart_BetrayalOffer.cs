@@ -20,6 +20,8 @@ namespace RimWorld
 
 		public string outSignalFailure;
 
+		public string outSignalFailureRecruited;
+
 		public override string ExpiryInfoPart => "QuestBetrayalOffer".Translate(PawnsAliveCount, extraFaction.faction.Name);
 
 		public override string ExpiryInfoPartTip => "QuestBetrayalOfferTip".Translate(asker.NameFullColored, extraFaction.faction.Name);
@@ -34,7 +36,7 @@ namespace RimWorld
 				}
 				for (int i = 0; i < pawns.Count; i++)
 				{
-					if (pawns[i].GetExtraFaction(extraFaction.factionType, quest) == extraFaction.faction && !pawns[i].Destroyed)
+					if (!pawns[i].Destroyed)
 					{
 						yield return pawns[i];
 					}
@@ -49,7 +51,7 @@ namespace RimWorld
 				int num = 0;
 				for (int i = 0; i < pawns.Count; i++)
 				{
-					if (pawns[i].GetExtraFaction(extraFaction.factionType, quest) == extraFaction.faction && !pawns[i].Destroyed)
+					if (!pawns[i].Destroyed)
 					{
 						num++;
 					}
@@ -64,12 +66,27 @@ namespace RimWorld
 			{
 				for (int i = 0; i < pawns.Count; i++)
 				{
-					if (pawns[i].GetExtraFaction(extraFaction.factionType, quest) == extraFaction.faction && !pawns[i].Spawned && !pawns[i].Dead)
+					if (!pawns[i].SpawnedOrAnyParentSpawned && !pawns[i].Dead)
 					{
 						return true;
 					}
 				}
 				return false;
+			}
+		}
+
+		private bool AllSurvivingPawnsRecruited
+		{
+			get
+			{
+				foreach (Pawn pawn in pawns)
+				{
+					if (!pawn.Destroyed && (!pawn.Faction.IsPlayerSafe() || pawn.GetExtraFaction(extraFaction.factionType, quest) == extraFaction.faction))
+					{
+						return false;
+					}
+				}
+				return true;
 			}
 		}
 
@@ -104,6 +121,12 @@ namespace RimWorld
 					Find.SignalManager.SendSignal(new Signal(outSignalSuccess, signal.args));
 					Complete();
 				}
+				else if (AllSurvivingPawnsRecruited)
+				{
+					string tag = outSignalFailureRecruited ?? outSignalFailure;
+					Find.SignalManager.SendSignal(new Signal(tag, signal.args));
+					Complete();
+				}
 			}
 		}
 
@@ -112,6 +135,15 @@ namespace RimWorld
 			if (extraFaction.faction == f)
 			{
 				extraFaction.faction = null;
+			}
+		}
+
+		public override void Notify_PawnKilled(Pawn pawn, DamageInfo? dinfo)
+		{
+			base.Notify_PawnKilled(pawn, dinfo);
+			if (pawn == asker && base.State == QuestPartState.Enabled)
+			{
+				Disable();
 			}
 		}
 
@@ -124,10 +156,15 @@ namespace RimWorld
 			Scribe_Collections.Look(ref inSignals, "inSignals", LookMode.Value);
 			Scribe_Values.Look(ref outSignalSuccess, "outSignalSuccess");
 			Scribe_Values.Look(ref outSignalFailure, "outSignalFailure");
+			Scribe_Values.Look(ref outSignalFailureRecruited, "outSignalFailureRecruited");
 			Scribe_Values.Look(ref outSignalEnabled, "outSignalEnabled");
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				pawns.RemoveAll((Pawn x) => x == null);
+				if (asker == null && base.State == QuestPartState.Enabled)
+				{
+					Disable();
+				}
 			}
 		}
 	}

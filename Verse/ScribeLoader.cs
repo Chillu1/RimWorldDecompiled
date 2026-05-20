@@ -18,7 +18,7 @@ namespace Verse
 
 		public void InitLoading(string filePath)
 		{
-			if (Scribe.mode != 0)
+			if (Scribe.mode != LoadSaveMode.Inactive)
 			{
 				Log.Error("Called InitLoading() but current mode is " + Scribe.mode);
 				Scribe.ForceStop();
@@ -54,7 +54,7 @@ namespace Verse
 
 		public void InitLoadingMetaHeaderOnly(string filePath)
 		{
-			if (Scribe.mode != 0)
+			if (Scribe.mode != LoadSaveMode.Inactive)
 			{
 				Log.Error("Called InitLoadingMetaHeaderOnly() but current mode is " + Scribe.mode);
 				Scribe.ForceStop();
@@ -99,12 +99,16 @@ namespace Verse
 				curParent = null;
 				curPathRelToParent = null;
 				Scribe.mode = LoadSaveMode.Inactive;
+				DeepProfiler.Start("ResolveAllCrossReferences()");
 				crossRefs.ResolveAllCrossReferences();
+				DeepProfiler.End();
+				DeepProfiler.Start("DoAllPostLoadInits()");
 				initer.DoAllPostLoadInits();
+				DeepProfiler.End();
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Exception in FinalizeLoading(): " + arg);
+				Log.Error("Exception in FinalizeLoading(): " + ex);
 				ForceStop();
 				throw;
 			}

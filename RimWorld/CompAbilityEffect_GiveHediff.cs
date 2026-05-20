@@ -9,13 +9,16 @@ namespace RimWorld
 		public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
 		{
 			base.Apply(target, dest);
-			if (!Props.onlyApplyToSelf)
+			if (!Props.ignoreSelf || target.Pawn != parent.pawn)
 			{
-				ApplyInner(target.Pawn, parent.pawn);
-			}
-			if (Props.applyToSelf || Props.onlyApplyToSelf)
-			{
-				ApplyInner(parent.pawn, target.Pawn);
+				if (!Props.onlyApplyToSelf && Props.applyToTarget)
+				{
+					ApplyInner(target.Pawn, parent.pawn);
+				}
+				if (Props.applyToSelf || Props.onlyApplyToSelf)
+				{
+					ApplyInner(parent.pawn, target.Pawn);
+				}
 			}
 		}
 
@@ -23,6 +26,11 @@ namespace RimWorld
 		{
 			if (target == null)
 			{
+				return;
+			}
+			if (TryResist(target))
+			{
+				MoteMaker.ThrowText(target.DrawPos, target.Map, "Resisted".Translate());
 				return;
 			}
 			if (Props.replaceExisting)
@@ -39,6 +47,10 @@ namespace RimWorld
 			{
 				hediffComp_Disappears.ticksToDisappear = GetDurationSeconds(target).SecondsToTicks();
 			}
+			if (Props.severity >= 0f)
+			{
+				hediff.Severity = Props.severity;
+			}
 			HediffComp_Link hediffComp_Link = hediff.TryGetComp<HediffComp_Link>();
 			if (hediffComp_Link != null)
 			{
@@ -46,6 +58,20 @@ namespace RimWorld
 				hediffComp_Link.drawConnection = target == parent.pawn;
 			}
 			target.health.AddHediff(hediff);
+		}
+
+		protected virtual bool TryResist(Pawn pawn)
+		{
+			return false;
+		}
+
+		public override bool AICanTargetNow(LocalTargetInfo target)
+		{
+			if (parent.pawn.Faction == Faction.OfPlayer)
+			{
+				return false;
+			}
+			return target.Pawn != null;
 		}
 	}
 }

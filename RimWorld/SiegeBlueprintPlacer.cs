@@ -40,7 +40,7 @@ namespace RimWorld
 
 		private static bool CanPlaceBlueprintAt(IntVec3 root, Rot4 rot, ThingDef buildingDef, Map map, ThingDef stuffDef)
 		{
-			return GenConstruct.CanPlaceBlueprintAt(buildingDef, root, rot, map, godMode: false, null, null, stuffDef).Accepted;
+			return GenConstruct.CanPlaceBlueprintAt(buildingDef, root, rot, map, godMode: false, null, null, stuffDef, ignoreEdgeArea: true, ignoreInteractionSpots: true, ignoreClearableFreeBuildings: true).Accepted;
 		}
 
 		private static IEnumerable<Blueprint_Build> PlaceCoverBlueprints(Map map)
@@ -83,7 +83,7 @@ namespace RimWorld
 		private static IEnumerable<Blueprint_Build> MakeCoverLine(IntVec3 root, Map map, Rot4 growDir, int maxLength, ThingDef coverThing, ThingDef coverStuff)
 		{
 			IntVec3 cur = root;
-			for (int i = 0; i < maxLength; i++)
+			for (int j = 0; j < maxLength; j++)
 			{
 				if (!CanPlaceBlueprintAt(cur, Rot4.North, coverThing, map, coverStuff))
 				{

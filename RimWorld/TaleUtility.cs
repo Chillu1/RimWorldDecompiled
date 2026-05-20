@@ -23,18 +23,22 @@ namespace RimWorld
 				return;
 			}
 			Pawn pawn = dinfo.Value.Instigator as Pawn;
-			if (pawn != null && pawn.CurJob != null && pawn.jobs.curDriver is JobDriver_Execute)
+			if ((pawn != null && pawn.CurJob != null && pawn.jobs.curDriver is JobDriver_Execute) || victim.IsSubhuman)
 			{
 				return;
 			}
 			bool flag = !victim.RaceProps.Humanlike && dinfo.Value.Instigator != null && dinfo.Value.Instigator.Spawned && dinfo.Value.Instigator is Pawn && ((Pawn)dinfo.Value.Instigator).jobs.curDriver is JobDriver_Slaughter;
 			if (pawn != null)
 			{
-				if (victim.IsColonist)
+				if (!victim.ageTracker.Adult && victim.RaceProps.Humanlike)
+				{
+					TaleRecorder.RecordTale(TaleDefOf.KilledChild, pawn, victim);
+				}
+				else if (victim.IsColonist)
 				{
 					TaleRecorder.RecordTale(TaleDefOf.KilledColonist, pawn, victim);
 				}
-				else if (victim.Faction == Faction.OfPlayer && victim.RaceProps.Animal && !flag)
+				else if (victim.Faction == Faction.OfPlayer && victim.IsAnimal && !flag)
 				{
 					TaleRecorder.RecordTale(TaleDefOf.KilledColonyAnimal, pawn, victim);
 				}

@@ -20,21 +20,21 @@ namespace RimWorld.Planet
 
 		public static bool CanEatVirtualPlants(Pawn p, int ticksAbs)
 		{
-			if (p.Tile >= 0 && !p.Dead && p.IsWorldPawn() && CanEverEatVirtualPlants(p))
+			if (p.Tile.Valid && !p.Dead && p.IsWorldPawn() && CanEverEatVirtualPlants(p))
 			{
 				return EnvironmentAllowsEatingVirtualPlantsAt(p.Tile, ticksAbs);
 			}
 			return false;
 		}
 
-		public static bool EnvironmentAllowsEatingVirtualPlantsNowAt(int tile)
+		public static bool EnvironmentAllowsEatingVirtualPlantsNowAt(PlanetTile tile)
 		{
 			return EnvironmentAllowsEatingVirtualPlantsAt(tile, GenTicks.TicksAbs);
 		}
 
-		public static bool EnvironmentAllowsEatingVirtualPlantsAt(int tile, int ticksAbs)
+		public static bool EnvironmentAllowsEatingVirtualPlantsAt(PlanetTile tile, int ticksAbs)
 		{
-			if (!Find.WorldGrid[tile].biome.hasVirtualPlants)
+			if (!Find.WorldGrid[tile].PrimaryBiome.hasVirtualPlants)
 			{
 				return false;
 			}
@@ -51,7 +51,7 @@ namespace RimWorld.Planet
 			p.needs.food.CurLevel += num;
 		}
 
-		public static string GetVirtualPlantsStatusExplanationAt(int tile, int ticksAbs)
+		public static string GetVirtualPlantsStatusExplanationAt(PlanetTile tile, int ticksAbs)
 		{
 			StringBuilder stringBuilder = new StringBuilder();
 			if (ticksAbs == GenTicks.TicksAbs)
@@ -83,9 +83,9 @@ namespace RimWorld.Planet
 			}
 			else
 			{
-				if (!Find.WorldGrid[tile].biome.hasVirtualPlants)
+				if (!Find.WorldGrid[tile].PrimaryBiome.hasVirtualPlants)
 				{
-					stringBuilder.Append("\n" + "CantGrazeBecauseOfBiome".Translate(Find.WorldGrid[tile].biome.label));
+					stringBuilder.Append("\n" + "CantGrazeBecauseOfBiome".Translate(Find.WorldGrid[tile].PrimaryBiome.label));
 				}
 				float? approxDaysUntilPossibleToGraze2 = GetApproxDaysUntilPossibleToGraze(tile, ticksAbs);
 				if (approxDaysUntilPossibleToGraze2.HasValue)
@@ -96,14 +96,14 @@ namespace RimWorld.Planet
 			return stringBuilder.ToString();
 		}
 
-		public static float? GetApproxDaysUntilPossibleToGraze(int tile, int ticksAbs, bool untilNoLongerPossibleToGraze = false)
+		public static float? GetApproxDaysUntilPossibleToGraze(PlanetTile tile, int ticksAbs, bool untilNoLongerPossibleToGraze = false)
 		{
-			if (!untilNoLongerPossibleToGraze && !Find.WorldGrid[tile].biome.hasVirtualPlants)
+			if (!untilNoLongerPossibleToGraze && !Find.WorldGrid[tile].PrimaryBiome.hasVirtualPlants)
 			{
 				return null;
 			}
 			float num = 0f;
-			for (int i = 0; i < Mathf.CeilToInt(133.333344f); i++)
+			for (int i = 0; i < Mathf.CeilToInt(133.33334f); i++)
 			{
 				bool flag = EnvironmentAllowsEatingVirtualPlantsAt(tile, ticksAbs + (int)(num * 60000f));
 				if ((!untilNoLongerPossibleToGraze && flag) || (untilNoLongerPossibleToGraze && !flag))

@@ -3,11 +3,15 @@ using Verse;
 
 namespace RimWorld
 {
-	public class Building_Casket : Building, IThingHolder, IOpenable
+	public class Building_Casket : Building, IThingHolder, IOpenable, ISearchableContents
 	{
 		protected ThingOwner innerContainer;
 
 		protected bool contentsKnown;
+
+		public string openedSignal;
+
+		public virtual int OpenTicks => 300;
 
 		public bool HasAnyContents => innerContainer.Count > 0;
 
@@ -23,7 +27,9 @@ namespace RimWorld
 			}
 		}
 
-		public bool CanOpen => HasAnyContents;
+		public virtual bool CanOpen => HasAnyContents;
+
+		public ThingOwner SearchableContents => innerContainer;
 
 		public Building_Casket()
 		{
@@ -40,23 +46,37 @@ namespace RimWorld
 			ThingOwnerUtility.AppendThingHoldersFromThings(outChildren, GetDirectlyHeldThings());
 		}
 
-		public override void TickRare()
-		{
-			base.TickRare();
-			innerContainer.ThingOwnerTickRare();
-		}
-
-		public override void Tick()
-		{
-			base.Tick();
-			innerContainer.ThingOwnerTick();
-		}
-
 		public virtual void Open()
 		{
 			if (HasAnyContents)
 			{
 				EjectContents();
+				if (!openedSignal.NullOrEmpty())
+				{
+					Find.SignalManager.SendSignal(new Signal(openedSignal, this.Named("SUBJECT")));
+				}
+				DirtyMapMesh(base.Map);
+			}
+		}
+
+		public override IEnumerable<Gizmo> GetGizmos()
+		{
+			foreach (Gizmo gizmo2 in base.GetGizmos())
+			{
+				yield return gizmo2;
+			}
+			Gizmo gizmo = Building.SelectContainedItemGizmo(this, ContainedThing);
+			if (gizmo != null)
+			{
+				yield return gizmo;
+			}
+			if (DebugSettings.ShowDevGizmos && CanOpen)
+			{
+				yield return new Command_Action
+				{
+					defaultLabel = "DEV: Open",
+					action = Open
+				};
 			}
 		}
 
@@ -65,6 +85,7 @@ namespace RimWorld
 			base.ExposeData();
 			Scribe_Deep.Look(ref innerContainer, "innerContainer", this);
 			Scribe_Values.Look(ref contentsKnown, "contentsKnown", defaultValue: false);
+			Scribe_Values.Look(ref openedSignal, "openedSignal");
 		}
 
 		public override void SpawnSetup(Map map, bool respawningAfterLoad)
@@ -76,17 +97,10 @@ namespace RimWorld
 			}
 		}
 
-		public override bool ClaimableBy(Faction fac)
+		public override AcceptanceReport ClaimableBy(Faction fac)
 		{
-			if (innerContainer.Any)
+			if (innerContainer.Any && !contentsKnown)
 			{
-				for (int i = 0; i < innerContainer.Count; i++)
-				{
-					if (innerContainer[i].Faction == fac)
-					{
-						return true;
-					}
-				}
 				return false;
 			}
 			return base.ClaimableBy(fac);
@@ -103,7 +117,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			bool flag = false;
+			bool flag;
 			if (thing.holdingOwner != null)
 			{
 				thing.holdingOwner.TryTransferToContainer(thing, innerContainer, thing.stackCount);
@@ -126,28 +140,28 @@ namespace RimWorld
 
 		public override void Destroy(DestroyMode mode = DestroyMode.Vanish)
 		{
+			Map map = base.Map;
+			base.Destroy(mode);
 			if (innerContainer.Count > 0 && (mode == DestroyMode.Deconstruct || mode == DestroyMode.KillFinalize))
 			{
 				if (mode != DestroyMode.Deconstruct)
 				{
 					List<Pawn> list = new List<Pawn>();
-					foreach (Thing item in (IEnumerable<Thing>)innerContainer)
+					foreach (Thing item2 in (IEnumerable<Thing>)innerContainer)
 					{
-						Pawn pawn = item as Pawn;
-						if (pawn != null)
+						if (item2 is Pawn item)
 						{
-							list.Add(pawn);
+							list.Add(item);
 						}
 					}
-					foreach (Pawn item2 in list)
+					foreach (Pawn item3 in list)
 					{
-						HealthUtility.DamageUntilDowned(item2);
+						HealthUtility.DamageUntilDowned(item3);
 					}
 				}
-				EjectContents();
+				innerContainer.TryDropAll(base.Position, map, ThingPlaceMode.Near);
 			}
 			innerContainer.ClearAndDestroyContents();
-			base.Destroy(mode);
 		}
 
 		public virtual void EjectContents()

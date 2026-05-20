@@ -10,14 +10,13 @@ namespace RimWorld
 			return Deploy(base.ReloadableCompSource);
 		}
 
-		public static bool Deploy(CompReloadable comp)
+		public static bool Deploy(CompApparelReloadable comp)
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (!ModLister.CheckRoyalty("Projectile interceptors"))
 			{
-				Log.ErrorOnce("Shields are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 86573384);
 				return false;
 			}
-			if (comp == null || !comp.CanBeUsed)
+			if (comp == null || !comp.CanBeUsed(out var _))
 			{
 				return false;
 			}
@@ -40,7 +39,7 @@ namespace RimWorld
 
 		private static void SpawnEffect(Thing projector)
 		{
-			MoteMaker.MakeStaticMote(projector.TrueCenter(), projector.Map, ThingDefOf.Mote_BroadshieldActivation);
+			FleckMaker.Static(projector.TrueCenter(), projector.Map, FleckDefOf.BroadshieldActivation);
 			SoundDefOf.Broadshield_Startup.PlayOneShot(new TargetInfo(projector.Position, projector.Map));
 		}
 	}

@@ -7,7 +7,13 @@ namespace RimWorld
 	{
 		private AudioSource audioSource;
 
+		private int silentTillFrame = -1;
+
+		private float silenceMultiplier = 1f;
+
 		private const string SourceGameObjectName = "MusicAudioSourceDummy";
+
+		private const float SilenceMultiplierChangePerSecond = 1.75f;
 
 		private float CurVolume => Prefs.VolumeMusic * SongDefOf.EntrySong.volume;
 
@@ -19,7 +25,16 @@ namespace RimWorld
 			{
 				StartPlaying();
 			}
-			audioSource.volume = CurSanitizedVolume;
+			float curSanitizedVolume = CurSanitizedVolume;
+			if (Time.frameCount > silentTillFrame)
+			{
+				silenceMultiplier = Mathf.Clamp01(silenceMultiplier + 1.75f * Time.deltaTime);
+			}
+			else if (Time.frameCount <= silentTillFrame)
+			{
+				silenceMultiplier = Mathf.Clamp01(silenceMultiplier - 1.75f * Time.deltaTime);
+			}
+			audioSource.volume = curSanitizedVolume * silenceMultiplier;
 		}
 
 		private void StartPlaying()
@@ -46,6 +61,11 @@ namespace RimWorld
 			audioSource.loop = true;
 			audioSource.spatialBlend = 0f;
 			audioSource.Play();
+		}
+
+		public void MaintainSilence()
+		{
+			silentTillFrame = Time.frameCount + 1;
 		}
 	}
 }

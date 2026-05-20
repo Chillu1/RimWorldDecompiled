@@ -5,8 +5,6 @@ namespace RimWorld
 {
 	public class JobGiver_Berserk : ThinkNode_JobGiver
 	{
-		private const float MaxAttackDistance = 40f;
-
 		private const float WaitChance = 0.5f;
 
 		private const int WaitTicks = 90;
@@ -14,6 +12,8 @@ namespace RimWorld
 		private const int MinMeleeChaseTicks = 420;
 
 		private const int MaxMeleeChaseTicks = 900;
+
+		private float maxAttackDistance = 40f;
 
 		protected override Job TryGiveJob(Pawn pawn)
 		{
@@ -28,22 +28,37 @@ namespace RimWorld
 			{
 				return null;
 			}
-			Pawn pawn2 = FindPawnTarget(pawn);
-			if (pawn2 != null)
+			Thing thing = FindAttackTarget(pawn);
+			if (thing != null)
 			{
-				Job job2 = JobMaker.MakeJob(JobDefOf.AttackMelee, pawn2);
+				Job job2 = JobMaker.MakeJob(JobDefOf.AttackMelee, thing);
 				job2.maxNumMeleeAttacks = 1;
 				job2.expiryInterval = Rand.Range(420, 900);
-				job2.canBash = true;
+				job2.canBashDoors = true;
 				return job2;
 			}
 			return null;
 		}
 
-		private Pawn FindPawnTarget(Pawn pawn)
+		private Thing FindAttackTarget(Pawn pawn)
 		{
-			Pawn pawn2;
-			return (Pawn)AttackTargetFinder.BestAttackTarget(pawn, TargetScanFlags.NeedReachable, (Thing x) => (pawn2 = x as Pawn) != null && pawn2.Spawned && !pawn2.Downed && !pawn2.IsInvisible(), 0f, 40f, default(IntVec3), float.MaxValue, canBash: true);
+			return (Thing)AttackTargetFinder.BestAttackTarget(pawn, TargetScanFlags.NeedReachable, IsGoodTarget, 0f, maxAttackDistance, default(IntVec3), float.MaxValue, canBashDoors: true);
+		}
+
+		protected virtual bool IsGoodTarget(Thing thing)
+		{
+			if (thing is Pawn { Spawned: not false, Downed: false } pawn)
+			{
+				return !pawn.IsPsychologicallyInvisible();
+			}
+			return false;
+		}
+
+		public override ThinkNode DeepCopy(bool resolve = true)
+		{
+			JobGiver_Berserk obj = (JobGiver_Berserk)base.DeepCopy(resolve);
+			obj.maxAttackDistance = maxAttackDistance;
+			return obj;
 		}
 	}
 }

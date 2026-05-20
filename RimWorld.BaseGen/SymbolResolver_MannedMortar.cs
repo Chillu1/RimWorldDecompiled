@@ -44,7 +44,7 @@ namespace RimWorld.BaseGen
 				{
 					IntVec3 c = ThingUtility.InteractionCellWhenAt(thingDef, cell, rot, map);
 					Lord singlePawnLord = LordMaker.MakeNewLord(faction, new LordJob_ManTurrets(), map);
-					PawnGenerationRequest value = new PawnGenerationRequest(faction.RandomPawnKind(), faction, PawnGenerationContext.NonPlayer, map.Tile, forceGenerateNewPawn: false, newborn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: true, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowFood: true, allowAddictions: true, inhabitant: true);
+					PawnGenerationRequest value = new PawnGenerationRequest(faction.RandomPawnKind(), faction, PawnGenerationContext.NonPlayer, map.Tile, forceGenerateNewPawn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: true, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowPregnant: false, allowFood: true, allowAddictions: true, inhabitant: true);
 					ResolveParams resolveParams = rp;
 					resolveParams.faction = faction;
 					resolveParams.singlePawnGenerationRequest = value;
@@ -52,7 +52,7 @@ namespace RimWorld.BaseGen
 					resolveParams.singlePawnLord = singlePawnLord;
 					BaseGen.symbolStack.Push("pawn", resolveParams);
 				}
-				ThingDef thingDef2 = TurretGunUtility.TryFindRandomShellDef(thingDef, allowEMP: false, mustHarmHealth: true, faction.def.techLevel, allowAntigrainWarhead: false, 250f);
+				ThingDef thingDef2 = TurretGunUtility.TryFindRandomShellDef(thingDef, allowEMP: false, allowToxGas: false, mustHarmHealth: true, faction.def.techLevel, allowAntigrainWarhead: false, 250f, faction);
 				if (thingDef2 != null)
 				{
 					ResolveParams resolveParams2 = rp;

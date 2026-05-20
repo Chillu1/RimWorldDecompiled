@@ -11,13 +11,15 @@ namespace RimWorld.BaseGen
 		{
 			Map map = BaseGen.globalSettings.map;
 			CellRect cellRect = CellRect.Empty;
-			RimWorld.SketchGen.ResolveParams parms = default(RimWorld.SketchGen.ResolveParams);
-			parms.sketch = new Sketch();
-			parms.monumentOpen = false;
-			parms.monumentSize = new IntVec2(rp.rect.Width, rp.rect.Height);
-			parms.allowMonumentDoors = false;
-			parms.allowWood = false;
-			parms.allowFlammableWalls = false;
+			SketchResolveParams parms = new SketchResolveParams
+			{
+				sketch = new Sketch(),
+				monumentOpen = false,
+				monumentSize = new IntVec2(rp.rect.Width, rp.rect.Height),
+				allowMonumentDoors = false,
+				allowWood = false,
+				allowFlammableWalls = false
+			};
 			if (rp.allowedMonumentThings != null)
 			{
 				parms.allowedMonumentThings = rp.allowedMonumentThings;
@@ -29,13 +31,13 @@ namespace RimWorld.BaseGen
 			}
 			parms.allowedMonumentThings.SetAllow(ThingDefOf.Drape, allow: false);
 			Sketch sketch = RimWorld.SketchGen.SketchGen.Generate(SketchResolverDefOf.Monument, parms);
-			sketch.Spawn(map, rp.rect.CenterCell, null, Sketch.SpawnPosType.Unchanged, Sketch.SpawnMode.Normal, wipeIfCollides: true, clearEdificeWhereFloor: true, null, dormant: false, buildRoofsInstantly: true);
-			CellRect rect = SketchGenUtility.FindBiggestRect(sketch, (IntVec3 x) => sketch.TerrainAt(x) != null && !sketch.ThingsAt(x).Any((SketchThing y) => y.def == ThingDefOf.Wall)).MovedBy(rp.rect.CenterCell);
-			for (int i = 0; i < sketch.Things.Count; i++)
+			sketch.Spawn(map, rp.rect.CenterCell, null, Sketch.SpawnPosType.Unchanged, Sketch.SpawnMode.Normal, wipeIfCollides: true, forceTerrainAffordance: false, clearEdificeWhereFloor: true, null, dormant: false, buildRoofsInstantly: true);
+			CellRect rect = SketchGenUtility.FindBiggestRect(sketch, (IntVec3 x) => sketch.TerrainAt(x) != null && sketch.ThingsAt(x).All((SketchThing y) => y.def != ThingDefOf.Wall)).MovedBy(rp.rect.CenterCell);
+			for (int num = 0; num < sketch.Things.Count; num++)
 			{
-				if (sketch.Things[i].def == ThingDefOf.Wall)
+				if (sketch.Things[num].def == ThingDefOf.Wall)
 				{
-					IntVec3 c = sketch.Things[i].pos + rp.rect.CenterCell;
+					IntVec3 c = sketch.Things[num].pos + rp.rect.CenterCell;
 					cellRect = ((!cellRect.IsEmpty) ? CellRect.FromLimits(Mathf.Min(cellRect.minX, c.x), Mathf.Min(cellRect.minZ, c.z), Mathf.Max(cellRect.maxX, c.x), Mathf.Max(cellRect.maxZ, c.z)) : CellRect.SingleCell(c));
 				}
 			}
@@ -60,16 +62,17 @@ namespace RimWorld.BaseGen
 			}
 			if (rp.makeWarningLetter.HasValue && rp.makeWarningLetter.Value)
 			{
-				int nextSignalTagID = Find.UniqueIDsManager.GetNextSignalTagID();
-				string signalTag = "ancientTempleApproached-" + nextSignalTagID;
-				SignalAction_Letter obj = (SignalAction_Letter)ThingMaker.MakeThing(ThingDefOf.SignalAction_Letter);
+				string signalTag = $"ancientTempleApproached-{Find.UniqueIDsManager.GetNextSignalTagID()}";
+				RectTrigger obj = (RectTrigger)ThingMaker.MakeThing(ThingDefOf.RectTrigger);
 				obj.signalTag = signalTag;
-				obj.letter = LetterMaker.MakeLetter("LetterLabelAncientShrineWarning".Translate(), "AncientShrineWarning".Translate(), LetterDefOf.ThreatBig, new TargetInfo(cellRect.CenterCell, map));
+				obj.Rect = cellRect.ExpandedBy(1).ClipInsideMap(map);
+				obj.destroyIfUnfogged = true;
 				GenSpawn.Spawn(obj, cellRect.CenterCell, map);
-				RectTrigger obj2 = (RectTrigger)ThingMaker.MakeThing(ThingDefOf.RectTrigger);
+				SignalAction_Letter obj2 = (SignalAction_Letter)ThingMaker.MakeThing(ThingDefOf.SignalAction_Letter);
 				obj2.signalTag = signalTag;
-				obj2.Rect = cellRect.ExpandedBy(1).ClipInsideMap(map);
-				obj2.destroyIfUnfogged = true;
+				obj2.letterDef = LetterDefOf.ThreatBig;
+				obj2.letterLabelKey = "LetterLabelAncientShrineWarning";
+				obj2.letterMessageKey = "AncientShrineWarning";
 				GenSpawn.Spawn(obj2, cellRect.CenterCell, map);
 			}
 		}

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Verse;
+using Verse.Steam;
 
 namespace RimWorld
 {
@@ -10,6 +11,9 @@ namespace RimWorld
 
 		[MustTranslate]
 		public string text;
+
+		[MustTranslate]
+		public string textController;
 
 		public bool startCentered;
 
@@ -55,6 +59,18 @@ namespace RimWorld
 
 		private static List<string> tmpParseErrors = new List<string>();
 
+		public string Text
+		{
+			get
+			{
+				if (!SteamDeck.IsSteamDeckInNonKeyboardMode || textController.NullOrEmpty())
+				{
+					return text;
+				}
+				return textController;
+			}
+		}
+
 		public override IEnumerable<string> ConfigErrors()
 		{
 			foreach (string item in base.ConfigErrors())
@@ -78,6 +94,15 @@ namespace RimWorld
 			for (int i = 0; i < tmpParseErrors.Count; i++)
 			{
 				yield return "text error: " + tmpParseErrors[i];
+			}
+			if (!textController.NullOrEmpty())
+			{
+				tmpParseErrors.Clear();
+				textController.AdjustedForKeys(tmpParseErrors, resolveKeys: false);
+				for (int i = 0; i < tmpParseErrors.Count; i++)
+				{
+					yield return "text error (controller): " + tmpParseErrors[i];
+				}
 			}
 		}
 	}

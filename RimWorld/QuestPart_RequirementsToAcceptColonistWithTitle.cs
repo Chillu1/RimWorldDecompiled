@@ -21,9 +21,9 @@ namespace RimWorld
 
 		public override AcceptanceReport CanAccept()
 		{
-			foreach (Pawn allMapsCaravansAndTravelingTransportPods_Alive_Colonist in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_Colonists)
+			foreach (Pawn allMapsCaravansAndTravellingTransporters_Alive_Colonist in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_Colonists)
 			{
-				if (CanPawnAccept(allMapsCaravansAndTravelingTransportPods_Alive_Colonist))
+				if (CanPawnAccept(allMapsCaravansAndTravellingTransporters_Alive_Colonist))
 				{
 					return true;
 				}

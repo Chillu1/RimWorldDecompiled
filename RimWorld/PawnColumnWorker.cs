@@ -22,15 +22,19 @@ namespace RimWorld
 
 		protected virtual GameFont DefaultHeaderFont => GameFont.Small;
 
+		protected virtual TextAnchor DefaultHeaderAlignment => TextAnchor.LowerCenter;
+
+		public virtual bool VisibleCurrently => true;
+
 		public virtual void DoHeader(Rect rect, PawnTable table)
 		{
 			if (!def.label.NullOrEmpty())
 			{
 				Text.Font = DefaultHeaderFont;
 				GUI.color = DefaultHeaderColor;
-				Text.Anchor = TextAnchor.LowerCenter;
+				Text.Anchor = DefaultHeaderAlignment;
 				Rect rect2 = rect;
-				rect2.y += 3f;
+				rect2.xMin += GetHeaderOffsetX(rect);
 				Widgets.Label(rect2, def.LabelCap.Resolve().Truncate(rect.width));
 				Text.Anchor = TextAnchor.UpperLeft;
 				GUI.color = Color.white;
@@ -67,7 +71,21 @@ namespace RimWorld
 			}
 		}
 
+		protected virtual float GetHeaderOffsetX(Rect rect)
+		{
+			return 0f;
+		}
+
 		public abstract void DoCell(Rect rect, Pawn pawn, PawnTable table);
+
+		public virtual bool CanGroupWith(Pawn pawn, Pawn other)
+		{
+			return false;
+		}
+
+		public virtual void Recache()
+		{
+		}
 
 		public virtual int GetMinWidth(PawnTable table)
 		{

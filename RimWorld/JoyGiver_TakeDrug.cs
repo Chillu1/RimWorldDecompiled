@@ -7,7 +7,7 @@ namespace RimWorld
 {
 	public class JoyGiver_TakeDrug : JoyGiver_Ingest
 	{
-		private static List<ThingDef> takeableDrugs = new List<ThingDef>();
+		private static readonly List<ThingDef> takeableDrugs = new List<ThingDef>();
 
 		protected override Thing BestIngestItem(Pawn pawn, Predicate<Thing> extraValidator)
 		{
@@ -15,27 +15,15 @@ namespace RimWorld
 			{
 				return null;
 			}
-			Predicate<Thing> predicate = delegate(Thing t)
-			{
-				if (!CanIngestForJoy(pawn, t))
-				{
-					return false;
-				}
-				return (extraValidator == null || extraValidator(t)) ? true : false;
-			};
 			ThingOwner<Thing> innerContainer = pawn.inventory.innerContainer;
 			for (int i = 0; i < innerContainer.Count; i++)
 			{
-				if (predicate(innerContainer[i]))
+				if (Validator(innerContainer[i]))
 				{
 					return innerContainer[i];
 				}
 			}
-			bool flag = false;
-			if (pawn.story != null && (pawn.story.traits.DegreeOfTrait(TraitDefOf.DrugDesire) > 0 || pawn.InMentalState))
-			{
-				flag = true;
-			}
+			bool flag = pawn.story != null && (pawn.story.traits.DegreeOfTrait(TraitDefOf.DrugDesire) > 0 || pawn.InMentalState);
 			takeableDrugs.Clear();
 			DrugPolicy currentPolicy = pawn.drugs.CurrentPolicy;
 			for (int j = 0; j < currentPolicy.Count; j++)
@@ -51,7 +39,7 @@ namespace RimWorld
 				List<Thing> list = pawn.Map.listerThings.ThingsOfDef(takeableDrugs[k]);
 				if (list.Count > 0)
 				{
-					Thing thing = GenClosest.ClosestThing_Global_Reachable(pawn.Position, pawn.Map, list, PathEndMode.OnCell, TraverseParms.For(pawn), 9999f, predicate);
+					Thing thing = GenClosest.ClosestThing_Global_Reachable(pawn.Position, pawn.Map, list, PathEndMode.OnCell, TraverseParms.For(pawn), 9999f, Validator);
 					if (thing != null)
 					{
 						return thing;
@@ -59,6 +47,22 @@ namespace RimWorld
 				}
 			}
 			return null;
+			bool Validator(Thing t)
+			{
+				if (!CanIngestForJoy(pawn, t))
+				{
+					return false;
+				}
+				if (extraValidator != null && !extraValidator(t))
+				{
+					return false;
+				}
+				if (t.def.ingestible == null || t.def.ingestible.drugCategory == DrugCategory.None)
+				{
+					return false;
+				}
+				return true;
+			}
 		}
 
 		public override float GetChance(Pawn pawn)

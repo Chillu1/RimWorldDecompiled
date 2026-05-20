@@ -1,4 +1,4 @@
-using System;
+using System.Collections.Generic;
 using RimWorld;
 
 namespace Verse
@@ -13,7 +13,11 @@ namespace Verse
 
 		public HediffDef Def => parent.def;
 
+		public virtual string CompLabelPrefix => null;
+
 		public virtual string CompLabelInBracketsExtra => null;
+
+		public virtual string CompDescriptionExtra => null;
 
 		public virtual string CompTipStringExtra => null;
 
@@ -26,6 +30,10 @@ namespace Verse
 		}
 
 		public virtual void CompPostTick(ref float severityAdjustment)
+		{
+		}
+
+		public virtual void CompPostTickInterval(ref float severityAdjustment, int delta)
 		{
 		}
 
@@ -58,12 +66,7 @@ namespace Verse
 		{
 		}
 
-		[Obsolete("Only need this overload to not break mod compatibility.")]
-		public virtual void CompTended(float quality, int batchPosition = 0)
-		{
-		}
-
-		public virtual void CompTended_NewTemp(float quality, float maxQuality, int batchPosition = 0)
+		public virtual void CompTended(float quality, float maxQuality, int batchPosition = 0)
 		{
 		}
 
@@ -79,7 +82,7 @@ namespace Verse
 		{
 		}
 
-		public virtual void Notify_PawnDied()
+		public virtual void Notify_PawnDied(DamageInfo? dinfo, Hediff culprit = null)
 		{
 		}
 
@@ -87,8 +90,33 @@ namespace Verse
 		{
 		}
 
+		public virtual void Notify_KilledPawn(Pawn victim, DamageInfo? dinfo)
+		{
+		}
+
 		public virtual void Notify_PawnPostApplyDamage(DamageInfo dinfo, float totalDamageDealt)
 		{
+		}
+
+		public virtual void Notify_Spawned()
+		{
+		}
+
+		public virtual void Notify_SurgicallyRemoved(Pawn surgeon)
+		{
+		}
+
+		public virtual void Notify_SurgicallyReplaced(Pawn surgeon)
+		{
+		}
+
+		public virtual void CopyFrom(HediffComp other)
+		{
+		}
+
+		public virtual IEnumerable<Gizmo> CompGetGizmos()
+		{
+			return null;
 		}
 
 		public virtual string CompDebugString()

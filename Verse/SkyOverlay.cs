@@ -4,82 +4,51 @@ namespace Verse
 {
 	public abstract class SkyOverlay
 	{
-		public Material worldOverlayMat;
+		public Color? ForcedOverlayColor { get; protected set; }
 
-		public Material screenOverlayMat;
-
-		protected float worldOverlayPanSpeed1;
-
-		protected float worldOverlayPanSpeed2;
-
-		protected Vector2 worldPanDir1;
-
-		protected Vector2 worldPanDir2;
-
-		public Color OverlayColor
+		public static void DrawWorldOverlay(Map map, Material mat, int layer = 0)
 		{
-			set
-			{
-				if (worldOverlayMat != null)
-				{
-					worldOverlayMat.color = value;
-				}
-				if (screenOverlayMat != null)
-				{
-					screenOverlayMat.color = value;
-				}
-			}
+			DrawWorldOverlay(map, mat, AltitudeLayer.Weather.AltitudeFor(), layer);
 		}
 
-		public SkyOverlay()
+		public static void DrawWorldOverlay(Map map, Material mat, float altitude, int layer = 0)
 		{
-			LongEventHandler.ExecuteWhenFinished(delegate
-			{
-				OverlayColor = Color.clear;
-			});
+			Vector3 position = map.Center.ToVector3Shifted().WithY(altitude);
+			Graphics.DrawMesh(MeshPool.wholeMapPlane, position, Quaternion.identity, mat, layer);
 		}
 
-		public virtual void TickOverlay(Map map)
+		public static void DrawScreenOverlay(Material mat, int layer = 0, Camera camera = null)
 		{
-			if (worldOverlayMat != null)
-			{
-				worldOverlayMat.SetTextureOffset("_MainTex", Find.TickManager.TicksGame % 3600000 * worldPanDir1 * -1f * worldOverlayPanSpeed1 * worldOverlayMat.GetTextureScale("_MainTex").x);
-				if (worldOverlayMat.HasProperty("_MainTex2"))
-				{
-					worldOverlayMat.SetTextureOffset("_MainTex2", Find.TickManager.TicksGame % 3600000 * worldPanDir2 * -1f * worldOverlayPanSpeed2 * worldOverlayMat.GetTextureScale("_MainTex2").x);
-				}
-			}
+			DrawScreenOverlay(mat, AltitudeLayer.Weather.AltitudeFor() + 0.03658537f, layer, camera);
 		}
 
-		public void DrawOverlay(Map map)
+		public virtual void Reset()
 		{
-			if (worldOverlayMat != null)
-			{
-				Vector3 position = map.Center.ToVector3ShiftedWithAltitude(AltitudeLayer.Weather);
-				Graphics.DrawMesh(MeshPool.wholeMapPlane, position, Quaternion.identity, worldOverlayMat, 0);
-			}
-			if (screenOverlayMat != null)
-			{
-				float num = Find.Camera.orthographicSize * 2f;
-				Vector3 s = new Vector3(num * Find.Camera.aspect, 1f, num);
-				Vector3 position2 = Find.Camera.transform.position;
-				position2.y = AltitudeLayer.Weather.AltitudeFor() + 3f / 70f;
-				Matrix4x4 matrix = default(Matrix4x4);
-				matrix.SetTRS(position2, Quaternion.identity, s);
-				Graphics.DrawMesh(MeshPool.plane10, matrix, screenOverlayMat, 0);
-			}
 		}
+
+		public static void DrawScreenOverlay(Material mat, float altitude, int layer = 0, Camera camera = null)
+		{
+			if (!camera)
+			{
+				camera = Find.Camera;
+			}
+			float num = camera.orthographicSize * 2f;
+			Vector3 s = new Vector3(num * camera.aspect, 1f, num);
+			Vector3 position = camera.transform.position;
+			position.y = altitude;
+			Matrix4x4 matrix = default(Matrix4x4);
+			matrix.SetTRS(position, Quaternion.identity, s);
+			Graphics.DrawMesh(MeshPool.plane10, matrix, mat, layer);
+		}
+
+		public abstract void TickOverlay(Map map, float lerpFactor);
+
+		public abstract void DrawOverlay(Map map);
+
+		public abstract void SetOverlayColor(Color color);
 
 		public override string ToString()
 		{
-			if (worldOverlayMat != null)
-			{
-				return worldOverlayMat.name;
-			}
-			if (screenOverlayMat != null)
-			{
-				return screenOverlayMat.name;
-			}
 			return "NoOverlayOverlay";
 		}
 	}

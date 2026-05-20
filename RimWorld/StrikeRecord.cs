@@ -23,7 +23,15 @@ namespace RimWorld
 
 		public override string ToString()
 		{
-			return string.Concat("(", cell, ", ", def, ", ", ticksGame, ")");
+			string[] obj = new string[7] { "(", null, null, null, null, null, null };
+			IntVec3 intVec = cell;
+			obj[1] = intVec.ToString();
+			obj[2] = ", ";
+			obj[3] = def?.ToString();
+			obj[4] = ", ";
+			obj[5] = ticksGame.ToString();
+			obj[6] = ")";
+			return string.Concat(obj);
 		}
 	}
 }

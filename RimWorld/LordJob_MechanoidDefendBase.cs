@@ -47,14 +47,13 @@ namespace RimWorld
 			foreach (Thing thing in things)
 			{
 				thing.SetFaction(null);
-				thing.TryGetComp<CompSendSignalOnPawnProximity>()?.Expire();
+				thing.TryGetComp<CompSendSignalOnMotion>()?.Expire();
 				CompSendSignalOnCountdown compSendSignalOnCountdown = thing.TryGetComp<CompSendSignalOnCountdown>();
 				if (compSendSignalOnCountdown != null)
 				{
 					compSendSignalOnCountdown.ticksLeft = 0;
 				}
-				ThingWithComps thingWithComps;
-				if ((thingWithComps = thing as ThingWithComps) != null)
+				if (thing is ThingWithComps thingWithComps)
 				{
 					thingWithComps.BroadcastCompSignal("MechClusterDefeated");
 				}
@@ -63,6 +62,10 @@ namespace RimWorld
 			for (int i = 0; i < thingsToNotifyOnDefeat.Count; i++)
 			{
 				thingsToNotifyOnDefeat[i].Notify_LordDestroyed();
+			}
+			if (!base.Map.IsPlayerHome)
+			{
+				IdeoUtility.Notify_PlayerRaidedSomeone(base.Map.mapPawns.FreeColonistsSpawned);
 			}
 			mechClusterDefeated = true;
 			foreach (Pawn item in base.Map.mapPawns.FreeColonistsSpawned)
@@ -76,7 +79,7 @@ namespace RimWorld
 
 		public void AddThingToNotifyOnDefeat(Thing t)
 		{
-			thingsToNotifyOnDefeat.AddDistinct(t);
+			thingsToNotifyOnDefeat.AddUnique(t);
 		}
 
 		public override void ExposeData()

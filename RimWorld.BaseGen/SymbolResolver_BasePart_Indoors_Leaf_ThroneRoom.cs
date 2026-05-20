@@ -8,7 +8,19 @@ namespace RimWorld.BaseGen
 			{
 				return false;
 			}
-			if (rp.faction == null || rp.faction != Faction.Empire)
+			if (rp.faction == null || rp.faction != Faction.OfEmpire)
+			{
+				return false;
+			}
+			if (rp.allowGeneratingThronerooms.HasValue && !rp.allowGeneratingThronerooms.Value)
+			{
+				return false;
+			}
+			if (BaseGen.globalSettings.basePart_worshippedTerminalsResolved < BaseGen.globalSettings.requiredWorshippedTerminalRooms && SymbolResolver_BasePart_Indoors_Leaf_WorshippedTerminal.CanResolve("basePart_indoors_leaf", rp))
+			{
+				return false;
+			}
+			if (BaseGen.globalSettings.basePart_gravcoresResolved < BaseGen.globalSettings.requiredGravcoreRooms && SymbolResolver_BasePart_Indoors_Leaf_Gravcore.CanResolve("basePart_indoors_leaf", rp))
 			{
 				return false;
 			}

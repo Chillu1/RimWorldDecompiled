@@ -13,7 +13,7 @@ namespace RimWorld
 
 		public override Job TryGiveJob(Pawn pawn)
 		{
-			if (!JoyUtility.EnjoyableOutsideNow(pawn) || pawn.Map.weatherManager.curWeather.rainRate > 0.1f)
+			if (!JoyUtility.EnjoyableOutsideNow(pawn) || pawn.Map.weatherManager.curWeather.rainRate > 0.1f || pawn.Map.weatherManager.curWeather.preventSkygaze || (ModsConfig.AnomalyActive && pawn.Map.gameConditionManager.ConditionIsActive(GameConditionDefOf.UnnaturalDarkness)))
 			{
 				return null;
 			}

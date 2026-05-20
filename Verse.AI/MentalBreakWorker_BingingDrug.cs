@@ -37,8 +37,7 @@ namespace Verse.AI
 			List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
 			for (int i = 0; i < hediffs.Count; i++)
 			{
-				Hediff_Addiction hediff_Addiction = hediffs[i] as Hediff_Addiction;
-				if (hediff_Addiction != null && AddictionUtility.CanBingeOnNow(pawn, hediff_Addiction.Chemical, DrugCategory.Any))
+				if (hediffs[i] is Hediff_Addiction hediff_Addiction && AddictionUtility.CanBingeOnNow(pawn, hediff_Addiction.Chemical, DrugCategory.Any))
 				{
 					num++;
 				}

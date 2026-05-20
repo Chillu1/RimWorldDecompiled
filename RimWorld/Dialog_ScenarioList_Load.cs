@@ -18,8 +18,7 @@ namespace RimWorld
 			string filePath = GenFilePaths.AbsPathForScenario(fileName);
 			PreLoadUtility.CheckVersionAndLoad(filePath, ScribeMetaHeaderUtility.ScribeHeaderMode.Scenario, delegate
 			{
-				Scenario scen = null;
-				if (GameDataSaveLoader.TryLoadScenario(filePath, ScenarioCategory.CustomLocal, out scen))
+				if (GameDataSaveLoader.TryLoadScenario(filePath, ScenarioCategory.CustomLocal, out var scen))
 				{
 					scenarioReturner(scen);
 				}

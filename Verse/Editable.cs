@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Verse
 {
@@ -14,7 +15,7 @@ namespace Verse
 
 		public virtual IEnumerable<string> ConfigErrors()
 		{
-			yield break;
+			return Enumerable.Empty<string>();
 		}
 	}
 }

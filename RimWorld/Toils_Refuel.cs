@@ -9,17 +9,14 @@ namespace RimWorld
 	{
 		public static Toil FinalizeRefueling(TargetIndex refuelableInd, TargetIndex fuelInd)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("FinalizeRefueling");
 			toil.initAction = delegate
 			{
 				Job curJob = toil.actor.CurJob;
 				Thing thing = curJob.GetTarget(refuelableInd).Thing;
 				if (toil.actor.CurJob.placedThings.NullOrEmpty())
 				{
-					thing.TryGetComp<CompRefuelable>().Refuel(new List<Thing>
-					{
-						curJob.GetTarget(fuelInd).Thing
-					});
+					thing.TryGetComp<CompRefuelable>().Refuel(new List<Thing> { curJob.GetTarget(fuelInd).Thing });
 				}
 				else
 				{

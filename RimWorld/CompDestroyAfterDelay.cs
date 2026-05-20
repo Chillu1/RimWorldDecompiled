@@ -7,12 +7,16 @@ namespace RimWorld
 	{
 		public int spawnTick;
 
+		public int DestructionTick => spawnTick + Props.delayTicks;
+
+		public int TicksLeft => DestructionTick - Find.TickManager.TicksGame;
+
 		public CompProperties_DestroyAfterDelay Props => (CompProperties_DestroyAfterDelay)props;
 
 		public override void CompTick()
 		{
 			base.CompTick();
-			if (Find.TickManager.TicksGame > spawnTick + Props.delayTicks && !parent.Destroyed)
+			if (TicksLeft <= 0 && !parent.Destroyed)
 			{
 				parent.Destroy(Props.destroyMode);
 			}
@@ -28,10 +32,19 @@ namespace RimWorld
 			return Props.countdownLabel + ": " + numTicks.ToStringSecondsFromTicks();
 		}
 
+		public override string TransformLabel(string label)
+		{
+			if (Props.displayCountdownOnLabel)
+			{
+				return base.TransformLabel(label) + " (" + TicksLeft.TicksToSeconds().ToString("F0") + "s)";
+			}
+			return base.TransformLabel(label);
+		}
+
 		public override void PostSpawnSetup(bool respawningAfterLoad)
 		{
 			base.PostSpawnSetup(respawningAfterLoad);
-			if (!respawningAfterLoad)
+			if (!respawningAfterLoad && !parent.BeingTransportedOnGravship)
 			{
 				spawnTick = Find.TickManager.TicksGame;
 			}

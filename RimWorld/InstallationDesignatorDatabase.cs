@@ -20,10 +20,9 @@ namespace RimWorld
 
 		private static Designator_Install NewDesignatorFor(ThingDef artDef)
 		{
-			return new Designator_Install
-			{
-				hotKey = KeyBindingDefOf.Misc1
-			};
+			Designator_Install designator_Install = ((!(artDef.thingClass == typeof(MinifiedTree))) ? new Designator_Install() : new Designator_Replant());
+			designator_Install.hotKey = KeyBindingDefOf.Misc1;
+			return designator_Install;
 		}
 	}
 }

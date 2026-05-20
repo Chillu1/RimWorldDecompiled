@@ -41,9 +41,26 @@ namespace RimWorld
 			return "ScenPart_StartingResearchFinished".Translate(project.LabelCap);
 		}
 
+		public override bool HasNullDefs()
+		{
+			if (!base.HasNullDefs())
+			{
+				return project == null;
+			}
+			return true;
+		}
+
 		public override void PostGameStart()
 		{
-			Find.ResearchManager.FinishProject(project);
+			if (project != null)
+			{
+				Find.ResearchManager.FinishProject(project, doCompletionDialog: false, null, doCompletionLetter: false);
+			}
+		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode() ^ ((project != null) ? project.GetHashCode() : 0);
 		}
 	}
 }

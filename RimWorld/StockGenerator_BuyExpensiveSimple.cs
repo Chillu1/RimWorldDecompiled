@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -7,14 +9,14 @@ namespace RimWorld
 	{
 		public float minValuePerUnit = 15f;
 
-		public override IEnumerable<Thing> GenerateThings(int forTile, Faction faction = null)
+		public override IEnumerable<Thing> GenerateThings(PlanetTile forTile, Faction faction = null)
 		{
-			yield break;
+			return Enumerable.Empty<Thing>();
 		}
 
 		public override bool HandlesThingDef(ThingDef thingDef)
 		{
-			if (thingDef.category != ThingCategory.Item || thingDef.IsApparel || thingDef.IsWeapon || thingDef.IsMedicine || thingDef.IsDrug)
+			if (thingDef.category != ThingCategory.Item || thingDef.IsApparel || thingDef.IsWeapon || thingDef.IsMedicine || thingDef.IsDrug || !thingDef.genericMarketSellable)
 			{
 				return false;
 			}
@@ -23,6 +25,15 @@ namespace RimWorld
 				return true;
 			}
 			return thingDef.BaseMarketValue / thingDef.VolumePerUnit >= minValuePerUnit;
+		}
+
+		public override Tradeability TradeabilityFor(ThingDef thingDef)
+		{
+			if (thingDef.tradeability == Tradeability.None || !HandlesThingDef(thingDef))
+			{
+				return Tradeability.None;
+			}
+			return Tradeability.Sellable;
 		}
 	}
 }

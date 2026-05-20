@@ -6,7 +6,7 @@ namespace RimWorld
 {
 	public class Designator_EmptySpace : Designator
 	{
-		public override GizmoResult GizmoOnGUI(Vector2 loc, float maxWidth)
+		public override GizmoResult GizmoOnGUI(Vector2 loc, float maxWidth, GizmoRenderParms parms)
 		{
 			return new GizmoResult(GizmoState.Clear);
 		}

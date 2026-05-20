@@ -15,5 +15,11 @@ namespace RimWorld
 			base.ExposeData();
 			Scribe_Defs.Look(ref titleDef, "titleDef");
 		}
+
+		public override void CopyFrom(Thought_Memory m)
+		{
+			titleDef = ((Thought_MemoryRoyalTitle)m).titleDef;
+			base.CopyFrom(m);
+		}
 	}
 }

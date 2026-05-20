@@ -27,13 +27,13 @@ namespace Verse.AI
 			ChooseRandomChemical();
 			if (PawnUtility.ShouldSendNotificationAbout(pawn))
 			{
-				string str = "LetterLabelDrugBinge".Translate(chemical.label).CapitalizeFirst() + ": " + pawn.LabelShortCap;
-				string text = "LetterDrugBinge".Translate(pawn.Label, chemical.label, pawn).CapitalizeFirst();
+				string text = "LetterLabelDrugBinge".Translate(chemical.label).CapitalizeFirst() + ": " + pawn.LabelShortCap;
+				string text2 = "LetterDrugBinge".Translate(pawn.Label, chemical.label, pawn).CapitalizeFirst();
 				if (!reason.NullOrEmpty())
 				{
-					text = text + "\n\n" + reason;
+					text2 = text2 + "\n\n" + reason;
 				}
-				Find.LetterStack.ReceiveLetter(str, text, LetterDefOf.ThreatSmall, pawn);
+				Find.LetterStack.ReceiveLetter(text, text2, LetterDefOf.ThreatSmall, pawn);
 			}
 		}
 
@@ -52,8 +52,7 @@ namespace Verse.AI
 			List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
 			for (int i = 0; i < hediffs.Count; i++)
 			{
-				Hediff_Addiction hediff_Addiction = hediffs[i] as Hediff_Addiction;
-				if (hediff_Addiction != null && AddictionUtility.CanBingeOnNow(pawn, hediff_Addiction.Chemical, DrugCategory.Any))
+				if (hediffs[i] is Hediff_Addiction hediff_Addiction && AddictionUtility.CanBingeOnNow(pawn, hediff_Addiction.Chemical, DrugCategory.Any))
 				{
 					addictions.Add(hediff_Addiction.Chemical);
 				}

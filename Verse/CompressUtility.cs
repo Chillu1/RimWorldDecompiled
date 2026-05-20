@@ -17,6 +17,16 @@ namespace Verse
 			return memoryStream.ToArray();
 		}
 
+		public static byte[] Compress(ReadOnlySpan<byte> input)
+		{
+			using MemoryStream memoryStream = new MemoryStream();
+			using (DeflateStream deflateStream = new DeflateStream(memoryStream, CompressionMode.Compress))
+			{
+				deflateStream.Write(input);
+			}
+			return memoryStream.ToArray();
+		}
+
 		public static byte[] Decompress(byte[] input)
 		{
 			using MemoryStream stream = new MemoryStream(input);

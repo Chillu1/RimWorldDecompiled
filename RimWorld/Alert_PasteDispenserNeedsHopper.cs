@@ -18,11 +18,10 @@ namespace RimWorld
 					foreach (Thing item in maps[i].listerThings.ThingsInGroup(ThingRequestGroup.FoodDispenser))
 					{
 						bool flag = false;
-						ThingDef hopper = ThingDefOf.Hopper;
 						foreach (IntVec3 adjCellsCardinalInBound in ((Building_NutrientPasteDispenser)item).AdjCellsCardinalInBounds)
 						{
 							Thing edifice = adjCellsCardinalInBound.GetEdifice(item.Map);
-							if (edifice != null && edifice.def == hopper)
+							if (edifice != null && edifice.IsHopper())
 							{
 								flag = true;
 								break;

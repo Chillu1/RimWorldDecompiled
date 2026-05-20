@@ -22,7 +22,7 @@ namespace RimWorld.BaseGen
 			{
 				return false;
 			}
-			if (BaseGen.globalSettings.basePart_farmsCoverage + (float)rp.rect.Area / (float)BaseGen.globalSettings.mainRect.Area >= 0.55f)
+			if (BaseGen.globalSettings.basePart_farmsCoverage + (float)rp.rect.Area / (float)BaseGen.globalSettings.mainRect.Area >= 0.55f || (BaseGen.globalSettings.maxFarms > -1 && BaseGen.globalSettings.basePart_farmsCount >= BaseGen.globalSettings.maxFarms))
 			{
 				return false;
 			}
@@ -41,6 +41,7 @@ namespace RimWorld.BaseGen
 		{
 			BaseGen.symbolStack.Push("farm", rp);
 			BaseGen.globalSettings.basePart_farmsCoverage += (float)rp.rect.Area / (float)BaseGen.globalSettings.mainRect.Area;
+			BaseGen.globalSettings.basePart_farmsCount++;
 		}
 	}
 }

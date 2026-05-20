@@ -22,14 +22,14 @@ namespace RimWorld
 		public override void Initialize(CompProperties props)
 		{
 			base.Initialize(props);
-			gender = Gender.Male;
+			gender = (Rand.Bool ? Gender.Male : Gender.Female);
 			droneLevel = Props.droneLevel;
 		}
 
 		public override void PostSpawnSetup(bool respawningAfterLoad)
 		{
 			base.PostSpawnSetup(respawningAfterLoad);
-			if (!respawningAfterLoad && DroneLevelIncreases)
+			if (!respawningAfterLoad && DroneLevelIncreases && !parent.BeingTransportedOnGravship)
 			{
 				ticksToIncreaseDroneLevel = Props.droneLevelIncreaseInterval;
 				SoundDefOf.PsychicPulseGlobal.PlayOneShotOnCamera(parent.Map);
@@ -39,7 +39,7 @@ namespace RimWorld
 		public override void CompTick()
 		{
 			base.CompTick();
-			if (parent.Spawned && DroneLevelIncreases && base.Active)
+			if (parent.Spawned && DroneLevelIncreases && Active)
 			{
 				ticksToIncreaseDroneLevel--;
 				if (ticksToIncreaseDroneLevel <= 0)
@@ -55,8 +55,8 @@ namespace RimWorld
 			if (droneLevel != PsychicDroneLevel.BadExtreme)
 			{
 				droneLevel++;
-				TaggedString taggedString = "LetterPsychicDroneLevelIncreased".Translate(gender.GetLabel());
-				Find.LetterStack.ReceiveLetter("LetterLabelPsychicDroneLevelIncreased".Translate(), taggedString, LetterDefOf.NegativeEvent);
+				TaggedString text = "LetterPsychicDroneLevelIncreased".Translate(gender.GetLabel());
+				Find.LetterStack.ReceiveLetter("LetterLabelPsychicDroneLevelIncreased".Translate(), text, LetterDefOf.NegativeEvent);
 				SoundDefOf.PsychicPulseGlobal.PlayOneShotOnCamera(parent.Map);
 				ReSetupAllConditions();
 			}
@@ -80,7 +80,7 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (!Prefs.DevMode)
+			if (!Prefs.DevMode || !DebugSettings.godMode)
 			{
 				yield break;
 			}
@@ -121,7 +121,7 @@ namespace RimWorld
 			return text + ("AffectedGender".Translate() + ": " + gender.GetLabel().CapitalizeFirst() + "\n" + "PsychicDroneLevel".Translate(droneLevel.GetLabelCap()));
 		}
 
-		public override void RandomizeSettings_NewTemp_NewTemp(Site site)
+		public override void RandomizeSettings(Site site)
 		{
 			gender = (Rand.Bool ? Gender.Male : Gender.Female);
 			if (site.ActualThreatPoints < 800f)

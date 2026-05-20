@@ -20,7 +20,7 @@ namespace RimWorld
 
 		public Color colorB = Color.white;
 
-		public FloatRange scale;
+		public FloatRange scale = FloatRange.One;
 
 		public FloatRange rotationRate;
 

@@ -15,12 +15,20 @@ namespace RimWorld
 
 		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			bool num = pawn == t && pawn.playerSettings != null && base.HasJobOnThing(pawn, t, forced);
-			if (num && !pawn.playerSettings.selfTend)
+			int num;
+			if (pawn == t && pawn.playerSettings != null)
 			{
-				JobFailReason.Is("SelfTendDisabled".Translate());
+				num = (base.HasJobOnThing(pawn, t, forced) ? 1 : 0);
+				if (num != 0 && !pawn.playerSettings.selfTend)
+				{
+					JobFailReason.Is("SelfTendDisabled".Translate());
+				}
 			}
-			if (num)
+			else
+			{
+				num = 0;
+			}
+			if (num != 0)
 			{
 				return pawn.playerSettings.selfTend;
 			}

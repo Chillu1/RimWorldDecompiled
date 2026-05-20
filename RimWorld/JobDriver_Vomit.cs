@@ -25,37 +25,37 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
 				ticksLeft = Rand.Range(300, 900);
 				int num = 0;
-				IntVec3 c;
+				IntVec3 intVec;
 				do
 				{
-					c = pawn.Position + GenAdj.AdjacentCellsAndInside[Rand.Range(0, 9)];
+					intVec = pawn.Position + GenAdj.AdjacentCellsAndInside[Rand.Range(0, 9)];
 					num++;
 					if (num > 12)
 					{
-						c = pawn.Position;
+						intVec = pawn.Position;
 						break;
 					}
 				}
-				while (!c.InBounds(pawn.Map) || !c.Standable(pawn.Map));
-				job.targetA = c;
+				while (!intVec.InBounds(pawn.Map) || !intVec.Standable(pawn.Map));
+				job.targetA = intVec;
 				pawn.pather.StopDead();
 			};
-			toil.tickAction = delegate
+			toil.tickIntervalAction = delegate(int delta)
 			{
-				if (ticksLeft % 150 == 149)
+				if (pawn.IsHashIntervalTick(150, delta))
 				{
 					FilthMaker.TryMakeFilth(job.targetA.Cell, base.Map, ThingDefOf.Filth_Vomit, pawn.LabelIndefinite());
-					if (pawn.needs.food.CurLevelPercentage > 0.1f)
+					if (pawn.needs != null && pawn.needs.TryGetNeed(out Need_Food need) && need.CurLevelPercentage > 0.1f)
 					{
-						pawn.needs.food.CurLevel -= pawn.needs.food.MaxLevel * 0.04f;
+						need.CurLevel -= need.MaxLevel * 0.04f;
 					}
 				}
-				ticksLeft--;
+				ticksLeft -= delta;
 				if (ticksLeft <= 0)
 				{
 					ReadyForNextToil();

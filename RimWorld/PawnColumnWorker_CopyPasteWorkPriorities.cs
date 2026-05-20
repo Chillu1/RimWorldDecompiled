@@ -27,8 +27,8 @@ namespace RimWorld
 			List<WorkTypeDef> allDefsListForReading = DefDatabase<WorkTypeDef>.AllDefsListForReading;
 			for (int i = 0; i < allDefsListForReading.Count; i++)
 			{
-				WorkTypeDef workTypeDef = allDefsListForReading[i];
-				clipboard[workTypeDef] = ((!p.WorkTypeIsDisabled(workTypeDef)) ? p.workSettings.GetPriority(workTypeDef) : 3);
+				WorkTypeDef w = allDefsListForReading[i];
+				clipboard[w] = ((!p.WorkTypeIsDisabled(w)) ? p.workSettings.GetPriority(w) : 0);
 			}
 		}
 
@@ -37,10 +37,10 @@ namespace RimWorld
 			List<WorkTypeDef> allDefsListForReading = DefDatabase<WorkTypeDef>.AllDefsListForReading;
 			for (int i = 0; i < allDefsListForReading.Count; i++)
 			{
-				WorkTypeDef workTypeDef = allDefsListForReading[i];
-				if (!p.WorkTypeIsDisabled(workTypeDef))
+				WorkTypeDef w = allDefsListForReading[i];
+				if (!p.WorkTypeIsDisabled(w))
 				{
-					p.workSettings.SetPriority(workTypeDef, clipboard[workTypeDef]);
+					p.workSettings.SetPriority(w, clipboard[w]);
 				}
 			}
 		}

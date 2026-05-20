@@ -1,10 +1,11 @@
+using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using RimWorld;
 
 namespace Verse
 {
-	public class Def : Editable
+	public class Def : Editable, IEquatable<Def>
 	{
 		[Description("The name of this Def. It is used as an identifier by the game code.")]
 		[NoTranslate]
@@ -28,6 +29,8 @@ namespace Verse
 		[MustTranslate]
 		public bool ignoreConfigErrors;
 
+		public bool ignoreIllegalLabelCharacterConfigError;
+
 		[Description("Mod-specific data. Not used by core game code.")]
 		[DefaultValue(null)]
 		public List<DefModExtension> modExtensions;
@@ -45,7 +48,10 @@ namespace Verse
 		public string fileName;
 
 		[Unsaved(false)]
-		private TaggedString cachedLabelCap = null;
+		public int defNameHash;
+
+		[Unsaved(false)]
+		protected TaggedString cachedLabelCap = null;
 
 		[Unsaved(false)]
 		public bool generated;
@@ -55,9 +61,11 @@ namespace Verse
 
 		public const string DefaultDefName = "UnnamedDef";
 
-		private static Regex AllowedDefnamesRegex = new Regex("^[a-zA-Z0-9\\-_]*$");
+		private static readonly Regex AllowedDefNamesRegex = new Regex("^[a-zA-Z0-9\\-_]*$");
 
-		public TaggedString LabelCap
+		private static readonly Regex DisallowedLabelCharsRegex = new Regex("\\[|\\]|\\{|\\}");
+
+		public virtual TaggedString LabelCap
 		{
 			get
 			{
@@ -75,34 +83,50 @@ namespace Verse
 
 		public virtual IEnumerable<StatDrawEntry> SpecialDisplayStats(StatRequest req)
 		{
-			yield break;
+			if (modContentPack != null && !modContentPack.IsCoreMod)
+			{
+				TaggedString taggedString = (modContentPack.IsOfficialMod ? "Stat_Source_OfficialExpansionReport".Translate() : "Stat_Source_ModReport".Translate());
+				yield return new StatDrawEntry(StatCategoryDefOf.Source, "Stat_Source_Label".Translate(), modContentPack.Name, taggedString + ": " + modContentPack.Name, 90000, null, null, forceUnfinalizedMode: false, overridesHideStats: true);
+			}
+		}
+
+		public override void ResolveReferences()
+		{
+			base.ResolveReferences();
+			if (modExtensions != null)
+			{
+				for (int i = 0; i < modExtensions.Count; i++)
+				{
+					modExtensions[i].ResolveReferences(this);
+				}
+			}
 		}
 
 		public override IEnumerable<string> ConfigErrors()
 		{
 			if (defName == "UnnamedDef")
 			{
-				yield return string.Concat(GetType(), " lacks defName. Label=", label);
+				yield return GetType()?.ToString() + " lacks defName. Label=" + label;
 			}
 			if (defName == "null")
 			{
 				yield return "defName cannot be the string 'null'.";
 			}
-			if (!AllowedDefnamesRegex.IsMatch(defName))
+			if (!AllowedDefNamesRegex.IsMatch(defName))
 			{
 				yield return "defName " + defName + " should only contain letters, numbers, underscores, or dashes.";
 			}
 			if (modExtensions != null)
 			{
-				int j = 0;
-				while (j < modExtensions.Count)
+				int i = 0;
+				while (i < modExtensions.Count)
 				{
-					foreach (string item in modExtensions[j].ConfigErrors())
+					foreach (string item in modExtensions[i].ConfigErrors())
 					{
 						yield return item;
 					}
-					int num = j + 1;
-					j = num;
+					int num = i + 1;
+					i = num;
 				}
 			}
 			if (description != null)
@@ -120,22 +144,29 @@ namespace Verse
 					yield return "description has trailing whitespace";
 				}
 			}
-			if (descriptionHyperlinks == null || descriptionHyperlinks.Count <= 0)
+			if (descriptionHyperlinks != null && descriptionHyperlinks.Count > 0)
 			{
-				yield break;
-			}
-			if (descriptionHyperlinks.RemoveAll((DefHyperlink x) => x.def == null) != 0)
-			{
-				Log.Warning("Some descriptionHyperlinks in " + defName + " had null def.");
-			}
-			int i;
-			for (i = descriptionHyperlinks.Count - 1; i > 0; i--)
-			{
-				if (descriptionHyperlinks.FirstIndexOf((DefHyperlink h) => h.def == descriptionHyperlinks[i].def) < i)
+				if (descriptionHyperlinks.RemoveAll((DefHyperlink x) => x.def == null) != 0)
 				{
-					yield return "Hyperlink to " + descriptionHyperlinks[i].def.defName + " more than once on " + defName + " description";
+					Log.Warning("Some descriptionHyperlinks in " + defName + " had null def.");
+				}
+				int i2;
+				for (i2 = descriptionHyperlinks.Count - 1; i2 > 0; i2--)
+				{
+					if (descriptionHyperlinks.FirstIndexOf((DefHyperlink h) => h.def == descriptionHyperlinks[i2].def) < i2)
+					{
+						yield return "Hyperlink to " + descriptionHyperlinks[i2].def.defName + " more than once on " + defName + " description";
+					}
 				}
 			}
+			if (label != null && !ignoreIllegalLabelCharacterConfigError && DisallowedLabelCharsRegex.IsMatch(label))
+			{
+				yield return "label contains illegal character(s): \"[]{}\". This can cause issues during grammar resolution. If this was intended, you can use the \"ignoreIllegalLabelCharacterConfigError\" flag.";
+			}
+		}
+
+		public virtual void PostSetIndices()
+		{
 		}
 
 		public virtual void ClearCachedData()
@@ -148,9 +179,14 @@ namespace Verse
 			return defName;
 		}
 
+		public void ResolveDefNameHash()
+		{
+			defNameHash = defName.GetHashCode();
+		}
+
 		public override int GetHashCode()
 		{
-			return defName.GetHashCode();
+			return defNameHash;
 		}
 
 		public T GetModExtension<T>() where T : DefModExtension
@@ -172,6 +208,15 @@ namespace Verse
 		public bool HasModExtension<T>() where T : DefModExtension
 		{
 			return GetModExtension<T>() != null;
+		}
+
+		public bool Equals(Def other)
+		{
+			if (other != null && other.defNameHash == defNameHash)
+			{
+				return other.GetType() == GetType();
+			}
+			return false;
 		}
 	}
 }

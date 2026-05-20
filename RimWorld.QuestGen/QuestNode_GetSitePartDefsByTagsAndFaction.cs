@@ -77,9 +77,9 @@ namespace RimWorld.QuestGen
 				if (QuestGen.Working)
 				{
 					Dictionary<string, string> dictionary = new Dictionary<string, string>();
-					for (int j = 0; j < siteParts.Count; j++)
+					for (int num = 0; num < siteParts.Count; num++)
 					{
-						dictionary[siteParts[j].defName + "_exists"] = "True";
+						dictionary[siteParts[num].defName + "_exists"] = "True";
 					}
 					QuestGen.AddQuestDescriptionConstants(dictionary);
 				}

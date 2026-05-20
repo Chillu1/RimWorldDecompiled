@@ -9,9 +9,9 @@ namespace RimWorld
 
 		protected override bool CanScatterAt(IntVec3 c, Map map)
 		{
-			if (base.CanScatterAt(c, map))
+			if (base.CanScatterAt(c, map) && c.Standable(map))
 			{
-				return c.Standable(map);
+				return !c.Fogged(map);
 			}
 			return false;
 		}
@@ -32,7 +32,6 @@ namespace RimWorld
 			HealthUtility.DamageLegsUntilIncapableOfMoving(pawn, allowBleedingWounds: false);
 			GenSpawn.Spawn(pawn, loc, map);
 			pawn.mindState.WillJoinColonyIfRescued = true;
-			MapGenerator.rootsToUnfog.Add(loc);
 			MapGenerator.SetVar("RectOfInterest", CellRect.CenteredOn(loc, 1, 1));
 		}
 	}

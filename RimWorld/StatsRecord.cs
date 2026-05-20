@@ -36,7 +36,7 @@ namespace RimWorld
 
 		public void UpdateGreatestPopulation()
 		{
-			int a = PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_Colonists.Count();
+			int a = PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_Colonists.Count();
 			greatestPopulation = Mathf.Max(a, greatestPopulation);
 		}
 	}

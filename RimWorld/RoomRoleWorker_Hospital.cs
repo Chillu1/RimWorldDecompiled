@@ -7,12 +7,11 @@ namespace RimWorld
 	{
 		public override float GetScore(Room room)
 		{
-			int num = 0;
+			bool flag = false;
 			List<Thing> containedAndAdjacentThings = room.ContainedAndAdjacentThings;
 			for (int i = 0; i < containedAndAdjacentThings.Count; i++)
 			{
-				Building_Bed building_Bed = containedAndAdjacentThings[i] as Building_Bed;
-				if (building_Bed != null && building_Bed.def.building.bed_humanlike)
+				if (containedAndAdjacentThings[i] is Building_Bed building_Bed && building_Bed.def.building.bed_humanlike)
 				{
 					if (building_Bed.ForPrisoners)
 					{
@@ -20,11 +19,29 @@ namespace RimWorld
 					}
 					if (building_Bed.Medical)
 					{
-						num++;
+						flag = true;
+						break;
 					}
 				}
 			}
-			return (float)num * 100000f;
+			if (!flag)
+			{
+				return 0f;
+			}
+			return 100000f;
+		}
+
+		public override float GetScoreDeltaIfBuildingPlaced(Room room, ThingDef buildingDef)
+		{
+			if (room.Role != null && room.Role.Worker is RoomRoleWorker_Hospital)
+			{
+				return 0f;
+			}
+			if (buildingDef.building != null && buildingDef.building.bed_humanlike && buildingDef.building.bed_defaultMedical)
+			{
+				return 100000f;
+			}
+			return 0f;
 		}
 	}
 }

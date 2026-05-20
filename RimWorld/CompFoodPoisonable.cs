@@ -6,9 +6,11 @@ namespace RimWorld
 	{
 		private float poisonPct;
 
-		public FoodPoisonCause cause;
+		private FoodPoisonCause cause;
 
 		public float PoisonPercent => poisonPct;
+
+		public FoodPoisonCause Cause => cause;
 
 		public void SetPoisoned(FoodPoisonCause newCause)
 		{
@@ -31,15 +33,27 @@ namespace RimWorld
 			compFoodPoisonable.cause = cause;
 		}
 
+		public override void Notify_RecipeProduced(Pawn pawn)
+		{
+			if (Rand.Chance(pawn.GetRoom()?.GetStat(RoomStatDefOf.FoodPoisonChance) ?? RoomStatDefOf.FoodPoisonChance.roomlessScore))
+			{
+				SetPoisoned(FoodPoisonCause.FilthyKitchen);
+			}
+			else if (Rand.Chance(pawn.GetStatValue(StatDefOf.FoodPoisonChance)))
+			{
+				SetPoisoned(FoodPoisonCause.IncompetentCook);
+			}
+		}
+
 		public override void PreAbsorbStack(Thing otherStack, int count)
 		{
 			base.PreAbsorbStack(otherStack, count);
 			CompFoodPoisonable compFoodPoisonable = otherStack.TryGetComp<CompFoodPoisonable>();
-			if (cause == FoodPoisonCause.Unknown && compFoodPoisonable.cause != 0)
+			if (cause == FoodPoisonCause.Unknown && compFoodPoisonable.cause != FoodPoisonCause.Unknown)
 			{
 				cause = compFoodPoisonable.cause;
 			}
-			else if (compFoodPoisonable.cause != 0 || cause != 0)
+			else if (compFoodPoisonable.cause != FoodPoisonCause.Unknown && cause != FoodPoisonCause.Unknown)
 			{
 				float num = poisonPct * (float)parent.stackCount;
 				float num2 = compFoodPoisonable.poisonPct * (float)count;

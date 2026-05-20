@@ -16,8 +16,8 @@ namespace RimWorld
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			this.FailOnDespawnedOrNull(TargetIndex.A);
-			Toil beat = new Toil();
-			Toil approach = new Toil();
+			Toil beat = ToilMaker.MakeToil("MakeNewToils");
+			Toil approach = ToilMaker.MakeToil("MakeNewToils");
 			approach.initAction = delegate
 			{
 				if (base.Map.reservationManager.CanReserve(pawn, TargetFire))
@@ -26,7 +26,7 @@ namespace RimWorld
 				}
 				pawn.pather.StartPath(TargetFire, PathEndMode.Touch);
 			};
-			approach.tickAction = delegate
+			approach.tickIntervalAction = delegate
 			{
 				if (pawn.pather.Moving && pawn.pather.nextCell != TargetFire.Position)
 				{
@@ -67,8 +67,7 @@ namespace RimWorld
 			List<Thing> thingList = cell.GetThingList(base.Map);
 			for (int i = 0; i < thingList.Count; i++)
 			{
-				Fire fire = thingList[i] as Fire;
-				if (fire != null && fire.parent == null)
+				if (thingList[i] is Fire { parent: null } fire)
 				{
 					job.targetA = fire;
 					pawn.pather.StopDead();

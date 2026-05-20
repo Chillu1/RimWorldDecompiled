@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 using Verse;
 using Verse.AI;
 using Verse.AI.Group;
@@ -7,11 +8,15 @@ namespace RimWorld
 {
 	public class CompCanBeDormant : ThingComp
 	{
-		public int makeTick;
+		private int makeTick;
 
 		public int wokeUpTick = int.MinValue;
 
 		public int wakeUpOnTick = int.MinValue;
+
+		private int repeatWakeUpSignalOnTick = int.MaxValue;
+
+		private Effecter wakeUpEffect;
 
 		public string wakeUpSignalTag;
 
@@ -19,19 +24,45 @@ namespace RimWorld
 
 		public const string DefaultWakeUpSignal = "CompCanBeDormant.WakeUp";
 
-		private CompProperties_CanBeDormant Props => (CompProperties_CanBeDormant)props;
+		public CompProperties_CanBeDormant Props => (CompProperties_CanBeDormant)props;
 
 		private bool WaitingToWakeUp => wakeUpOnTick != int.MinValue;
 
-		public bool Awake
+		protected virtual JobDef SleepJob => JobDefOf.Wait_AsleepDormancy;
+
+		public virtual bool Awake
 		{
 			get
 			{
-				if (wokeUpTick != int.MinValue)
+				if (wokeUpTick == int.MinValue || wokeUpTick > Find.TickManager.TicksGame)
 				{
-					return wokeUpTick <= Find.TickManager.TicksGame;
+					if (parent.Spawned && Props.jobDormancy && parent is Pawn pawn)
+					{
+						return pawn.CurJobDef != SleepJob;
+					}
+					return false;
 				}
-				return false;
+				return true;
+			}
+		}
+
+		protected virtual bool ShowZs
+		{
+			get
+			{
+				if (parent is Pawn)
+				{
+					return false;
+				}
+				if (!Props.showSleepingZs)
+				{
+					return false;
+				}
+				if (!Props.delayedWakeUpDoesZs)
+				{
+					return wakeUpOnTick == int.MinValue;
+				}
+				return true;
 			}
 		}
 
@@ -53,27 +84,65 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (Prefs.DevMode)
+			if (!Prefs.DevMode || !DebugSettings.godMode || Props.dontShowDevGizmos)
 			{
-				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "DEV: Wake Up";
-				command_Action.action = delegate
+				yield break;
+			}
+			if (!Awake)
+			{
+				yield return new Command_Action
 				{
-					WakeUp();
+					defaultLabel = "DEV: Wake Up",
+					action = WakeUp
 				};
-				yield return command_Action;
+				yield return new Command_Action
+				{
+					action = delegate
+					{
+						List<FloatMenuOption> list = new List<FloatMenuOption>();
+						for (int i = 0; i < 10; i++)
+						{
+							float num = (float)i * 0.5f;
+							int delayTicks = Mathf.RoundToInt(num * 60f);
+							string label = num.ToString("F1") + "s";
+							list.Add(new FloatMenuOption(label, delegate
+							{
+								wakeUpOnTick = Find.TickManager.TicksGame + delayTicks;
+							}));
+						}
+						Find.WindowStack.Add(new FloatMenu(list));
+					},
+					defaultLabel = "DEV: Wake up after...",
+					defaultDesc = "DEV: Wake up after a delay"
+				};
+			}
+			else if (Props.jobDormancy)
+			{
+				yield return new Command_Action
+				{
+					defaultLabel = "DEV: To Sleep",
+					action = ToSleep
+				};
 			}
 		}
 
 		public override string CompInspectStringExtra()
 		{
+			if (parent is Pawn p && (p.IsSelfShutdown() || p.IsDeactivated() || p.Awake()))
+			{
+				return null;
+			}
 			if (Awake)
 			{
-				if (makeTick != wokeUpTick)
+				if (parent.Faction != Faction.OfPlayer && makeTick != wokeUpTick && !(parent is Pawn { Downed: not false }))
 				{
 					return Props.awakeStateLabelKey.Translate((GenTicks.TicksGame - wokeUpTick).TicksToDays().ToString("0.#"));
 				}
 				return null;
+			}
+			if (!Props.wakeUpDelayStateLabelKey.NullOrEmpty() && wakeUpOnTick != int.MinValue)
+			{
+				return Props.wakeUpDelayStateLabelKey.Translate();
 			}
 			return Props.dormantStateLabelKey.Translate();
 		}
@@ -82,11 +151,12 @@ namespace RimWorld
 		{
 			if (!Awake)
 			{
-				wakeUpOnTick = Find.TickManager.TicksGame + Rand.Range(60, 300);
+				wakeUpOnTick = Find.TickManager.TicksGame + Props.wakeUpDelayRange.RandomInRange;
+				repeatWakeUpSignalOnTick = (Props.wakeUpRepeatSignalDelayRange.HasValue ? (Find.TickManager.TicksGame + Props.wakeUpRepeatSignalDelayRange.Value.RandomInRange) : int.MinValue);
 			}
 		}
 
-		public void WakeUp()
+		public virtual void WakeUp()
 		{
 			if (Awake)
 			{
@@ -99,15 +169,18 @@ namespace RimWorld
 			(obj?.GetLord() ?? building?.GetLord())?.Notify_DormancyWakeup();
 			if (parent.Spawned)
 			{
-				IAttackTarget attackTarget = parent as IAttackTarget;
-				if (attackTarget != null)
+				if (parent is IAttackTarget t)
 				{
-					parent.Map.attackTargetsCache.UpdateTarget(attackTarget);
+					parent.Map.attackTargetsCache.UpdateTarget(t);
+				}
+				if (Props.jobDormancy && parent is Pawn pawn && pawn.CurJobDef == SleepJob)
+				{
+					pawn.jobs.EndCurrentJob(JobCondition.InterruptForced);
 				}
 			}
 		}
 
-		public void ToSleep()
+		public virtual void ToSleep()
 		{
 			if (!Awake)
 			{
@@ -116,10 +189,15 @@ namespace RimWorld
 			wokeUpTick = int.MinValue;
 			if (parent.Spawned)
 			{
-				IAttackTarget attackTarget = parent as IAttackTarget;
-				if (attackTarget != null)
+				if (parent is IAttackTarget t)
 				{
-					parent.Map.attackTargetsCache.UpdateTarget(attackTarget);
+					parent.Map.attackTargetsCache.UpdateTarget(t);
+				}
+				if (Props.jobDormancy && parent is Pawn pawn)
+				{
+					Job job = JobMaker.MakeJob(SleepJob, pawn.Position);
+					job.forceSleep = true;
+					pawn.jobs.StartJob(job, JobCondition.InterruptForced);
 				}
 			}
 		}
@@ -137,9 +215,26 @@ namespace RimWorld
 		public override void CompTick()
 		{
 			base.CompTick();
-			if (wakeUpOnTick != int.MinValue && Find.TickManager.TicksGame >= wakeUpOnTick)
+			if (wakeUpOnTick != int.MinValue)
 			{
-				WakeUp();
+				if (Find.TickManager.TicksGame >= wakeUpOnTick)
+				{
+					WakeUp();
+					wakeUpEffect?.Cleanup();
+					wakeUpEffect = null;
+				}
+				else
+				{
+					if (Props.wakeUpEffect != null && wakeUpEffect == null)
+					{
+						wakeUpEffect = Props.wakeUpEffect.SpawnAttached(parent, parent.Map);
+					}
+					wakeUpEffect?.EffectTick(parent, parent);
+					if (repeatWakeUpSignalOnTick != int.MinValue && Find.TickManager.TicksGame == repeatWakeUpSignalOnTick)
+					{
+						Find.SignalManager.SendSignal(new Signal(wakeUpSignalTag, parent.Named("SUBJECT")));
+					}
+				}
 			}
 			if (parent.IsHashIntervalTick(250))
 			{
@@ -149,9 +244,9 @@ namespace RimWorld
 
 		public void TickRareWorker()
 		{
-			if (parent.Spawned && !Awake && !(parent is Pawn) && !parent.Position.Fogged(parent.Map))
+			if (parent.Spawned && !Awake && ShowZs && !parent.Position.Fogged(parent.Map))
 			{
-				MoteMaker.ThrowMetaIcon(parent.Position, parent.Map, ThingDefOf.Mote_SleepZ);
+				FleckMaker.ThrowMetaIcon(parent.Position, parent.Map, FleckDefOf.SleepZ);
 			}
 		}
 
@@ -171,6 +266,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref wakeUpSignalTag, "wakeUpSignalTag");
 			Scribe_Collections.Look(ref wakeUpSignalTags, "wakeUpSignalTags", LookMode.Value);
 			Scribe_Values.Look(ref makeTick, "makeTick", 0);
+			Scribe_Values.Look(ref repeatWakeUpSignalOnTick, "repeatWakeUpSignalOnTick", int.MinValue);
 		}
 	}
 }

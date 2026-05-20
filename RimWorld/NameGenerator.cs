@@ -13,17 +13,23 @@ namespace RimWorld
 			return GenerateName(rootPack, (string x) => !extantNames.Contains(x), appendNumberIfNameUsed, rootKeyword);
 		}
 
-		public static string GenerateName(RulePackDef rootPack, Predicate<string> validator = null, bool appendNumberIfNameUsed = false, string rootKeyword = null, string testPawnNameSymbol = null)
+		public static string GenerateName(RulePackDef rootPack, Predicate<string> validator = null, bool appendNumberIfNameUsed = false, string rootKeyword = null, string testPawnNameSymbol = null, List<Rule> extraRules = null)
 		{
-			GrammarRequest request = default(GrammarRequest);
-			request.Includes.Add(rootPack);
+			GrammarRequest request = new GrammarRequest
+			{
+				Includes = { rootPack }
+			};
 			if (testPawnNameSymbol != null)
 			{
 				request.Rules.Add(new Rule_String("ANYPAWN_nameDef", testPawnNameSymbol));
 				request.Rules.Add(new Rule_String("ANYPAWN_nameIndef", testPawnNameSymbol));
 			}
-			string rootKeyword2 = ((rootKeyword != null) ? rootKeyword : rootPack.FirstRuleKeyword);
-			string untranslatedRootKeyword = ((rootKeyword != null) ? rootKeyword : rootPack.FirstUntranslatedRuleKeyword);
+			if (!extraRules.NullOrEmpty())
+			{
+				request.Rules.AddRange(extraRules);
+			}
+			string rootKeyword2 = rootKeyword ?? rootPack.FirstRuleKeyword;
+			string untranslatedRootKeyword = rootKeyword ?? rootPack.FirstUntranslatedRuleKeyword;
 			return GenerateName(request, validator, appendNumberIfNameUsed, rootKeyword2, untranslatedRootKeyword);
 		}
 

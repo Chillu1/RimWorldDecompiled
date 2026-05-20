@@ -5,7 +5,9 @@ namespace Verse
 		None,
 		Basic,
 		CornerFiller,
+		CornerOverlay,
 		Transmitter,
-		TransmitterOverlay
+		TransmitterOverlay,
+		Asymmetric
 	}
 }

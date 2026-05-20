@@ -20,7 +20,16 @@ namespace Verse
 		[Unsaved(false)]
 		private List<SpecialThingFilterDef> disallowedSpecialFilters = new List<SpecialThingFilterDef>();
 
+		[Unsaved(false)]
+		public List<SpecialThingFilterDef> hiddenSpecialFilters = new List<SpecialThingFilterDef>();
+
+		private ThingCategoryDef overrideRootDef;
+
+		private bool onlySpecialFilters;
+
 		private FloatRange allowedHitPointsPercents = FloatRange.ZeroToOne;
+
+		private FloatRange allowedMentalBreakChance = FloatRange.ZeroToOne;
 
 		public bool allowedHitPointsConfigurable = true;
 
@@ -65,6 +74,12 @@ namespace Verse
 
 		private bool disallowInedibleByHuman;
 
+		private bool disallowDoesntProduceMeat;
+
+		private bool disallowMedicalDrugs;
+
+		private bool disallowNotEverStorable;
+
 		private Type allowWithComp;
 
 		private Type disallowWithComp;
@@ -72,6 +87,32 @@ namespace Verse
 		private float disallowCheaperThan = float.MinValue;
 
 		private List<ThingDef> disallowedThingDefs;
+
+		public TreeNode_ThingCategory OverrideRootNode
+		{
+			get
+			{
+				if (overrideRootDef == null)
+				{
+					return null;
+				}
+				return overrideRootDef.treeNode;
+			}
+		}
+
+		public TreeNode_ThingCategory RootNode
+		{
+			get
+			{
+				if (overrideRootDef == null)
+				{
+					return ThingCategoryNodeDatabase.RootNode;
+				}
+				return overrideRootDef.treeNode;
+			}
+		}
+
+		public bool OnlySpecialFilters => onlySpecialFilters;
 
 		public string Summary
 		{
@@ -81,11 +122,11 @@ namespace Verse
 				{
 					return customSummary;
 				}
-				if (thingDefs != null && thingDefs.Count == 1 && categories.NullOrEmpty() && tradeTagsToAllow.NullOrEmpty() && tradeTagsToDisallow.NullOrEmpty() && thingSetMakerTagsToAllow.NullOrEmpty() && thingSetMakerTagsToDisallow.NullOrEmpty() && disallowedCategories.NullOrEmpty() && specialFiltersToAllow.NullOrEmpty() && specialFiltersToDisallow.NullOrEmpty() && stuffCategoriesToAllow.NullOrEmpty() && allowAllWhoCanMake.NullOrEmpty() && disallowWorsePreferability == FoodPreferability.Undefined && !disallowInedibleByHuman && allowWithComp == null && disallowWithComp == null && disallowCheaperThan == float.MinValue && disallowedThingDefs.NullOrEmpty())
+				if (thingDefs != null && thingDefs.Count == 1 && categories.NullOrEmpty() && tradeTagsToAllow.NullOrEmpty() && tradeTagsToDisallow.NullOrEmpty() && thingSetMakerTagsToAllow.NullOrEmpty() && thingSetMakerTagsToDisallow.NullOrEmpty() && disallowedCategories.NullOrEmpty() && specialFiltersToAllow.NullOrEmpty() && specialFiltersToDisallow.NullOrEmpty() && stuffCategoriesToAllow.NullOrEmpty() && allowAllWhoCanMake.NullOrEmpty() && disallowWorsePreferability == FoodPreferability.Undefined && !disallowInedibleByHuman && !disallowMedicalDrugs && !disallowDoesntProduceMeat && !disallowNotEverStorable && allowWithComp == null && disallowWithComp == null && disallowCheaperThan == float.MinValue && disallowedThingDefs.NullOrEmpty())
 				{
 					return thingDefs[0].label;
 				}
-				if (thingDefs.NullOrEmpty() && categories != null && categories.Count == 1 && tradeTagsToAllow.NullOrEmpty() && tradeTagsToDisallow.NullOrEmpty() && thingSetMakerTagsToAllow.NullOrEmpty() && thingSetMakerTagsToDisallow.NullOrEmpty() && disallowedCategories.NullOrEmpty() && specialFiltersToAllow.NullOrEmpty() && specialFiltersToDisallow.NullOrEmpty() && stuffCategoriesToAllow.NullOrEmpty() && allowAllWhoCanMake.NullOrEmpty() && disallowWorsePreferability == FoodPreferability.Undefined && !disallowInedibleByHuman && allowWithComp == null && disallowWithComp == null && disallowCheaperThan == float.MinValue && disallowedThingDefs.NullOrEmpty())
+				if (thingDefs.NullOrEmpty() && categories != null && categories.Count == 1 && tradeTagsToAllow.NullOrEmpty() && tradeTagsToDisallow.NullOrEmpty() && thingSetMakerTagsToAllow.NullOrEmpty() && thingSetMakerTagsToDisallow.NullOrEmpty() && disallowedCategories.NullOrEmpty() && specialFiltersToAllow.NullOrEmpty() && specialFiltersToDisallow.NullOrEmpty() && stuffCategoriesToAllow.NullOrEmpty() && allowAllWhoCanMake.NullOrEmpty() && disallowWorsePreferability == FoodPreferability.Undefined && !disallowInedibleByHuman && !disallowMedicalDrugs && !disallowDoesntProduceMeat && !disallowNotEverStorable && allowWithComp == null && disallowWithComp == null && disallowCheaperThan == float.MinValue && disallowedThingDefs.NullOrEmpty())
 				{
 					return DefDatabase<ThingCategoryDef>.GetNamed(categories[0]).label;
 				}
@@ -157,6 +198,25 @@ namespace Verse
 			}
 		}
 
+		public FloatRange AllowedMentalBreakChance
+		{
+			get
+			{
+				return allowedMentalBreakChance;
+			}
+			set
+			{
+				if (!(allowedMentalBreakChance == value))
+				{
+					allowedMentalBreakChance = value;
+					if (settingsChangedCallback != null)
+					{
+						settingsChangedCallback();
+					}
+				}
+			}
+		}
+
 		public QualityRange AllowedQualityLevels
 		{
 			get
@@ -200,8 +260,26 @@ namespace Verse
 			}
 		}
 
+		public bool CaresAboutHitPoints
+		{
+			get
+			{
+				if (allowedHitPointsConfigurable)
+				{
+					return allowedHitPointsPercents != FloatRange.ZeroToOne;
+				}
+				return false;
+			}
+		}
+
 		public ThingFilter()
 		{
+		}
+
+		public ThingFilter(ThingCategoryDef overrideRootDef, bool onlySpecialFilters = false)
+		{
+			this.overrideRootDef = overrideRootDef;
+			this.onlySpecialFilters = onlySpecialFilters;
 		}
 
 		public ThingFilter(Action settingsChangedCallback)
@@ -214,7 +292,10 @@ namespace Verse
 			Scribe_Collections.Look(ref disallowedSpecialFilters, "disallowedSpecialFilters", LookMode.Def);
 			Scribe_Collections.Look(ref allowedDefs, "allowedDefs");
 			Scribe_Values.Look(ref allowedHitPointsPercents, "allowedHitPointsPercents");
+			Scribe_Values.Look(ref allowedMentalBreakChance, "allowedMentalBreakChance");
 			Scribe_Values.Look(ref allowedQualities, "allowedQualityLevels");
+			Scribe_Values.Look(ref onlySpecialFilters, "onlySpecialFilters", defaultValue: false);
+			Scribe_Defs.Look(ref overrideRootDef, "overrideRootDef");
 		}
 
 		public void ResolveReferences()
@@ -245,7 +326,7 @@ namespace Verse
 			{
 				for (int k = 0; k < categories.Count; k++)
 				{
-					ThingCategoryDef named = DefDatabase<ThingCategoryDef>.GetNamed(categories[k]);
+					ThingCategoryDef named = DefDatabase<ThingCategoryDef>.GetNamed(categories[k], errorOnFail: false);
 					if (named != null)
 					{
 						SetAllow(named, allow: true);
@@ -316,7 +397,7 @@ namespace Verse
 			{
 				for (int num6 = 0; num6 < disallowedCategories.Count; num6++)
 				{
-					ThingCategoryDef named2 = DefDatabase<ThingCategoryDef>.GetNamed(disallowedCategories[num6]);
+					ThingCategoryDef named2 = DefDatabase<ThingCategoryDef>.GetNamed(disallowedCategories[num6], errorOnFail: false);
 					if (named2 != null)
 					{
 						SetAllow(named2, allow: false);
@@ -351,13 +432,13 @@ namespace Verse
 					SetAllowAllWhoCanMake(allowAllWhoCanMake[num10]);
 				}
 			}
-			if (disallowWorsePreferability != 0)
+			if (disallowWorsePreferability != FoodPreferability.Undefined)
 			{
 				List<ThingDef> allDefsListForReading5 = DefDatabase<ThingDef>.AllDefsListForReading;
 				for (int num11 = 0; num11 < allDefsListForReading5.Count; num11++)
 				{
 					ThingDef thingDef5 = allDefsListForReading5[num11];
-					if (thingDef5.IsIngestible && thingDef5.ingestible.preferability != 0 && (int)thingDef5.ingestible.preferability < (int)disallowWorsePreferability)
+					if (thingDef5.IsIngestible && thingDef5.ingestible.preferability != FoodPreferability.Undefined && (int)thingDef5.ingestible.preferability < (int)disallowWorsePreferability)
 					{
 						SetAllow(thingDef5, allow: false);
 					}
@@ -375,27 +456,61 @@ namespace Verse
 					}
 				}
 			}
-			if (allowWithComp != null)
+			if (disallowMedicalDrugs)
 			{
 				List<ThingDef> allDefsListForReading7 = DefDatabase<ThingDef>.AllDefsListForReading;
 				for (int num13 = 0; num13 < allDefsListForReading7.Count; num13++)
 				{
 					ThingDef thingDef7 = allDefsListForReading7[num13];
-					if (thingDef7.HasComp(allowWithComp))
+					if (!thingDef7.IsIngestible || (thingDef7.IsDrug && thingDef7.ingestible.drugCategory == DrugCategory.Medical))
 					{
-						SetAllow(thingDef7, allow: true);
+						SetAllow(thingDef7, allow: false);
 					}
 				}
 			}
-			if (disallowWithComp != null)
+			if (disallowDoesntProduceMeat)
 			{
 				List<ThingDef> allDefsListForReading8 = DefDatabase<ThingDef>.AllDefsListForReading;
 				for (int num14 = 0; num14 < allDefsListForReading8.Count; num14++)
 				{
 					ThingDef thingDef8 = allDefsListForReading8[num14];
-					if (thingDef8.HasComp(disallowWithComp))
+					if (thingDef8.race != null && !thingDef8.race.hasMeat)
 					{
 						SetAllow(thingDef8, allow: false);
+					}
+				}
+			}
+			if (disallowNotEverStorable)
+			{
+				foreach (ThingDef item in DefDatabase<ThingDef>.AllDefsListForReading)
+				{
+					if (!item.EverStorable(willMinifyIfPossible: true))
+					{
+						SetAllow(item, allow: false);
+					}
+				}
+			}
+			if (allowWithComp != null)
+			{
+				List<ThingDef> allDefsListForReading9 = DefDatabase<ThingDef>.AllDefsListForReading;
+				for (int num15 = 0; num15 < allDefsListForReading9.Count; num15++)
+				{
+					ThingDef thingDef9 = allDefsListForReading9[num15];
+					if (thingDef9.HasComp(allowWithComp))
+					{
+						SetAllow(thingDef9, allow: true);
+					}
+				}
+			}
+			if (disallowWithComp != null)
+			{
+				List<ThingDef> allDefsListForReading10 = DefDatabase<ThingDef>.AllDefsListForReading;
+				for (int num16 = 0; num16 < allDefsListForReading10.Count; num16++)
+				{
+					ThingDef thingDef10 = allDefsListForReading10[num16];
+					if (thingDef10.HasComp(disallowWithComp))
+					{
+						SetAllow(thingDef10, allow: false);
 					}
 				}
 			}
@@ -409,24 +524,24 @@ namespace Verse
 						list.Add(allowedDef);
 					}
 				}
-				for (int num15 = 0; num15 < list.Count; num15++)
+				for (int num17 = 0; num17 < list.Count; num17++)
 				{
-					SetAllow(list[num15], allow: false);
+					SetAllow(list[num17], allow: false);
 				}
 			}
 			if (disallowedThingDefs == null)
 			{
 				return;
 			}
-			for (int num16 = 0; num16 < disallowedThingDefs.Count; num16++)
+			for (int num18 = 0; num18 < disallowedThingDefs.Count; num18++)
 			{
-				if (disallowedThingDefs[num16] != null)
+				if (disallowedThingDefs[num18] != null)
 				{
-					SetAllow(disallowedThingDefs[num16], allow: false);
+					SetAllow(disallowedThingDefs[num18], allow: false);
 				}
 				else
 				{
-					Log.Error("ThingFilter could not find excepted thing def named " + disallowedThingDefs[num16]);
+					Log.Error("ThingFilter could not find excepted thing def named " + disallowedThingDefs[num18]);
 				}
 			}
 		}
@@ -519,12 +634,10 @@ namespace Verse
 		public virtual void CopyAllowancesFrom(ThingFilter other)
 		{
 			allowedDefs.Clear();
-			foreach (ThingDef allDef in DefDatabase<ThingDef>.AllDefs)
-			{
-				SetAllow(allDef, other.Allows(allDef));
-			}
+			allowedDefs.AddRange(other.allowedDefs);
 			disallowedSpecialFilters = other.disallowedSpecialFilters.ListFullCopyOrNull();
 			allowedHitPointsPercents = other.allowedHitPointsPercents;
+			allowedMentalBreakChance = other.allowedMentalBreakChance;
 			allowedHitPointsConfigurable = other.allowedHitPointsConfigurable;
 			allowedQualities = other.allowedQualities;
 			allowedQualitiesConfigurable = other.allowedQualitiesConfigurable;
@@ -541,6 +654,8 @@ namespace Verse
 			allowAllWhoCanMake = other.allowAllWhoCanMake.ListFullCopyOrNull();
 			disallowWorsePreferability = other.disallowWorsePreferability;
 			disallowInedibleByHuman = other.disallowInedibleByHuman;
+			disallowMedicalDrugs = other.disallowMedicalDrugs;
+			disallowNotEverStorable = other.disallowNotEverStorable;
 			allowWithComp = other.allowWithComp;
 			disallowWithComp = other.disallowWithComp;
 			disallowCheaperThan = other.disallowCheaperThan;
@@ -553,27 +668,32 @@ namespace Verse
 
 		public void SetAllow(ThingDef thingDef, bool allow)
 		{
-			if (allow != Allows(thingDef))
+			if (allow == Allows(thingDef))
 			{
-				if (allow)
-				{
-					allowedDefs.Add(thingDef);
-				}
-				else
-				{
-					allowedDefs.Remove(thingDef);
-				}
-				if (settingsChangedCallback != null)
-				{
-					settingsChangedCallback();
-				}
-				displayRootCategoryInt = null;
+				return;
 			}
+			if (allow)
+			{
+				allowedDefs.Add(thingDef);
+			}
+			else
+			{
+				allowedDefs.Remove(thingDef);
+			}
+			foreach (ThingDef virtualDef in thingDef.virtualDefs)
+			{
+				SetAllow(virtualDef, allow);
+			}
+			if (settingsChangedCallback != null)
+			{
+				settingsChangedCallback();
+			}
+			displayRootCategoryInt = null;
 		}
 
 		public void SetAllow(SpecialThingFilterDef sfDef, bool allow)
 		{
-			if (!sfDef.configurable || allow == Allows(sfDef))
+			if (allow == Allows(sfDef))
 			{
 				return;
 			}
@@ -610,7 +730,7 @@ namespace Verse
 			}
 			foreach (SpecialThingFilterDef descendantSpecialThingFilterDef in categoryDef.DescendantSpecialThingFilterDefs)
 			{
-				if (exceptedFilters == null || !exceptedFilters.Contains(descendantSpecialThingFilterDef))
+				if (descendantSpecialThingFilterDef.configurable && (exceptedFilters == null || !exceptedFilters.Contains(descendantSpecialThingFilterDef)))
 				{
 					SetAllow(descendantSpecialThingFilterDef, allow);
 				}
@@ -668,11 +788,23 @@ namespace Verse
 				SetAllow(ThingCategoryDefOf.Weapons, allow: true);
 				SetAllow(ThingCategoryDefOf.Apparel, allow: true);
 				SetAllow(ThingCategoryDefOf.BodyParts, allow: true);
+				if (ModsConfig.BiotechActive)
+				{
+					SetAllow(ThingDefOf.Wastepack, allow: false);
+				}
 			}
 			if (preset == StorageSettingsPreset.DumpingStockpile)
 			{
 				SetAllow(ThingCategoryDefOf.Corpses, allow: true);
 				SetAllow(ThingCategoryDefOf.Chunks, allow: true);
+				if (ModsConfig.BiotechActive)
+				{
+					SetAllow(ThingDefOf.Wastepack, allow: true);
+				}
+			}
+			if (preset == StorageSettingsPreset.CorpseStockpile)
+			{
+				SetAllow(ThingCategoryDefOf.Corpses, allow: true);
 			}
 			if (settingsChangedCallback != null)
 			{
@@ -685,11 +817,26 @@ namespace Verse
 		{
 			allowedDefs.RemoveWhere((ThingDef d) => exceptedDefs == null || !exceptedDefs.Contains(d));
 			disallowedSpecialFilters.RemoveAll((SpecialThingFilterDef sf) => sf.configurable && (exceptedFilters == null || !exceptedFilters.Contains(sf)));
+			if (onlySpecialFilters)
+			{
+				DisableSpecialFilters(RootNode);
+			}
 			if (settingsChangedCallback != null)
 			{
 				settingsChangedCallback();
 			}
 			displayRootCategoryInt = null;
+		}
+
+		private void DisableSpecialFilters(TreeNode_ThingCategory category)
+		{
+			foreach (TreeNode_ThingCategory childCategoryNodesAndThi in category.ChildCategoryNodesAndThis)
+			{
+				foreach (SpecialThingFilterDef childSpecialFilter in childCategoryNodesAndThi.catDef.childSpecialFilters)
+				{
+					disallowedSpecialFilters.Add(childSpecialFilter);
+				}
+			}
 		}
 
 		public void SetAllowAll(ThingFilter parentFilter, bool includeNonStorable = false)
@@ -727,11 +874,11 @@ namespace Verse
 		public virtual bool Allows(Thing t)
 		{
 			t = t.GetInnerIfMinified();
-			if (!Allows(t.def))
+			if (!Allows(t.def) && !onlySpecialFilters)
 			{
 				return false;
 			}
-			if (t.def.useHitPoints)
+			if (t.def.useHitPoints && CaresAboutHitPoints)
 			{
 				float f = (float)t.HitPoints / (float)t.MaxHitPoints;
 				f = GenMath.RoundedHundredth(f);
@@ -740,20 +887,17 @@ namespace Verse
 					return false;
 				}
 			}
-			if (allowedQualities != QualityRange.All && t.def.FollowQualityThingFilter())
+			if (ModsConfig.AnomalyActive && t is Book book && !allowedMentalBreakChance.IncludesEpsilon(Mathf.Clamp01(book.MentalBreakChancePerHour)))
 			{
-				if (!t.TryGetQuality(out var qc))
-				{
-					qc = QualityCategory.Normal;
-				}
-				if (!allowedQualities.Includes(qc))
-				{
-					return false;
-				}
+				return false;
+			}
+			if (allowedQualities != QualityRange.All && t.def.FollowQualityThingFilter() && t.TryGetQuality(out var qc) && !allowedQualities.Includes(qc))
+			{
+				return false;
 			}
 			for (int i = 0; i < disallowedSpecialFilters.Count; i++)
 			{
-				if (disallowedSpecialFilters[i].Worker.Matches(t) && t.def.IsWithinCategory(disallowedSpecialFilters[i].parentCategory))
+				if (disallowedSpecialFilters[i].Worker.Matches(t) && (t.def.IsWithinCategory(disallowedSpecialFilters[i].parentCategory) || onlySpecialFilters))
 				{
 					return false;
 				}
@@ -783,6 +927,17 @@ namespace Verse
 		public override string ToString()
 		{
 			return Summary;
+		}
+
+		public static ThingFilter CreateOnlyEverStorableThingFilter()
+		{
+			ThingFilter thingFilter = new ThingFilter();
+			thingFilter.categories = new List<string>();
+			thingFilter.categories.Add(ThingCategoryDefOf.Root.defName);
+			thingFilter.disallowNotEverStorable = true;
+			thingFilter.ResolveReferences();
+			thingFilter.hiddenSpecialFilters = new List<SpecialThingFilterDef> { SpecialThingFilterDefOf.AllowLargeCorpses };
+			return thingFilter;
 		}
 	}
 }

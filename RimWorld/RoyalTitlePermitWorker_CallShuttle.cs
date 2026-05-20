@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using RimWorld.Planet;
-using RimWorld.QuestGen;
 using UnityEngine;
 using Verse;
 
@@ -14,11 +13,11 @@ namespace RimWorld
 
 		private static readonly Texture2D CommandTex = ContentFinder<Texture2D>.Get("UI/Commands/CallShuttle");
 
-		public override bool ValidateTarget(LocalTargetInfo target)
+		public override bool ValidateTarget(LocalTargetInfo target, bool showMessages = true)
 		{
 			if (!CanHitTarget(target))
 			{
-				if (target.IsValid)
+				if (target.IsValid && showMessages)
 				{
 					Messages.Message(def.LabelCap + ": " + "AbilityCannotHitTarget".Translate(), MessageTypeDefOf.RejectInput);
 				}
@@ -34,8 +33,8 @@ namespace RimWorld
 
 		public override void DrawHighlight(LocalTargetInfo target)
 		{
-			GenDraw.DrawRadiusRing(caller.Position, def.royalAid.targetingRange, Color.white);
-			DrawShuttleGhost(target, map);
+			GenDraw.DrawRadiusRing(caller.Position, base.RangeClamped, Color.white);
+			DrawShuttleGhost(target, map, ThingDefOf.Shuttle, ThingDefOf.Shuttle.defaultPlacingRot);
 		}
 
 		public override void OrderForceTarget(LocalTargetInfo target)
@@ -53,6 +52,11 @@ namespace RimWorld
 
 		public override IEnumerable<FloatMenuOption> GetRoyalAidOptions(Map map, Pawn pawn, Faction faction)
 		{
+			if (map.generatorDef?.isUnderground ?? false)
+			{
+				yield return new FloatMenuOption(def.LabelCap + ": " + "CommandCallRoyalAidMapUnreachable".Translate(faction.Named("FACTION")), null);
+				yield break;
+			}
 			if (faction.HostileTo(Faction.OfPlayer))
 			{
 				yield return new FloatMenuOption(def.LabelCap + ": " + "CommandCallRoyalAidFactionHostile".Translate(faction.Named("FACTION")), null);
@@ -84,6 +88,10 @@ namespace RimWorld
 						CallShuttleToCaravan(pawn, faction, free);
 					}
 				};
+				if (pawn.MapHeld != null && pawn.MapHeld.generatorDef.isUnderground)
+				{
+					command_Action.Disable("CommandCallRoyalAidMapUnreachable".Translate(faction.Named("FACTION")));
+				}
 				if (faction.HostileTo(Faction.OfPlayer))
 				{
 					command_Action.Disable("CommandCallRoyalAidFactionHostile".Translate(faction.Named("FACTION")));
@@ -105,11 +113,12 @@ namespace RimWorld
 			targetingParameters.canTargetFires = false;
 			targetingParameters.canTargetBuildings = true;
 			targetingParameters.canTargetItems = true;
-			targetingParameters.validator = (TargetInfo target) => (!(def.royalAid.targetingRange > 0f) || !(target.Cell.DistanceTo(caller.Position) > def.royalAid.targetingRange)) ? true : false;
 			base.caller = caller;
 			base.map = map;
 			calledFaction = faction;
 			base.free = free;
+			float rangeActual = base.RangeClamped;
+			targetingParameters.validator = (TargetInfo target) => (!(rangeActual > 0f) || !(target.Cell.DistanceTo(caller.Position) > rangeActual)) ? true : false;
 			Find.Targeter.BeginTargeting(this);
 		}
 
@@ -117,13 +126,13 @@ namespace RimWorld
 		{
 			if (caller.Spawned)
 			{
-				QuestScriptDef permit_CallShuttle = QuestScriptDefOf.Permit_CallShuttle;
-				Slate slate = new Slate();
-				slate.Set("asker", caller);
-				slate.Set("map", caller.Map);
-				slate.Set("landingCell", landingCell);
-				slate.Set("permitFaction", calledFaction);
-				QuestUtility.GenerateQuestAndMakeAvailable(permit_CallShuttle, slate);
+				Thing thing = ThingMaker.MakeThing(ThingDefOf.Shuttle);
+				CompShuttle compShuttle = thing.TryGetComp<CompShuttle>();
+				compShuttle.permitShuttle = true;
+				compShuttle.acceptChildren = true;
+				TransportShip transportShip = TransportShipMaker.MakeTransportShip(TransportShipDefOf.Ship_Shuttle, null, thing);
+				transportShip.ArriveAt(landingCell, map.Parent);
+				transportShip.AddJobs(ShipJobDefOf.WaitForever, ShipJobDefOf.Unload_Destination, ShipJobDefOf.FlyAway);
 				caller.royalty.GetPermit(def, calledFaction).Notify_Used();
 				if (!free)
 				{
@@ -135,31 +144,39 @@ namespace RimWorld
 		private void CallShuttleToCaravan(Pawn caller, Faction faction, bool free)
 		{
 			Caravan caravan = caller.GetCaravan();
-			int maxLaunchDistance = ThingDefOf.Shuttle.GetCompProperties<CompProperties_Launchable>().fixedLaunchDistanceMax;
+			int maxLaunchDistance = TransportShipDefOf.Ship_Shuttle.maxLaunchDistance;
 			CameraJumper.TryJump(CameraJumper.GetWorldTarget(caravan));
 			Find.WorldSelector.ClearSelection();
-			int caravanTile = caravan.Tile;
-			Find.WorldTargeter.BeginTargeting_NewTemp(ChoseWorldTarget, canTargetTiles: true, CompLaunchable.TargeterMouseAttachment, closeWorldTabWhenFinished: false, delegate
+			PlanetTile caravanTile = caravan.Tile;
+			Find.WorldTargeter.BeginTargeting(ChoseWorldTarget, canTargetTiles: true, CompLaunchable.TargeterMouseAttachment, closeWorldTabWhenFinished: false, delegate
 			{
-				GenDraw.DrawWorldRadiusRing(caravanTile, maxLaunchDistance);
+				if (maxLaunchDistance > 0)
+				{
+					PlanetTile center = caravanTile;
+					if (caravanTile.Layer != Find.WorldSelector.SelectedLayer)
+					{
+						center = Find.WorldSelector.SelectedLayer.GetClosestTile_NewTemp(caravanTile);
+					}
+					GenDraw.DrawWorldRadiusRing(center, maxLaunchDistance);
+				}
 			}, (GlobalTargetInfo target) => CompLaunchable.TargetingLabelGetter(target, caravanTile, maxLaunchDistance, Gen.YieldSingle(caravan), Launch, null));
 			bool ChoseWorldTarget(GlobalTargetInfo target)
 			{
 				return CompLaunchable.ChoseWorldTarget(target, caravan.Tile, Gen.YieldSingle(caravan), maxLaunchDistance, Launch, null);
 			}
-			void Launch(int tile, TransportPodsArrivalAction arrivalAction)
+			void Launch(PlanetTile tile, TransportersArrivalAction arrivalAction)
 			{
-				ActiveDropPodInfo activeDropPodInfo = new ActiveDropPodInfo();
-				activeDropPodInfo.innerContainer.TryAddRangeOrTransfer(CaravanInventoryUtility.AllInventoryItems(caravan));
-				activeDropPodInfo.innerContainer.TryAddRangeOrTransfer(caravan.GetDirectlyHeldThings());
+				ActiveTransporterInfo activeTransporterInfo = new ActiveTransporterInfo();
+				activeTransporterInfo.innerContainer.TryAddRangeOrTransfer(CaravanInventoryUtility.AllInventoryItems(caravan));
+				activeTransporterInfo.innerContainer.TryAddRangeOrTransfer(caravan.GetDirectlyHeldThings());
 				caravan.Destroy();
-				TravelingTransportPods travelingTransportPods = (TravelingTransportPods)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.TravelingShuttle);
-				travelingTransportPods.Tile = caravan.Tile;
-				travelingTransportPods.SetFaction(Faction.OfPlayer);
-				travelingTransportPods.destinationTile = tile;
-				travelingTransportPods.arrivalAction = arrivalAction;
-				travelingTransportPods.AddPod(activeDropPodInfo, justLeftTheMap: true);
-				Find.WorldObjects.Add(travelingTransportPods);
+				TravellingTransporters travellingTransporters = (TravellingTransporters)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.TravelingShuttle);
+				travellingTransporters.Tile = caravan.Tile;
+				travellingTransporters.SetFaction(Faction.OfPlayer);
+				travellingTransporters.destinationTile = tile;
+				travellingTransporters.arrivalAction = arrivalAction;
+				travellingTransporters.AddTransporter(activeTransporterInfo, justLeftTheMap: true);
+				Find.WorldObjects.Add(travellingTransporters);
 				Find.WorldTargeter.StopTargeting();
 				caller.royalty.GetPermit(def, faction).Notify_Used();
 				if (!free)
@@ -169,38 +186,48 @@ namespace RimWorld
 			}
 		}
 
-		public static void DrawShuttleGhost(LocalTargetInfo target, Map map)
+		public static void DrawShuttleGhost(LocalTargetInfo target, Map map, ThingDef shuttleDef, Rot4 rot)
 		{
-			Color ghostCol = (ShuttleCanLandHere(target, map).Accepted ? Designator_Place.CanPlaceColor : Designator_Place.CannotPlaceColor);
-			GhostDrawer.DrawGhostThing_NewTmp(target.Cell, Rot4.North, ThingDefOf.Shuttle, ThingDefOf.Shuttle.graphic, ghostCol, AltitudeLayer.Blueprint);
-			Vector3 position = (target.Cell + IntVec3.South * 2).ToVector3ShiftedWithAltitude(AltitudeLayer.Blueprint);
+			Color ghostCol = (ShuttleCanLandHere(target, map, shuttleDef, rot).Accepted ? Designator_Place.CanPlaceColor : Designator_Place.CannotPlaceColor);
+			GhostDrawer.DrawGhostThing(target.Cell, rot, shuttleDef, shuttleDef.graphic, ghostCol, AltitudeLayer.Blueprint);
+			Vector3 position = ThingUtility.InteractionCellWhenAt(shuttleDef, target.Cell, rot, map).ToVector3ShiftedWithAltitude(AltitudeLayer.Blueprint);
 			Graphics.DrawMesh(MeshPool.plane10, position, Quaternion.identity, GenDraw.InteractionCellMaterial, 0);
 		}
 
-		public static AcceptanceReport ShuttleCanLandHere(LocalTargetInfo target, Map map)
+		public static AcceptanceReport ShuttleCanLandHere(LocalTargetInfo target, Map map, ThingDef shuttleDef = null, Rot4? rot = null)
 		{
-			TaggedString t = "CannotCallShuttle".Translate() + ": ";
+			TaggedString taggedString = "ShuttleCannotLand".Translate() + ": ";
 			if (!target.IsValid)
 			{
-				return new AcceptanceReport(t + "MessageTransportPodsDestinationIsInvalid".Translate().CapitalizeFirst());
+				return new AcceptanceReport(taggedString + "MessageTransportPodsDestinationIsInvalid".Translate().CapitalizeFirst());
 			}
-			foreach (IntVec3 item in GenAdj.OccupiedRect(target.Cell, Rot4.North, ThingDefOf.Shuttle.size))
+			if (shuttleDef == null)
 			{
-				string reportFromCell = GetReportFromCell(item, map);
+				shuttleDef = ThingDefOf.Shuttle;
+			}
+			Rot4 valueOrDefault = rot.GetValueOrDefault();
+			if (!rot.HasValue)
+			{
+				valueOrDefault = shuttleDef.defaultPlacingRot;
+				rot = valueOrDefault;
+			}
+			foreach (IntVec3 item in GenAdj.OccupiedRect(target.Cell, rot.Value, shuttleDef.size))
+			{
+				string reportFromCell = GetReportFromCell(item, map, interactionSpot: false, shuttleDef);
 				if (reportFromCell != null)
 				{
-					return new AcceptanceReport(t + reportFromCell);
+					return new AcceptanceReport(taggedString + reportFromCell);
 				}
 			}
-			string reportFromCell2 = GetReportFromCell(target.Cell + CompShuttle.DropoffSpotOffset, map);
+			string reportFromCell2 = GetReportFromCell(ThingUtility.InteractionCellWhenAt(shuttleDef, target.Cell, rot.Value, map), map, interactionSpot: true, shuttleDef);
 			if (reportFromCell2 != null)
 			{
-				return new AcceptanceReport(t + reportFromCell2);
+				return new AcceptanceReport(taggedString + reportFromCell2);
 			}
 			return AcceptanceReport.WasAccepted;
 		}
 
-		private static string GetReportFromCell(IntVec3 cell, Map map)
+		private static string GetReportFromCell(IntVec3 cell, Map map, bool interactionSpot, ThingDef shuttleDef)
 		{
 			if (!cell.InBounds(map))
 			{
@@ -214,6 +241,10 @@ namespace RimWorld
 			{
 				return "ShuttleCannotLand_Unwalkable".Translate().CapitalizeFirst();
 			}
+			if (!cell.GetAffordances(map).Contains(ThingDefOf.Shuttle.terrainAffordanceNeeded))
+			{
+				return "ShuttleCannotLand_Unaffordable".Translate(shuttleDef.label).CapitalizeFirst();
+			}
 			RoofDef roof = cell.GetRoof(map);
 			if (roof != null && (roof.isNatural || roof.isThickRoof))
 			{
@@ -223,7 +254,7 @@ namespace RimWorld
 			for (int i = 0; i < thingList.Count; i++)
 			{
 				Thing thing = thingList[i];
-				if (thing is IActiveDropPod || thing is Skyfaller || thing.def.category == ThingCategory.Item || thing.def.category == ThingCategory.Building)
+				if (thing is IActiveTransporter || thing is Skyfaller || (thing.def.category == ThingCategory.Building && !thing.def.building.isPowerConduit))
 				{
 					return "BlockedBy".Translate(thing).CapitalizeFirst();
 				}

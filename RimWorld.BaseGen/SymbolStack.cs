@@ -28,18 +28,21 @@ namespace RimWorld.BaseGen
 				text += "_";
 			}
 			text += customNameForPath ?? symbol;
-			Element item = default(Element);
-			item.symbol = symbol;
-			item.resolveParams = resolveParams;
-			item.symbolPath = text;
+			Element item = new Element
+			{
+				symbol = symbol,
+				resolveParams = resolveParams,
+				symbolPath = text
+			};
 			stack.Push(item);
 		}
 
 		public void Push(string symbol, CellRect rect, string customNameForPath = null)
 		{
-			ResolveParams resolveParams = default(ResolveParams);
-			resolveParams.rect = rect;
-			Push(symbol, resolveParams, customNameForPath);
+			Push(symbol, new ResolveParams
+			{
+				rect = rect
+			}, customNameForPath);
 		}
 
 		public void PushMany(ResolveParams resolveParams, params string[] symbols)

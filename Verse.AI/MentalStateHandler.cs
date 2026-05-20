@@ -1,6 +1,7 @@
 using System;
 using RimWorld;
 using RimWorld.Planet;
+using Verse.AI.Group;
 
 namespace Verse.AI
 {
@@ -47,7 +48,7 @@ namespace Verse.AI
 				{
 					curStateInt.pawn = pawn;
 				}
-				if (Current.ProgramState != 0 && pawn.Spawned)
+				if (Current.ProgramState != ProgramState.Entry && pawn.Spawned)
 				{
 					pawn.Map.attackTargetsCache.UpdateTarget(pawn);
 				}
@@ -59,25 +60,45 @@ namespace Verse.AI
 			ClearMentalStateDirect();
 		}
 
-		public void MentalStateHandlerTick()
+		public void MentalStateHandlerTickInterval(int delta)
 		{
 			if (curStateInt != null)
 			{
 				if (pawn.Downed && curStateInt.def.recoverFromDowned)
 				{
-					Log.Error("In mental state while downed, but not allowed: " + pawn);
+					Log.Error("In mental state while downed or deathresting, but not allowed: " + pawn);
 					CurState.RecoverFromState();
 				}
 				else
 				{
-					curStateInt.MentalStateTick();
+					curStateInt.MentalStateTick(delta);
 				}
 			}
 		}
 
-		public bool TryStartMentalState(MentalStateDef stateDef, string reason = null, bool forceWake = false, bool causedByMood = false, Pawn otherPawn = null, bool transitionSilently = false)
+		public bool MentalBreaksBlocked()
 		{
-			if ((!pawn.Spawned && !pawn.IsCaravanMember()) || CurStateDef == stateDef || pawn.Downed || (!forceWake && !pawn.Awake()))
+			foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
+			{
+				if (hediff.CurStage != null && hediff.CurStage.blocksMentalBreaks)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public bool TryStartMentalState(MentalStateDef stateDef, string reason = null, bool forced = false, bool forceWake = false, bool causedByMood = false, Pawn otherPawn = null, bool transitionSilently = false, bool causedByDamage = false, bool causedByPsycast = false)
+		{
+			if (!forced && MentalBreaksBlocked())
+			{
+				return false;
+			}
+			if (pawn.IsMutant && pawn.mutant.Def.preventsMentalBreaks)
+			{
+				return false;
+			}
+			if (CurStateDef == stateDef || (!forceWake && !pawn.Awake()))
 			{
 				return false;
 			}
@@ -85,7 +106,7 @@ namespace Verse.AI
 			{
 				return false;
 			}
-			if (!stateDef.Worker.StateCanOccur(pawn))
+			if (!forced && !stateDef.Worker.StateCanOccur(pawn))
 			{
 				return false;
 			}
@@ -97,9 +118,12 @@ namespace Verse.AI
 			mentalState.pawn = pawn;
 			mentalState.def = stateDef;
 			mentalState.causedByMood = causedByMood;
-			if (otherPawn != null)
+			mentalState.causedByDamage = causedByDamage;
+			mentalState.causedByPsycast = causedByPsycast;
+			mentalState.causedByPawn = otherPawn;
+			if (mentalState is MentalState_SocialFighting mentalState_SocialFighting)
 			{
-				((MentalState_SocialFighting)mentalState).otherPawn = otherPawn;
+				mentalState_SocialFighting.otherPawn = otherPawn;
 			}
 			mentalState.PreStart();
 			if (!transitionSilently)
@@ -118,6 +142,10 @@ namespace Verse.AI
 			{
 				pawn.drafter.Drafted = false;
 			}
+			if (pawn.mechanitor != null)
+			{
+				pawn.mechanitor.UndraftAllMechs();
+			}
 			curStateInt = mentalState;
 			if (pawn.needs.mood != null)
 			{
@@ -127,33 +155,48 @@ namespace Verse.AI
 			{
 				pawn.caller.Notify_InAggroMentalState();
 			}
+			Lord lord = pawn.GetLord();
+			lord?.Notify_InMentalState(pawn, stateDef);
 			if (curStateInt != null)
 			{
 				curStateInt.PostStart(reason);
 			}
-			if (pawn.CurJob != null)
+			Thing resultingThing;
+			if (stateDef.stopsJobs && pawn.CurJob != null)
 			{
 				pawn.jobs.StopAll();
+				if (pawn.IsCarrying())
+				{
+					pawn.carryTracker.TryDropCarriedThing(pawn.PositionHeld, ThingPlaceMode.Near, out resultingThing);
+				}
 			}
 			if (pawn.Spawned)
 			{
 				pawn.Map.attackTargetsCache.UpdateTarget(pawn);
 			}
-			if (pawn.Spawned && forceWake && !pawn.Awake())
+			if (pawn.Spawned && forceWake)
 			{
-				pawn.jobs.EndCurrentJob(JobCondition.InterruptForced);
+				lord?.Notify_DormancyWakeup();
+				if (!pawn.Awake())
+				{
+					pawn.jobs.EndCurrentJob(JobCondition.InterruptForced);
+				}
+			}
+			if (pawn.ParentHolder is CompTransporter compTransporter)
+			{
+				compTransporter.innerContainer.TryDrop(pawn, ThingPlaceMode.Near, out resultingThing);
 			}
 			if (!transitionSilently && PawnUtility.ShouldSendNotificationAbout(pawn))
 			{
-				string text = mentalState.GetBeginLetterText();
-				if (!text.NullOrEmpty())
+				TaggedString beginLetterText = mentalState.GetBeginLetterText();
+				if (!beginLetterText.NullOrEmpty())
 				{
-					string str = (stateDef.beginLetterLabel ?? ((string)stateDef.LabelCap)).CapitalizeFirst() + ": " + pawn.LabelShortCap;
+					string text = (stateDef.beginLetterLabel ?? ((string)stateDef.LabelCap)).CapitalizeFirst() + ": " + pawn.LabelShortCap;
 					if (!reason.NullOrEmpty())
 					{
-						text = text + "\n\n" + reason;
+						beginLetterText += "\n\n" + reason;
 					}
-					Find.LetterStack.ReceiveLetter(str, text, stateDef.beginLetterDef, pawn);
+					Find.LetterStack.ReceiveLetter(text, beginLetterText, stateDef.beginLetterDef, pawn);
 				}
 			}
 			return true;
@@ -167,7 +210,7 @@ namespace Verse.AI
 				float num = pawn.kindDef.fleeHealthThresholdRange.LerpThroughRange(lerpPct);
 				if (pawn.health.summaryHealth.SummaryHealthPercent < num && pawn.Faction != Faction.OfPlayer && pawn.HostFaction == null)
 				{
-					TryStartMentalState(MentalStateDefOf.PanicFlee);
+					TryStartMentalState(MentalStateDefOf.PanicFlee, null, forced: false, forceWake: false, causedByMood: false, null, transitionSilently: false, causedByDamage: true);
 				}
 			}
 		}

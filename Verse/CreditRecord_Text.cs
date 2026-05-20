@@ -26,6 +26,7 @@ namespace Verse
 		public override void Draw(Rect r)
 		{
 			Text.Anchor = anchor;
+			Text.Font = GameFont.Medium;
 			Widgets.Label(r, text);
 			Text.Anchor = TextAnchor.UpperLeft;
 		}

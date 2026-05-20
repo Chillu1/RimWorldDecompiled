@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Verse;
 using Verse.AI;
 
@@ -8,7 +9,7 @@ namespace RimWorld
 	{
 		protected override Job TryGiveJob(Pawn pawn)
 		{
-			if (pawn.gender != Gender.Male || !pawn.ageTracker.CurLifeStage.reproductive)
+			if (pawn.gender != Gender.Male || pawn.Sterile() || pawn.RaceProps.disableMating)
 			{
 				return null;
 			}
@@ -29,12 +30,15 @@ namespace RimWorld
 				}
 				return PawnUtility.FertileMateTarget(pawn, pawn3) ? true : false;
 			};
-			Pawn pawn2 = (Pawn)GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(pawn.def), PathEndMode.Touch, TraverseParms.For(pawn), 30f, validator);
-			if (pawn2 == null)
+			foreach (ThingDef item in pawn.RaceProps.canCrossBreedWith.OrElseEmptyEnumerable().Prepend(pawn.def))
 			{
-				return null;
+				Pawn pawn2 = (Pawn)GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(item), PathEndMode.Touch, TraverseParms.For(pawn), 30f, validator);
+				if (pawn2 != null)
+				{
+					return JobMaker.MakeJob(JobDefOf.Mate, pawn2);
+				}
 			}
-			return JobMaker.MakeJob(JobDefOf.Mate, pawn2);
+			return null;
 		}
 	}
 }

@@ -17,8 +17,10 @@ namespace RimWorld
 			pawnGroupMakerParms.traderKind = parms.traderKind;
 			pawnGroupMakerParms.generateFightersOnly = parms.generateFightersOnly;
 			pawnGroupMakerParms.raidStrategy = parms.raidStrategy;
-			pawnGroupMakerParms.forceOneIncap = parms.raidForceOneIncap;
+			pawnGroupMakerParms.forceOneDowned = parms.raidForceOneDowned;
 			pawnGroupMakerParms.seed = parms.pawnGroupMakerSeed;
+			pawnGroupMakerParms.ideo = parms.pawnIdeo;
+			pawnGroupMakerParms.raidAgeRestriction = parms.raidAgeRestriction;
 			if (ensureCanGenerateAtLeastOnePawn && parms.faction != null)
 			{
 				pawnGroupMakerParms.points = Mathf.Max(pawnGroupMakerParms.points, parms.faction.def.MinPointsToGeneratePawnGroup(groupKind));

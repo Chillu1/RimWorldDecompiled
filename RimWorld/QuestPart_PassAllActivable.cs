@@ -7,6 +7,10 @@ namespace RimWorld
 	{
 		public List<string> inSignals = new List<string>();
 
+		public string outSignalAny;
+
+		public string expiryInfoPartKey;
+
 		private List<bool> signalsReceived = new List<bool>();
 
 		private bool AllSignalsReceived
@@ -28,6 +32,20 @@ namespace RimWorld
 			}
 		}
 
+		public int SignalsReceivedCount => signalsReceived.Count((bool s) => s);
+
+		public override string ExpiryInfoPart
+		{
+			get
+			{
+				if (expiryInfoPartKey.NullOrEmpty())
+				{
+					return null;
+				}
+				return string.Concat(expiryInfoPartKey.Translate() + " ", SignalsReceivedCount.ToString(), " / ", inSignals.Count.ToString());
+			}
+		}
+
 		protected override void Enable(SignalArgs receivedArgs)
 		{
 			signalsReceived.Clear();
@@ -45,6 +63,12 @@ namespace RimWorld
 					signalsReceived.Add(item: false);
 				}
 				signalsReceived[num] = true;
+				if (!outSignalAny.NullOrEmpty())
+				{
+					SignalArgs args = signal.args;
+					args.Add(SignalsReceivedCount.Named("COUNT"));
+					Find.SignalManager.SendSignal(new Signal(outSignalAny, args));
+				}
 				if (AllSignalsReceived)
 				{
 					Complete();
@@ -57,6 +81,8 @@ namespace RimWorld
 			base.ExposeData();
 			Scribe_Collections.Look(ref inSignals, "inSignals", LookMode.Value);
 			Scribe_Collections.Look(ref signalsReceived, "signalsReceived", LookMode.Value);
+			Scribe_Values.Look(ref outSignalAny, "outSignalAny");
+			Scribe_Values.Look(ref expiryInfoPartKey, "expiryInfoPartKey");
 		}
 
 		public override void AssignDebugData()

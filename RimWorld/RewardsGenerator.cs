@@ -95,7 +95,7 @@ namespace RimWorld
 			bool flag2 = parms.allowRoyalFavor && parms.giverFaction != null && parms.giverFaction.allowRoyalFavorRewards && parms.giverFaction.def.HasRoyalTitles;
 			bool flag3 = flag2 || flag;
 			bool flag4 = parms.giverFaction != null && parms.giverFaction.HostileTo(Faction.OfPlayer);
-			bool flag5 = flag2 && parms.giverFaction == Faction.Empire && !parms.thingRewardItemsOnly;
+			bool flag5 = flag2 && Faction.OfEmpire != null && parms.giverFaction == Faction.OfEmpire && !parms.thingRewardItemsOnly;
 			bool flag6;
 			bool flag7;
 			if (!parms.thingRewardDisallowed && !flag3)
@@ -222,7 +222,8 @@ namespace RimWorld
 		{
 			if (!allowGoodwill && !allowRoyalFavor)
 			{
-				Log.Error("GenerateSocialReward could not generate any reward for parms=" + parms);
+				RewardsGeneratorParams rewardsGeneratorParams = parms;
+				Log.Error("GenerateSocialReward could not generate any reward for parms=" + rewardsGeneratorParams.ToString());
 				allowGoodwill = true;
 			}
 			float valueActuallyUsedLocal = 0f;
@@ -294,15 +295,11 @@ namespace RimWorld
 				Thing thing = ThingMaker.MakeThing(thingDef);
 				thing.stackCount = num;
 				generatedRewardValue += thing.MarketValue * (float)thing.stackCount;
-				Reward_Items reward_Items = thingReward as Reward_Items;
-				if (reward_Items == null)
+				if (!(thingReward is Reward_Items reward_Items))
 				{
 					return new Reward_Items
 					{
-						items = 
-						{
-							thing
-						}
+						items = { thing }
 					};
 				}
 				reward_Items.items.Add(thing);

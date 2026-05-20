@@ -1,7 +1,9 @@
 using UnityEngine;
+using Verse;
 
 namespace RimWorld.Planet
 {
+	[StaticConstructorOnStartup]
 	public static class WorldCameraManager
 	{
 		private static Camera worldCameraInt;
@@ -22,6 +24,8 @@ namespace RimWorld.Planet
 
 		public static int WorldSkyboxLayer;
 
+		public const int FarClipPlane = 7500;
+
 		private static readonly Color SkyColor;
 
 		public static Camera WorldCamera => worldCameraInt;
@@ -38,7 +42,7 @@ namespace RimWorld.Planet
 			WorldSkyboxLayerName = "WorldSkybox";
 			WorldSkyboxLayerMask = LayerMask.GetMask(WorldSkyboxLayerName);
 			WorldSkyboxLayer = LayerMask.NameToLayer(WorldSkyboxLayerName);
-			SkyColor = new Color(16f / 255f, 23f / 255f, 0.117647059f);
+			SkyColor = new Color(0.0627451f, 0.09019608f, 0.11764706f);
 			worldCameraInt = CreateWorldCamera();
 			worldSkyboxCameraInt = CreateWorldSkyboxCamera(worldCameraInt);
 			worldCameraDriverInt = worldCameraInt.GetComponent<WorldCameraDriver>();
@@ -57,7 +61,7 @@ namespace RimWorld.Planet
 			component.useOcclusionCulling = true;
 			component.renderingPath = RenderingPath.Forward;
 			component.nearClipPlane = 2f;
-			component.farClipPlane = 1200f;
+			component.farClipPlane = 7500f;
 			component.fieldOfView = 20f;
 			component.depth = 1f;
 			return component;
@@ -77,7 +81,7 @@ namespace RimWorld.Planet
 			component.useOcclusionCulling = false;
 			component.renderingPath = RenderingPath.Forward;
 			component.nearClipPlane = 2f;
-			component.farClipPlane = 1200f;
+			component.farClipPlane = 7500f;
 			component.fieldOfView = 60f;
 			component.depth = 0f;
 			return component;

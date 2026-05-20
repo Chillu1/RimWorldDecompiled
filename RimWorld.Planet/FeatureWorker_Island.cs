@@ -4,19 +4,19 @@ namespace RimWorld.Planet
 {
 	public class FeatureWorker_Island : FeatureWorker_FloodFill
 	{
-		protected override bool IsRoot(int tile)
+		protected override bool IsRoot(PlanetTile tile)
 		{
-			BiomeDef biome = Find.WorldGrid[tile].biome;
-			if (biome != BiomeDefOf.Ocean)
+			BiomeDef primaryBiome = Find.WorldGrid[tile].PrimaryBiome;
+			if (primaryBiome != BiomeDefOf.Ocean)
 			{
-				return biome != BiomeDefOf.Lake;
+				return primaryBiome != BiomeDefOf.Lake;
 			}
 			return false;
 		}
 
-		protected override bool IsPossiblyAllowed(int tile)
+		protected override bool IsPossiblyAllowed(PlanetTile tile)
 		{
-			return Find.WorldGrid[tile].biome == BiomeDefOf.Lake;
+			return Find.WorldGrid[tile].PrimaryBiome == BiomeDefOf.Lake;
 		}
 	}
 }

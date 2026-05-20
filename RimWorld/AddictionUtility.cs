@@ -6,6 +6,32 @@ namespace RimWorld
 {
 	public static class AddictionUtility
 	{
+		public static bool HasChemicalDependency(Pawn pawn, Thing drug)
+		{
+			return HasChemicalDependency(pawn, drug.def);
+		}
+
+		public static bool HasChemicalDependency(Pawn pawn, ThingDef drug)
+		{
+			if (!ModsConfig.BiotechActive)
+			{
+				return false;
+			}
+			ChemicalDef chemicalDef = drug.GetCompProperties<CompProperties_Drug>()?.chemical;
+			if (chemicalDef == null)
+			{
+				return false;
+			}
+			foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
+			{
+				if (hediff is Hediff_ChemicalDependency hediff_ChemicalDependency && hediff_ChemicalDependency.chemical == chemicalDef)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
 		public static bool IsAddicted(Pawn pawn, Thing drug)
 		{
 			return FindAddictionHediff(pawn, drug) != null;
@@ -44,7 +70,7 @@ namespace RimWorld
 			return pawn.health.hediffSet.hediffs.Find((Hediff x) => x.def == chemical.toleranceHediff);
 		}
 
-		public static void ModifyChemicalEffectForToleranceAndBodySize(Pawn pawn, ChemicalDef chemicalDef, ref float effect)
+		public static void ModifyChemicalEffectForToleranceAndBodySize(Pawn pawn, ChemicalDef chemicalDef, ref float effect, bool applyGeneToleranceFactor, bool divideByBodySize = true)
 		{
 			if (chemicalDef != null)
 			{
@@ -54,7 +80,20 @@ namespace RimWorld
 					hediffs[i].ModifyChemicalEffect(chemicalDef, ref effect);
 				}
 			}
-			effect /= pawn.BodySize;
+			if (applyGeneToleranceFactor && ModsConfig.BiotechActive && pawn.genes != null)
+			{
+				foreach (Gene item in pawn.genes.GenesListForReading)
+				{
+					if (item.Active && item.def.chemical == chemicalDef)
+					{
+						effect *= item.def.toleranceBuildupFactor;
+					}
+				}
+			}
+			if (divideByBodySize)
+			{
+				effect /= pawn.BodySize;
+			}
 		}
 
 		public static void CheckDrugAddictionTeachOpportunity(Pawn pawn)

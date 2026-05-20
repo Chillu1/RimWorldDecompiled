@@ -31,7 +31,7 @@ namespace RimWorld
 			yield return Toils_General.Wait(200).FailOnDestroyedNullOrForbidden(TargetIndex.A).FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch)
 				.FailOn(() => !Barrel.Fermented)
 				.WithProgressBarToilDelay(TargetIndex.A);
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
 				Thing thing = Barrel.TakeOutBeer();

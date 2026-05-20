@@ -3,16 +3,14 @@ using Verse.AI;
 
 namespace RimWorld
 {
-	public class LordToil_Speech : LordToil_Gathering
+	public class LordToil_Speech : LordToil_Ritual
 	{
-		public Pawn organizer;
+		public new LordToilData_Speech Data => (LordToilData_Speech)data;
 
-		public LordToilData_Speech Data => (LordToilData_Speech)data;
-
-		public LordToil_Speech(IntVec3 spot, GatheringDef gatheringDef, Pawn organizer)
-			: base(spot, gatheringDef)
+		public LordToil_Speech(IntVec3 spot, Precept_Ritual ritual, LordJob_Ritual lordJob, Pawn organizer)
+			: base(spot, lordJob, null, organizer)
 		{
-			this.organizer = organizer;
+			base.organizer = organizer;
 			data = new LordToilData_Speech();
 		}
 

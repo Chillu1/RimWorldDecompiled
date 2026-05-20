@@ -46,7 +46,17 @@ namespace Verse
 					return;
 				}
 			}
-			Log.Warning(string.Concat(claimant, " tried to release reservation on target ", target, ", but it's not reserved by him."));
+			string obj = claimant?.ToString();
+			LocalTargetInfo localTargetInfo = target;
+			Log.Warning(obj + " tried to release reservation on target " + localTargetInfo.ToString() + ", but it's not reserved by him.");
+		}
+
+		public void TryRelease(Pawn claimant, Job job, LocalTargetInfo target)
+		{
+			if (IsReservedBy(claimant, target))
+			{
+				Release(claimant, job, target);
+			}
 		}
 
 		public bool IsReservedBy(Pawn claimant, LocalTargetInfo target)
@@ -78,6 +88,18 @@ namespace Verse
 				}
 			}
 			return null;
+		}
+
+		public void ReserversOf(LocalTargetInfo target, HashSet<Pawn> reserversOut)
+		{
+			for (int i = 0; i < reservations.Count; i++)
+			{
+				PhysicalInteractionReservation physicalInteractionReservation = reservations[i];
+				if (physicalInteractionReservation.target == target)
+				{
+					reserversOut.Add(physicalInteractionReservation.claimant);
+				}
+			}
 		}
 
 		public LocalTargetInfo FirstReservationFor(Pawn claimant)

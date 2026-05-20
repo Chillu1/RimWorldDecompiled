@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Verse;
 
 namespace RimWorld
@@ -12,6 +13,8 @@ namespace RimWorld
 
 		public const string BreakdownSignal = "Breakdown";
 
+		private OverlayHandle? overlayBrokenDown;
+
 		public bool BrokenDown => brokenDownInt;
 
 		public override void PostExposeData()
@@ -20,11 +23,15 @@ namespace RimWorld
 			Scribe_Values.Look(ref brokenDownInt, "brokenDown", defaultValue: false);
 		}
 
-		public override void PostDraw()
+		private void UpdateOverlays()
 		{
-			if (brokenDownInt)
+			if (parent.Spawned)
 			{
-				parent.Map.overlayDrawer.DrawOverlay(parent, OverlayTypes.BrokenDown);
+				parent.Map.overlayDrawer.Disable(parent, ref overlayBrokenDown);
+				if (brokenDownInt)
+				{
+					overlayBrokenDown = parent.Map.overlayDrawer.Enable(parent, OverlayTypes.BrokenDown);
+				}
 			}
 		}
 
@@ -33,17 +40,18 @@ namespace RimWorld
 			base.PostSpawnSetup(respawningAfterLoad);
 			powerComp = parent.GetComp<CompPowerTrader>();
 			parent.Map.GetComponent<BreakdownManager>().Register(this);
+			UpdateOverlays();
 		}
 
-		public override void PostDeSpawn(Map map)
+		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
 		{
-			base.PostDeSpawn(map);
+			base.PostDeSpawn(map, mode);
 			map.GetComponent<BreakdownManager>().Deregister(this);
 		}
 
 		public void CheckForBreakdown()
 		{
-			if (CanBreakdownNow() && Rand.MTBEventOccurs(1.368E+07f, 1f, 1041f))
+			if (CanBreakdownNow() && Rand.MTBEventOccurs(13680000f, 1f, 1041f))
 			{
 				DoBreakdown();
 			}
@@ -70,6 +78,7 @@ namespace RimWorld
 			{
 				parent.Map.powerNetManager.Notfiy_TransmitterTransmitsPowerNowChanged(parent.GetComp<CompPower>());
 			}
+			UpdateOverlays();
 		}
 
 		public void DoBreakdown()
@@ -77,6 +86,7 @@ namespace RimWorld
 			brokenDownInt = true;
 			parent.BroadcastCompSignal("Breakdown");
 			parent.Map.GetComponent<BreakdownManager>().Notify_BrokenDown(parent);
+			UpdateOverlays();
 		}
 
 		public override string CompInspectStringExtra()
@@ -86,6 +96,18 @@ namespace RimWorld
 				return "BrokenDown".Translate();
 			}
 			return null;
+		}
+
+		public override IEnumerable<Gizmo> CompGetGizmosExtra()
+		{
+			if (DebugSettings.ShowDevGizmos && BrokenDown)
+			{
+				yield return new Command_Action
+				{
+					defaultLabel = "DEV: Fix breakdown",
+					action = Notify_Repaired
+				};
+			}
 		}
 	}
 }

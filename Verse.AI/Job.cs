@@ -36,6 +36,16 @@ namespace Verse.AI
 
 		public bool playerForced;
 
+		public bool playerInterruptedForced;
+
+		public bool showCarryingInspectLine = true;
+
+		public bool flying;
+
+		public bool swimming;
+
+		public TargetIndex intervalScalingTarget;
+
 		public List<ThingCountClass> placedThings;
 
 		public int maxNumMeleeAttacks = int.MaxValue;
@@ -52,6 +62,8 @@ namespace Verse.AI
 
 		public ThingDef plantDefToSow;
 
+		public ThingDef thingDefToCarry;
+
 		public Verb verbToUse;
 
 		public bool haulOpportunisticDuplicates;
@@ -66,7 +78,9 @@ namespace Verse.AI
 
 		public bool ignoreDesignations;
 
-		public bool canBash;
+		public bool canBashDoors;
+
+		public bool canBashFences;
 
 		public bool canUseRangedWeapon = true;
 
@@ -80,11 +94,17 @@ namespace Verse.AI
 
 		public bool overeat;
 
+		public bool ingestTotalCount;
+
 		public bool attackDoorIfTargetLost;
 
 		public int takeExtraIngestibles;
 
 		public bool expireRequiresEnemiesNearby;
+
+		public bool ensureReachable;
+
+		public bool expireOnEnemiesNearby;
 
 		public Lord lord;
 
@@ -114,6 +134,50 @@ namespace Verse.AI
 
 		public bool reactingToMeleeThreat;
 
+		public bool preventFriendlyFire;
+
+		public RopingPriority ropingPriority;
+
+		public bool ropeToUnenclosedPens;
+
+		public bool showSpeechBubbles = true;
+
+		public Direction8Way lookDirection = Direction8Way.Invalid;
+
+		public Rot4 overrideFacing = Rot4.Invalid;
+
+		public bool forceMaintainFacing;
+
+		public string dutyTag;
+
+		public string ritualTag;
+
+		public string controlGroupTag;
+
+		public int takeInventoryDelay;
+
+		public bool draftedTend;
+
+		public bool speechFaceSpectatorsIfPossible;
+
+		public SoundDef speechSoundMale;
+
+		public SoundDef speechSoundFemale;
+
+		public string biosculpterCycleKey;
+
+		[MustTranslate]
+		public string reportStringOverride;
+
+		[MustTranslate]
+		public string crawlingReportStringOverride;
+
+		public bool startInvoluntarySleep;
+
+		public bool isLearningDesire;
+
+		public int interactableIndex = -1;
+
 		public ThinkTreeDef jobGiverThinkTree;
 
 		public ThinkNode jobGiver;
@@ -122,21 +186,15 @@ namespace Verse.AI
 
 		public Ability ability;
 
+		public ILoadReferenceable source;
+
 		private JobDriver cachedDriver;
+
+		private JobDriver lastJobDriverMade;
 
 		private int jobGiverKey = -1;
 
-		public RecipeDef RecipeDef
-		{
-			get
-			{
-				if (bill == null)
-				{
-					return null;
-				}
-				return bill.recipe;
-			}
-		}
+		public RecipeDef RecipeDef => bill?.recipe;
 
 		public JobDriver GetCachedDriverDirect => cachedDriver;
 
@@ -155,6 +213,7 @@ namespace Verse.AI
 			expiryInterval = -1;
 			checkOverrideOnExpire = false;
 			playerForced = false;
+			playerInterruptedForced = false;
 			placedThings = null;
 			maxNumMeleeAttacks = int.MaxValue;
 			maxNumStaticAttacks = int.MaxValue;
@@ -170,13 +229,15 @@ namespace Verse.AI
 			killIncappedTarget = false;
 			ignoreForbidden = false;
 			ignoreDesignations = false;
-			canBash = false;
+			canBashDoors = false;
+			canBashFences = false;
 			canUseRangedWeapon = true;
 			haulDroppedApparel = false;
 			restUntilHealed = false;
 			ignoreJoyTimeAssignment = false;
 			doUntilGatheringEnded = false;
 			overeat = false;
+			ingestTotalCount = false;
 			attackDoorIfTargetLost = false;
 			takeExtraIngestibles = 0;
 			expireRequiresEnemiesNearby = false;
@@ -194,15 +255,46 @@ namespace Verse.AI
 			reactingToMeleeThreat = false;
 			wasOnMeditationTimeAssignment = false;
 			psyfocusTargetLast = -1f;
+			preventFriendlyFire = false;
+			ropingPriority = RopingPriority.Closest;
+			ropeToUnenclosedPens = false;
+			thingDefToCarry = null;
+			dutyTag = null;
+			ritualTag = null;
+			controlGroupTag = null;
+			lookDirection = Direction8Way.Invalid;
+			overrideFacing = Rot4.Invalid;
+			forceMaintainFacing = false;
+			takeInventoryDelay = 0;
+			draftedTend = false;
+			showSpeechBubbles = true;
+			speechSoundFemale = null;
+			speechSoundMale = null;
+			speechFaceSpectatorsIfPossible = false;
+			biosculpterCycleKey = null;
+			startInvoluntarySleep = false;
+			reportStringOverride = null;
+			crawlingReportStringOverride = null;
+			isLearningDesire = false;
+			flying = false;
+			swimming = false;
+			intervalScalingTarget = TargetIndex.None;
+			ensureReachable = false;
 			jobGiverThinkTree = null;
 			jobGiver = null;
 			workGiverDef = null;
 			ability = null;
+			source = null;
 			if (cachedDriver != null)
 			{
 				cachedDriver.job = null;
 			}
 			cachedDriver = null;
+			if (lastJobDriverMade != null)
+			{
+				lastJobDriverMade.job = null;
+			}
+			lastJobDriverMade = null;
 		}
 
 		public Job()
@@ -251,6 +343,99 @@ namespace Verse.AI
 			this.expiryInterval = expiryInterval;
 			checkOverrideOnExpire = checkOverrideOnExpiry;
 			loadID = Find.UniqueIDsManager.GetNextJobID();
+		}
+
+		public Job Clone()
+		{
+			return new Job
+			{
+				def = def,
+				targetA = targetA,
+				targetB = targetB,
+				targetC = targetC,
+				targetQueueA = targetQueueA,
+				targetQueueB = targetQueueB,
+				globalTarget = globalTarget,
+				count = count,
+				countQueue = countQueue,
+				loadID = loadID,
+				expiryInterval = expiryInterval,
+				checkOverrideOnExpire = checkOverrideOnExpire,
+				playerForced = playerForced,
+				showCarryingInspectLine = showCarryingInspectLine,
+				placedThings = placedThings,
+				maxNumMeleeAttacks = maxNumMeleeAttacks,
+				maxNumStaticAttacks = maxNumStaticAttacks,
+				locomotionUrgency = locomotionUrgency,
+				haulMode = haulMode,
+				bill = bill,
+				commTarget = commTarget,
+				plantDefToSow = plantDefToSow,
+				thingDefToCarry = thingDefToCarry,
+				verbToUse = verbToUse,
+				haulOpportunisticDuplicates = haulOpportunisticDuplicates,
+				exitMapOnArrival = exitMapOnArrival,
+				failIfCantJoinOrCreateCaravan = failIfCantJoinOrCreateCaravan,
+				killIncappedTarget = killIncappedTarget,
+				ignoreForbidden = ignoreForbidden,
+				ignoreDesignations = ignoreDesignations,
+				canBashDoors = canBashDoors,
+				canBashFences = canBashFences,
+				canUseRangedWeapon = canUseRangedWeapon,
+				haulDroppedApparel = haulDroppedApparel,
+				restUntilHealed = restUntilHealed,
+				ignoreJoyTimeAssignment = ignoreJoyTimeAssignment,
+				doUntilGatheringEnded = doUntilGatheringEnded,
+				overeat = overeat,
+				ingestTotalCount = ingestTotalCount,
+				attackDoorIfTargetLost = attackDoorIfTargetLost,
+				takeExtraIngestibles = takeExtraIngestibles,
+				expireRequiresEnemiesNearby = expireRequiresEnemiesNearby,
+				expireOnEnemiesNearby = expireOnEnemiesNearby,
+				intervalScalingTarget = intervalScalingTarget,
+				lord = lord,
+				collideWithPawns = collideWithPawns,
+				forceSleep = forceSleep,
+				interaction = interaction,
+				endIfCantShootTargetFromCurPos = endIfCantShootTargetFromCurPos,
+				endIfCantShootInMelee = endIfCantShootInMelee,
+				checkEncumbrance = checkEncumbrance,
+				followRadius = followRadius,
+				endAfterTendedOnce = endAfterTendedOnce,
+				quest = quest,
+				mote = mote,
+				psyfocusTargetLast = psyfocusTargetLast,
+				wasOnMeditationTimeAssignment = wasOnMeditationTimeAssignment,
+				reactingToMeleeThreat = reactingToMeleeThreat,
+				preventFriendlyFire = preventFriendlyFire,
+				ropingPriority = ropingPriority,
+				ropeToUnenclosedPens = ropeToUnenclosedPens,
+				showSpeechBubbles = showSpeechBubbles,
+				lookDirection = lookDirection,
+				overrideFacing = overrideFacing,
+				forceMaintainFacing = forceMaintainFacing,
+				dutyTag = dutyTag,
+				ritualTag = ritualTag,
+				controlGroupTag = controlGroupTag,
+				takeInventoryDelay = takeInventoryDelay,
+				draftedTend = draftedTend,
+				speechFaceSpectatorsIfPossible = speechFaceSpectatorsIfPossible,
+				speechSoundMale = speechSoundMale,
+				speechSoundFemale = speechSoundFemale,
+				biosculpterCycleKey = biosculpterCycleKey,
+				reportStringOverride = reportStringOverride,
+				crawlingReportStringOverride = crawlingReportStringOverride,
+				startInvoluntarySleep = startInvoluntarySleep,
+				isLearningDesire = isLearningDesire,
+				flying = flying,
+				swimming = swimming,
+				ensureReachable = ensureReachable,
+				jobGiverThinkTree = jobGiverThinkTree,
+				jobGiver = jobGiver,
+				workGiverDef = workGiverDef,
+				ability = ability,
+				source = source
+			};
 		}
 
 		public LocalTargetInfo GetTarget(TargetIndex ind)
@@ -327,10 +512,13 @@ namespace Verse.AI
 			Scribe_Collections.Look(ref targetQueueB, "targetQueueB", LookMode.Undefined);
 			Scribe_Values.Look(ref count, "count", -1);
 			Scribe_Collections.Look(ref countQueue, "countQueue", LookMode.Undefined);
+			Scribe_Values.Look(ref ignoreForbidden, "ignoreForbidden", defaultValue: false);
 			Scribe_Values.Look(ref startTick, "startTick", -1);
 			Scribe_Values.Look(ref expiryInterval, "expiryInterval", -1);
 			Scribe_Values.Look(ref checkOverrideOnExpire, "checkOverrideOnExpire", defaultValue: false);
 			Scribe_Values.Look(ref playerForced, "playerForced", defaultValue: false);
+			Scribe_Values.Look(ref playerInterruptedForced, "playerInterruptedForced", defaultValue: false);
+			Scribe_Values.Look(ref intervalScalingTarget, "intervalScalingTarget", TargetIndex.None);
 			Scribe_Collections.Look(ref placedThings, "placedThings", LookMode.Undefined);
 			Scribe_Values.Look(ref maxNumMeleeAttacks, "maxNumMeleeAttacks", int.MaxValue);
 			Scribe_Values.Look(ref maxNumStaticAttacks, "maxNumStaticAttacks", int.MaxValue);
@@ -340,14 +528,17 @@ namespace Verse.AI
 			Scribe_Values.Look(ref haulOpportunisticDuplicates, "haulOpportunisticDuplicates", defaultValue: false);
 			Scribe_Values.Look(ref haulMode, "haulMode", HaulMode.Undefined);
 			Scribe_Defs.Look(ref plantDefToSow, "plantDefToSow");
+			Scribe_Defs.Look(ref thingDefToCarry, "thingDefToCarry");
 			Scribe_Values.Look(ref locomotionUrgency, "locomotionUrgency", LocomotionUrgency.Jog);
 			Scribe_Values.Look(ref ignoreDesignations, "ignoreDesignations", defaultValue: false);
-			Scribe_Values.Look(ref canBash, "canBash", defaultValue: false);
+			Scribe_Values.Look(ref canBashDoors, "canBash", defaultValue: false);
+			Scribe_Values.Look(ref canBashFences, "canBashFences", defaultValue: false);
 			Scribe_Values.Look(ref canUseRangedWeapon, "canUseRangedWeapon", defaultValue: true);
 			Scribe_Values.Look(ref haulDroppedApparel, "haulDroppedApparel", defaultValue: false);
 			Scribe_Values.Look(ref restUntilHealed, "restUntilHealed", defaultValue: false);
 			Scribe_Values.Look(ref ignoreJoyTimeAssignment, "ignoreJoyTimeAssignment", defaultValue: false);
 			Scribe_Values.Look(ref overeat, "overeat", defaultValue: false);
+			Scribe_Values.Look(ref ingestTotalCount, "ingestTotalCount", defaultValue: false);
 			Scribe_Values.Look(ref attackDoorIfTargetLost, "attackDoorIfTargetLost", defaultValue: false);
 			Scribe_Values.Look(ref takeExtraIngestibles, "takeExtraIngestibles", 0);
 			Scribe_Values.Look(ref expireRequiresEnemiesNearby, "expireRequiresEnemiesNearby", defaultValue: false);
@@ -365,29 +556,56 @@ namespace Verse.AI
 			Scribe_Values.Look(ref psyfocusTargetLast, "psyfocusTargetLast", 0f);
 			Scribe_Values.Look(ref wasOnMeditationTimeAssignment, "wasOnMeditationTimeAssignment", defaultValue: false);
 			Scribe_Values.Look(ref reactingToMeleeThreat, "reactingToMeleeThreat", defaultValue: false);
+			Scribe_Values.Look(ref preventFriendlyFire, "preventFriendlyFire", defaultValue: false);
+			Scribe_Values.Look(ref ropingPriority, "ropingPriority", RopingPriority.Closest);
+			Scribe_Values.Look(ref ropeToUnenclosedPens, "ropeToUnenclosedPens", defaultValue: false);
+			Scribe_Values.Look(ref lookDirection, "lookDirection", Direction8Way.Invalid);
+			Scribe_Values.Look(ref dutyTag, "dutyTag");
+			Scribe_Values.Look(ref ritualTag, "ritualTag");
+			Scribe_Values.Look(ref controlGroupTag, "controlGroupTag");
 			Scribe_References.Look(ref ability, "ability");
+			Scribe_References.Look(ref source, "source");
+			Scribe_Values.Look(ref takeInventoryDelay, "takeInventoryDelay", 0);
+			Scribe_Values.Look(ref draftedTend, "draftedTend", defaultValue: false);
+			Scribe_Values.Look(ref showSpeechBubbles, "showSpeechBubbles", defaultValue: true);
+			Scribe_Values.Look(ref overrideFacing, "overrideFacing", Rot4.Invalid);
+			Scribe_Values.Look(ref forceMaintainFacing, "forceMaintainFacing", defaultValue: false);
+			Scribe_Values.Look(ref speechFaceSpectatorsIfPossible, "speechFaceSpectatorsIfPossible", defaultValue: false);
+			Scribe_Defs.Look(ref speechSoundMale, "speechSoundMale");
+			Scribe_Defs.Look(ref speechSoundFemale, "speechSoundFemale");
+			Scribe_Values.Look(ref biosculpterCycleKey, "biosculpterCycleKey");
+			Scribe_Values.Look(ref startInvoluntarySleep, "startInvoluntarySleep", defaultValue: false);
+			Scribe_Values.Look(ref reportStringOverride, "reportStringOverride");
+			Scribe_Values.Look(ref crawlingReportStringOverride, "crawlingReportStringOverride");
+			Scribe_Values.Look(ref isLearningDesire, "isLearning", defaultValue: false);
+			Scribe_Values.Look(ref interactableIndex, "interactableIndex", 0);
+			Scribe_Values.Look(ref ensureReachable, "ensureReachable", defaultValue: false);
 			if (Scribe.mode == LoadSaveMode.Saving)
 			{
-				jobGiverKey = ((jobGiver != null) ? jobGiver.UniqueSaveKey : (-1));
+				jobGiverKey = jobGiver?.UniqueSaveKey ?? (-1);
 			}
 			Scribe_Values.Look(ref jobGiverKey, "lastJobGiverKey", -1);
-			if (Scribe.mode == LoadSaveMode.PostLoadInit && jobGiverKey != -1 && !jobGiverThinkTree.TryGetThinkNodeWithSaveKey(jobGiverKey, out jobGiver))
+			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
-				Log.Warning("Could not find think node with key " + jobGiverKey);
-			}
-			if (Scribe.mode == LoadSaveMode.PostLoadInit && verbToUse != null && verbToUse.BuggedAfterLoading)
-			{
-				verbToUse = null;
-				Log.Warning(string.Concat(GetType(), " had a bugged verbToUse after loading."));
+				if (jobGiverKey != -1 && !jobGiverThinkTree.TryGetThinkNodeWithSaveKey(jobGiverKey, out jobGiver))
+				{
+					Log.Warning("Could not find think node with key " + jobGiverKey);
+				}
+				if (verbToUse != null && verbToUse.BuggedAfterLoading)
+				{
+					verbToUse = null;
+					Log.Warning(GetType()?.ToString() + " had a bugged verbToUse after loading.");
+				}
 			}
 		}
 
 		public JobDriver MakeDriver(Pawn driverPawn)
 		{
-			JobDriver obj = (JobDriver)Activator.CreateInstance(def.driverClass);
-			obj.pawn = driverPawn;
-			obj.job = this;
-			return obj;
+			JobDriver jobDriver = (JobDriver)Activator.CreateInstance(def.driverClass);
+			jobDriver.pawn = driverPawn;
+			jobDriver.job = this;
+			lastJobDriverMade = jobDriver;
+			return jobDriver;
 		}
 
 		public JobDriver GetCachedDriver(Pawn driverPawn)
@@ -431,7 +649,7 @@ namespace Verse.AI
 			return true;
 		}
 
-		public bool JobIsSameAs(Job other)
+		public bool JobIsSameAs(Pawn pawn, Job other)
 		{
 			if (other == null)
 			{
@@ -441,7 +659,16 @@ namespace Verse.AI
 			{
 				return true;
 			}
-			if (def != other.def || targetA != other.targetA || targetB != other.targetB || verbToUse != other.verbToUse || targetC != other.targetC || commTarget != other.commTarget || bill != other.bill)
+			if (def != other.def || verbToUse != other.verbToUse || bill != other.bill)
+			{
+				return false;
+			}
+			bool? flag = GetCachedDriver(pawn).IsSameJobAs(other);
+			if (flag.HasValue)
+			{
+				return flag.Value;
+			}
+			if (targetA != other.targetA || targetB != other.targetB || targetC != other.targetC || commTarget != other.commTarget)
 			{
 				return false;
 			}
@@ -506,18 +733,22 @@ namespace Verse.AI
 
 		public override string ToString()
 		{
-			string text = def.ToString() + " (" + GetUniqueLoadID() + ")";
+			string text = $"{def} ({GetUniqueLoadID()})";
 			if (targetA.IsValid)
 			{
-				text = text + " A=" + targetA.ToString();
+				text += $" A = {targetA}";
 			}
 			if (targetB.IsValid)
 			{
-				text = text + " B=" + targetB.ToString();
+				text += $" B = {targetB}";
 			}
 			if (targetC.IsValid)
 			{
-				text = text + " C=" + targetC.ToString();
+				text += $" C = {targetC}";
+			}
+			if (jobGiver != null)
+			{
+				text = text + " Giver = " + jobGiver.GetType().Name + " [workGiverDef: " + ((workGiverDef == null) ? "null" : workGiverDef.ToString()) + "]";
 			}
 			return text;
 		}
@@ -525,6 +756,14 @@ namespace Verse.AI
 		public string GetUniqueLoadID()
 		{
 			return "Job_" + loadID;
+		}
+
+		public void LogDetails(Pawn pawn)
+		{
+			string text = $"{this}";
+			JobDriver curDriver = pawn.jobs.curDriver;
+			text = ((curDriver == null) ? (text + "\nno driver.") : (text + $"\ndriver details - current toil [{curDriver.CurToilIndex}]: {curDriver.CurToilString}"));
+			Log.Message(text);
 		}
 	}
 }

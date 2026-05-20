@@ -18,7 +18,7 @@ namespace Verse
 				Faction faction = Find.FactionManager.RandomNonHostileFaction();
 				if (faction != null && faction.leader != null)
 				{
-					Find.LetterStack.ReceiveLetter("LetterLabelAICoreOffer".Translate(), "LetterAICoreOffer".Translate(faction.leader.LabelDefinite(), faction.Name, faction.leader.Named("PAWN")).CapitalizeFirst(), LetterDefOf.NeutralEvent, GlobalTargetInfo.Invalid, faction);
+					Find.LetterStack.ReceiveLetter("LetterLabelAICoreOffer".Translate(), "LetterAICoreOffer".Translate(faction.leader.LabelDefinite(), faction.NameColored, faction.leader.Named("PAWN")).Resolve().CapitalizeFirst(), LetterDefOf.NeutralEvent, GlobalTargetInfo.Invalid, faction);
 					sendAICoreRequestReminder = false;
 				}
 			}

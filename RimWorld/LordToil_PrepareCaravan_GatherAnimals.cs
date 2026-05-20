@@ -1,25 +1,26 @@
-using System;
 using Verse;
-using Verse.AI.Group;
+using Verse.AI;
 
 namespace RimWorld
 {
-	[Obsolete]
-	public class LordToil_PrepareCaravan_GatherAnimals : LordToil
+	public class LordToil_PrepareCaravan_GatherAnimals : LordToil_PrepareCaravan_RopeAnimals
 	{
-		private IntVec3 meetingPoint;
-
-		public override float? CustomWakeThreshold => 0.5f;
-
-		public override bool AllowRestingInBed => false;
-
-		public LordToil_PrepareCaravan_GatherAnimals(IntVec3 meetingPoint)
+		public LordToil_PrepareCaravan_GatherAnimals(IntVec3 destinationPoint)
+			: base(destinationPoint, null)
 		{
-			this.meetingPoint = meetingPoint;
 		}
 
-		public override void UpdateAllDuties()
+		protected override PawnDuty MakeRopeDuty()
 		{
+			return new PawnDuty(DutyDefOf.PrepareCaravan_GatherAnimals, destinationPoint);
+		}
+
+		public override void LordToilTick()
+		{
+			if (Find.TickManager.TicksGame % 100 == 0)
+			{
+				GatherAnimalsAndSlavesForCaravanUtility.CheckArrived(lord, lord.ownedPawns, destinationPoint, "AllAnimalsGathered", AnimalPenUtility.NeedsToBeManagedByRope, (Pawn x) => x.roping.RopedToSpot == destinationPoint);
+			}
 		}
 	}
 }

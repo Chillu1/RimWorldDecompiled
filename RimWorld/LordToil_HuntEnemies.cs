@@ -18,13 +18,13 @@ namespace RimWorld
 
 		public override void UpdateAllDuties()
 		{
-			LordToilData_HuntEnemies data = Data;
-			if (!data.fallbackLocation.IsValid)
+			LordToilData_HuntEnemies lordToilData_HuntEnemies = Data;
+			if (!lordToilData_HuntEnemies.fallbackLocation.IsValid)
 			{
 				for (int i = 0; i < lord.ownedPawns.Count; i++)
 				{
 					Pawn pawn = lord.ownedPawns[i];
-					if (pawn.Spawned && RCellFinder.TryFindRandomSpotJustOutsideColony(pawn, out data.fallbackLocation) && data.fallbackLocation.IsValid)
+					if (pawn.Spawned && RCellFinder.TryFindRandomSpotJustOutsideColony(pawn, out lordToilData_HuntEnemies.fallbackLocation) && lordToilData_HuntEnemies.fallbackLocation.IsValid)
 					{
 						break;
 					}
@@ -34,7 +34,7 @@ namespace RimWorld
 			{
 				Pawn pawn2 = lord.ownedPawns[j];
 				pawn2.mindState.duty = new PawnDuty(DutyDefOf.HuntEnemiesIndividual);
-				pawn2.mindState.duty.focusSecond = data.fallbackLocation;
+				pawn2.mindState.duty.focusSecond = lordToilData_HuntEnemies.fallbackLocation;
 			}
 		}
 	}

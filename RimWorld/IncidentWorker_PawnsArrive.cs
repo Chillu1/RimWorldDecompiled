@@ -7,13 +7,16 @@ namespace RimWorld
 {
 	public abstract class IncidentWorker_PawnsArrive : IncidentWorker
 	{
-		protected IEnumerable<Faction> CandidateFactions(Map map, bool desperate = false)
+		protected virtual bool MustHaveSettlementOnLayer => false;
+
+		protected IEnumerable<Faction> CandidateFactions(IncidentParms parms, bool desperate = false)
 		{
-			return Find.FactionManager.AllFactions.Where((Faction f) => FactionCanBeGroupSource(f, map, desperate));
+			return Find.FactionManager.AllFactions.Where((Faction f) => FactionCanBeGroupSource(f, parms, desperate));
 		}
 
-		protected virtual bool FactionCanBeGroupSource(Faction f, Map map, bool desperate = false)
+		public virtual bool FactionCanBeGroupSource(Faction f, IncidentParms parms, bool desperate = false)
 		{
+			Map map = (Map)parms.target;
 			if (f.IsPlayer)
 			{
 				return false;
@@ -30,15 +33,30 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (MustHaveSettlementOnLayer && !f.Hidden && map.Tile.Valid && !Find.WorldObjects.AnyFactionSettlementOnLayer(f, map.Tile.Layer))
+			{
+				return false;
+			}
+			if (!f.def.arrivalLayerWhitelist.NullOrEmpty() && !f.def.arrivalLayerWhitelist.Contains(map.Tile.LayerDef))
+			{
+				return false;
+			}
+			if (!f.def.arrivalLayerBlacklist.NullOrEmpty() && f.def.arrivalLayerBlacklist.Contains(map.Tile.LayerDef))
+			{
+				return false;
+			}
+			if (map.Tile.LayerDef.onlyAllowWhitelistedArrivals && (f.def.arrivalLayerWhitelist.NullOrEmpty() || !f.def.arrivalLayerWhitelist.Contains(map.Tile.LayerDef)))
+			{
+				return false;
+			}
 			return true;
 		}
 
 		protected override bool CanFireNowSub(IncidentParms parms)
 		{
-			Map map = (Map)parms.target;
 			if (parms.faction == null)
 			{
-				return CandidateFactions(map).Any();
+				return CandidateFactions(parms).Any();
 			}
 			return true;
 		}
@@ -46,14 +64,18 @@ namespace RimWorld
 		public string DebugListingOfGroupSources()
 		{
 			StringBuilder stringBuilder = new StringBuilder();
+			IncidentParms parms = new IncidentParms
+			{
+				target = Find.CurrentMap
+			};
 			foreach (Faction allFaction in Find.FactionManager.AllFactions)
 			{
 				stringBuilder.Append(allFaction.Name);
-				if (FactionCanBeGroupSource(allFaction, Find.CurrentMap))
+				if (FactionCanBeGroupSource(allFaction, parms))
 				{
 					stringBuilder.Append("    YES");
 				}
-				else if (FactionCanBeGroupSource(allFaction, Find.CurrentMap, desperate: true))
+				else if (FactionCanBeGroupSource(allFaction, parms, desperate: true))
 				{
 					stringBuilder.Append("    YES-DESPERATE");
 				}

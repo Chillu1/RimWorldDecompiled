@@ -1,6 +1,8 @@
 using System;
+using LudeonTK;
 using UnityEngine;
 using Verse;
+using Verse.Steam;
 
 namespace RimWorld
 {
@@ -16,6 +18,7 @@ namespace RimWorld
 		{
 			base.Init();
 			Messages.Clear();
+			debugWindowOpener.TryOpenOrClosePalette();
 		}
 
 		public override void UIRootOnGUI()
@@ -34,8 +37,11 @@ namespace RimWorld
 			{
 				Find.Tutor.TutorOnGUI();
 			}
+			Find.World.WorldOnGUI();
 			ReorderableWidget.ReorderableWidgetOnGUI_BeforeWindowStack();
+			DragAndDropWidget.DragAndDropWidgetOnGUI_BeforeWindowStack();
 			windows.WindowStackOnGUI();
+			DragAndDropWidget.DragAndDropWidgetOnGUI_AfterWindowStack();
 			ReorderableWidget.ReorderableWidgetOnGUI_AfterWindowStack();
 			Widgets.WidgetsOnGUI();
 			mapUI.HandleMapClicks();
@@ -48,6 +54,7 @@ namespace RimWorld
 			Find.World.UI.HandleLowPriorityInput();
 			mapUI.HandleLowPriorityInput();
 			OpenMainMenuShortcut();
+			SteamDeck.ShowSteamDeckGameControlsIfNotKnown();
 		}
 
 		public override void UIRootUpdate()

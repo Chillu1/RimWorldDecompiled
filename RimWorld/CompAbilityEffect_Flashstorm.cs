@@ -16,7 +16,7 @@ namespace RimWorld
 			GameCondition_Flashstorm gameCondition_Flashstorm = (GameCondition_Flashstorm)GameConditionMaker.MakeCondition(GameConditionDefOf.Flashstorm);
 			gameCondition_Flashstorm.centerLocation = target.Cell.ToIntVec2;
 			gameCondition_Flashstorm.areaRadiusOverride = new IntRange(Mathf.RoundToInt(parent.def.EffectRadius), Mathf.RoundToInt(parent.def.EffectRadius));
-			gameCondition_Flashstorm.Duration = Mathf.RoundToInt(parent.def.EffectDuration.SecondsToTicks());
+			gameCondition_Flashstorm.Duration = Mathf.RoundToInt(parent.def.EffectDuration(parent.pawn).SecondsToTicks());
 			gameCondition_Flashstorm.suppressEndMessage = true;
 			gameCondition_Flashstorm.initialStrikeDelay = new IntRange(60, 180);
 			gameCondition_Flashstorm.conditionCauser = conditionCauser;
@@ -27,14 +27,17 @@ namespace RimWorld
 
 		private void ApplyGoodwillImpact(LocalTargetInfo target, int radius)
 		{
+			if (parent.pawn.Faction != Faction.OfPlayer)
+			{
+				return;
+			}
 			affectedFactionCache.Clear();
 			foreach (Thing item in GenRadial.RadialDistinctThingsAround(target.Cell, parent.pawn.Map, radius, useCenter: true))
 			{
-				Pawn pawn;
-				if ((pawn = item as Pawn) != null && item.Faction != null && item.Faction != parent.pawn.Faction && !item.Faction.HostileTo(parent.pawn.Faction) && !affectedFactionCache.Contains(item.Faction) && (base.Props.applyGoodwillImpactToLodgers || !pawn.IsQuestLodger()))
+				if (item is Pawn p && item.Faction != null && item.Faction != parent.pawn.Faction && !item.Faction.HostileTo(parent.pawn.Faction) && !affectedFactionCache.Contains(item.Faction) && (base.Props.applyGoodwillImpactToLodgers || !p.IsQuestLodger()))
 				{
 					affectedFactionCache.Add(item.Faction);
-					item.Faction.TryAffectGoodwillWith(parent.pawn.Faction, base.Props.goodwillImpact, canSendMessage: true, canSendHostilityLetter: true, "GoodwillChangedReason_UsedAbility".Translate(parent.def.LabelCap, pawn.LabelShort), pawn);
+					Faction.OfPlayer.TryAffectGoodwillWith(item.Faction, base.Props.goodwillImpact, canSendMessage: true, canSendHostilityLetter: true, HistoryEventDefOf.UsedHarmfulAbility);
 				}
 			}
 			affectedFactionCache.Clear();
@@ -46,7 +49,7 @@ namespace RimWorld
 			{
 				if (throwMessages)
 				{
-					Messages.Message("AbilityRoofed".Translate(parent.def.LabelCap), target.ToTargetInfo(parent.pawn.Map), MessageTypeDefOf.RejectInput, historical: false);
+					Messages.Message("CannotUseAbility".Translate(parent.def.label) + ": " + "AbilityRoofed".Translate(), target.ToTargetInfo(parent.pawn.Map), MessageTypeDefOf.RejectInput, historical: false);
 				}
 				return false;
 			}

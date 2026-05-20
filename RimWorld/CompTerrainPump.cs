@@ -47,7 +47,7 @@ namespace RimWorld
 			powerComp = parent.TryGetComp<CompPowerTrader>();
 		}
 
-		public override void PostDeSpawn(Map map)
+		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
 		{
 			progressTicks = 0;
 		}
@@ -92,10 +92,10 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (Prefs.DevMode)
+			if (DebugSettings.ShowDevGizmos)
 			{
 				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "DEBUG: Progress 1 day";
+				command_Action.defaultLabel = "DEV: Progress 1 day";
 				command_Action.action = delegate
 				{
 					progressTicks += 60000;

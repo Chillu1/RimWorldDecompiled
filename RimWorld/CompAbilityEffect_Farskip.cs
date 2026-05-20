@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld.Planet;
@@ -9,7 +10,7 @@ namespace RimWorld
 {
 	public class CompAbilityEffect_Farskip : CompAbilityEffect
 	{
-		public new CompProperties_AbilityFarskip Props => (CompProperties_AbilityFarskip)props;
+		private new CompProperties_AbilityFarskip Props => (CompProperties_AbilityFarskip)props;
 
 		public override void Apply(GlobalTargetInfo target)
 		{
@@ -48,21 +49,22 @@ namespace RimWorld
 						AbilityUtility.DoClamor(item2.Position, Props.clamorRadius, parent.pawn, Props.clamorType);
 						item2.teleporting = false;
 					}
-					CellFinder.TryFindRandomSpawnCellForPawnNear_NewTmp(targetCell, targetMap, out var result, 4, (IntVec3 cell) => cell != targetCell && cell.GetRoom(targetMap) == targetCell.GetRoom(targetMap));
+					CellFinder.TryFindRandomSpawnCellForPawnNear(targetCell, targetMap, out var result, 4, (IntVec3 cell) => cell != targetCell && cell.GetRoom(targetMap) == targetCell.GetRoom(targetMap));
 					GenSpawn.Spawn(item2, result, targetMap);
-					if (item2.drafter != null && item2.IsColonistPlayerControlled)
+					if (item2.drafter != null && item2.IsColonistPlayerControlled && !item2.Downed)
 					{
 						item2.drafter.Drafted = true;
 					}
-					item2.stances.stunner.StunFor_NewTmp(Props.stunTicks.RandomInRange, parent.pawn, addBattleLog: false);
+					item2.stances.stunner.StunFor(Props.stunTicks.RandomInRange, parent.pawn, addBattleLog: false);
 					item2.Notify_Teleported();
+					CompAbilityEffect_Teleport.SendSkipUsedSignal(item2, parent.pawn);
 					if (item2.IsPrisoner)
 					{
 						item2.guest.WaitInsteadOfEscapingForDefaultTicks();
 					}
-					parent.AddEffecterToMaintain(EffecterDefOf.Skip_ExitNoDelay.Spawn(item2, item2.Map), item2.Position, 60);
+					parent.AddEffecterToMaintain(EffecterDefOf.Skip_ExitNoDelay.Spawn(item2, item2.Map), item2.Position, 60, targetMap);
 					SoundDefOf.Psycast_Skip_Exit.PlayOneShot(new TargetInfo(result, item2.Map));
-					if ((item2.IsColonist || item2.RaceProps.packAnimal) && item2.Map.IsPlayerHome)
+					if ((item2.IsColonist || item2.RaceProps.packAnimal || item2.IsColonyMech) && item2.Map.IsPlayerHome)
 					{
 						item2.inventory.UnloadEverything = true;
 					}
@@ -70,26 +72,24 @@ namespace RimWorld
 				caravan?.Destroy();
 				return;
 			}
-			Caravan caravan2 = target.WorldObject as Caravan;
-			if (caravan2 != null && caravan2.Faction == parent.pawn.Faction)
+			if (target.WorldObject is Caravan caravan2 && caravan2.Faction == parent.pawn.Faction)
 			{
 				if (caravan != null)
 				{
 					caravan.pawns.TryTransferAllToContainer(caravan2.pawns);
-					caravan2.Notify_Merged(new List<Caravan>
-					{
-						caravan
-					});
+					caravan2.Notify_Merged(new List<Caravan> { caravan });
 					caravan.Destroy();
 					return;
 				}
-				foreach (Pawn item3 in list)
 				{
-					caravan2.AddPawn(item3, addCarriedPawnToWorldPawnsIfAny: true);
-					item3.ExitMap(allowedToJoinOrCreateCaravan: false, Rot4.Invalid);
-					AbilityUtility.DoClamor(item3.Position, Props.clamorRadius, parent.pawn, Props.clamorType);
+					foreach (Pawn item3 in list)
+					{
+						caravan2.AddPawn(item3, addCarriedPawnToWorldPawnsIfAny: true);
+						item3.ExitMap(allowedToJoinOrCreateCaravan: false, Rot4.Invalid);
+						AbilityUtility.DoClamor(item3.Position, Props.clamorRadius, parent.pawn, Props.clamorType);
+					}
+					return;
 				}
-				return;
 			}
 			if (caravan != null)
 			{
@@ -112,7 +112,9 @@ namespace RimWorld
 				{
 					foreach (Pawn item in PawnsToSkip())
 					{
-						MoteMaker.MakeAttachedOverlay(item, ThingDefOf.Mote_PsycastSkipFlashEntry, Vector3.zero).detachAfterTicks = 5;
+						FleckCreationData dataAttachedOverlay = FleckMaker.GetDataAttachedOverlay(item, FleckDefOf.PsycastSkipFlashEntry, new Vector3(-0.5f, 0f, -0.5f));
+						dataAttachedOverlay.link.detachAfterTicks = 5;
+						item.Map.flecks.CreateFleck(dataAttachedOverlay);
 					}
 				},
 				ticksAwayFromCast = 5
@@ -131,10 +133,22 @@ namespace RimWorld
 				yield break;
 			}
 			bool homeMap = parent.pawn.Map.IsPlayerHome;
+			bool sentLodgerMessage = false;
 			foreach (Thing item in GenRadial.RadialDistinctThingsAround(parent.pawn.Position, parent.pawn.Map, parent.def.EffectRadius, useCenter: true))
 			{
-				Pawn pawn;
-				if ((pawn = item as Pawn) != null && !pawn.Dead && (pawn.IsColonist || pawn.IsPrisonerOfColony || (!homeMap && pawn.RaceProps.Animal && pawn.Faction != null && pawn.Faction.IsPlayer)))
+				if (!(item is Pawn pawn))
+				{
+					continue;
+				}
+				if (pawn.IsQuestLodger())
+				{
+					if (!sentLodgerMessage)
+					{
+						Messages.Message("MessageLodgersCantFarskip".Translate(), pawn, MessageTypeDefOf.NegativeEvent, historical: false);
+					}
+					sentLodgerMessage = true;
+				}
+				else if (!pawn.Dead && (pawn.IsColonist || pawn.IsPrisonerOfColony || (!homeMap && pawn.IsAnimal && pawn.Faction != null && pawn.Faction.IsPlayer) || pawn.IsColonySubhuman))
 				{
 					yield return pawn;
 				}
@@ -143,18 +157,16 @@ namespace RimWorld
 
 		private Pawn AlliedPawnOnMap(Map targetMap)
 		{
-			return targetMap.mapPawns.AllPawnsSpawned.FirstOrDefault((Pawn p) => !p.NonHumanlikeOrWildMan() && p.IsColonist && p.FactionOrExtraMiniOrHomeFaction == Faction.OfPlayer && !PawnsToSkip().Contains(p));
+			return targetMap.mapPawns.AllPawnsSpawned.FirstOrDefault((Pawn p) => !p.NonHumanlikeOrWildMan() && p.IsColonist && p.HomeFaction == Faction.OfPlayer && !PawnsToSkip().Contains(p));
 		}
 
 		private bool ShouldEnterMap(GlobalTargetInfo target)
 		{
-			Caravan caravan = target.WorldObject as Caravan;
-			if (caravan != null && caravan.Faction == parent.pawn.Faction)
+			if (target.WorldObject is Caravan caravan && caravan.Faction == parent.pawn.Faction)
 			{
 				return false;
 			}
-			MapParent mapParent = target.WorldObject as MapParent;
-			if (mapParent != null && mapParent.HasMap)
+			if (target.WorldObject is MapParent { HasMap: not false } mapParent)
 			{
 				if (AlliedPawnOnMap(mapParent.Map) == null)
 				{
@@ -167,8 +179,7 @@ namespace RimWorld
 
 		private bool ShouldJoinCaravan(GlobalTargetInfo target)
 		{
-			Caravan caravan;
-			if ((caravan = target.WorldObject as Caravan) != null)
+			if (target.WorldObject is Caravan caravan)
 			{
 				return caravan.Faction == parent.pawn.Faction;
 			}
@@ -196,22 +207,21 @@ namespace RimWorld
 
 		public override bool CanApplyOn(GlobalTargetInfo target)
 		{
-			MapParent mapParent = target.WorldObject as MapParent;
-			if (mapParent != null && mapParent.Map != null && AlliedPawnOnMap(mapParent.Map) == null)
+			if (target.WorldObject is MapParent { Map: not null } mapParent && AlliedPawnOnMap(mapParent.Map) == null)
 			{
 				return false;
 			}
 			return base.CanApplyOn(target);
 		}
 
-		public override string ConfirmationDialogText(GlobalTargetInfo target)
+		public override Window ConfirmationDialog(GlobalTargetInfo target, Action confirmAction)
 		{
 			Pawn pawn = PawnsToSkip().FirstOrDefault((Pawn p) => p.IsQuestLodger());
 			if (pawn != null)
 			{
-				return "FarskipConfirmTeleportingLodger".Translate(pawn.Named("PAWN"));
+				return Dialog_MessageBox.CreateConfirmation("FarskipConfirmTeleportingLodger".Translate(pawn.Named("PAWN")), confirmAction);
 			}
-			return base.ConfirmationDialogText(target);
+			return null;
 		}
 
 		public override string WorldMapExtraLabel(GlobalTargetInfo target)

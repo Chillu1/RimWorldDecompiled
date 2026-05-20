@@ -72,7 +72,10 @@ namespace RimWorld
 			for (pointsLeft = points; pointsLeft > 0f && Props.spawnablePawnKinds.Where((PawnKindDef p) => p.combatPower <= pointsLeft).TryRandomElement(out result); pointsLeft -= result.combatPower)
 			{
 				int index = result.lifeStages.Count - 1;
-				list.Add(PawnGenerator.GeneratePawn(new PawnGenerationRequest(result, parent.Faction, PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: false, newborn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: false, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, null, 1f, null, null, null, null, null, result.race.race.lifeStageAges[index].minAge)));
+				PawnKindDef kind = result;
+				Faction faction = parent.Faction;
+				float? fixedBiologicalAge = result.race.race.lifeStageAges[index].minAge;
+				list.Add(PawnGenerator.GeneratePawn(new PawnGenerationRequest(kind, faction, PawnGenerationContext.NonPlayer, null, forceGenerateNewPawn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: false, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowPregnant: false, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, 0f, null, 1f, null, null, null, null, null, fixedBiologicalAge)));
 			}
 			points = 0f;
 			return list;
@@ -93,7 +96,7 @@ namespace RimWorld
 			List<Thing> list = GeneratePawns();
 			if (Props.dropInPods)
 			{
-				DropPodUtility.DropThingsNear(spawnPosition, parent.MapHeld, list);
+				DropPodUtility.DropThingsNear(spawnPosition, parent.MapHeld, list, 110, canInstaDropDuringInit: false, leaveSlag: false, canRoofPunch: true, forbid: true, allowFogged: true, parent.Faction);
 			}
 			List<IntVec3> occupiedCells = new List<IntVec3>();
 			foreach (Thing item in list)
@@ -111,6 +114,10 @@ namespace RimWorld
 				lord.AddPawn((Pawn)item);
 				spawnedPawns.Add((Pawn)item);
 				item.TryGetComp<CompCanBeDormant>()?.WakeUp();
+				if (Props.mentalState != null)
+				{
+					((Pawn)item).mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.CocoonDisturbed);
+				}
 			}
 			if (Props.spawnEffecter != null)
 			{
@@ -126,11 +133,15 @@ namespace RimWorld
 			{
 				Messages.Message(Props.activatedMessageKey.Translate(), spawnedPawns, MessageTypeDefOf.ThreatBig);
 			}
+			if (Props.destroyAfterSpawn && !parent.Destroyed)
+			{
+				parent.Destroy();
+			}
 		}
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (Prefs.DevMode)
+			if (Prefs.DevMode && DebugSettings.godMode)
 			{
 				Command_Action command_Action = new Command_Action();
 				command_Action.defaultLabel = "DEV: Spawn";

@@ -1,4 +1,3 @@
-using UnityEngine;
 using Verse;
 using Verse.AI;
 
@@ -16,6 +15,8 @@ namespace RimWorld
 
 		private static string CantInteractAnimalBusyTrans;
 
+		protected bool canInteractWhileSleeping;
+
 		public override PathEndMode PathEndMode => PathEndMode.OnCell;
 
 		public static void ResetStaticData()
@@ -29,29 +30,43 @@ namespace RimWorld
 
 		protected virtual bool CanInteractWithAnimal(Pawn pawn, Pawn animal, bool forced)
 		{
+			if (CanInteractWithAnimal(pawn, animal, out var jobFailReason, forced, canInteractWhileSleeping))
+			{
+				return true;
+			}
+			if (jobFailReason != null)
+			{
+				JobFailReason.Is(jobFailReason);
+			}
+			return false;
+		}
+
+		public static bool CanInteractWithAnimal(Pawn pawn, Pawn animal, out string jobFailReason, bool forced, bool canInteractWhileSleeping = false, bool ignoreSkillRequirements = false, bool canInteractWhileRoaming = false)
+		{
+			jobFailReason = null;
 			if (!pawn.CanReserve(animal, 1, -1, null, forced))
 			{
 				return false;
 			}
 			if (animal.Downed)
 			{
-				JobFailReason.Is(CantInteractAnimalDownedTrans);
+				jobFailReason = CantInteractAnimalDownedTrans;
 				return false;
 			}
-			if (!animal.Awake())
+			if (!animal.Awake() && !canInteractWhileSleeping)
 			{
-				JobFailReason.Is(CantInteractAnimalAsleepTrans);
+				jobFailReason = CantInteractAnimalAsleepTrans;
 				return false;
 			}
-			if (!animal.CanCasuallyInteractNow())
+			if (!animal.CanCasuallyInteractNow(twoWayInteraction: false, canInteractWhileSleeping, canInteractWhileRoaming))
 			{
-				JobFailReason.Is(CantInteractAnimalBusyTrans);
+				jobFailReason = CantInteractAnimalBusyTrans;
 				return false;
 			}
 			int num = TrainableUtility.MinimumHandlingSkill(animal);
-			if (num > pawn.skills.GetSkill(SkillDefOf.Animals).Level)
+			if (!ignoreSkillRequirements && num > pawn.skills.GetSkill(SkillDefOf.Animals).Level)
 			{
-				JobFailReason.Is("AnimalsSkillTooLow".Translate(num));
+				jobFailReason = "AnimalsSkillTooLow".Translate(num);
 				return false;
 			}
 			return true;
@@ -89,17 +104,15 @@ namespace RimWorld
 
 		protected Job TakeFoodForAnimalInteractJob(Pawn pawn, Pawn tamee)
 		{
-			FoodUtility.bestFoodSourceOnMap_minNutrition_NewTemp = JobDriver_InteractAnimal.RequiredNutritionPerFeed(tamee) * 2f * 4f;
 			ThingDef foodDef;
-			Thing thing = FoodUtility.BestFoodSourceOnMap(pawn, tamee, desperate: false, out foodDef, FoodPreferability.RawTasty, allowPlant: false, allowDrug: false, allowCorpse: false, allowDispenserFull: false, allowDispenserEmpty: false);
-			FoodUtility.bestFoodSourceOnMap_minNutrition_NewTemp = null;
+			Thing thing = FoodUtility.BestFoodSourceOnMap(pawn, tamee, desperate: false, out foodDef, FoodPreferability.RawTasty, allowPlant: false, allowDrug: false, allowCorpse: false, allowDispenserFull: false, allowDispenserEmpty: false, allowForbidden: false, allowSociallyImproper: false, allowHarvest: false, forceScanWholeMap: false, ignoreReservations: false, calculateWantedStackCount: false, FoodPreferability.Undefined, JobDriver_InteractAnimal.RequiredNutritionPerFeed(tamee) * 2f * 4f);
 			if (thing == null)
 			{
 				return null;
 			}
-			float num = JobDriver_InteractAnimal.RequiredNutritionPerFeed(tamee) * 2f * 4f;
-			float nutrition = FoodUtility.GetNutrition(thing, foodDef);
-			int count = Mathf.CeilToInt(num / nutrition);
+			float wantedNutrition = JobDriver_InteractAnimal.RequiredNutritionPerFeed(tamee) * 2f * 4f;
+			float nutrition = FoodUtility.GetNutrition(tamee, thing, foodDef);
+			int count = FoodUtility.StackCountForNutrition(wantedNutrition, nutrition);
 			Job job = JobMaker.MakeJob(JobDefOf.TakeInventory, thing);
 			job.count = count;
 			return job;

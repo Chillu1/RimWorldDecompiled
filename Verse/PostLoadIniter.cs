@@ -11,19 +11,24 @@ namespace Verse
 		{
 			if (Scribe.mode != LoadSaveMode.LoadingVars)
 			{
-				Log.Error(string.Concat("Registered ", s, " for post load init, but current mode is ", Scribe.mode));
+				Log.Error("Registered " + s?.ToString() + " for post load init, but current mode is " + Scribe.mode);
+				return;
 			}
-			else if (s == null)
+			if (s == null)
 			{
 				Log.Warning("Trying to register null in RegisterforPostLoadInit.");
+				return;
 			}
-			else if (saveablesToPostLoad.Contains(s))
+			try
 			{
-				Log.Warning("Tried to register in RegisterforPostLoadInit when already registered: " + s);
+				if (!saveablesToPostLoad.Add(s))
+				{
+					Log.Warning("Tried to register in RegisterforPostLoadInit when already registered: " + s);
+				}
 			}
-			else
+			catch (Exception ex)
 			{
-				saveablesToPostLoad.Add(s);
+				Log.Error("Could not register an object for post load init: " + ex);
 			}
 		}
 

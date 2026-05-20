@@ -7,10 +7,7 @@ namespace Verse.Steam
 {
 	public interface WorkshopUploadable
 	{
-		IEnumerable<System.Version> SupportedVersions
-		{
-			get;
-		}
+		IEnumerable<System.Version> SupportedVersions { get; }
 
 		bool CanToUploadToWorkshop();
 

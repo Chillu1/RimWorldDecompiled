@@ -8,7 +8,7 @@ namespace RimWorld
 {
 	public class JoyGiver_ViewArt : JoyGiver
 	{
-		private static List<Thing> candidates = new List<Thing>();
+		private static readonly List<Thing> candidates = new List<Thing>();
 
 		public override Job TryGiveJob(Pawn pawn)
 		{
@@ -17,14 +17,14 @@ namespace RimWorld
 			{
 				candidates.AddRange(pawn.Map.listerThings.ThingsInGroup(ThingRequestGroup.Art).Where(delegate(Thing thing)
 				{
-					if (thing.Faction != Faction.OfPlayer || thing.IsForbidden(pawn) || (!allowedOutside && !thing.Position.Roofed(thing.Map)) || !pawn.CanReserveAndReach(thing, PathEndMode.Touch, Danger.None) || !thing.IsPoliticallyProper(pawn))
+					if (!Validator(thing))
 					{
 						return false;
 					}
 					CompArt compArt = thing.TryGetComp<CompArt>();
 					if (compArt == null)
 					{
-						Log.Error("No CompArt on thing being considered for viewing: " + thing);
+						Log.Error($"No CompArt on thing being considered for viewing: {thing}");
 						return false;
 					}
 					if (!compArt.CanShowArt || !compArt.Props.canBeEnjoyedAsArt)
@@ -36,7 +36,7 @@ namespace RimWorld
 					{
 						return false;
 					}
-					return ((room.Role != RoomRoleDefOf.Bedroom && room.Role != RoomRoleDefOf.Barracks && room.Role != RoomRoleDefOf.PrisonCell && room.Role != RoomRoleDefOf.PrisonBarracks && room.Role != RoomRoleDefOf.Hospital) || (pawn.ownership != null && pawn.ownership.OwnedRoom != null && pawn.ownership.OwnedRoom == room)) ? true : false;
+					return (!room.Role.avoidViewingArtIfUnowned || (pawn.ownership?.OwnedRoom != null && pawn.ownership.OwnedRoom == room)) ? true : false;
 				}));
 				if (!candidates.TryRandomElementByWeight((Thing target) => Mathf.Max(target.GetStatValue(StatDefOf.Beauty), 0.5f), out var result))
 				{
@@ -47,6 +47,14 @@ namespace RimWorld
 			finally
 			{
 				candidates.Clear();
+			}
+			bool Validator(Thing thing)
+			{
+				if (thing.Faction == Faction.OfPlayer && (allowedOutside || thing.Position.Roofed(thing.Map)) && !thing.Fogged() && !thing.VacuumConcernTo(pawn) && thing.IsPoliticallyProper(pawn) && pawn.CanReserveAndReach(thing, PathEndMode.Touch, Danger.None))
+				{
+					return !thing.IsForbidden(pawn);
+				}
+				return false;
 			}
 		}
 	}

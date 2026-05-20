@@ -11,7 +11,7 @@ namespace RimWorld
 		{
 			if (def.implied)
 			{
-				throw new NotImplementedException(string.Concat(def, " lacks InRelation implementation."));
+				throw new NotImplementedException(def?.ToString() + " lacks InRelation implementation.");
 			}
 			return me.relations.DirectRelationExists(def, other);
 		}
@@ -28,12 +28,16 @@ namespace RimWorld
 				generated.relations.AddDirectRelation(def, other);
 				return;
 			}
-			throw new NotImplementedException(string.Concat(def, " lacks CreateRelation implementation."));
+			throw new NotImplementedException(def?.ToString() + " lacks CreateRelation implementation.");
 		}
 
 		public float BaseGenerationChanceFactor(Pawn generated, Pawn other, PawnGenerationRequest request)
 		{
 			float num = 1f;
+			if (other.IsDuplicate)
+			{
+				return 0f;
+			}
 			if (generated.Faction != other.Faction)
 			{
 				num *= 0.65f;
@@ -56,7 +60,7 @@ namespace RimWorld
 			}
 			TechLevel techLevel = ((generated.Faction != null) ? generated.Faction.def.techLevel : TechLevel.Undefined);
 			TechLevel techLevel2 = ((other.Faction != null) ? other.Faction.def.techLevel : TechLevel.Undefined);
-			if (techLevel != 0 && techLevel2 != 0 && techLevel != techLevel2)
+			if (techLevel != TechLevel.Undefined && techLevel2 != TechLevel.Undefined && techLevel != techLevel2)
 			{
 				num *= 0.85f;
 			}
@@ -68,6 +72,18 @@ namespace RimWorld
 		}
 
 		public virtual void OnRelationCreated(Pawn firstPawn, Pawn secondPawn)
+		{
+		}
+
+		public virtual void OnRelationRemoved(Pawn firstPawn, Pawn secondPawn)
+		{
+		}
+
+		public virtual void Notify_PostRemovedByDeath(Pawn firstPawn, Pawn secondPawn)
+		{
+		}
+
+		public virtual void Notify_PostRemovedLeftBehind(Pawn firstPawn, Pawn secondPawn)
 		{
 		}
 	}

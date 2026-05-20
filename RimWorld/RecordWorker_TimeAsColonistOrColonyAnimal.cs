@@ -6,9 +6,9 @@ namespace RimWorld
 	{
 		public override bool ShouldMeasureTimeNow(Pawn pawn)
 		{
-			if (pawn.Faction == Faction.OfPlayer)
+			if (pawn.Faction == Faction.OfPlayer && !pawn.HasExtraHomeFaction() && !pawn.IsSlave)
 			{
-				return !pawn.HasExtraHomeFaction();
+				return !pawn.IsPrisoner;
 			}
 			return false;
 		}

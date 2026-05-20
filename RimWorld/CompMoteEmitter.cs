@@ -1,3 +1,4 @@
+using UnityEngine;
 using Verse;
 using Verse.Sound;
 
@@ -11,8 +12,33 @@ namespace RimWorld
 
 		private CompProperties_MoteEmitter Props => (CompProperties_MoteEmitter)props;
 
+		public bool MoteLive
+		{
+			get
+			{
+				if (mote != null)
+				{
+					return !mote.Destroyed;
+				}
+				return false;
+			}
+		}
+
+		public override void Initialize(CompProperties props)
+		{
+			base.Initialize(props);
+			if (Props.ticksSinceLastEmittedMaxOffset > 0)
+			{
+				ticksSinceLastEmitted = Rand.Range(0, Props.ticksSinceLastEmittedMaxOffset);
+			}
+		}
+
 		public override void CompTick()
 		{
+			if (!parent.Spawned)
+			{
+				return;
+			}
 			CompPowerTrader comp = parent.GetComp<CompPowerTrader>();
 			if (comp != null && !comp.PowerOn)
 			{
@@ -28,6 +54,11 @@ namespace RimWorld
 			{
 				return;
 			}
+			Skyfaller skyfaller = parent as Skyfaller;
+			if (skyfaller != null && skyfaller.FadingOut)
+			{
+				return;
+			}
 			if (Props.emissionInterval != -1 && !Props.maintain)
 			{
 				if (ticksSinceLastEmitted >= Props.emissionInterval)
@@ -40,19 +71,57 @@ namespace RimWorld
 					ticksSinceLastEmitted++;
 				}
 			}
-			else if (mote == null)
+			else if (mote == null || mote.Destroyed)
 			{
 				Emit();
 			}
-			if (Props.maintain && mote != null)
+			if (mote != null && !mote.Destroyed)
 			{
-				mote.Maintain();
+				if (typeof(MoteAttached).IsAssignableFrom(Props.mote.thingClass) && skyfaller != null)
+				{
+					mote.exactRotation = skyfaller.DrawAngle();
+				}
+				if (Props.maintain)
+				{
+					Maintain();
+				}
 			}
 		}
 
-		protected void Emit()
+		public void Maintain()
 		{
-			mote = MoteMaker.MakeStaticMote(parent.DrawPos + Props.offset, parent.Map, Props.mote);
+			mote.Maintain();
+		}
+
+		public virtual void Emit()
+		{
+			if (!parent.Spawned)
+			{
+				Log.Error("Thing tried spawning mote without being spawned!");
+				return;
+			}
+			Vector3 vector = Props.offset + Props.RotationOffset(parent.Rotation);
+			if (Props.offsetMin != Vector3.zero || Props.offsetMax != Vector3.zero)
+			{
+				vector = Props.EmissionOffset;
+			}
+			ThingDef thingDef = Props.RotationMote(parent.Rotation) ?? Props.mote;
+			if (typeof(MoteAttached).IsAssignableFrom(thingDef.thingClass))
+			{
+				mote = MoteMaker.MakeAttachedOverlay(parent, thingDef, vector);
+			}
+			else
+			{
+				Vector3 vector2 = parent.DrawPos + vector;
+				if (vector2.InBounds(parent.Map))
+				{
+					mote = MoteMaker.MakeStaticMote(vector2, parent.Map, thingDef);
+				}
+			}
+			if (mote != null && Props.useParentRotation)
+			{
+				mote.exactRotation = parent.Rotation.AsAngle;
+			}
 			if (!Props.soundOnEmission.NullOrUndefined())
 			{
 				Props.soundOnEmission.PlayOneShot(SoundInfo.InMap(parent));

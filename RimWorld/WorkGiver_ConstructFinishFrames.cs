@@ -20,12 +20,15 @@ namespace RimWorld
 			{
 				return null;
 			}
-			Frame frame = t as Frame;
-			if (frame == null)
+			if (!(t is Frame frame))
 			{
 				return null;
 			}
-			if (frame.MaterialsNeeded().Count > 0)
+			if (!frame.IsCompleted())
+			{
+				return null;
+			}
+			if (!GenConstruct.CanTouchTargetFromValidCell(frame, pawn))
 			{
 				return null;
 			}

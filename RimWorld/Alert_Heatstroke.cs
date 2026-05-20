@@ -8,6 +8,8 @@ namespace RimWorld
 	{
 		private List<Pawn> heatstrokePawnsResult = new List<Pawn>();
 
+		private StringBuilder sb = new StringBuilder();
+
 		private List<Pawn> HeatstrokePawns
 		{
 			get
@@ -17,7 +19,7 @@ namespace RimWorld
 				for (int i = 0; i < list.Count; i++)
 				{
 					Pawn pawn = list[i];
-					if (pawn.health != null && !pawn.RaceProps.Animal && pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Heatstroke, mustBeVisible: true) != null)
+					if (pawn.health != null && !pawn.IsAnimal && pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Heatstroke, mustBeVisible: true) != null)
 					{
 						heatstrokePawnsResult.Add(pawn);
 					}
@@ -34,12 +36,12 @@ namespace RimWorld
 
 		public override TaggedString GetExplanation()
 		{
-			StringBuilder stringBuilder = new StringBuilder();
+			sb.Length = 0;
 			foreach (Pawn heatstrokePawn in HeatstrokePawns)
 			{
-				stringBuilder.AppendLine("  - " + heatstrokePawn.NameShortColored.Resolve());
+				sb.AppendLine("  - " + heatstrokePawn.NameShortColored.Resolve());
 			}
-			return string.Format("AlertHeatstrokeDesc".Translate(), stringBuilder.ToString());
+			return string.Format("AlertHeatstrokeDesc".Translate(), sb.ToString().TrimEndNewlines());
 		}
 
 		public override AlertReport GetReport()

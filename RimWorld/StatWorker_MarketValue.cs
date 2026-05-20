@@ -17,11 +17,31 @@ namespace RimWorld
 			{
 				return base.GetValueUnfinalized(StatRequest.For(req.BuildableDef, req.StuffDef), applyPostProcess) * PriceUtility.PawnQualityPriceFactor((Pawn)req.Thing) + PriceUtility.PawnQualityPriceOffset((Pawn)req.Thing);
 			}
-			if (req.StatBases.StatListContains(StatDefOf.MarketValue))
+			float num;
+			if (!req.StatBases.StatListContains(StatDefOf.MarketValue))
 			{
-				return base.GetValueUnfinalized(req);
+				num = ((req.HasThing && req.Thing is IFixedBaseMarketValue fixedBaseMarketValue) ? fixedBaseMarketValue.BaseMarketValue : ((!req.HasThing || !(req.Thing.StyleSourcePrecept is Precept_Relic)) ? CalculatedBaseMarketValue(req.BuildableDef, req.StuffDef) : CalculatedBaseMarketValue(req.BuildableDef, ThingDefOf.Steel)));
 			}
-			return CalculatedBaseMarketValue(req.BuildableDef, req.StuffDef);
+			else
+			{
+				if (stat != StatDefOf.MarketValue)
+				{
+					return StatDefOf.MarketValue.Worker.GetValueUnfinalized(req);
+				}
+				num = base.GetValueUnfinalized(req);
+			}
+			if (req.Thing is ThingWithComps { AllComps: var allComps })
+			{
+				foreach (ThingComp item in allComps)
+				{
+					num += item.GetStatOffset(stat);
+				}
+				foreach (ThingComp item2 in allComps)
+				{
+					num *= item2.GetStatFactor(stat);
+				}
+			}
+			return num;
 		}
 
 		public static float CalculatedBaseMarketValue(BuildableDef def, ThingDef stuffDef)
@@ -49,17 +69,17 @@ namespace RimWorld
 			{
 				num2 = Mathf.Max(def.GetStatValueAbstract(StatDefOf.WorkToMake, stuffDef), def.GetStatValueAbstract(StatDefOf.WorkToBuild, stuffDef));
 				num3 = 1;
-				if (def.costList != null)
+				if (def.CostList != null)
 				{
-					for (int j = 0; j < def.costList.Count; j++)
+					for (int j = 0; j < def.CostList.Count; j++)
 					{
-						ThingDefCountClass thingDefCountClass = def.costList[j];
+						ThingDefCountClass thingDefCountClass = def.CostList[j];
 						num += (float)thingDefCountClass.count * thingDefCountClass.thingDef.BaseMarketValue;
 					}
 				}
-				if (def.costStuffCount > 0)
+				if (def.CostStuffCount > 0)
 				{
-					num = ((stuffDef == null) ? (num + (float)def.costStuffCount * 2f) : (num + (float)def.costStuffCount / stuffDef.VolumePerUnit * stuffDef.GetStatValueAbstract(StatDefOf.MarketValue)));
+					num = ((stuffDef == null) ? (num + (float)def.CostStuffCount * 2f) : (num + (float)def.CostStuffCount / stuffDef.VolumePerUnit * stuffDef.GetStatValueAbstract(StatDefOf.MarketValue)));
 				}
 			}
 			if (num2 > 2f)
@@ -71,7 +91,7 @@ namespace RimWorld
 
 		public static RecipeDef CalculableRecipe(BuildableDef def)
 		{
-			if (def.costList.NullOrEmpty() && def.costStuffCount <= 0)
+			if (def.CostList.NullOrEmpty() && def.CostStuffCount <= 0)
 			{
 				List<RecipeDef> allDefsListForReading = DefDatabase<RecipeDef>.AllDefsListForReading;
 				for (int i = 0; i < allDefsListForReading.Count; i++)
@@ -96,10 +116,11 @@ namespace RimWorld
 
 		public override string GetExplanationUnfinalized(StatRequest req, ToStringNumberSense numberSense)
 		{
+			StringBuilder stringBuilder = new StringBuilder();
 			if (req.HasThing && req.Thing is Pawn)
 			{
 				Pawn pawn = (Pawn)req.Thing;
-				StringBuilder stringBuilder = new StringBuilder(base.GetExplanationUnfinalized(req, numberSense));
+				stringBuilder.Append(base.GetExplanationUnfinalized(req, numberSense));
 				PriceUtility.PawnQualityPriceFactor(pawn, stringBuilder);
 				PriceUtility.PawnQualityPriceOffset(pawn, stringBuilder);
 				return stringBuilder.ToString();
@@ -108,7 +129,16 @@ namespace RimWorld
 			{
 				return base.GetExplanationUnfinalized(req, numberSense);
 			}
-			return "StatsReport_MarketValueFromStuffsAndWork".TranslateSimple().TrimEnd('.') + ": " + CalculatedBaseMarketValue(req.BuildableDef, req.StuffDef).ToStringByStyle(stat.ToStringStyleUnfinalized, numberSense);
+			stringBuilder.Append("StatsReport_MarketValueFromStuffsAndWork".TranslateSimple().TrimEnd('.') + ": " + CalculatedBaseMarketValue(req.BuildableDef, (!req.HasThing || !(req.Thing.StyleSourcePrecept is Precept_Relic)) ? req.StuffDef : ThingDefOf.Steel).ToStringByStyle(stat.ToStringStyleUnfinalized, numberSense));
+			stringBuilder.AppendLine();
+			if (req.Thing is ThingWithComps thingWithComps)
+			{
+				foreach (ThingComp allComp in thingWithComps.AllComps)
+				{
+					allComp.GetStatsExplanation(stat, stringBuilder);
+				}
+			}
+			return stringBuilder.ToString();
 		}
 	}
 }

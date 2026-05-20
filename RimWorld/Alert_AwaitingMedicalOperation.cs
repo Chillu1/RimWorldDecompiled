@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using Verse;
 
@@ -8,6 +7,8 @@ namespace RimWorld
 	public class Alert_AwaitingMedicalOperation : Alert
 	{
 		private List<Pawn> awaitingMedicalOperationResult = new List<Pawn>();
+
+		private StringBuilder sb = new StringBuilder();
 
 		private List<Pawn> AwaitingMedicalOperation
 		{
@@ -25,17 +26,17 @@ namespace RimWorld
 				List<Pawn> allMaps_PrisonersOfColonySpawned = PawnsFinder.AllMaps_PrisonersOfColonySpawned;
 				for (int j = 0; j < allMaps_PrisonersOfColonySpawned.Count; j++)
 				{
-					if (IsAwaiting(allMaps_PrisonersOfColonySpawned[j]))
+					if (IsAwaiting(allMaps_PrisonersOfColonySpawned[j]) && (!ModsConfig.BiotechActive || allMaps_PrisonersOfColonySpawned[j].health.surgeryBills.Count != 1 || allMaps_PrisonersOfColonySpawned[j].health.surgeryBills[0].recipe != RecipeDefOf.ExtractHemogenPack || allMaps_PrisonersOfColonySpawned[j].guest.IsInteractionDisabled(PrisonerInteractionModeDefOf.HemogenFarm)))
 					{
 						awaitingMedicalOperationResult.Add(allMaps_PrisonersOfColonySpawned[j]);
 					}
 				}
 				return awaitingMedicalOperationResult;
-				static bool IsAwaiting(Pawn p)
+				bool IsAwaiting(Pawn p)
 				{
-					if (HealthAIUtility.ShouldHaveSurgeryDoneNow(p))
+					if (HealthAIUtility.ShouldHaveSurgeryDoneNow(p) && p.InBed())
 					{
-						return p.InBed();
+						return !awaitingMedicalOperationResult.Contains(p);
 					}
 					return false;
 				}
@@ -44,17 +45,17 @@ namespace RimWorld
 
 		public override string GetLabel()
 		{
-			return "PatientsAwaitingMedicalOperation".Translate(AwaitingMedicalOperation.Count().ToStringCached());
+			return "PatientsAwaitingMedicalOperation".Translate(awaitingMedicalOperationResult.Count.ToStringCached());
 		}
 
 		public override TaggedString GetExplanation()
 		{
-			StringBuilder stringBuilder = new StringBuilder();
-			foreach (Pawn item in AwaitingMedicalOperation)
+			sb.Length = 0;
+			foreach (Pawn item in awaitingMedicalOperationResult)
 			{
-				stringBuilder.AppendLine("  - " + item.NameShortColored.Resolve());
+				sb.AppendLine("  - " + item.NameShortColored.Resolve());
 			}
-			return "PatientsAwaitingMedicalOperationDesc".Translate(stringBuilder.ToString());
+			return "PatientsAwaitingMedicalOperationDesc".Translate(sb.ToString().TrimEndNewlines());
 		}
 
 		public override AlertReport GetReport()

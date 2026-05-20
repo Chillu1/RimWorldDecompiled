@@ -47,7 +47,7 @@ namespace Verse
 		public override void OpenLetter()
 		{
 			Pawn targetPawn = lookTargets.TryGetPrimaryTarget().Thing as Pawn;
-			TaggedString taggedString = base.text;
+			TaggedString taggedString = base.Text;
 			string text = (from entry in (from entry in Find.BattleLog.Battles.Where((Battle battle) => battle.Concerns(targetPawn)).SelectMany((Battle battle) => battle.Entries.Where((LogEntry entry) => entry.Concerns(targetPawn) && entry.ShowInCompactView()))
 					orderby entry.Age
 					select entry).Take(5).Reverse()

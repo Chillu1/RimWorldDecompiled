@@ -50,23 +50,23 @@ namespace RimWorld
 			{
 				if (culpritsThings != null)
 				{
-					for (int l = 0; l < culpritsThings.Count; l++)
+					for (int i = 0; i < culpritsThings.Count; i++)
 					{
-						yield return culpritsThings[l];
+						yield return culpritsThings[i];
 					}
 				}
 				if (culpritsPawns != null)
 				{
-					for (int l = 0; l < culpritsPawns.Count; l++)
+					for (int i = 0; i < culpritsPawns.Count; i++)
 					{
-						yield return culpritsPawns[l];
+						yield return culpritsPawns[i];
 					}
 				}
 				if (culpritsCaravans != null)
 				{
-					for (int l = 0; l < culpritsCaravans.Count; l++)
+					for (int i = 0; i < culpritsCaravans.Count; i++)
 					{
-						yield return culpritsCaravans[l];
+						yield return culpritsCaravans[i];
 					}
 				}
 				if (culpritTarget.HasValue)
@@ -75,38 +75,30 @@ namespace RimWorld
 				}
 				if (culpritsTargets != null)
 				{
-					for (int l = 0; l < culpritsTargets.Count; l++)
+					for (int i = 0; i < culpritsTargets.Count; i++)
 					{
-						yield return culpritsTargets[l];
+						yield return culpritsTargets[i];
 					}
 				}
 			}
 		}
 
-		public static AlertReport Active
+		public static AlertReport Active => new AlertReport
 		{
-			get
-			{
-				AlertReport result = default(AlertReport);
-				result.active = true;
-				return result;
-			}
-		}
+			active = true
+		};
 
-		public static AlertReport Inactive
+		public static AlertReport Inactive => new AlertReport
 		{
-			get
-			{
-				AlertReport result = default(AlertReport);
-				result.active = false;
-				return result;
-			}
-		}
+			active = false
+		};
 
 		public static AlertReport CulpritIs(GlobalTargetInfo culp)
 		{
-			AlertReport result = default(AlertReport);
-			result.active = culp.IsValid;
+			AlertReport result = new AlertReport
+			{
+				active = culp.IsValid
+			};
 			if (culp.IsValid)
 			{
 				result.culpritTarget = culp;
@@ -148,9 +140,10 @@ namespace RimWorld
 
 		public static implicit operator AlertReport(bool b)
 		{
-			AlertReport result = default(AlertReport);
-			result.active = b;
-			return result;
+			return new AlertReport
+			{
+				active = b
+			};
 		}
 
 		public static implicit operator AlertReport(Thing culprit)

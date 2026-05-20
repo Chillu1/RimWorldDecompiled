@@ -27,7 +27,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			return HaulAIUtility.HaulToStorageJob(pawn, t);
+			return HaulAIUtility.HaulToStorageJob(pawn, t, forced);
 		}
 	}
 }

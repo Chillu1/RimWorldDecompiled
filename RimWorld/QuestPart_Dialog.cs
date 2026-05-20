@@ -37,6 +37,8 @@ namespace RimWorld
 
 		public LookTargets lookTargets;
 
+		public QuestPartDialogCloseAction.CloseActionKey closeAction;
+
 		public override IEnumerable<GlobalTargetInfo> QuestLookTargets
 		{
 			get
@@ -93,10 +95,10 @@ namespace RimWorld
 			}
 			if (options.Any())
 			{
-				for (int i = 0; i < options.Count; i++)
+				for (int num = 0; num < options.Count; num++)
 				{
-					int localIndex = i;
-					DiaOption diaOption2 = new DiaOption(signal.args.GetFormattedText(options[i].text));
+					int localIndex = num;
+					DiaOption diaOption2 = new DiaOption(signal.args.GetFormattedText(options[num].text));
 					diaOption2.action = delegate
 					{
 						Find.SignalManager.SendSignal(new Signal(options[localIndex].outSignal));
@@ -112,7 +114,14 @@ namespace RimWorld
 				diaNode.options.Add(diaOption3);
 			}
 			TaggedString formattedText = signal.args.GetFormattedText(title);
-			Find.WindowStack.Add(new Dialog_NodeTreeWithFactionInfo(diaNode, relatedFaction, delayInteractivity: true, radioMode, formattedText));
+			Dialog_NodeTreeWithFactionInfo dialog_NodeTreeWithFactionInfo = new Dialog_NodeTreeWithFactionInfo(diaNode, relatedFaction, delayInteractivity: true, radioMode, formattedText);
+			QuestPartDialogCloseAction questPartDialogCloseAction = QuestPartDialogCloseActionRegistry.CloseActionOf(closeAction);
+			if (questPartDialogCloseAction != null)
+			{
+				dialog_NodeTreeWithFactionInfo.soundClose = questPartDialogCloseAction.dialogCloseSound;
+				dialog_NodeTreeWithFactionInfo.closeAction = questPartDialogCloseAction.dialogCloseAction;
+			}
+			Find.WindowStack.Add(dialog_NodeTreeWithFactionInfo);
 			if (addToArchive)
 			{
 				Find.Archive.Add(new ArchivedDialog(diaNode.text, formattedText, relatedFaction));
@@ -131,6 +140,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref radioMode, "radioMode", defaultValue: false);
 			Scribe_Values.Look(ref getLookTargetsFromSignal, "getLookTargetsFromSignal", defaultValue: false);
 			Scribe_Deep.Look(ref lookTargets, "lookTargets");
+			Scribe_Values.Look(ref closeAction, "closeAction", QuestPartDialogCloseAction.CloseActionKey.None);
 		}
 
 		public override void AssignDebugData()
@@ -138,7 +148,7 @@ namespace RimWorld
 			base.AssignDebugData();
 			inSignal = "DebugSignal" + Rand.Int;
 			title = "Title";
-			text = "Dev: Test";
+			text = "DEV: Test";
 			relatedFaction = Faction.OfMechanoids;
 			addToArchive = false;
 			Option option = new Option();

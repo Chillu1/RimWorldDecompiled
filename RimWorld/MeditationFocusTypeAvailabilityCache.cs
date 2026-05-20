@@ -20,6 +20,11 @@ namespace RimWorld
 			return pawnCanUseMeditationTypeCached[p][type];
 		}
 
+		public static void Notify_PawnDiedOrDestroyed(Pawn p)
+		{
+			pawnCanUseMeditationTypeCached.Remove(p);
+		}
+
 		public static void ClearFor(Pawn p)
 		{
 			if (pawnCanUseMeditationTypeCached.ContainsKey(p))
@@ -34,14 +39,17 @@ namespace RimWorld
 			{
 				for (int i = 0; i < p.story.traits.allTraits.Count; i++)
 				{
-					List<MeditationFocusDef> disallowedMeditationFocusTypes = p.story.traits.allTraits[i].CurrentData.disallowedMeditationFocusTypes;
-					if (disallowedMeditationFocusTypes != null && disallowedMeditationFocusTypes.Contains(type))
+					if (!p.story.traits.allTraits[i].Suppressed)
 					{
-						return false;
+						List<MeditationFocusDef> disallowedMeditationFocusTypes = p.story.traits.allTraits[i].CurrentData.disallowedMeditationFocusTypes;
+						if (disallowedMeditationFocusTypes != null && disallowedMeditationFocusTypes.Contains(type))
+						{
+							return false;
+						}
 					}
 				}
-				List<string> list = p.story.adulthood?.spawnCategories;
-				List<string> list2 = p.story.childhood?.spawnCategories;
+				List<string> list = p.story.Adulthood?.spawnCategories;
+				List<string> list2 = p.story.Childhood?.spawnCategories;
 				for (int j = 0; j < type.incompatibleBackstoriesAny.Count; j++)
 				{
 					BackstoryCategoryAndSlot backstoryCategoryAndSlot = type.incompatibleBackstoriesAny[j];
@@ -62,21 +70,34 @@ namespace RimWorld
 			}
 			if (p.story != null)
 			{
-				for (int k = 0; k < p.story.traits.allTraits.Count; k++)
+				for (int num = 0; num < p.story.traits.allTraits.Count; num++)
 				{
-					List<MeditationFocusDef> allowedMeditationFocusTypes = p.story.traits.allTraits[k].CurrentData.allowedMeditationFocusTypes;
-					if (allowedMeditationFocusTypes != null && allowedMeditationFocusTypes.Contains(type))
+					if (!p.story.traits.allTraits[num].Suppressed)
+					{
+						List<MeditationFocusDef> allowedMeditationFocusTypes = p.story.traits.allTraits[num].CurrentData.allowedMeditationFocusTypes;
+						if (allowedMeditationFocusTypes != null && allowedMeditationFocusTypes.Contains(type))
+						{
+							return true;
+						}
+					}
+				}
+				List<string> list4 = p.story.Adulthood?.spawnCategories;
+				List<string> list5 = p.story.Childhood?.spawnCategories;
+				for (int num2 = 0; num2 < type.requiredBackstoriesAny.Count; num2++)
+				{
+					BackstoryCategoryAndSlot backstoryCategoryAndSlot2 = type.requiredBackstoriesAny[num2];
+					List<string> list6 = ((backstoryCategoryAndSlot2.slot == BackstorySlot.Adulthood) ? list4 : list5);
+					if (list6 != null && list6.Contains(backstoryCategoryAndSlot2.categoryName))
 					{
 						return true;
 					}
 				}
-				List<string> list4 = p.story.adulthood?.spawnCategories;
-				List<string> list5 = p.story.childhood?.spawnCategories;
-				for (int l = 0; l < type.requiredBackstoriesAny.Count; l++)
+			}
+			if (p.health?.hediffSet != null)
+			{
+				for (int num3 = 0; num3 < p.health.hediffSet.hediffs.Count; num3++)
 				{
-					BackstoryCategoryAndSlot backstoryCategoryAndSlot2 = type.requiredBackstoriesAny[l];
-					List<string> list6 = ((backstoryCategoryAndSlot2.slot == BackstorySlot.Adulthood) ? list4 : list5);
-					if (list6 != null && list6.Contains(backstoryCategoryAndSlot2.categoryName))
+					if (p.health.hediffSet.hediffs[num3].def.allowedMeditationFocusTypes.NotNullAndContains(type))
 					{
 						return true;
 					}
@@ -85,16 +106,17 @@ namespace RimWorld
 			if (type.requiredBackstoriesAny.Count == 0)
 			{
 				bool flag = false;
-				for (int m = 0; m < DefDatabase<TraitDef>.AllDefsListForReading.Count; m++)
+				bool flag2 = false;
+				for (int num4 = 0; num4 < DefDatabase<TraitDef>.AllDefsListForReading.Count; num4++)
 				{
 					if (flag)
 					{
 						break;
 					}
-					TraitDef traitDef = DefDatabase<TraitDef>.AllDefsListForReading[m];
-					for (int n = 0; n < traitDef.degreeDatas.Count; n++)
+					TraitDef traitDef = DefDatabase<TraitDef>.AllDefsListForReading[num4];
+					for (int num5 = 0; num5 < traitDef.degreeDatas.Count; num5++)
 					{
-						List<MeditationFocusDef> allowedMeditationFocusTypes2 = traitDef.degreeDatas[n].allowedMeditationFocusTypes;
+						List<MeditationFocusDef> allowedMeditationFocusTypes2 = traitDef.degreeDatas[num5].allowedMeditationFocusTypes;
 						if (allowedMeditationFocusTypes2 != null && allowedMeditationFocusTypes2.Contains(type))
 						{
 							flag = true;
@@ -102,7 +124,15 @@ namespace RimWorld
 						}
 					}
 				}
-				if (!flag)
+				for (int num6 = 0; num6 < DefDatabase<HediffDef>.AllDefsListForReading.Count; num6++)
+				{
+					if (DefDatabase<HediffDef>.AllDefsListForReading[num6].allowedMeditationFocusTypes.NotNullAndContains(type))
+					{
+						flag2 = true;
+						break;
+					}
+				}
+				if (!flag && !flag2)
 				{
 					return true;
 				}

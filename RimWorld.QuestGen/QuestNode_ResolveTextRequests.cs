@@ -41,9 +41,9 @@ namespace RimWorld.QuestGen
 					string obj = QuestGenUtility.ResolveAbsoluteText(list, QuestGen.QuestDescriptionConstantsReadOnly, textRequestsReadOnly[i].keyword);
 					textRequestsReadOnly[i].setter(obj);
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Error("Error while resolving text request: " + arg);
+					Log.Error("Error while resolving text request: " + ex);
 				}
 			}
 			textRequestsReadOnly.Clear();

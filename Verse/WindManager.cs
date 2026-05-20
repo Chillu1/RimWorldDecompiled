@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text;
+using RimWorld;
 using UnityEngine;
 using Verse.Noise;
 
@@ -19,6 +20,8 @@ namespace Verse
 
 		private float plantSwayHead;
 
+		private List<GameCondition> tempAllGameConditionsAffectingMap = new List<GameCondition>();
+
 		public float WindSpeed => cachedWindSpeed;
 
 		public WindManager(Map map)
@@ -29,17 +32,27 @@ namespace Verse
 		public void WindManagerTick()
 		{
 			cachedWindSpeed = BaseWindSpeedAt(Find.TickManager.TicksAbs) * map.weatherManager.CurWindSpeedFactor;
-			float curWindSpeedOffset = map.weatherManager.CurWindSpeedOffset;
-			if (curWindSpeedOffset > 0f)
+			float num = map.weatherManager.CurWindSpeedOffset;
+			tempAllGameConditionsAffectingMap.Clear();
+			map.gameConditionManager.GetAllGameConditionsAffectingMap(map, tempAllGameConditionsAffectingMap);
+			for (int i = 0; i < tempAllGameConditionsAffectingMap.Count; i++)
+			{
+				float num2 = tempAllGameConditionsAffectingMap[i].MinWindSpeed();
+				if (num2 > num)
+				{
+					num = num2;
+				}
+			}
+			if (num > 0f)
 			{
 				FloatRange floatRange = WindSpeedRange * map.weatherManager.CurWindSpeedFactor;
-				float num = (cachedWindSpeed - floatRange.min) / (floatRange.max - floatRange.min) * (floatRange.max - curWindSpeedOffset);
-				cachedWindSpeed = curWindSpeedOffset + num;
+				float num3 = (cachedWindSpeed - floatRange.min) / (floatRange.max - floatRange.min) * (floatRange.max - num);
+				cachedWindSpeed = num + num3;
 			}
 			List<Thing> list = map.listerThings.ThingsInGroup(ThingRequestGroup.WindSource);
-			for (int i = 0; i < list.Count; i++)
+			for (int j = 0; j < list.Count; j++)
 			{
-				CompWindSource compWindSource = list[i].TryGetComp<CompWindSource>();
+				CompWindSource compWindSource = list[j].TryGetComp<CompWindSource>();
 				cachedWindSpeed = Mathf.Max(cachedWindSpeed, compWindSource.wind);
 			}
 			if (Prefs.PlantWindSway)
@@ -52,9 +65,9 @@ namespace Verse
 			}
 			if (Find.CurrentMap == map)
 			{
-				for (int j = 0; j < plantMaterials.Count; j++)
+				for (int k = 0; k < plantMaterials.Count; k++)
 				{
-					plantMaterials[j].SetFloat(ShaderPropertyIDs.SwayHead, plantSwayHead);
+					plantMaterials[k].SetFloat(ShaderPropertyIDs.SwayHead, plantSwayHead);
 				}
 			}
 		}
@@ -68,7 +81,7 @@ namespace Verse
 		{
 			if (windNoise == null)
 			{
-				int seed = Gen.HashCombineInt(map.Tile, 122049541) ^ Find.World.info.Seed;
+				int seed = Gen.HashCombineInt(map.GetHashCode(), 122049541) ^ Find.World.info.Seed;
 				windNoise = new Perlin(3.9999998989515007E-05, 2.0, 0.5, 4, seed, QualityMode.Medium);
 				windNoise = new ScaleBias(1.5, 0.5, windNoise);
 				windNoise = new Clamp(WindSpeedRange.min, WindSpeedRange.max, windNoise);

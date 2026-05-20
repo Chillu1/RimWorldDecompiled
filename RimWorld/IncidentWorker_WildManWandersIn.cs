@@ -19,6 +19,10 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (ModsConfig.BiotechActive && map.GameConditionManager.ConditionIsActive(GameConditionDefOf.NoxiousHaze))
+			{
+				return false;
+			}
 			if (!map.mapTemperature.SeasonAcceptableFor(ThingDefOf.Human))
 			{
 				return false;
@@ -38,13 +42,19 @@ namespace RimWorld
 			{
 				return false;
 			}
-			Pawn pawn = PawnGenerator.GeneratePawn(PawnKindDefOf.WildMan, formerFaction);
+			DevelopmentalStage developmentalStage = (Find.Storyteller.difficulty.ChildrenAllowed ? (DevelopmentalStage.Child | DevelopmentalStage.Adult) : DevelopmentalStage.Adult);
+			PawnKindDef wildMan = PawnKindDefOf.WildMan;
+			Faction faction = formerFaction;
+			DevelopmentalStage developmentalStages = developmentalStage;
+			Pawn pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(wildMan, faction, PawnGenerationContext.NonPlayer, null, forceGenerateNewPawn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: false, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowPregnant: false, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, 0f, null, 1f, null, null, null, null, null, null, null, null, null, null, null, null, forceNoIdeo: false, forceNoBackstory: false, forbidAnyTitle: false, forceDead: false, null, null, null, null, null, 0f, developmentalStages));
 			pawn.SetFaction(null);
 			GenSpawn.Spawn(pawn, cell, map);
-			TaggedString title = def.letterLabel.Formatted(pawn.LabelShort, pawn.Named("PAWN")).CapitalizeFirst();
-			TaggedString text = def.letterText.Formatted(pawn.NameShortColored, pawn.Named("PAWN")).AdjustedFor(pawn).CapitalizeFirst();
-			PawnRelationUtility.TryAppendRelationsWithColonistsInfo(ref text, ref title, pawn);
-			SendStandardLetter(title, text, def.letterDef, parms, pawn);
+			string text = (pawn.DevelopmentalStage.Child() ? "FeralChild".Translate().ToString() : pawn.KindLabel);
+			TaggedString taggedString = (pawn.DevelopmentalStage.Child() ? "Child".Translate() : "Person".Translate());
+			TaggedString title = def.letterLabel.Formatted(text, pawn.Named("PAWN")).CapitalizeFirst();
+			TaggedString text2 = def.letterText.Formatted(pawn.NameShortColored, taggedString, pawn.Named("PAWN")).AdjustedFor(pawn).CapitalizeFirst();
+			PawnRelationUtility.TryAppendRelationsWithColonistsInfo(ref text2, ref title, pawn);
+			SendStandardLetter(title, text2, def.letterDef, parms, pawn);
 			return true;
 		}
 
@@ -55,7 +65,7 @@ namespace RimWorld
 
 		private bool TryFindFormerFaction(out Faction formerFaction)
 		{
-			return Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction_NewTemp(out formerFaction, tryMedievalOrBetter: false, allowDefeated: true);
+			return Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction(out formerFaction, tryMedievalOrBetter: false, allowDefeated: true);
 		}
 	}
 }

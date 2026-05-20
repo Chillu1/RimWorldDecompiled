@@ -7,8 +7,6 @@ namespace RimWorld
 	{
 		public static TrainabilityDef None;
 
-		public static TrainabilityDef Simple;
-
 		public static TrainabilityDef Intermediate;
 
 		public static TrainabilityDef Advanced;

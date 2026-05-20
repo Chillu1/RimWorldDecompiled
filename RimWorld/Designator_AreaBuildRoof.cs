@@ -3,11 +3,11 @@ using Verse;
 
 namespace RimWorld
 {
-	public class Designator_AreaBuildRoof : Designator_Area
+	public class Designator_AreaBuildRoof : Designator_Cells
 	{
-		public override int DraggableDimensions => 2;
-
 		public override bool DragDrawMeasurements => true;
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Areas;
 
 		public Designator_AreaBuildRoof()
 		{
@@ -16,8 +16,8 @@ namespace RimWorld
 			icon = ContentFinder<Texture2D>.Get("UI/Designators/BuildRoofArea");
 			hotKey = KeyBindingDefOf.Misc9;
 			soundDragSustain = SoundDefOf.Designate_DragAreaAdd;
-			soundDragChanged = null;
-			soundSucceeded = SoundDefOf.Designate_ZoneAdd;
+			soundDragChanged = SoundDefOf.Designate_DragZone_Changed;
+			soundSucceeded = SoundDefOf.Designate_ZoneAdd_Roof;
 			useMouseIcon = true;
 			tutorTag = "AreaBuildRoofExpand";
 		}

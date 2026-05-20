@@ -10,15 +10,9 @@ namespace RimWorld
 
 		protected bool clearSnow;
 
-		protected abstract int BaseWorkAmount
-		{
-			get;
-		}
+		protected abstract int BaseWorkAmount { get; }
 
-		protected abstract DesignationDef DesDef
-		{
-			get;
-		}
+		protected abstract DesignationDef DesDef { get; }
 
 		protected virtual StatDef SpeedStat => null;
 
@@ -31,23 +25,24 @@ namespace RimWorld
 		{
 			this.FailOn(() => (!job.ignoreDesignations && base.Map.designationManager.DesignationAt(base.TargetLocA, DesDef) == null) ? true : false);
 			yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.Touch);
-			Toil doWork = new Toil();
+			Toil doWork = ToilMaker.MakeToil("MakeNewToils");
 			doWork.initAction = delegate
 			{
 				workLeft = BaseWorkAmount;
 			};
-			doWork.tickAction = delegate
+			doWork.tickIntervalAction = delegate(int delta)
 			{
-				float num = ((SpeedStat != null) ? doWork.actor.GetStatValue(SpeedStat) : 1f);
-				num *= 1.7f;
+				float num = ((SpeedStat != null && !SpeedStat.Worker.IsDisabledFor(doWork.actor)) ? doWork.actor.GetStatValue(SpeedStat) : 1f);
+				num *= 1.7f * (float)delta;
 				workLeft -= num;
 				if (doWork.actor.skills != null)
 				{
-					doWork.actor.skills.Learn(SkillDefOf.Construction, 0.1f);
+					doWork.actor.skills.Learn(SkillDefOf.Construction, 0.1f * (float)delta);
 				}
 				if (clearSnow)
 				{
 					base.Map.snowGrid.SetDepth(base.TargetLocA, 0f);
+					base.Map.sandGrid?.SetDepth(base.TargetLocA, 0f);
 				}
 				if (workLeft <= 0f)
 				{

@@ -23,7 +23,7 @@ namespace RimWorld
 			{
 				return true;
 			}
-			if (allowedTypes != 0 && (allowedTypes & food.ingestible.foodType) != 0)
+			if (allowedTypes != FoodTypeFlags.None && (allowedTypes & food.ingestible.foodType) != FoodTypeFlags.None)
 			{
 				return true;
 			}

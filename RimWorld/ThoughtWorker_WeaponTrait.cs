@@ -20,6 +20,10 @@ namespace RimWorld
 			{
 				return string.Empty;
 			}
+			if (pawn.equipment.bondedWeapon.StyleSourcePrecept != null)
+			{
+				return pawn.equipment.bondedWeapon.StyleSourcePrecept.Label;
+			}
 			CompGeneratedNames compGeneratedNames = pawn.equipment.bondedWeapon.TryGetComp<CompGeneratedNames>();
 			if (compGeneratedNames != null)
 			{

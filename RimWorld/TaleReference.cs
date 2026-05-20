@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using Verse;
+using Verse.Grammar;
 
 namespace RimWorld
 {
@@ -9,6 +11,8 @@ namespace RimWorld
 		private int seed;
 
 		public static TaleReference Taleless => new TaleReference(null);
+
+		public bool IsNullTale => tale == null;
 
 		public TaleReference()
 		{
@@ -35,9 +39,9 @@ namespace RimWorld
 			}
 		}
 
-		public TaggedString GenerateText(TextGenerationPurpose purpose, RulePackDef extraInclude)
+		public TaggedString GenerateText(TextGenerationPurpose purpose, RulePackDef extraInclude, List<Rule> extraRules = null, Dictionary<string, string> extraConstants = null)
 		{
-			return TaleTextGenerator.GenerateTextFromTale(purpose, tale, seed, extraInclude);
+			return TaleTextGenerator.GenerateTextFromTale(purpose, tale, seed, new List<RulePackDef> { extraInclude }, extraRules, extraConstants);
 		}
 
 		public override string ToString()

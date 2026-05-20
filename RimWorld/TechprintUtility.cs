@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using Verse;
 
 namespace RimWorld
@@ -51,14 +53,30 @@ namespace RimWorld
 			});
 		}
 
+		[Obsolete]
 		public static float GetSelectionWeight(ResearchProjectDef project)
 		{
+			return GetSelectionWeight_NewTemp(project);
+		}
+
+		public static float GetSelectionWeight_NewTemp(ResearchProjectDef project, bool weightForPlayerNeed = true)
+		{
+			if (!weightForPlayerNeed)
+			{
+				return project.techprintCommonality;
+			}
 			return project.techprintCommonality * (project.PrerequisitesCompleted ? 1f : 0.02f);
 		}
 
+		[Obsolete]
 		public static bool TryGetTechprintDefToGenerate(Faction faction, out ThingDef result, List<ThingDef> alreadyGeneratedTechprints = null, float maxMarketValue = float.MaxValue)
 		{
-			if (!GetResearchProjectsNeedingTechprintsNow(faction, alreadyGeneratedTechprints, maxMarketValue).TryRandomElementByWeight(GetSelectionWeight, out var result2))
+			return TryGetTechprintDefToGenerate_NewTemp(faction, out result, alreadyGeneratedTechprints, maxMarketValue);
+		}
+
+		public static bool TryGetTechprintDefToGenerate_NewTemp(Faction faction, out ThingDef result, List<ThingDef> alreadyGeneratedTechprints = null, float maxMarketValue = float.MaxValue, bool weightForPlayerNeed = true)
+		{
+			if (!GetResearchProjectsNeedingTechprintsNow(faction, alreadyGeneratedTechprints, maxMarketValue).TryRandomElementByWeight((ResearchProjectDef p) => GetSelectionWeight_NewTemp(p, weightForPlayerNeed), out var result2))
 			{
 				result = null;
 				return false;
@@ -75,9 +93,9 @@ namespace RimWorld
 			foreach (Faction item in Find.FactionManager.AllFactions.Where((Faction fa) => fa.def.humanlikeFaction && !fa.Hidden))
 			{
 				stringBuilder.AppendLine(item.Name);
-				for (int i = 0; i < 30; i++)
+				for (int num = 0; num < 30; num++)
 				{
-					if (TryGetTechprintDefToGenerate(item, out var result))
+					if (TryGetTechprintDefToGenerate_NewTemp(item, out var result))
 					{
 						stringBuilder.AppendLine("    " + result.LabelCap);
 						continue;
@@ -105,9 +123,9 @@ namespace RimWorld
 					IEnumerable<ResearchProjectDef> researchProjectsNeedingTechprintsNow = GetResearchProjectsNeedingTechprintsNow(localFac);
 					if (researchProjectsNeedingTechprintsNow.Any())
 					{
-						float sum = researchProjectsNeedingTechprintsNow.Sum((ResearchProjectDef x) => GetSelectionWeight(x));
-						list2.Add(new TableDataGetter<ResearchProjectDef>("chance", (ResearchProjectDef x) => (GetSelectionWeight(x) / sum).ToStringPercent()));
-						list2.Add(new TableDataGetter<ResearchProjectDef>("weight", (ResearchProjectDef x) => GetSelectionWeight(x).ToString("0.###")));
+						float sum = researchProjectsNeedingTechprintsNow.Sum((ResearchProjectDef x) => GetSelectionWeight_NewTemp(x));
+						list2.Add(new TableDataGetter<ResearchProjectDef>("chance", (ResearchProjectDef x) => (GetSelectionWeight_NewTemp(x) / sum).ToStringPercent()));
+						list2.Add(new TableDataGetter<ResearchProjectDef>("weight", (ResearchProjectDef x) => GetSelectionWeight_NewTemp(x).ToString("0.###")));
 					}
 					DebugTables.MakeTablesDialog(researchProjectsNeedingTechprintsNow, list2.ToArray());
 				}));

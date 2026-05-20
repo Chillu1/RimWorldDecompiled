@@ -43,6 +43,10 @@ namespace RimWorld
 			{
 				return 0f;
 			}
+			if (!RestUtility.CanFallAsleep(pawn))
+			{
+				return 0f;
+			}
 			TimeAssignmentDef timeAssignmentDef;
 			if (pawn.RaceProps.Humanlike)
 			{
@@ -84,11 +88,7 @@ namespace RimWorld
 			}
 			if (timeAssignmentDef == TimeAssignmentDefOf.Sleep)
 			{
-				if (curLevel < RestUtility.FallAsleepMaxLevel(pawn))
-				{
-					return 8f;
-				}
-				return 0f;
+				return 8f;
 			}
 			throw new NotImplementedException();
 		}
@@ -105,26 +105,70 @@ namespace RimWorld
 				return null;
 			}
 			Lord lord = pawn.GetLord();
-			Building_Bed building_Bed = (((lord == null || lord.CurLordToil == null || lord.CurLordToil.AllowRestingInBed) && !pawn.IsWildMan()) ? RestUtility.FindBedFor(pawn) : null);
+			Building_Bed building_Bed;
+			if ((lord == null || lord.CurLordToil == null || lord.CurLordToil.AllowRestingInBed) && !pawn.IsWildMan() && (!pawn.InMentalState || pawn.MentalState.AllowRestingInBed))
+			{
+				Pawn_RopeTracker roping = pawn.roping;
+				if (roping == null || !roping.IsRoped)
+				{
+					building_Bed = RestUtility.FindBedFor(pawn);
+					goto IL_0092;
+				}
+			}
+			building_Bed = null;
+			goto IL_0092;
+			IL_0092:
 			if (building_Bed != null)
 			{
 				return JobMaker.MakeJob(JobDefOf.LayDown, building_Bed);
 			}
-			return JobMaker.MakeJob(JobDefOf.LayDown, FindGroundSleepSpotFor(pawn));
+			if (TryFindGroundSleepSpotFor(pawn, out var cell))
+			{
+				return JobMaker.MakeJob(JobDefOf.LayDown, cell);
+			}
+			return null;
 		}
 
-		private IntVec3 FindGroundSleepSpotFor(Pawn pawn)
+		private bool TryFindGroundSleepSpotFor(Pawn pawn, out IntVec3 cell)
 		{
 			Map map = pawn.Map;
+			IntVec3 position = pawn.Position;
+			if (pawn.RaceProps.Dryad && pawn.connections != null)
+			{
+				foreach (Thing connectedThing in pawn.connections.ConnectedThings)
+				{
+					if (pawn.CanReach(connectedThing, PathEndMode.Touch, Danger.Deadly))
+					{
+						position = connectedThing.Position;
+						break;
+					}
+				}
+			}
+			else if (IsValidCell(pawn, position))
+			{
+				cell = position;
+				return true;
+			}
 			for (int i = 0; i < 2; i++)
 			{
 				int radius = ((i == 0) ? 4 : 12);
-				if (CellFinder.TryRandomClosewalkCellNear(pawn.Position, map, radius, out var result, (IntVec3 x) => !x.IsForbidden(pawn) && !x.GetTerrain(map).avoidWander))
+				if (CellFinder.TryRandomClosewalkCellNear(position, map, radius, out var result, (IntVec3 c) => IsValidCell(pawn, c)))
 				{
-					return result;
+					cell = result;
+					return true;
 				}
 			}
-			return CellFinder.RandomClosewalkCellNearNotForbidden(pawn.Position, map, 4, pawn);
+			cell = CellFinder.RandomClosewalkCellNearNotForbidden(pawn, 4, (IntVec3 c) => IsValidCell(pawn, c));
+			return IsValidCell(pawn, cell);
+		}
+
+		private static bool IsValidCell(Pawn pawn, IntVec3 cell)
+		{
+			if (!cell.IsForbidden(pawn) && !cell.GetTerrain(pawn.Map).avoidWander)
+			{
+				return pawn.CanReserve(cell);
+			}
+			return false;
 		}
 	}
 }

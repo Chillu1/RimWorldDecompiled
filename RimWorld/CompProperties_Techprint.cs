@@ -22,13 +22,11 @@ namespace RimWorld
 			List<Def> unlockedDefs = project.UnlockedDefs;
 			for (int i = 0; i < unlockedDefs.Count; i++)
 			{
-				ThingDef def;
-				RecipeDef recipeDef;
-				if ((def = unlockedDefs[i] as ThingDef) != null)
+				if (unlockedDefs[i] is ThingDef thingDef)
 				{
-					parentDef.descriptionHyperlinks.Add(def);
+					parentDef.descriptionHyperlinks.Add(thingDef);
 				}
-				else if ((recipeDef = unlockedDefs[i] as RecipeDef) != null && !recipeDef.products.NullOrEmpty())
+				else if (unlockedDefs[i] is RecipeDef recipeDef && !recipeDef.products.NullOrEmpty())
 				{
 					for (int j = 0; j < recipeDef.products.Count; j++)
 					{

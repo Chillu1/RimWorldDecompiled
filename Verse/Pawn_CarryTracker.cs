@@ -70,7 +70,7 @@ namespace Verse
 		{
 			if (pawn.Dead || pawn.Downed)
 			{
-				Log.Error(string.Concat("Dead/downed pawn ", pawn, " tried to start carry item."));
+				Log.Error("Dead/downed/deathresting pawn " + pawn?.ToString() + " tried to start carry item.");
 				return false;
 			}
 			if (innerContainer.TryAdd(item))
@@ -85,12 +85,18 @@ namespace Verse
 		{
 			if (pawn.Dead || pawn.Downed)
 			{
-				Log.Error(string.Concat("Dead/downed pawn ", pawn, " tried to start carry ", item.ToStringSafe()));
+				Log.Error("Dead/downed/deathresting pawn " + pawn?.ToString() + " tried to start carry " + item.ToStringSafe());
 				return 0;
 			}
 			count = Mathf.Min(count, AvailableStackSpace(item.def));
 			count = Mathf.Min(count, item.stackCount);
-			int num = innerContainer.TryAdd(item.SplitOff(count), count);
+			bool flag = Find.Selector.IsSelected(item);
+			Thing thing = item.SplitOff(count);
+			int num = innerContainer.TryAdd(thing, count);
+			if (num > 0 && thing != item)
+			{
+				TryUpdateTransferables(thing);
+			}
 			if (num > 0)
 			{
 				item.def.soundPickup.PlayOneShot(new TargetInfo(item.Position, pawn.Map));
@@ -98,8 +104,29 @@ namespace Verse
 				{
 					pawn.Reserve(CarriedThing, pawn.CurJob);
 				}
+				if (flag)
+				{
+					if (!thing.Destroyed)
+					{
+						Find.Selector.Select(thing);
+					}
+					Find.Selector.Select(CarriedThing);
+				}
+				pawn.MapHeld.resourceCounter.UpdateResourceCounts();
 			}
 			return num;
+		}
+
+		private void TryUpdateTransferables(Thing splitStack)
+		{
+			if (splitStack != null && pawn.jobs?.curDriver is JobDriver_HaulToTransporter jobDriver_HaulToTransporter)
+			{
+				TransferableOneWay transferableOneWay = TransferableUtility.TransferableMatching(splitStack, jobDriver_HaulToTransporter.Transporter?.leftToLoad, TransferAsOneMode.PodsOrCaravanPacking);
+				if (transferableOneWay != null && !transferableOneWay.things.Contains(splitStack) && transferableOneWay.MaxCount + splitStack.stackCount <= transferableOneWay.CountToTransfer)
+				{
+					transferableOneWay.things.Add(splitStack);
+				}
+			}
 		}
 
 		public bool TryDropCarriedThing(IntVec3 dropLoc, ThingPlaceMode mode, out Thing resultingThing, Action<Thing, int> placedAction = null)
@@ -110,6 +137,7 @@ namespace Verse
 				{
 					resultingThing.SetForbidden(value: true, warnOnFail: false);
 				}
+				pawn.MapHeld.resourceCounter.UpdateResourceCounts();
 				return true;
 			}
 			return false;
@@ -123,9 +151,23 @@ namespace Verse
 				{
 					resultingThing.SetForbidden(value: true, warnOnFail: false);
 				}
+				pawn.MapHeld.resourceCounter.UpdateResourceCounts();
 				return true;
 			}
 			return false;
+		}
+
+		public int CarriedCount(ThingDef def)
+		{
+			int num = 0;
+			foreach (Thing item in innerContainer)
+			{
+				if (item.def == def)
+				{
+					num += item.stackCount;
+				}
+			}
+			return num;
 		}
 
 		public void DestroyCarriedThing()
@@ -133,9 +175,48 @@ namespace Verse
 			innerContainer.ClearAndDestroyContents();
 		}
 
-		public void CarryHandsTick()
+		public void CarryHandsTickInterval(int delta)
 		{
-			innerContainer.ThingOwnerTick();
+			if (CarriedThing is Pawn pawn && pawn.DevelopmentalStage.Baby())
+			{
+				pawn.ideo?.IncreaseIdeoExposureIfBabyTick(this.pawn.Ideo, delta);
+			}
+		}
+
+		public IEnumerable<Gizmo> GetGizmos()
+		{
+			Gizmo gizmo = ContainingSelectionUtility.SelectCarriedThingGizmo(pawn, CarriedThing);
+			if (gizmo != null)
+			{
+				yield return gizmo;
+			}
+			if (pawn.Drafted && CarriedThing is Pawn)
+			{
+				Command_Action command_Action = new Command_Action();
+				command_Action.defaultLabel = "CommandDropPawn".Translate(CarriedThing);
+				command_Action.defaultDesc = "CommandDropPawnDesc".Translate();
+				command_Action.action = delegate
+				{
+					pawn.carryTracker.TryDropCarriedThing(pawn.Position, ThingPlaceMode.Near, out var _);
+				};
+				command_Action.icon = TexCommand.DropCarriedPawn;
+				yield return command_Action;
+			}
+			if (!ModsConfig.BiotechActive || !DebugSettings.ShowDevGizmos)
+			{
+				yield break;
+			}
+			CompDissolution compDissolution = CarriedThing.TryGetComp<CompDissolution>();
+			if (compDissolution != null)
+			{
+				Command_Action command_Action2 = new Command_Action();
+				command_Action2.defaultLabel = "DEV: Dissolution event";
+				command_Action2.action = delegate
+				{
+					compDissolution.TriggerDissolutionEvent();
+				};
+				yield return command_Action2;
+			}
 		}
 	}
 }

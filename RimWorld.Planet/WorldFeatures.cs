@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using LudeonTK;
 using TMPro;
 using UnityEngine;
 using Verse;
@@ -50,9 +51,9 @@ namespace RimWorld.Planet
 				return;
 			}
 			WorldGrid grid = Find.WorldGrid;
-			if (grid.tileFeature != null && grid.tileFeature.Length != 0)
+			if (grid.Surface.tileFeature != null && grid.Surface.tileFeature.Length != 0)
 			{
-				DataSerializeUtility.LoadUshort(grid.tileFeature, grid.TilesCount, delegate(int i, ushort data)
+				DataSerializeUtility.LoadUshort(grid.Surface.tileFeature, grid.TilesCount, delegate(int i, ushort data)
 				{
 					grid[i].feature = ((data == ushort.MaxValue) ? null : GetFeatureWithID(data));
 				});
@@ -67,17 +68,17 @@ namespace RimWorld.Planet
 				textsCreated = true;
 				CreateTextsAndSetPosition();
 			}
-			bool showWorldFeatures = Find.PlaySettings.showWorldFeatures;
+			bool flag = Find.PlaySettings.showWorldFeatures && !WorldRendererUtility.WorldBackgroundNow;
 			for (int i = 0; i < features.Count; i++)
 			{
 				Vector3 position = texts[i].Position;
-				bool flag = showWorldFeatures && !WorldRendererUtility.HiddenBehindTerrainNow(position);
-				if (flag != texts[i].Active)
+				bool flag2 = flag && !WorldRendererUtility.HiddenBehindTerrainNow(position);
+				if (flag2 != texts[i].Active)
 				{
-					texts[i].SetActive(flag);
-					texts[i].WrapAroundPlanetSurface();
+					texts[i].SetActive(flag2);
+					texts[i].WrapAroundPlanetSurface(features[i].layer);
 				}
-				if (flag)
+				if (flag2)
 				{
 					UpdateAlpha(texts[i], features[i]);
 				}
@@ -99,10 +100,10 @@ namespace RimWorld.Planet
 		private void UpdateAlpha(WorldFeatureTextMesh text, WorldFeature feature)
 		{
 			float num = 0.3f * feature.alpha;
-			if (text.Color.a != num)
+			if (!Mathf.Approximately(text.Color.a, num))
 			{
 				text.Color = new Color(1f, 1f, 1f, num);
-				text.WrapAroundPlanetSurface();
+				text.WrapAroundPlanetSurface(feature.layer);
 			}
 			float num2 = Time.deltaTime * 5f;
 			if (GoodCameraAltitudeFor(feature))
@@ -122,6 +123,10 @@ namespace RimWorld.Planet
 			float altitude = Find.WorldCameraDriver.altitude;
 			float num = 1f / (altitude / AlphaScale * (altitude / AlphaScale));
 			effectiveDrawSize *= num;
+			if (!feature.layer.IsSelected)
+			{
+				return false;
+			}
 			if ((int)Find.WorldCameraDriver.CurrentZoom <= 0 && effectiveDrawSize >= 0.56f)
 			{
 				return false;
@@ -140,7 +145,7 @@ namespace RimWorld.Planet
 		private void CreateTextsAndSetPosition()
 		{
 			CreateOrDestroyTexts();
-			float averageTileSize = Find.WorldGrid.averageTileSize;
+			float averageTileSize = Find.WorldGrid.AverageTileSize;
 			for (int i = 0; i < features.Count; i++)
 			{
 				texts[i].Text = features[i].name.WordWrapAt(TextWrapThreshold);
@@ -151,7 +156,7 @@ namespace RimWorld.Planet
 				rotation *= Quaternion.Euler(Vector3.forward * (90f - features[i].drawAngle));
 				texts[i].Rotation = rotation;
 				texts[i].LocalPosition = features[i].drawCenter;
-				texts[i].WrapAroundPlanetSurface();
+				texts[i].WrapAroundPlanetSurface(features[i].layer);
 				texts[i].SetActive(active: false);
 			}
 		}

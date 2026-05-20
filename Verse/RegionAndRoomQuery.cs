@@ -9,7 +9,7 @@ namespace Verse
 				return null;
 			}
 			Region validRegionAt = map.regionGrid.GetValidRegionAt(c);
-			if (validRegionAt != null && (validRegionAt.type & allowedRegionTypes) != 0)
+			if (validRegionAt != null && (validRegionAt.type & allowedRegionTypes) != RegionType.None)
 			{
 				return validRegionAt;
 			}
@@ -25,36 +25,47 @@ namespace Verse
 			return RegionAt(thing.Position, thing.Map, allowedRegionTypes);
 		}
 
-		public static Room RoomAt(IntVec3 c, Map map, RegionType allowedRegionTypes = RegionType.Set_Passable)
+		public static Region GetRegionHeld(this Thing thing, RegionType allowedRegionTypes = RegionType.Set_Passable)
 		{
-			return RegionAt(c, map, allowedRegionTypes)?.Room;
+			return RegionAt(thing.PositionHeld, thing.MapHeld, allowedRegionTypes);
 		}
 
-		public static RoomGroup RoomGroupAt(IntVec3 c, Map map)
+		public static District DistrictAt(IntVec3 c, Map map, RegionType allowedRegionTypes = RegionType.Set_Passable)
 		{
-			return RoomAt(c, map, RegionType.Set_All)?.Group;
+			return RegionAt(c, map, allowedRegionTypes)?.District;
 		}
 
-		public static Room GetRoom(this Thing thing, RegionType allowedRegionTypes = RegionType.Set_Passable)
+		public static Room RoomAt(IntVec3 c, Map map, RegionType allowedRegionTypes = RegionType.Set_All)
 		{
-			if (!thing.Spawned)
+			return DistrictAt(c, map, allowedRegionTypes)?.Room;
+		}
+
+		public static District GetDistrict(this Thing thing, RegionType allowedRegionTypes = RegionType.Set_Passable)
+		{
+			Thing spawnedParentOrMe = thing.SpawnedParentOrMe;
+			if (spawnedParentOrMe != null)
 			{
-				return null;
+				return DistrictAt(spawnedParentOrMe.Position, spawnedParentOrMe.Map, allowedRegionTypes);
 			}
-			return RoomAt(thing.Position, thing.Map, allowedRegionTypes);
+			return null;
 		}
 
-		public static RoomGroup GetRoomGroup(this Thing thing)
+		public static Room GetRoom(this Thing thing, RegionType allowedRegionTypes = RegionType.Set_All)
 		{
-			return thing.GetRoom(RegionType.Set_All)?.Group;
+			return thing.GetDistrict(allowedRegionTypes)?.Room;
 		}
 
-		public static Room RoomAtFast(IntVec3 c, Map map, RegionType allowedRegionTypes = RegionType.Set_Passable)
+		public static bool IsOutside(this Thing thing)
+		{
+			return thing.GetRoom()?.PsychologicallyOutdoors ?? true;
+		}
+
+		public static District DistirctAtFast(IntVec3 c, Map map, RegionType allowedRegionTypes = RegionType.Set_Passable)
 		{
 			Region validRegionAt = map.regionGrid.GetValidRegionAt(c);
-			if (validRegionAt != null && (validRegionAt.type & allowedRegionTypes) != 0)
+			if (validRegionAt != null && (validRegionAt.type & allowedRegionTypes) != RegionType.None)
 			{
-				return validRegionAt.Room;
+				return validRegionAt.District;
 			}
 			return null;
 		}

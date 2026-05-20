@@ -7,7 +7,7 @@ namespace Verse.AI
 	{
 		public static Toil StopDead()
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("StopDead");
 			toil.initAction = delegate
 			{
 				toil.actor.pather.StopDead();
@@ -18,17 +18,17 @@ namespace Verse.AI
 
 		public static Toil Wait(int ticks, TargetIndex face = TargetIndex.None)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("Wait");
 			toil.initAction = delegate
 			{
 				toil.actor.pather.StopDead();
 			};
 			toil.defaultCompleteMode = ToilCompleteMode.Delay;
 			toil.defaultDuration = ticks;
-			if (face != 0)
+			if (face != TargetIndex.None)
 			{
 				toil.handlingFacing = true;
-				toil.tickAction = delegate
+				toil.tickIntervalAction = delegate
 				{
 					toil.actor.rotationTracker.FaceTarget(toil.actor.CurJob.GetTarget(face));
 				};
@@ -36,14 +36,13 @@ namespace Verse.AI
 			return toil;
 		}
 
-		public static Toil WaitWith(TargetIndex targetInd, int ticks, bool useProgressBar = false, bool maintainPosture = false)
+		public static Toil WaitWith(TargetIndex targetInd, int ticks, bool useProgressBar = false, bool maintainPosture = false, bool maintainSleep = false, TargetIndex face = TargetIndex.None, PathEndMode pathEndMode = PathEndMode.Touch)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("WaitWith");
 			toil.initAction = delegate
 			{
 				toil.actor.pather.StopDead();
-				Pawn pawn = toil.actor.CurJob.GetTarget(targetInd).Thing as Pawn;
-				if (pawn != null)
+				if (toil.actor.CurJob.GetTarget(targetInd).Thing is Pawn pawn)
 				{
 					if (pawn == toil.actor)
 					{
@@ -51,14 +50,22 @@ namespace Verse.AI
 					}
 					else
 					{
-						PawnUtility.ForceWait(pawn, ticks, null, maintainPosture);
+						PawnUtility.ForceWait(pawn, ticks, null, maintainPosture, maintainSleep);
 					}
 				}
 			};
 			toil.FailOnDespawnedOrNull(targetInd);
-			toil.FailOnCannotTouch(targetInd, PathEndMode.Touch);
+			toil.FailOnCannotTouch(targetInd, pathEndMode);
 			toil.defaultCompleteMode = ToilCompleteMode.Delay;
 			toil.defaultDuration = ticks;
+			if (face != TargetIndex.None)
+			{
+				toil.handlingFacing = true;
+				toil.tickIntervalAction = delegate
+				{
+					toil.actor.rotationTracker.FaceTarget(toil.actor.CurJob.GetTarget(face));
+				};
+			}
 			if (useProgressBar)
 			{
 				toil.WithProgressBarToilDelay(targetInd);
@@ -68,7 +75,7 @@ namespace Verse.AI
 
 		public static Toil RemoveDesignationsOnThing(TargetIndex ind, DesignationDef def)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("RemoveDesignationsOnThing");
 			toil.initAction = delegate
 			{
 				toil.actor.Map.designationManager.RemoveAllDesignationsOn(toil.actor.jobs.curJob.GetTarget(ind).Thing);
@@ -78,7 +85,7 @@ namespace Verse.AI
 
 		public static Toil ClearTarget(TargetIndex ind)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("ClearTarget");
 			toil.initAction = delegate
 			{
 				toil.GetActor().CurJob.SetTarget(ind, null);
@@ -88,7 +95,7 @@ namespace Verse.AI
 
 		public static Toil PutCarriedThingInInventory()
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("PutCarriedThingInInventory");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.GetActor();
@@ -102,24 +109,22 @@ namespace Verse.AI
 
 		public static Toil Do(Action action)
 		{
-			return new Toil
-			{
-				initAction = action
-			};
+			Toil toil = ToilMaker.MakeToil("Do");
+			toil.initAction = action;
+			return toil;
 		}
 
 		public static Toil DoAtomic(Action action)
 		{
-			return new Toil
-			{
-				initAction = action,
-				atomicWithPrevious = true
-			};
+			Toil toil = ToilMaker.MakeToil("DoAtomic");
+			toil.initAction = action;
+			toil.atomicWithPrevious = true;
+			return toil;
 		}
 
 		public static Toil Open(TargetIndex openableInd)
 		{
-			Toil open = new Toil();
+			Toil open = ToilMaker.MakeToil("Open");
 			open.initAction = delegate
 			{
 				Pawn actor = open.actor;
@@ -138,11 +143,22 @@ namespace Verse.AI
 
 		public static Toil Label()
 		{
-			return new Toil
+			Toil toil = ToilMaker.MakeToil("Label");
+			toil.atomicWithPrevious = true;
+			toil.defaultCompleteMode = ToilCompleteMode.Instant;
+			return toil;
+		}
+
+		public static Toil WaitWhileExtractingContents(TargetIndex containerInd, TargetIndex contentsInd, int openTicks)
+		{
+			Toil extract = Wait(openTicks, containerInd).WithProgressBarToilDelay(containerInd).FailOnDespawnedOrNull(containerInd);
+			extract.handlingFacing = true;
+			extract.AddPreInitAction(delegate
 			{
-				atomicWithPrevious = true,
-				defaultCompleteMode = ToilCompleteMode.Instant
-			};
+				Thing thing = extract.actor.CurJob.GetTarget(contentsInd).Thing;
+				QuestUtility.SendQuestTargetSignals(thing.questTags, "StartedExtractingFromContainer", thing.Named("SUBJECT"));
+			});
+			return extract;
 		}
 	}
 }

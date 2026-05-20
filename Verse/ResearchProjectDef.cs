@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
 using UnityEngine;
+using Verse.Grammar;
 
 namespace Verse
 {
 	public class ResearchProjectDef : Def
 	{
-		public float baseCost = 100f;
+		public float baseCost;
 
 		public List<ResearchProjectDef> prerequisites;
 
@@ -38,13 +39,7 @@ namespace Verse
 		[MustTranslate]
 		public string discoveredLetterText;
 
-		[Obsolete]
-		public int discoveredLetterMinDifficulty;
-
 		public DifficultyConditionConfig discoveredLetterDisabledWhen = new DifficultyConditionConfig();
-
-		[Obsolete]
-		public bool unlockExtremeDifficulty;
 
 		public int techprintCount;
 
@@ -52,9 +47,29 @@ namespace Verse
 
 		public float techprintMarketValue = 1000f;
 
+		[NoTranslate]
 		public List<string> heldByFactionCategoryTags;
 
 		public DifficultyConditionConfig hideWhen = new DifficultyConditionConfig();
+
+		public bool requiresMechanitor;
+
+		public List<ThingDef> requiredAnalyzed;
+
+		public bool recalculatePower;
+
+		public KnowledgeCategoryDef knowledgeCategory;
+
+		public float knowledgeCost;
+
+		public ConceptDef teachConcept;
+
+		public RulePack generalRules;
+
+		public bool requireGravEngineInspected;
+
+		[MustTranslate]
+		public List<string> customUnlockTexts;
 
 		[Unsaved(false)]
 		private float x = 1f;
@@ -74,6 +89,9 @@ namespace Verse
 		[Unsaved(false)]
 		private List<Dialog_InfoCard.Hyperlink> cachedHyperlinks;
 
+		[Unsaved(false)]
+		private string cachedDescription;
+
 		public const TechLevel MaxEffectiveTechLevel = TechLevel.Industrial;
 
 		private const float ResearchCostFactorPerTechLevelDiff = 0.5f;
@@ -82,27 +100,74 @@ namespace Verse
 
 		public float ResearchViewY => y;
 
-		public float CostApparent => baseCost * CostFactor(Faction.OfPlayer.def.techLevel);
+		public float CostApparent => Cost * CostFactor(Faction.OfPlayer.def.techLevel);
 
 		public float ProgressReal => Find.ResearchManager.GetProgress(this);
 
 		public float ProgressApparent => ProgressReal * CostFactor(Faction.OfPlayer.def.techLevel);
 
-		public float ProgressPercent => Find.ResearchManager.GetProgress(this) / baseCost;
+		public string ProgressApparentString
+		{
+			get
+			{
+				string text = ((baseCost > 0f) ? "F0" : "F2");
+				return ProgressApparent.ToString(text);
+			}
+		}
 
-		public bool IsFinished => ProgressReal >= baseCost;
+		public float ProgressPercent => Mathf.Clamp01(ProgressReal / Cost);
+
+		public bool IsFinished => ProgressReal >= Cost;
+
+		public float Cost
+		{
+			get
+			{
+				if (!(baseCost > 0f))
+				{
+					return knowledgeCost;
+				}
+				return baseCost;
+			}
+		}
+
+		public override TaggedString LabelCap
+		{
+			get
+			{
+				if (label.NullOrEmpty())
+				{
+					return null;
+				}
+				if (cachedLabelCap.NullOrEmpty())
+				{
+					cachedLabelCap = label.CapitalizeFirst();
+				}
+				return cachedLabelCap;
+			}
+		}
+
+		public string Description => description;
+
+		public bool IsHidden
+		{
+			get
+			{
+				if (!IsFinished && ModsConfig.AnomalyActive)
+				{
+					return Find.EntityCodex.Hidden(this);
+				}
+				return false;
+			}
+		}
 
 		public bool CanStartNow
 		{
 			get
 			{
-				if (!IsFinished && PrerequisitesCompleted && TechprintRequirementMet)
+				if (!IsFinished && PrerequisitesCompleted && TechprintRequirementMet && (requiredResearchBuilding == null || PlayerHasAnyAppropriateResearchBench) && PlayerMechanitorRequirementMet && AnalyzedThingsRequirementsMet && !IsHidden)
 				{
-					if (requiredResearchBuilding != null)
-					{
-						return PlayerHasAnyAppropriateResearchBench;
-					}
-					return true;
+					return InspectionRequirementsMet;
 				}
 				return false;
 			}
@@ -186,26 +251,78 @@ namespace Verse
 			}
 		}
 
+		public int RequiredAnalyzedThingCount => requiredAnalyzed?.Count ?? 0;
+
+		public int AnalyzedThingsCompleted
+		{
+			get
+			{
+				if (requiredAnalyzed.NullOrEmpty())
+				{
+					return 0;
+				}
+				int num = 0;
+				for (int i = 0; i < requiredAnalyzed.Count; i++)
+				{
+					Find.AnalysisManager.TryGetAnalysisProgress(requiredAnalyzed[i].GetCompProperties<CompProperties_CompAnalyzableUnlockResearch>()?.analysisID ?? (-1), out var details);
+					if (details != null && details.Satisfied)
+					{
+						num++;
+					}
+				}
+				return num;
+			}
+		}
+
+		public bool AnalyzedThingsRequirementsMet
+		{
+			get
+			{
+				if (RequiredAnalyzedThingCount > 0)
+				{
+					return AnalyzedThingsCompleted >= RequiredAnalyzedThingCount;
+				}
+				return true;
+			}
+		}
+
+		public bool InspectionRequirementsMet
+		{
+			get
+			{
+				if (ModsConfig.OdysseyActive && requireGravEngineInspected)
+				{
+					return Find.ResearchManager.gravEngineInspected;
+				}
+				return true;
+			}
+		}
+
 		public List<Def> UnlockedDefs
 		{
 			get
 			{
 				if (cachedUnlockedDefs == null)
 				{
-					cachedUnlockedDefs = (from x in DefDatabase<RecipeDef>.AllDefs.Where((RecipeDef x) => x.researchPrerequisite == this || (x.researchPrerequisites != null && x.researchPrerequisites.Contains(this))).SelectMany((RecipeDef x) => ((IEnumerable<ThingDefCountClass>)x.products).Select((Func<ThingDefCountClass, Def>)((ThingDefCountClass y) => y.thingDef)))
+					cachedUnlockedDefs = (from x in (from x in DefDatabase<RecipeDef>.AllDefs.Where((RecipeDef x) => x.researchPrerequisite == this || (x.researchPrerequisites != null && x.researchPrerequisites.Contains(this))).SelectMany((RecipeDef x) => ((IEnumerable<ThingDefCountClass>)x.products).Select((Func<ThingDefCountClass, Def>)((ThingDefCountClass y) => y.thingDef)))
+							orderby x.label
+							select x).Concat(from x in DefDatabase<ThingDef>.AllDefs
+							where x.researchPrerequisites != null && x.researchPrerequisites.Contains(this)
+							orderby x.label
+							select x).Concat(from x in DefDatabase<ThingDef>.AllDefs
+							where x.plant != null && x.plant.sowResearchPrerequisites != null && x.plant.sowResearchPrerequisites.Contains(this)
+							orderby x.label
+							select x).Concat(from x in DefDatabase<TerrainDef>.AllDefs
+							where x.researchPrerequisites != null && x.researchPrerequisites.Contains(this)
+							orderby x.label
+							select x)
+							.Concat(from x in DefDatabase<RecipeDef>.AllDefs
+								where x.IsSurgery && x.researchPrerequisites != null && x.researchPrerequisites.Contains(this)
+								orderby x.label
+								select x)
+							.Concat(DefDatabase<PsychicRitualDef>.AllDefs.Where((PsychicRitualDef x) => x.researchPrerequisite == this))
 						orderby x.label
-						select x).Concat(from x in DefDatabase<ThingDef>.AllDefs
-						where x.researchPrerequisites != null && x.researchPrerequisites.Contains(this)
-						orderby x.label
-						select x).Concat(from x in DefDatabase<ThingDef>.AllDefs
-						where x.plant != null && x.plant.sowResearchPrerequisites != null && x.plant.sowResearchPrerequisites.Contains(this)
-						orderby x.label
-						select x).Concat(from x in DefDatabase<TerrainDef>.AllDefs
-						where x.researchPrerequisites != null && x.researchPrerequisites.Contains(this)
-						orderby x.label
-						select x)
-						.Distinct()
-						.ToList();
+						select x).Distinct().ToList();
 				}
 				return cachedUnlockedDefs;
 			}
@@ -231,7 +348,7 @@ namespace Verse
 			}
 		}
 
-		private bool PlayerHasAnyAppropriateResearchBench
+		public bool PlayerHasAnyAppropriateResearchBench
 		{
 			get
 			{
@@ -241,8 +358,7 @@ namespace Verse
 					List<Building> allBuildingsColonist = maps[i].listerBuildings.allBuildingsColonist;
 					for (int j = 0; j < allBuildingsColonist.Count; j++)
 					{
-						Building_ResearchBench building_ResearchBench = allBuildingsColonist[j] as Building_ResearchBench;
-						if (building_ResearchBench != null && CanBeResearchedAt(building_ResearchBench, ignoreResearchBenchPowerStatus: true))
+						if (allBuildingsColonist[j] is Building_ResearchBench bench && CanBeResearchedAt(bench, ignoreResearchBenchPowerStatus: true))
 						{
 							return true;
 						}
@@ -252,8 +368,21 @@ namespace Verse
 			}
 		}
 
+		public bool PlayerMechanitorRequirementMet
+		{
+			get
+			{
+				if (!ModsConfig.BiotechActive || !requiresMechanitor)
+				{
+					return true;
+				}
+				return MechanitorUtility.AnyMechanitorInPlayerFaction();
+			}
+		}
+
 		public override void ResolveReferences()
 		{
+			base.ResolveReferences();
 			if (tab == null)
 			{
 				tab = ResearchTabDefOf.Main;
@@ -266,7 +395,7 @@ namespace Verse
 			{
 				yield return item;
 			}
-			if (techLevel == TechLevel.Undefined)
+			if (techLevel == TechLevel.Undefined && knowledgeCategory == null)
 			{
 				yield return "techLevel is Undefined";
 			}
@@ -287,12 +416,30 @@ namespace Verse
 			{
 				if (rpDefs[i] != this && rpDefs[i].tab == tab && rpDefs[i].ResearchViewX == ResearchViewX && rpDefs[i].ResearchViewY == ResearchViewY)
 				{
-					yield return string.Concat("same research view coords and tab as ", rpDefs[i], ": ", ResearchViewX, ", ", ResearchViewY, "(", tab, ")");
+					yield return "same research view coords and tab as " + rpDefs[i]?.ToString() + ": " + ResearchViewX + ", " + ResearchViewY + "(" + tab?.ToString() + ")";
 				}
 			}
 			if (!ModLister.RoyaltyInstalled && techprintCount > 0)
 			{
 				yield return "defines techprintCount, but techprints are a Royalty-specific game system and only work with Royalty installed.";
+			}
+			if (!requiredAnalyzed.NullOrEmpty())
+			{
+				foreach (ThingDef item2 in requiredAnalyzed)
+				{
+					if (!item2.HasAssignableCompFrom(typeof(CompAnalyzable)))
+					{
+						yield return "requires analyzing " + item2.label + " but " + item2.label + " cannot be analyzed.";
+					}
+				}
+			}
+			if (knowledgeCost > 0f && knowledgeCategory == null)
+			{
+				yield return "has knowledge cost, but no knowledge category.";
+			}
+			if (baseCost > 0f && knowledgeCost > 0f)
+			{
+				yield return "baseCost and knowledgeCost are both defined. This is unsupported.";
 			}
 		}
 
@@ -303,10 +450,45 @@ namespace Verse
 			{
 				techprintCount = 0;
 			}
+			if (!ModLister.BiotechInstalled)
+			{
+				requiredAnalyzed = null;
+			}
+		}
+
+		public string GetTip()
+		{
+			string text = LabelCap.Colorize(ColoredText.TipSectionTitleColor);
+			if (ProgressReal > 0f && !IsFinished)
+			{
+				text = text + " (" + ProgressApparentString + " / " + CostApparent.ToString("F0") + ")";
+			}
+			if (cachedDescription == null)
+			{
+				cachedDescription = Description;
+				if (TechprintCount > 0)
+				{
+					cachedDescription = cachedDescription + "\n\n" + ("RequiredTechprintTip".Translate() + ": " + Techprint.LabelCap).ToString();
+				}
+				if (RequiredAnalyzedThingCount > 0)
+				{
+					cachedDescription = cachedDescription + "\n\n" + "StudyRequirementTip".Translate().ToString() + ": " + requiredAnalyzed.Select((ThingDef t) => t.label).ToCommaList(useAnd: true).CapitalizeFirst();
+				}
+				if (modContentPack != null && !modContentPack.IsCoreMod)
+				{
+					Color color = (modContentPack.IsOfficialMod ? ModLister.GetExpansionWithIdentifier(modContentPack.PackageId.ToLower()).primaryColor : ColoredText.SubtleGrayColor);
+					cachedDescription = cachedDescription + "\n\n" + ("Stat_Source_Label".Translate().ToString() + ": " + modContentPack.Name).Colorize(color);
+				}
+			}
+			return text + "\n" + cachedDescription;
 		}
 
 		public float CostFactor(TechLevel researcherTechLevel)
 		{
+			if (this.techLevel == TechLevel.Undefined)
+			{
+				return 1f;
+			}
 			TechLevel techLevel = (TechLevel)Mathf.Min((int)this.techLevel, 4);
 			if ((int)researcherTechLevel >= (int)techLevel)
 			{
@@ -359,6 +541,22 @@ namespace Verse
 			return true;
 		}
 
+		public bool AnyOtherVisiblePrerequisitesCompleted(ResearchProjectDef prerequisite)
+		{
+			if (prerequisites == null)
+			{
+				return false;
+			}
+			for (int i = 0; i < prerequisites.Count; i++)
+			{
+				if (prerequisites[i] != prerequisite && prerequisites[i].IsFinished)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
 		public void ReapplyAllMods()
 		{
 			if (researchMods == null)
@@ -373,7 +571,7 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					Log.Error(string.Concat("Exception applying research mod for project ", this, ": ", ex.ToString()));
+					Log.Error("Exception applying research mod for project " + this?.ToString() + ": " + ex);
 				}
 			}
 		}
@@ -478,13 +676,16 @@ namespace Verse
 			{
 				y += delta.y;
 			}
-			positionModified = true;
+			if (num || flag)
+			{
+				positionModified = true;
+			}
 		}
 
 		public void Debug_SnapPositionData()
 		{
-			x = Mathf.Round(x * 1f) / 1f;
-			y = Mathf.Round(y * 20f) / 20f;
+			x = Mathf.Round(x * 2f) / 2f;
+			y = Mathf.Round(y * 10f) / 10f;
 			ClampInCoordinateLimits(this);
 		}
 

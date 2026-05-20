@@ -10,15 +10,19 @@ namespace RimWorld
 		{
 			base.Apply(target, dest);
 			GenSpawn.Spawn(Props.thingDef, target.Cell, parent.pawn.Map);
+			if (Props.sendSkipSignal)
+			{
+				CompAbilityEffect_Teleport.SendSkipUsedSignal(target, parent.pawn);
+			}
 		}
 
 		public override bool Valid(LocalTargetInfo target, bool throwMessages = false)
 		{
-			if (target.Cell.Filled(parent.pawn.Map) || (target.Cell.GetFirstBuilding(parent.pawn.Map) != null && !Props.allowOnBuildings))
+			if (target.Cell.Filled(parent.pawn.Map) || (!Props.allowOnBuildings && target.Cell.GetEdifice(parent.pawn.Map) != null))
 			{
 				if (throwMessages)
 				{
-					Messages.Message("AbilityOccupiedCells".Translate(parent.def.LabelCap), target.ToTargetInfo(parent.pawn.Map), MessageTypeDefOf.RejectInput, historical: false);
+					Messages.Message("CannotUseAbility".Translate(parent.def.label) + ": " + "AbilityOccupiedCells".Translate(), target.ToTargetInfo(parent.pawn.Map), MessageTypeDefOf.RejectInput, historical: false);
 				}
 				return false;
 			}

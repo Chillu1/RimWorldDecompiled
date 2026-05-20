@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using System.Linq;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -9,7 +11,7 @@ namespace RimWorld
 		[Unsaved(false)]
 		public TraderKindDef trader;
 
-		public IntRange countRange = IntRange.zero;
+		public IntRange countRange = IntRange.Zero;
 
 		public List<ThingDefCountRangeClass> customCountRanges;
 
@@ -28,12 +30,21 @@ namespace RimWorld
 
 		public virtual IEnumerable<string> ConfigErrors(TraderKindDef parentDef)
 		{
-			yield break;
+			return Enumerable.Empty<string>();
 		}
 
-		public abstract IEnumerable<Thing> GenerateThings(int forTile, Faction faction = null);
+		public abstract IEnumerable<Thing> GenerateThings(PlanetTile forTile, Faction faction = null);
 
 		public abstract bool HandlesThingDef(ThingDef thingDef);
+
+		public virtual Tradeability TradeabilityFor(ThingDef thingDef)
+		{
+			if (!HandlesThingDef(thingDef))
+			{
+				return Tradeability.None;
+			}
+			return thingDef.tradeability;
+		}
 
 		public bool TryGetPriceType(ThingDef thingDef, TradeAction action, out PriceType priceType)
 		{

@@ -8,6 +8,8 @@ namespace Verse.AI.Group
 
 		private int checkEveryTicks = 1;
 
+		private TriggerData_Reason Data => (TriggerData_Reason)data;
+
 		public Trigger_TickCondition(Func<bool> condition, int checkEveryTicks = 1)
 		{
 			this.condition = condition;

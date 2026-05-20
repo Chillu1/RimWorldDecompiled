@@ -6,6 +6,8 @@ namespace Verse
 	{
 		public int Compare(string x, string y)
 		{
+			x = x ?? "";
+			y = y ?? "";
 			if (x.Contains("~"))
 			{
 				string[] array = x.Split('~');
@@ -26,6 +28,14 @@ namespace Verse
 			{
 				x = x.Substring(0, x.Length - 1);
 				y = y.Substring(0, y.Length - 1);
+			}
+			if (x.Length >= 2 && x[0] == '$')
+			{
+				x = x.Substring(1, x.Length - 1);
+			}
+			if (y.Length >= 2 && y[0] == '$')
+			{
+				y = y.Substring(1, y.Length - 1);
 			}
 			if (float.TryParse(x, out var result) && float.TryParse(y, out var result2))
 			{

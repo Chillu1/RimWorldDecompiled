@@ -7,6 +7,8 @@ namespace Verse
 	{
 		private static Dictionary<MaterialRequest, Material> matDictionary = new Dictionary<MaterialRequest, Material>();
 
+		private static Dictionary<Material, MaterialRequest> matDictionaryReverse = new Dictionary<Material, MaterialRequest>();
+
 		public static Material MatFrom(string texPath, bool reportFailure)
 		{
 			if (texPath == null || texPath == "null")
@@ -66,6 +68,11 @@ namespace Verse
 			return MatFrom(req);
 		}
 
+		public static Material MatFrom(Shader shader)
+		{
+			return MatFrom(new MaterialRequest(shader));
+		}
+
 		public static Material MatFrom(MaterialRequest req)
 		{
 			if (!UnityData.IsInMainThread)
@@ -73,7 +80,7 @@ namespace Verse
 				Log.Error("Tried to get a material from a different thread.");
 				return null;
 			}
-			if (req.mainTex == null)
+			if (req.mainTex == null && req.needsMainTex)
 			{
 				Log.Error("MatFrom with null sourceTex.");
 				return BaseContent.BadMat;
@@ -93,13 +100,26 @@ namespace Verse
 			if (!matDictionary.TryGetValue(req, out var value))
 			{
 				value = MaterialAllocator.Create(req.shader);
-				value.name = req.shader.name + "_" + req.mainTex.name;
-				value.mainTexture = req.mainTex;
+				value.name = req.shader.name;
+				if (req.mainTex != null)
+				{
+					Material material = value;
+					material.name = material.name + "_" + req.mainTex.name;
+					value.mainTexture = req.mainTex;
+				}
 				value.color = req.color;
 				if (req.maskTex != null)
 				{
 					value.SetTexture(ShaderPropertyIDs.MaskTex, req.maskTex);
 					value.SetColor(ShaderPropertyIDs.ColorTwo, req.colorTwo);
+				}
+				else if (req.colorTwo != default(Color))
+				{
+					value.SetColor(ShaderPropertyIDs.ColorTwo, req.colorTwo);
+				}
+				if (req.secondaryTex != null)
+				{
+					value.SetTexture(ShaderPropertyIDs.SecondaryTex, req.secondaryTex);
 				}
 				if (req.renderQueue != 0)
 				{
@@ -113,12 +133,18 @@ namespace Verse
 					}
 				}
 				matDictionary.Add(req, value);
+				matDictionaryReverse.Add(value, req);
 				if (req.shader == ShaderDatabase.CutoutPlant || req.shader == ShaderDatabase.TransparentPlant)
 				{
 					WindManager.Notify_PlantMaterialCreated(value);
 				}
 			}
 			return value;
+		}
+
+		public static bool TryGetRequestForMat(Material material, out MaterialRequest request)
+		{
+			return matDictionaryReverse.TryGetValue(material, out request);
 		}
 	}
 }

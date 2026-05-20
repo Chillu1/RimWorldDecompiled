@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -11,29 +12,29 @@ namespace RimWorld
 		{
 			TraderKindDef traderKindDef = parms.traderDef ?? DefDatabase<TraderKindDef>.AllDefsListForReading.RandomElement();
 			Faction makingFaction = parms.makingFaction;
-			int forTile = (parms.tile.HasValue ? parms.tile.Value : ((Find.AnyPlayerHomeMap != null) ? Find.AnyPlayerHomeMap.Tile : ((Find.CurrentMap == null) ? (-1) : Find.CurrentMap.Tile)));
+			PlanetTile forTile = (parms.tile.HasValue ? parms.tile.Value : ((Find.AnyPlayerHomeMap != null) ? Find.AnyPlayerHomeMap.Tile : ((Find.CurrentMap == null) ? PlanetTile.Invalid : Find.CurrentMap.Tile)));
 			for (int i = 0; i < traderKindDef.stockGenerators.Count; i++)
 			{
 				foreach (Thing item in traderKindDef.stockGenerators[i].GenerateThings(forTile, parms.makingFaction))
 				{
 					if (!item.def.tradeability.TraderCanSell())
 					{
-						Log.Error(string.Concat(traderKindDef, " generated carrying ", item, " which can't be sold by traders. Ignoring..."));
+						Log.Error(traderKindDef?.ToString() + " generated carrying " + item?.ToString() + " which can't be sold by traders. Ignoring...");
+						continue;
 					}
-					else
-					{
-						item.PostGeneratedForTrader(traderKindDef, forTile, makingFaction);
-						outThings.Add(item);
-					}
+					item.PostGeneratedForTrader(traderKindDef, forTile, makingFaction);
+					outThings.Add(item);
 				}
 			}
 		}
 
 		public float DebugAverageTotalStockValue(TraderKindDef td)
 		{
-			ThingSetMakerParams parms = default(ThingSetMakerParams);
-			parms.traderDef = td;
-			parms.tile = -1;
+			ThingSetMakerParams parms = new ThingSetMakerParams
+			{
+				traderDef = td,
+				tile = PlanetTile.Invalid
+			};
 			float num = 0f;
 			for (int i = 0; i < 50; i++)
 			{
@@ -50,18 +51,23 @@ namespace RimWorld
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.AppendLine(td.defName);
 			stringBuilder.AppendLine("Average total market value:" + DebugAverageTotalStockValue(td).ToString("F0"));
-			ThingSetMakerParams parms = default(ThingSetMakerParams);
-			parms.traderDef = td;
-			parms.tile = -1;
+			ThingSetMakerParams parms = new ThingSetMakerParams
+			{
+				traderDef = td,
+				tile = PlanetTile.Invalid
+			};
 			Find.FactionManager.AllFactionsListForReading.Where((Faction x) => x.def.baseTraderKinds.Contains(td) || x.def.visitorTraderKinds.Contains(td) || x.def.caravanTraderKinds.Contains(td)).TryRandomElement(out parms.makingFaction);
 			stringBuilder.AppendLine("Example generated stock:\n\n");
 			foreach (Thing item in Generate(parms))
 			{
-				MinifiedThing minifiedThing = item as MinifiedThing;
-				Thing thing = ((minifiedThing == null) ? item : minifiedThing.InnerThing);
-				string labelCap = thing.LabelCap;
-				labelCap = labelCap + " [" + (thing.MarketValue * (float)thing.stackCount).ToString("F0") + "]";
-				stringBuilder.AppendLine(labelCap);
+				Thing thing = ((!(item is MinifiedThing minifiedThing)) ? item : minifiedThing.InnerThing);
+				string text = thing.LabelCap;
+				if (thing is Book book)
+				{
+					text = "[" + book.def.defName + "]: " + text;
+				}
+				text = text + " [" + (thing.MarketValue * (float)thing.stackCount).ToString("F0") + "]";
+				stringBuilder.AppendLine(text);
 			}
 			return stringBuilder.ToString();
 		}

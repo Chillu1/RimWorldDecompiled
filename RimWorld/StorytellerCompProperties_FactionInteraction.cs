@@ -12,6 +12,8 @@ namespace RimWorld
 
 		public bool fullAlliesOnly;
 
+		public float minWealth;
+
 		public StorytellerCompProperties_FactionInteraction()
 		{
 			compClass = typeof(StorytellerComp_FactionInteraction);

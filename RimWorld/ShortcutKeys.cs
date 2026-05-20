@@ -7,7 +7,7 @@ namespace RimWorld
 	{
 		public void ShortcutKeysOnGUI()
 		{
-			if (Current.ProgramState == ProgramState.Playing)
+			if (Current.ProgramState == ProgramState.Playing && !WorldComponent_GravshipController.CutsceneInProgress)
 			{
 				if (KeyBindingDefOf.NextColonist.KeyDownEvent)
 				{

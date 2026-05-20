@@ -6,15 +6,15 @@ namespace RimWorld.Planet
 {
 	public static class GenPlanetMorphology
 	{
-		private static HashSet<int> tmpOutput = new HashSet<int>();
+		private static readonly HashSet<PlanetTile> tmpOutput = new HashSet<PlanetTile>();
 
-		private static HashSet<int> tilesSet = new HashSet<int>();
+		private static readonly HashSet<PlanetTile> tilesSet = new HashSet<PlanetTile>();
 
-		private static List<int> tmpNeighbors = new List<int>();
+		private static readonly List<PlanetTile> tmpEdgeTiles = new List<PlanetTile>();
 
-		private static List<int> tmpEdgeTiles = new List<int>();
+		private static readonly List<PlanetTile> tmpNeighbors = new List<PlanetTile>();
 
-		public static void Erode(List<int> tiles, int count, Predicate<int> extraPredicate = null)
+		public static void Erode(PlanetLayer layer, List<PlanetTile> tiles, int count, Predicate<PlanetTile> extraPredicate = null)
 		{
 			if (count <= 0)
 			{
@@ -41,8 +41,8 @@ namespace RimWorld.Planet
 				return;
 			}
 			tmpOutput.Clear();
-			Predicate<int> passCheck = ((extraPredicate == null) ? ((Predicate<int>)((int x) => tilesSet.Contains(x))) : ((Predicate<int>)((int x) => tilesSet.Contains(x) && extraPredicate(x))));
-			Find.WorldFloodFiller.FloodFill(-1, passCheck, delegate(int tile, int traversalDist)
+			Predicate<PlanetTile> passCheck = ((extraPredicate == null) ? ((Predicate<PlanetTile>)((PlanetTile x) => tilesSet.Contains(x))) : ((Predicate<PlanetTile>)((PlanetTile x) => tilesSet.Contains(x) && extraPredicate(x))));
+			layer.Filler.FloodFill(PlanetTile.Invalid, passCheck, delegate(PlanetTile tile, int traversalDist)
 			{
 				if (traversalDist >= count)
 				{
@@ -54,13 +54,13 @@ namespace RimWorld.Planet
 			tiles.AddRange(tmpOutput);
 		}
 
-		public static void Dilate(List<int> tiles, int count, Predicate<int> extraPredicate = null)
+		public static void Dilate(PlanetLayer layer, List<PlanetTile> tiles, int count, Predicate<PlanetTile> extraPredicate = null)
 		{
 			if (count <= 0)
 			{
 				return;
 			}
-			Find.WorldFloodFiller.FloodFill(-1, extraPredicate ?? ((Predicate<int>)((int x) => true)), delegate(int tile, int traversalDist)
+			layer.Filler.FloodFill(PlanetTile.Invalid, extraPredicate ?? ((Predicate<PlanetTile>)((PlanetTile x) => true)), delegate(PlanetTile tile, int traversalDist)
 			{
 				if (traversalDist > count)
 				{
@@ -74,16 +74,16 @@ namespace RimWorld.Planet
 			}, int.MaxValue, tiles);
 		}
 
-		public static void Open(List<int> tiles, int count)
+		public static void Open(PlanetLayer layer, List<PlanetTile> tiles, int count)
 		{
-			Erode(tiles, count);
-			Dilate(tiles, count);
+			Erode(layer, tiles, count);
+			Dilate(layer, tiles, count);
 		}
 
-		public static void Close(List<int> tiles, int count)
+		public static void Close(PlanetLayer layer, List<PlanetTile> tiles, int count)
 		{
-			Dilate(tiles, count);
-			Erode(tiles, count);
+			Dilate(layer, tiles, count);
+			Erode(layer, tiles, count);
 		}
 	}
 }

@@ -1,20 +1,26 @@
-using System;
 using Verse;
 using Verse.AI;
+using Verse.AI.Group;
 
 namespace RimWorld
 {
-	[Obsolete]
-	public class JobGiver_PrepareCaravan_GatherPawns : ThinkNode_JobGiver
+	public class JobGiver_PrepareCaravan_GatherPawns : JobGiver_PrepareCaravan_RopePawns
 	{
-		protected override Job TryGiveJob(Pawn pawn)
+		protected override JobDef RopeJobDef => JobDefOf.PrepareCaravan_GatherAnimals;
+
+		protected override bool AnimalNeedsGathering(Pawn pawn, Pawn animal)
 		{
-			return null;
+			return DoesAnimalNeedGathering(pawn, animal);
 		}
 
-		private Pawn FindPawn(Pawn pawn)
+		public static bool DoesAnimalNeedGathering(Pawn pawn, Pawn animal)
 		{
-			return null;
+			IntVec3 cell = pawn.mindState.duty.focus.Cell;
+			if (AnimalPenUtility.NeedsToBeManagedByRope(animal) && !animal.roping.IsRopedByPawn && (!animal.roping.IsRopedToSpot || !(animal.roping.RopedToSpot == cell)) && pawn.GetLord() == animal.GetLord() && GatherAnimalsAndSlavesForCaravanUtility.CanRoperTakeAnimalToDest(pawn, animal, cell))
+			{
+				return pawn.CanReserve(animal);
+			}
+			return false;
 		}
 	}
 }

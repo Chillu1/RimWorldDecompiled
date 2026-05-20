@@ -2,8 +2,6 @@ namespace Verse
 {
 	public class Hediff_Implant : HediffWithComps
 	{
-		public override bool ShouldRemove => false;
-
 		public override void PostAdd(DamageInfo? dinfo)
 		{
 			base.PostAdd(dinfo);

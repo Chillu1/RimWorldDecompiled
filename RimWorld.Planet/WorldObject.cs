@@ -14,7 +14,7 @@ namespace RimWorld.Planet
 
 		public int ID = -1;
 
-		private int tileInt = -1;
+		private PlanetTile tile = PlanetTile.Invalid;
 
 		private Faction factionInt;
 
@@ -26,43 +26,110 @@ namespace RimWorld.Planet
 
 		public ThingOwner<Thing> rewards;
 
+		private int tickDelta;
+
+		public bool isGeneratedLocation;
+
 		private List<WorldObjectComp> comps = new List<WorldObjectComp>();
+
+		private Material expandingMaterial;
+
+		private int drawPosCacheTick = -1;
+
+		private Vector3 drawPosCached;
 
 		private static MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
 
 		private const float BaseDrawSize = 0.7f;
 
+		private const float DrawOffsetRange = 0.01f;
+
 		private static readonly Texture2D ViewQuestCommandTex = ContentFinder<Texture2D>.Get("UI/Commands/ViewQuest");
+
+		private List<IThingHolder> tmpHolders;
+
+		private bool cached;
+
+		private bool cachedIsHolder;
+
+		private IThingHolder cachedHolder;
+
+		private IThingHolderTickable cachedTickable;
 
 		public List<WorldObjectComp> AllComps => comps;
 
 		public virtual bool ShowRelatedQuests => true;
 
+		public virtual bool CanReformFoggedEnemies => false;
+
 		public bool Destroyed => destroyed;
 
-		public int Tile
+		public virtual bool VisibleInBackground
 		{
 			get
 			{
-				return tileInt;
+				if (Tile.LayerDef.isSpace)
+				{
+					return Find.WorldSelector.SelectedLayer.Def.isSpace;
+				}
+				return false;
+			}
+		}
+
+		public virtual bool RequiresSignalJammerToReach
+		{
+			get
+			{
+				if (def.requiresSignalJammerToReach)
+				{
+					return !(this is MapParent mapParent) || !mapParent.HasMap;
+				}
+				return false;
+			}
+		}
+
+		public virtual float DrawAltitude => 0.03f;
+
+		public PlanetTile Tile
+		{
+			get
+			{
+				return tile;
 			}
 			set
 			{
-				if (tileInt != value)
+				if (!(tile == value))
 				{
-					tileInt = value;
+					PlanetTile previous = tile;
+					tile = value;
 					if (Spawned && !def.useDynamicDrawer)
 					{
 						Find.World.renderer.Notify_StaticWorldObjectPosChanged();
 					}
-					PositionChanged();
+					if (previous.Valid)
+					{
+						previous.Tile.Layer.FastTileFinder.DirtyTile(previous);
+					}
+					tile.Tile.Layer.FastTileFinder.DirtyTile(tile);
+					PositionChanged(previous, tile);
 				}
 			}
 		}
 
 		public bool Spawned => Find.WorldObjects.Contains(this);
 
-		public virtual Vector3 DrawPos => Find.WorldGrid.GetTileCenter(Tile);
+		public virtual Vector3 DrawPos
+		{
+			get
+			{
+				if (Find.TickManager.TicksGame != drawPosCacheTick)
+				{
+					drawPosCached = Tile.Layer.Origin + Find.WorldGrid.GetTileCenter(Tile);
+					drawPosCacheTick = Find.TickManager.TicksGame;
+				}
+				return drawPosCached;
+			}
+		}
 
 		public Faction Faction => factionInt;
 
@@ -78,11 +145,48 @@ namespace RimWorld.Planet
 
 		public virtual Material Material => def.Material;
 
+		public virtual Material ExpandingMaterial
+		{
+			get
+			{
+				if (def.expandingShader == null)
+				{
+					return null;
+				}
+				if (expandingMaterial != null)
+				{
+					return expandingMaterial;
+				}
+				MaterialRequest req = new MaterialRequest
+				{
+					mainTex = def.ExpandingIconTexture,
+					shader = def.expandingShader.Shader,
+					color = Color.white,
+					maskTex = def.ExpandingIconTextureMask
+				};
+				return expandingMaterial = MaterialPool.MatFrom(req);
+			}
+		}
+
 		public virtual bool SelectableNow => def.selectable;
 
 		public virtual bool NeverMultiSelect => def.neverMultiSelect;
 
-		public virtual Texture2D ExpandingIcon => def.ExpandingIconTexture ?? ((Texture2D)Material.mainTexture);
+		public virtual Texture2D ExpandingIcon
+		{
+			get
+			{
+				if (def.ExpandingIconTexture != null)
+				{
+					return def.ExpandingIconTexture;
+				}
+				if (Material != null)
+				{
+					return (Texture2D)Material.mainTexture;
+				}
+				return BaseContent.BadTex;
+			}
+		}
 
 		public virtual Color ExpandingIconColor => def.expandingIconColor ?? Material.color;
 
@@ -104,15 +208,9 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public virtual IEnumerable<StatDrawEntry> SpecialDisplayStats
-		{
-			get
-			{
-				yield break;
-			}
-		}
+		public virtual IEnumerable<StatDrawEntry> SpecialDisplayStats => Enumerable.Empty<StatDrawEntry>();
 
-		public BiomeDef Biome
+		public virtual BiomeDef Biome
 		{
 			get
 			{
@@ -120,13 +218,29 @@ namespace RimWorld.Planet
 				{
 					return null;
 				}
-				return Find.WorldGrid[Tile].biome;
+				return Find.WorldGrid[Tile].PrimaryBiome;
 			}
 		}
 
 		public virtual float ExpandingIconRotation => 0f;
 
 		public virtual bool ExpandingIconFlipHorizontal => false;
+
+		public virtual bool GravShipCanLandOn => false;
+
+		protected virtual int UpdateRateTicks
+		{
+			get
+			{
+				if (!WorldRendererUtility.WorldSelected)
+				{
+					return 15;
+				}
+				return 1;
+			}
+		}
+
+		protected virtual int UpdateRateTickOffset => this.HashOffset();
 
 		public virtual IEnumerable<IncidentTargetTagDef> IncidentTargetTags()
 		{
@@ -153,12 +267,14 @@ namespace RimWorld.Planet
 			{
 				InitializeComps();
 			}
+			Scribe_Values.Look(ref tile, "tile");
 			Scribe_Values.Look(ref ID, "ID", -1);
-			Scribe_Values.Look(ref tileInt, "tile", -1);
-			Scribe_References.Look(ref factionInt, "faction");
 			Scribe_Values.Look(ref creationGameTicks, "creationGameTicks", 0);
-			Scribe_Collections.Look(ref questTags, "questTags", LookMode.Value);
 			Scribe_Values.Look(ref destroyed, "destroyed", defaultValue: false);
+			Scribe_Values.Look(ref tickDelta, "tickDelta", 0);
+			Scribe_Values.Look(ref isGeneratedLocation, "isGeneratedLocation", defaultValue: false);
+			Scribe_References.Look(ref factionInt, "faction");
+			Scribe_Collections.Look(ref questTags, "questTags", LookMode.Value);
 			if (Scribe.mode != LoadSaveMode.Saving)
 			{
 				Scribe_Deep.Look(ref rewards, "rewards");
@@ -181,9 +297,9 @@ namespace RimWorld.Planet
 					comps.Add(worldObjectComp);
 					worldObjectComp.Initialize(def.comps[i]);
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Error("Could not instantiate or initialize a WorldObjectComp: " + arg);
+					Log.Error("Could not instantiate or initialize a WorldObjectComp: " + ex);
 					comps.Remove(worldObjectComp);
 				}
 			}
@@ -193,7 +309,7 @@ namespace RimWorld.Planet
 		{
 			if (!def.canHaveFaction && newFaction != null)
 			{
-				Log.Warning(string.Concat("Tried to set faction to ", newFaction, " but this world object (", this, ") cannot have faction."));
+				Log.Warning("Tried to set faction to " + newFaction?.ToString() + " but this world object (" + this?.ToString() + ") cannot have faction.");
 			}
 			else
 			{
@@ -204,36 +320,116 @@ namespace RimWorld.Planet
 		public virtual string GetInspectString()
 		{
 			StringBuilder stringBuilder = new StringBuilder();
+			if (ModsConfig.OdysseyActive && def.requiresSignalJammerToReach)
+			{
+				stringBuilder.Append("RequiresSignalJammer".Translate());
+			}
 			if (Faction != null && AppendFactionToInspectString)
 			{
-				stringBuilder.Append("Faction".Translate() + ": " + Faction.Name);
+				if (stringBuilder.Length != 0)
+				{
+					stringBuilder.AppendLine();
+				}
+				stringBuilder.Append(string.Format("{0}: {1}", "Faction".Translate(), Faction.Name));
 			}
 			for (int i = 0; i < comps.Count; i++)
 			{
 				string text = comps[i].CompInspectStringExtra();
-				if (!text.NullOrEmpty())
+				if (text.NullOrEmpty())
 				{
-					if (Prefs.DevMode && char.IsWhiteSpace(text[text.Length - 1]))
+					continue;
+				}
+				if (Prefs.DevMode)
+				{
+					string text2 = text;
+					if (char.IsWhiteSpace(text2[text2.Length - 1]))
 					{
-						Log.ErrorOnce(string.Concat(comps[i].GetType(), " CompInspectStringExtra ended with whitespace: ", text), 25612);
+						Log.ErrorOnce($"{comps[i].GetType()} CompInspectStringExtra ended with whitespace: {text}", 25612);
 						text = text.TrimEndNewlines();
 					}
-					if (stringBuilder.Length != 0)
-					{
-						stringBuilder.AppendLine();
-					}
-					stringBuilder.Append(text);
 				}
+				if (stringBuilder.Length != 0)
+				{
+					stringBuilder.AppendLine();
+				}
+				stringBuilder.Append(text);
 			}
 			QuestUtility.AppendInspectStringsFromQuestParts(stringBuilder, this);
 			return stringBuilder.ToString();
 		}
 
-		public virtual void Tick()
+		public void DoTick()
+		{
+			using (ProfilerBlock.Scope("DoTick()"))
+			{
+				using (ProfilerBlock.Scope("Tick()"))
+				{
+					Tick();
+				}
+				tickDelta++;
+				if (tickDelta > UpdateRateTicks || GenTicks.IsTickInterval(UpdateRateTickOffset, UpdateRateTicks))
+				{
+					using (ProfilerBlock.Scope("TickInterval()"))
+					{
+						TickInterval(tickDelta);
+					}
+					tickDelta = 0;
+				}
+			}
+			if (Destroyed)
+			{
+				return;
+			}
+			if (!cached)
+			{
+				cached = true;
+				cachedHolder = this as IThingHolder;
+				cachedTickable = this as IThingHolderTickable;
+				cachedIsHolder = cachedHolder != null;
+			}
+			if (!cachedIsHolder || (cachedTickable != null && !cachedTickable.ShouldTickContents))
+			{
+				return;
+			}
+			if (tmpHolders == null)
+			{
+				tmpHolders = new List<IThingHolder>(8);
+			}
+			tmpHolders.Add(cachedHolder);
+			cachedHolder.GetChildHolders(tmpHolders);
+			for (int i = 0; i < tmpHolders.Count; i++)
+			{
+				ThingOwner directlyHeldThings = tmpHolders[i].GetDirectlyHeldThings();
+				if (directlyHeldThings == null)
+				{
+					continue;
+				}
+				IThingHolder owner = directlyHeldThings.Owner;
+				if (!(owner is Map) && !(owner is Caravan))
+				{
+					directlyHeldThings.DoTick();
+					if (Destroyed)
+					{
+						break;
+					}
+				}
+			}
+			tmpHolders.Clear();
+		}
+
+		protected virtual void Tick()
 		{
 			for (int i = 0; i < comps.Count; i++)
 			{
 				comps[i].CompTick();
+			}
+		}
+
+		protected virtual void TickInterval(int delta)
+		{
+			for (int i = 0; i < comps.Count; i++)
+			{
+				comps[i].CompTickInterval(delta);
 			}
 		}
 
@@ -259,7 +455,7 @@ namespace RimWorld.Planet
 			QuestUtility.SendQuestTargetSignals(questTags, "Spawned", this.Named("SUBJECT"));
 		}
 
-		protected virtual void PositionChanged()
+		protected virtual void PositionChanged(PlanetTile previous, PlanetTile current)
 		{
 		}
 
@@ -273,6 +469,7 @@ namespace RimWorld.Planet
 			{
 				Find.WorldDynamicDrawManager.RegisterDrawable(this);
 			}
+			Tile.Layer.FastTileFinder.DirtyTile(Tile);
 		}
 
 		public virtual void PostRemove()
@@ -291,6 +488,7 @@ namespace RimWorld.Planet
 				comps[i].PostPostRemove();
 			}
 			QuestUtility.SendQuestTargetSignals(questTags, "Despawned", this.Named("SUBJECT"));
+			Tile.Layer.FastTileFinder.DirtyTile(Tile);
 		}
 
 		public virtual void Destroy()
@@ -305,6 +503,7 @@ namespace RimWorld.Planet
 				Find.WorldObjects.Remove(this);
 			}
 			destroyed = true;
+			Find.FactionManager.Notify_WorldObjectDestroyed(this);
 			for (int i = 0; i < comps.Count; i++)
 			{
 				comps[i].PostDestroy();
@@ -314,24 +513,29 @@ namespace RimWorld.Planet
 
 		public virtual void Print(LayerSubMesh subMesh)
 		{
-			float averageTileSize = Find.WorldGrid.averageTileSize;
-			WorldRendererUtility.PrintQuadTangentialToPlanet(DrawPos, 0.7f * averageTileSize, 0.015f, subMesh, counterClockwise: false, randomizeRotation: true);
+			float averageTileSize = Tile.Layer.AverageTileSize;
+			float num = Rand.RangeSeeded(0f, 0.01f, ID) + def.drawAltitudeOffset;
+			WorldRendererUtility.PrintQuadTangentialToPlanet(DrawPos, 0.7f * averageTileSize, 0.03f + num, subMesh, counterClockwise: false, Rand.Range(0f, 360f));
 		}
 
 		public virtual void Draw()
 		{
-			float averageTileSize = Find.WorldGrid.averageTileSize;
-			float transitionPct = ExpandableWorldObjectsUtility.TransitionPct;
-			if (def.expandingIcon && transitionPct > 0f)
+			float averageTileSize = Tile.Layer.AverageTileSize;
+			float rawTransitionPct = ExpandableWorldObjectsUtility.RawTransitionPct;
+			if (!Tile.LayerDef.isSpace && (bool)Material)
 			{
-				Color color = Material.color;
-				float num = 1f - transitionPct;
-				propertyBlock.SetColor(ShaderPropertyIDs.Color, new Color(color.r, color.g, color.b, color.a * num));
-				WorldRendererUtility.DrawQuadTangentialToPlanet(DrawPos, 0.7f * averageTileSize, 0.015f, Material, counterClockwise: false, useSkyboxLayer: false, propertyBlock);
-			}
-			else
-			{
-				WorldRendererUtility.DrawQuadTangentialToPlanet(DrawPos, 0.7f * averageTileSize, 0.015f, Material);
+				float num = Rand.RangeSeeded(0f, 0.01f, ID) + def.drawAltitudeOffset;
+				if (def.expandingIcon && rawTransitionPct > 0f && !ExpandableWorldObjectsUtility.HiddenByRules(this))
+				{
+					Color color = Material.color;
+					float num2 = 1f - rawTransitionPct;
+					propertyBlock.SetColor(ShaderPropertyIDs.Color, new Color(color.r, color.g, color.b, color.a * num2));
+					WorldRendererUtility.DrawQuadTangentialToPlanet(DrawPos, 0.7f * averageTileSize, DrawAltitude + num, Material, 0f, counterClockwise: false, useSkyboxLayer: false, propertyBlock);
+				}
+				else
+				{
+					WorldRendererUtility.DrawQuadTangentialToPlanet(DrawPos, 0.7f * averageTileSize, DrawAltitude + num, Material);
+				}
 			}
 		}
 
@@ -339,20 +543,25 @@ namespace RimWorld.Planet
 		{
 			for (int i = 0; i < comps.Count; i++)
 			{
-				T val = comps[i] as T;
-				if (val != null)
+				if (comps[i] is T result)
 				{
-					return val;
+					return result;
 				}
 			}
 			return null;
+		}
+
+		public bool TryGetComponent<T>(out T comp) where T : WorldObjectComp
+		{
+			comp = GetComponent<T>();
+			return comp != null;
 		}
 
 		public WorldObjectComp GetComponent(Type type)
 		{
 			for (int i = 0; i < comps.Count; i++)
 			{
-				if (type.IsAssignableFrom(comps[i].GetType()))
+				if (type.IsInstanceOfType(comps[i]))
 				{
 					return comps[i];
 				}
@@ -362,37 +571,56 @@ namespace RimWorld.Planet
 
 		public virtual IEnumerable<Gizmo> GetGizmos()
 		{
-			int j;
+			int i;
 			if (ShowRelatedQuests)
 			{
 				List<Quest> quests = Find.QuestManager.QuestsListForReading;
-				for (j = 0; j < quests.Count; j++)
+				for (i = 0; i < quests.Count; i++)
 				{
-					Quest quest = quests[j];
-					if (!quest.Historical && !quest.dismissed && quest.QuestLookTargets.Contains(this))
+					Quest quest = quests[i];
+					if (!quest.hidden && !quest.Historical && !quest.dismissed && quest.QuestLookTargets.Contains(this))
 					{
-						Command_Action command_Action = new Command_Action();
-						command_Action.defaultLabel = "CommandViewQuest".Translate(quest.name);
-						command_Action.defaultDesc = "CommandViewQuestDesc".Translate();
-						command_Action.icon = ViewQuestCommandTex;
-						command_Action.action = delegate
+						yield return new Command_Action
 						{
-							Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Quests);
-							((MainTabWindow_Quests)MainButtonDefOf.Quests.TabWindow).Select(quest);
+							defaultLabel = "CommandViewQuest".Translate(quest.name),
+							defaultDesc = "CommandViewQuestDesc".Translate(),
+							icon = ViewQuestCommandTex,
+							Order = -1f,
+							action = delegate
+							{
+								Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Quests);
+								((MainTabWindow_Quests)MainButtonDefOf.Quests.TabWindow).Select(quest);
+							}
 						};
-						yield return command_Action;
 					}
 				}
 			}
-			j = 0;
-			while (j < comps.Count)
+			if (DebugSettings.ShowDevGizmos && this is MapParent { HasMap: false })
 			{
-				foreach (Gizmo gizmo in comps[j].GetGizmos())
+				yield return new Command_Action
+				{
+					defaultLabel = "DEV: Generate",
+					action = delegate
+					{
+						LongEventHandler.QueueLongEvent(delegate
+						{
+							SetFaction(Faction.OfPlayer);
+							Map orGenerateMap = GetOrGenerateMapUtility.GetOrGenerateMap(Tile, new IntVec3(200, 1, 200), null);
+							Current.Game.CurrentMap = orGenerateMap;
+							CameraJumper.TryJump(orGenerateMap.Center, orGenerateMap);
+						}, "GeneratingMap", doAsynchronously: false, GameAndMapInitExceptionHandlers.ErrorWhileGeneratingMap);
+					}
+				};
+			}
+			i = 0;
+			while (i < comps.Count)
+			{
+				foreach (Gizmo gizmo in comps[i].GetGizmos())
 				{
 					yield return gizmo;
 				}
-				int num = j + 1;
-				j = num;
+				int num = i + 1;
+				i = num;
 			}
 		}
 
@@ -421,20 +649,14 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public virtual IEnumerable<FloatMenuOption> GetTransportPodsFloatMenuOptions(IEnumerable<IThingHolder> pods, CompLaunchable representative)
+		public virtual IEnumerable<FloatMenuOption> GetTransportersFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<PlanetTile, TransportersArrivalAction> launchAction)
 		{
-			for (int i = 0; i < comps.Count; i++)
-			{
-				foreach (FloatMenuOption transportPodsFloatMenuOption in comps[i].GetTransportPodsFloatMenuOptions(pods, representative))
-				{
-					yield return transportPodsFloatMenuOption;
-				}
-			}
+			return Enumerable.Empty<FloatMenuOption>();
 		}
 
-		public virtual IEnumerable<FloatMenuOption> GetShuttleFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<int, TransportPodsArrivalAction> launchAction)
+		public virtual IEnumerable<FloatMenuOption> GetShuttleFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<PlanetTile, TransportersArrivalAction> launchAction)
 		{
-			yield break;
+			return Enumerable.Empty<FloatMenuOption>();
 		}
 
 		public virtual IEnumerable<InspectTabBase> GetInspectTabs()
@@ -449,7 +671,7 @@ namespace RimWorld.Planet
 
 		public override string ToString()
 		{
-			return GetType().Name + " " + LabelCap + " (tile=" + Tile + ")";
+			return GetType().Name + " " + LabelCap + " (tile=" + Tile.ToString() + ")";
 		}
 
 		public override int GetHashCode()

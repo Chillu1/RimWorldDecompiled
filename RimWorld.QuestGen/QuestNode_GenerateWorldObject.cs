@@ -7,7 +7,7 @@ namespace RimWorld.QuestGen
 	{
 		public SlateRef<WorldObjectDef> def;
 
-		public SlateRef<int> tile;
+		public SlateRef<PlanetTile> tile;
 
 		public SlateRef<Faction> faction;
 

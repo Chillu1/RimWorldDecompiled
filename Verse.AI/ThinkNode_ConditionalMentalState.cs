@@ -13,7 +13,12 @@ namespace Verse.AI
 
 		protected override bool Satisfied(Pawn pawn)
 		{
-			return pawn.MentalStateDef == state;
+			MentalStateDef mentalStateDef = pawn.MentalStateDef;
+			if (mentalStateDef != null)
+			{
+				return mentalStateDef == state;
+			}
+			return false;
 		}
 	}
 }

@@ -14,7 +14,7 @@ namespace RimWorld
 			PawnsArrivalModeWorkerUtility.SetPawnGroupsInfo(parms, list);
 			for (int i = 0; i < list.Count; i++)
 			{
-				DropPodUtility.DropThingsNear(list[i].Second, map, list[i].First.Cast<Thing>(), parms.podOpenDelay, canInstaDropDuringInit: false, leaveSlag: true, canRoofPunch);
+				DropPodUtility.DropThingsNear(list[i].Second, map, list[i].First.Cast<Thing>(), parms.podOpenDelay, canInstaDropDuringInit: false, leaveSlag: true, canRoofPunch, forbid: true, allowFogged: true, parms.faction);
 			}
 		}
 

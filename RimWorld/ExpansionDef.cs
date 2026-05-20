@@ -11,6 +11,9 @@ namespace RimWorld
 		public string iconPath;
 
 		[NoTranslate]
+		public string notOwnedIconPath;
+
+		[NoTranslate]
 		public string backgroundPath;
 
 		[NoTranslate]
@@ -27,11 +30,27 @@ namespace RimWorld
 
 		public bool isCore;
 
+		public Color primaryColor = Color.white;
+
 		private Texture2D cachedIcon;
+
+		private Texture2D cachedNotOwnedIcon;
 
 		private Texture2D cachedBG;
 
 		private List<Texture2D> cachedPreviewImages;
+
+		public Texture2D IconFromStatus
+		{
+			get
+			{
+				if (Status != ExpansionStatus.NotInstalled)
+				{
+					return Icon;
+				}
+				return NotOwnedIcon;
+			}
+		}
 
 		public Texture2D Icon
 		{
@@ -42,6 +61,22 @@ namespace RimWorld
 					cachedIcon = ContentFinder<Texture2D>.Get(iconPath);
 				}
 				return cachedIcon;
+			}
+		}
+
+		private Texture2D NotOwnedIcon
+		{
+			get
+			{
+				if (notOwnedIconPath.NullOrEmpty())
+				{
+					return Icon;
+				}
+				if (cachedNotOwnedIcon == null)
+				{
+					cachedNotOwnedIcon = ContentFinder<Texture2D>.Get(notOwnedIconPath);
+				}
+				return cachedNotOwnedIcon;
 			}
 		}
 

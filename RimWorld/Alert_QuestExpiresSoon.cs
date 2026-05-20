@@ -4,20 +4,25 @@ namespace RimWorld
 {
 	public class Alert_QuestExpiresSoon : Alert
 	{
+		private Quest questExpiring;
+
 		private const int TicksToAlert = 60000;
 
 		private Quest QuestExpiring
 		{
 			get
 			{
+				int num = int.MaxValue;
+				questExpiring = null;
 				foreach (Quest item in Find.QuestManager.questsInDisplayOrder)
 				{
-					if (!item.dismissed && !item.Historical && !item.initiallyAccepted && item.State == QuestState.NotYetAccepted && item.ticksUntilAcceptanceExpiry > 0 && item.ticksUntilAcceptanceExpiry < 60000)
+					if (!item.dismissed && !item.Historical && !item.initiallyAccepted && item.State == QuestState.NotYetAccepted && item.TicksUntilExpiry > 0 && item.TicksUntilExpiry < 60000 && item.TicksUntilExpiry < num)
 					{
-						return item;
+						questExpiring = item;
+						num = item.TicksUntilExpiry;
 					}
 				}
-				return null;
+				return questExpiring;
 			}
 		}
 
@@ -28,31 +33,29 @@ namespace RimWorld
 
 		protected override void OnClick()
 		{
-			if (QuestExpiring != null)
+			if (questExpiring != null)
 			{
 				Find.MainTabsRoot.SetCurrentTab(MainButtonDefOf.Quests);
-				((MainTabWindow_Quests)MainButtonDefOf.Quests.TabWindow).Select(QuestExpiring);
+				((MainTabWindow_Quests)MainButtonDefOf.Quests.TabWindow).Select(questExpiring);
 			}
 		}
 
 		public override string GetLabel()
 		{
-			Quest questExpiring = QuestExpiring;
 			if (questExpiring == null)
 			{
 				return string.Empty;
 			}
-			return "QuestExpiresSoon".Translate(questExpiring.ticksUntilAcceptanceExpiry.ToStringTicksToPeriod());
+			return "QuestExpiresSoon".Translate(questExpiring.TicksUntilExpiry.ToStringTicksToPeriodVerbose());
 		}
 
 		public override TaggedString GetExplanation()
 		{
-			Quest questExpiring = QuestExpiring;
 			if (questExpiring == null)
 			{
 				return string.Empty;
 			}
-			return "QuestExpiresSoonDesc".Translate(questExpiring.name, questExpiring.ticksUntilAcceptanceExpiry.ToStringTicksToPeriod().Colorize(ColoredText.DateTimeColor));
+			return "QuestExpiresSoonDesc".Translate(questExpiring.name, questExpiring.TicksUntilExpiry.ToStringTicksToPeriodVerbose().Colorize(ColoredText.DateTimeColor));
 		}
 
 		public override AlertReport GetReport()

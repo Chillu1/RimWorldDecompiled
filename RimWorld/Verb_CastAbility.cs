@@ -4,15 +4,42 @@ using Verse.AI;
 
 namespace RimWorld
 {
-	public class Verb_CastAbility : Verb
+	public class Verb_CastAbility : Verb, IAbilityVerb
 	{
 		public Ability ability;
+
+		public Ability Ability
+		{
+			get
+			{
+				return ability;
+			}
+			set
+			{
+				ability = value;
+			}
+		}
 
 		public static Color RadiusHighlightColor => new Color(0.3f, 0.8f, 1f);
 
 		public override string ReportLabel => ability.def.label;
 
 		public override bool MultiSelect => true;
+
+		public override bool HidePawnTooltips
+		{
+			get
+			{
+				foreach (CompAbilityEffect effectComp in ability.EffectComps)
+				{
+					if (effectComp.HideTargetPawnTooltip)
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+		}
 
 		public override ITargetingSource DestinationSelector
 		{
@@ -52,34 +79,42 @@ namespace RimWorld
 			return true;
 		}
 
-		public override bool ValidateTarget(LocalTargetInfo target)
+		public override bool ValidateTarget(LocalTargetInfo target, bool showMessages = true)
 		{
-			if (verbProps.range > 0f)
+			if (EffectiveRange > 0f)
 			{
 				if (!CanHitTarget(target))
 				{
-					if (target.IsValid)
+					if (target.IsValid && showMessages)
 					{
-						Messages.Message(ability.def.LabelCap + ": " + "AbilityCannotHitTarget".Translate(), new LookTargets(ability.pawn, target.ToTargetInfo(ability.pawn.Map)), MessageTypeDefOf.RejectInput, historical: false);
+						string text = "CannotUseAbility".Translate(ability.def.label) + ": ";
+						if (ability.verb.OutOfRange(ability.pawn.Position, target, target.HasThing ? target.Thing.OccupiedRect() : CellRect.SingleCell(target.Cell)))
+						{
+							Messages.Message(text + "AbilityOutOfRange".Translate(), new LookTargets(ability.pawn, target.ToTargetInfo(ability.pawn.Map)), MessageTypeDefOf.RejectInput, historical: false);
+						}
+						else if (ability.pawn.Spawned)
+						{
+							Messages.Message(text + "AbilityCannotHitTarget".Translate(), new LookTargets(ability.pawn, target.ToTargetInfo(ability.pawn.Map)), MessageTypeDefOf.RejectInput, historical: false);
+						}
 					}
 					return false;
 				}
 			}
 			else if (!ability.pawn.CanReach(target, PathEndMode.Touch, ability.pawn.NormalMaxDanger()))
 			{
-				if (target.IsValid)
+				if (target.IsValid && showMessages)
 				{
-					Messages.Message(ability.def.LabelCap + ": " + "AbilityCannotReachTarget".Translate(), new LookTargets(ability.pawn, target.ToTargetInfo(ability.pawn.Map)), MessageTypeDefOf.RejectInput, historical: false);
+					Messages.Message("CannotUseAbility".Translate(ability.def.label) + ": " + "AbilityCannotReachTarget".Translate(), new LookTargets(ability.pawn, target.ToTargetInfo(ability.pawn.Map)), MessageTypeDefOf.RejectInput, historical: false);
 				}
 				return false;
 			}
-			if (!IsApplicableTo(target, showMessages: true))
+			if (!IsApplicableTo(target, showMessages))
 			{
 				return false;
 			}
 			for (int i = 0; i < ability.EffectComps.Count; i++)
 			{
-				if (!ability.EffectComps[i].Valid(target, throwMessages: true))
+				if (!ability.EffectComps[i].Valid(target, showMessages))
 				{
 					return false;
 				}
@@ -89,7 +124,7 @@ namespace RimWorld
 
 		public override bool CanHitTarget(LocalTargetInfo targ)
 		{
-			if (verbProps.range <= 0f)
+			if (EffectiveRange <= 0f)
 			{
 				return true;
 			}
@@ -98,7 +133,7 @@ namespace RimWorld
 
 		public override void OnGUI(LocalTargetInfo target)
 		{
-			if (CanHitTarget(target) && IsApplicableTo(target) && ValidateTarget(target))
+			if (CanHitTarget(target) && IsApplicableTo(target) && ValidateTarget(target, showMessages: false))
 			{
 				base.OnGUI(target);
 			}
@@ -113,7 +148,7 @@ namespace RimWorld
 		{
 			foreach (CompAbilityEffect effectComp in ability.EffectComps)
 			{
-				string text = effectComp.ExtraLabel(target);
+				string text = effectComp.ExtraLabelMouseAttachment(target);
 				if (!text.NullOrEmpty())
 				{
 					Widgets.MouseAttachedLabel(text);
@@ -122,21 +157,16 @@ namespace RimWorld
 			}
 		}
 
-		public void DrawRadius()
+		public override bool TryStartCastOn(LocalTargetInfo castTarg, LocalTargetInfo destTarg, bool surpriseAttack = false, bool canHitNonTargetPawns = true, bool preventFriendlyFire = false, bool nonInterruptingSelfCast = false)
 		{
-			if (ability.pawn.Spawned)
+			bool num = base.TryStartCastOn(castTarg, destTarg, surpriseAttack, canHitNonTargetPawns, preventFriendlyFire, nonInterruptingSelfCast);
+			if (num && ability.def.stunTargetWhileCasting && ability.def.verbProperties.warmupTime > 0f && castTarg.Thing is Pawn pawn && pawn != ability.pawn)
 			{
-				GenDraw.DrawRadiusRing(ability.pawn.Position, verbProps.range);
-			}
-		}
-
-		public override bool TryStartCastOn(LocalTargetInfo castTarg, LocalTargetInfo destTarg, bool surpriseAttack = false, bool canHitNonTargetPawns = true)
-		{
-			bool num = base.TryStartCastOn(castTarg, destTarg, surpriseAttack, canHitNonTargetPawns);
-			Pawn pawn;
-			if (num && ability.def.stunTargetWhileCasting && ability.def.verbProperties.warmupTime > 0f && (pawn = castTarg.Thing as Pawn) != null && pawn != ability.pawn)
-			{
-				pawn.stances.stunner.StunFor_NewTmp(ability.def.verbProperties.warmupTime.SecondsToTicks(), ability.pawn, addBattleLog: false, showMote: false);
+				pawn.stances.stunner.StunFor(ability.def.verbProperties.warmupTime.SecondsToTicks(), ability.pawn, addBattleLog: false, showMote: false);
+				if (!pawn.Awake())
+				{
+					RestUtility.WakeUp(pawn);
+				}
 			}
 			return num;
 		}
@@ -144,9 +174,9 @@ namespace RimWorld
 		public override void DrawHighlight(LocalTargetInfo target)
 		{
 			AbilityDef def = ability.def;
-			if (verbProps.range > 0f)
+			if (EffectiveRange > 0f)
 			{
-				DrawRadius();
+				verbProps.DrawRadiusRing(caster.Position, this);
 			}
 			if (CanHitTarget(target) && IsApplicableTo(target))
 			{

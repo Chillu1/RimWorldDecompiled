@@ -33,13 +33,9 @@ namespace RimWorld
 		public override void Notify_QuestSignalReceived(Signal signal)
 		{
 			base.Notify_QuestSignalReceived(signal);
-			if (signal.tag == inSignal && pawn != null && pawn.needs != null)
+			if (signal.tag == inSignal && pawn != null && pawn.needs != null && pawn.needs.TryGetNeed(this.need, out var need))
 			{
-				Need need = pawn.needs.TryGetNeed(this.need);
-				if (need != null)
-				{
-					need.CurLevel += offset;
-				}
+				need.CurLevel += offset;
 			}
 		}
 

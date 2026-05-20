@@ -11,8 +11,6 @@ namespace RimWorld
 	{
 		private int ticksSinceSave;
 
-		private const int NumAutosaves = 5;
-
 		public const float MaxPermadeathModeAutosaveInterval = 1f;
 
 		private float AutosaveIntervalDays
@@ -33,7 +31,7 @@ namespace RimWorld
 		public void AutosaverTick()
 		{
 			ticksSinceSave++;
-			if (ticksSinceSave >= AutosaveIntervalTicks)
+			if (ticksSinceSave >= AutosaveIntervalTicks && !GameDataSaveLoader.SavingIsTemporarilyDisabled)
 			{
 				LongEventHandler.QueueLongEvent(DoAutosave, "Autosaving", doAsynchronously: false, null);
 				ticksSinceSave = 0;
@@ -53,9 +51,7 @@ namespace RimWorld
 
 		private string NewAutosaveFileName()
 		{
-			string text = (from name in AutoSaveNames()
-				where !SaveGameFilesUtility.SavedGameNamedExists(name)
-				select name).FirstOrDefault();
+			string text = AutoSaveNames().FirstOrDefault((string name) => !SaveGameFilesUtility.SavedGameNamedExists(name));
 			if (text != null)
 			{
 				return text;
@@ -65,7 +61,7 @@ namespace RimWorld
 
 		private IEnumerable<string> AutoSaveNames()
 		{
-			for (int i = 1; i <= 5; i++)
+			for (int i = 1; i <= Prefs.AutosavesCount; i++)
 			{
 				yield return "Autosave-" + i;
 			}

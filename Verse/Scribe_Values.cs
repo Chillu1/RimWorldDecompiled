@@ -1,3 +1,5 @@
+using UnityEngine;
+
 namespace Verse
 {
 	public static class Scribe_Values
@@ -9,44 +11,79 @@ namespace Verse
 				if (typeof(T) == typeof(TargetInfo))
 				{
 					Log.Error("Saving a TargetInfo " + label + " with Scribe_Values. TargetInfos must be saved with Scribe_TargetInfo.");
+					return;
 				}
-				else if (typeof(Thing).IsAssignableFrom(typeof(T)))
+				if (typeof(Thing).IsAssignableFrom(typeof(T)))
 				{
 					Log.Error("Using Scribe_Values with a Thing reference " + label + ". Use Scribe_References or Scribe_Deep instead.");
+					return;
 				}
-				else if (typeof(IExposable).IsAssignableFrom(typeof(T)))
+				if (typeof(IExposable).IsAssignableFrom(typeof(T)))
 				{
 					Log.Error("Using Scribe_Values with a IExposable reference " + label + ". Use Scribe_References or Scribe_Deep instead.");
+					return;
 				}
-				else if (typeof(Def).IsAssignableFrom(typeof(T)))
+				if (GenTypes.IsDef(typeof(T)))
 				{
 					Log.Error("Using Scribe_Values with a Def " + label + ". Use Scribe_Defs instead.");
+					return;
 				}
-				else
+				if (!forceSave && (value != null || defaultValue == null))
 				{
-					if (!forceSave && (value != null || defaultValue == null) && (value == null || value.Equals(defaultValue)))
+					if (value == null)
 					{
 						return;
 					}
-					if (value == null)
+					object obj = defaultValue;
+					if (value.Equals(obj))
 					{
-						if (Scribe.EnterNode(label))
-						{
-							try
-							{
-								Scribe.saver.WriteAttribute("IsNull", "True");
-							}
-							finally
-							{
-								Scribe.ExitNode();
-							}
-						}
+						return;
+					}
+				}
+				if (value == null)
+				{
+					if (!Scribe.EnterNode(label))
+					{
+						return;
+					}
+					try
+					{
+						Scribe.saver.WriteAttribute("IsNull", "True");
+						return;
+					}
+					finally
+					{
+						Scribe.ExitNode();
+					}
+				}
+				T val = value;
+				string value2;
+				if (val is Vector2 vector)
+				{
+					value2 = vector.ToString("G9");
+				}
+				else
+				{
+					val = value;
+					if (val is Vector3 vector2)
+					{
+						value2 = vector2.ToString("G9");
 					}
 					else
 					{
-						Scribe.saver.WriteElement(label, value.ToString());
+						val = value;
+						if (val is Quaternion quaternion)
+						{
+							value2 = quaternion.ToString("G9");
+						}
+						else
+						{
+							val = value;
+							value2 = ((!(val is float num)) ? value.ToString() : num.ToString("G9"));
+						}
 					}
 				}
+				Scribe.saver.WriteElement(label, value2);
 			}
 			else if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{

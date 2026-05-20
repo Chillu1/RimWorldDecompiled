@@ -19,7 +19,7 @@ namespace RimWorld
 			Map map = MapWithLowFood();
 			if (map == null)
 			{
-				return "";
+				return string.Empty;
 			}
 			float totalHumanEdibleNutrition = map.resourceCounter.TotalHumanEdibleNutrition;
 			int num = map.mapPawns.FreeColonistsSpawnedCount + map.mapPawns.PrisonersOfColonyCount;
@@ -29,7 +29,7 @@ namespace RimWorld
 
 		public override AlertReport GetReport()
 		{
-			if (Find.TickManager.TicksGame < 150000)
+			if ((float)Find.TickManager.TicksGame < 150000f)
 			{
 				return false;
 			}

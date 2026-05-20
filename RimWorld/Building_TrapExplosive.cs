@@ -6,7 +6,7 @@ namespace RimWorld
 	{
 		protected override void SpringSub(Pawn p)
 		{
-			GetComp<CompExplosive>().StartWick();
+			GetComp<CompExplosive>().StartWick(p);
 		}
 	}
 }

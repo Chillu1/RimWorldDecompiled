@@ -5,12 +5,13 @@ namespace RimWorld
 {
 	public class Alert_ThroneroomInvalidConfiguration : Alert
 	{
-		private static string validationInfo;
+		private string validationInfo;
 
 		public Alert_ThroneroomInvalidConfiguration()
 		{
 			defaultLabel = "ThroneroomInvalidConfiguration".Translate();
 			defaultExplanation = "ThroneroomInvalidConfigurationDesc".Translate();
+			requireRoyalty = true;
 		}
 
 		public override TaggedString GetExplanation()
@@ -23,12 +24,15 @@ namespace RimWorld
 			List<Map> maps = Find.Maps;
 			for (int i = 0; i < maps.Count; i++)
 			{
-				foreach (Building_Throne item in maps[i].listerThings.ThingsInGroup(ThingRequestGroup.Throne))
+				foreach (Thing item in maps[i].listerThings.ThingsInGroup(ThingRequestGroup.Throne))
 				{
-					validationInfo = RoomRoleWorker_ThroneRoom.Validate(item.GetRoom());
-					if (validationInfo != null)
+					if (!item.Fogged() && item.Faction == Faction.OfPlayer)
 					{
-						return AlertReport.CulpritIs(item);
+						validationInfo = RoomRoleWorker_ThroneRoom.Validate(item.GetRoom());
+						if (validationInfo != null)
+						{
+							return AlertReport.CulpritIs(item);
+						}
 					}
 				}
 			}

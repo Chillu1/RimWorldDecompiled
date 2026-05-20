@@ -20,8 +20,8 @@ namespace Verse
 			if (mote == null)
 			{
 				mote = (MoteProgressBar)MoteMaker.MakeInteractionOverlay(def.moteDef, A, B);
-				mote.exactScale.x = 0.68f;
-				mote.exactScale.z = 0.12f;
+				mote.linearScale.x = 0.68f;
+				mote.linearScale.z = 0.12f;
 			}
 		}
 

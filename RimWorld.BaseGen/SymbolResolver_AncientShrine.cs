@@ -14,9 +14,9 @@ namespace RimWorld.BaseGen
 
 		public override void Resolve(ResolveParams rp)
 		{
-			IntVec3 bottomLeft = rp.rect.BottomLeft;
+			IntVec3 min = rp.rect.Min;
 			Map map = BaseGen.globalSettings.map;
-			CellRect rect = new CellRect(bottomLeft.x + rp.rect.Width / 2 - 1, bottomLeft.z + rp.rect.Height / 2, 2, 1);
+			CellRect rect = new CellRect(min.x + rp.rect.Width / 2 - 1, min.z + rp.rect.Height / 2, 2, 1);
 			foreach (IntVec3 item in rect)
 			{
 				List<Thing> thingList = item.GetThingList(map);
@@ -53,15 +53,15 @@ namespace RimWorld.BaseGen
 				}
 			}
 			ResolveParams resolveParams4 = rp;
-			resolveParams4.rect = CellRect.SingleCell(rect.BottomLeft);
+			resolveParams4.rect = CellRect.SingleCell(rect.Min);
 			resolveParams4.thingRot = Rot4.East;
 			BaseGen.symbolStack.Push("ancientCryptosleepCasket", resolveParams4);
 			ResolveParams resolveParams5 = rp;
 			resolveParams5.rect = rect;
-			resolveParams5.floorDef = TerrainDefOf.Concrete;
+			resolveParams5.floorDef = TerrainDefOf.AncientConcrete;
 			BaseGen.symbolStack.Push("floor", resolveParams5);
 			ResolveParams resolveParams6 = rp;
-			resolveParams6.floorDef = rp.floorDef ?? TerrainDefOf.MetalTile;
+			resolveParams6.floorDef = rp.floorDef ?? TerrainDefOf.AncientTile;
 			BaseGen.symbolStack.Push("floor", resolveParams6);
 		}
 	}

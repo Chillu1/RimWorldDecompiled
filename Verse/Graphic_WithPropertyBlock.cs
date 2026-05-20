@@ -4,7 +4,7 @@ namespace Verse
 {
 	public abstract class Graphic_WithPropertyBlock : Graphic_Single
 	{
-		protected MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+		public MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
 
 		protected override void DrawMeshInt(Mesh mesh, Vector3 loc, Quaternion quat, Material mat)
 		{

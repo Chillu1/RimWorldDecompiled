@@ -41,7 +41,7 @@ namespace Verse.Noise
 			List<GradientColorKey> list3 = new List<GradientColorKey>
 			{
 				new GradientColorKey(Color.red, 0f),
-				new GradientColorKey(Color.green, 0.333333343f),
+				new GradientColorKey(Color.green, 1f / 3f),
 				new GradientColorKey(Color.blue, 2f / 3f),
 				new GradientColorKey(Color.black, 1f)
 			};

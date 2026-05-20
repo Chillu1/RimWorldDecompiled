@@ -1,3 +1,4 @@
+using LudeonTK;
 using UnityEngine;
 using Verse;
 
@@ -100,12 +101,12 @@ namespace RimWorld.Planet
 			textMesh.color = new Color(1f, 1f, 1f, 0f);
 			textMesh.anchor = TextAnchor.MiddleCenter;
 			textMesh.alignment = TextAlignment.Center;
-			textMesh.GetComponent<MeshRenderer>().sharedMaterial.renderQueue = WorldMaterials.FeatureNameRenderQueue;
+			textMesh.GetComponent<MeshRenderer>().sharedMaterial.renderQueue = 3610;
 			Color = new Color(1f, 1f, 1f, 0f);
 			textMesh.transform.localScale = new Vector3(0.23f, 0.23f, 0.23f);
 		}
 
-		public override void WrapAroundPlanetSurface()
+		public override void WrapAroundPlanetSurface(PlanetLayer layer)
 		{
 		}
 	}

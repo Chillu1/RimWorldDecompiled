@@ -8,17 +8,16 @@ namespace RimWorld
 	{
 		public HediffCompProperties_PsychicHarmonizer Props => (HediffCompProperties_PsychicHarmonizer)props;
 
-		public override void CompPostTick(ref float severityAdjustment)
+		public override void CompPostTickInterval(ref float severityAdjustment, int delta)
 		{
-			base.CompPostTick(ref severityAdjustment);
 			Pawn pawn = parent.pawn;
-			if (pawn.IsHashIntervalTick(150) || pawn.needs == null || pawn.needs.mood == null || pawn.Faction == null)
+			if (!pawn.IsHashIntervalTick(150, delta) || pawn.needs == null || pawn.needs.mood == null || pawn.Faction == null)
 			{
 				return;
 			}
 			if (pawn.Spawned)
 			{
-				List<Pawn> pawns = pawn.Map.mapPawns.PawnsInFaction(pawn.Faction);
+				List<Pawn> pawns = pawn.Map.mapPawns.SpawnedPawnsInFaction(pawn.Faction);
 				AffectPawns(pawn, pawns);
 				return;
 			}
@@ -34,15 +33,14 @@ namespace RimWorld
 			for (int i = 0; i < pawns.Count; i++)
 			{
 				Pawn pawn = pawns[i];
-				if (p == pawn || !p.RaceProps.Humanlike || pawn.needs == null || pawn.needs.mood == null || pawn.needs.mood.thoughts == null || (p.Spawned && pawn.Spawned && pawn.Position.DistanceTo(p.Position) > Props.range) || pawn.health.hediffSet.HasHediff(HediffDefOf.PsychicHarmonizer))
+				if (p == pawn || !p.RaceProps.Humanlike || pawn?.needs?.mood?.thoughts == null || pawn.Position.DistanceTo(p.Position) > Props.range || pawn.health.hediffSet.HasHediff(HediffDefOf.PsychicHarmonizer))
 				{
 					continue;
 				}
 				bool flag = false;
 				foreach (Thought_Memory memory in pawn.needs.mood.thoughts.memories.Memories)
 				{
-					Thought_PsychicHarmonizer thought_PsychicHarmonizer = memory as Thought_PsychicHarmonizer;
-					if (thought_PsychicHarmonizer != null && thought_PsychicHarmonizer.harmonizer == parent)
+					if (memory is Thought_PsychicHarmonizer thought_PsychicHarmonizer && thought_PsychicHarmonizer.harmonizer == parent)
 					{
 						flag = true;
 						break;

@@ -45,7 +45,10 @@ namespace RimWorld
 			{
 				foreach (Designator resolvedAllowedDesignator in allDef.ResolvedAllowedDesignators)
 				{
-					(resolvedAllowedDesignator as Designator_Build)?.ResetStuffToDefault();
+					if (resolvedAllowedDesignator is Designator_Build designator_Build)
+					{
+						designator_Build.ResetStuffToDefault();
+					}
 				}
 			}
 		}
@@ -53,7 +56,7 @@ namespace RimWorld
 		public override void LessonOnGUI()
 		{
 			Text.Font = GameFont.Small;
-			string textAdj = def.text.AdjustedForKeys();
+			string textAdj = def.Text.AdjustedForKeys();
 			float num = Text.CalcHeight(textAdj, 290f) + 20f;
 			if (ShowProgressBar)
 			{
@@ -128,9 +131,9 @@ namespace RimWorld
 			}, doBackground: false);
 			if (def.highlightTags != null)
 			{
-				for (int i = 0; i < def.highlightTags.Count; i++)
+				for (int num2 = 0; num2 < def.highlightTags.Count; num2++)
 				{
-					UIHighlighter.HighlightTag(def.highlightTags[i]);
+					UIHighlighter.HighlightTag(def.highlightTags[num2]);
 				}
 			}
 		}

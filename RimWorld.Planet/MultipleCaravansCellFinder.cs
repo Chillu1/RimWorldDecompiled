@@ -45,7 +45,7 @@ namespace RimWorld.Planet
 			}
 			IntVec3 localFirst = first;
 			float tryMinDistBetweenSpots = (float)Mathf.Max(map.Size.x, map.Size.z) * 0.6f;
-			TraverseParms traverseParams = TraverseParms.For(TraverseMode.NoPassClosedDoors);
+			TraverseParms traverseParams = TraverseParms.For(TraverseMode.NoPassClosedDoors).WithFenceblocked(forceFenceblocked: true);
 			if (!CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => x.Standable(map) && !x.Fogged(map) && !x.InHorDistOf(localFirst, tryMinDistBetweenSpots) && map.reachability.CanReach(x, localFirst, PathEndMode.OnCell, traverseParams), map, CellFinder.EdgeRoadChance_Neutral, out second) && !CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => x.Standable(map) && !x.Fogged(map) && map.reachability.CanReach(x, localFirst, PathEndMode.OnCell, traverseParams), map, 0.5f, out second))
 			{
 				Log.Error("Could not find any valid starting cell for a caravan.");
@@ -69,7 +69,7 @@ namespace RimWorld.Planet
 			{
 				IntVec3 intVec3 = ((i == 0) ? intVec : cellRect.RandomCell);
 				IntVec3 intVec4 = ((i == 0) ? intVec2 : cellRect2.RandomCell);
-				if (intVec3.Standable(map) && !intVec3.Fogged(map) && intVec4.Standable(map) && !intVec4.Fogged(map) && map.reachability.CanReach(intVec3, intVec4, PathEndMode.OnCell, TraverseParms.For(TraverseMode.NoPassClosedDoors)))
+				if (intVec3.Standable(map) && !intVec3.Fogged(map) && intVec4.Standable(map) && !intVec4.Fogged(map) && map.reachability.CanReach(intVec3, intVec4, PathEndMode.OnCell, TraverseParms.For(TraverseMode.NoPassClosedDoors).WithFenceblocked(forceFenceblocked: true)))
 				{
 					first = intVec3;
 					second = intVec4;

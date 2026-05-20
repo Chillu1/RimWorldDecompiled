@@ -33,8 +33,7 @@ namespace RimWorld
 			thought.moodPowerFactor = moodPowerFactor;
 			thought.otherPawn = otherPawn;
 			thought.pawn = addTo;
-			Thought_MemorySocial thought_MemorySocial = thought as Thought_MemorySocial;
-			if (thought_MemorySocial != null)
+			if (thought is Thought_MemorySocial thought_MemorySocial)
 			{
 				thought_MemorySocial.opinionOffset *= opinionOffsetFactor;
 			}

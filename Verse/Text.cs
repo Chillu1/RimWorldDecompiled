@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using Verse.Steam;
 
 namespace Verse
 {
@@ -31,6 +32,26 @@ namespace Verse
 
 		public const float SmallFontHeight = 22f;
 
+		public static bool TinyFontSupported
+		{
+			get
+			{
+				if (!LongEventHandler.AnyEventNowOrWaiting && !LanguageDatabase.activeLanguage.info.canBeTiny)
+				{
+					return false;
+				}
+				if (Prefs.DisableTinyText)
+				{
+					return false;
+				}
+				if (SteamDeck.IsSteamDeck)
+				{
+					return false;
+				}
+				return true;
+			}
+		}
+
 		public static GameFont Font
 		{
 			get
@@ -39,7 +60,7 @@ namespace Verse
 			}
 			set
 			{
-				if (value == GameFont.Tiny && !LongEventHandler.AnyEventNowOrWaiting && !LanguageDatabase.activeLanguage.info.canBeTiny)
+				if (value == GameFont.Tiny && !TinyFontSupported)
 				{
 					fontInt = GameFont.Small;
 				}
@@ -180,6 +201,11 @@ namespace Verse
 			Font = GameFont.Small;
 		}
 
+		public static float LineHeightOf(GameFont font)
+		{
+			return lineHeights[(uint)font];
+		}
+
 		public static float CalcHeight(string text, float width)
 		{
 			tmpTextGUIContent.text = text.StripTags();
@@ -192,6 +218,29 @@ namespace Verse
 			return CurFontStyle.CalcSize(tmpTextGUIContent);
 		}
 
+		public static string ClampTextWithEllipsis(Rect rect, string text)
+		{
+			if (text.Length <= 4)
+			{
+				return text;
+			}
+			Vector2 vector = CalcSize(text);
+			if (vector.x <= rect.width - 13f)
+			{
+				return text;
+			}
+			while (vector.x > rect.width - 13f)
+			{
+				if (text.Length == 0)
+				{
+					return "";
+				}
+				text = text.Substring(0, text.Length - 1);
+				vector = CalcSize(text + "...");
+			}
+			return text + "...";
+		}
+
 		public static void StartOfOnGUI()
 		{
 			if (!WordWrap)
@@ -199,9 +248,9 @@ namespace Verse
 				Log.ErrorOnce("Word wrap was false at end of frame.", 764362);
 				WordWrap = true;
 			}
-			if (Anchor != 0)
+			if (Anchor != TextAnchor.UpperLeft)
 			{
-				Log.ErrorOnce(string.Concat("Alignment was ", Anchor, " at end of frame."), 15558);
+				Log.ErrorOnce("Alignment was " + Anchor.ToString() + " at end of frame.", 15558);
 				Anchor = TextAnchor.UpperLeft;
 			}
 			Font = GameFont.Small;

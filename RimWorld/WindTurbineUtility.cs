@@ -41,18 +41,18 @@ namespace RimWorld
 				rectB.minX = (rectA.minX = center.x - 3);
 				rectB.maxX = (rectA.maxX = center.x + 3);
 			}
-			for (int z2 = rectA.minZ; z2 <= rectA.maxZ; z2++)
+			for (int z = rectA.minZ; z <= rectA.maxZ; z++)
 			{
 				for (int x = rectA.minX; x <= rectA.maxX; x++)
 				{
-					yield return new IntVec3(x, 0, z2);
+					yield return new IntVec3(x, 0, z);
 				}
 			}
-			for (int z2 = rectB.minZ; z2 <= rectB.maxZ; z2++)
+			for (int z = rectB.minZ; z <= rectB.maxZ; z++)
 			{
 				for (int x = rectB.minX; x <= rectB.maxX; x++)
 				{
-					yield return new IntVec3(x, 0, z2);
+					yield return new IntVec3(x, 0, z);
 				}
 			}
 		}

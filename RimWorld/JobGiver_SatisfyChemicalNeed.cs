@@ -33,12 +33,19 @@ namespace RimWorld
 				return null;
 			}
 			tmpChemicalNeeds.SortBy((Need_Chemical x) => x.CurLevel);
-			for (int j = 0; j < tmpChemicalNeeds.Count; j++)
+			for (int num = 0; num < tmpChemicalNeeds.Count; num++)
 			{
-				Thing thing = FindDrugFor(pawn, tmpChemicalNeeds[j]);
+				Thing thing = FindDrugFor(pawn, tmpChemicalNeeds[num]);
 				if (thing != null)
 				{
 					tmpChemicalNeeds.Clear();
+					Pawn pawn2 = (thing.ParentHolder as Pawn_InventoryTracker)?.pawn;
+					if (pawn2 != null && pawn2 != pawn)
+					{
+						Job job = JobMaker.MakeJob(JobDefOf.TakeFromOtherInventory, thing, pawn2);
+						job.count = 1;
+						return job;
+					}
 					return DrugAIUtility.IngestAndTakeToInventoryJob(thing, pawn, 1);
 				}
 			}
@@ -48,8 +55,7 @@ namespace RimWorld
 
 		private bool ShouldSatisfy(Need need)
 		{
-			Need_Chemical need_Chemical = need as Need_Chemical;
-			if (need_Chemical != null && (int)need_Chemical.CurCategory <= 1)
+			if (need is Need_Chemical { CurCategory: <=DrugDesireCategory.Desire })
 			{
 				return true;
 			}
@@ -71,32 +77,39 @@ namespace RimWorld
 					return innerContainer[i];
 				}
 			}
-			return GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.Drug), PathEndMode.ClosestTouch, TraverseParms.For(pawn), 9999f, (Thing x) => DrugValidator(pawn, addictionHediff, x));
+			Thing thing = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.Drug), PathEndMode.ClosestTouch, TraverseParms.For(pawn), 9999f, (Thing x) => DrugValidator(pawn, addictionHediff, x));
+			if (thing != null)
+			{
+				return thing;
+			}
+			if (pawn.IsColonist && pawn.Map != null)
+			{
+				foreach (Pawn spawnedColonyAnimal in pawn.Map.mapPawns.SpawnedColonyAnimals)
+				{
+					foreach (Thing item in spawnedColonyAnimal.inventory.innerContainer)
+					{
+						if (DrugValidator(pawn, addictionHediff, item) && !spawnedColonyAnimal.IsForbidden(pawn) && pawn.CanReach(spawnedColonyAnimal, PathEndMode.OnCell, Danger.Some))
+						{
+							return item;
+						}
+					}
+				}
+			}
+			return null;
 		}
 
-		private bool DrugValidator(Pawn pawn, Hediff_Addiction addiction, Thing drug)
+		private static bool DrugValidator(Pawn pawn, Hediff_Addiction addiction, Thing drug)
 		{
 			if (!drug.def.IsDrug)
 			{
 				return false;
 			}
-			if (drug.Spawned)
+			if (drug.Spawned && (!pawn.CanReserve(drug) || drug.IsForbidden(pawn) || !drug.IsSociallyProper(pawn) || !drug.IngestibleNow))
 			{
-				if (drug.IsForbidden(pawn))
-				{
-					return false;
-				}
-				if (!pawn.CanReserve(drug))
-				{
-					return false;
-				}
-				if (!drug.IsSociallyProper(pawn))
-				{
-					return false;
-				}
+				return false;
 			}
 			CompDrug compDrug = drug.TryGetComp<CompDrug>();
-			if (compDrug == null || compDrug.Props.chemical == null)
+			if (compDrug?.Props.chemical == null)
 			{
 				return false;
 			}
@@ -104,7 +117,8 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (pawn.drugs != null && !pawn.drugs.CurrentPolicy[drug.def].allowedForAddiction && pawn.story != null && pawn.story.traits.DegreeOfTrait(TraitDefOf.DrugDesire) <= 0 && (!pawn.InMentalState || !pawn.MentalStateDef.ignoreDrugPolicy))
+			DrugPolicy drugPolicy = pawn.drugs?.CurrentPolicy;
+			if (drugPolicy != null && !drugPolicy[drug.def].allowedForAddiction && pawn.story != null && pawn.story.traits.DegreeOfTrait(TraitDefOf.DrugDesire) <= 0 && (!pawn.InMentalState || !pawn.MentalStateDef.ignoreDrugPolicy))
 			{
 				return false;
 			}

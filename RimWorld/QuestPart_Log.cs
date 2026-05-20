@@ -28,7 +28,7 @@ namespace RimWorld
 		{
 			base.AssignDebugData();
 			inSignal = "DebugSignal" + Rand.Int;
-			message = "Dev: Test";
+			message = "DEV: Test";
 		}
 	}
 }

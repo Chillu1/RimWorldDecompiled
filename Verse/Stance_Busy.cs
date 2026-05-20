@@ -4,6 +4,8 @@ namespace Verse
 	{
 		public int ticksLeft;
 
+		public int startedTick;
+
 		public Verb verb;
 
 		public LocalTargetInfo focusTarg;
@@ -17,11 +19,13 @@ namespace Verse
 		public Stance_Busy()
 		{
 			SetPieSizeFactor();
+			startedTick = Find.TickManager.TicksGame;
 		}
 
 		public Stance_Busy(int ticks, LocalTargetInfo focusTarg, Verb verb)
 		{
 			ticksLeft = ticks;
+			startedTick = Find.TickManager.TicksGame;
 			this.focusTarg = focusTarg;
 			this.verb = verb;
 		}
@@ -51,6 +55,7 @@ namespace Verse
 		{
 			base.ExposeData();
 			Scribe_Values.Look(ref ticksLeft, "ticksLeft", 0);
+			Scribe_Values.Look(ref startedTick, "startedTick", 0);
 			Scribe_TargetInfo.Look(ref focusTarg, "focusTarg");
 			Scribe_Values.Look(ref neverAimWeapon, "neverAimWeapon", defaultValue: false);
 			Scribe_References.Look(ref verb, "verb");
@@ -61,16 +66,19 @@ namespace Verse
 			if (Scribe.mode == LoadSaveMode.PostLoadInit && verb != null && verb.BuggedAfterLoading)
 			{
 				verb = null;
-				Log.Warning(string.Concat(GetType(), " had a bugged verb after loading."));
+				Log.Warning(GetType()?.ToString() + " had a bugged verb after loading.");
 			}
 		}
 
 		public override void StanceTick()
 		{
-			ticksLeft--;
-			if (ticksLeft <= 0)
+			if (!stanceTracker.stunner.Stunned)
 			{
-				Expire();
+				ticksLeft--;
+				if (ticksLeft <= 0)
+				{
+					Expire();
+				}
 			}
 		}
 

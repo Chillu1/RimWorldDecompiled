@@ -8,7 +8,7 @@ namespace RimWorld.Planet
 	{
 		private class CachedTileTemperatureData
 		{
-			private int tile;
+			private readonly PlanetTile tile;
 
 			private int tickCachesNeedReset = int.MinValue;
 
@@ -22,11 +22,11 @@ namespace RimWorld.Planet
 
 			private const int CachedTempUpdateInterval = 60;
 
-			public CachedTileTemperatureData(int tile)
+			public CachedTileTemperatureData(PlanetTile tile)
 			{
 				this.tile = tile;
-				int seed = Gen.HashCombineInt(tile, 199372327);
-				dailyVariationPerlinCached = new Perlin(4.9999998736893758E-06, 2.0, 0.5, 3, seed, QualityMode.Medium);
+				int seed = Gen.HashCombineInt(tile.GetHashCode(), 199372327);
+				dailyVariationPerlinCached = new Perlin(4.999999873689376E-06, 2.0, 0.5, 3, seed, QualityMode.Medium);
 				twelfthlyTempAverages = new float[12];
 				for (int i = 0; i < 12; i++)
 				{
@@ -90,9 +90,9 @@ namespace RimWorld.Planet
 			}
 		}
 
-		private CachedTileTemperatureData[] cache;
+		private Dictionary<PlanetLayerDef, CachedTileTemperatureData[]> cache;
 
-		private List<int> usedSlots;
+		private Dictionary<PlanetLayerDef, List<int>> usedSlots;
 
 		public TileTemperaturesComp(World world)
 			: base(world)
@@ -102,44 +102,65 @@ namespace RimWorld.Planet
 
 		public override void WorldComponentTick()
 		{
-			for (int i = 0; i < usedSlots.Count; i++)
+			PlanetLayerDef key;
+			List<int> value;
+			foreach (KeyValuePair<PlanetLayerDef, List<int>> usedSlot in usedSlots)
 			{
-				cache[usedSlots[i]].CheckCache();
+				usedSlot.Deconstruct(out key, out value);
+				PlanetLayerDef key2 = key;
+				foreach (int item in value)
+				{
+					cache[key2][item].CheckCache();
+				}
 			}
-			if (Find.TickManager.TicksGame % 300 == 84 && usedSlots.Any())
+			if (Find.TickManager.TicksGame % 300 != 84)
 			{
-				cache[usedSlots[0]] = null;
-				usedSlots.RemoveAt(0);
+				return;
+			}
+			foreach (KeyValuePair<PlanetLayerDef, List<int>> usedSlot2 in usedSlots)
+			{
+				usedSlot2.Deconstruct(out key, out value);
+				PlanetLayerDef key3 = key;
+				List<int> list = value;
+				if (list.Any())
+				{
+					cache[key3][list[0]] = null;
+					list.RemoveAt(0);
+				}
 			}
 		}
 
-		public float GetOutdoorTemp(int tile)
+		public float GetOutdoorTemp(PlanetTile tile)
 		{
 			return RetrieveCachedData(tile).GetOutdoorTemp();
 		}
 
-		public float GetSeasonalTemp(int tile)
+		public float GetSeasonalTemp(PlanetTile tile)
 		{
 			return RetrieveCachedData(tile).GetSeasonalTemp();
 		}
 
-		public float OutdoorTemperatureAt(int tile, int absTick)
+		public float OutdoorTemperatureAt(PlanetTile tile, int absTick)
 		{
 			return RetrieveCachedData(tile).OutdoorTemperatureAt(absTick);
 		}
 
-		public float OffsetFromDailyRandomVariation(int tile, int absTick)
+		public float OffsetFromDailyRandomVariation(PlanetTile tile, int absTick)
 		{
 			return RetrieveCachedData(tile).OffsetFromDailyRandomVariation(absTick);
 		}
 
-		public float AverageTemperatureForTwelfth(int tile, Twelfth twelfth)
+		public float AverageTemperatureForTwelfth(PlanetTile tile, Twelfth twelfth)
 		{
 			return RetrieveCachedData(tile).AverageTemperatureForTwelfth(twelfth);
 		}
 
-		public bool SeasonAcceptableFor(int tile, ThingDef animalRace)
+		public bool SeasonAcceptableFor(PlanetTile tile, ThingDef animalRace)
 		{
+			if (!tile.Valid)
+			{
+				return true;
+			}
 			float seasonalTemp = GetSeasonalTemp(tile);
 			if (seasonalTemp > animalRace.GetStatValueAbstract(StatDefOf.ComfyTemperatureMin))
 			{
@@ -148,8 +169,12 @@ namespace RimWorld.Planet
 			return false;
 		}
 
-		public bool OutdoorTemperatureAcceptableFor(int tile, ThingDef animalRace)
+		public bool OutdoorTemperatureAcceptableFor(PlanetTile tile, ThingDef animalRace)
 		{
+			if (!tile.Valid)
+			{
+				return true;
+			}
 			float outdoorTemp = GetOutdoorTemp(tile);
 			if (outdoorTemp > animalRace.GetStatValueAbstract(StatDefOf.ComfyTemperatureMin))
 			{
@@ -158,7 +183,7 @@ namespace RimWorld.Planet
 			return false;
 		}
 
-		public bool SeasonAndOutdoorTemperatureAcceptableFor(int tile, ThingDef animalRace)
+		public bool SeasonAndOutdoorTemperatureAcceptableFor(PlanetTile tile, ThingDef animalRace)
 		{
 			if (SeasonAcceptableFor(tile, animalRace))
 			{
@@ -169,19 +194,27 @@ namespace RimWorld.Planet
 
 		public void ClearCaches()
 		{
-			cache = new CachedTileTemperatureData[Find.WorldGrid.TilesCount];
-			usedSlots = new List<int>();
+			cache = new Dictionary<PlanetLayerDef, CachedTileTemperatureData[]>();
+			usedSlots = new Dictionary<PlanetLayerDef, List<int>>();
 		}
 
-		private CachedTileTemperatureData RetrieveCachedData(int tile)
+		private CachedTileTemperatureData RetrieveCachedData(PlanetTile tile)
 		{
-			if (cache[tile] != null)
+			if (!cache.ContainsKey(tile.LayerDef))
 			{
-				return cache[tile];
+				cache[tile.LayerDef] = new CachedTileTemperatureData[tile.Layer.TilesCount];
 			}
-			cache[tile] = new CachedTileTemperatureData(tile);
-			usedSlots.Add(tile);
-			return cache[tile];
+			if (!usedSlots.ContainsKey(tile.LayerDef))
+			{
+				usedSlots[tile.LayerDef] = new List<int>();
+			}
+			if (cache[tile.LayerDef][tile.tileId] != null)
+			{
+				return cache[tile.LayerDef][tile.tileId];
+			}
+			cache[tile.LayerDef][tile.tileId] = new CachedTileTemperatureData(tile);
+			usedSlots[tile.LayerDef].Add(tile.tileId);
+			return cache[tile.LayerDef][tile.tileId];
 		}
 	}
 }

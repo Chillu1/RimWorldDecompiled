@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using RimWorld.Planet;
 using RimWorld.QuestGen;
 using UnityEngine;
@@ -13,11 +12,11 @@ namespace RimWorld
 		public override string GetArrivedLetterPart(Map map, out LetterDef preferredLetterDef, out LookTargets lookTargets)
 		{
 			string arrivedLetterPart = base.GetArrivedLetterPart(map, out preferredLetterDef, out lookTargets);
-			lookTargets = map.mapPawns.AllPawnsSpawned.Where((Pawn x) => x.MentalStateDef == MentalStateDefOf.Manhunter || x.MentalStateDef == MentalStateDefOf.ManhunterPermanent).FirstOrDefault();
+			lookTargets = new LookTargets(map.Parent);
 			return arrivedLetterPart;
 		}
 
-		public override SitePartParams GenerateDefaultParams(float myThreatPoints, int tile, Faction faction)
+		public override SitePartParams GenerateDefaultParams(float myThreatPoints, PlanetTile tile, Faction faction)
 		{
 			SitePartParams sitePartParams = base.GenerateDefaultParams(myThreatPoints, tile, faction);
 			if (ManhunterPackGenStepUtility.TryGetAnimalsKind(sitePartParams.threatPoints, tile, out sitePartParams.animalKind))
@@ -45,7 +44,7 @@ namespace RimWorld
 
 		private int GetAnimalsCount(SitePartParams parms)
 		{
-			return ManhunterPackIncidentUtility.GetAnimalsCount(parms.animalKind, parms.threatPoints);
+			return AggressiveAnimalIncidentUtility.GetAnimalsCount(parms.animalKind, parms.threatPoints);
 		}
 	}
 }

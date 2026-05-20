@@ -7,6 +7,8 @@ namespace Verse
 	{
 		public Action doWindowFunc;
 
+		public Action doClickOutsideFunc;
+
 		public override Vector2 InitialSize => windowRect.size;
 
 		protected override float Margin => 0f;
@@ -27,6 +29,12 @@ namespace Verse
 		public override void DoWindowContents(Rect inRect)
 		{
 			doWindowFunc();
+		}
+
+		public override void Notify_ClickOutsideWindow()
+		{
+			base.Notify_ClickOutsideWindow();
+			doClickOutsideFunc?.Invoke();
 		}
 	}
 }

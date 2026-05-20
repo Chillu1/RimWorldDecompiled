@@ -7,13 +7,11 @@ namespace RimWorld
 		public static void UpdateFlickDesignation(Thing t)
 		{
 			bool flag = false;
-			ThingWithComps thingWithComps = t as ThingWithComps;
-			if (thingWithComps != null)
+			if (t is ThingWithComps thingWithComps)
 			{
 				for (int i = 0; i < thingWithComps.AllComps.Count; i++)
 				{
-					CompFlickable compFlickable = thingWithComps.AllComps[i] as CompFlickable;
-					if (compFlickable != null && compFlickable.WantsFlick())
+					if (thingWithComps.AllComps[i] is CompFlickable compFlickable && compFlickable.WantsFlick())
 					{
 						flag = true;
 						break;
@@ -41,6 +39,15 @@ namespace RimWorld
 			}
 			CompSchedule compSchedule = t.TryGetComp<CompSchedule>();
 			if (compSchedule != null && !compSchedule.Allowed)
+			{
+				return false;
+			}
+			if (t.TryGetComp<CompLightball>() != null && !t.IsRitualTarget())
+			{
+				return false;
+			}
+			CompAutoPowered compAutoPowered = t.TryGetComp<CompAutoPowered>();
+			if (compAutoPowered != null && !compAutoPowered.WantsToBeOn)
 			{
 				return false;
 			}

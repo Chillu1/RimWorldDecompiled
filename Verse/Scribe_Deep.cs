@@ -13,16 +13,15 @@ namespace Verse
 		{
 			if (Scribe.mode == LoadSaveMode.Saving)
 			{
-				Thing thing = target as Thing;
-				if (thing != null && thing.Destroyed)
+				if (target is Thing { Destroyed: not false } thing)
 				{
 					if (!saveDestroyedThings)
 					{
-						Log.Warning(string.Concat("Deep-saving destroyed thing ", thing, " with saveDestroyedThings==false. label=", label));
+						Log.Warning("Deep-saving destroyed thing " + thing?.ToString() + " with saveDestroyedThings==false. label=" + label);
 					}
 					else if (thing.Discarded)
 					{
-						Log.Warning(string.Concat("Deep-saving discarded thing ", thing, ". This mode means that the thing is no longer managed by anything in the code and should not be deep-saved anywhere. (even with saveDestroyedThings==true) , label=", label));
+						Log.Warning("Deep-saving discarded thing " + thing?.ToString() + ". This mode means that the thing is no longer managed by anything in the code and should not be deep-saved anywhere. (even with saveDestroyedThings==true) , label=" + label);
 					}
 				}
 				IExposable exposable = target as IExposable;
@@ -70,10 +69,18 @@ namespace Verse
 				}
 				Scribe.saver.loadIDsErrorsChecker.RegisterDeepSaved(target, label);
 			}
-			else if (Scribe.mode == LoadSaveMode.LoadingVars)
+			else
 			{
+				if (Scribe.mode != LoadSaveMode.LoadingVars)
+				{
+					return;
+				}
 				try
 				{
+					if (target is IDisposable disposable)
+					{
+						disposable.Dispose();
+					}
 					target = ScribeExtractor.SaveableFromNode<T>(Scribe.loader.curXmlParent[label], ctorArgs);
 				}
 				catch (Exception ex3)

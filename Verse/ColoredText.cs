@@ -27,25 +27,21 @@ namespace Verse
 
 		private static CaptureStage capStage = CaptureStage.Result;
 
-		private static Regex DaysRegex;
-
-		private static Regex HoursRegex;
-
-		private static Regex SecondsRegex;
-
 		private static Regex ColonistCountRegex;
 
-		public static readonly Color RedReadable = new Color(1f, 0.2f, 0.2f);
+		private static List<Regex> DateTimeRegexes;
 
 		public static readonly Color NameColor = GenColor.FromHex("d09b61");
 
 		public static readonly Color CurrencyColor = GenColor.FromHex("dbb40c");
 
+		public static readonly Color TipSectionTitleColor = new Color(0.9f, 0.9f, 0.3f);
+
 		public static readonly Color DateTimeColor = GenColor.FromHex("87f6f6");
 
 		public static readonly Color FactionColor_Ally = GenColor.FromHex("00ff00");
 
-		public static readonly Color FactionColor_Hostile = RedReadable;
+		public static readonly Color FactionColor_Hostile = ColorLibrary.RedReadable;
 
 		public static readonly Color ThreatColor = GenColor.FromHex("d46f68");
 
@@ -54,6 +50,14 @@ namespace Verse
 		public static readonly Color WarningColor = GenColor.FromHex("ff0000");
 
 		public static readonly Color ColonistCountColor = GenColor.FromHex("dcffaf");
+
+		public static readonly Color SubtleGrayColor = GenColor.FromHex("999999");
+
+		public static readonly Color ExpectationsColor = new Color(0.57f, 0.9f, 0.69f);
+
+		public static readonly Color ImpactColor = GenColor.FromHex("c79fef");
+
+		public static readonly Color GeneColor = ColorLibrary.LightBlue;
 
 		private static readonly Regex CurrencyRegex = new Regex("\\$\\d+\\.?\\d*");
 
@@ -73,11 +77,32 @@ namespace Verse
 
 		public static void ResetStaticData()
 		{
-			DaysRegex = new Regex(string.Format("PeriodDays".Translate(), "\\d+\\.?\\d*"));
-			HoursRegex = new Regex(string.Format("PeriodHours".Translate(), "\\d+\\.?\\d*"));
-			SecondsRegex = new Regex(string.Format("PeriodSeconds".Translate(), "\\d+\\.?\\d*"));
-			string str = "(" + FactionDefOf.PlayerColony.pawnsPlural + "|" + FactionDefOf.PlayerColony.pawnSingular + ")";
-			ColonistCountRegex = new Regex("\\d+\\.?\\d* " + str);
+			DateTimeRegexes = new List<Regex>();
+			AddRegexPatternsForDateString("PeriodYears".Translate(), "Period1Year".Translate());
+			AddRegexPatternsForDateString("PeriodQuadrums".Translate(), "Period1Quadrum".Translate());
+			AddRegexPatternsForDateString("PeriodDays".Translate(), "Period1Day".Translate());
+			AddRegexPatternsForDateString("PeriodHours".Translate(), "Period1Hour".Translate());
+			AddRegexPatternsForDateString("PeriodSeconds".Translate(), "Period1Second".Translate());
+			string text = "(" + FactionDefOf.PlayerColony.pawnsPlural + "|" + FactionDefOf.PlayerColony.pawnSingular + ")";
+			ColonistCountRegex = new Regex("\\d+\\.?\\d* " + text);
+		}
+
+		private static void AddRegexPatternsForDateString(string dateMany, string dateOne)
+		{
+			if (dateMany.Contains("{0}"))
+			{
+				DateTimeRegexes.Add(new Regex("(" + string.Format(dateMany, "\\d+\\.?\\d*") + "|" + dateOne + ")"));
+				return;
+			}
+			List<string> list = GrammarResolverSimple.TryParseNumCase(dateMany);
+			if (list.NullOrEmpty())
+			{
+				return;
+			}
+			foreach (string item in list)
+			{
+				DateTimeRegexes.Add(new Regex("(\\d+\\.?\\d* " + item + "|" + dateOne + ")"));
+			}
 		}
 
 		public static void ClearCache()
@@ -101,6 +126,15 @@ namespace Verse
 				return s;
 			}
 			return s.ApplyTag(TagType.Faction, faction.GetUniqueLoadID());
+		}
+
+		public static TaggedString ApplyTag(this string s, Ideo ideo)
+		{
+			if (ideo == null)
+			{
+				return s;
+			}
+			return s.ApplyTag(TagType.Ideo, ideo.GetUniqueLoadID());
 		}
 
 		public static string StripTags(this string s)
@@ -193,13 +227,19 @@ namespace Verse
 				}
 			}
 			string input = resultBuffer.ToString();
+			for (int j = 0; j < DateTimeRegexes.Count; j++)
+			{
+				input = DateTimeRegexes[j].Replace(input, "$&".Colorize(DateTimeColor));
+			}
 			input = CurrencyRegex.Replace(input, "$&".Colorize(CurrencyColor));
-			input = DaysRegex.Replace(input, "$&".Colorize(DateTimeColor));
-			input = HoursRegex.Replace(input, "$&".Colorize(DateTimeColor));
-			input = SecondsRegex.Replace(input, "$&".Colorize(DateTimeColor));
 			input = ColonistCountRegex.Replace(input, "$&".Colorize(ColonistCountColor));
 			cache.Add(rawText, input);
 			return input;
+		}
+
+		public static string Colorize(this TaggedString ts, Color color)
+		{
+			return ts.Resolve().Colorize(color);
 		}
 
 		public static string Colorize(this string s, Color color)
@@ -217,6 +257,8 @@ namespace Verse
 				return str;
 			case TagType.Name:
 				return text.Colorize(NameColor);
+			case TagType.SectionTitle:
+				return text.Colorize(TipSectionTitleColor);
 			case TagType.Faction:
 			{
 				if (arg.NullOrEmpty())
@@ -226,9 +268,22 @@ namespace Verse
 				Faction faction2 = Find.FactionManager.AllFactions.ToList().Find((Faction x) => x.GetUniqueLoadID() == arg);
 				if (faction2 == null)
 				{
-					Log.Error("No faction found with UniqueLoadID '" + arg + "'");
+					return text.Colorize(SubtleGrayColor);
 				}
 				return text.Colorize(GetFactionRelationColor(faction2));
+			}
+			case TagType.Ideo:
+			{
+				if (arg.NullOrEmpty())
+				{
+					return text;
+				}
+				Ideo ideo = Find.IdeoManager.IdeosListForReading.Find((Ideo x) => x.GetUniqueLoadID() == arg);
+				if (ideo == null)
+				{
+					return text;
+				}
+				return text.Colorize(ideo.TextColor);
 			}
 			case TagType.Settlement:
 			{
@@ -239,7 +294,7 @@ namespace Verse
 				Faction faction = Find.FactionManager.AllFactionsVisible.ToList().Find((Faction x) => x.GetUniqueLoadID() == arg);
 				if (faction == null)
 				{
-					Log.Error("No faction found with UniqueLoadID '" + arg + "'");
+					return text.Colorize(SubtleGrayColor);
 				}
 				if (faction == null)
 				{
@@ -253,8 +308,14 @@ namespace Verse
 				return text.Colorize(ColonistCountColor);
 			case TagType.Threat:
 				return text.Colorize(ThreatColor);
+			case TagType.Red:
+				return text.Colorize(ColorLibrary.RedReadable);
+			case TagType.Reward:
+				return text.Colorize(CurrencyColor);
+			case TagType.Gray:
+				return text.Colorize(SubtleGrayColor);
 			default:
-				Log.Error("Invalid tag '" + tag + "'");
+				Log.ErrorOnce("Invalid tag '" + tag + "'", tag.GetHashCode());
 				return text;
 			}
 		}
@@ -287,19 +348,29 @@ namespace Verse
 			return default(T);
 		}
 
-		public static void AppendTagged(this StringBuilder sb, TaggedString taggedString)
+		public static StringBuilder AppendTagged(this StringBuilder sb, TaggedString taggedString)
 		{
-			sb.Append(taggedString.Resolve());
+			return sb.Append(taggedString.Resolve());
 		}
 
-		public static void AppendLineTagged(this StringBuilder sb, TaggedString taggedString)
+		public static StringBuilder AppendLineTagged(this StringBuilder sb, TaggedString taggedString)
 		{
-			sb.AppendLine(taggedString.Resolve());
+			return sb.AppendLine(taggedString.Resolve());
 		}
 
 		public static TaggedString ToTaggedString(this StringBuilder sb)
 		{
 			return new TaggedString(sb.ToString());
+		}
+
+		public static string AsTipTitle(this TaggedString ts)
+		{
+			return ts.Colorize(TipSectionTitleColor);
+		}
+
+		public static string AsTipTitle(this string s)
+		{
+			return s.Colorize(TipSectionTitleColor);
 		}
 	}
 }

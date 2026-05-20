@@ -19,6 +19,10 @@ namespace RimWorld
 
 		public static BodyPartGroupDef Eyes;
 
+		public static BodyPartGroupDef LeftBlade;
+
+		public static BodyPartGroupDef FrontLeftPaw;
+
 		static BodyPartGroupDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(BodyPartGroupDefOf));

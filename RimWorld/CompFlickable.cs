@@ -56,7 +56,7 @@ namespace RimWorld
 					}
 					if (parent.Spawned)
 					{
-						parent.Map.mapDrawer.MapMeshDirty(parent.Position, MapMeshFlag.Things | MapMeshFlag.Buildings);
+						parent.Map.mapDrawer.MapMeshDirty(parent.Position, (ulong)MapMeshFlagDefOf.Buildings | (ulong)MapMeshFlagDefOf.Things);
 					}
 				}
 			}

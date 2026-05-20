@@ -13,7 +13,7 @@ namespace RimWorld
 
 		public override void DoCell(Rect rect, Pawn pawn, PawnTable table)
 		{
-			if (pawn.timetable != null)
+			if (pawn.timetable != null && !pawn.IsSubhuman)
 			{
 				base.DoCell(rect, pawn, table);
 			}

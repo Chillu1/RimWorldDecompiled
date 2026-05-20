@@ -72,8 +72,7 @@ namespace RimWorld
 
 		public override bool GroupsWith(Thought other)
 		{
-			Thought_SituationalSocial thought_SituationalSocial = other as Thought_SituationalSocial;
-			if (thought_SituationalSocial == null)
+			if (!(other is Thought_SituationalSocial thought_SituationalSocial))
 			{
 				return false;
 			}

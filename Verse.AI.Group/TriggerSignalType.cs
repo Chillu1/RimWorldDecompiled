@@ -14,6 +14,8 @@ namespace Verse.AI.Group
 		DormancyWakeup,
 		Clamor,
 		MechClusterDefeated,
-		Signal
+		Signal,
+		CorpseLost,
+		AcquiredTarget
 	}
 }

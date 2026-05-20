@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using LudeonTK;
 using RimWorld;
 using UnityEngine;
 
@@ -8,6 +9,9 @@ namespace Verse
 {
 	public sealed class TickManager : IExposable
 	{
+		[TweakValue("Gameplay", 0f, 100f)]
+		private static bool UltraSpeedBoost;
+
 		private int ticksGameInt;
 
 		public int gameStartAbsTick;
@@ -22,6 +26,8 @@ namespace Verse
 
 		private Stopwatch clock = new Stopwatch();
 
+		private int lastSettleTicksInt;
+
 		private TickList tickListNormal = new TickList(TickerType.Normal);
 
 		private TickList tickListRare = new TickList(TickerType.Rare);
@@ -32,7 +38,13 @@ namespace Verse
 
 		private int lastAutoScreenshot;
 
-		private float WorstAllowedFPS = 22f;
+		private int ticksThisFrame;
+
+		private SimpleMovingAverage rawTickTimeAverage = new SimpleMovingAverage(720);
+
+		private ExponentialMovingAverage smoothedTickTimeAverage = new ExponentialMovingAverage(0.1f);
+
+		public const float WorstAllowedFPS = 22f;
 
 		private int lastNothingHappeningCheckTick = -1;
 
@@ -52,6 +64,10 @@ namespace Verse
 				return ticksGameInt + gameStartAbsTick;
 			}
 		}
+
+		public int TicksSinceSettle => ticksGameInt - lastSettleTicksInt;
+
+		public int SettleTick => lastSettleTicksInt;
 
 		public int StartingYear => startingYearInt;
 
@@ -78,7 +94,7 @@ namespace Verse
 				case TimeSpeed.Superfast:
 					if (Find.Maps.Count == 0)
 					{
-						return 120f;
+						return 18f;
 					}
 					if (NothingHappeningInGame())
 					{
@@ -86,7 +102,7 @@ namespace Verse
 					}
 					return 6f;
 				case TimeSpeed.Ultrafast:
-					if (Find.Maps.Count == 0)
+					if (Find.Maps.Count == 0 || UltraSpeedBoost)
 					{
 						return 150f;
 					}
@@ -96,6 +112,8 @@ namespace Verse
 				}
 			}
 		}
+
+		public int TicksThisFrame => ticksThisFrame;
 
 		private float CurTimePerTick
 		{
@@ -113,9 +131,42 @@ namespace Verse
 		{
 			get
 			{
-				if (curTimeSpeed != 0 && !Find.WindowStack.WindowsForcePause)
+				if (curTimeSpeed != TimeSpeed.Paused)
 				{
-					return LongEventHandler.ForcePause;
+					return ForcePaused;
+				}
+				return true;
+			}
+		}
+
+		public bool ForcePaused
+		{
+			get
+			{
+				if ((Find.WindowStack == null || !Find.WindowStack.WindowsForcePause) && !LongEventHandler.ForcePause && !Find.TilePicker.Active && !WorldComponent_GravshipController.CutsceneInProgress)
+				{
+					WorldComponent_GravshipController gravshipController = Find.GravshipController;
+					if (gravshipController == null || !gravshipController.LandingAreaConfirmationInProgress)
+					{
+						return MapGenerator.debugMode;
+					}
+				}
+				return true;
+			}
+		}
+
+		private AcceptanceReport PlayerCanControl
+		{
+			get
+			{
+				WorldComponent_GravshipController gravshipController = Find.GravshipController;
+				if (gravshipController != null && gravshipController.LandingAreaConfirmationInProgress)
+				{
+					return "MessageConfirmLandingAreaFirst".Translate();
+				}
+				if (!Current.Game.PlayerHasControl)
+				{
+					return false;
 				}
 				return true;
 			}
@@ -141,13 +192,34 @@ namespace Verse
 			}
 			set
 			{
-				curTimeSpeed = value;
+				if (!PlayerCanControl)
+				{
+					if (!PlayerCanControl.Reason.NullOrEmpty())
+					{
+						Messages.Message(PlayerCanControl.Reason, MessageTypeDefOf.RejectInput, historical: false);
+					}
+				}
+				else
+				{
+					curTimeSpeed = value;
+				}
 			}
 		}
 
+		public bool HasSettledNewColony => lastSettleTicksInt > 0;
+
+		public float MeanTickTime => smoothedTickTimeAverage.GetAverage();
+
 		public void TogglePaused()
 		{
-			if (curTimeSpeed != 0)
+			if (!PlayerCanControl)
+			{
+				if (!PlayerCanControl.Reason.NullOrEmpty())
+				{
+					Messages.Message(PlayerCanControl.Reason, MessageTypeDefOf.RejectInput, historical: false);
+				}
+			}
+			else if (curTimeSpeed != TimeSpeed.Paused)
 			{
 				prePauseTimeSpeed = curTimeSpeed;
 				curTimeSpeed = TimeSpeed.Paused;
@@ -164,7 +236,7 @@ namespace Verse
 
 		public void Pause()
 		{
-			if (curTimeSpeed != 0)
+			if (curTimeSpeed != TimeSpeed.Paused)
 			{
 				TogglePaused();
 			}
@@ -182,7 +254,7 @@ namespace Verse
 					for (int j = 0; j < list.Count; j++)
 					{
 						Pawn pawn = list[j];
-						if (pawn.HostFaction == null && pawn.RaceProps.Humanlike && pawn.Awake())
+						if (pawn.HostFaction == null && pawn.RaceProps.Humanlike && pawn.Awake() && !pawn.IsGhoul)
 						{
 							nothingHappeningCached = false;
 							break;
@@ -214,6 +286,7 @@ namespace Verse
 			Scribe_Values.Look(ref ticksGameInt, "ticksGame", 0);
 			Scribe_Values.Look(ref gameStartAbsTick, "gameStartAbsTick", 0);
 			Scribe_Values.Look(ref startingYearInt, "startingYear", 0);
+			Scribe_Values.Look(ref lastSettleTicksInt, "lastSettleTicks", 0);
 		}
 
 		public void RegisterAllTickabilityFor(Thing t)
@@ -228,6 +301,10 @@ namespace Verse
 
 		private TickList TickListFor(Thing t)
 		{
+			if (t is IThingHolder)
+			{
+				return tickListNormal;
+			}
 			return t.def.tickerType switch
 			{
 				TickerType.Never => null, 
@@ -240,6 +317,7 @@ namespace Verse
 
 		public void TickManagerUpdate()
 		{
+			ticksThisFrame = 0;
 			if (Paused)
 			{
 				return;
@@ -253,16 +331,19 @@ namespace Verse
 			{
 				realTimeToTickThrough += Time.deltaTime;
 			}
-			int num = 0;
 			float tickRateMultiplier = TickRateMultiplier;
 			clock.Reset();
 			clock.Start();
-			while (realTimeToTickThrough > 0f && (float)num < tickRateMultiplier * 2f)
+			while (realTimeToTickThrough > 0f && (float)ticksThisFrame < tickRateMultiplier * 2f)
 			{
+				double totalMilliseconds = clock.Elapsed.TotalMilliseconds;
 				DoSingleTick();
+				double totalMilliseconds2 = clock.Elapsed.TotalMilliseconds;
 				realTimeToTickThrough -= curTimePerTick;
-				num++;
-				if (Paused || (float)clock.ElapsedMilliseconds > 1000f / WorstAllowedFPS)
+				ticksThisFrame++;
+				rawTickTimeAverage.AddValue((float)(totalMilliseconds2 - totalMilliseconds));
+				smoothedTickTimeAverage.AddValue(rawTickTimeAverage.GetAverage());
+				if (Paused || (float)clock.ElapsedMilliseconds > 45.454544f)
 				{
 					break;
 				}
@@ -406,6 +487,14 @@ namespace Verse
 			{
 				Log.Error(ex13.ToString());
 			}
+			try
+			{
+				Find.TransportShipManager.ShipObjectsTick();
+			}
+			catch (Exception ex14)
+			{
+				Log.Error(ex14.ToString());
+			}
 			UnityEngine.Debug.developerConsoleVisible = false;
 		}
 
@@ -425,6 +514,11 @@ namespace Verse
 		{
 			Pause();
 			slower.SignalForceNormalSpeedShort();
+		}
+
+		public void ResetSettlementTicks()
+		{
+			lastSettleTicksInt = TicksGame;
 		}
 	}
 }

@@ -42,7 +42,9 @@ namespace Verse
 		{
 			if (!c.InBounds(map))
 			{
-				Log.Warning(string.Concat(t, " tried to register out of bounds at ", c, ". Destroying."));
+				string obj = t?.ToString();
+				IntVec3 intVec = c;
+				Log.Warning(obj + " tried to register out of bounds at " + intVec.ToString() + ". Destroying.");
 				t.Destroy();
 			}
 			else
@@ -76,7 +78,9 @@ namespace Verse
 		{
 			if (!c.InBounds(map))
 			{
-				Log.Error(string.Concat(t, " tried to de-register out of bounds at ", c));
+				string obj = t?.ToString();
+				IntVec3 intVec = c;
+				Log.Error(obj + " tried to de-register out of bounds at " + intVec.ToString());
 				return;
 			}
 			int num = map.cellIndices.CellToIndex(c);
@@ -102,7 +106,8 @@ namespace Verse
 		{
 			if (!c.InBounds(map))
 			{
-				Log.ErrorOnce("Got ThingsListAt out of bounds: " + c, 495287);
+				IntVec3 intVec = c;
+				Log.ErrorOnce("Got ThingsListAt out of bounds: " + intVec.ToString(), 495287);
 				return EmptyThingList;
 			}
 			return thingGrid[map.cellIndices.CellToIndex(c)];
@@ -171,10 +176,9 @@ namespace Verse
 			List<Thing> list = thingGrid[map.cellIndices.CellToIndex(c)];
 			for (int i = 0; i < list.Count; i++)
 			{
-				T val = list[i] as T;
-				if (val != null)
+				if (list[i] is T result)
 				{
-					return val;
+					return result;
 				}
 			}
 			return null;

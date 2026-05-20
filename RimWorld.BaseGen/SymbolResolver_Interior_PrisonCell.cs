@@ -6,8 +6,10 @@ namespace RimWorld.BaseGen
 
 		public override void Resolve(ResolveParams rp)
 		{
-			ThingSetMakerParams value = default(ThingSetMakerParams);
-			value.techLevel = ((rp.faction != null) ? rp.faction.def.techLevel : TechLevel.Spacer);
+			ThingSetMakerParams value = new ThingSetMakerParams
+			{
+				techLevel = ((rp.faction != null) ? rp.faction.def.techLevel : TechLevel.Spacer)
+			};
 			ResolveParams resolveParams = rp;
 			resolveParams.thingSetMakerDef = ThingSetMakerDefOf.MapGen_PrisonCellStockpile;
 			resolveParams.thingSetMakerParams = value;

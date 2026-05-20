@@ -13,16 +13,25 @@ namespace RimWorld
 
 		public PawnRecentMemory recentMemory;
 
+		private int lastInstantMoodCheckTick = -9999;
+
+		private float lastInstantMood = -1f;
+
 		public override float CurInstantLevel
 		{
 			get
 			{
-				float num = thoughts.TotalMoodOffset();
-				if (pawn.IsColonist || pawn.IsPrisonerOfColony)
+				if (lastInstantMoodCheckTick != Find.TickManager.TicksGame)
 				{
-					num += Find.Storyteller.difficultyValues.colonistMoodOffset;
+					lastInstantMood = thoughts.TotalMoodOffset();
+					if (pawn.IsColonist || pawn.IsPrisonerOfColony)
+					{
+						lastInstantMood += Find.Storyteller.difficulty.colonistMoodOffset;
+					}
+					lastInstantMood = Mathf.Clamp01((pawn.health.hediffSet.OverrideMoodBase ?? def.baseLevel) + lastInstantMood / 100f);
+					lastInstantMoodCheckTick = Find.TickManager.TicksGame;
 				}
-				return Mathf.Clamp01(def.baseLevel + num / 100f);
+				return lastInstantMood;
 			}
 		}
 
@@ -85,25 +94,37 @@ namespace RimWorld
 		public override string GetTipString()
 		{
 			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.AppendLine(base.GetTipString());
-			stringBuilder.AppendLine();
-			stringBuilder.AppendLine("MentalBreakThresholdExtreme".Translate() + ": " + pawn.mindState.mentalBreaker.BreakThresholdExtreme.ToStringPercent());
-			stringBuilder.AppendLine("MentalBreakThresholdMajor".Translate() + ": " + pawn.mindState.mentalBreaker.BreakThresholdMajor.ToStringPercent());
-			stringBuilder.AppendLine("MentalBreakThresholdMinor".Translate() + ": " + pawn.mindState.mentalBreaker.BreakThresholdMinor.ToStringPercent());
+			string text = pawn.ageTracker.CurLifeStage?.customMoodTipString;
+			if (text != null)
+			{
+				stringBuilder.AppendLine((base.LabelCap + ": " + base.CurLevelPercentage.ToStringPercent()).Colorize(ColoredText.TipSectionTitleColor));
+				stringBuilder.AppendLine(text);
+			}
+			else
+			{
+				stringBuilder.AppendLine(base.GetTipString());
+				stringBuilder.AppendLine();
+				stringBuilder.AppendLine("MentalBreakThresholdExtreme".Translate() + ": " + pawn.mindState.mentalBreaker.BreakThresholdExtreme.ToStringPercent());
+				stringBuilder.AppendLine("MentalBreakThresholdMajor".Translate() + ": " + pawn.mindState.mentalBreaker.BreakThresholdMajor.ToStringPercent());
+				stringBuilder.AppendLine("MentalBreakThresholdMinor".Translate() + ": " + pawn.mindState.mentalBreaker.BreakThresholdMinor.ToStringPercent());
+			}
 			return stringBuilder.ToString();
 		}
 
-		public override void DrawOnGUI(Rect rect, int maxThresholdMarkers = int.MaxValue, float customMargin = -1f, bool drawArrows = true, bool doTooltip = true)
+		public override void DrawOnGUI(Rect rect, int maxThresholdMarkers = int.MaxValue, float customMargin = -1f, bool drawArrows = true, bool doTooltip = true, Rect? rectForTooltip = null, bool drawLabel = true)
 		{
 			if (threshPercents == null)
 			{
 				threshPercents = new List<float>();
 			}
 			threshPercents.Clear();
-			threshPercents.Add(pawn.mindState.mentalBreaker.BreakThresholdExtreme);
-			threshPercents.Add(pawn.mindState.mentalBreaker.BreakThresholdMajor);
-			threshPercents.Add(pawn.mindState.mentalBreaker.BreakThresholdMinor);
-			base.DrawOnGUI(rect, maxThresholdMarkers, customMargin, drawArrows, doTooltip);
+			if (pawn.mindState.mentalBreaker.CanDoRandomMentalBreaks)
+			{
+				threshPercents.Add(pawn.mindState.mentalBreaker.BreakThresholdExtreme);
+				threshPercents.Add(pawn.mindState.mentalBreaker.BreakThresholdMajor);
+				threshPercents.Add(pawn.mindState.mentalBreaker.BreakThresholdMinor);
+			}
+			base.DrawOnGUI(rect, maxThresholdMarkers, customMargin, drawArrows, doTooltip, rectForTooltip, drawLabel);
 		}
 	}
 }

@@ -4,7 +4,7 @@ using Verse;
 
 namespace RimWorld.Planet
 {
-	public class Settlement_TraderTracker : IThingHolder, IExposable
+	public class Settlement_TraderTracker : IThingHolderTickable, IThingHolder, IExposable
 	{
 		public Settlement settlement;
 
@@ -22,11 +22,13 @@ namespace RimWorld.Planet
 
 		public IThingHolder ParentHolder => settlement;
 
+		public bool ShouldTickContents => false;
+
 		public List<Thing> StockListForReading
 		{
 			get
 			{
-				if (stock == null)
+				if (stock == null || stock.InnerListForReading.Empty())
 				{
 					RegenerateStock();
 				}
@@ -94,7 +96,7 @@ namespace RimWorld.Planet
 			{
 				if (TraderKind != null)
 				{
-					if (stock != null)
+					if (stock != null && !stock.InnerListForReading.Empty())
 					{
 						return stock.InnerListForReading.Any((Thing x) => TraderKind.WillTrade(x.def));
 					}
@@ -120,11 +122,10 @@ namespace RimWorld.Planet
 				{
 					for (int num = stock.Count - 1; num >= 0; num--)
 					{
-						Pawn pawn = stock[num] as Pawn;
-						if (pawn != null)
+						if (stock[num] is Pawn item)
 						{
-							stock.Remove(pawn);
-							tmpSavedPawns.Add(pawn);
+							stock.Remove(item);
+							tmpSavedPawns.Add(item);
 						}
 					}
 				}
@@ -169,8 +170,7 @@ namespace RimWorld.Planet
 			Caravan caravan = playerNegotiator.GetCaravan();
 			Thing thing = toGive.SplitOff(countToGive);
 			thing.PreTraded(TradeAction.PlayerSells, playerNegotiator, settlement);
-			Pawn pawn = toGive as Pawn;
-			if (pawn != null)
+			if (toGive is Pawn pawn)
 			{
 				CaravanInventoryUtility.MoveAllInventoryToSomeoneElse(pawn, caravan.PawnsListForReading);
 				if (!pawn.RaceProps.Humanlike && !stock.TryAdd(pawn, canMergeWithExistingStacks: false))
@@ -189,19 +189,18 @@ namespace RimWorld.Planet
 			Caravan caravan = playerNegotiator.GetCaravan();
 			Thing thing = toGive.SplitOff(countToGive);
 			thing.PreTraded(TradeAction.PlayerBuys, playerNegotiator, settlement);
-			Pawn pawn = thing as Pawn;
-			if (pawn != null)
+			if (thing is Pawn p)
 			{
-				caravan.AddPawn(pawn, addCarriedPawnToWorldPawnsIfAny: true);
+				caravan.AddPawn(p, addCarriedPawnToWorldPawnsIfAny: true);
 				return;
 			}
-			Pawn pawn2 = CaravanInventoryUtility.FindPawnToMoveInventoryTo(thing, caravan.PawnsListForReading, null);
-			if (pawn2 == null)
+			Pawn pawn = CaravanInventoryUtility.FindPawnToMoveInventoryTo(thing, caravan.PawnsListForReading, null);
+			if (pawn == null)
 			{
 				Log.Error("Could not find any pawn to give sold thing to.");
 				thing.Destroy();
 			}
-			else if (!pawn2.inventory.innerContainer.TryAdd(thing))
+			else if (!pawn.inventory.innerContainer.TryAdd(thing))
 			{
 				Log.Error("Could not add sold thing to inventory.");
 				thing.Destroy();
@@ -221,16 +220,14 @@ namespace RimWorld.Planet
 			}
 			for (int num = stock.Count - 1; num >= 0; num--)
 			{
-				Pawn pawn = stock[num] as Pawn;
-				if (pawn != null && pawn.Destroyed)
+				if (stock[num] is Pawn { Destroyed: not false } pawn)
 				{
 					stock.Remove(pawn);
 				}
 			}
 			for (int num2 = stock.Count - 1; num2 >= 0; num2--)
 			{
-				Pawn pawn2 = stock[num2] as Pawn;
-				if (pawn2 != null && !pawn2.IsWorldPawn())
+				if (stock[num2] is Pawn pawn2 && !pawn2.IsWorldPawn())
 				{
 					Log.Error("Faction base has non-world-pawns in its stock. Removing...");
 					stock.Remove(pawn2);
@@ -268,20 +265,24 @@ namespace RimWorld.Planet
 		protected virtual void RegenerateStock()
 		{
 			TryDestroyStock();
-			stock = new ThingOwner<Thing>(this);
+			stock = new ThingOwner<Thing>(this)
+			{
+				dontTickContents = true
+			};
 			everGeneratedStock = true;
 			if (settlement.Faction == null || !settlement.Faction.IsPlayer)
 			{
-				ThingSetMakerParams parms = default(ThingSetMakerParams);
-				parms.traderDef = TraderKind;
-				parms.tile = settlement.Tile;
-				parms.makingFaction = settlement.Faction;
+				ThingSetMakerParams parms = new ThingSetMakerParams
+				{
+					traderDef = TraderKind,
+					tile = settlement.Tile,
+					makingFaction = settlement.Faction
+				};
 				stock.TryAddRangeOrTransfer(ThingSetMakerDefOf.TraderStock.root.Generate(parms));
 			}
 			for (int i = 0; i < stock.Count; i++)
 			{
-				Pawn pawn = stock[i] as Pawn;
-				if (pawn != null)
+				if (stock[i] is Pawn pawn)
 				{
 					Find.WorldPawns.PassToWorld(pawn);
 				}

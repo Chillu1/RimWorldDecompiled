@@ -14,11 +14,11 @@ namespace Verse.AI
 				return null;
 			}
 			tmpAnimals.Clear();
-			List<Pawn> allPawnsSpawned = pawn.Map.mapPawns.AllPawnsSpawned;
+			IReadOnlyList<Pawn> allPawnsSpawned = pawn.Map.mapPawns.AllPawnsSpawned;
 			for (int i = 0; i < allPawnsSpawned.Count; i++)
 			{
 				Pawn pawn2 = allPawnsSpawned[i];
-				if (pawn2.RaceProps.Animal && pawn2.Faction == pawn.Faction && pawn2 != pawn && !pawn2.IsBurning() && !pawn2.InAggroMentalState && pawn.CanReserveAndReach(pawn2, PathEndMode.Touch, Danger.Deadly))
+				if (pawn2.IsAnimal && pawn2.Faction == pawn.Faction && pawn2 != pawn && !pawn2.IsBurning() && !pawn2.InAggroMentalState && pawn.CanReserveAndReach(pawn2, PathEndMode.Touch, Danger.Deadly))
 				{
 					tmpAnimals.Add(pawn2);
 				}

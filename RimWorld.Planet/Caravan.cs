@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -33,6 +34,8 @@ namespace RimWorld.Planet
 
 		public Caravan_BedsTracker beds;
 
+		public Caravan_BabyTracker babies;
+
 		public StoryState storyState;
 
 		private Material cachedMat;
@@ -41,7 +44,7 @@ namespace RimWorld.Planet
 
 		private int cachedImmobilizedForTicks = -99999;
 
-		private Pair<float, float> cachedDaysWorthOfFood;
+		private (float days, float tillRot) cachedDaysWorthOfFood;
 
 		private int cachedDaysWorthOfFoodForTicks = -99999;
 
@@ -55,7 +58,13 @@ namespace RimWorld.Planet
 
 		private static readonly Color PlayerCaravanColor = new Color(1f, 0.863f, 0.33f);
 
+		public bool hasShuttleDirty = true;
+
+		private Building_PassengerShuttle cachedShuttle;
+
 		public List<Pawn> PawnsListForReading => pawns.InnerListForReading;
+
+		public override float DrawAltitude => 0.035f;
 
 		public override Material Material
 		{
@@ -63,7 +72,7 @@ namespace RimWorld.Planet
 			{
 				if (cachedMat == null)
 				{
-					cachedMat = MaterialPool.MatFrom(color: (base.Faction == null) ? Color.white : ((!base.Faction.IsPlayer) ? base.Faction.Color : PlayerCaravanColor), texPath: def.texture, shader: ShaderDatabase.WorldOverlayTransparentLit, renderQueue: WorldMaterials.DynamicObjectRenderQueue);
+					cachedMat = MaterialPool.MatFrom(color: (base.Faction == null) ? Color.white : ((!base.Faction.IsPlayer) ? base.Faction.Color : PlayerCaravanColor), texPath: def.texture, shader: ShaderDatabase.WorldOverlayTransparentLit, renderQueue: 3600);
 				}
 				return cachedMat;
 			}
@@ -99,7 +108,7 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public Pair<float, float> DaysWorthOfFood
+		public (float days, float tillRot) DaysWorthOfFood
 		{
 			get
 			{
@@ -107,7 +116,7 @@ namespace RimWorld.Planet
 				{
 					return cachedDaysWorthOfFood;
 				}
-				cachedDaysWorthOfFood = new Pair<float, float>(DaysWorthOfFoodCalculator.ApproxDaysWorthOfFood(this), DaysUntilRotCalculator.ApproxDaysUntilRot(this));
+				cachedDaysWorthOfFood = (days: DaysWorthOfFoodCalculator.ApproxDaysWorthOfFood(this), tillRot: DaysUntilRotCalculator.ApproxDaysUntilRot(this));
 				cachedDaysWorthOfFoodForTicks = Find.TickManager.TicksGame;
 				return cachedDaysWorthOfFood;
 			}
@@ -117,9 +126,9 @@ namespace RimWorld.Planet
 		{
 			get
 			{
-				if (!NightResting && !AllOwnersHaveMentalBreak && !AllOwnersDowned)
+				if (!NightResting && !pather.Paused && !AllOwnersHaveMentalBreak && !AllOwnersDowned && !ImmobilizedByMass)
 				{
-					return ImmobilizedByMass;
+					return Shuttle != null;
 				}
 				return true;
 			}
@@ -174,6 +183,10 @@ namespace RimWorld.Planet
 			get
 			{
 				if (!base.Spawned)
+				{
+					return false;
+				}
+				if (!needs.AnyPawnsNeedRest)
 				{
 					return false;
 				}
@@ -251,6 +264,19 @@ namespace RimWorld.Planet
 
 		public IEnumerable<Thing> AllThings => CaravanInventoryUtility.AllInventoryItems(this).Concat(pawns);
 
+		public Building_PassengerShuttle Shuttle
+		{
+			get
+			{
+				if (hasShuttleDirty)
+				{
+					hasShuttleDirty = false;
+					cachedShuttle = CaravanInventoryUtility.FindShuttle(this);
+				}
+				return cachedShuttle;
+			}
+		}
+
 		public int ConstantRandSeed => uniqueId ^ 0x2B6813E1;
 
 		public StoryState StoryState => storyState;
@@ -278,7 +304,12 @@ namespace RimWorld.Planet
 					num += WealthWatcher.GetEquipmentApparelAndInventoryWealth(pawns[i]);
 					if (pawns[i].Faction == Faction.OfPlayer)
 					{
-						num += pawns[i].MarketValue;
+						float num2 = pawns[i].MarketValue;
+						if (pawns[i].IsSlave)
+						{
+							num2 *= 0.75f;
+						}
+						num += num2;
 					}
 				}
 				return num * 0.7f;
@@ -348,6 +379,10 @@ namespace RimWorld.Planet
 			needs = new Caravan_NeedsTracker(this);
 			carryTracker = new Caravan_CarryTracker(this);
 			beds = new Caravan_BedsTracker(this);
+			if (ModsConfig.BiotechActive)
+			{
+				babies = new Caravan_BabyTracker(this);
+			}
 			storyState = new StoryState(this);
 		}
 
@@ -370,6 +405,10 @@ namespace RimWorld.Planet
 			Scribe_Deep.Look(ref beds, "beds", this);
 			Scribe_Deep.Look(ref storyState, "storyState", this);
 			BackCompatibility.PostExposeData(this);
+			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			{
+				babies?.Recache();
+			}
 		}
 
 		public override void PostAdd()
@@ -377,7 +416,9 @@ namespace RimWorld.Planet
 			base.PostAdd();
 			carryTracker.Notify_CaravanSpawned();
 			beds.Notify_CaravanSpawned();
+			babies?.Recache();
 			Find.ColonistBar.MarkColonistsDirty();
+			hasShuttleDirty = true;
 		}
 
 		public override void PostRemove()
@@ -387,18 +428,23 @@ namespace RimWorld.Planet
 			Find.ColonistBar.MarkColonistsDirty();
 		}
 
-		public override void Tick()
+		protected override void TickInterval(int delta)
 		{
-			base.Tick();
+			base.TickInterval(delta);
 			CheckAnyNonWorldPawns();
-			pather.PatherTick();
-			tweener.TweenerTick();
-			forage.ForageTrackerTick();
-			carryTracker.CarryTrackerTick();
-			beds.BedsTrackerTick();
-			needs.NeedsTrackerTick();
-			CaravanDrugPolicyUtility.CheckTakeScheduledDrugs(this);
-			CaravanTendUtility.CheckTend(this);
+			pather.PatherTickInterval(delta);
+			tweener.TweenerTickInterval(delta);
+			forage.ForageTrackerTickInterval(delta);
+			carryTracker.CarryTrackerTickInterval(delta);
+			beds.BedsTrackerTickInterval(delta);
+			needs.NeedsTrackerTickInterval(delta);
+			babies?.TickInterval(delta);
+			CaravanDrugPolicyUtility.CheckTakeScheduledDrugs(this, delta);
+			CaravanTendUtility.CheckTend(this, delta);
+			if (ModsConfig.BiotechActive)
+			{
+				CaravanPollutionUtility.CheckDamageFromPollution(this, delta);
+			}
 		}
 
 		public override void SpawnSetup()
@@ -426,7 +472,7 @@ namespace RimWorld.Planet
 			}
 			if (p.Dead)
 			{
-				Log.Warning(string.Concat("Tried to add ", p, " to ", this, ", but this pawn is dead."));
+				Log.Warning("Tried to add " + p?.ToString() + " to " + this?.ToString() + ", but this pawn is dead.");
 				return;
 			}
 			Pawn pawn = p.carryTracker.CarriedThing as Pawn;
@@ -434,10 +480,7 @@ namespace RimWorld.Planet
 			{
 				p.carryTracker.innerContainer.Remove(pawn);
 			}
-			if (p.Spawned)
-			{
-				p.DeSpawn();
-			}
+			p.DeSpawnOrDeselect();
 			if (pawns.TryAdd(p))
 			{
 				if (ShouldAutoCapture(p))
@@ -459,7 +502,7 @@ namespace RimWorld.Planet
 			}
 			else
 			{
-				Log.Error(string.Concat("Couldn't add pawn ", p, " to caravan."));
+				Log.Error("Couldn't add pawn " + p?.ToString() + " to caravan.");
 			}
 		}
 
@@ -468,12 +511,10 @@ namespace RimWorld.Planet
 			if (thing == null)
 			{
 				Log.Warning("Tried to add a null thing to " + this);
-				return;
 			}
-			Pawn pawn = thing as Pawn;
-			if (pawn != null)
+			else if (thing is Pawn p)
 			{
-				AddPawn(pawn, addCarriedPawnToWorldPawnsIfAny);
+				AddPawn(p, addCarriedPawnToWorldPawnsIfAny);
 			}
 			else
 			{
@@ -518,6 +559,7 @@ namespace RimWorld.Planet
 			int num3 = 0;
 			int num4 = 0;
 			int num5 = 0;
+			int num6 = 0;
 			for (int i = 0; i < pawns.Count; i++)
 			{
 				if (pawns[i].IsColonist)
@@ -532,7 +574,11 @@ namespace RimWorld.Planet
 				{
 					num3++;
 				}
-				if (pawns[i].Downed)
+				else if (pawns[i].RaceProps.IsMechanoid)
+				{
+					num6++;
+				}
+				if (pawns[i].Downed && !pawns[i].ageTracker.CurLifeStage.alwaysDowned)
 				{
 					num4++;
 				}
@@ -557,6 +603,17 @@ namespace RimWorld.Planet
 			else if (num3 > 1)
 			{
 				stringBuilder.Append(", " + "CaravanPrisonersCount".Translate(num3));
+			}
+			if (ModsConfig.BiotechActive)
+			{
+				if (num6 == 1)
+				{
+					stringBuilder.Append(", " + "CaravanMech".Translate());
+				}
+				else if (num6 > 1)
+				{
+					stringBuilder.Append(", " + "CaravanMechsCount".Translate(num6));
+				}
 			}
 			stringBuilder.AppendLine();
 			if (num5 > 0)
@@ -600,9 +657,9 @@ namespace RimWorld.Planet
 			}
 			if (pather.Moving)
 			{
-				float num6 = (float)CaravanArrivalTimeEstimator.EstimatedTicksToArrive(this, allowCaching: true) / 60000f;
+				float num7 = (float)CaravanArrivalTimeEstimator.EstimatedTicksToArrive(this, allowCaching: true) / 60000f;
 				stringBuilder.AppendLine();
-				stringBuilder.Append("CaravanEstimatedTimeToDestination".Translate(num6.ToString("0.#")));
+				stringBuilder.Append("CaravanEstimatedTimeToDestination".Translate(num7.ToString("0.#")));
 			}
 			if (AllOwnersDowned)
 			{
@@ -651,6 +708,11 @@ namespace RimWorld.Planet
 					stringBuilder.Append(inBedForMedicalReasonsInspectStringLine);
 				}
 			}
+			if (ModsConfig.OdysseyActive && Shuttle != null)
+			{
+				stringBuilder.AppendLine();
+				stringBuilder.Append(string.Format("{0}: {1:F0} / {2:F0}", "CaravanShuttleFuel".Translate(), Shuttle.FuelLevel, Shuttle.MaxFuelLevel));
+			}
 			return stringBuilder.ToString();
 		}
 
@@ -669,6 +731,7 @@ namespace RimWorld.Planet
 				if (Find.WorldSelector.SingleSelectedObject == this)
 				{
 					yield return SettleInEmptyTileUtility.SettleCommand(this);
+					yield return SettleInEmptyTileUtility.SetupCamp(this);
 					foreach (Pawn p in pawns)
 					{
 						if (p.royalty == null)
@@ -688,19 +751,19 @@ namespace RimWorld.Planet
 							}
 						}
 					}
-				}
-				if (Find.WorldSelector.SingleSelectedObject == this && PawnsListForReading.Count((Pawn x) => x.IsColonist) >= 2)
-				{
-					Command_Action command_Action = new Command_Action();
-					command_Action.defaultLabel = "CommandSplitCaravan".Translate();
-					command_Action.defaultDesc = "CommandSplitCaravanDesc".Translate();
-					command_Action.icon = SplitCommand;
-					command_Action.hotKey = KeyBindingDefOf.Misc5;
-					command_Action.action = delegate
+					if (PawnsListForReading.Count((Pawn x) => x.IsColonist) >= 2)
 					{
-						Find.WindowStack.Add(new Dialog_SplitCaravan(this));
-					};
-					yield return command_Action;
+						Command_Action command_Action = new Command_Action();
+						command_Action.defaultLabel = "CommandSplitCaravan".Translate();
+						command_Action.defaultDesc = "CommandSplitCaravanDesc".Translate();
+						command_Action.icon = SplitCommand;
+						command_Action.hotKey = KeyBindingDefOf.Misc5;
+						command_Action.action = delegate
+						{
+							Find.WindowStack.Add(new Dialog_SplitCaravan(this));
+						};
+						yield return command_Action;
+					}
 				}
 				if (pather.Moving)
 				{
@@ -734,135 +797,253 @@ namespace RimWorld.Planet
 						yield return caravanGizmo;
 					}
 				}
-				foreach (Pawn pawn in pawns)
+				if (Find.WorldSelector.SingleSelectedObject == this)
 				{
-					if (pawn.abilities == null || pawn.Downed || pawn.IsPrisoner)
+					foreach (Pawn p in pawns)
 					{
-						continue;
-					}
-					foreach (Ability ability in pawn.abilities.abilities)
-					{
-						if (!ability.def.showGizmoOnWorldView)
+						if (p.abilities != null && !p.Downed && !p.IsPrisoner)
+						{
+							foreach (Ability ability in p.abilities.abilities)
+							{
+								if (!ability.def.showGizmoOnWorldView)
+								{
+									continue;
+								}
+								foreach (Command gizmo3 in ability.GetGizmos())
+								{
+									yield return gizmo3;
+								}
+							}
+						}
+						if (p.genes == null)
 						{
 							continue;
 						}
-						foreach (Command gizmo3 in ability.GetGizmos())
+						foreach (Gene item3 in p.genes.GenesListForReading)
 						{
-							yield return gizmo3;
+							if (!item3.def.showGizmoOnWorldView)
+							{
+								continue;
+							}
+							foreach (Gizmo gizmo4 in item3.GetGizmos())
+							{
+								yield return gizmo4;
+							}
 						}
 					}
 				}
+				if (ModsConfig.OdysseyActive && Shuttle != null && Find.WorldSelector.NumSelectedObjects == 1)
+				{
+					yield return GetLaunchGizmo();
+					yield return GetRefuelGizmo();
+					if (DebugSettings.ShowDevGizmos)
+					{
+						Command_Action command_Action2 = new Command_Action();
+						command_Action2.defaultLabel = "DEV: End cooldown";
+						command_Action2.action = delegate
+						{
+							Shuttle.LaunchableComp.lastLaunchTick = Find.TickManager.TicksGame - Shuttle.LaunchableComp.Props.cooldownTicks;
+						};
+						yield return command_Action2;
+					}
+				}
 			}
-			if (!Prefs.DevMode)
+			if (!DebugSettings.ShowDevGizmos)
 			{
 				yield break;
 			}
-			Command_Action command_Action2 = new Command_Action();
-			command_Action2.defaultLabel = "Dev: Mental break";
-			command_Action2.action = delegate
-			{
-				if (PawnsListForReading.Where((Pawn x) => x.RaceProps.Humanlike && !x.InMentalState).TryRandomElement(out var result6))
-				{
-					result6.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Wander_Sad);
-				}
-			};
-			yield return command_Action2;
 			Command_Action command_Action3 = new Command_Action();
-			command_Action3.defaultLabel = "Dev: Make random pawn hungry";
+			command_Action3.defaultLabel = "DEV: Mental break";
 			command_Action3.action = delegate
 			{
-				if (PawnsListForReading.Where((Pawn x) => x.needs.food != null).TryRandomElement(out var result5))
+				if (PawnsListForReading.Where((Pawn x) => x.RaceProps.Humanlike && !x.InMentalState).TryRandomElement(out var result))
 				{
-					result5.needs.food.CurLevelPercentage = 0f;
+					result.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Wander_Sad);
 				}
 			};
 			yield return command_Action3;
 			Command_Action command_Action4 = new Command_Action();
-			command_Action4.defaultLabel = "Dev: Kill random pawn";
+			command_Action4.defaultLabel = "DEV: Make random pawn hungry";
 			command_Action4.action = delegate
 			{
-				if (PawnsListForReading.TryRandomElement(out var result4))
+				if (PawnsListForReading.Where((Pawn x) => x.needs.food != null).TryRandomElement(out var result))
 				{
-					result4.Kill(null, null);
-					Messages.Message("Dev: Killed " + result4.LabelShort, this, MessageTypeDefOf.TaskCompletion, historical: false);
+					result.needs.food.CurLevelPercentage = 0f;
 				}
 			};
 			yield return command_Action4;
 			Command_Action command_Action5 = new Command_Action();
-			command_Action5.defaultLabel = "Dev: Harm random pawn";
+			command_Action5.defaultLabel = "DEV: Kill random pawn";
 			command_Action5.action = delegate
 			{
-				if (PawnsListForReading.TryRandomElement(out var result3))
+				if (PawnsListForReading.TryRandomElement(out var result))
 				{
-					DamageInfo dinfo = new DamageInfo(DamageDefOf.Scratch, 10f, 999f);
-					result3.TakeDamage(dinfo);
+					result.Kill(null, null);
+					Messages.Message("DEV: Killed " + result.LabelShort, this, MessageTypeDefOf.TaskCompletion, historical: false);
 				}
 			};
 			yield return command_Action5;
-			Command_Action command_Action6 = new Command_Action();
-			command_Action6.defaultLabel = "Dev: Down random pawn";
-			command_Action6.action = delegate
+			if (ModsConfig.IdeologyActive)
 			{
-				if (PawnsListForReading.Where((Pawn x) => !x.Downed).TryRandomElement(out var result2))
+				Command_Action command_Action6 = new Command_Action();
+				command_Action6.defaultLabel = "DEV: Kill all non-slave pawns";
+				command_Action6.action = delegate
 				{
-					HealthUtility.DamageUntilDowned(result2);
-					Messages.Message("Dev: Downed " + result2.LabelShort, this, MessageTypeDefOf.TaskCompletion, historical: false);
-				}
-			};
-			yield return command_Action6;
+					for (int num = PawnsListForReading.Count - 1; num >= 0; num--)
+					{
+						Pawn pawn = PawnsListForReading[num];
+						if (!pawn.IsSlave)
+						{
+							pawn.Kill(null, null);
+							Messages.Message("DEV: Killed " + pawn.LabelShort, this, MessageTypeDefOf.TaskCompletion, historical: false);
+						}
+					}
+				};
+				yield return command_Action6;
+			}
 			Command_Action command_Action7 = new Command_Action();
-			command_Action7.defaultLabel = "Dev: Plague on random pawn";
+			command_Action7.defaultLabel = "DEV: Harm random pawn";
 			command_Action7.action = delegate
 			{
-				if (PawnsListForReading.Where((Pawn x) => !x.Downed).TryRandomElement(out var result))
+				if (PawnsListForReading.TryRandomElement(out var result))
 				{
-					Hediff hediff = HediffMaker.MakeHediff(HediffDefOf.Plague, result);
-					hediff.Severity = HediffDefOf.Plague.stages[1].minSeverity - 0.001f;
-					result.health.AddHediff(hediff);
-					Messages.Message("Dev: Gave advanced plague to " + result.LabelShort, this, MessageTypeDefOf.TaskCompletion, historical: false);
+					DamageInfo dinfo = new DamageInfo(DamageDefOf.Scratch, 10f, 999f);
+					result.TakeDamage(dinfo);
 				}
 			};
 			yield return command_Action7;
 			Command_Action command_Action8 = new Command_Action();
-			command_Action8.defaultLabel = "Dev: Teleport to destination";
+			command_Action8.defaultLabel = "DEV: Down random pawn";
 			command_Action8.action = delegate
+			{
+				if (PawnsListForReading.Where((Pawn x) => !x.Downed).TryRandomElement(out var result))
+				{
+					HealthUtility.DamageUntilDowned(result);
+					Messages.Message("DEV: Downed " + result.LabelShort, this, MessageTypeDefOf.TaskCompletion, historical: false);
+				}
+			};
+			yield return command_Action8;
+			Command_Action command_Action9 = new Command_Action();
+			command_Action9.defaultLabel = "DEV: Plague on random pawn";
+			command_Action9.action = delegate
+			{
+				if (PawnsListForReading.Where((Pawn x) => !x.Downed && x.RaceProps.IsFlesh).TryRandomElement(out var result))
+				{
+					Hediff hediff = HediffMaker.MakeHediff(HediffDefOf.Plague, result);
+					hediff.Severity = HediffDefOf.Plague.stages[1].minSeverity - 0.001f;
+					result.health.AddHediff(hediff);
+					Messages.Message("DEV: Gave advanced plague to " + result.LabelShort, this, MessageTypeDefOf.TaskCompletion, historical: false);
+				}
+			};
+			yield return command_Action9;
+			Command_Action command_Action10 = new Command_Action();
+			command_Action10.defaultLabel = "DEV: Teleport to destination";
+			command_Action10.action = delegate
 			{
 				base.Tile = pather.Destination;
 				pather.StopDead();
 			};
-			yield return command_Action8;
-			Command_Action command_Action9 = new Command_Action();
-			command_Action9.defaultLabel = "Dev: +20% psyfocus";
-			command_Action9.action = delegate
+			yield return command_Action10;
+			if (ModsConfig.RoyaltyActive)
 			{
-				for (int i = 0; i < PawnsListForReading.Count; i++)
+				Command_Action command_Action11 = new Command_Action();
+				command_Action11.defaultLabel = "DEV: +20% psyfocus";
+				command_Action11.action = delegate
 				{
-					PawnsListForReading[i].psychicEntropy?.OffsetPsyfocusDirectly(0.2f);
-				}
-			};
-			yield return command_Action9;
+					for (int i = 0; i < PawnsListForReading.Count; i++)
+					{
+						PawnsListForReading[i].psychicEntropy?.OffsetPsyfocusDirectly(0.2f);
+					}
+				};
+				yield return command_Action11;
+			}
+			if (!ModsConfig.BiotechActive)
+			{
+				yield break;
+			}
+			IEnumerable<Thing> allDissolvingThings = CaravanInventoryUtility.GetAllDissolvingThings(this);
+			if (allDissolvingThings.Any())
+			{
+				Command_Action command_Action12 = new Command_Action();
+				command_Action12.defaultLabel = "DEV: Trigger random dissolution event";
+				command_Action12.action = delegate
+				{
+					allDissolvingThings.RandomElement().TryGetComp<CompDissolution>().TriggerDissolutionEvent();
+				};
+				yield return command_Action12;
+			}
 		}
 
-		public override IEnumerable<FloatMenuOption> GetTransportPodsFloatMenuOptions(IEnumerable<IThingHolder> pods, CompLaunchable representative)
+		private Gizmo GetLaunchGizmo()
 		{
-			foreach (FloatMenuOption transportPodsFloatMenuOption in base.GetTransportPodsFloatMenuOptions(pods, representative))
+			Command_Action command_Action = new Command_Action();
+			command_Action.defaultLabel = "CommandLaunchGroup".Translate();
+			command_Action.defaultDesc = "CommandLaunchGroupDesc".Translate();
+			command_Action.icon = CompLaunchable.LaunchCommandTex;
+			command_Action.action = delegate
 			{
-				yield return transportPodsFloatMenuOption;
+				Shuttle.LaunchableComp.StartChoosingDestination(delegate(PlanetTile tile, TransportersArrivalAction action)
+				{
+					CaravanShuttleUtility.LaunchShuttle(this, tile, action);
+				});
+			};
+			AcceptanceReport acceptanceReport = CaravanShuttleUtility.CanLaunchCaravanShuttle(this);
+			if (!acceptanceReport.Accepted)
+			{
+				command_Action.Disable(acceptanceReport.Reason);
 			}
-			foreach (FloatMenuOption floatMenuOption in TransportPodsArrivalAction_GiveToCaravan.GetFloatMenuOptions(representative, pods, this))
+			return command_Action;
+		}
+
+		private Gizmo GetRefuelGizmo()
+		{
+			float fuelInCaravan = CaravanShuttleUtility.FuelInCaravan(this);
+			string text = null;
+			if (fuelInCaravan <= 0f)
+			{
+				text = "NoFuelInCaravan".Translate();
+			}
+			if (Mathf.Approximately(Shuttle.FuelLevel, Shuttle.MaxFuelLevel))
+			{
+				text = "ShuttleFullyFueled".Translate();
+			}
+			return new Command_Action
+			{
+				defaultLabel = "CommandRefuelShuttleFromCargo".Translate(),
+				defaultDesc = "CommandRefuelShuttleFromCargoDesc".Translate(),
+				icon = Building_PassengerShuttle.RefuelFromCargoIcon.Texture,
+				action = delegate
+				{
+					int to = Mathf.FloorToInt(Mathf.Min(fuelInCaravan, Shuttle.MaxFuelLevel - Shuttle.FuelLevel));
+					Dialog_Slider window = new Dialog_Slider((int val) => "RefuelShuttleCount".Translate(val), 1, to, delegate(int count)
+					{
+						CaravanShuttleUtility.ConsumeFuelFromCaravanInventory(this, count);
+						Shuttle.RefuelableComp.Refuel(count);
+					});
+					Find.WindowStack.Add(window);
+				},
+				Disabled = !text.NullOrEmpty(),
+				disabledReason = text
+			};
+		}
+
+		public override IEnumerable<FloatMenuOption> GetTransportersFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<PlanetTile, TransportersArrivalAction> launchAction)
+		{
+			foreach (FloatMenuOption transportersFloatMenuOption in base.GetTransportersFloatMenuOptions(pods, launchAction))
+			{
+				yield return transportersFloatMenuOption;
+			}
+			foreach (FloatMenuOption floatMenuOption in TransportersArrivalAction_GiveToCaravan.GetFloatMenuOptions(launchAction, pods, this))
 			{
 				yield return floatMenuOption;
 			}
 		}
 
-		public void RecacheImmobilizedNow()
+		public void RecacheInventory()
 		{
 			cachedImmobilizedForTicks = -99999;
-		}
-
-		public void RecacheDaysWorthOfFood()
-		{
 			cachedDaysWorthOfFoodForTicks = -99999;
+			hasShuttleDirty = true;
 		}
 
 		public virtual void Notify_MemberDied(Pawn member)
@@ -873,10 +1054,22 @@ namespace RimWorld.Planet
 			}
 			if (!PawnsListForReading.Any((Pawn x) => x != member && IsOwner(x)))
 			{
+				List<Thing> list = CaravanInventoryUtility.AllInventoryItems(this);
+				for (int num = 0; num < list.Count; num++)
+				{
+					list[num].Notify_AbandonedAtTile(base.Tile);
+				}
 				RemovePawn(member);
 				if (base.Faction == Faction.OfPlayer)
 				{
-					Find.LetterStack.ReceiveLetter("LetterLabelAllCaravanColonistsDied".Translate(), "LetterAllCaravanColonistsDied".Translate(Name).CapitalizeFirst(), LetterDefOf.NegativeEvent, new GlobalTargetInfo(base.Tile));
+					if (ModsConfig.IdeologyActive && PawnsListForReading.Any((Pawn x) => x != member && x.IsSlave))
+					{
+						Find.LetterStack.ReceiveLetter("LetterLabelAllCaravanColonistsDied".Translate(), "LetterOnlySlaveCaravanColonistsLeft".Translate(Name).CapitalizeFirst(), LetterDefOf.NegativeEvent, new GlobalTargetInfo(base.Tile));
+					}
+					else
+					{
+						Find.LetterStack.ReceiveLetter("LetterLabelAllCaravanColonistsDied".Translate(), "LetterAllCaravanColonistsDied".Translate(Name).CapitalizeFirst(), LetterDefOf.NegativeEvent, new GlobalTargetInfo(base.Tile));
+					}
 				}
 				pawns.Clear();
 				Destroy();
@@ -904,7 +1097,7 @@ namespace RimWorld.Planet
 			{
 				if (!pawns[num].IsWorldPawn())
 				{
-					Log.Error(string.Concat("Caravan member ", pawns[num], " is not a world pawn. Removing..."));
+					Log.Error($"Caravan member {pawns[num]} is not a world pawn. Removing...");
 					pawns.Remove(pawns[num]);
 				}
 			}
@@ -918,22 +1111,23 @@ namespace RimWorld.Planet
 		public void Notify_PawnRemoved(Pawn p)
 		{
 			Find.ColonistBar.MarkColonistsDirty();
-			RecacheImmobilizedNow();
-			RecacheDaysWorthOfFood();
+			RecacheInventory();
 			carryTracker.Notify_PawnRemoved();
 			beds.Notify_PawnRemoved();
+			babies?.Recache();
+			p.mindState?.ClearBreastfeedCaravan();
 		}
 
 		public void Notify_PawnAdded(Pawn p)
 		{
 			Find.ColonistBar.MarkColonistsDirty();
-			RecacheImmobilizedNow();
-			RecacheDaysWorthOfFood();
+			RecacheInventory();
+			babies?.Recache();
 		}
 
 		public void Notify_DestinationOrPauseStatusChanged()
 		{
-			RecacheDaysWorthOfFood();
+			cachedDaysWorthOfFoodForTicks = -99999;
 		}
 
 		public void Notify_Teleported()

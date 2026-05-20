@@ -11,6 +11,10 @@ namespace RimWorld
 			for (int i = 0; i < wornApparel.Count; i++)
 			{
 				Apparel apparel = wornApparel[i];
+				if (!apparel.def.apparel.countsAsClothingForNudity)
+				{
+					continue;
+				}
 				for (int j = 0; j < apparel.def.apparel.bodyPartGroups.Count; j++)
 				{
 					if (apparel.def.apparel.bodyPartGroups[j] == BodyPartGroupDefOf.Torso)

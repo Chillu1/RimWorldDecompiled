@@ -37,9 +37,14 @@ namespace Verse
 			}
 		}
 
-		public static void RenderSpot(Vector3 loc, float colorPct = 0.5f)
+		public static void RenderSpot(IntVec3 c, float colorPct = 0.5f, float scale = 0.15f)
 		{
-			RenderSpot(loc, MatFromColorPct(colorPct, transparent: false));
+			RenderSpot(c.ToVector3ShiftedWithAltitude(AltitudeLayer.MetaOverlays), colorPct, scale);
+		}
+
+		public static void RenderSpot(Vector3 loc, float colorPct = 0.5f, float scale = 0.15f)
+		{
+			RenderSpot(loc, MatFromColorPct(colorPct, transparent: false), scale);
 		}
 
 		public static void RenderSpot(Vector3 loc, Material mat, float scale = 0.15f)

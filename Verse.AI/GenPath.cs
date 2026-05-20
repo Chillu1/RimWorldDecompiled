@@ -15,7 +15,8 @@ namespace Verse.AI
 			{
 				if (!dest.HasThing)
 				{
-					Log.Error(string.Concat("Pathed to cell ", dest, " with PathEndMode.InteractionCell."));
+					TargetInfo targetInfo = dest;
+					Log.Error("Pathed to cell " + targetInfo.ToString() + " with PathEndMode.InteractionCell.");
 				}
 				peMode = PathEndMode.OnCell;
 				return new TargetInfo(dest.Thing.InteractionCell, dest.Thing.Map);
@@ -38,7 +39,7 @@ namespace Verse.AI
 
 		private static bool ShouldNotEnterCell(Pawn pawn, Map map, IntVec3 dest)
 		{
-			if (map.pathGrid.PerceivedPathCostAt(dest) > 30)
+			if (map.pathing.For(pawn).pathGrid.Cost(dest) > 30)
 			{
 				return true;
 			}
@@ -52,24 +53,24 @@ namespace Verse.AI
 				{
 					return true;
 				}
-				Building edifice = dest.GetEdifice(map);
-				if (edifice != null)
+				if (dest.GetEdifice(map) is Building_Door building_Door)
 				{
-					Building_Door building_Door = edifice as Building_Door;
-					if (building_Door != null)
+					if (building_Door.IsForbidden(pawn))
 					{
-						if (building_Door.IsForbidden(pawn))
-						{
-							return true;
-						}
-						if (!building_Door.PawnCanOpen(pawn))
-						{
-							return true;
-						}
+						return true;
+					}
+					if (!building_Door.PawnCanOpen(pawn))
+					{
+						return true;
 					}
 				}
 			}
 			return false;
+		}
+
+		public static string SpeedPercentString(float extraPathTicks)
+		{
+			return (13f / (extraPathTicks + 13f)).ToStringPercent();
 		}
 	}
 }

@@ -12,6 +12,14 @@ namespace Verse
 
 		private float drawRotatedExtraAngleOffset;
 
+		public const string NorthSuffix = "_north";
+
+		public const string SouthSuffix = "_south";
+
+		public const string EastSuffix = "_east";
+
+		public const string WestSuffix = "_west";
+
 		public string GraphicPath => path;
 
 		public override Material MatSingle => MatSouth;
@@ -46,10 +54,25 @@ namespace Verse
 
 		public override float DrawRotatedExtraAngleOffset => drawRotatedExtraAngleOffset;
 
+		public override void TryInsertIntoAtlas(TextureAtlasGroup groupKey)
+		{
+			Material[] array = mats;
+			foreach (Material material in array)
+			{
+				Texture2D mask = null;
+				if (material.HasProperty(ShaderPropertyIDs.MaskTex))
+				{
+					mask = (Texture2D)material.GetTexture(ShaderPropertyIDs.MaskTex);
+				}
+				GlobalTextureAtlasManager.TryInsertStatic(groupKey, (Texture2D)material.mainTexture, mask);
+			}
+		}
+
 		public override void Init(GraphicRequest req)
 		{
 			data = req.graphicData;
 			path = req.path;
+			maskPath = req.maskPath;
 			color = req.color;
 			colorTwo = req.colorTwo;
 			drawSize = req.drawSize;
@@ -83,6 +106,7 @@ namespace Verse
 			if (array[0] == null)
 			{
 				Log.Error("Failed to find any textures at " + req.path + " while constructing " + this.ToStringSafe());
+				mats[0] = (mats[1] = (mats[2] = (mats[3] = BaseContent.BadMat)));
 				return;
 			}
 			if (array[2] == null)
@@ -116,10 +140,12 @@ namespace Verse
 			Texture2D[] array2 = new Texture2D[mats.Length];
 			if (req.shader.SupportsMaskTex())
 			{
-				array2[0] = ContentFinder<Texture2D>.Get(req.path + "_northm", reportFailure: false);
-				array2[1] = ContentFinder<Texture2D>.Get(req.path + "_eastm", reportFailure: false);
-				array2[2] = ContentFinder<Texture2D>.Get(req.path + "_southm", reportFailure: false);
-				array2[3] = ContentFinder<Texture2D>.Get(req.path + "_westm", reportFailure: false);
+				string text = (maskPath.NullOrEmpty() ? path : maskPath);
+				string text2 = (maskPath.NullOrEmpty() ? "m" : string.Empty);
+				array2[0] = ContentFinder<Texture2D>.Get(text + "_north" + text2, reportFailure: false);
+				array2[1] = ContentFinder<Texture2D>.Get(text + "_east" + text2, reportFailure: false);
+				array2[2] = ContentFinder<Texture2D>.Get(text + "_south" + text2, reportFailure: false);
+				array2[3] = ContentFinder<Texture2D>.Get(text + "_west" + text2, reportFailure: false);
 				if (array2[0] == null)
 				{
 					if (array2[2] != null)
@@ -164,25 +190,35 @@ namespace Verse
 			}
 			for (int i = 0; i < mats.Length; i++)
 			{
-				MaterialRequest req2 = default(MaterialRequest);
-				req2.mainTex = array[i];
-				req2.shader = req.shader;
-				req2.color = color;
-				req2.colorTwo = colorTwo;
-				req2.maskTex = array2[i];
-				req2.shaderParameters = req.shaderParameters;
+				MaterialRequest req2 = new MaterialRequest
+				{
+					mainTex = array[i],
+					shader = req.shader,
+					color = color,
+					colorTwo = colorTwo,
+					maskTex = array2[i],
+					shaderParameters = req.shaderParameters,
+					renderQueue = req.renderQueue
+				};
 				mats[i] = MaterialPool.MatFrom(req2);
 			}
 		}
 
 		public override Graphic GetColoredVersion(Shader newShader, Color newColor, Color newColorTwo)
 		{
-			return GraphicDatabase.Get<Graphic_Multi>(path, newShader, drawSize, newColor, newColorTwo, data);
+			return GraphicDatabase.Get<Graphic_Multi>(path, newShader, drawSize, newColor, newColorTwo, data, maskPath);
 		}
 
 		public override string ToString()
 		{
-			return string.Concat("Multi(initPath=", path, ", color=", color, ", colorTwo=", colorTwo, ")");
+			string[] obj = new string[7] { "Multi(initPath=", path, ", color=", null, null, null, null };
+			Color color = base.color;
+			obj[3] = color.ToString();
+			obj[4] = ", colorTwo=";
+			color = colorTwo;
+			obj[5] = color.ToString();
+			obj[6] = ")";
+			return string.Concat(obj);
 		}
 
 		public override int GetHashCode()

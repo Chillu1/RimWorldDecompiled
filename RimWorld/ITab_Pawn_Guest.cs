@@ -6,9 +6,9 @@ namespace RimWorld
 		{
 			get
 			{
-				if (base.SelPawn.HostFaction == Faction.OfPlayer)
+				if (SelPawn.HostFaction == Faction.OfPlayer && !SelPawn.IsPrisoner)
 				{
-					return !base.SelPawn.IsPrisoner;
+					return !SelPawn.IsSlaveOfColony;
 				}
 				return false;
 			}

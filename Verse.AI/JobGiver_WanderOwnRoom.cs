@@ -12,7 +12,11 @@ namespace Verse.AI
 
 		protected override IntVec3 GetWanderRoot(Pawn pawn)
 		{
-			return (pawn.MentalState as MentalState_WanderOwnRoom)?.target ?? pawn.Position;
+			if (pawn.MentalState is MentalState_WanderOwnRoom mentalState_WanderOwnRoom)
+			{
+				return mentalState_WanderOwnRoom.target;
+			}
+			return pawn.Position;
 		}
 	}
 }

@@ -9,7 +9,7 @@ namespace RimWorld
 
 		public override void PostDestroy(DestroyMode mode, Map previousMap)
 		{
-			if (previousMap != null)
+			if ((mode != DestroyMode.Vanish || !Props.ignoreOnVanish) && (!Props.onlyWhenKilled || mode == DestroyMode.KillFinalize || mode == DestroyMode.KillFinalizeLeavingsOnly) && previousMap != null)
 			{
 				Props.sound.PlayOneShotOnCamera(previousMap);
 			}

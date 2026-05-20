@@ -26,14 +26,14 @@ namespace Verse
 			return ThingCategoryDefOf.StoneBlocks.label;
 		}
 
-		public override bool CanPossiblyStoreInStockpile(Bill_Production bill, Zone_Stockpile stockpile)
+		public override bool CanPossiblyStore(Bill_Production bill, ISlotGroup slotGroup)
 		{
 			foreach (ThingDef allowedThingDef in bill.ingredientFilter.AllowedThingDefs)
 			{
 				if (!allowedThingDef.butcherProducts.NullOrEmpty())
 				{
 					ThingDef thingDef = allowedThingDef.butcherProducts[0].thingDef;
-					if (!stockpile.GetStoreSettings().AllowedToAccept(thingDef))
+					if (!slotGroup.Settings.AllowedToAccept(thingDef))
 					{
 						return false;
 					}

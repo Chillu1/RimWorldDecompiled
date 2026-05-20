@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
@@ -41,9 +42,15 @@ namespace Verse
 			}
 		}
 
+		private static readonly List<Thing> cellThingsFiltered = new List<Thing>();
+
 		public static ThingDef GetProjectile(this Verb verb)
 		{
-			return (verb as Verb_LaunchProjectile)?.Projectile;
+			if (!(verb is Verb_LaunchProjectile verb_LaunchProjectile))
+			{
+				return null;
+			}
+			return verb_LaunchProjectile.Projectile;
 		}
 
 		public static DamageDef GetDamageDef(this Verb verb)
@@ -55,9 +62,28 @@ namespace Verse
 			return verb.verbProps.meleeDamageDef;
 		}
 
-		public static bool IsIncendiary(this Verb verb)
+		public static bool IsIncendiary_Ranged(this Verb verb)
 		{
+			if (verb.verbProps != null && verb.verbProps.ai_BeamIsIncendiary)
+			{
+				return true;
+			}
 			return verb.GetProjectile()?.projectile.ai_IsIncendiary ?? false;
+		}
+
+		public static bool IsIncendiary_Melee(this Verb verb)
+		{
+			if (verb.tool != null && !verb.tool.extraMeleeDamages.NullOrEmpty())
+			{
+				for (int i = 0; i < verb.tool.extraMeleeDamages.Count; i++)
+				{
+					if (verb.tool.extraMeleeDamages[i].def == DamageDefOf.Flame)
+					{
+						return true;
+					}
+				}
+			}
+			return false;
 		}
 
 		public static bool ProjectileFliesOverhead(this Verb verb)
@@ -88,14 +114,12 @@ namespace Verse
 		public static List<Verb> GetConcreteExampleVerbs(Def def, ThingDef stuff = null)
 		{
 			List<Verb> result = null;
-			ThingDef thingDef = def as ThingDef;
-			if (thingDef != null)
+			if (def is ThingDef thingDef)
 			{
 				Thing concreteExample = thingDef.GetConcreteExample(stuff);
 				result = ((concreteExample is Pawn) ? ((Pawn)concreteExample).VerbTracker.AllVerbs : ((!(concreteExample is ThingWithComps)) ? null : ((ThingWithComps)concreteExample).GetComp<CompEquippable>().AllVerbs));
 			}
-			HediffDef hediffDef = def as HediffDef;
-			if (hediffDef != null)
+			if (def is HediffDef hediffDef)
 			{
 				result = hediffDef.ConcreteExample.TryGetComp<HediffComp_VerbGiver>().VerbTracker.AllVerbs;
 			}
@@ -138,20 +162,20 @@ namespace Verse
 		{
 			if (verbProps != null)
 			{
-				for (int j = 0; j < verbProps.Count; j++)
+				for (int i = 0; i < verbProps.Count; i++)
 				{
-					yield return new VerbPropertiesWithSource(verbProps[j]);
+					yield return new VerbPropertiesWithSource(verbProps[i]);
 				}
 			}
 			if (tools == null)
 			{
 				yield break;
 			}
-			for (int j = 0; j < tools.Count; j++)
+			for (int i = 0; i < tools.Count; i++)
 			{
-				foreach (ManeuverDef maneuver in tools[j].Maneuvers)
+				foreach (ManeuverDef maneuver in tools[i].Maneuvers)
 				{
-					yield return new VerbPropertiesWithSource(maneuver.verb, tools[j], maneuver);
+					yield return new VerbPropertiesWithSource(maneuver.verb, tools[i], maneuver);
 				}
 			}
 		}
@@ -162,8 +186,7 @@ namespace Verse
 			{
 				return true;
 			}
-			Pawn pawn = target.Thing as Pawn;
-			if (pawn != null && pawn.HostileTo(caster))
+			if (target.Thing is Pawn pawn && pawn.HostileTo(caster))
 			{
 				return pawn.Downed;
 			}
@@ -204,7 +227,6 @@ namespace Verse
 					_ = additionalHediff;
 					num += 0.1f;
 				}
-				return num;
 			}
 			return num;
 		}
@@ -225,6 +247,21 @@ namespace Verse
 				}
 			}
 			return 1f / (float)num * ((selectionCategory == VerbSelectionCategory.Mid) ? 0.25f : 0.75f);
+		}
+
+		public static List<Thing> ThingsToHit(IntVec3 cell, Map map, Func<Thing, bool> filter)
+		{
+			cellThingsFiltered.Clear();
+			List<Thing> thingList = cell.GetThingList(map);
+			for (int i = 0; i < thingList.Count; i++)
+			{
+				Thing thing = thingList[i];
+				if ((thing.def.category == ThingCategory.Building || thing.def.category == ThingCategory.Pawn || thing.def.category == ThingCategory.Item || thing.def.category == ThingCategory.Plant) && filter(thing))
+				{
+					cellThingsFiltered.Add(thing);
+				}
+			}
+			return cellThingsFiltered;
 		}
 	}
 }

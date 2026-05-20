@@ -5,9 +5,9 @@ namespace RimWorld
 {
 	public class ItemAvailability
 	{
-		private Map map;
+		private readonly Map map;
 
-		private Dictionary<int, bool> cachedResults = new Dictionary<int, bool>();
+		private readonly Dictionary<int, bool> cachedResults = new Dictionary<int, bool>();
 
 		public ItemAvailability(Map map)
 		{
@@ -19,25 +19,25 @@ namespace RimWorld
 			cachedResults.Clear();
 		}
 
-		public bool ThingsAvailableAnywhere(ThingDefCountClass need, Pawn pawn)
+		public bool ThingsAvailableAnywhere(ThingDef need, int amount, Pawn pawn)
 		{
 			int key = Gen.HashCombine(need.GetHashCode(), pawn.Faction);
 			if (!cachedResults.TryGetValue(key, out var value))
 			{
-				List<Thing> list = map.listerThings.ThingsOfDef(need.thingDef);
+				List<Thing> list = map.listerThings.ThingsOfDef(need);
 				int num = 0;
 				for (int i = 0; i < list.Count; i++)
 				{
 					if (!list[i].IsForbidden(pawn))
 					{
 						num += list[i].stackCount;
-						if (num >= need.count)
+						if (num >= amount)
 						{
 							break;
 						}
 					}
 				}
-				value = num >= need.count;
+				value = num >= amount;
 				cachedResults.Add(key, value);
 			}
 			return value;

@@ -5,24 +5,6 @@ namespace RimWorld
 	{
 		public static ThoughtDef AteRawFood;
 
-		public static ThoughtDef AteAwfulMeal;
-
-		public static ThoughtDef AteFineMeal;
-
-		public static ThoughtDef AteLavishMeal;
-
-		public static ThoughtDef AteHumanlikeMeatDirect;
-
-		public static ThoughtDef AteHumanlikeMeatDirectCannibal;
-
-		public static ThoughtDef AteHumanlikeMeatAsIngredient;
-
-		public static ThoughtDef AteHumanlikeMeatAsIngredientCannibal;
-
-		public static ThoughtDef AteInsectMeatDirect;
-
-		public static ThoughtDef AteInsectMeatAsIngredient;
-
 		public static ThoughtDef AteCorpse;
 
 		public static ThoughtDef AteRottenFood;
@@ -44,12 +26,20 @@ namespace RimWorld
 
 		public static ThoughtDef SleepDisturbed;
 
+		[MayRequireIdeology]
+		public static ThoughtDef SleptInRoomWithSlave;
+
 		[MayRequireRoyalty]
 		public static ThoughtDef ReignedInThroneroom;
+
+		[MayRequireIdeology]
+		public static ThoughtDef ObservedTerror;
 
 		public static ThoughtDef WasImprisoned;
 
 		public static ThoughtDef NewColonyOptimism;
+
+		public static ThoughtDef NewColonyHope;
 
 		public static ThoughtDef AteWithoutTable;
 
@@ -61,23 +51,17 @@ namespace RimWorld
 
 		public static ThoughtDef MyOrganHarvested;
 
+		public static ThoughtDef HarvestedOrgan_Bloodlust;
+
 		public static ThoughtDef KnowColonistDied;
 
 		public static ThoughtDef KnowPrisonerDiedInnocent;
 
-		public static ThoughtDef KnowGuestOrganHarvested;
-
-		public static ThoughtDef KnowColonistOrganHarvested;
-
-		public static ThoughtDef KnowGuestExecuted;
-
-		public static ThoughtDef KnowColonistExecuted;
-
-		public static ThoughtDef KnowPrisonerSold;
-
 		public static ThoughtDef FreedFromSlavery;
 
 		public static ThoughtDef ReleasedHealthyPrisoner;
+
+		public static ThoughtDef SoakingWet;
 
 		public static ThoughtDef SoldMyBondedAnimalMood;
 
@@ -91,16 +75,6 @@ namespace RimWorld
 
 		public static ThoughtDef KilledHumanlikeBloodlust;
 
-		public static ThoughtDef ButcheredHumanlikeCorpse;
-
-		public static ThoughtDef KnowButcheredHumanlikeCorpse;
-
-		public static ThoughtDef ObservedLayingRottingCorpse;
-
-		public static ThoughtDef ObservedLayingCorpse;
-
-		public static ThoughtDef RapportBuilt;
-
 		public static ThoughtDef Nuzzled;
 
 		public static ThoughtDef ArtifactMoodBoost;
@@ -111,13 +85,19 @@ namespace RimWorld
 
 		public static ThoughtDef DebugBad;
 
+		public static ThoughtDef DeniedJoining;
+
 		public static ThoughtDef ColonistBanished;
 
 		public static ThoughtDef ColonistBanishedToDie;
 
 		public static ThoughtDef PrisonerBanishedToDie;
 
+		public static ThoughtDef ColonyPrisonerEscaped;
+
 		public static ThoughtDef BondedAnimalBanished;
+
+		public static ThoughtDef BondedAnimalReleased;
 
 		public static ThoughtDef FailedToRescueRelative;
 
@@ -125,14 +105,178 @@ namespace RimWorld
 
 		public static ThoughtDef Rescued;
 
+		public static ThoughtDef PyroUsed;
+
 		[MayRequireRoyalty]
 		public static ThoughtDef DecreeMet;
 
 		[MayRequireRoyalty]
-		public static ThoughtDef KillThirst;
-
-		[MayRequireRoyalty]
 		public static ThoughtDef JealousRage;
+
+		[MayRequireIdeology]
+		public static ThoughtDef FailedConvertIdeoAttemptResentment;
+
+		[MayRequireIdeology]
+		public static ThoughtDef IdeoBuildingMissing;
+
+		[MayRequireIdeology]
+		public static ThoughtDef IdeoBuildingDisrespected;
+
+		[MayRequireIdeology]
+		public static ThoughtDef IdeoRoleLost;
+
+		[MayRequireIdeology]
+		public static ThoughtDef IdeoRoleEmpty;
+
+		[MayRequireIdeology]
+		public static ThoughtDef IdeoRoleApparelRequirementNotMet;
+
+		[MayRequireIdeology]
+		public static ThoughtDef Counselled;
+
+		[MayRequireIdeology]
+		public static ThoughtDef Counselled_MoodBoost;
+
+		[MayRequireIdeology]
+		public static ThoughtDef ObservedGibbetCage;
+
+		[MayRequireIdeology]
+		public static ThoughtDef ObservedSkullspike;
+
+		[MayRequireIdeology]
+		public static ThoughtDef RelicDestroyed;
+
+		[MayRequireIdeology]
+		public static ThoughtDef RelicLost;
+
+		[MayRequireIdeology]
+		public static ThoughtDef RelicAtRitual;
+
+		[MayRequireIdeology]
+		public static ThoughtDef WasEnslaved;
+
+		[MayRequireIdeology]
+		public static ThoughtDef TameVeneratedAnimalDied;
+
+		[MayRequireIdeology]
+		public static ThoughtDef ConnectedTreeDied;
+
+		[MayRequireIdeology]
+		public static ThoughtDef RelicsCollected;
+
+		[MayRequireIdeology]
+		public static ThoughtDef BiosculpterPleasure;
+
+		[MayRequireIdeology]
+		public static ThoughtDef AgeReversalDemanded;
+
+		[MayRequireIdeology]
+		public static ThoughtDef AgeReversalReceived;
+
+		[MayRequireIdeology]
+		public static ThoughtDef DryadDied;
+
+		[MayRequireBiotech]
+		public static ThoughtDef PregnancyTerminated;
+
+		[MayRequireBiotech]
+		public static ThoughtDef PregnancyEnded;
+
+		[MayRequireBiotech]
+		public static ThoughtDef Stillbirth;
+
+		[MayRequireBiotech]
+		public static ThoughtDef Miscarried;
+
+		[MayRequireBiotech]
+		public static ThoughtDef PartnerMiscarried;
+
+		[MayRequireBiotech]
+		public static ThoughtDef BabyBorn;
+
+		[MayRequireBiotech]
+		public static ThoughtDef CryingBaby;
+
+		[MayRequireBiotech]
+		public static ThoughtDef MyCryingBaby;
+
+		[MayRequireBiotech]
+		public static ThoughtDef GigglingBaby;
+
+		[MayRequireBiotech]
+		public static ThoughtDef MyGigglingBaby;
+
+		[MayRequireBiotech]
+		public static ThoughtDef BabyGiggledSocial;
+
+		[MayRequireBiotech]
+		public static ThoughtDef BabyCriedSocial;
+
+		[MayRequireBiotech]
+		public static ThoughtDef BreastfedMe;
+
+		[MayRequireBiotech]
+		public static ThoughtDef BreastfedBaby;
+
+		[MayRequireBiotech]
+		public static ThoughtDef FedMe;
+
+		[MayRequireBiotech]
+		public static ThoughtDef FedBaby;
+
+		[MayRequireBiotech]
+		public static ThoughtDef PlayedWithMe;
+
+		[MayRequireBiotech]
+		public static ThoughtDef PsychicBondTorn;
+
+		[MayRequireBiotech]
+		public static ThoughtDef XenogermHarvested_Prisoner;
+
+		[MayRequireAnomaly]
+		public static ThoughtDef PsychicRitualVictim;
+
+		[MayRequireAnomaly]
+		public static ThoughtDef DarknessLifted;
+
+		[MayRequireAnomaly]
+		public static ThoughtDef PlayedWithCube;
+
+		[MayRequireAnomaly]
+		public static ThoughtDef DestroyedCubeSculpture;
+
+		[MayRequireAnomaly]
+		public static ThoughtDef UnnaturalCorpseDestroyed;
+
+		[MayRequireAnomaly]
+		public static ThoughtDef ObeliskAbduction;
+
+		[MayRequireAnomaly]
+		public static ThoughtDef EmbracedTheVoid;
+
+		[MayRequireAnomaly]
+		public static ThoughtDef ClosedTheVoid;
+
+		[MayRequireAnomaly]
+		public static ThoughtDef VoidClosed;
+
+		[MayRequireAnomaly]
+		public static ThoughtDef ClosedTheVoidOpinion;
+
+		[MayRequireAnomaly]
+		public static ThoughtDef PsychicRitualGuilt;
+
+		[MayRequireAnomaly]
+		public static ThoughtDef VoidCuriosity;
+
+		[MayRequireAnomaly]
+		public static ThoughtDef VoidCuriositySatisfied;
+
+		[MayRequireOdyssey]
+		public static ThoughtDef DestroyedMechhive;
+
+		[MayRequireOdyssey]
+		public static ThoughtDef DestroyedMechhiveMainPawn;
 
 		public static ThoughtDef ColonistLost;
 
@@ -155,7 +299,29 @@ namespace RimWorld
 		[MayRequireRoyalty]
 		public static ThoughtDef DecreeUnmet;
 
-		public static ThoughtDef Chitchat;
+		[MayRequireIdeology]
+		public static ThoughtDef NoRecentHumanMeat_RequiredRavenous;
+
+		[MayRequireIdeology]
+		public static ThoughtDef NoRecentHumanMeat_RequiredStrong;
+
+		[MayRequireIdeology]
+		public static ThoughtDef NoRecentHumanMeat_Preferred;
+
+		[MayRequireIdeology]
+		public static ThoughtDef TreesDesired;
+
+		[MayRequireIdeology]
+		public static ThoughtDef Skullspike_Desired;
+
+		[MayRequireIdeology]
+		public static ThoughtDef Skullspike_Disapproved;
+
+		[MayRequireAnomaly]
+		public static ThoughtDef HeardInhumanRambling;
+
+		[MayRequireAnomaly]
+		public static ThoughtDef Chimera;
 
 		public static ThoughtDef PawnWithGoodOpinionDied;
 
@@ -205,19 +371,11 @@ namespace RimWorld
 
 		public static ThoughtDef HeldConcert;
 
-		public static ThoughtDef TerribleSpeech;
-
-		public static ThoughtDef UninspiringSpeech;
-
 		public static ThoughtDef EncouragingSpeech;
 
 		public static ThoughtDef InspirationalSpeech;
 
 		public static ThoughtDef CrashedTogether;
-
-		public static ThoughtDef Insulted;
-
-		public static ThoughtDef KindWords;
 
 		public static ThoughtDef GotSomeLovin;
 
@@ -228,6 +386,8 @@ namespace RimWorld
 		public static ThoughtDef DefeatedHostileFactionLeader;
 
 		public static ThoughtDef DefeatedMechCluster;
+
+		public static ThoughtDef DefeatedInsectHive;
 
 		public static ThoughtDef ForcedMeToTakeDrugs;
 
@@ -243,7 +403,43 @@ namespace RimWorld
 		public static ThoughtDef OtherTravelerSurgicallyViolated;
 
 		[MayRequireRoyalty]
+		public static ThoughtDef OtherTravelerLeftBehind;
+
+		[MayRequireRoyalty]
 		public static ThoughtDef NeuroquakeEcho;
+
+		[MayRequireIdeology]
+		public static ThoughtDef TrialExonerated;
+
+		[MayRequireIdeology]
+		public static ThoughtDef TrialFailed;
+
+		[MayRequireIdeology]
+		public static ThoughtDef TrialConvicted;
+
+		[MayRequireBiotech]
+		public static ThoughtDef FedOn;
+
+		[MayRequireBiotech]
+		public static ThoughtDef FedOn_Social;
+
+		[MayRequireBiotech]
+		public static ThoughtDef WasTaught;
+
+		[MayRequireBiotech]
+		public static ThoughtDef GaveLesson;
+
+		[MayRequireBiotech]
+		public static ThoughtDef KilledChild;
+
+		[MayRequireAnomaly]
+		public static ThoughtDef DrainedMySkills;
+
+		[MayRequireAnomaly]
+		public static ThoughtDef UsedMeForPsychicRitual;
+
+		[MayRequireOdyssey]
+		public static ThoughtDef MadeStatueOfMe;
 
 		static ThoughtDefOf()
 		{

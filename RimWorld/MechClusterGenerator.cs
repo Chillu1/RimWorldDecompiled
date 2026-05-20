@@ -1,6 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using LudeonTK;
 using RimWorld.SketchGen;
 using UnityEngine;
 using Verse;
@@ -23,10 +23,7 @@ namespace RimWorld
 
 		public const float MaxPoints = 10000f;
 
-		public static readonly SimpleCurve PointsToPawnsChanceCurve = new SimpleCurve
-		{
-			new CurvePoint(400f, 0.75f)
-		};
+		public static readonly SimpleCurve PointsToPawnsChanceCurve = new SimpleCurve { new CurvePoint(400f, 0.75f) };
 
 		public static readonly SimpleCurve PawnPointsRandomPercentOfTotalCurve = new SimpleCurve
 		{
@@ -70,10 +67,7 @@ namespace RimWorld
 			new CurvePoint(5000f, 4f)
 		};
 
-		private static readonly SimpleCurve GoodBuildingChanceCurve = new SimpleCurve
-		{
-			new CurvePoint(400f, 0.5f)
-		};
+		private static readonly SimpleCurve GoodBuildingChanceCurve = new SimpleCurve { new CurvePoint(400f, 0.5f) };
 
 		private static readonly SimpleCurve GoodBuildingMaxCountCurve = new SimpleCurve
 		{
@@ -123,25 +117,10 @@ namespace RimWorld
 			new CurvePoint(2200f, 0.5f)
 		};
 
-		private const float BuildingRechooseWeight = 200f;
-
-		[Obsolete]
-		public static MechClusterSketch GenerateClusterSketch(float points, bool startDormant = true)
+		public static MechClusterSketch GenerateClusterSketch(float points, Map map, bool startDormant = true, bool forceNoConditionCauser = false)
 		{
-			return GenerateClusterSketch(points, null, startDormant);
-		}
-
-		[Obsolete]
-		public static MechClusterSketch GenerateClusterSketch(float points, Map map, bool startDormant = true)
-		{
-			return GenerateClusterSketch_NewTemp(points, map, startDormant);
-		}
-
-		public static MechClusterSketch GenerateClusterSketch_NewTemp(float points, Map map, bool startDormant = true, bool forceNoConditionCauser = false)
-		{
-			if (!ModLister.RoyaltyInstalled)
+			if (!ModLister.CheckRoyalty("Mech cluster") || !ModsConfig.RoyaltyActive)
 			{
-				Log.ErrorOnce("Mech clusters are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 657122);
 				return new MechClusterSketch(new Sketch(), new List<MechClusterSketch.Mech>(), startDormant);
 			}
 			points = Mathf.Min(points, 10000f);
@@ -149,7 +128,7 @@ namespace RimWorld
 			List<MechClusterSketch.Mech> list = null;
 			if (Rand.Chance(PointsToPawnsChanceCurve.Evaluate(points)))
 			{
-				List<PawnKindDef> source = DefDatabase<PawnKindDef>.AllDefsListForReading.Where((PawnKindDef def) => def.RaceProps.IsMechanoid).ToList();
+				List<PawnKindDef> source = DefDatabase<PawnKindDef>.AllDefsListForReading.Where(MechKindSuitableForCluster).ToList();
 				list = new List<MechClusterSketch.Mech>();
 				float a = Rand.ByCurve(PawnPointsRandomPercentOfTotalCurve) * num;
 				float pawnPointsLeft;
@@ -162,7 +141,7 @@ namespace RimWorld
 				}
 				num -= a - pawnPointsLeft;
 			}
-			Sketch buildingsSketch = RimWorld.SketchGen.SketchGen.Generate(SketchResolverDefOf.MechCluster, new ResolveParams
+			Sketch buildingsSketch = RimWorld.SketchGen.SketchGen.Generate(SketchResolverDefOf.MechCluster, new SketchResolveParams
 			{
 				points = num,
 				totalPoints = points,
@@ -174,9 +153,9 @@ namespace RimWorld
 			if (list != null)
 			{
 				List<IntVec3> pawnUsedSpots = new List<IntVec3>();
-				for (int i = 0; i < list.Count; i++)
+				for (int num2 = 0; num2 < list.Count; num2++)
 				{
-					MechClusterSketch.Mech pawn = list[i];
+					MechClusterSketch.Mech pawn = list[num2];
 					if (!buildingsSketch.OccupiedRect.Where((IntVec3 c) => !buildingsSketch.ThingsAt(c).Any() && !pawnUsedSpots.Contains(c)).TryRandomElement(out var result2))
 					{
 						CellRect cellRect = buildingsSketch.OccupiedRect;
@@ -188,17 +167,29 @@ namespace RimWorld
 					}
 					pawnUsedSpots.Add(result2);
 					pawn.position = result2;
-					list[i] = pawn;
+					list[num2] = pawn;
 				}
 			}
 			return new MechClusterSketch(buildingsSketch, list, startDormant);
 		}
 
-		public static void ResolveSketch(ResolveParams parms)
+		public static bool MechKindSuitableForCluster(PawnKindDef def)
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (!def.RaceProps.IsMechanoid || def.isGoodBreacher || !def.isFighter || !def.allowInMechClusters)
 			{
-				Log.ErrorOnce("Mech clusters are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 673321);
+				return false;
+			}
+			if (ModsConfig.BiotechActive && Find.BossgroupManager.ReservedByBossgroup(def))
+			{
+				return false;
+			}
+			return true;
+		}
+
+		public static void ResolveSketch(SketchResolveParams parms)
+		{
+			if (!ModLister.CheckRoyalty("Mech cluster"))
+			{
 				return;
 			}
 			bool canBeDormant = !parms.mechClusterDormant.HasValue || parms.mechClusterDormant.Value;
@@ -212,7 +203,7 @@ namespace RimWorld
 				num = 2000f;
 				Log.Error("No points given for mech cluster generation. Default to " + num);
 			}
-			float value = (parms.totalPoints.HasValue ? parms.totalPoints.Value : num);
+			float value = parms.totalPoints ?? num;
 			IntVec2 intVec;
 			if (parms.mechClusterSize.HasValue)
 			{
@@ -224,7 +215,7 @@ namespace RimWorld
 				int num3 = GenMath.RoundRandom(PointsToSizeCurve.Evaluate(num) * SizeRandomFactorRange.RandomInRange);
 				if (parms.mechClusterForMap != null)
 				{
-					CellRect cellRect = LargestAreaFinder.FindLargestRect(parms.mechClusterForMap, (IntVec3 x) => !x.Impassable(parms.mechClusterForMap) && x.GetTerrain(parms.mechClusterForMap).affordances.Contains(TerrainAffordanceDefOf.Heavy), Mathf.Max(num2, num3));
+					CellRect cellRect = LargestAreaFinder.FindLargestRect(parms.mechClusterForMap, (IntVec3 x) => !x.Impassable(parms.mechClusterForMap) && x.GetAffordances(parms.mechClusterForMap).Contains(TerrainAffordanceDefOf.Heavy), Mathf.Max(num2, num3));
 					num2 = Mathf.Min(num2, cellRect.Width);
 					num3 = Mathf.Min(num3, cellRect.Height);
 				}
@@ -233,36 +224,24 @@ namespace RimWorld
 			Sketch sketch = new Sketch();
 			if (Rand.Chance(WallsChanceCurve.Evaluate(num)))
 			{
-				ResolveParams parms2 = parms;
+				SketchResolveParams parms2 = parms;
 				parms2.sketch = sketch;
 				parms2.mechClusterSize = intVec;
 				SketchResolverDefOf.MechClusterWalls.Resolve(parms2);
 			}
-			List<ThingDef> buildingDefsForCluster_NewTemp = GetBuildingDefsForCluster_NewTemp(num, intVec, canBeDormant, value, parms.forceNoConditionCauser.HasValue && parms.forceNoConditionCauser.Value);
-			AddBuildingsToSketch(sketch, intVec, buildingDefsForCluster_NewTemp);
+			List<ThingDef> buildingDefsForCluster = GetBuildingDefsForCluster(num, intVec, canBeDormant, value, parms.forceNoConditionCauser == true);
+			AddBuildingsToSketch(sketch, intVec, buildingDefsForCluster);
 			parms.sketch.MergeAt(sketch, default(IntVec3), Sketch.SpawnPosType.OccupiedCenter);
 		}
 
-		[Obsolete("Only need this overload to not break mod compatibility.")]
-		private static List<ThingDef> GetBuildingDefsForCluster(float points, IntVec2 size, bool canBeDormant)
-		{
-			return GetBuildingDefsForCluster_NewTemp(points, size, canBeDormant, 0f);
-		}
-
-		[Obsolete("Only need this overload to not break mod compatibility.")]
-		private static List<ThingDef> GetBuildingDefsForCluster_NewTemp(float points, IntVec2 size, bool canBeDormant, float? totalPoints)
-		{
-			return GetBuildingDefsForCluster_NewTemp(points, size, canBeDormant, totalPoints, forceNoConditionCauser: false);
-		}
-
-		private static List<ThingDef> GetBuildingDefsForCluster_NewTemp(float points, IntVec2 size, bool canBeDormant, float? totalPoints, bool forceNoConditionCauser)
+		private static List<ThingDef> GetBuildingDefsForCluster(float points, IntVec2 size, bool canBeDormant, float? totalPoints, bool forceNoConditionCauser)
 		{
 			List<ThingDef> list = new List<ThingDef>();
-			List<ThingDef> source = DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef def) => def.building != null && def.building.buildingTags != null && def.building.buildingTags.Contains("MechClusterMember") && (!totalPoints.HasValue || (float)def.building.minMechClusterPoints <= totalPoints)).ToList();
+			List<ThingDef> source = DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef def) => def.building?.buildingTags != null && def.building.buildingTags.Contains("MechClusterMember") && (!totalPoints.HasValue || (float)def.building.minMechClusterPoints <= totalPoints)).ToList();
 			if (!forceNoConditionCauser)
 			{
 				int num = GenMath.RoundRandom(ProblemCauserCountCurve.Evaluate(points));
-				for (int i = 0; i < num; i++)
+				for (int num2 = 0; num2 < num; num2++)
 				{
 					if (!source.Where((ThingDef x) => x.building.buildingTags.Contains("MechClusterProblemCauser")).TryRandomElementByWeight((ThingDef t) => t.generateCommonality, out var result))
 					{
@@ -279,8 +258,8 @@ namespace RimWorld
 				}
 				if (Rand.Chance(0.5f))
 				{
-					int num2 = GenMath.RoundRandom(ActivatorProximitysCountCurve.Evaluate(points));
-					for (int j = 0; j < num2; j++)
+					int num3 = GenMath.RoundRandom(ActivatorProximitysCountCurve.Evaluate(points));
+					for (int num4 = 0; num4 < num3; num4++)
 					{
 						list.Add(ThingDefOf.ActivatorProximity);
 					}
@@ -288,8 +267,8 @@ namespace RimWorld
 			}
 			if (Rand.Chance(GoodBuildingChanceCurve.Evaluate(points)))
 			{
-				int num3 = Rand.RangeInclusive(0, GenMath.RoundRandom(GoodBuildingMaxCountCurve.Evaluate(points)));
-				for (int k = 0; k < num3; k++)
+				int num5 = Rand.RangeInclusive(0, GenMath.RoundRandom(GoodBuildingMaxCountCurve.Evaluate(points)));
+				for (int num6 = 0; num6 < num5; num6++)
 				{
 					if (!source.Where((ThingDef x) => x.building.buildingTags.Contains("MechClusterMemberGood")).TryRandomElement(out var result2))
 					{
@@ -298,8 +277,8 @@ namespace RimWorld
 					list.Add(result2);
 				}
 			}
-			int num4 = Rand.RangeInclusive(Mathf.FloorToInt(LampBuildingMinCountCurve.Evaluate(points)), Mathf.CeilToInt(LampBuildingMaxCountCurve.Evaluate(points)));
-			for (int l = 0; l < num4; l++)
+			int num7 = Rand.RangeInclusive(Mathf.FloorToInt(LampBuildingMinCountCurve.Evaluate(points)), Mathf.CeilToInt(LampBuildingMaxCountCurve.Evaluate(points)));
+			for (int num8 = 0; num8 < num7; num8++)
 			{
 				if (!source.Where((ThingDef x) => x.building.buildingTags.Contains("MechClusterMemberLamp")).TryRandomElement(out var result3))
 				{
@@ -310,8 +289,8 @@ namespace RimWorld
 			if (Rand.Chance(BulletShieldChanceCurve.Evaluate(points)))
 			{
 				points *= 0.85f;
-				int num5 = Rand.RangeInclusive(0, GenMath.RoundRandom(BulletShieldMaxCountCurve.Evaluate(points)));
-				for (int m = 0; m < num5; m++)
+				int num9 = Rand.RangeInclusive(0, GenMath.RoundRandom(BulletShieldMaxCountCurve.Evaluate(points)));
+				for (int num10 = 0; num10 < num9; num10++)
 				{
 					list.Add(ThingDefOf.ShieldGeneratorBullets);
 				}
@@ -485,9 +464,9 @@ namespace RimWorld
 					for (int i = 0; i < 50; i++)
 					{
 						int num = Rand.Range(10, 20);
-						List<ThingDef> buildingDefsForCluster_NewTemp = GetBuildingDefsForCluster_NewTemp(localPoints, new IntVec2(num, num), canBeDormant: true, localPoints);
+						List<ThingDef> buildingDefsForCluster = GetBuildingDefsForCluster(localPoints, new IntVec2(num, num), canBeDormant: true, localPoints, forceNoConditionCauser: false);
 						text = text + "points: " + localPoints + " , size: " + num;
-						foreach (ThingDef item2 in buildingDefsForCluster_NewTemp)
+						foreach (ThingDef item2 in buildingDefsForCluster)
 						{
 							text = text + "\n- " + item2.defName;
 						}

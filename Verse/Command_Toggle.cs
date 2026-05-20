@@ -16,6 +16,8 @@ namespace Verse
 
 		public bool activateIfAmbiguous = true;
 
+		public bool hideIconIfDisabled;
+
 		public override SoundDef CurActivateSound
 		{
 			get
@@ -34,20 +36,22 @@ namespace Verse
 			toggleAction();
 		}
 
-		public override GizmoResult GizmoOnGUI(Vector2 loc, float maxWidth)
+		public override GizmoResult GizmoOnGUI(Vector2 loc, float maxWidth, GizmoRenderParms parms)
 		{
-			GizmoResult result = base.GizmoOnGUI(loc, maxWidth);
-			Rect rect = new Rect(loc.x, loc.y, GetWidth(maxWidth), 75f);
-			Rect position = new Rect(rect.x + rect.width - 24f, rect.y, 24f, 24f);
-			Texture2D image = (isActive() ? Widgets.CheckboxOnTex : Widgets.CheckboxOffTex);
-			GUI.DrawTexture(position, image);
+			GizmoResult result = base.GizmoOnGUI(loc, maxWidth, parms);
+			if (!disabled || !hideIconIfDisabled)
+			{
+				Rect rect = new Rect(loc.x, loc.y, GetWidth(maxWidth), 75f);
+				Rect position = new Rect(rect.x + rect.width - 24f, rect.y, 24f, 24f);
+				Texture2D image = (isActive() ? Widgets.CheckboxOnTex : Widgets.CheckboxOffTex);
+				GUI.DrawTexture(position, image);
+			}
 			return result;
 		}
 
 		public override bool InheritInteractionsFrom(Gizmo other)
 		{
-			Command_Toggle command_Toggle = other as Command_Toggle;
-			if (command_Toggle != null)
+			if (other is Command_Toggle command_Toggle)
 			{
 				return command_Toggle.isActive() == isActive();
 			}

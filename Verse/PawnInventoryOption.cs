@@ -6,7 +6,7 @@ namespace Verse
 	{
 		public ThingDef thingDef;
 
-		public IntRange countRange = IntRange.one;
+		public IntRange countRange = IntRange.One;
 
 		public float choiceChance = 1f;
 

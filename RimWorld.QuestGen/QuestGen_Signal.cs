@@ -205,10 +205,7 @@ namespace RimWorld.QuestGen
 		public static void SignalPassAll(this Quest quest, Action action = null, List<string> inSignals = null, string outSignal = null)
 		{
 			QuestPart_PassAll questPart_PassAll = new QuestPart_PassAll();
-			questPart_PassAll.inSignals = inSignals ?? new List<string>
-			{
-				QuestGen.slate.Get<string>("inSignal")
-			};
+			questPart_PassAll.inSignals = inSignals ?? new List<string> { QuestGen.slate.Get<string>("inSignal") };
 			if (action != null)
 			{
 				outSignal = outSignal ?? QuestGen.GenerateNewSignal("OuterNodeCompleted");
@@ -218,13 +215,23 @@ namespace RimWorld.QuestGen
 			quest.AddPart(questPart_PassAll);
 		}
 
+		public static void SignalPassAny(this Quest quest, Action action = null, List<string> inSignals = null, string outSignal = null)
+		{
+			QuestPart_PassAny questPart_PassAny = new QuestPart_PassAny();
+			questPart_PassAny.inSignals = inSignals ?? new List<string> { QuestGen.slate.Get<string>("inSignal") };
+			if (action != null)
+			{
+				outSignal = outSignal ?? QuestGen.GenerateNewSignal("OuterNodeCompleted");
+				QuestGenUtility.RunInner(action, outSignal);
+			}
+			questPart_PassAny.outSignal = outSignal;
+			quest.AddPart(questPart_PassAny);
+		}
+
 		public static void SignalPassAllSequence(this Quest quest, Action action = null, List<string> inSignals = null, string outSignal = null)
 		{
 			QuestPart_PassAllSequence questPart_PassAllSequence = new QuestPart_PassAllSequence();
-			questPart_PassAllSequence.inSignals = inSignals ?? new List<string>
-			{
-				QuestGen.slate.Get<string>("inSignal")
-			};
+			questPart_PassAllSequence.inSignals = inSignals ?? new List<string> { QuestGen.slate.Get<string>("inSignal") };
 			if (action != null)
 			{
 				outSignal = outSignal ?? QuestGen.GenerateNewSignal("OuterNodeCompleted");

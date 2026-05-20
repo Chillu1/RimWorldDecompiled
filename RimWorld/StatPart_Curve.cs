@@ -6,6 +6,8 @@ namespace RimWorld
 	{
 		protected SimpleCurve curve;
 
+		public SimpleCurve Curve => curve;
+
 		protected abstract bool AppliesTo(StatRequest req);
 
 		protected abstract float CurveXGetter(StatRequest req);

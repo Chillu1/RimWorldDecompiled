@@ -1,3 +1,4 @@
+using System;
 using System.Linq;
 using Verse;
 using Verse.AI;
@@ -17,6 +18,8 @@ namespace RimWorld
 
 		private const int UpdateInterval = 101;
 
+		private static readonly Func<IAttackTarget, bool> CachedAffectsStoryDangerDelegate = AffectsStoryDanger;
+
 		public StoryDanger DangerRating
 		{
 			get
@@ -32,21 +35,19 @@ namespace RimWorld
 
 		private StoryDanger CalculateDangerRating()
 		{
-			float num = map.attackTargetsCache.TargetsHostileToColony.Where((IAttackTarget x) => AffectsStoryDanger(x)).Sum(delegate(IAttackTarget t)
+			float num = map.attackTargetsCache.TargetsHostileToColony.Where(CachedAffectsStoryDangerDelegate).Sum(delegate(IAttackTarget t)
 			{
-				Pawn pawn;
-				if ((pawn = t as Pawn) != null)
+				if (t is Pawn pawn)
 				{
 					return pawn.kindDef.combatPower;
 				}
-				Building_TurretGun building_TurretGun;
-				return ((building_TurretGun = t as Building_TurretGun) != null && building_TurretGun.def.building.IsMortar && !building_TurretGun.IsMannable) ? building_TurretGun.def.building.combatPower : 0f;
+				return (t is Building_TurretGun building_TurretGun && building_TurretGun.def.building.IsMortar && !building_TurretGun.IsMannable) ? building_TurretGun.def.building.combatPower : 0f;
 			});
 			if (num == 0f)
 			{
 				return StoryDanger.None;
 			}
-			int num2 = map.mapPawns.FreeColonistsSpawned.Where((Pawn p) => !p.Downed).Count();
+			int num2 = map.mapPawns.FreeColonistsSpawned.Count((Pawn p) => !p.Downed);
 			if (num < 150f && num <= (float)num2 * 18f)
 			{
 				return StoryDanger.Low;
@@ -79,10 +80,9 @@ namespace RimWorld
 			lastColonistHarmedTick = Find.TickManager.TicksGame;
 		}
 
-		private bool AffectsStoryDanger(IAttackTarget t)
+		private static bool AffectsStoryDanger(IAttackTarget t)
 		{
-			Pawn pawn = t.Thing as Pawn;
-			if (pawn != null)
+			if (t.Thing is Pawn pawn)
 			{
 				Lord lord = pawn.GetLord();
 				if (lord != null && (lord.LordJob is LordJob_DefendPoint || lord.LordJob is LordJob_MechanoidDefendBase) && pawn.CurJobDef != JobDefOf.AttackMelee && pawn.CurJobDef != JobDefOf.AttackStatic)

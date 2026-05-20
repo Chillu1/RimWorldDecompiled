@@ -18,6 +18,7 @@ namespace RimWorld
 			DamageDef def = verbProps.meleeDamageDef;
 			BodyPartGroupDef bodyPartGroupDef = null;
 			HediffDef hediffDef = null;
+			QualityCategory qc = QualityCategory.Normal;
 			num = Rand.Range(num * 0.8f, num * 1.2f);
 			if (CasterIsPawn)
 			{
@@ -35,13 +36,25 @@ namespace RimWorld
 					def = DamageDefOf.Blunt;
 				}
 			}
-			ThingDef source = ((base.EquipmentSource == null) ? CasterPawn.def : base.EquipmentSource.def);
+			ThingDef source;
+			if (base.EquipmentSource != null)
+			{
+				source = base.EquipmentSource.def;
+				base.EquipmentSource.TryGetQuality(out qc);
+			}
+			else
+			{
+				source = CasterPawn.def;
+			}
 			Vector3 direction = (target.Thing.Position - CasterPawn.Position).ToVector3();
-			DamageInfo damageInfo = new DamageInfo(def, num, armorPenetration, -1f, caster, null, source);
+			bool instigatorGuilty = !(caster is Pawn pawn) || !pawn.Drafted;
+			DamageInfo damageInfo = new DamageInfo(def, num, armorPenetration, -1f, caster, null, source, DamageInfo.SourceCategory.ThingOrUnknown, null, instigatorGuilty);
 			damageInfo.SetBodyRegion(BodyPartHeight.Undefined, BodyPartDepth.Outside);
 			damageInfo.SetWeaponBodyPartGroup(bodyPartGroupDef);
 			damageInfo.SetWeaponHediff(hediffDef);
 			damageInfo.SetAngle(direction);
+			damageInfo.SetTool(tool);
+			damageInfo.SetWeaponQuality(qc);
 			yield return damageInfo;
 			if (tool != null && tool.extraMeleeDamages != null)
 			{
@@ -91,12 +104,11 @@ namespace RimWorld
 			DamageWorker.DamageResult result = new DamageWorker.DamageResult();
 			foreach (DamageInfo item in DamageInfosToApply(target))
 			{
-				if (!target.ThingDestroyed)
+				if (target.ThingDestroyed)
 				{
-					result = target.Thing.TakeDamage(item);
-					continue;
+					break;
 				}
-				return result;
+				result = target.Thing.TakeDamage(item);
 			}
 			return result;
 		}

@@ -100,13 +100,11 @@ namespace Verse
 
 		public override bool ConfusinglySimilarTo(Name other)
 		{
-			NameSingle nameSingle = other as NameSingle;
-			if (nameSingle != null && nameSingle.nameInt == nameInt)
+			if (other is NameSingle nameSingle && nameSingle.nameInt == nameInt)
 			{
 				return true;
 			}
-			NameTriple nameTriple = other as NameTriple;
-			if (nameTriple != null && nameTriple.Nick == nameInt)
+			if (other is NameTriple nameTriple && nameTriple.Nick == nameInt)
 			{
 				return true;
 			}

@@ -25,6 +25,19 @@ namespace RimWorld
 			}
 		}
 
+		public virtual string LetterText
+		{
+			get
+			{
+				string text = def.beginLetter.Formatted(pawn.LabelCap, pawn.Named("PAWN")).AdjustedFor(pawn).Resolve();
+				if (!string.IsNullOrWhiteSpace(reason))
+				{
+					text = reason.Formatted(pawn.LabelCap, pawn.Named("PAWN")).AdjustedFor(pawn).Resolve() + "\n\n" + text;
+				}
+				return text;
+			}
+		}
+
 		public virtual void ExposeData()
 		{
 			Scribe_Defs.Look(ref def, "def");
@@ -32,18 +45,21 @@ namespace RimWorld
 			Scribe_Values.Look(ref reason, "reason");
 		}
 
-		public virtual void InspirationTick()
+		public virtual void InspirationTick(int delta)
 		{
-			age++;
+			age += delta;
 			if (AgeDays >= def.baseDurationDays)
 			{
 				End();
 			}
 		}
 
-		public virtual void PostStart()
+		public virtual void PostStart(bool sendLetter = true)
 		{
-			SendBeginLetter();
+			if (sendLetter)
+			{
+				SendBeginLetter();
+			}
 		}
 
 		public virtual void PostEnd()
@@ -60,13 +76,8 @@ namespace RimWorld
 		{
 			if (!def.beginLetter.NullOrEmpty() && PawnUtility.ShouldSendNotificationAbout(pawn))
 			{
-				TaggedString taggedString = def.beginLetter.Formatted(pawn.LabelCap, pawn.Named("PAWN")).AdjustedFor(pawn);
-				if (!string.IsNullOrWhiteSpace(reason))
-				{
-					taggedString = reason.Formatted(pawn.LabelCap, pawn.Named("PAWN")).AdjustedFor(pawn) + "\n\n" + taggedString;
-				}
-				string str = (def.beginLetterLabel ?? ((string)def.LabelCap)).CapitalizeFirst() + ": " + pawn.LabelShortCap;
-				Find.LetterStack.ReceiveLetter(str, taggedString, def.beginLetterDef, pawn);
+				string text = (def.beginLetterLabel ?? ((string)def.LabelCap)).CapitalizeFirst() + ": " + pawn.LabelShortCap;
+				Find.LetterStack.ReceiveLetter(text, LetterText, def.beginLetterDef, pawn);
 			}
 		}
 

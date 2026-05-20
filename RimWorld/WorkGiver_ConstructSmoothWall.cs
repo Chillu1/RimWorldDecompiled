@@ -23,7 +23,7 @@ namespace RimWorld
 
 		public override bool HasJobOnCell(Pawn pawn, IntVec3 c, bool forced = false)
 		{
-			if (c.IsForbidden(pawn) || pawn.Map.designationManager.DesignationAt(c, DesignationDefOf.SmoothWall) == null)
+			if (pawn.Map.designationManager.DesignationAt(c, DesignationDefOf.SmoothWall) == null)
 			{
 				return false;
 			}

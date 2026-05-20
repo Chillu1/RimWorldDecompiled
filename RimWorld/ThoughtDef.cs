@@ -17,6 +17,8 @@ namespace RimWorld
 
 		public float stackedEffectMultiplier = 0.75f;
 
+		public bool stagesStack;
+
 		public float durationDays;
 
 		public bool invert;
@@ -25,17 +27,38 @@ namespace RimWorld
 
 		public ThoughtDef nextThought;
 
+		public ThoughtDef producesMemoryThought;
+
 		public List<TraitDef> nullifyingTraits;
+
+		public List<TraitDef> neverNullifyIfAnyTrait;
+
+		[XmlInheritanceAllowDuplicateNodes]
+		public List<TraitRequirement> nullifyingTraitDegrees;
 
 		public List<TaleDef> nullifyingOwnTales;
 
+		public List<PreceptDef> nullifyingPrecepts;
+
+		public List<HediffDef> nullifyingHediffs;
+
+		public List<GeneDef> nullifyingGenes;
+
 		public List<TraitDef> requiredTraits;
+
+		public List<GeneDef> requiredGenes;
 
 		public int requiredTraitsDegree = int.MinValue;
 
+		public List<HediffDef> requiredHediffs;
+
 		public StatDef effectMultiplyingStat;
 
+		public SimpleCurve effectMultiplyingStatCurve;
+
 		public HediffDef hediff;
+
+		public MentalStateDef mentalState;
 
 		public GameConditionDef gameCondition;
 
@@ -48,13 +71,36 @@ namespace RimWorld
 
 		public bool showBubble;
 
+		public ExpectationDef minExpectation;
+
+		public ExpectationDef minExpectationForNegativeThought;
+
+		public List<ThoughtDef> replaceThoughts;
+
+		public DevelopmentalStage developmentalStageFilter = DevelopmentalStage.Child | DevelopmentalStage.Adult;
+
+		public ChemicalDef chemicalDef;
+
+		public bool lerpMoodToZero;
+
 		public int stackLimitForSameOtherPawn = -1;
 
 		public float lerpOpinionToZeroAfterDurationPct = 0.7f;
 
+		public DevelopmentalStage socialTargetDevelopmentalStageFilter = DevelopmentalStage.Child | DevelopmentalStage.Adult;
+
+		public bool ignoreSubhumans = true;
+
+		public bool doNotApplyToQuestLodgers;
+
 		public float maxCumulatedOpinionOffset = float.MaxValue;
 
 		public TaleDef taleDef;
+
+		public Gender gender;
+
+		[MustTranslate]
+		public string labelInBracketsExtraForHediff;
 
 		[Unsaved(false)]
 		private ThoughtWorker workerInt;
@@ -85,6 +131,22 @@ namespace RimWorld
 				}
 				Log.Error("Cannot get good label for ThoughtDef " + defName);
 				return defName;
+			}
+		}
+
+		public override TaggedString LabelCap
+		{
+			get
+			{
+				if (Label.NullOrEmpty())
+				{
+					return null;
+				}
+				if (cachedLabelCap.NullOrEmpty())
+				{
+					cachedLabelCap = Label.CapitalizeFirst();
+				}
+				return cachedLabelCap;
 			}
 		}
 

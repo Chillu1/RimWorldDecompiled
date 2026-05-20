@@ -50,7 +50,13 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return string.Concat("(", countRange, "x ", (thingDef != null) ? thingDef.defName : "null", ")");
+			string[] obj = new string[5] { "(", null, null, null, null };
+			IntRange intRange = countRange;
+			obj[1] = intRange.ToString();
+			obj[2] = "x ";
+			obj[3] = ((thingDef != null) ? thingDef.defName : "null");
+			obj[4] = ")";
+			return string.Concat(obj);
 		}
 
 		public static implicit operator ThingDefCountRangeClass(ThingDefCountRange t)

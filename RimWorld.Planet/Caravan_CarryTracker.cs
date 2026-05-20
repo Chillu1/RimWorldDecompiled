@@ -12,7 +12,7 @@ namespace RimWorld.Planet
 
 		private static List<Pawn> tmpPawnsWhoCanCarry = new List<Pawn>();
 
-		private static List<string> tmpPawnLabels = new List<string>();
+		private static readonly List<string> tmpPawnLabels = new List<string>();
 
 		public List<Pawn> CarriedPawnsListForReading => carriedPawns;
 
@@ -25,7 +25,7 @@ namespace RimWorld.Planet
 			this.caravan = caravan;
 		}
 
-		public void CarryTrackerTick()
+		public void CarryTrackerTickInterval(int delta)
 		{
 			RecalculateCarriedPawns();
 		}

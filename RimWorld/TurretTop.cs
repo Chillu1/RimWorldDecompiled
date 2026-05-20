@@ -25,7 +25,7 @@ namespace RimWorld
 
 		public static readonly int ArtworkRotation = -90;
 
-		private float CurRotation
+		public float CurRotation
 		{
 			get
 			{
@@ -55,12 +55,22 @@ namespace RimWorld
 			parentTurret = ParentTurret;
 		}
 
+		public void ForceFaceTarget(LocalTargetInfo targ)
+		{
+			if (targ.IsValid)
+			{
+				float curRotation = (targ.Cell.ToVector3Shifted() - parentTurret.DrawPos).AngleFlat();
+				CurRotation = curRotation;
+			}
+		}
+
 		public void TurretTopTick()
 		{
 			LocalTargetInfo currentTarget = parentTurret.CurrentTarget;
 			if (currentTarget.IsValid)
 			{
-				float num2 = (CurRotation = (currentTarget.Cell.ToVector3Shifted() - parentTurret.DrawPos).AngleFlat());
+				float curRotation = (currentTarget.Cell.ToVector3Shifted() - parentTurret.DrawPos).AngleFlat();
+				CurRotation = curRotation;
 				ticksUntilIdleTurn = Rand.RangeInclusive(150, 350);
 			}
 			else if (ticksUntilIdleTurn > 0)
@@ -97,13 +107,16 @@ namespace RimWorld
 			}
 		}
 
-		public void DrawTurret()
+		public void DrawTurret(Vector3 drawLoc, Vector3 recoilDrawOffset, float recoilAngleOffset)
 		{
-			Vector3 b = new Vector3(parentTurret.def.building.turretTopOffset.x, 0f, parentTurret.def.building.turretTopOffset.y).RotatedBy(CurRotation);
+			Vector3 v = new Vector3(parentTurret.def.building.turretTopOffset.x, 0f, parentTurret.def.building.turretTopOffset.y);
 			float turretTopDrawSize = parentTurret.def.building.turretTopDrawSize;
-			Matrix4x4 matrix = default(Matrix4x4);
-			matrix.SetTRS(parentTurret.DrawPos + Altitudes.AltIncVect + b, (CurRotation + (float)ArtworkRotation).ToQuat(), new Vector3(turretTopDrawSize, 1f, turretTopDrawSize));
-			Graphics.DrawMesh(MeshPool.plane10, matrix, parentTurret.def.building.turretTopMat, 0);
+			v = v.RotatedBy(recoilAngleOffset);
+			v += recoilDrawOffset;
+			float num = parentTurret.CurrentEffectiveVerb?.AimAngleOverride ?? CurRotation;
+			Vector3 pos = drawLoc + Altitudes.AltIncVect + v;
+			Quaternion q = ((float)ArtworkRotation + num).ToQuat();
+			Graphics.DrawMesh(matrix: Matrix4x4.TRS(pos, q, new Vector3(turretTopDrawSize, 1f, turretTopDrawSize)), mesh: MeshPool.plane10, material: parentTurret.TurretTopMaterial, layer: 0);
 		}
 	}
 }

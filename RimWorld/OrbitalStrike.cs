@@ -1,3 +1,4 @@
+using UnityEngine;
 using Verse;
 
 namespace RimWorld
@@ -36,7 +37,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref startTick, "startTick", 0);
 		}
 
-		public override void Draw()
+		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
 		{
 			Comps_PostDraw();
 		}
@@ -54,7 +55,7 @@ namespace RimWorld
 			GetComp<CompOrbitalBeam>().StartAnimation(duration, 10, angle);
 		}
 
-		public override void Tick()
+		protected override void Tick()
 		{
 			base.Tick();
 			if (TicksPassed >= duration)

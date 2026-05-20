@@ -10,7 +10,7 @@ namespace RimWorld
 
 		public override string Label(Room r = null)
 		{
-			return (string)(((!labelKey.NullOrEmpty()) ? labelKey : "RoomRequirementImpressiveness").Translate() + " " + ((r != null) ? (Mathf.Round(r.GetStat(RoomStatDefOf.Impressiveness)) + "/") : "")) + impressiveness;
+			return string.Concat(((!labelKey.NullOrEmpty()) ? labelKey : "RoomRequirementImpressiveness").Translate() + " " + ((r != null) ? (Mathf.Round(r.GetStat(RoomStatDefOf.Impressiveness)) + "/") : ""), impressiveness.ToString());
 		}
 
 		public override bool Met(Room r, Pawn p = null)
@@ -28,6 +28,12 @@ namespace RimWorld
 			{
 				yield return "impressiveness must be larger than 0";
 			}
+		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_Values.Look(ref impressiveness, "impressiveness", 0);
 		}
 	}
 }

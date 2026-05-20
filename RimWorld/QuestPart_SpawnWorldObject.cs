@@ -33,8 +33,7 @@ namespace RimWorld
 		{
 			get
 			{
-				Site site = worldObject as Site;
-				if (site != null && site.IncreasesPopulation)
+				if (worldObject is Site { IncreasesPopulation: not false })
 				{
 					return true;
 				}
@@ -49,21 +48,21 @@ namespace RimWorld
 			{
 				return;
 			}
-			int tile = worldObject.Tile;
-			if (tile == -1)
+			PlanetTile result = worldObject.Tile;
+			if (!result.Valid)
 			{
-				if (!TileFinder.TryFindNewSiteTile(out tile))
+				if (!TileFinder.TryFindNewSiteTile(out result))
 				{
-					tile = -1;
+					result = PlanetTile.Invalid;
 				}
 			}
-			else if (Find.WorldObjects.AnyWorldObjectAt(tile) && !TileFinder.TryFindPassableTileWithTraversalDistance(tile, 1, 50, out tile, (int x) => !Find.WorldObjects.AnyWorldObjectAt(x), ignoreFirstTilePassability: false, preferCloserTiles: true))
+			else if (Find.WorldObjects.AnyWorldObjectAt(result) && !TileFinder.TryFindPassableTileWithTraversalDistance(result, 1, 50, out result, (PlanetTile x) => !Find.WorldObjects.AnyWorldObjectAt(x), ignoreFirstTilePassability: false, TileFinderMode.Near))
 			{
-				tile = -1;
+				result = PlanetTile.Invalid;
 			}
-			if (tile != -1)
+			if (result.Valid)
 			{
-				worldObject.Tile = tile;
+				worldObject.Tile = result;
 				Find.WorldObjects.Add(worldObject);
 				spawned = true;
 			}
@@ -72,8 +71,7 @@ namespace RimWorld
 		public override void PostQuestAdded()
 		{
 			base.PostQuestAdded();
-			Site site;
-			if ((site = worldObject as Site) == null)
+			if (!(worldObject is Site site))
 			{
 				return;
 			}
@@ -94,9 +92,21 @@ namespace RimWorld
 			}
 		}
 
+		public override void Cleanup()
+		{
+			if (!spawned)
+			{
+				worldObject.Destroy();
+			}
+		}
+
 		public override void ExposeData()
 		{
 			base.ExposeData();
+			if (Scribe.mode == LoadSaveMode.Saving && spawned && worldObject != null && (worldObject.Destroyed || !worldObject.Spawned))
+			{
+				worldObject = null;
+			}
 			Scribe_Values.Look(ref inSignal, "inSignal");
 			Scribe_Values.Look(ref spawned, "spawned", defaultValue: false);
 			Scribe_Collections.Look(ref defsToExcludeFromHyperlinks, "defsToExcludeFromHyperlinks", LookMode.Def);
@@ -116,7 +126,7 @@ namespace RimWorld
 			inSignal = "DebugSignal" + Rand.Int;
 			if (TileFinder.TryFindNewSiteTile(out var tile))
 			{
-				worldObject = SiteMaker.MakeSite((SitePartDef)null, tile, (Faction)null, ifHostileThenMustRemainHostile: true, (float?)null);
+				worldObject = SiteMaker.MakeSite((SitePartDef)null, tile, (Faction)null, ifHostileThenMustRemainHostile: true, (float?)null, (WorldObjectDef)null);
 			}
 		}
 	}

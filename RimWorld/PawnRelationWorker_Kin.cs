@@ -13,7 +13,11 @@ namespace RimWorld
 				return false;
 			}
 			IEnumerable<Pawn> familyByBlood = me.relations.FamilyByBlood;
-			return (familyByBlood as HashSet<Pawn>)?.Contains(other) ?? familyByBlood.Contains(other);
+			if (!(familyByBlood is HashSet<Pawn> hashSet))
+			{
+				return familyByBlood.Contains(other);
+			}
+			return hashSet.Contains(other);
 		}
 	}
 }

@@ -8,18 +8,20 @@ namespace RimWorld
 	{
 		private float storedEnergy;
 
+		private CompStunnable stunnableComp;
+
 		private const float SelfDischargingWatts = 5f;
 
 		public float AmountCanAccept
 		{
 			get
 			{
-				if (parent.IsBrokenDown())
+				if (parent.IsBrokenDown() || StunnedByEMP)
 				{
 					return 0f;
 				}
-				CompProperties_Battery props = Props;
-				return (props.storedEnergyMax - storedEnergy) / props.efficiency;
+				CompProperties_Battery compProperties_Battery = Props;
+				return (compProperties_Battery.storedEnergyMax - storedEnergy) / compProperties_Battery.efficiency;
 			}
 		}
 
@@ -29,14 +31,36 @@ namespace RimWorld
 
 		public new CompProperties_Battery Props => (CompProperties_Battery)props;
 
+		public bool StunnedByEMP
+		{
+			get
+			{
+				if (stunnableComp != null)
+				{
+					if (stunnableComp.StunHandler.Stunned)
+					{
+						return stunnableComp.StunHandler.StunFromEMP;
+					}
+					return false;
+				}
+				return false;
+			}
+		}
+
+		public override void PostSpawnSetup(bool respawningAfterLoad)
+		{
+			base.PostSpawnSetup(respawningAfterLoad);
+			stunnableComp = parent.GetComp<CompStunnable>();
+		}
+
 		public override void PostExposeData()
 		{
 			base.PostExposeData();
 			Scribe_Values.Look(ref storedEnergy, "storedPower", 0f);
-			CompProperties_Battery props = Props;
-			if (storedEnergy > props.storedEnergyMax)
+			CompProperties_Battery compProperties_Battery = Props;
+			if (storedEnergy > compProperties_Battery.storedEnergyMax)
 			{
-				storedEnergy = props.storedEnergyMax;
+				storedEnergy = compProperties_Battery.storedEnergyMax;
 			}
 		}
 
@@ -51,14 +75,16 @@ namespace RimWorld
 			if (amount < 0f)
 			{
 				Log.Error("Cannot add negative energy " + amount);
-				return;
 			}
-			if (amount > AmountCanAccept)
+			else if (!StunnedByEMP)
 			{
-				amount = AmountCanAccept;
+				if (amount > AmountCanAccept)
+				{
+					amount = AmountCanAccept;
+				}
+				amount *= Props.efficiency;
+				storedEnergy += amount;
 			}
-			amount *= Props.efficiency;
-			storedEnergy += amount;
 		}
 
 		public void DrawPower(float amount)
@@ -87,14 +113,14 @@ namespace RimWorld
 
 		public override string CompInspectStringExtra()
 		{
-			CompProperties_Battery props = Props;
-			string t = "PowerBatteryStored".Translate() + ": " + storedEnergy.ToString("F0") + " / " + props.storedEnergyMax.ToString("F0") + " Wd";
-			t += "\n" + "PowerBatteryEfficiency".Translate() + ": " + (props.efficiency * 100f).ToString("F0") + "%";
+			CompProperties_Battery compProperties_Battery = Props;
+			string text = "PowerBatteryStored".Translate() + ": " + storedEnergy.ToString("F0") + " / " + compProperties_Battery.storedEnergyMax.ToString("F0") + " Wd";
+			text += "\n" + "PowerBatteryEfficiency".Translate() + ": " + (compProperties_Battery.efficiency * 100f).ToString("F0") + "%";
 			if (storedEnergy > 0f)
 			{
-				t += "\n" + "SelfDischarging".Translate() + ": " + 5f.ToString("F0") + " W";
+				text += "\n" + "SelfDischarging".Translate() + ": " + 5f.ToString("F0") + " W";
 			}
-			return t + "\n" + base.CompInspectStringExtra();
+			return text + "\n" + base.CompInspectStringExtra();
 		}
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
@@ -103,17 +129,17 @@ namespace RimWorld
 			{
 				yield return item;
 			}
-			if (Prefs.DevMode)
+			if (DebugSettings.ShowDevGizmos)
 			{
 				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "DEBUG: Fill";
+				command_Action.defaultLabel = "DEV: Fill";
 				command_Action.action = delegate
 				{
 					SetStoredEnergyPct(1f);
 				};
 				yield return command_Action;
 				Command_Action command_Action2 = new Command_Action();
-				command_Action2.defaultLabel = "DEBUG: Empty";
+				command_Action2.defaultLabel = "DEV: Empty";
 				command_Action2.action = delegate
 				{
 					SetStoredEnergyPct(0f);

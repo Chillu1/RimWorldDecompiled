@@ -8,6 +8,8 @@ namespace RimWorld
 
 		public int worldRange;
 
+		public bool hideSource;
+
 		public bool preventConditionStacking = true;
 
 		public CompProperties_CausesGameCondition()

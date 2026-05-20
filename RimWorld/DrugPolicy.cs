@@ -4,15 +4,15 @@ using Verse;
 
 namespace RimWorld
 {
-	public class DrugPolicy : IExposable, ILoadReferenceable
+	public class DrugPolicy : Policy
 	{
-		public int uniqueId;
-
-		public string label;
+		public DrugPolicyDef sourceDef;
 
 		private List<DrugPolicyEntry> entriesInt;
 
 		public int Count => entriesInt.Count;
+
+		protected override string LoadKey => "DrugPolicy";
 
 		public DrugPolicyEntry this[int index]
 		{
@@ -45,48 +45,67 @@ namespace RimWorld
 		{
 		}
 
-		public DrugPolicy(int uniqueId, string label)
+		public DrugPolicy(int id, string label)
+			: base(id, label)
 		{
-			this.uniqueId = uniqueId;
-			this.label = label;
 			InitializeIfNeeded();
 		}
 
-		public void InitializeIfNeeded()
+		private void InitializeIfNeeded(bool overwriteExisting = true)
 		{
-			if (entriesInt != null)
+			if (overwriteExisting)
 			{
-				return;
-			}
-			entriesInt = new List<DrugPolicyEntry>();
-			List<ThingDef> allDefsListForReading = DefDatabase<ThingDef>.AllDefsListForReading;
-			for (int i = 0; i < allDefsListForReading.Count; i++)
-			{
-				if (allDefsListForReading[i].category == ThingCategory.Item && allDefsListForReading[i].IsDrug)
+				if (entriesInt != null)
 				{
-					DrugPolicyEntry drugPolicyEntry = new DrugPolicyEntry();
-					drugPolicyEntry.drug = allDefsListForReading[i];
-					drugPolicyEntry.allowedForAddiction = true;
-					entriesInt.Add(drugPolicyEntry);
+					return;
+				}
+				entriesInt = new List<DrugPolicyEntry>();
+			}
+			List<ThingDef> thingDefs = DefDatabase<ThingDef>.AllDefsListForReading;
+			int i;
+			for (i = 0; i < thingDefs.Count; i++)
+			{
+				if (thingDefs[i].category == ThingCategory.Item && thingDefs[i].IsDrug && (overwriteExisting || !entriesInt.Any((DrugPolicyEntry x) => x.drug == thingDefs[i])))
+				{
+					entriesInt.Add(new DrugPolicyEntry
+					{
+						drug = thingDefs[i],
+						allowedForAddiction = true
+					});
 				}
 			}
 			entriesInt.SortBy((DrugPolicyEntry e) => e.drug.GetCompProperties<CompProperties_Drug>().listOrder);
 		}
 
-		public void ExposeData()
+		public override void CopyFrom(Policy other)
 		{
-			Scribe_Values.Look(ref uniqueId, "uniqueId", 0);
-			Scribe_Values.Look(ref label, "label");
-			Scribe_Collections.Look(ref entriesInt, "drugs", LookMode.Deep);
-			if (Scribe.mode == LoadSaveMode.PostLoadInit && entriesInt != null && entriesInt.RemoveAll((DrugPolicyEntry x) => x == null || x.drug == null) != 0)
+			if (!(other is DrugPolicy drugPolicy))
 			{
-				Log.Error("Some DrugPolicyEntries were null after loading.");
+				return;
+			}
+			sourceDef = drugPolicy.sourceDef;
+			entriesInt.Clear();
+			foreach (DrugPolicyEntry item in drugPolicy.entriesInt)
+			{
+				DrugPolicyEntry drugPolicyEntry = new DrugPolicyEntry();
+				drugPolicyEntry.CopyFrom(item);
+				entriesInt.Add(drugPolicyEntry);
 			}
 		}
 
-		public string GetUniqueLoadID()
+		public override void ExposeData()
 		{
-			return "DrugPolicy_" + label + uniqueId;
+			base.ExposeData();
+			Scribe_Collections.Look(ref entriesInt, "drugs", LookMode.Deep);
+			Scribe_Defs.Look(ref sourceDef, "sourceDef");
+			if (Scribe.mode == LoadSaveMode.PostLoadInit && entriesInt != null)
+			{
+				if (entriesInt.RemoveAll((DrugPolicyEntry x) => x == null || x.drug == null) != 0)
+				{
+					Log.Error("Some DrugPolicyEntries were null after loading.");
+				}
+				InitializeIfNeeded(overwriteExisting: false);
+			}
 		}
 	}
 }

@@ -1,3 +1,4 @@
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -6,7 +7,7 @@ namespace RimWorld
 	{
 		private int cachedTicks = -1;
 
-		private int cachedForStartingTile = -1;
+		private PlanetTile cachedForStartingTile = PlanetTile.Invalid;
 
 		private Season cachedForStartingSeason;
 

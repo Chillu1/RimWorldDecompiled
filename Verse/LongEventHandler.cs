@@ -15,6 +15,8 @@ namespace Verse
 		{
 			public Action eventAction;
 
+			public Action callback;
+
 			public IEnumerator eventActionEnumerator;
 
 			public string levelToLoad;
@@ -32,6 +34,8 @@ namespace Verse
 			public bool canEverUseStandardWindow = true;
 
 			public bool showExtraUIInfo = true;
+
+			public bool forceHideUI;
 
 			public bool UseAnimatedDots
 			{
@@ -133,41 +137,51 @@ namespace Verse
 
 		public static bool ForcePause => AnyEventNowOrWaiting;
 
-		public static void QueueLongEvent(Action action, string textKey, bool doAsynchronously, Action<Exception> exceptionHandler, bool showExtraUIInfo = true)
+		public static void QueueLongEvent(Action action, string textKey, bool doAsynchronously, Action<Exception> exceptionHandler, bool showExtraUIInfo = true, bool forceHideUI = false, Action callback = null)
 		{
-			QueuedLongEvent queuedLongEvent = new QueuedLongEvent();
-			queuedLongEvent.eventAction = action;
-			queuedLongEvent.eventTextKey = textKey;
-			queuedLongEvent.doAsynchronously = doAsynchronously;
-			queuedLongEvent.exceptionHandler = exceptionHandler;
-			queuedLongEvent.canEverUseStandardWindow = !AnyEventWhichDoesntUseStandardWindowNowOrWaiting;
-			queuedLongEvent.showExtraUIInfo = showExtraUIInfo;
-			eventQueue.Enqueue(queuedLongEvent);
+			QueuedLongEvent item = new QueuedLongEvent
+			{
+				eventAction = action,
+				eventTextKey = textKey,
+				doAsynchronously = doAsynchronously,
+				exceptionHandler = exceptionHandler,
+				canEverUseStandardWindow = !AnyEventWhichDoesntUseStandardWindowNowOrWaiting,
+				showExtraUIInfo = showExtraUIInfo,
+				callback = callback,
+				forceHideUI = forceHideUI
+			};
+			eventQueue.Enqueue(item);
 		}
 
-		public static void QueueLongEvent(IEnumerable action, string textKey, Action<Exception> exceptionHandler = null, bool showExtraUIInfo = true)
+		public static void QueueLongEvent(IEnumerable action, string textKey, Action<Exception> exceptionHandler = null, bool showExtraUIInfo = true, bool forceHideUI = false)
 		{
-			QueuedLongEvent queuedLongEvent = new QueuedLongEvent();
-			queuedLongEvent.eventActionEnumerator = action.GetEnumerator();
-			queuedLongEvent.eventTextKey = textKey;
-			queuedLongEvent.doAsynchronously = false;
-			queuedLongEvent.exceptionHandler = exceptionHandler;
-			queuedLongEvent.canEverUseStandardWindow = !AnyEventWhichDoesntUseStandardWindowNowOrWaiting;
-			queuedLongEvent.showExtraUIInfo = showExtraUIInfo;
-			eventQueue.Enqueue(queuedLongEvent);
+			QueuedLongEvent item = new QueuedLongEvent
+			{
+				eventActionEnumerator = action.GetEnumerator(),
+				eventTextKey = textKey,
+				doAsynchronously = false,
+				exceptionHandler = exceptionHandler,
+				canEverUseStandardWindow = !AnyEventWhichDoesntUseStandardWindowNowOrWaiting,
+				showExtraUIInfo = showExtraUIInfo,
+				forceHideUI = forceHideUI
+			};
+			eventQueue.Enqueue(item);
 		}
 
-		public static void QueueLongEvent(Action preLoadLevelAction, string levelToLoad, string textKey, bool doAsynchronously, Action<Exception> exceptionHandler, bool showExtraUIInfo = true)
+		public static void QueueLongEvent(Action preLoadLevelAction, string levelToLoad, string textKey, bool doAsynchronously, Action<Exception> exceptionHandler, bool showExtraUIInfo = true, bool forceHideUI = false)
 		{
-			QueuedLongEvent queuedLongEvent = new QueuedLongEvent();
-			queuedLongEvent.eventAction = preLoadLevelAction;
-			queuedLongEvent.levelToLoad = levelToLoad;
-			queuedLongEvent.eventTextKey = textKey;
-			queuedLongEvent.doAsynchronously = doAsynchronously;
-			queuedLongEvent.exceptionHandler = exceptionHandler;
-			queuedLongEvent.canEverUseStandardWindow = !AnyEventWhichDoesntUseStandardWindowNowOrWaiting;
-			queuedLongEvent.showExtraUIInfo = showExtraUIInfo;
-			eventQueue.Enqueue(queuedLongEvent);
+			QueuedLongEvent item = new QueuedLongEvent
+			{
+				eventAction = preLoadLevelAction,
+				levelToLoad = levelToLoad,
+				eventTextKey = textKey,
+				doAsynchronously = doAsynchronously,
+				exceptionHandler = exceptionHandler,
+				canEverUseStandardWindow = !AnyEventWhichDoesntUseStandardWindowNowOrWaiting,
+				showExtraUIInfo = showExtraUIInfo,
+				forceHideUI = forceHideUI
+			};
+			eventQueue.Enqueue(item);
 		}
 
 		public static void ClearQueuedEvents()
@@ -180,57 +194,63 @@ namespace Verse
 			if (currentEvent == null)
 			{
 				GameplayTipWindow.ResetTipTimer();
-				return;
-			}
-			float num = StatusRectSize.x;
-			lock (CurrentEventTextLock)
-			{
-				Text.Font = GameFont.Small;
-				num = Mathf.Max(num, Text.CalcSize(currentEvent.eventText + "...").x + 40f);
-			}
-			bool flag = Find.UIRoot != null && !currentEvent.UseStandardWindow && currentEvent.showExtraUIInfo;
-			bool flag2 = Find.UIRoot != null && Current.Game != null && !currentEvent.UseStandardWindow && currentEvent.showExtraUIInfo;
-			Vector2 vector = (flag2 ? ModSummaryWindow.GetEffectiveSize() : Vector2.zero);
-			float num2 = StatusRectSize.y;
-			if (flag2)
-			{
-				num2 += 17f + vector.y;
-			}
-			if (flag)
-			{
-				num2 += 17f + GameplayTipWindow.WindowSize.y;
-			}
-			float num3 = ((float)UI.screenHeight - num2) / 2f;
-			Vector2 offset = new Vector2(((float)UI.screenWidth - GameplayTipWindow.WindowSize.x) / 2f, num3 + StatusRectSize.y + 17f);
-			Vector2 offset2 = new Vector2(((float)UI.screenWidth - vector.x) / 2f, offset.y + GameplayTipWindow.WindowSize.y + 17f);
-			Rect r = new Rect(((float)UI.screenWidth - num) / 2f, num3, num, StatusRectSize.y);
-			r = r.Rounded();
-			if (!currentEvent.UseStandardWindow || Find.UIRoot == null || Find.WindowStack == null)
-			{
-				if (UIMenuBackgroundManager.background == null)
-				{
-					UIMenuBackgroundManager.background = new UI_BackgroundMain();
-				}
-				UIMenuBackgroundManager.background.BackgroundOnGUI();
-				Widgets.DrawShadowAround(r);
-				Widgets.DrawWindowBackground(r);
-				DrawLongEventWindowContents(r);
-				if (flag)
-				{
-					GameplayTipWindow.DrawWindow(offset, useWindowStack: false);
-				}
-				if (flag2)
-				{
-					ModSummaryWindow.DrawWindow(offset2, useWindowStack: false);
-					TooltipHandler.DoTooltipGUI();
-				}
 			}
 			else
 			{
-				DrawLongEventWindow(r);
+				if (currentEvent.forceHideUI)
+				{
+					return;
+				}
+				float num = StatusRectSize.x;
+				lock (CurrentEventTextLock)
+				{
+					Text.Font = GameFont.Small;
+					num = Mathf.Max(num, Text.CalcSize(currentEvent.eventText + "...").x + 40f);
+				}
+				bool flag = Find.UIRoot != null && !currentEvent.UseStandardWindow && currentEvent.showExtraUIInfo;
+				bool flag2 = Find.UIRoot != null && Current.Game != null && !currentEvent.UseStandardWindow && currentEvent.showExtraUIInfo;
+				Vector2 vector = (flag2 ? ModSummaryWindow.GetEffectiveSize() : Vector2.zero);
+				float num2 = StatusRectSize.y;
+				if (flag2)
+				{
+					num2 += 17f + vector.y;
+				}
 				if (flag)
 				{
-					GameplayTipWindow.DrawWindow(offset, useWindowStack: true);
+					num2 += 17f + GameplayTipWindow.WindowSize.y;
+				}
+				float num3 = ((float)UI.screenHeight - num2) / 2f;
+				Vector2 offset = new Vector2(((float)UI.screenWidth - GameplayTipWindow.WindowSize.x) / 2f, num3 + StatusRectSize.y + 17f);
+				Vector2 offset2 = new Vector2(((float)UI.screenWidth - vector.x) / 2f, offset.y + GameplayTipWindow.WindowSize.y + 17f);
+				Rect r = new Rect(((float)UI.screenWidth - num) / 2f, num3, num, StatusRectSize.y);
+				r = r.Rounded();
+				if (!currentEvent.UseStandardWindow || Find.UIRoot == null || Find.WindowStack == null)
+				{
+					if (UIMenuBackgroundManager.background == null)
+					{
+						UIMenuBackgroundManager.background = new UI_BackgroundMain();
+					}
+					UIMenuBackgroundManager.background.BackgroundOnGUI();
+					Widgets.DrawShadowAround(r);
+					Widgets.DrawWindowBackground(r);
+					DrawLongEventWindowContents(r);
+					if (flag)
+					{
+						GameplayTipWindow.DrawWindow(offset, useWindowStack: false);
+					}
+					if (flag2)
+					{
+						ModSummaryWindow.DrawWindow(offset2, useWindowStack: false);
+						TooltipHandler.DoTooltipGUI();
+					}
+				}
+				else
+				{
+					DrawLongEventWindow(r);
+					if (flag)
+					{
+						GameplayTipWindow.DrawWindow(offset, useWindowStack: true);
+					}
 				}
 			}
 		}
@@ -240,7 +260,7 @@ namespace Verse
 			Find.WindowStack.ImmediateWindow(62893994, statusRect, WindowLayer.Super, delegate
 			{
 				DrawLongEventWindowContents(statusRect.AtZero());
-			});
+			}, doBackground: true, absorbInputAroundWindow: false, 1f, null, ignoreScreenFader: true);
 		}
 
 		public static void LongEventsUpdate(out bool sceneChanged)
@@ -284,6 +304,11 @@ namespace Verse
 			}
 		}
 
+		public static void ForceExecuteToExecuteWhenFinished()
+		{
+			ExecuteToExecuteWhenFinished();
+		}
+
 		public static void SetCurrentEventText(string newText)
 		{
 			lock (CurrentEventTextLock)
@@ -304,11 +329,16 @@ namespace Verse
 				{
 					if (!currentEvent.eventActionEnumerator.MoveNext())
 					{
-						(currentEvent.eventActionEnumerator as IDisposable)?.Dispose();
+						if (currentEvent.eventActionEnumerator is IDisposable disposable)
+						{
+							disposable.Dispose();
+						}
+						Action callback = currentEvent.callback;
 						currentEvent = null;
 						eventThread = null;
 						levelLoadOp = null;
 						ExecuteToExecuteWhenFinished();
+						callback?.Invoke();
 						break;
 					}
 				}
@@ -319,11 +349,11 @@ namespace Verse
 				Log.Error("Exception from long event: " + ex);
 				if (currentEvent != null)
 				{
-					(currentEvent.eventActionEnumerator as IDisposable)?.Dispose();
-					if (currentEvent.exceptionHandler != null)
+					if (currentEvent.eventActionEnumerator is IDisposable disposable2)
 					{
-						currentEvent.exceptionHandler(ex);
+						disposable2.Dispose();
 					}
+					currentEvent.exceptionHandler?.Invoke(ex);
 				}
 				currentEvent = null;
 				eventThread = null;
@@ -365,10 +395,11 @@ namespace Verse
 				}
 				if (flag)
 				{
+					ExecuteToExecuteWhenFinished();
+					currentEvent.callback?.Invoke();
 					currentEvent = null;
 					eventThread = null;
 					levelLoadOp = null;
-					ExecuteToExecuteWhenFinished();
 				}
 			}
 		}
@@ -391,10 +422,12 @@ namespace Verse
 					SceneManager.LoadScene(currentEvent.levelToLoad);
 					sceneChanged = true;
 				}
+				Action callback = currentEvent.callback;
 				currentEvent = null;
 				eventThread = null;
 				levelLoadOp = null;
 				ExecuteToExecuteWhenFinished();
+				callback?.Invoke();
 			}
 			catch (Exception ex)
 			{
@@ -426,9 +459,9 @@ namespace Verse
 						currentEvent.exceptionHandler(ex);
 					}
 				}
-				catch (Exception arg)
+				catch (Exception ex2)
 				{
-					Log.Error("Exception was thrown while trying to handle exception. Exception: " + arg);
+					Log.Error("Exception was thrown while trying to handle exception. Exception: " + ex2);
 				}
 			}
 		}
@@ -452,9 +485,9 @@ namespace Verse
 				{
 					toExecuteWhenFinished[i]();
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Error("Could not execute post-long-event action. Exception: " + arg);
+					Log.Error("Could not execute post-long-event action. Exception: " + ex);
 				}
 				finally
 				{
@@ -471,7 +504,7 @@ namespace Verse
 
 		private static void DrawLongEventWindowContents(Rect rect)
 		{
-			if (currentEvent == null)
+			if (currentEvent == null || currentEvent.forceHideUI)
 			{
 				return;
 			}

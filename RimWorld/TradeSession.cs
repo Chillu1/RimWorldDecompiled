@@ -28,7 +28,7 @@ namespace RimWorld
 			deal = new TradeDeal();
 			if (!giftMode && deal.cannotSellReasons.Count > 0)
 			{
-				Messages.Message("MessageCannotSellItemsReason".Translate() + deal.cannotSellReasons.ToCommaList(useAnd: true), MessageTypeDefOf.NegativeEvent, historical: false);
+				Messages.Message("MessageCannotSellItemsReason".Translate() + deal.cannotSellReasons.ToCommaList(useAnd: true).CapitalizeFirst(), MessageTypeDefOf.NegativeEvent, historical: false);
 			}
 		}
 

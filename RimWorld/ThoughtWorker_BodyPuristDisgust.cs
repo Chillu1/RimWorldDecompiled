@@ -22,7 +22,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			int num = other.health.hediffSet.CountAddedAndImplantedParts();
+			int num = GeneUtility.AddedAndImplantedPartsWithXenogenesCount(other);
 			if (num > 0)
 			{
 				return ThoughtState.ActiveAtStage(num - 1);

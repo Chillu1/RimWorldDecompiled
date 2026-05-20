@@ -6,11 +6,11 @@ namespace RimWorld.Planet
 {
 	public class EnterCooldownComp : WorldObjectComp
 	{
-		private int ticksLeft;
+		private int endTick;
 
 		public WorldObjectCompProperties_EnterCooldown Props => (WorldObjectCompProperties_EnterCooldown)props;
 
-		public bool Active => ticksLeft > 0;
+		public bool Active => endTick > GenTicks.TicksGame;
 
 		public bool BlocksEntering
 		{
@@ -32,7 +32,7 @@ namespace RimWorld.Planet
 				{
 					return 0;
 				}
-				return ticksLeft;
+				return endTick - GenTicks.TicksGame;
 			}
 		}
 
@@ -41,21 +41,12 @@ namespace RimWorld.Planet
 		public void Start(float? durationDays = null)
 		{
 			float num = durationDays ?? Props.durationDays;
-			ticksLeft = Mathf.RoundToInt(num * 60000f);
+			endTick = GenTicks.TicksGame + Mathf.RoundToInt(num * 60000f);
 		}
 
 		public void Stop()
 		{
-			ticksLeft = 0;
-		}
-
-		public override void CompTick()
-		{
-			base.CompTick();
-			if (Active)
-			{
-				ticksLeft--;
-			}
+			endTick = 0;
 		}
 
 		public override void PostMapGenerate()
@@ -79,27 +70,35 @@ namespace RimWorld.Planet
 		public override void PostExposeData()
 		{
 			base.PostExposeData();
-			Scribe_Values.Look(ref ticksLeft, "ticksLeft", 0);
+			int value = 0;
+			Scribe_Values.Look(ref value, "ticksLeft", 0);
+			Scribe_Values.Look(ref endTick, "endTick", 0);
+			if (Scribe.mode == LoadSaveMode.PostLoadInit && value > 0 && endTick == 0)
+			{
+				endTick = GenTicks.TicksGame + value;
+			}
 		}
 
 		public override IEnumerable<Gizmo> GetGizmos()
 		{
-			if (Prefs.DevMode)
+			if (DebugSettings.ShowDevGizmos)
 			{
-				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "Dev: Set enter cooldown to 1 hour";
-				command_Action.action = delegate
+				yield return new Command_Action
 				{
-					ticksLeft = 2500;
+					defaultLabel = "DEV: Set enter cooldown to 1 hour",
+					action = delegate
+					{
+						endTick = GenTicks.TicksGame + 2500;
+					}
 				};
-				yield return command_Action;
-				Command_Action command_Action2 = new Command_Action();
-				command_Action2.defaultLabel = "Dev: Reset enter cooldown";
-				command_Action2.action = delegate
+				yield return new Command_Action
 				{
-					ticksLeft = 0;
+					defaultLabel = "DEV: Reset enter cooldown",
+					action = delegate
+					{
+						endTick = GenTicks.TicksGame;
+					}
 				};
-				yield return command_Action2;
 			}
 		}
 	}

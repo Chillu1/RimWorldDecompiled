@@ -53,6 +53,8 @@ namespace Verse
 
 		private HashSet<string> deepSaved = new HashSet<string>();
 
+		private Dictionary<string, string> deepSavedInfo = new Dictionary<string, string>();
+
 		private HashSet<ReferencedObject> referenced = new HashSet<ReferencedObject>();
 
 		public void Clear()
@@ -60,6 +62,7 @@ namespace Verse
 			if (Prefs.DevMode)
 			{
 				deepSaved.Clear();
+				deepSavedInfo.Clear();
 				referenced.Clear();
 			}
 		}
@@ -91,29 +94,33 @@ namespace Verse
 			}
 			if (Scribe.mode != LoadSaveMode.Saving)
 			{
-				Log.Error(string.Concat("Registered ", obj, ", but current mode is ", Scribe.mode));
+				Log.Error("Registered " + obj?.ToString() + ", but current mode is " + Scribe.mode);
 			}
 			else
 			{
-				if (obj == null)
-				{
-					return;
-				}
-				ILoadReferenceable loadReferenceable = obj as ILoadReferenceable;
-				if (loadReferenceable == null)
+				if (obj == null || !(obj is ILoadReferenceable loadReferenceable))
 				{
 					return;
 				}
 				try
 				{
-					if (!deepSaved.Add(loadReferenceable.GetUniqueLoadID()))
+					string uniqueLoadID = loadReferenceable.GetUniqueLoadID();
+					if (!deepSaved.Add(uniqueLoadID))
 					{
-						Log.Warning("DebugLoadIDsSavingErrorsChecker error: tried to register deep-saved object with loadID " + loadReferenceable.GetUniqueLoadID() + ", but it's already here. label=" + label + " (not cleared after the previous save? different objects have the same load ID? the same object is deep-saved twice?)");
+						Log.Warning("DebugLoadIDsSavingErrorsChecker error: tried to register deep-saved object with loadID " + uniqueLoadID + ", but it's already here. label=" + label + " (not cleared after the previous save? different objects have the same load ID? the same object is deep-saved twice?)");
+						if (deepSavedInfo.TryGetValue(uniqueLoadID, out var value))
+						{
+							Log.Warning(loadReferenceable.GetType()?.ToString() + " was already deepsaved at " + value + ".");
+						}
+					}
+					else
+					{
+						deepSavedInfo.Add(uniqueLoadID, Scribe.saver.CurPath);
 					}
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Error("Error in GetUniqueLoadID(): " + arg);
+					Log.Error("Error in GetUniqueLoadID(): " + ex);
 				}
 			}
 		}
@@ -126,7 +133,7 @@ namespace Verse
 			}
 			if (Scribe.mode != LoadSaveMode.Saving)
 			{
-				Log.Error(string.Concat("Registered ", obj, ", but current mode is ", Scribe.mode));
+				Log.Error("Registered " + obj?.ToString() + ", but current mode is " + Scribe.mode);
 			}
 			else if (obj != null)
 			{
@@ -134,9 +141,9 @@ namespace Verse
 				{
 					referenced.Add(new ReferencedObject(obj.GetUniqueLoadID(), label));
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Error("Error in GetUniqueLoadID(): " + arg);
+					Log.Error("Error in GetUniqueLoadID(): " + ex);
 				}
 			}
 		}

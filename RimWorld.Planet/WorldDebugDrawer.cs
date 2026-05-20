@@ -12,9 +12,9 @@ namespace RimWorld.Planet
 
 		private const int DefaultLifespanTicks = 50;
 
-		private const float MaxDistToCameraToDisplayLabel = 39f;
+		private static float MaxDistToCameraToDisplayLabel => WorldCameraDriver.MinAltitude - 100f + 14f;
 
-		public void FlashTile(int tile, float colorPct = 0f, string text = null, int duration = 50)
+		public void FlashTile(PlanetTile tile, float colorPct = 0f, string text = null, int duration = 50)
 		{
 			DebugTile debugTile = new DebugTile();
 			debugTile.tile = tile;
@@ -24,7 +24,7 @@ namespace RimWorld.Planet
 			debugTiles.Add(debugTile);
 		}
 
-		public void FlashTile(int tile, Material mat, string text = null, int duration = 50)
+		public void FlashTile(PlanetTile tile, Material mat, string text = null, int duration = 50)
 		{
 			DebugTile debugTile = new DebugTile();
 			debugTile.tile = tile;
@@ -41,7 +41,7 @@ namespace RimWorld.Planet
 			debugLines.Add(debugWorldLine);
 		}
 
-		public void FlashLine(int tileA, int tileB, int duration = 50)
+		public void FlashLine(PlanetTile tileA, PlanetTile tileB, int duration = 50)
 		{
 			WorldGrid worldGrid = Find.WorldGrid;
 			Vector3 tileCenter = worldGrid.GetTileCenter(tileA);
@@ -92,7 +92,7 @@ namespace RimWorld.Planet
 			GUI.color = new Color(1f, 1f, 1f, 0.5f);
 			for (int i = 0; i < debugTiles.Count; i++)
 			{
-				if (!(debugTiles[i].DistanceToCamera > 39f))
+				if (!(debugTiles[i].DistanceToCamera > MaxDistToCameraToDisplayLabel))
 				{
 					debugTiles[i].OnGUI();
 				}

@@ -10,10 +10,7 @@ namespace RimWorld
 
 		protected const TargetIndex AnimalInd = TargetIndex.A;
 
-		protected abstract float WorkTotal
-		{
-			get;
-		}
+		protected abstract float WorkTotal { get; }
 
 		protected abstract CompHasGatherableBodyResource GetComp(Pawn animal);
 
@@ -34,19 +31,19 @@ namespace RimWorld
 			this.FailOnDowned(TargetIndex.A);
 			this.FailOnNotCasualInterruptible(TargetIndex.A);
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
-			Toil wait = new Toil();
+			Toil wait = ToilMaker.MakeToil("MakeNewToils");
 			wait.initAction = delegate
 			{
-				Pawn actor2 = wait.actor;
-				Pawn pawn2 = (Pawn)job.GetTarget(TargetIndex.A).Thing;
-				actor2.pather.StopDead();
-				PawnUtility.ForceWait(pawn2, 15000, null, maintainPosture: true);
+				Pawn actor = wait.actor;
+				Pawn obj = (Pawn)job.GetTarget(TargetIndex.A).Thing;
+				actor.pather.StopDead();
+				PawnUtility.ForceWait(obj, 15000, null, maintainPosture: true);
 			};
-			wait.tickAction = delegate
+			wait.tickIntervalAction = delegate(int delta)
 			{
 				Pawn actor = wait.actor;
-				actor.skills.Learn(SkillDefOf.Animals, 0.13f);
-				gatherProgress += actor.GetStatValue(StatDefOf.AnimalGatherSpeed);
+				actor.skills.Learn(SkillDefOf.Animals, 0.13f * (float)delta);
+				gatherProgress += actor.GetStatValue(StatDefOf.AnimalGatherSpeed) * (float)delta;
 				if (gatherProgress >= WorkTotal)
 				{
 					GetComp((Pawn)(Thing)job.GetTarget(TargetIndex.A)).Gathered(pawn);

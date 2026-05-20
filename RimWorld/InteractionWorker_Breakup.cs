@@ -59,17 +59,7 @@ namespace RimWorld
 			{
 				initiator.relations.RemoveDirectRelation(PawnRelationDefOf.Spouse, recipient);
 				initiator.relations.AddDirectRelation(PawnRelationDefOf.ExSpouse, recipient);
-				if (recipient.needs.mood != null)
-				{
-					recipient.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.DivorcedMe, initiator);
-					recipient.needs.mood.thoughts.memories.RemoveMemoriesOfDef(ThoughtDefOf.GotMarried);
-					recipient.needs.mood.thoughts.memories.RemoveMemoriesOfDefWhereOtherPawnIs(ThoughtDefOf.HoneymoonPhase, initiator);
-				}
-				if (recipient.needs.mood != null)
-				{
-					initiator.needs.mood.thoughts.memories.RemoveMemoriesOfDef(ThoughtDefOf.GotMarried);
-					initiator.needs.mood.thoughts.memories.RemoveMemoriesOfDefWhereOtherPawnIs(ThoughtDefOf.HoneymoonPhase, recipient);
-				}
+				SpouseRelationUtility.RemoveGotMarriedThoughts(initiator, recipient);
 				flag = SpouseRelationUtility.ChangeNameAfterDivorce(initiator);
 				flag2 = SpouseRelationUtility.ChangeNameAfterDivorce(recipient);
 			}

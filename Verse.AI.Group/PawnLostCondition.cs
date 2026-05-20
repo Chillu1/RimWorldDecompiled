@@ -4,7 +4,8 @@ namespace Verse.AI.Group
 	{
 		Undefined,
 		Vanished,
-		IncappedOrKilled,
+		Incapped,
+		Killed,
 		MadePrisoner,
 		ChangedFaction,
 		ExitedMap,
@@ -13,6 +14,9 @@ namespace Verse.AI.Group
 		ForcedToJoinOtherLord,
 		ForcedByPlayerAction,
 		ForcedByQuest,
-		NoLongerEnteringTransportPods
+		NoLongerEnteringTransportPods,
+		MadeSlave,
+		InMentalState,
+		LordRejected
 	}
 }

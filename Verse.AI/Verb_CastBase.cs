@@ -1,4 +1,5 @@
 using RimWorld;
+using RimWorld.Utility;
 using UnityEngine;
 
 namespace Verse.AI
@@ -7,7 +8,7 @@ namespace Verse.AI
 	{
 		public override bool MultiSelect => true;
 
-		public override bool ValidateTarget(LocalTargetInfo target)
+		public override bool ValidateTarget(LocalTargetInfo target, bool showMessages = true)
 		{
 			if (!base.ValidateTarget(target))
 			{
@@ -24,7 +25,7 @@ namespace Verse.AI
 		{
 			Job job = JobMaker.MakeJob(JobDefOf.UseVerbOnThingStatic, target);
 			job.verbToUse = this;
-			CasterPawn.jobs.TryTakeOrderedJob(job);
+			CasterPawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
 		}
 
 		public override void OnGUI(LocalTargetInfo target)
@@ -46,18 +47,7 @@ namespace Verse.AI
 				GenDraw.DrawTargetHighlightWithLayer(target.CenterVector3, AltitudeLayer.MetaOverlays);
 				DrawHighlightFieldRadiusAroundTarget(target);
 			}
-			if (verbProps.requireLineOfSight)
-			{
-				GenDraw.DrawRadiusRing(caster.Position, EffectiveRange, Color.white, CanTarget);
-			}
-			else
-			{
-				GenDraw.DrawRadiusRing(caster.Position, EffectiveRange);
-			}
-			bool CanTarget(IntVec3 c)
-			{
-				return GenSight.LineOfSight(caster.Position, c, caster.Map);
-			}
+			GenDraw.DrawRadiusRing(caster.Position, EffectiveRange, Color.white, (IntVec3 c) => CanHitTarget(c));
 		}
 	}
 }

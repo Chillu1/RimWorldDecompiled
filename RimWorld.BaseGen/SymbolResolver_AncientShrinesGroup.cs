@@ -18,12 +18,12 @@ namespace RimWorld.BaseGen
 			Map map = BaseGen.globalSettings.map;
 			int num = (rp.rect.Width + Mathf.Max(-1, 0)) / (StandardAncientShrineSize.x + -1);
 			int num2 = (rp.rect.Height + Mathf.Max(-1, 0)) / (StandardAncientShrineSize.z + -1);
-			IntVec3 bottomLeft = rp.rect.BottomLeft;
+			IntVec3 min = rp.rect.Min;
 			PodContentsType? podContentsType = rp.podContentsType;
 			if (!podContentsType.HasValue)
 			{
 				float value = Rand.Value;
-				podContentsType = ((value < 0.5f) ? null : ((value < 0.7f) ? new PodContentsType?(PodContentsType.Slave) : new PodContentsType?(PodContentsType.AncientHostile)));
+				podContentsType = ((value < 0.5f) ? ((PodContentsType?)null) : ((!(value < 0.7f)) ? new PodContentsType?(PodContentsType.AncientHostile) : new PodContentsType?(PodContentsType.Slave)));
 			}
 			int value2 = rp.ancientCryptosleepCasketGroupID ?? Find.UniqueIDsManager.GetNextAncientCryptosleepCasketGroupID();
 			int num3 = 0;
@@ -37,7 +37,7 @@ namespace RimWorld.BaseGen
 						{
 							break;
 						}
-						CellRect rect = new CellRect(bottomLeft.x + j * (StandardAncientShrineSize.x + -1), bottomLeft.z + i * (StandardAncientShrineSize.z + -1), StandardAncientShrineSize.x, StandardAncientShrineSize.z);
+						CellRect rect = new CellRect(min.x + j * (StandardAncientShrineSize.x + -1), min.z + i * (StandardAncientShrineSize.z + -1), StandardAncientShrineSize.x, StandardAncientShrineSize.z);
 						if (rect.FullyContainedWithin(rp.rect) && ThingUtility.InteractionCellWhenAt(center: new IntVec3(rect.minX + rect.Width / 2 - 1, 0, rect.minZ + rect.Height / 2), def: ThingDefOf.AncientCryptosleepCasket, rot: Rot4.East, map: map).Standable(map))
 						{
 							ResolveParams resolveParams = rp;

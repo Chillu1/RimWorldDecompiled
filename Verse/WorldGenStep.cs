@@ -1,22 +1,21 @@
+using RimWorld.Planet;
+
 namespace Verse
 {
 	public abstract class WorldGenStep
 	{
 		public WorldGenStepDef def;
 
-		public abstract int SeedPart
+		public abstract int SeedPart { get; }
+
+		public abstract void GenerateFresh(string seed, PlanetLayer layer);
+
+		public virtual void GenerateWithoutWorldData(string seed, PlanetLayer layer)
 		{
-			get;
+			GenerateFresh(seed, layer);
 		}
 
-		public abstract void GenerateFresh(string seed);
-
-		public virtual void GenerateWithoutWorldData(string seed)
-		{
-			GenerateFresh(seed);
-		}
-
-		public virtual void GenerateFromScribe(string seed)
+		public virtual void GenerateFromScribe(string seed, PlanetLayer layer)
 		{
 		}
 	}

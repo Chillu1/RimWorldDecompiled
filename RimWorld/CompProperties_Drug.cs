@@ -21,6 +21,8 @@ namespace RimWorld
 
 		public bool isCombatEnhancingDrug;
 
+		public bool teetotalerCanConsume;
+
 		public float listOrder;
 
 		public bool Addictive => addictiveness > 0f;

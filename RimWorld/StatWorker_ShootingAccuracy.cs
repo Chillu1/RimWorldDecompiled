@@ -8,12 +8,16 @@ namespace RimWorld
 		public override string GetExplanationFinalizePart(StatRequest req, ToStringNumberSense numberSense, float finalVal)
 		{
 			StringBuilder stringBuilder = new StringBuilder();
-			for (int i = 5; i <= 45; i += 5)
+			stringBuilder.AppendLine(base.GetExplanationFinalizePart(req, numberSense, finalVal));
+			stringBuilder.AppendLine();
+			stringBuilder.AppendLine("StatsReport_ShootingExampleDistances".Translate());
+			float f = ShotReport.HitFactorFromShooter(req.Thing, 1f, finalVal);
+			stringBuilder.AppendLine("distance".Translate().CapitalizeFirst() + " 1: " + f.ToStringPercent("F1"));
+			for (int i = 5; i <= 55; i += 5)
 			{
-				float f = ShotReport.HitFactorFromShooter(finalVal, i);
+				f = ShotReport.HitFactorFromShooter(req.Thing, i, finalVal);
 				stringBuilder.AppendLine("distance".Translate().CapitalizeFirst() + " " + i.ToString() + ": " + f.ToStringPercent("F1"));
 			}
-			stringBuilder.AppendLine(base.GetExplanationFinalizePart(req, numberSense, finalVal));
 			return stringBuilder.ToString();
 		}
 	}

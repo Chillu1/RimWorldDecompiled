@@ -90,35 +90,25 @@ namespace Verse
 			List<Thing> list2 = thingLists[Find.TickManager.TicksGame % TickInterval];
 			for (int m = 0; m < list2.Count; m++)
 			{
-				if (list2[m].Destroyed)
+				Thing thing = list2[m];
+				if (thing.Destroyed)
 				{
 					continue;
 				}
 				try
 				{
-					switch (tickType)
-					{
-					case TickerType.Normal:
-						list2[m].Tick();
-						break;
-					case TickerType.Rare:
-						list2[m].TickRare();
-						break;
-					case TickerType.Long:
-						list2[m].TickLong();
-						break;
-					}
+					thing.DoTick();
 				}
-				catch (Exception ex)
+				catch (Exception arg)
 				{
-					string text = (list2[m].Spawned ? string.Concat(" (at ", list2[m].Position, ")") : "");
+					string arg2 = (thing.Spawned ? $" (at {thing.Position})" : "");
 					if (Prefs.DevMode)
 					{
-						Log.Error("Exception ticking " + list2[m].ToStringSafe() + text + ": " + ex);
+						Log.Error($"Exception ticking {thing.ToStringSafe()}{arg2}: {arg}");
 					}
 					else
 					{
-						Log.ErrorOnce("Exception ticking " + list2[m].ToStringSafe() + text + ". Suppressing further errors. Exception: " + ex, list2[m].thingIDNumber ^ 0x22627165);
+						Log.ErrorOnce($"Exception ticking {thing.ToStringSafe()}{arg2}. Suppressing further errors. Exception: {arg}", thing.thingIDNumber ^ 0x22627165);
 					}
 				}
 			}

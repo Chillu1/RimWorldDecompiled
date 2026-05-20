@@ -2,13 +2,13 @@ using Verse;
 
 namespace RimWorld
 {
-	public abstract class Designator_AreaHome : Designator_Area
+	public abstract class Designator_AreaHome : Designator_Cells
 	{
 		private DesignateMode mode;
 
-		public override int DraggableDimensions => 2;
-
 		public override bool DragDrawMeasurements => true;
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Areas;
 
 		public Designator_AreaHome(DesignateMode mode)
 		{

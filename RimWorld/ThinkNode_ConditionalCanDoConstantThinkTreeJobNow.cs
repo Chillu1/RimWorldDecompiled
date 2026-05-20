@@ -7,7 +7,7 @@ namespace RimWorld
 	{
 		protected override bool Satisfied(Pawn pawn)
 		{
-			if (!pawn.Downed && !pawn.IsBurning() && !pawn.InMentalState && !pawn.Drafted)
+			if ((!pawn.Downed || pawn.health.CanCrawl) && !pawn.IsBurning() && !pawn.InMentalState && !pawn.Drafted)
 			{
 				return pawn.Awake();
 			}

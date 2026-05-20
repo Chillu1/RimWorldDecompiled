@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Verse;
 using Verse.AI;
@@ -7,17 +8,17 @@ namespace RimWorld
 {
 	public abstract class WorkGiver_ConstructDeliverResources : WorkGiver_Scanner
 	{
-		private static List<Thing> resourcesAvailable = new List<Thing>();
+		private static readonly List<Thing> resourcesAvailable = new List<Thing>();
+
+		private static readonly Dictionary<ThingDef, int> missingResources = new Dictionary<ThingDef, int>();
 
 		private const float MultiPickupRadius = 5f;
 
 		private const float NearbyConstructScanRadius = 8f;
 
-		private static string MissingMaterialsTranslated;
+		protected static string ForbiddenLowerTranslated;
 
-		private static string ForbiddenLowerTranslated;
-
-		private static string NoPathTranslated;
+		protected static string NoPathTranslated;
 
 		public override Danger MaxPathDanger(Pawn pawn)
 		{
@@ -26,7 +27,6 @@ namespace RimWorld
 
 		public static void ResetStaticData()
 		{
-			MissingMaterialsTranslated = "MissingMaterials".Translate();
 			ForbiddenLowerTranslated = "ForbiddenLower".Translate();
 			NoPathTranslated = "NoPath".Translate();
 		}
@@ -41,116 +41,173 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!pawn.CanReserve(th))
+			if (!HaulAIUtility.PawnCanAutomaticallyHaulFast(pawn, th, forced: false))
 			{
 				return false;
 			}
 			return true;
 		}
 
-		protected Job ResourceDeliverJobFor(Pawn pawn, IConstructible c, bool canRemoveExistingFloorUnderNearbyNeeders = true)
+		private bool CanUseCarriedResource(Pawn pawn, IConstructible c, ThingDefCountClass need)
 		{
-			Blueprint_Install blueprint_Install = c as Blueprint_Install;
-			if (blueprint_Install != null)
+			if (pawn.carryTracker.CarriedThing?.def != need.thingDef)
 			{
-				return InstallJob(pawn, blueprint_Install);
+				return false;
 			}
-			bool flag = false;
-			ThingDefCountClass thingDefCountClass = null;
-			List<ThingDefCountClass> list = c.MaterialsNeeded();
-			int count = list.Count;
-			for (int i = 0; i < count; i++)
+			if (!KeyBindingDefOf.QueueOrder.IsDownEvent)
 			{
-				ThingDefCountClass need = list[i];
-				if (!pawn.Map.itemAvailability.ThingsAvailableAnywhere(need, pawn))
+				return true;
+			}
+			if (pawn.CurJob != null && !IsValidJob(pawn.CurJob))
+			{
+				return false;
+			}
+			foreach (QueuedJob item in pawn.jobs.jobQueue)
+			{
+				if (!IsValidJob(item.job))
 				{
-					flag = true;
-					thingDefCountClass = need;
-					break;
+					return false;
 				}
-				Thing foundRes = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(need.thingDef), PathEndMode.ClosestTouch, TraverseParms.For(pawn), 9999f, (Thing r) => ResourceValidator(pawn, need, r));
-				if (foundRes != null)
+			}
+			return true;
+			bool IsValidJob(Job job)
+			{
+				if (job.def != JobDefOf.HaulToContainer)
 				{
-					FindAvailableNearbyResources(foundRes, pawn, out var resTotalAvailable);
-					int neededTotal;
-					Job jobToMakeNeederAvailable;
-					HashSet<Thing> hashSet = FindNearbyNeeders(pawn, need, c, resTotalAvailable, canRemoveExistingFloorUnderNearbyNeeders, out neededTotal, out jobToMakeNeederAvailable);
-					if (jobToMakeNeederAvailable != null)
+					return true;
+				}
+				return job.targetA != pawn.carryTracker.CarriedThing;
+			}
+		}
+
+		protected Job ResourceDeliverJobFor(Pawn pawn, IConstructible c, bool canRemoveExistingFloorUnderNearbyNeeders = true, bool forced = false)
+		{
+			if (c is Blueprint_Install install)
+			{
+				return InstallJob(pawn, install);
+			}
+			missingResources.Clear();
+			foreach (ThingDefCountClass need in c.TotalMaterialCost())
+			{
+				int num = ((forced || !(c is IHaulEnroute enroute)) ? c.ThingCountNeeded(need.thingDef) : enroute.GetSpaceRemainingWithEnroute(need.thingDef, pawn));
+				if (num <= 0)
+				{
+					continue;
+				}
+				if (!pawn.Map.itemAvailability.ThingsAvailableAnywhere(need.thingDef, num, pawn))
+				{
+					missingResources.Add(need.thingDef, num);
+					if (FloatMenuMakerMap.makingFor != pawn)
 					{
-						return jobToMakeNeederAvailable;
+						break;
 					}
-					hashSet.Add((Thing)c);
-					Thing thing = hashSet.MinBy((Thing nee) => IntVec3Utility.ManhattanDistanceFlat(foundRes.Position, nee.Position));
+					continue;
+				}
+				Thing foundRes;
+				if (CanUseCarriedResource(pawn, c, need))
+				{
+					foundRes = pawn.carryTracker.CarriedThing;
+				}
+				else
+				{
+					foundRes = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(need.thingDef), PathEndMode.ClosestTouch, TraverseParms.For(pawn), 9999f, (Thing r) => ResourceValidator(pawn, need, r));
+				}
+				if (foundRes == null)
+				{
+					missingResources.Add(need.thingDef, num);
+					if (FloatMenuMakerMap.makingFor != pawn)
+					{
+						break;
+					}
+					continue;
+				}
+				FindAvailableNearbyResources(foundRes, pawn, out var resTotalAvailable);
+				int neededTotal;
+				Job jobToMakeNeederAvailable;
+				HashSet<Thing> hashSet = FindNearbyNeeders(pawn, need.thingDef, c, num, resTotalAvailable, canRemoveExistingFloorUnderNearbyNeeders, out neededTotal, out jobToMakeNeederAvailable);
+				if (jobToMakeNeederAvailable != null)
+				{
+					return jobToMakeNeederAvailable;
+				}
+				hashSet.Add((Thing)c);
+				Thing thing;
+				if (hashSet.Count > 0)
+				{
+					thing = hashSet.MinBy((Thing needer) => IntVec3Utility.ManhattanDistanceFlat(foundRes.Position, needer.Position));
 					hashSet.Remove(thing);
-					int num = 0;
-					int num2 = 0;
-					do
-					{
-						num += resourcesAvailable[num2].stackCount;
-						num2++;
-					}
-					while (num < neededTotal && num2 < resourcesAvailable.Count);
-					resourcesAvailable.RemoveRange(num2, resourcesAvailable.Count - num2);
-					resourcesAvailable.Remove(foundRes);
-					Job job = JobMaker.MakeJob(JobDefOf.HaulToContainer);
-					job.targetA = foundRes;
-					job.targetQueueA = new List<LocalTargetInfo>();
-					for (num2 = 0; num2 < resourcesAvailable.Count; num2++)
-					{
-						job.targetQueueA.Add(resourcesAvailable[num2]);
-					}
-					job.targetB = thing;
-					if (hashSet.Count > 0)
-					{
-						job.targetQueueB = new List<LocalTargetInfo>();
-						foreach (Thing item in hashSet)
-						{
-							job.targetQueueB.Add(item);
-						}
-					}
-					job.targetC = (Thing)c;
-					job.count = neededTotal;
-					job.haulMode = HaulMode.ToContainer;
-					return job;
 				}
-				flag = true;
-				thingDefCountClass = need;
+				else
+				{
+					thing = (Thing)c;
+				}
+				int num2 = 0;
+				int num3 = 0;
+				do
+				{
+					num2 += resourcesAvailable[num3].stackCount;
+					num2 = Mathf.Min(num2, Mathf.Min(resTotalAvailable, neededTotal));
+					num3++;
+				}
+				while (num2 < neededTotal && num2 < resTotalAvailable && num3 < resourcesAvailable.Count);
+				resourcesAvailable.RemoveRange(num3, resourcesAvailable.Count - num3);
+				resourcesAvailable.Remove(foundRes);
+				Job job = JobMaker.MakeJob(JobDefOf.HaulToContainer);
+				job.targetA = foundRes;
+				job.targetQueueA = new List<LocalTargetInfo>();
+				for (num3 = 0; num3 < resourcesAvailable.Count; num3++)
+				{
+					job.targetQueueA.Add(resourcesAvailable[num3]);
+				}
+				job.targetC = (Thing)c;
+				job.targetB = thing;
+				if (hashSet.Count > 0)
+				{
+					job.targetQueueB = new List<LocalTargetInfo>();
+					foreach (Thing item in hashSet)
+					{
+						job.targetQueueB.Add(item);
+					}
+				}
+				job.count = num2;
+				job.haulMode = HaulMode.ToContainer;
+				return job;
 			}
-			if (flag)
+			if (missingResources.Count > 0 && FloatMenuMakerMap.makingFor == pawn)
 			{
-				JobFailReason.Is($"{MissingMaterialsTranslated}: {thingDefCountClass.thingDef.label}");
+				JobFailReason.Is("MissingMaterials".Translate(missingResources.Select((KeyValuePair<ThingDef, int> kvp) => $"{kvp.Value}x {kvp.Key.label}").ToCommaList()));
 			}
 			return null;
 		}
 
 		private void FindAvailableNearbyResources(Thing firstFoundResource, Pawn pawn, out int resTotalAvailable)
 		{
-			int num = Mathf.Min(firstFoundResource.def.stackLimit, pawn.carryTracker.MaxStackSpaceEver(firstFoundResource.def));
+			int num = pawn.carryTracker.MaxStackSpaceEver(firstFoundResource.def);
 			resTotalAvailable = 0;
 			resourcesAvailable.Clear();
 			resourcesAvailable.Add(firstFoundResource);
 			resTotalAvailable += firstFoundResource.stackCount;
-			if (resTotalAvailable >= num)
+			if (resTotalAvailable < num)
 			{
-				return;
-			}
-			foreach (Thing item in GenRadial.RadialDistinctThingsAround(firstFoundResource.Position, firstFoundResource.Map, 5f, useCenter: false))
-			{
-				if (resTotalAvailable >= num)
+				foreach (Thing item in GenRadial.RadialDistinctThingsAround(firstFoundResource.PositionHeld, firstFoundResource.MapHeld, 5f, useCenter: false))
 				{
-					break;
-				}
-				if (item.def == firstFoundResource.def && GenAI.CanUseItemForWork(pawn, item))
-				{
-					resourcesAvailable.Add(item);
-					resTotalAvailable += item.stackCount;
+					if (resTotalAvailable >= num)
+					{
+						resTotalAvailable = num;
+						break;
+					}
+					if (item.def == firstFoundResource.def && GenAI.CanUseItemForWork(pawn, item))
+					{
+						resourcesAvailable.Add(item);
+						resTotalAvailable += item.stackCount;
+					}
 				}
 			}
+			resTotalAvailable = Mathf.Min(resTotalAvailable, num);
 		}
 
-		private HashSet<Thing> FindNearbyNeeders(Pawn pawn, ThingDefCountClass need, IConstructible c, int resTotalAvailable, bool canRemoveExistingFloorUnderNearbyNeeders, out int neededTotal, out Job jobToMakeNeederAvailable)
+		private HashSet<Thing> FindNearbyNeeders(Pawn pawn, ThingDef stuff, IConstructible c, int resNeeded, int resTotalAvailable, bool canRemoveExistingFloorUnderNearbyNeeders, out int neededTotal, out Job jobToMakeNeederAvailable)
 		{
-			neededTotal = need.count;
+			neededTotal = resNeeded;
 			HashSet<Thing> hashSet = new HashSet<Thing>();
 			Thing thing = (Thing)c;
 			foreach (Thing item in GenRadial.RadialDistinctThingsAround(thing.Position, thing.Map, 8f, useCenter: true))
@@ -159,14 +216,17 @@ namespace RimWorld
 				{
 					break;
 				}
-				if (!IsNewValidNearbyNeeder(item, hashSet, c, pawn))
+				if (IsNewValidNearbyNeeder(item, hashSet, c, pawn) && (!(item is Blueprint blue) || !ShouldRemoveExistingFloorFirst(pawn, blue)))
 				{
-					continue;
-				}
-				Blueprint blueprint = item as Blueprint;
-				if (blueprint == null || !ShouldRemoveExistingFloorFirst(pawn, blueprint))
-				{
-					int num = GenConstruct.AmountNeededByOf((IConstructible)item, need.thingDef);
+					int num = 0;
+					if (item is IHaulEnroute enroute)
+					{
+						num = enroute.GetSpaceRemainingWithEnroute(stuff, pawn);
+					}
+					else if (item is IConstructible constructible)
+					{
+						num = constructible.ThingCountNeeded(stuff);
+					}
 					if (num > 0)
 					{
 						hashSet.Add(item);
@@ -174,19 +234,13 @@ namespace RimWorld
 					}
 				}
 			}
-			Blueprint blueprint2 = c as Blueprint;
-			if (blueprint2 != null && blueprint2.def.entityDefToBuild is TerrainDef && canRemoveExistingFloorUnderNearbyNeeders && neededTotal < resTotalAvailable)
+			if (c is Blueprint blueprint && blueprint.def.entityDefToBuild is TerrainDef && canRemoveExistingFloorUnderNearbyNeeders && neededTotal < resTotalAvailable)
 			{
 				foreach (Thing item2 in GenRadial.RadialDistinctThingsAround(thing.Position, thing.Map, 3f, useCenter: false))
 				{
-					if (!IsNewValidNearbyNeeder(item2, hashSet, c, pawn))
+					if (IsNewValidNearbyNeeder(item2, hashSet, c, pawn) && item2 is Blueprint blue2)
 					{
-						continue;
-					}
-					Blueprint blueprint3 = item2 as Blueprint;
-					if (blueprint3 != null)
-					{
-						Job job = RemoveExistingFloorJob(pawn, blueprint3);
+						Job job = RemoveExistingFloorJob(pawn, blue2);
 						if (job != null)
 						{
 							jobToMakeNeederAvailable = job;
@@ -201,24 +255,20 @@ namespace RimWorld
 
 		private bool IsNewValidNearbyNeeder(Thing t, HashSet<Thing> nearbyNeeders, IConstructible constructible, Pawn pawn)
 		{
-			if (!(t is IConstructible) || t == constructible || t is Blueprint_Install || t.Faction != pawn.Faction || t.IsForbidden(pawn) || nearbyNeeders.Contains(t) || !GenConstruct.CanConstruct(t, pawn, checkSkills: false))
+			if (t is IConstructible && t != constructible && t.Faction == pawn.Faction && t.Isnt<Blueprint_Install>() && !nearbyNeeders.Contains(t) && !t.IsForbidden(pawn))
 			{
-				return false;
+				return GenConstruct.CanConstruct(t, pawn, checkSkills: false, forced: false, JobDefOf.HaulToContainer);
 			}
-			return true;
+			return false;
 		}
 
 		protected static bool ShouldRemoveExistingFloorFirst(Pawn pawn, Blueprint blue)
 		{
-			if (!(blue.def.entityDefToBuild is TerrainDef))
+			if (blue.def.entityDefToBuild is TerrainDef)
 			{
-				return false;
+				return pawn.Map.terrainGrid.CanRemoveTopLayerAt(blue.Position);
 			}
-			if (!pawn.Map.terrainGrid.CanRemoveTopLayerAt(blue.Position))
-			{
-				return false;
-			}
-			return true;
+			return false;
 		}
 
 		protected Job RemoveExistingFloorJob(Pawn pawn, Blueprint blue)
@@ -231,6 +281,10 @@ namespace RimWorld
 			{
 				return null;
 			}
+			if (pawn.WorkTypeIsDisabled(WorkGiverDefOf.ConstructRemoveFloors.workType))
+			{
+				return null;
+			}
 			Job job = JobMaker.MakeJob(JobDefOf.RemoveFloor, blue.Position);
 			job.ignoreDesignations = true;
 			return job;
@@ -239,6 +293,12 @@ namespace RimWorld
 		private Job InstallJob(Pawn pawn, Blueprint_Install install)
 		{
 			Thing miniToInstallOrBuildingToReinstall = install.MiniToInstallOrBuildingToReinstall;
+			IThingHolder parentHolder = miniToInstallOrBuildingToReinstall.ParentHolder;
+			if (parentHolder != null && parentHolder is Pawn_CarryTracker pawn_CarryTracker)
+			{
+				JobFailReason.Is("BeingCarriedBy".Translate(pawn_CarryTracker.pawn));
+				return null;
+			}
 			if (miniToInstallOrBuildingToReinstall.IsForbidden(pawn))
 			{
 				JobFailReason.Is(ForbiddenLowerTranslated);

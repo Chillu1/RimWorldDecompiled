@@ -7,11 +7,13 @@ namespace RimWorld
 	{
 		public static List<IntVec3> beautyRelevantCells = new List<IntVec3>();
 
-		private static List<Room> visibleRooms = new List<Room>();
+		private static HashSet<Room> visibleRooms = new HashSet<Room>();
 
 		public static readonly int SampleNumCells_Beauty = GenRadial.NumCellsInRadius(8.9f);
 
-		private static List<Thing> tempCountedThings = new List<Thing>();
+		private const float PollutedTerrainBeautyOffset = -1f;
+
+		private static HashSet<Thing> tempCountedThings = new HashSet<Thing>();
 
 		public static float AverageBeautyPerceptible(IntVec3 root, Map map)
 		{
@@ -22,10 +24,16 @@ namespace RimWorld
 			tempCountedThings.Clear();
 			float num = 0f;
 			int num2 = 0;
-			FillBeautyRelevantCells(root, map);
+			using (new ProfilerBlock("FillBeautyRelevantCells"))
+			{
+				FillBeautyRelevantCells(root, map);
+			}
 			for (int i = 0; i < beautyRelevantCells.Count; i++)
 			{
-				num += CellBeauty(beautyRelevantCells[i], map, tempCountedThings);
+				using (new ProfilerBlock("CellBeauty"))
+				{
+					num += CellBeauty(beautyRelevantCells[i], map, tempCountedThings);
+				}
 				num2++;
 			}
 			tempCountedThings.Clear();
@@ -46,14 +54,11 @@ namespace RimWorld
 			}
 			visibleRooms.Clear();
 			visibleRooms.Add(room);
-			if (room.Regions.Count == 1 && room.Regions[0].type == RegionType.Portal)
+			if (room.IsDoorway)
 			{
-				foreach (Region neighbor in room.Regions[0].Neighbors)
+				foreach (Region neighbor in room.FirstRegion.Neighbors)
 				{
-					if (!visibleRooms.Contains(neighbor.Room))
-					{
-						visibleRooms.Add(neighbor.Room);
-					}
+					visibleRooms.Add(neighbor.Room);
 				}
 			}
 			for (int i = 0; i < SampleNumCells_Beauty; i++)
@@ -86,32 +91,27 @@ namespace RimWorld
 			visibleRooms.Clear();
 		}
 
-		public static float CellBeauty(IntVec3 c, Map map, List<Thing> countedThings = null)
+		public static float CellBeauty(IntVec3 c, Map map, HashSet<Thing> countedThings = null)
 		{
 			float num = 0f;
 			float num2 = 0f;
 			bool flag = false;
+			bool flag2 = c.GetRoom(map)?.PsychologicallyOutdoors ?? true;
+			bool flag3 = map.roofGrid.Roofed(c);
 			List<Thing> list = map.thingGrid.ThingsListAt(c);
 			for (int i = 0; i < list.Count; i++)
 			{
 				Thing thing = list[i];
-				if (!BeautyRelevant(thing.def.category))
+				if (!BeautyRelevant(thing.def.category) || (countedThings != null && countedThings.Contains(thing)))
 				{
 					continue;
 				}
-				if (countedThings != null)
-				{
-					if (countedThings.Contains(thing))
-					{
-						continue;
-					}
-					countedThings.Add(thing);
-				}
+				countedThings?.Add(thing);
 				SlotGroup slotGroup = thing.GetSlotGroup();
-				if (slotGroup == null || slotGroup.parent == thing || !slotGroup.parent.IgnoreStoredThingsBeauty)
+				if (!thing.def.EverHaulable || slotGroup == null || slotGroup.parent == thing || !slotGroup.parent.IgnoreStoredThingsBeauty)
 				{
-					float num3 = thing.GetStatValue(StatDefOf.Beauty);
-					if (thing is Filth && !map.roofGrid.Roofed(c))
+					float num3 = thing.GetBeauty(flag2);
+					if (thing.def.filth != null && flag3)
 					{
 						num3 *= 0.3f;
 					}
@@ -130,7 +130,16 @@ namespace RimWorld
 			{
 				return num2;
 			}
-			return num + map.terrainGrid.TerrainAt(c).GetStatValueAbstract(StatDefOf.Beauty);
+			TerrainDef terrainDef = map.terrainGrid.TerrainAt(c);
+			if (ModsConfig.BiotechActive && !terrainDef.BuildableByPlayer && c.IsPolluted(map))
+			{
+				num += -1f;
+			}
+			if (flag2 && terrainDef.StatBaseDefined(StatDefOf.BeautyOutdoors))
+			{
+				return num + terrainDef.GetStatValueAbstract(StatDefOf.BeautyOutdoors);
+			}
+			return num + terrainDef.GetStatValueAbstract(StatDefOf.Beauty);
 		}
 
 		public static bool BeautyRelevant(ThingCategory cat)

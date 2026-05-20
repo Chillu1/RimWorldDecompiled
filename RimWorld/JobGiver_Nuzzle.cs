@@ -10,12 +10,12 @@ namespace RimWorld
 
 		protected override Job TryGiveJob(Pawn pawn)
 		{
-			if (pawn.RaceProps.nuzzleMtbHours <= 0f)
+			if (NuzzleUtility.GetNuzzleMTBHours(pawn) <= 0f)
 			{
 				return null;
 			}
 			if (!(from p in pawn.Map.mapPawns.SpawnedPawnsInFaction(pawn.Faction)
-				where !p.NonHumanlikeOrWildMan() && p != pawn && p.Position.InHorDistOf(pawn.Position, 40f) && pawn.GetRoom() == p.GetRoom() && !p.Position.IsForbidden(pawn) && p.CanCasuallyInteractNow()
+				where !p.NonHumanlikeOrWildMan() && !p.IsSubhuman && p != pawn && p.Position.InHorDistOf(pawn.Position, 40f) && pawn.GetRoom() == p.GetRoom() && !p.Position.IsForbidden(pawn) && p.CanCasuallyInteractNow()
 				select p).TryRandomElement(out var result))
 			{
 				return null;

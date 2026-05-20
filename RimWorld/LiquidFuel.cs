@@ -25,7 +25,7 @@ namespace RimWorld
 			spawnTick = Find.TickManager.TicksGame;
 		}
 
-		public override void Tick()
+		protected override void TickInterval(int delta)
 		{
 			if (spawnTick + 1500 < Find.TickManager.TicksGame)
 			{

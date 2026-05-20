@@ -19,7 +19,7 @@ namespace Verse
 			Rect rect = GetRect(height);
 			Widgets.DrawBoxSolid(rect, new Color(1f, 1f, 1f, 0.08f));
 			WidgetRow widgetRow = new WidgetRow(rect.x, rect.y, UIDirection.RightThenDown, 72f, 0f);
-			if (part.def.PlayerAddRemovable && widgetRow.ButtonIcon(TexButton.DeleteX, null, GenUI.SubtleMouseoverColor))
+			if (part.def.PlayerAddRemovable && widgetRow.ButtonIcon(TexButton.Delete, null, GenUI.SubtleMouseoverColor))
 			{
 				scen.RemovePart(part);
 				SoundDefOf.Click.PlayOneShotOnCamera();

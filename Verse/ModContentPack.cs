@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml;
+using KTrie;
 using RimWorld;
 using UnityEngine;
 
@@ -20,6 +21,8 @@ namespace Verse
 
 		private string packageIdPlayerFacingInt;
 
+		private bool official;
+
 		private ModContentHolder<AudioClip> audioClips;
 
 		private ModContentHolder<Texture2D> textures;
@@ -36,15 +39,27 @@ namespace Verse
 
 		private List<List<string>> allAssetNamesInBundleCached;
 
+		private List<StringTrieSet> allAssetNamesInBundleCachedTrie;
+
 		public List<string> foldersToLoadDescendingOrder;
 
 		private bool loadedAnyPatches;
 
-		public static readonly string LudeonPackageIdAuthor = "ludeon";
+		public const string LudeonPackageIdAuthor = "ludeon";
 
-		public static readonly string CoreModPackageId = "ludeon.rimworld";
+		public const string CoreModPackageId = "ludeon.rimworld";
 
-		public static readonly string RoyaltyModPackageId = "ludeon.rimworld.royalty";
+		public const string RoyaltyModPackageId = "ludeon.rimworld.royalty";
+
+		public const string IdeologyModPackageId = "ludeon.rimworld.ideology";
+
+		public const string BiotechModPackageId = "ludeon.rimworld.biotech";
+
+		public const string AnomalyModPackageId = "ludeon.rimworld.anomaly";
+
+		public const string OdysseyModPackageId = "ludeon.rimworld.odyssey";
+
+		public static readonly string[] ProductPackageIDs = new string[6] { "ludeon.rimworld", "ludeon.rimworld.royalty", "ludeon.rimworld.ideology", "ludeon.rimworld.biotech", "ludeon.rimworld.anomaly", "ludeon.rimworld.odyssey" };
 
 		public static readonly string CommonFolderName = "Common";
 
@@ -53,6 +68,10 @@ namespace Verse
 		public string PackageId => packageIdInt;
 
 		public string PackageIdPlayerFacing => packageIdPlayerFacingInt;
+
+		public uint SteamAppId => ModMetaData?.SteamAppId ?? 0;
+
+		public ModMetaData ModMetaData => ModLister.GetModWithIdentifier(PackageId);
 
 		public string FolderName => rootDirInt.Name;
 
@@ -70,7 +89,9 @@ namespace Verse
 			}
 		}
 
-		public bool IsCoreMod => PackageId == CoreModPackageId;
+		public bool IsCoreMod => PackageId == "ludeon.rimworld";
+
+		public bool IsOfficialMod => official;
 
 		public IEnumerable<Def> AllDefs => defs;
 
@@ -86,7 +107,7 @@ namespace Verse
 			}
 		}
 
-		public IEnumerable<string> AllAssetNamesInBundle(int index)
+		public List<string> AllAssetNamesInBundle(int index)
 		{
 			if (allAssetNamesInBundleCached == null)
 			{
@@ -99,17 +120,31 @@ namespace Verse
 			return allAssetNamesInBundleCached[index];
 		}
 
-		[Obsolete("Only need this overload to not break mod compatibility.")]
-		public ModContentPack(DirectoryInfo directory, string packageId, int loadOrder, string name)
-			: this(directory, packageId, packageId, loadOrder, name)
+		public StringTrieSet AllAssetNamesInBundleTrie(int index)
 		{
+			if (allAssetNamesInBundleCachedTrie == null)
+			{
+				allAssetNamesInBundleCachedTrie = new List<StringTrieSet>();
+				foreach (AssetBundle loadedAssetBundle in assetBundles.loadedAssetBundles)
+				{
+					StringTrieSet stringTrieSet = new StringTrieSet();
+					string[] allAssetNames = loadedAssetBundle.GetAllAssetNames();
+					foreach (string item in allAssetNames)
+					{
+						stringTrieSet.Add(item);
+					}
+					allAssetNamesInBundleCachedTrie.Add(stringTrieSet);
+				}
+			}
+			return allAssetNamesInBundleCachedTrie[index];
 		}
 
-		public ModContentPack(DirectoryInfo directory, string packageId, string packageIdPlayerFacing, int loadOrder, string name)
+		public ModContentPack(DirectoryInfo directory, string packageId, string packageIdPlayerFacing, int loadOrder, string name, bool official)
 		{
 			rootDirInt = directory;
 			this.loadOrder = loadOrder;
 			nameInt = name;
+			this.official = official;
 			packageIdInt = packageId.ToLower();
 			packageIdPlayerFacingInt = packageIdPlayerFacing;
 			audioClips = new ModContentHolder<AudioClip>(this);
@@ -126,6 +161,7 @@ namespace Verse
 			textures.ClearDestroy();
 			assetBundles.ClearDestroy();
 			allAssetNamesInBundleCached = null;
+			allAssetNamesInBundleCachedTrie = null;
 		}
 
 		public ModContentHolder<T> GetContentHolder<T>() where T : class
@@ -146,12 +182,16 @@ namespace Verse
 			return null;
 		}
 
-		private void ReloadContentInt()
+		private void ReloadContentInt(bool hotReload = false)
 		{
+			if (hotReload)
+			{
+				return;
+			}
 			DeepProfiler.Start("Reload audio clips");
 			try
 			{
-				audioClips.ReloadAll();
+				audioClips.ReloadAll(hotReload);
 			}
 			finally
 			{
@@ -160,7 +200,7 @@ namespace Verse
 			DeepProfiler.Start("Reload textures");
 			try
 			{
-				textures.ReloadAll();
+				textures.ReloadAll(hotReload);
 			}
 			finally
 			{
@@ -169,7 +209,7 @@ namespace Verse
 			DeepProfiler.Start("Reload strings");
 			try
 			{
-				strings.ReloadAll();
+				strings.ReloadAll(hotReload);
 			}
 			finally
 			{
@@ -178,8 +218,9 @@ namespace Verse
 			DeepProfiler.Start("Reload asset bundles");
 			try
 			{
-				assetBundles.ReloadAll();
+				assetBundles.ReloadAll(hotReload);
 				allAssetNamesInBundleCached = null;
+				allAssetNamesInBundleCachedTrie = null;
 			}
 			finally
 			{
@@ -187,22 +228,28 @@ namespace Verse
 			}
 		}
 
-		public void ReloadContent()
+		public void ReloadContent(bool hotReload = false)
 		{
-			LongEventHandler.ExecuteWhenFinished(ReloadContentInt);
-			assemblies.ReloadAll();
+			LongEventHandler.ExecuteWhenFinished(delegate
+			{
+				ReloadContentInt(hotReload);
+			});
+			if (!hotReload)
+			{
+				assemblies.ReloadAll();
+			}
 		}
 
-		public IEnumerable<LoadableXmlAsset> LoadDefs()
+		public IEnumerable<LoadableXmlAsset> LoadDefs(bool hotReload = false)
 		{
-			if (defs.Count != 0)
+			if (!hotReload && defs.Count != 0)
 			{
 				Log.ErrorOnce("LoadDefs called with already existing def packages", 39029405);
 			}
-			DeepProfiler.Start("Load Assets");
+			DeepProfiler.Start("Load defs via DirectXmlLoader");
 			List<LoadableXmlAsset> list = DirectXmlLoader.XmlAssetsInModFolder(this, "Defs/").ToList();
 			DeepProfiler.End();
-			DeepProfiler.Start("Parse Assets");
+			DeepProfiler.Start("Parse loaded defs");
 			foreach (LoadableXmlAsset item in list)
 			{
 				yield return item;
@@ -216,30 +263,32 @@ namespace Verse
 			ModMetaData modWithIdentifier = ModLister.GetModWithIdentifier(PackageId);
 			if (modWithIdentifier?.loadFolders != null && modWithIdentifier.loadFolders.DefinedVersions().Count > 0)
 			{
-				List<LoadFolder> list = modWithIdentifier.LoadFoldersForVersion(VersionControl.CurrentVersionStringWithoutBuild);
+				List<LoadFolder> list = modWithIdentifier.LoadFoldersForVersion(VersionControl.CurrentVersionString);
 				if (list != null && list.Count > 0)
 				{
 					AddFolders(list);
 					return;
 				}
-				int num = VersionControl.CurrentVersion.Major;
-				int num2 = VersionControl.CurrentVersion.Minor;
-				while (true)
+				string text = (from x in modWithIdentifier.loadFolders.DefinedVersions().Where(delegate(string x)
+					{
+						if (x == "default" || x.NullOrEmpty() || !x.Contains("."))
+						{
+							return false;
+						}
+						try
+						{
+							return VersionControl.VersionFromString(x) <= VersionControl.CurrentVersion;
+						}
+						catch
+						{
+							return false;
+						}
+					})
+					orderby x descending
+					select x).FirstOrDefault();
+				if (text != null)
 				{
-					if (num2 == 0)
-					{
-						num--;
-						num2 = 9;
-					}
-					else
-					{
-						num2--;
-					}
-					if (num < 1)
-					{
-						break;
-					}
-					List<LoadFolder> list2 = modWithIdentifier.LoadFoldersForVersion(num + "." + num2);
+					List<LoadFolder> list2 = modWithIdentifier.LoadFoldersForVersion(text);
 					if (list2 != null)
 					{
 						AddFolders(list2);
@@ -257,20 +306,29 @@ namespace Verse
 			{
 				return;
 			}
-			string text = Path.Combine(RootDir, VersionControl.CurrentVersionStringWithoutBuild);
-			if (Directory.Exists(text))
+			string text2 = Path.Combine(RootDir, VersionControl.CurrentVersionStringWithoutBuild);
+			if (Directory.Exists(text2))
 			{
-				foldersToLoadDescendingOrder.Add(text);
+				foldersToLoadDescendingOrder.Add(text2);
 			}
 			else
 			{
 				Version version = new Version(0, 0);
+				List<Version> list4 = new List<Version>();
 				DirectoryInfo[] directories = rootDirInt.GetDirectories();
-				for (int i = 0; i < directories.Length; i++)
+				for (int num = 0; num < directories.Length; num++)
 				{
-					if (VersionControl.TryParseVersionString(directories[i].Name, out var version2) && version2 > version)
+					if (VersionControl.TryParseVersionString(directories[num].Name, out var version2))
 					{
-						version = version2;
+						list4.Add(version2);
+					}
+				}
+				list4.Sort();
+				foreach (Version item in list4)
+				{
+					if ((item > version || version > VersionControl.CurrentVersion) && (item <= VersionControl.CurrentVersion || version.Major == 0))
+					{
+						version = item;
 					}
 				}
 				if (version.Major > 0)
@@ -278,19 +336,19 @@ namespace Verse
 					foldersToLoadDescendingOrder.Add(Path.Combine(RootDir, version.ToString()));
 				}
 			}
-			string text2 = Path.Combine(RootDir, CommonFolderName);
-			if (Directory.Exists(text2))
+			string text3 = Path.Combine(RootDir, CommonFolderName);
+			if (Directory.Exists(text3))
 			{
-				foldersToLoadDescendingOrder.Add(text2);
+				foldersToLoadDescendingOrder.Add(text3);
 			}
 			foldersToLoadDescendingOrder.Add(RootDir);
 			void AddFolders(List<LoadFolder> folders)
 			{
-				for (int num3 = folders.Count - 1; num3 >= 0; num3--)
+				for (int num2 = folders.Count - 1; num2 >= 0; num2--)
 				{
-					if (folders[num3].ShouldLoad)
+					if (folders[num2].ShouldLoad)
 					{
-						foldersToLoadDescendingOrder.Add(Path.Combine(RootDir, folders[num3].folderName));
+						foldersToLoadDescendingOrder.Add(Path.Combine(RootDir, folders[num2].folderName));
 					}
 				}
 			}
@@ -368,6 +426,7 @@ namespace Verse
 				if (directoryInfo.Exists)
 				{
 					FileInfo[] files = directoryInfo.GetFiles("*.*", SearchOption.AllDirectories);
+					Array.Sort(files, (FileInfo a, FileInfo b) => a.Name.CompareTo(b.Name));
 					foreach (FileInfo fileInfo in files)
 					{
 						if (validateExtension == null || validateExtension(fileInfo.Extension))
@@ -379,16 +438,16 @@ namespace Verse
 				}
 			}
 			HashSet<string> hashSet = new HashSet<string>();
-			for (int num2 = list2.Count - 1; num2 >= 0; num2--)
+			for (int num3 = list2.Count - 1; num3 >= 0; num3--)
 			{
-				Tuple<string, FileInfo> tuple = list2[num2];
+				Tuple<string, FileInfo> tuple = list2[num3];
 				if (!hashSet.Contains(tuple.Item1))
 				{
 					hashSet.Add(tuple.Item1);
 				}
 				else
 				{
-					list2.RemoveAt(num2);
+					list2.RemoveAt(num3);
 				}
 			}
 			return list2;
@@ -456,6 +515,11 @@ namespace Verse
 		public void ClearPatchesCache()
 		{
 			patches = null;
+		}
+
+		public void ClearDefs()
+		{
+			defs.Clear();
 		}
 
 		public void AddDef(Def def, string source = "Unknown")

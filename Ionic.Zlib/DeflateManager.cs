@@ -58,19 +58,7 @@ namespace Ionic.Zlib
 
 		private CompressFunc DeflateFunction;
 
-		private static readonly string[] _ErrorMessage = new string[10]
-		{
-			"need dictionary",
-			"stream end",
-			"",
-			"file error",
-			"stream error",
-			"data error",
-			"insufficient memory",
-			"buffer error",
-			"incompatible version",
-			""
-		};
+		private static readonly string[] _ErrorMessage = new string[10] { "need dictionary", "stream end", "", "file error", "stream error", "data error", "insufficient memory", "buffer error", "incompatible version", "" };
 
 		private static readonly int PRESET_DICT = 32;
 
@@ -487,7 +475,7 @@ namespace Ionic.Zlib
 				bi_buf |= (short)((value << bi_valid) & 0xFFFF);
 				pending[pendingCount++] = (byte)bi_buf;
 				pending[pendingCount++] = (byte)(bi_buf >> 8);
-				bi_buf = (short)((uint)value >> Buf_size - bi_valid);
+				bi_buf = (short)(value >>> Buf_size - bi_valid);
 				bi_valid += length - Buf_size;
 			}
 			else
@@ -1255,7 +1243,7 @@ namespace Ionic.Zlib
 					pending[pendingCount++] = (byte)((_codec._Adler32 & 0xFF000000u) >> 24);
 					pending[pendingCount++] = (byte)((_codec._Adler32 & 0xFF0000) >> 16);
 					pending[pendingCount++] = (byte)((_codec._Adler32 & 0xFF00) >> 8);
-					pending[pendingCount++] = (byte)(_codec._Adler32 & 0xFFu);
+					pending[pendingCount++] = (byte)(_codec._Adler32 & 0xFF);
 				}
 				_codec._Adler32 = Adler.Adler32(0u, null, 0, 0);
 			}
@@ -1277,7 +1265,7 @@ namespace Ionic.Zlib
 				_codec.Message = _ErrorMessage[7];
 				throw new ZlibException("status == FINISH_STATE && _codec.AvailableBytesIn != 0");
 			}
-			if (_codec.AvailableBytesIn != 0 || lookahead != 0 || (flush != 0 && status != FINISH_STATE))
+			if (_codec.AvailableBytesIn != 0 || lookahead != 0 || (flush != FlushType.None && status != FINISH_STATE))
 			{
 				BlockState blockState = DeflateFunction(flush);
 				if (blockState == BlockState.FinishStarted || blockState == BlockState.FinishDone)
@@ -1329,7 +1317,7 @@ namespace Ionic.Zlib
 			pending[pendingCount++] = (byte)((_codec._Adler32 & 0xFF000000u) >> 24);
 			pending[pendingCount++] = (byte)((_codec._Adler32 & 0xFF0000) >> 16);
 			pending[pendingCount++] = (byte)((_codec._Adler32 & 0xFF00) >> 8);
-			pending[pendingCount++] = (byte)(_codec._Adler32 & 0xFFu);
+			pending[pendingCount++] = (byte)(_codec._Adler32 & 0xFF);
 			_codec.flush_pending();
 			Rfc1950BytesEmitted = true;
 			if (pendingCount == 0)

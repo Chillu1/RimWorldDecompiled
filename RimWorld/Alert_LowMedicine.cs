@@ -5,32 +5,35 @@ namespace RimWorld
 {
 	public class Alert_LowMedicine : Alert
 	{
+		private Map mapWithNoMedicine;
+
+		private int medicineCount;
+
 		private const float MedicinePerColonistThreshold = 2f;
 
 		public Alert_LowMedicine()
 		{
 			defaultLabel = "LowMedicine".Translate();
+			defaultExplanation = "NoMedicineDesc".Translate();
 			defaultPriority = AlertPriority.High;
 		}
 
 		public override TaggedString GetExplanation()
 		{
-			Map map = MapWithLowMedicine();
-			if (map == null)
+			if (mapWithNoMedicine == null)
 			{
-				return "";
+				return string.Empty;
 			}
-			int num = MedicineCount(map);
-			if (num == 0)
+			if (medicineCount == 0)
 			{
-				return "NoMedicineDesc".Translate();
+				return defaultExplanation;
 			}
-			return "LowMedicineDesc".Translate(num);
+			return "LowMedicineDesc".Translate(medicineCount);
 		}
 
 		public override AlertReport GetReport()
 		{
-			if (Find.TickManager.TicksGame < 150000)
+			if ((float)Find.TickManager.TicksGame < 150000f)
 			{
 				return false;
 			}
@@ -39,21 +42,24 @@ namespace RimWorld
 
 		private Map MapWithLowMedicine()
 		{
+			mapWithNoMedicine = null;
 			List<Map> maps = Find.Maps;
 			for (int i = 0; i < maps.Count; i++)
 			{
 				Map map = maps[i];
 				if (map.IsPlayerHome && map.mapPawns.AnyColonistSpawned && (float)MedicineCount(map) < 2f * (float)map.mapPawns.FreeColonistsSpawnedCount)
 				{
-					return map;
+					mapWithNoMedicine = map;
+					break;
 				}
 			}
-			return null;
+			return mapWithNoMedicine;
 		}
 
 		private int MedicineCount(Map map)
 		{
-			return map.resourceCounter.GetCountIn(ThingRequestGroup.Medicine);
+			medicineCount = map.resourceCounter.GetCountIn(ThingRequestGroup.Medicine);
+			return medicineCount;
 		}
 	}
 }

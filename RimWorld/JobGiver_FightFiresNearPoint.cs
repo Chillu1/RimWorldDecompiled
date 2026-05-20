@@ -18,7 +18,17 @@ namespace RimWorld
 
 		protected override Job TryGiveJob(Pawn pawn)
 		{
-			Predicate<Thing> validator = delegate(Thing t)
+			Thing thing = GenClosest.ClosestThingReachable(pawn.GetLord().CurLordToil.FlagLoc, pawn.Map, ThingRequest.ForDef(ThingDefOf.Fire), PathEndMode.Touch, TraverseParms.For(pawn), maxDistFromPoint, FireValidator(pawn));
+			if (thing != null)
+			{
+				return JobMaker.MakeJob(JobDefOf.BeatFire, thing);
+			}
+			return null;
+		}
+
+		public static Predicate<Thing> FireValidator(Pawn pawn)
+		{
+			return delegate(Thing t)
 			{
 				if (((AttachableThing)t).parent is Pawn)
 				{
@@ -28,14 +38,8 @@ namespace RimWorld
 				{
 					return false;
 				}
-				return (!pawn.WorkTagIsDisabled(WorkTags.Firefighting)) ? true : false;
+				return !pawn.WorkTagIsDisabled(WorkTags.Firefighting);
 			};
-			Thing thing = GenClosest.ClosestThingReachable(pawn.GetLord().CurLordToil.FlagLoc, pawn.Map, ThingRequest.ForDef(ThingDefOf.Fire), PathEndMode.Touch, TraverseParms.For(pawn), maxDistFromPoint, validator);
-			if (thing != null)
-			{
-				return JobMaker.MakeJob(JobDefOf.BeatFire, thing);
-			}
-			return null;
 		}
 	}
 }

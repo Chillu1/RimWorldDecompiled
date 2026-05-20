@@ -71,7 +71,7 @@ namespace RimWorld
 					{
 						return 1f;
 					}
-					if ((i == 0 || room.RegionType != RegionType.Portal) && !tempScanRooms.Contains(room))
+					if ((i == 0 || (!room.IsDoorway && !room.PsychologicallyOutdoors)) && !tempScanRooms.Contains(room))
 					{
 						tempScanRooms.Add(room);
 					}

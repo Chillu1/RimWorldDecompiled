@@ -8,7 +8,6 @@ namespace Verse
 			dollyRateScreenEdge = 5f;
 			camSpeedDecayFactor = 1f;
 			moveSpeedScale = 1f;
-			minSize = 8.2f;
 		}
 	}
 }

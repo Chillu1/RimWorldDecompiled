@@ -31,7 +31,7 @@ namespace RimWorld
 			pawn.ownership.ClaimGrave((Building_Grave)parent);
 		}
 
-		public override void TryUnassignPawn(Pawn pawn, bool sort = true)
+		public override void TryUnassignPawn(Pawn pawn, bool sort = true, bool uninstall = false)
 		{
 			pawn.ownership.UnclaimGrave();
 		}

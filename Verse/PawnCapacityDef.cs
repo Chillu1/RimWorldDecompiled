@@ -14,11 +14,21 @@ namespace Verse
 		[MustTranslate]
 		public string labelAnimals = "";
 
+		[MustTranslate]
+		public string labelAnomalyEntity = "";
+
+		[MustTranslate]
+		public string labelDrones = "";
+
 		public bool showOnHumanlikes = true;
 
 		public bool showOnAnimals = true;
 
 		public bool showOnMechanoids = true;
+
+		public bool showOnAnomalyEntities = true;
+
+		public bool showOnDrones = true;
 
 		public bool lethalFlesh;
 
@@ -49,27 +59,31 @@ namespace Verse
 
 		public string GetLabelFor(Pawn pawn)
 		{
-			return GetLabelFor(pawn.RaceProps.IsFlesh, pawn.RaceProps.Humanlike);
-		}
-
-		public string GetLabelFor(bool isFlesh, bool isHumanlike)
-		{
-			if (isHumanlike)
+			if (pawn.RaceProps.Humanlike)
 			{
 				return label;
 			}
-			if (isFlesh)
+			if (pawn.RaceProps.IsFlesh && !labelAnimals.NullOrEmpty())
 			{
-				if (!labelAnimals.NullOrEmpty())
-				{
-					return labelAnimals;
-				}
-				return label;
+				return labelAnimals;
 			}
-			if (!labelMechanoids.NullOrEmpty())
+			if (pawn.RaceProps.IsAnomalyEntity && !labelAnomalyEntity.NullOrEmpty())
+			{
+				return labelAnomalyEntity;
+			}
+			if (pawn.RaceProps.IsMechanoid && !labelMechanoids.NullOrEmpty())
 			{
 				return labelMechanoids;
 			}
+			if (pawn.RaceProps.IsDrone && !labelDrones.NullOrEmpty())
+			{
+				return labelDrones;
+			}
+			return label;
+		}
+
+		public string GetLabelFor()
+		{
 			return label;
 		}
 
@@ -82,6 +96,14 @@ namespace Verse
 			if (p.def.race.Animal)
 			{
 				return showOnAnimals;
+			}
+			if (p.def.race.IsAnomalyEntity)
+			{
+				return showOnAnomalyEntities;
+			}
+			if (p.def.race.IsDrone)
+			{
+				return showOnDrones;
 			}
 			return showOnMechanoids;
 		}

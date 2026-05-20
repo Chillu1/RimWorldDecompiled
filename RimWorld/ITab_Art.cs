@@ -18,8 +18,7 @@ namespace RimWorld
 			get
 			{
 				Thing thing = Find.Selector.SingleSelectedThing;
-				MinifiedThing minifiedThing = thing as MinifiedThing;
-				if (minifiedThing != null)
+				if (thing is MinifiedThing minifiedThing)
 				{
 					thing = minifiedThing.InnerThing;
 				}
@@ -48,19 +47,20 @@ namespace RimWorld
 
 		protected override void FillTab()
 		{
-			Rect rect = new Rect(0f, 0f, WinSize.x, WinSize.y).ContractedBy(10f);
+			Rect rect2;
+			Rect rect = (rect2 = new Rect(0f, 0f, WinSize.x, WinSize.y).ContractedBy(10f));
 			Text.Font = GameFont.Medium;
-			Widgets.Label(rect, SelectedCompArt.Title);
+			Widgets.Label(rect2, SelectedCompArt.Title.Truncate(rect2.width));
 			if (cachedImageSource != SelectedCompArt || cachedTaleRef != SelectedCompArt.TaleRef)
 			{
 				cachedImageDescription = SelectedCompArt.GenerateImageDescription();
 				cachedImageSource = SelectedCompArt;
 				cachedTaleRef = SelectedCompArt.TaleRef;
 			}
-			Rect rect2 = rect;
-			rect2.yMin += 35f;
+			Rect rect3 = rect;
+			rect3.yMin += 35f;
 			Text.Font = GameFont.Small;
-			Widgets.Label(rect2, cachedImageDescription);
+			Widgets.Label(rect3, cachedImageDescription);
 		}
 	}
 }

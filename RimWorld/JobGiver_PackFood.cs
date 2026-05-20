@@ -7,7 +7,7 @@ namespace RimWorld
 {
 	public class JobGiver_PackFood : ThinkNode_JobGiver
 	{
-		private const float MaxInvNutritionToConsiderLookingForFood = 0.4f;
+		public const float MaxInvNutritionToConsiderLookingForFood = 0.4f;
 
 		private const float MinFinalInvNutritionToPickUp = 0.8f;
 
@@ -30,9 +30,13 @@ namespace RimWorld
 			{
 				return null;
 			}
+			if (MassUtility.IsOverEncumbered(pawn))
+			{
+				return null;
+			}
 			Thing thing = GenClosest.ClosestThing_Regionwise_ReachablePrioritized(pawn.Position, pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.FoodSourceNotPlantOrTree), PathEndMode.ClosestTouch, TraverseParms.For(pawn), 20f, delegate(Thing t)
 			{
-				if (!IsGoodPackableFoodFor(t, pawn) || t.IsForbidden(pawn) || !pawn.CanReserve(t) || !t.IsSociallyProper(pawn))
+				if (!IsGoodPackableFoodFor(t, pawn, checkMass: true) || t.IsForbidden(pawn) || !pawn.CanReserve(t) || !t.IsSociallyProper(pawn))
 				{
 					return false;
 				}
@@ -40,10 +44,10 @@ namespace RimWorld
 				{
 					return false;
 				}
-				List<ThoughtDef> list = FoodUtility.ThoughtsFromIngesting(pawn, t, FoodUtility.GetFinalIngestibleDef(t));
+				List<FoodUtility.ThoughtFromIngesting> list = FoodUtility.ThoughtsFromIngesting(pawn, t, FoodUtility.GetFinalIngestibleDef(t));
 				for (int i = 0; i < list.Count; i++)
 				{
-					if (list[i].stages[0].baseMoodEffect < 0f)
+					if (list[i].thought.stages[0].baseMoodEffect < 0f)
 					{
 						return false;
 					}
@@ -62,13 +66,13 @@ namespace RimWorld
 			return job;
 		}
 
-		private float GetInventoryPackableFoodNutrition(Pawn pawn)
+		public static float GetInventoryPackableFoodNutrition(Pawn pawn)
 		{
 			ThingOwner<Thing> innerContainer = pawn.inventory.innerContainer;
 			float num = 0f;
 			for (int i = 0; i < innerContainer.Count; i++)
 			{
-				if (IsGoodPackableFoodFor(innerContainer[i], pawn))
+				if (IsGoodPackableFoodFor(innerContainer[i], pawn, checkMass: false))
 				{
 					num += innerContainer[i].GetStatValue(StatDefOf.Nutrition) * (float)innerContainer[i].stackCount;
 				}
@@ -76,9 +80,13 @@ namespace RimWorld
 			return num;
 		}
 
-		private bool IsGoodPackableFoodFor(Thing food, Pawn forPawn)
+		public static bool IsGoodPackableFoodFor(Thing food, Pawn forPawn, bool checkMass)
 		{
-			if (food.def.IsNutritionGivingIngestible && food.def.EverHaulable && (int)food.def.ingestible.preferability >= 6)
+			if (checkMass && MassUtility.CountToPickUpUntilOverEncumbered(forPawn, food) == 0)
+			{
+				return false;
+			}
+			if (food.def.IsNutritionGivingIngestible && food.def.EverHaulable && (int)food.def.ingestible.preferability >= 7)
 			{
 				return forPawn.WillEat(food, null, careIfNotAcceptableForTitle: false);
 			}

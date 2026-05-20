@@ -1,3 +1,5 @@
+using Verse;
+
 namespace RimWorld.QuestGen
 {
 	public class QuestNode_SetTicksUntilAcceptanceExpiry : QuestNode
@@ -12,7 +14,7 @@ namespace RimWorld.QuestGen
 		protected override void RunInt()
 		{
 			Slate slate = QuestGen.slate;
-			QuestGen.quest.ticksUntilAcceptanceExpiry = ticks.GetValue(slate);
+			QuestGen.quest.acceptanceExpireTick = GenTicks.TicksGame + ticks.GetValue(slate);
 		}
 	}
 }

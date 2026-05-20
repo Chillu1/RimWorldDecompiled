@@ -192,7 +192,8 @@ namespace Verse.Noise
 			{
 				for (int j = 0; j < num2; j++)
 				{
-					float num3 = (array2[i, j] = ((!isNormalized) ? array[i, j] : ((array[i, j] + 1f) / 2f)));
+					float num3 = ((!isNormalized) ? array[i, j] : ((array[i, j] + 1f) / 2f));
+					array2[i, j] = num3;
 				}
 			}
 			return array2;
@@ -386,14 +387,14 @@ namespace Verse.Noise
 				{
 					float num = (m_ucData[Mathf.Max(0, i - m_ucBorder), j] - m_ucData[Mathf.Min(i + m_ucBorder, m_height + m_ucBorder), j]) / 2f;
 					float num2 = (m_ucData[i, Mathf.Max(0, j - m_ucBorder)] - m_ucData[i, Mathf.Min(j + m_ucBorder, m_width + m_ucBorder)]) / 2f;
-					Vector3 a = new Vector3(num * intensity, 0f, 1f);
-					Vector3 b = new Vector3(0f, num2 * intensity, 1f);
-					Vector3 vector = a + b;
-					vector.Normalize();
+					Vector3 vector = new Vector3(num * intensity, 0f, 1f);
+					Vector3 vector2 = new Vector3(0f, num2 * intensity, 1f);
+					Vector3 vector3 = vector + vector2;
+					vector3.Normalize();
 					Vector3 zero = Vector3.zero;
-					zero.x = (vector.x + 1f) / 2f;
-					zero.y = (vector.y + 1f) / 2f;
-					zero.z = (vector.z + 1f) / 2f;
+					zero.x = (vector3.x + 1f) / 2f;
+					zero.y = (vector3.y + 1f) / 2f;
+					zero.z = (vector3.z + 1f) / 2f;
 					if (i >= m_ucBorder && j >= m_ucBorder && i < m_width + m_ucBorder && j < m_height + m_ucBorder)
 					{
 						array[i - m_ucBorder + (j - m_ucBorder) * m_width] = new Color(zero.x, zero.y, zero.z);

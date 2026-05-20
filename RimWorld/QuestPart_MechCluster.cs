@@ -14,6 +14,8 @@ namespace RimWorld
 
 		public MapParent mapParent;
 
+		public IntVec3 dropSpot = IntVec3.Invalid;
+
 		private IntVec3 spawnedClusterPos = IntVec3.Invalid;
 
 		public override IEnumerable<GlobalTargetInfo> QuestLookTargets
@@ -34,9 +36,17 @@ namespace RimWorld
 		public override void Notify_QuestSignalReceived(Signal signal)
 		{
 			base.Notify_QuestSignalReceived(signal);
+			if (mapParent == null || !mapParent.HasMap || !quest.IsParentSuitableForQuest(mapParent))
+			{
+				mapParent = quest.TryFindNewSuitableMapParentForRetarget();
+			}
 			if (signal.tag == inSignal && mapParent != null && mapParent.HasMap)
 			{
-				spawnedClusterPos = MechClusterUtility.FindClusterPosition(mapParent.Map, sketch, 100, 0.5f);
+				spawnedClusterPos = dropSpot;
+				if (spawnedClusterPos == IntVec3.Invalid)
+				{
+					spawnedClusterPos = MechClusterUtility.FindClusterPosition(mapParent.Map, sketch, 100, 0.5f);
+				}
 				if (!(spawnedClusterPos == IntVec3.Invalid))
 				{
 					MechClusterUtility.SpawnCluster(spawnedClusterPos, mapParent.Map, sketch, dropInPods: true, canAssaultColony: false, tag);
@@ -52,6 +62,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref tag, "tag");
 			Scribe_References.Look(ref mapParent, "mapParent");
 			Scribe_Deep.Look(ref sketch, "sketch");
+			Scribe_Values.Look(ref dropSpot, "dropSpot");
 			Scribe_Values.Look(ref spawnedClusterPos, "spawnedClusterPos");
 		}
 	}

@@ -4,36 +4,45 @@ namespace RimWorld
 {
 	public class CompUseEffect_LearnSkill : CompUseEffect
 	{
-		private const float XPGainAmount = 50000f;
-
-		private SkillDef Skill => parent.GetComp<CompNeurotrainer>().skill;
+		public CompProperties_UseEffect_LearnSkill Props => (CompProperties_UseEffect_LearnSkill)props;
 
 		public override void DoEffect(Pawn user)
 		{
 			base.DoEffect(user);
-			SkillDef skill = Skill;
-			int level = user.skills.GetSkill(skill).Level;
-			user.skills.Learn(skill, 50000f, direct: true);
-			int level2 = user.skills.GetSkill(skill).Level;
+			int level = user.skills.GetSkill(Props.skill).GetLevel();
+			user.skills.Learn(Props.skill, Props.xpGainAmount, direct: true);
+			int level2 = user.skills.GetSkill(Props.skill).GetLevel();
 			if (PawnUtility.ShouldSendNotificationAbout(user))
 			{
-				Messages.Message("SkillNeurotrainerUsed".Translate(user.LabelShort, skill.LabelCap, level, level2, user.Named("USER")), user, MessageTypeDefOf.PositiveEvent);
+				Messages.Message("SkillNeurotrainerUsed".Translate(user.LabelShort, Props.skill.LabelCap, level, level2, user.Named("USER")), user, MessageTypeDefOf.PositiveEvent);
 			}
 		}
 
-		public override bool CanBeUsedBy(Pawn p, out string failReason)
+		public override AcceptanceReport CanBeUsedBy(Pawn p)
 		{
 			if (p.skills == null)
 			{
-				failReason = null;
 				return false;
 			}
-			if (p.skills.GetSkill(Skill).TotallyDisabled)
+			if (p.skills.GetSkill(Props.skill).TotallyDisabled)
 			{
-				failReason = "SkillDisabled".Translate();
+				return "SkillDisabled".Translate();
+			}
+			return base.CanBeUsedBy(p);
+		}
+
+		public override bool AllowStackWith(Thing other)
+		{
+			if (!base.AllowStackWith(other))
+			{
 				return false;
 			}
-			return base.CanBeUsedBy(p, out failReason);
+			CompUseEffect_LearnSkill compUseEffect_LearnSkill = other.TryGetComp<CompUseEffect_LearnSkill>();
+			if (compUseEffect_LearnSkill == null || compUseEffect_LearnSkill.Props.skill != Props.skill)
+			{
+				return false;
+			}
+			return true;
 		}
 	}
 }

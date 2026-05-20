@@ -17,10 +17,23 @@ namespace Verse
 
 		public bool allowOnQuestRewardPawns = true;
 
+		public bool allowOnQuestReservedPawns = true;
+
+		public bool allowOnBeggars = true;
+
 		public int countToAffect = 1;
 
 		public virtual void OnIntervalPassed(Pawn pawn, Hediff cause)
 		{
+		}
+
+		public virtual float ChanceFactor(Pawn pawn)
+		{
+			if (ModsConfig.BiotechActive && hediff == HediffDefOf.Carcinoma)
+			{
+				return pawn.GetStatValue(StatDefOf.CancerRate);
+			}
+			return 1f;
 		}
 
 		public virtual bool OnHediffAdded(Pawn pawn, Hediff hediff)
@@ -35,6 +48,26 @@ namespace Verse
 				return false;
 			}
 			if (!allowOnQuestRewardPawns && pawn.IsWorldPawn() && pawn.IsQuestReward())
+			{
+				return false;
+			}
+			if (!allowOnQuestReservedPawns && pawn.IsWorldPawn() && Find.WorldPawns.GetSituation(pawn) == WorldPawnSituation.ReservedByQuest)
+			{
+				return false;
+			}
+			if (ModsConfig.IdeologyActive && !allowOnBeggars && pawn.kindDef == PawnKindDefOf.Beggar)
+			{
+				return false;
+			}
+			if (pawn.ageTracker.CurLifeStage == LifeStageDefOf.HumanlikeBaby && Find.Storyteller.difficulty.babiesAreHealthy)
+			{
+				return false;
+			}
+			if (pawn.genes != null && !pawn.genes.HediffGiversCanGive(hediff))
+			{
+				return false;
+			}
+			if (pawn.IsMutant && !pawn.mutant.HediffGiversCanGive(hediff))
 			{
 				return false;
 			}

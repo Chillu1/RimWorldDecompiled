@@ -27,7 +27,7 @@ namespace Verse
 		{
 			foreach (TemporaryThingDrawable drawable in drawables)
 			{
-				drawable.thing.DrawAt(drawable.position);
+				drawable.thing.DrawNowAt(drawable.position);
 			}
 		}
 

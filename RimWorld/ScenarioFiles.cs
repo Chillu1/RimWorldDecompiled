@@ -7,9 +7,9 @@ namespace RimWorld
 {
 	public static class ScenarioFiles
 	{
-		private static List<Scenario> scenariosLocal = new List<Scenario>();
+		private static readonly List<Scenario> scenariosLocal = new List<Scenario>();
 
-		private static List<Scenario> scenariosWorkshop = new List<Scenario>();
+		private static readonly List<Scenario> scenariosWorkshop = new List<Scenario>();
 
 		public static IEnumerable<Scenario> AllScenariosLocal => scenariosLocal;
 
@@ -28,8 +28,7 @@ namespace RimWorld
 			scenariosWorkshop.Clear();
 			foreach (WorkshopItem allSubscribedItem in WorkshopItems.AllSubscribedItems)
 			{
-				WorkshopItem_Scenario workshopItem_Scenario = allSubscribedItem as WorkshopItem_Scenario;
-				if (workshopItem_Scenario != null)
+				if (allSubscribedItem is WorkshopItem_Scenario workshopItem_Scenario)
 				{
 					scenariosWorkshop.Add(workshopItem_Scenario.GetScenario());
 				}

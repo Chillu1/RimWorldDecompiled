@@ -12,6 +12,8 @@ namespace Verse
 
 		public SoundDef soundPunchThrough;
 
+		public bool canCollapse = true;
+
 		public bool VanishOnCollapse => !isThickRoof;
 	}
 }

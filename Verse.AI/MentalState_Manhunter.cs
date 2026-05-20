@@ -12,15 +12,27 @@ namespace Verse.AI
 
 		public override bool ForceHostileTo(Thing t)
 		{
-			if (t.Faction != null)
+			if (t is Pawn { Roamer: not false })
 			{
-				return ForceHostileTo(t.Faction);
+				return false;
 			}
-			return false;
+			if (t.Faction == null)
+			{
+				if (t is Pawn pawn2)
+				{
+					return pawn2.RaceProps.Humanlike;
+				}
+				return false;
+			}
+			return ForceHostileTo(t.Faction);
 		}
 
 		public override bool ForceHostileTo(Faction f)
 		{
+			if (ModsConfig.AnomalyActive && f == Faction.OfEntities)
+			{
+				return true;
+			}
 			if (!f.def.humanlikeFaction)
 			{
 				return f == Faction.OfMechanoids;

@@ -10,27 +10,29 @@ namespace Verse
 
 		private List<Region> newRegions = new List<Region>();
 
+		private List<District> newDistricts = new List<District>();
+
+		private HashSet<District> reusedOldDistricts = new HashSet<District>();
+
 		private List<Room> newRooms = new List<Room>();
 
 		private HashSet<Room> reusedOldRooms = new HashSet<Room>();
 
-		private List<RoomGroup> newRoomGroups = new List<RoomGroup>();
-
-		private HashSet<RoomGroup> reusedOldRoomGroups = new HashSet<RoomGroup>();
-
 		private List<Region> currentRegionGroup = new List<Region>();
 
-		private List<Room> currentRoomGroup = new List<Room>();
+		private List<District> currentDistrictGroup = new List<District>();
 
-		private Stack<Room> tmpRoomStack = new Stack<Room>();
+		private Stack<District> tmpDistrictStack = new Stack<District>();
 
-		private HashSet<Room> tmpVisitedRooms = new HashSet<Room>();
+		private HashSet<District> tmpVisitedDistricts = new HashSet<District>();
 
 		private bool initialized;
 
 		private bool working;
 
 		private bool enabledInt = true;
+
+		public Dictionary<int, Room> roomLookup = new Dictionary<int, Room>();
 
 		public bool Enabled
 		{
@@ -67,7 +69,7 @@ namespace Verse
 			{
 				Log.Warning("Called RebuildAllRegionsAndRooms() but RegionAndRoomUpdater is disabled. Regions won't be rebuilt.");
 			}
-			map.temperatureCache.ResetTemperatureCache();
+			map.TemperatureVacuumCache.ResetTemperatureCache();
 			map.regionDirtyer.SetAllDirty();
 			TryRebuildDirtyRegionsAndRooms();
 		}
@@ -93,9 +95,9 @@ namespace Verse
 				RegenerateNewRegionsFromDirtyCells();
 				CreateOrUpdateRooms();
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Exception while rebuilding dirty regions: " + arg);
+				Log.Error("Exception while rebuilding dirty regions: " + ex);
 			}
 			newRegions.Clear();
 			map.regionDirtyer.SetAllClean();
@@ -105,18 +107,17 @@ namespace Verse
 			{
 				Autotests_RegionListers.CheckBugs(map);
 			}
+			map.events.Notify_RegionsRoomsChanged();
 		}
 
 		private void RegenerateNewRegionsFromDirtyCells()
 		{
 			newRegions.Clear();
-			List<IntVec3> dirtyCells = map.regionDirtyer.DirtyCells;
-			for (int i = 0; i < dirtyCells.Count; i++)
+			foreach (IntVec3 dirtyCell in map.regionDirtyer.DirtyCells)
 			{
-				IntVec3 intVec = dirtyCells[i];
-				if (intVec.GetRegion(map, RegionType.Set_All) == null)
+				if (dirtyCell.GetRegion(map, RegionType.Set_All) == null)
 				{
-					Region region = map.regionMaker.TryGenerateRegionFrom(intVec);
+					Region region = map.regionMaker.TryGenerateRegionFrom(dirtyCell);
 					if (region != null)
 					{
 						newRegions.Add(region);
@@ -127,19 +128,19 @@ namespace Verse
 
 		private void CreateOrUpdateRooms()
 		{
+			newDistricts.Clear();
+			reusedOldDistricts.Clear();
 			newRooms.Clear();
 			reusedOldRooms.Clear();
-			newRoomGroups.Clear();
-			reusedOldRoomGroups.Clear();
 			int numRegionGroups = CombineNewRegionsIntoContiguousGroups();
-			CreateOrAttachToExistingRooms(numRegionGroups);
-			int numRoomGroups = CombineNewAndReusedRoomsIntoContiguousGroups();
-			CreateOrAttachToExistingRoomGroups(numRoomGroups);
-			NotifyAffectedRoomsAndRoomGroupsAndUpdateTemperature();
+			CreateOrAttachToExistingDistricts(numRegionGroups);
+			int numRooms = CombineNewAndReusedDistrictsIntoContiguousRooms();
+			CreateOrAttachToExistingRooms(numRooms);
+			NotifyAffectedDistrictsAndRoomsAndUpdateTemperatureVacuum();
+			newDistricts.Clear();
+			reusedOldDistricts.Clear();
 			newRooms.Clear();
 			reusedOldRooms.Clear();
-			newRoomGroups.Clear();
-			reusedOldRoomGroups.Clear();
 		}
 
 		private int CombineNewRegionsIntoContiguousGroups()
@@ -156,7 +157,7 @@ namespace Verse
 			return num;
 		}
 
-		private void CreateOrAttachToExistingRooms(int numRegionGroups)
+		private void CreateOrAttachToExistingDistricts(int numRegionGroups)
 		{
 			for (int i = 0; i < numRegionGroups; i++)
 			{
@@ -168,187 +169,222 @@ namespace Verse
 						currentRegionGroup.Add(newRegions[j]);
 					}
 				}
-				if (!currentRegionGroup[0].type.AllowsMultipleRegionsPerRoom())
+				if (!currentRegionGroup[0].type.AllowsMultipleRegionsPerDistrict())
 				{
 					if (currentRegionGroup.Count != 1)
 					{
 						Log.Error("Region type doesn't allow multiple regions per room but there are >1 regions in this group.");
 					}
-					Room room = Room.MakeNew(map);
-					currentRegionGroup[0].Room = room;
-					newRooms.Add(room);
+					District district = District.MakeNew(map);
+					currentRegionGroup[0].District = district;
+					newDistricts.Add(district);
 					continue;
 				}
-				bool multipleOldNeighborRooms;
-				Room room2 = FindCurrentRegionGroupNeighborWithMostRegions(out multipleOldNeighborRooms);
-				if (room2 == null)
+				bool multipleOldNeighborDistricts;
+				District district2 = FindCurrentRegionGroupNeighborWithMostRegions(out multipleOldNeighborDistricts);
+				if (district2 == null)
 				{
-					Room item = RegionTraverser.FloodAndSetRooms(currentRegionGroup[0], map, null);
-					newRooms.Add(item);
+					District item = RegionTraverser.FloodAndSetDistricts(currentRegionGroup[0], map, null);
+					newDistricts.Add(item);
 				}
-				else if (!multipleOldNeighborRooms)
+				else if (!multipleOldNeighborDistricts)
 				{
 					for (int k = 0; k < currentRegionGroup.Count; k++)
 					{
-						currentRegionGroup[k].Room = room2;
+						currentRegionGroup[k].District = district2;
 					}
-					reusedOldRooms.Add(room2);
+					reusedOldDistricts.Add(district2);
 				}
 				else
 				{
-					RegionTraverser.FloodAndSetRooms(currentRegionGroup[0], map, room2);
-					reusedOldRooms.Add(room2);
+					RegionTraverser.FloodAndSetDistricts(currentRegionGroup[0], map, district2);
+					reusedOldDistricts.Add(district2);
 				}
 			}
 		}
 
-		private int CombineNewAndReusedRoomsIntoContiguousGroups()
+		private int CombineNewAndReusedDistrictsIntoContiguousRooms()
 		{
 			int num = 0;
-			foreach (Room reusedOldRoom in reusedOldRooms)
+			foreach (District reusedOldDistrict in reusedOldDistricts)
 			{
-				reusedOldRoom.newOrReusedRoomGroupIndex = -1;
+				reusedOldDistrict.newOrReusedRoomIndex = -1;
 			}
-			foreach (Room item in reusedOldRooms.Concat(newRooms))
+			foreach (District item in reusedOldDistricts.Concat(newDistricts))
 			{
-				if (item.newOrReusedRoomGroupIndex >= 0)
+				if (item.newOrReusedRoomIndex >= 0)
 				{
 					continue;
 				}
-				tmpRoomStack.Clear();
-				tmpRoomStack.Push(item);
-				item.newOrReusedRoomGroupIndex = num;
-				while (tmpRoomStack.Count != 0)
+				tmpDistrictStack.Clear();
+				tmpDistrictStack.Push(item);
+				item.newOrReusedRoomIndex = num;
+				while (tmpDistrictStack.Count != 0)
 				{
-					Room room = tmpRoomStack.Pop();
-					foreach (Room neighbor in room.Neighbors)
+					District district = tmpDistrictStack.Pop();
+					foreach (District neighbor in district.Neighbors)
 					{
-						if (neighbor.newOrReusedRoomGroupIndex < 0 && ShouldBeInTheSameRoomGroup(room, neighbor))
+						if (neighbor.newOrReusedRoomIndex < 0 && ShouldBeInTheSameRoom(district, neighbor))
 						{
-							neighbor.newOrReusedRoomGroupIndex = num;
-							tmpRoomStack.Push(neighbor);
+							neighbor.newOrReusedRoomIndex = num;
+							tmpDistrictStack.Push(neighbor);
 						}
 					}
 				}
-				tmpRoomStack.Clear();
+				tmpDistrictStack.Clear();
 				num++;
 			}
 			return num;
 		}
 
-		private void CreateOrAttachToExistingRoomGroups(int numRoomGroups)
+		private void CreateOrAttachToExistingRooms(int numRooms)
 		{
-			for (int i = 0; i < numRoomGroups; i++)
+			for (int i = 0; i < numRooms; i++)
 			{
-				currentRoomGroup.Clear();
-				foreach (Room reusedOldRoom in reusedOldRooms)
+				currentDistrictGroup.Clear();
+				foreach (District reusedOldDistrict in reusedOldDistricts)
 				{
-					if (reusedOldRoom.newOrReusedRoomGroupIndex == i)
+					if (reusedOldDistrict.newOrReusedRoomIndex == i)
 					{
-						currentRoomGroup.Add(reusedOldRoom);
+						currentDistrictGroup.Add(reusedOldDistrict);
 					}
 				}
-				for (int j = 0; j < newRooms.Count; j++)
+				for (int j = 0; j < newDistricts.Count; j++)
 				{
-					if (newRooms[j].newOrReusedRoomGroupIndex == i)
+					if (newDistricts[j].newOrReusedRoomIndex == i)
 					{
-						currentRoomGroup.Add(newRooms[j]);
+						currentDistrictGroup.Add(newDistricts[j]);
 					}
 				}
-				bool multipleOldNeighborRoomGroups;
-				RoomGroup roomGroup = FindCurrentRoomGroupNeighborWithMostRegions(out multipleOldNeighborRoomGroups);
-				if (roomGroup == null)
+				bool multipleOldNeighborRooms;
+				Room room = FindCurrentRoomNeighborWithMostRegions(out multipleOldNeighborRooms);
+				if (room == null)
 				{
-					RoomGroup roomGroup2 = RoomGroup.MakeNew(map);
-					FloodAndSetRoomGroups(currentRoomGroup[0], roomGroup2);
-					newRoomGroups.Add(roomGroup2);
+					Room room2 = Room.MakeNew(map);
+					roomLookup[room2.ID] = room2;
+					FloodAndSetRooms(currentDistrictGroup[0], room2);
+					newRooms.Add(room2);
 				}
-				else if (!multipleOldNeighborRoomGroups)
+				else if (!multipleOldNeighborRooms)
 				{
-					for (int k = 0; k < currentRoomGroup.Count; k++)
+					for (int k = 0; k < currentDistrictGroup.Count; k++)
 					{
-						currentRoomGroup[k].Group = roomGroup;
+						currentDistrictGroup[k].Room = room;
 					}
-					reusedOldRoomGroups.Add(roomGroup);
+					reusedOldRooms.Add(room);
 				}
 				else
 				{
-					FloodAndSetRoomGroups(currentRoomGroup[0], roomGroup);
-					reusedOldRoomGroups.Add(roomGroup);
+					FloodAndSetRooms(currentDistrictGroup[0], room);
+					reusedOldRooms.Add(room);
 				}
 			}
 		}
 
-		private void FloodAndSetRoomGroups(Room start, RoomGroup roomGroup)
+		private void FloodAndSetRooms(District start, Room room)
 		{
-			tmpRoomStack.Clear();
-			tmpRoomStack.Push(start);
-			tmpVisitedRooms.Clear();
-			tmpVisitedRooms.Add(start);
-			while (tmpRoomStack.Count != 0)
+			tmpDistrictStack.Clear();
+			tmpDistrictStack.Push(start);
+			tmpVisitedDistricts.Clear();
+			tmpVisitedDistricts.Add(start);
+			while (tmpDistrictStack.Count != 0)
 			{
-				Room room = tmpRoomStack.Pop();
-				room.Group = roomGroup;
-				foreach (Room neighbor in room.Neighbors)
+				District district = tmpDistrictStack.Pop();
+				district.Room = room;
+				foreach (District neighbor in district.Neighbors)
 				{
-					if (!tmpVisitedRooms.Contains(neighbor) && ShouldBeInTheSameRoomGroup(room, neighbor))
+					if (!tmpVisitedDistricts.Contains(neighbor) && ShouldBeInTheSameRoom(district, neighbor))
 					{
-						tmpRoomStack.Push(neighbor);
-						tmpVisitedRooms.Add(neighbor);
+						tmpDistrictStack.Push(neighbor);
+						tmpVisitedDistricts.Add(neighbor);
 					}
 				}
 			}
-			tmpVisitedRooms.Clear();
-			tmpRoomStack.Clear();
+			tmpVisitedDistricts.Clear();
+			tmpDistrictStack.Clear();
 		}
 
-		private void NotifyAffectedRoomsAndRoomGroupsAndUpdateTemperature()
+		private void NotifyAffectedDistrictsAndRoomsAndUpdateTemperatureVacuum()
 		{
+			foreach (District reusedOldDistrict in reusedOldDistricts)
+			{
+				reusedOldDistrict.Notify_RoomShapeOrContainedBedsChanged();
+			}
+			for (int i = 0; i < newDistricts.Count; i++)
+			{
+				newDistricts[i].Notify_RoomShapeOrContainedBedsChanged();
+			}
 			foreach (Room reusedOldRoom in reusedOldRooms)
 			{
-				reusedOldRoom.Notify_RoomShapeOrContainedBedsChanged();
+				reusedOldRoom.Notify_RoomShapeChanged();
 			}
-			for (int i = 0; i < newRooms.Count; i++)
+			for (int j = 0; j < newRooms.Count; j++)
 			{
-				newRooms[i].Notify_RoomShapeOrContainedBedsChanged();
-			}
-			foreach (RoomGroup reusedOldRoomGroup in reusedOldRoomGroups)
-			{
-				reusedOldRoomGroup.Notify_RoomGroupShapeChanged();
-			}
-			for (int j = 0; j < newRoomGroups.Count; j++)
-			{
-				RoomGroup roomGroup = newRoomGroups[j];
-				roomGroup.Notify_RoomGroupShapeChanged();
-				if (map.temperatureCache.TryGetAverageCachedRoomGroupTemp(roomGroup, out var result))
+				Room room = newRooms[j];
+				room.Notify_RoomShapeChanged();
+				if (map.TemperatureVacuumCache.TryGetAverageCachedRoomTempVacuum(room, out var temperature, out var vacuum))
 				{
-					roomGroup.Temperature = result;
+					room.Temperature = temperature;
+					room.Vacuum = vacuum;
+				}
+				else if (map.Biome.inVacuum)
+				{
+					room.Vacuum = 1f;
 				}
 			}
 		}
 
-		private Room FindCurrentRegionGroupNeighborWithMostRegions(out bool multipleOldNeighborRooms)
+		private District FindCurrentRegionGroupNeighborWithMostRegions(out bool multipleOldNeighborDistricts)
 		{
-			multipleOldNeighborRooms = false;
-			Room room = null;
+			multipleOldNeighborDistricts = false;
+			District district = null;
 			for (int i = 0; i < currentRegionGroup.Count; i++)
 			{
 				foreach (Region item in currentRegionGroup[i].NeighborsOfSameType)
 				{
-					if (item.Room == null || reusedOldRooms.Contains(item.Room))
+					if (item.District == null || reusedOldDistricts.Contains(item.District))
+					{
+						continue;
+					}
+					if (district == null)
+					{
+						district = item.District;
+					}
+					else if (item.District != district)
+					{
+						multipleOldNeighborDistricts = true;
+						if (item.District.RegionCount > district.RegionCount)
+						{
+							district = item.District;
+						}
+					}
+				}
+			}
+			return district;
+		}
+
+		private Room FindCurrentRoomNeighborWithMostRegions(out bool multipleOldNeighborRooms)
+		{
+			multipleOldNeighborRooms = false;
+			Room room = null;
+			for (int i = 0; i < currentDistrictGroup.Count; i++)
+			{
+				foreach (District neighbor in currentDistrictGroup[i].Neighbors)
+				{
+					if (neighbor.Room == null || !ShouldBeInTheSameRoom(currentDistrictGroup[i], neighbor) || reusedOldRooms.Contains(neighbor.Room))
 					{
 						continue;
 					}
 					if (room == null)
 					{
-						room = item.Room;
+						room = neighbor.Room;
 					}
-					else if (item.Room != room)
+					else if (neighbor.Room != room)
 					{
 						multipleOldNeighborRooms = true;
-						if (item.Room.RegionCount > room.RegionCount)
+						if (neighbor.Room.RegionCount > room.RegionCount)
 						{
-							room = item.Room;
+							room = neighbor.Room;
 						}
 					}
 				}
@@ -356,44 +392,15 @@ namespace Verse
 			return room;
 		}
 
-		private RoomGroup FindCurrentRoomGroupNeighborWithMostRegions(out bool multipleOldNeighborRoomGroups)
-		{
-			multipleOldNeighborRoomGroups = false;
-			RoomGroup roomGroup = null;
-			for (int i = 0; i < currentRoomGroup.Count; i++)
-			{
-				foreach (Room neighbor in currentRoomGroup[i].Neighbors)
-				{
-					if (neighbor.Group == null || !ShouldBeInTheSameRoomGroup(currentRoomGroup[i], neighbor) || reusedOldRoomGroups.Contains(neighbor.Group))
-					{
-						continue;
-					}
-					if (roomGroup == null)
-					{
-						roomGroup = neighbor.Group;
-					}
-					else if (neighbor.Group != roomGroup)
-					{
-						multipleOldNeighborRoomGroups = true;
-						if (neighbor.Group.RegionCount > roomGroup.RegionCount)
-						{
-							roomGroup = neighbor.Group;
-						}
-					}
-				}
-			}
-			return roomGroup;
-		}
-
-		private bool ShouldBeInTheSameRoomGroup(Room a, Room b)
+		private bool ShouldBeInTheSameRoom(District a, District b)
 		{
 			RegionType regionType = a.RegionType;
 			RegionType regionType2 = b.RegionType;
-			if (regionType == RegionType.Normal || regionType == RegionType.ImpassableFreeAirExchange)
+			if (regionType == RegionType.Normal || regionType == RegionType.ImpassableFreeAirExchange || regionType == RegionType.Fence)
 			{
-				if (regionType2 != RegionType.Normal)
+				if (regionType2 != RegionType.Normal && regionType2 != RegionType.ImpassableFreeAirExchange)
 				{
-					return regionType2 == RegionType.ImpassableFreeAirExchange;
+					return regionType2 == RegionType.Fence;
 				}
 				return true;
 			}

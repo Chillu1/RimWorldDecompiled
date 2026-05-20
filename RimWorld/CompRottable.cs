@@ -1,4 +1,5 @@
 using System.Text;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -7,6 +8,8 @@ namespace RimWorld
 	public class CompRottable : ThingComp
 	{
 		private float rotProgressInt;
+
+		public bool disabled;
 
 		public CompProperties_Rottable PropsRot => (CompProperties_Rottable)props;
 
@@ -67,32 +70,28 @@ namespace RimWorld
 						return false;
 					}
 				}
-				return true;
+				return !disabled;
 			}
-		}
-
-		public override void PostSpawnSetup(bool respawningAfterLoad)
-		{
-			base.PostSpawnSetup(respawningAfterLoad);
 		}
 
 		public override void PostExposeData()
 		{
 			base.PostExposeData();
 			Scribe_Values.Look(ref rotProgressInt, "rotProg", 0f);
+			Scribe_Values.Look(ref disabled, "disabled", defaultValue: false);
 		}
 
-		public override void CompTick()
+		public override void CompTickInterval(int delta)
 		{
-			Tick(1);
+			TickInterval(delta);
 		}
 
 		public override void CompTickRare()
 		{
-			Tick(250);
+			TickInterval(250);
 		}
 
-		private void Tick(int interval)
+		private void TickInterval(int delta)
 		{
 			if (!Active)
 			{
@@ -100,13 +99,18 @@ namespace RimWorld
 			}
 			float rotProgress = RotProgress;
 			float num = GenTemperature.RotRateAtTemperature(parent.AmbientTemperature);
-			RotProgress += num * (float)interval;
+			RotProgress += num * (float)delta;
 			if (Stage == RotStage.Rotting && PropsRot.rotDestroys)
 			{
 				if (parent.IsInAnyStorage() && parent.SpawnedOrAnyParentSpawned)
 				{
 					Messages.Message("MessageRottedAwayInStorage".Translate(parent.Label, parent).CapitalizeFirst(), new TargetInfo(parent.PositionHeld, parent.MapHeld), MessageTypeDefOf.NegativeEvent);
 					LessonAutoActivator.TeachOpportunity(ConceptDefOf.SpoilageAndFreezers, OpportunityType.GoodToKnow);
+				}
+				if (parent.Spawned && parent.def.thingCategories.NotNullAndContains(ThingCategoryDefOf.MeatRaw))
+				{
+					int amount = 2 * parent.stackCount;
+					GasUtility.AddGas(parent.Position, parent.Map, GasType.RotStink, amount);
 				}
 				parent.Destroy();
 			}
@@ -125,8 +129,7 @@ namespace RimWorld
 
 		private bool ShouldTakeRotDamage()
 		{
-			Thing thing = parent.ParentHolder as Thing;
-			if (thing != null && thing.def.category == ThingCategory.Building && thing.def.building.preventDeteriorationInside)
+			if (parent.ParentHolder is Thing thing && thing.def.category == ThingCategory.Building && thing.def.building.preventDeteriorationInside)
 			{
 				return false;
 			}
@@ -147,7 +150,7 @@ namespace RimWorld
 
 		public override void PostIngested(Pawn ingester)
 		{
-			if (Stage != 0 && FoodUtility.GetFoodPoisonChanceFactor(ingester) > float.Epsilon)
+			if (Stage != RotStage.Fresh && FoodUtility.GetFoodPoisonChanceFactor(ingester) > float.Epsilon)
 			{
 				FoodUtility.AddFoodPoisoningHediff(ingester, parent, FoodPoisonCause.Rotten);
 			}
@@ -163,37 +166,40 @@ namespace RimWorld
 			switch (Stage)
 			{
 			case RotStage.Fresh:
-				stringBuilder.Append("RotStateFresh".Translate() + ".");
+				stringBuilder.Append("RotStateFresh".Translate());
 				break;
 			case RotStage.Rotting:
-				stringBuilder.Append("RotStateRotting".Translate() + ".");
+				stringBuilder.Append("RotStateRotting".Translate());
 				break;
 			case RotStage.Dessicated:
-				stringBuilder.Append("RotStateDessicated".Translate() + ".");
+				stringBuilder.Append("RotStateDessicated".Translate());
 				break;
 			}
 			if ((float)PropsRot.TicksToRotStart - RotProgress > 0f)
 			{
 				float num = GenTemperature.RotRateAtTemperature(Mathf.RoundToInt(parent.AmbientTemperature));
 				int ticksUntilRotAtCurrentTemp = TicksUntilRotAtCurrentTemp;
-				stringBuilder.AppendLine();
 				if (num < 0.001f)
 				{
-					stringBuilder.Append("CurrentlyFrozen".Translate() + ".");
+					stringBuilder.Append(string.Format(" ({0})", "CurrentlyFrozen".Translate()));
 				}
 				else if (num < 0.999f)
 				{
-					stringBuilder.Append("CurrentlyRefrigerated".Translate(ticksUntilRotAtCurrentTemp.ToStringTicksToPeriod()) + ".");
+					stringBuilder.AppendTagged(string.Format(" ({0})", "CurrentlyRefrigerated".Translate(ticksUntilRotAtCurrentTemp.ToStringTicksToPeriod())));
 				}
 				else
 				{
-					stringBuilder.Append("NotRefrigerated".Translate(ticksUntilRotAtCurrentTemp.ToStringTicksToPeriod()) + ".");
+					stringBuilder.AppendTagged(string.Format(" ({0})", "NotRefrigerated".Translate(ticksUntilRotAtCurrentTemp.ToStringTicksToPeriod())));
 				}
+			}
+			else
+			{
+				stringBuilder.Append(".");
 			}
 			return stringBuilder.ToString();
 		}
 
-		public int ApproxTicksUntilRotWhenAtTempOfTile(int tile, int ticksAbs)
+		public int ApproxTicksUntilRotWhenAtTempOfTile(PlanetTile tile, int ticksAbs)
 		{
 			float temperatureFromSeasonAtTile = GenTemperature.GetTemperatureFromSeasonAtTile(ticksAbs, tile);
 			return TicksUntilRotAtTemp(temperatureFromSeasonAtTile);
@@ -220,14 +226,21 @@ namespace RimWorld
 
 		private void StageChanged()
 		{
-			(parent as Corpse)?.RotStageChanged();
+			if (parent is Corpse corpse)
+			{
+				corpse.RotStageChanged();
+			}
 		}
 
-		public void RotImmediately()
+		public void RotImmediately(RotStage stage = RotStage.Rotting)
 		{
-			if (RotProgress < (float)PropsRot.TicksToRotStart)
+			if (stage == RotStage.Rotting && RotProgress < (float)PropsRot.TicksToRotStart)
 			{
 				RotProgress = PropsRot.TicksToRotStart;
+			}
+			else if (stage == RotStage.Dessicated && RotProgress < (float)PropsRot.TicksToDessicated)
+			{
+				RotProgress = PropsRot.TicksToDessicated;
 			}
 		}
 	}

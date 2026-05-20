@@ -88,13 +88,12 @@ namespace Verse
 			try
 			{
 				result = string.Format(translated, args);
-				return result;
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.ErrorOnce((string)("Exception translating '" + translated + "': ") + arg, Gen.HashCombineInt(key.GetHashCode(), 394878901));
-				return result;
+				Log.ErrorOnce(string.Concat("Exception translating '" + translated + "': ", ex?.ToString()), Gen.HashCombineInt(key.GetHashCode(), 394878901));
 			}
+			return result;
 		}
 
 		public static bool TryGetTranslatedStringsForFile(string fileName, out List<string> stringList)

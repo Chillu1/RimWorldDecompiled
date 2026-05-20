@@ -13,32 +13,48 @@ namespace Verse
 		[Unsaved(false)]
 		private List<BodyPartRecord> cachedPartsVulnerableToFrostbite;
 
+		[Unsaved(false)]
+		public Dictionary<BodyPartTagDef, List<BodyPartRecord>> cachedPartsByTag = new Dictionary<BodyPartTagDef, List<BodyPartRecord>>();
+
+		[Unsaved(false)]
+		public Dictionary<BodyPartDef, List<BodyPartRecord>> cachedPartsByDef = new Dictionary<BodyPartDef, List<BodyPartRecord>>();
+
 		public List<BodyPartRecord> AllParts => cachedAllParts;
 
 		public List<BodyPartRecord> AllPartsVulnerableToFrostbite => cachedPartsVulnerableToFrostbite;
 
-		public IEnumerable<BodyPartRecord> GetPartsWithTag(BodyPartTagDef tag)
+		public List<BodyPartRecord> GetPartsWithTag(BodyPartTagDef tag)
 		{
-			for (int i = 0; i < AllParts.Count; i++)
+			if (!cachedPartsByTag.ContainsKey(tag))
 			{
-				BodyPartRecord bodyPartRecord = AllParts[i];
-				if (bodyPartRecord.def.tags.Contains(tag))
+				cachedPartsByTag[tag] = new List<BodyPartRecord>();
+				for (int i = 0; i < AllParts.Count; i++)
 				{
-					yield return bodyPartRecord;
+					BodyPartRecord bodyPartRecord = AllParts[i];
+					if (bodyPartRecord.def.tags.Contains(tag))
+					{
+						cachedPartsByTag[tag].Add(bodyPartRecord);
+					}
 				}
 			}
+			return cachedPartsByTag[tag];
 		}
 
-		public IEnumerable<BodyPartRecord> GetPartsWithDef(BodyPartDef def)
+		public List<BodyPartRecord> GetPartsWithDef(BodyPartDef def)
 		{
-			for (int i = 0; i < AllParts.Count; i++)
+			if (!cachedPartsByDef.ContainsKey(def))
 			{
-				BodyPartRecord bodyPartRecord = AllParts[i];
-				if (bodyPartRecord.def == def)
+				cachedPartsByDef[def] = new List<BodyPartRecord>();
+				for (int i = 0; i < AllParts.Count; i++)
 				{
-					yield return bodyPartRecord;
+					BodyPartRecord bodyPartRecord = AllParts[i];
+					if (bodyPartRecord.def == def)
+					{
+						cachedPartsByDef[def].Add(bodyPartRecord);
+					}
 				}
 			}
+			return cachedPartsByDef[def];
 		}
 
 		public bool HasPartWithTag(BodyPartTagDef tag)
@@ -111,6 +127,7 @@ namespace Verse
 
 		public override void ResolveReferences()
 		{
+			base.ResolveReferences();
 			if (corePart != null)
 			{
 				CacheDataRecursive(corePart);
@@ -184,6 +201,13 @@ namespace Verse
 			{
 				CacheDataRecursive(node.parts[l]);
 			}
+		}
+
+		public override void ClearCachedData()
+		{
+			base.ClearCachedData();
+			cachedPartsByTag.Clear();
+			cachedPartsByDef.Clear();
 		}
 	}
 }

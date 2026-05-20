@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using RimWorld;
 using UnityEngine;
 
@@ -37,10 +38,14 @@ namespace Verse
 
 		public virtual IEnumerable<StatDrawEntry> SpecialDisplayStats(StatRequest req)
 		{
-			yield break;
+			return Enumerable.Empty<StatDrawEntry>();
 		}
 
 		public virtual void PostLoadSpecial(ThingDef parent)
+		{
+		}
+
+		public virtual void Notify_PostUnlockedByResearch(ThingDef parent)
 		{
 		}
 	}

@@ -1,9 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Verse.AI.Group
 {
-	public class StateGraph
+	public class StateGraph : IDisposable
 	{
 		public List<LordToil> lordToils = new List<LordToil>();
 
@@ -65,18 +66,18 @@ namespace Verse.AI.Group
 			}
 			foreach (LordToil toil in lordToils.Distinct())
 			{
-				int num = lordToils.Where((LordToil s) => s == toil).Count();
+				int num = lordToils.Count((LordToil s) => s == toil);
 				if (num != 1)
 				{
-					Log.Error(string.Concat("Graph has lord toil ", toil, " registered ", num, " times."));
+					Log.Error("Graph has lord toil " + toil?.ToString() + " registered " + num + " times.");
 				}
 			}
 			foreach (Transition trans in transitions)
 			{
-				int num2 = transitions.Where((Transition t) => t == trans).Count();
+				int num2 = transitions.Count((Transition t) => t == trans);
 				if (num2 != 1)
 				{
-					Log.Error(string.Concat("Graph has transition ", trans, " registered ", num2, " times."));
+					Log.Error("Graph has transition " + trans?.ToString() + " registered " + num2 + " times.");
 				}
 			}
 			checkedToils = new HashSet<LordToil>();
@@ -98,6 +99,14 @@ namespace Verse.AI.Group
 				{
 					CheckForUnregisteredLinkedToilsRecursive(transition.target);
 				}
+			}
+		}
+
+		public void Dispose()
+		{
+			foreach (LordToil lordToil in lordToils)
+			{
+				lordToil.Dispose();
 			}
 		}
 	}

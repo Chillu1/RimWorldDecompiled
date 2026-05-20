@@ -38,6 +38,20 @@ namespace RimWorld
 			memories.MemoryThoughtInterval();
 		}
 
+		public void GetMoodThoughtsFor(ThoughtDef def, List<Thought> thoughts)
+		{
+			thoughts.Clear();
+			for (int i = 0; i < memories.Memories.Count; i++)
+			{
+				Thought_Memory thought_Memory = memories.Memories[i];
+				if (thought_Memory.def == def && thought_Memory.MoodOffset() != 0f)
+				{
+					thoughts.Add(thought_Memory);
+				}
+			}
+			situational.AppendMoodThoughts(def, thoughts);
+		}
+
 		public void GetAllMoodThoughts(List<Thought> outThoughts)
 		{
 			outThoughts.Clear();
@@ -122,8 +136,7 @@ namespace RimWorld
 			List<Thought_Memory> list = memories.Memories;
 			for (int i = 0; i < list.Count; i++)
 			{
-				ISocialThought socialThought = list[i] as ISocialThought;
-				if (socialThought != null && socialThought.OtherPawn() == otherPawn)
+				if (list[i] is ISocialThought socialThought && socialThought.OtherPawn() == otherPawn)
 				{
 					outThoughts.Add(socialThought);
 				}
@@ -164,10 +177,10 @@ namespace RimWorld
 			}
 			float num2 = 0f;
 			float num3 = 1f;
-			for (int i = 0; i < tmpSocialThoughts.Count; i++)
+			for (int num4 = 0; num4 < tmpSocialThoughts.Count; num4++)
 			{
-				num2 += tmpSocialThoughts[i].OpinionOffset() * num3;
-				num3 *= ((Thought)tmpSocialThoughts[i]).def.stackedEffectMultiplier;
+				num2 += tmpSocialThoughts[num4].OpinionOffset() * num3;
+				num3 *= ((Thought)tmpSocialThoughts[num4]).def.stackedEffectMultiplier;
 			}
 			tmpSocialThoughts.Clear();
 			if (num2 == 0f)

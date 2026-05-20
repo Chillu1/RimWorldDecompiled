@@ -17,8 +17,9 @@ namespace RimWorld
 		public override void Init(Site site, SitePart sitePart)
 		{
 			sitePart.conditionCauser = ThingMaker.MakeThing(sitePart.def.conditionCauserDef);
+			sitePart.conditionCauser.SetFaction(site.Faction);
 			CompCauseGameCondition compCauseGameCondition = sitePart.conditionCauser.TryGetComp<CompCauseGameCondition>();
-			compCauseGameCondition.RandomizeSettings_NewTemp_NewTemp(site);
+			compCauseGameCondition.RandomizeSettings(site);
 			compCauseGameCondition.LinkWithSite(sitePart.site);
 		}
 
@@ -26,7 +27,7 @@ namespace RimWorld
 		{
 			if (!sitePart.conditionCauser.DestroyedOrNull() && !sitePart.conditionCauser.Spawned)
 			{
-				sitePart.conditionCauser.Tick();
+				sitePart.conditionCauser.DoTick();
 			}
 		}
 

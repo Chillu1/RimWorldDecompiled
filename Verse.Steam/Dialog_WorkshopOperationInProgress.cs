@@ -26,12 +26,12 @@ namespace Verse.Steam
 				return;
 			}
 			string text = "";
-			if (curStage != 0)
+			if (curStage != WorkshopInteractStage.None)
 			{
 				text += curStage.GetLabel();
 				text += "\n\n";
 			}
-			if (updateStatus != 0)
+			if (updateStatus != EItemUpdateStatus.k_EItemUpdateStatusInvalid)
 			{
 				text += updateStatus.GetLabel();
 				if (progPercent > 0f)

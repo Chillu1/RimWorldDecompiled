@@ -24,7 +24,7 @@ namespace RimWorld
 				int num = -1;
 				foreach (Building_MusicalInstrument item in enumerable)
 				{
-					if (GatheringsUtility.ValidateGatheringSpot_NewTemp(item.InteractionCell, def, organizer, enjoyableOutside, ignoreRequiredColonistCount: false) && InstrumentAccessible(item, organizer))
+					if (GatheringsUtility.ValidateGatheringSpot(item.InteractionCell, def, organizer, enjoyableOutside, ignoreRequiredColonistCount: false) && InstrumentAccessible(item, organizer))
 					{
 						float instrumentRange = item.def.building.instrumentRange;
 						if ((float)num < instrumentRange)
@@ -54,9 +54,9 @@ namespace RimWorld
 
 		public static bool InstrumentAccessible(Building_MusicalInstrument i, Pawn p)
 		{
-			if (!i.IsBeingPlayed)
+			if (!i.IsBeingPlayed && p.CanReach(i.InteractionCell, PathEndMode.OnCell, p.NormalMaxDanger()))
 			{
-				return p.CanReserveAndReach(i.InteractionCell, PathEndMode.OnCell, p.NormalMaxDanger());
+				return p.CanReserveSittableOrSpot(i.InteractionCell);
 			}
 			return false;
 		}

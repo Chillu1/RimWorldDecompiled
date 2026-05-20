@@ -13,8 +13,8 @@ namespace RimWorld
 
 		public override void Generate(Map map, GenStepParams parms)
 		{
-			TraverseParms traverseParams = TraverseParms.For(TraverseMode.NoPassClosedDoors);
-			if (RCellFinder.TryFindRandomCellNearTheCenterOfTheMapWith((IntVec3 x) => x.Standable(map) && !x.Fogged(map) && map.reachability.CanReachMapEdge(x, traverseParams) && x.GetRoom(map).CellCount >= MinRoomCells, map, out var result))
+			TraverseParms traverseParams = TraverseParms.For(TraverseMode.NoPassClosedDoors).WithFenceblocked(forceFenceblocked: true);
+			if (RCellFinder.TryFindRandomCellNearTheCenterOfTheMapWith((IntVec3 x) => CellValidator(x) && !x.Fogged(map) && map.reachability.CanReachMapEdge(x, traverseParams) && x.GetRoom(map).CellCount >= MinRoomCells, map, out var result))
 			{
 				float points = ((parms.sitePart != null) ? parms.sitePart.parms.threatPoints : defaultPointsRange.RandomInRange);
 				PawnKindDef animalKind;
@@ -26,14 +26,26 @@ namespace RimWorld
 				{
 					return;
 				}
-				List<Pawn> list = ManhunterPackIncidentUtility.GenerateAnimals_NewTmp(animalKind, map.Tile, points);
-				for (int i = 0; i < list.Count; i++)
+				List<Pawn> list = AggressiveAnimalIncidentUtility.GenerateAnimals(animalKind, map.Tile, points);
+				for (int num = 0; num < list.Count; num++)
 				{
-					IntVec3 loc = CellFinder.RandomSpawnCellForPawnNear(result, map, 10);
-					GenSpawn.Spawn(list[i], loc, map, Rot4.Random);
-					list[i].health.AddHediff(HediffDefOf.Scaria);
-					list[i].mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.ManhunterPermanent);
+					CellFinder.TryFindRandomSpawnCellForPawnNear(result, map, out var result2, 10, CellValidator);
+					GenSpawn.Spawn(list[num], result2, map, Rot4.Random);
+					list[num].health.AddHediff(HediffDefOf.Scaria);
+					list[num].mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.ManhunterPermanent);
 				}
+			}
+			bool CellValidator(IntVec3 x)
+			{
+				if (!x.Standable(map))
+				{
+					return false;
+				}
+				if (MapGenerator.UsedRects.Any((CellRect r) => r.Contains(x)))
+				{
+					return false;
+				}
+				return true;
 			}
 		}
 	}

@@ -15,17 +15,24 @@ namespace RimWorld
 			DiaNode diaNode = new DiaNode(msg);
 			if (allowKeepPlaying)
 			{
-				DiaOption diaOption = new DiaOption("GameOverKeepPlaying".Translate());
+				DiaOption diaOption = new DiaOption("GameOverKeepWatching".Translate());
 				diaOption.resolveTree = true;
 				diaNode.options.Add(diaOption);
+				DiaOption diaOption2 = new DiaOption("GameOverCreateNewWanderers".Translate());
+				diaOption2.resolveTree = true;
+				diaOption2.action = delegate
+				{
+					Find.WindowStack.Add(new Dialog_ChooseNewWanderers());
+				};
+				diaNode.options.Add(diaOption2);
 			}
-			DiaOption diaOption2 = new DiaOption("GameOverMainMenu".Translate());
-			diaOption2.action = delegate
+			DiaOption diaOption3 = new DiaOption("GameOverMainMenu".Translate());
+			diaOption3.action = delegate
 			{
 				GenScene.GoToMainMenu();
 			};
-			diaOption2.resolveTree = true;
-			diaNode.options.Add(diaOption2);
+			diaOption3.resolveTree = true;
+			diaNode.options.Add(diaOption3);
 			Dialog_NodeTree dialog_NodeTree = new Dialog_NodeTree(diaNode, delayInteractivity: true);
 			dialog_NodeTree.screenFillColor = screenFillColor;
 			dialog_NodeTree.silenceAmbientSound = !allowKeepPlaying;

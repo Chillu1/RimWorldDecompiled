@@ -22,12 +22,12 @@ namespace Verse.AI.Group
 
 		public override void UpdateAllDuties()
 		{
-			LordToilData_ExitMap data = Data;
+			LordToilData_ExitMap lordToilData_ExitMap = Data;
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
 				PawnDuty pawnDuty = new PawnDuty(ExitDuty);
-				pawnDuty.locomotion = data.locomotion;
-				pawnDuty.canDig = data.canDig;
+				pawnDuty.locomotion = lordToilData_ExitMap.locomotion;
+				pawnDuty.canDig = lordToilData_ExitMap.canDig;
 				Pawn pawn = lord.ownedPawns[i];
 				pawn.mindState.duty = pawnDuty;
 				if (Data.interruptCurrentJob && pawn.jobs.curJob != null)

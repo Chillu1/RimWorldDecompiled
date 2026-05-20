@@ -4,6 +4,10 @@ namespace RimWorld
 {
 	public class CompAbilityEffect_WordOfLove : CompAbilityEffect_WithDest
 	{
+		private const int MinAge = 16;
+
+		public override bool HideTargetPawnTooltip => true;
+
 		public override TargetingParameters targetParams => new TargetingParameters
 		{
 			canTargetSelf = true,
@@ -26,9 +30,9 @@ namespace RimWorld
 			HediffComp_Disappears hediffComp_Disappears = hediff_PsychicLove.TryGetComp<HediffComp_Disappears>();
 			if (hediffComp_Disappears != null)
 			{
-				float effectDuration = parent.def.EffectDuration;
-				effectDuration *= pawn.GetStatValue(StatDefOf.PsychicSensitivity);
-				hediffComp_Disappears.ticksToDisappear = effectDuration.SecondsToTicks();
+				float num = parent.def.EffectDuration(parent.pawn);
+				num *= pawn.GetStatValue(StatDefOf.PsychicSensitivity);
+				hediffComp_Disappears.ticksToDisappear = num.SecondsToTicks();
 			}
 			pawn.health.AddHediff(hediff_PsychicLove);
 		}
@@ -38,12 +42,22 @@ namespace RimWorld
 			return Valid(target);
 		}
 
-		public override bool ValidateTarget(LocalTargetInfo target)
+		public override bool ValidateTarget(LocalTargetInfo target, bool showMessages = true)
 		{
 			Pawn pawn = selectedTarget.Pawn;
 			Pawn pawn2 = target.Pawn;
 			if (pawn == pawn2)
 			{
+				return false;
+			}
+			if (pawn.ageTracker.AgeBiologicalYearsFloat < 16f)
+			{
+				Messages.Message("CannotUseAbility".Translate(parent.def.label) + ": " + "AbilityCantApplyTooYoung".Translate(pawn), pawn, MessageTypeDefOf.RejectInput, historical: false);
+				return false;
+			}
+			if (pawn2.ageTracker.AgeBiologicalYearsFloat < 16f)
+			{
+				Messages.Message("CannotUseAbility".Translate(parent.def.label) + ": " + "AbilityCantApplyTooYoung".Translate(pawn2), pawn2, MessageTypeDefOf.RejectInput, historical: false);
 				return false;
 			}
 			if (pawn != null && pawn2 != null && !pawn.story.traits.HasTrait(TraitDefOf.Bisexual))
@@ -52,7 +66,7 @@ namespace RimWorld
 				Gender gender2 = (pawn.story.traits.HasTrait(TraitDefOf.Gay) ? gender : gender.Opposite());
 				if (pawn2.gender != gender2)
 				{
-					Messages.Message("AbilityCantApplyWrongAttractionGender".Translate(pawn, pawn2), pawn, MessageTypeDefOf.RejectInput, historical: false);
+					Messages.Message("CannotUseAbility".Translate(parent.def.label) + ": " + "AbilityCantApplyWrongAttractionGender".Translate(pawn, pawn2), pawn, MessageTypeDefOf.RejectInput, historical: false);
 					return false;
 				}
 			}
@@ -68,11 +82,11 @@ namespace RimWorld
 				{
 					if (throwMessages)
 					{
-						Messages.Message("AbilityCantApplyOnAsexual".Translate(parent.def.label), pawn, MessageTypeDefOf.RejectInput, historical: false);
+						Messages.Message("CannotUseAbility".Translate(parent.def.label) + ": " + "AbilityCantApplyOnAsexual".Translate(), pawn, MessageTypeDefOf.RejectInput, historical: false);
 					}
 					return false;
 				}
-				if (!AbilityUtility.ValidateNoMentalState(pawn, throwMessages))
+				if (!AbilityUtility.ValidateNoMentalState(pawn, throwMessages, parent))
 				{
 					return false;
 				}
@@ -80,7 +94,7 @@ namespace RimWorld
 			return true;
 		}
 
-		public override string ExtraLabel(LocalTargetInfo target)
+		public override string ExtraLabelMouseAttachment(LocalTargetInfo target)
 		{
 			if (selectedTarget.IsValid)
 			{

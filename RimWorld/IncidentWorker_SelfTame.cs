@@ -9,7 +9,7 @@ namespace RimWorld
 	{
 		private IEnumerable<Pawn> Candidates(Map map)
 		{
-			return map.mapPawns.AllPawnsSpawned.Where((Pawn x) => x.RaceProps.Animal && x.Faction == null && !x.Position.Fogged(x.Map) && !x.InMentalState && !x.Downed && x.RaceProps.wildness > 0f);
+			return map.mapPawns.AllPawnsSpawned.Where((Pawn x) => x.IsAnimal && x.Faction == null && !x.Position.Fogged(x.Map) && !x.InMentalState && !x.Downed && !x.health.hediffSet.HasHediff(HediffDefOf.Scaria) && x.GetStatValue(StatDefOf.Wildness) > 0f);
 		}
 
 		protected override bool CanFireNowSub(IncidentParms parms)
@@ -26,14 +26,10 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (result.guest != null)
-			{
-				result.guest.SetGuestStatus(null);
-			}
-			string value = result.LabelIndefinite();
+			string text = result.LabelIndefinite();
 			bool num = result.Name != null;
 			result.SetFaction(Faction.OfPlayer);
-			SendStandardLetter(baseLetterText: (num || result.Name == null) ? ((string)"LetterAnimalSelfTame".Translate(result).CapitalizeFirst()) : ((!result.Name.Numerical) ? ((string)"LetterAnimalSelfTameAndName".Translate(value, result.Name.ToStringFull, result.Named("ANIMAL")).CapitalizeFirst()) : ((string)"LetterAnimalSelfTameAndNameNumerical".Translate(value, result.Name.ToStringFull, result.Named("ANIMAL")).CapitalizeFirst())), baseLetterLabel: "LetterLabelAnimalSelfTame".Translate(result.KindLabel, result).CapitalizeFirst(), baseLetterDef: LetterDefOf.PositiveEvent, parms: parms, lookTargets: result, textArgs: Array.Empty<NamedArgument>());
+			SendStandardLetter(baseLetterText: (num || result.Name == null) ? ((string)"LetterAnimalSelfTame".Translate(result).CapitalizeFirst()) : ((!result.Name.Numerical) ? ((string)"LetterAnimalSelfTameAndName".Translate(text, result.Name.ToStringFull, result.Named("ANIMAL")).CapitalizeFirst()) : ((string)"LetterAnimalSelfTameAndNameNumerical".Translate(text, result.Name.ToStringFull, result.Named("ANIMAL")).CapitalizeFirst())), baseLetterLabel: "LetterLabelAnimalSelfTame".Translate(result.KindLabel, result).CapitalizeFirst(), baseLetterDef: LetterDefOf.PositiveEvent, parms: parms, lookTargets: result, textArgs: Array.Empty<NamedArgument>());
 			return true;
 		}
 	}

@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld.Planet;
@@ -33,8 +32,7 @@ namespace RimWorld
 			List<Lord> lords = map.lordManager.lords;
 			for (int i = 0; i < lords.Count; i++)
 			{
-				LordJob_LoadAndEnterTransporters lordJob_LoadAndEnterTransporters = lords[i].LordJob as LordJob_LoadAndEnterTransporters;
-				if (lordJob_LoadAndEnterTransporters != null && lordJob_LoadAndEnterTransporters.transportersGroup == transportersGroup)
+				if (lords[i].LordJob is LordJob_LoadAndEnterTransporters lordJob_LoadAndEnterTransporters && lordJob_LoadAndEnterTransporters.transportersGroup == transportersGroup)
 				{
 					return lords[i];
 				}
@@ -62,18 +60,11 @@ namespace RimWorld
 			return nextTransporterGroupID;
 		}
 
-		[Obsolete("Only used for mod compatibility. Will be removed in future version.")]
 		public static IEnumerable<Pawn> AllSendablePawns(List<CompTransporter> transporters, Map map)
-		{
-			return AllSendablePawns_NewTmp(transporters, map, autoLoot: false);
-		}
-
-		public static IEnumerable<Pawn> AllSendablePawns_NewTmp(List<CompTransporter> transporters, Map map, bool autoLoot)
 		{
 			CompShuttle shuttle = transporters[0].parent.TryGetComp<CompShuttle>();
 			int allowLoadAndEnterTransportersLordForGroupID = ((transporters[0].Props.canChangeAssignedThingsAfterStarting && transporters[0].LoadingInProgressOrReadyToLaunch) ? transporters[0].groupID : (-1));
-			bool allowLodgers = shuttle != null;
-			List<Pawn> pawns = CaravanFormingUtility.AllSendablePawns(map, allowEvenIfDowned: true, autoLoot, autoLoot, autoLoot, allowLodgers, allowLoadAndEnterTransportersLordForGroupID);
+			List<Pawn> pawns = CaravanFormingUtility.AllSendablePawns(map, allowEvenIfDowned: true, allowEvenIfInMentalState: false, allowEvenIfPrisonerNotSecure: false, allowCapturableDownedPawns: false, shuttle != null, allowLoadAndEnterTransportersLordForGroupID);
 			for (int i = 0; i < pawns.Count; i++)
 			{
 				if (shuttle == null || shuttle.IsRequired(pawns[i]) || shuttle.IsAllowed(pawns[i]))
@@ -83,15 +74,9 @@ namespace RimWorld
 			}
 		}
 
-		[Obsolete("Only used for mod compatibility. Will be removed in future version.")]
 		public static IEnumerable<Thing> AllSendableItems(List<CompTransporter> transporters, Map map)
 		{
-			return AllSendableItems_NewTmp(transporters, map, autoLoot: false);
-		}
-
-		public static IEnumerable<Thing> AllSendableItems_NewTmp(List<CompTransporter> transporters, Map map, bool autoLoot)
-		{
-			List<Thing> items = CaravanFormingUtility.AllReachableColonyItems(map, canMinify: autoLoot, allowEvenIfOutsideHomeArea: autoLoot, allowEvenIfReserved: transporters[0].Props.canChangeAssignedThingsAfterStarting && transporters[0].LoadingInProgressOrReadyToLaunch);
+			List<Thing> items = CaravanFormingUtility.AllReachableColonyItems(map, !map.IsPlayerHome, transporters[0].Props.canChangeAssignedThingsAfterStarting && transporters[0].LoadingInProgressOrReadyToLaunch);
 			CompShuttle shuttle = transporters[0].parent.TryGetComp<CompShuttle>();
 			for (int i = 0; i < items.Count; i++)
 			{
@@ -104,7 +89,7 @@ namespace RimWorld
 
 		public static IEnumerable<Thing> ThingsBeingHauledTo(List<CompTransporter> transporters, Map map)
 		{
-			List<Pawn> pawns = map.mapPawns.AllPawnsSpawned;
+			IReadOnlyList<Pawn> pawns = map.mapPawns.AllPawnsSpawned;
 			for (int i = 0; i < pawns.Count; i++)
 			{
 				if (pawns[i].CurJobDef == JobDefOf.HaulToTransporter && transporters.Contains(((JobDriver_HaulToTransporter)pawns[i].jobs.curDriver).Transporter) && pawns[i].carryTracker.CarriedThing != null)
@@ -118,10 +103,10 @@ namespace RimWorld
 		{
 			int groupID = transporters[0].groupID;
 			Lord lord = null;
-			IEnumerable<Pawn> enumerable = pawns.Where((Pawn x) => x.IsColonist && !x.Downed && x.Spawned);
+			IEnumerable<Pawn> enumerable = pawns.Where((Pawn x) => (x.IsColonist || x.IsColonyMechPlayerControlled) && !x.Downed && x.Spawned);
 			if (enumerable.Any())
 			{
-				lord = map.lordManager.lords.Find((Lord x) => x.LordJob is LordJob_LoadAndEnterTransporters && ((LordJob_LoadAndEnterTransporters)x.LordJob).transportersGroup == groupID);
+				lord = map.lordManager.lords.Find((Lord x) => x.LordJob is LordJob_LoadAndEnterTransporters lordJob_LoadAndEnterTransporters2 && lordJob_LoadAndEnterTransporters2.transportersGroup == groupID);
 				if (lord == null)
 				{
 					lord = LordMaker.MakeNewLord(Faction.OfPlayer, new LordJob_LoadAndEnterTransporters(groupID), map);
@@ -145,12 +130,35 @@ namespace RimWorld
 			}
 			for (int num2 = map.lordManager.lords.Count - 1; num2 >= 0; num2--)
 			{
-				LordJob_LoadAndEnterTransporters lordJob_LoadAndEnterTransporters = map.lordManager.lords[num2].LordJob as LordJob_LoadAndEnterTransporters;
-				if (lordJob_LoadAndEnterTransporters != null && lordJob_LoadAndEnterTransporters.transportersGroup == groupID && map.lordManager.lords[num2] != lord)
+				if (map.lordManager.lords[num2].LordJob is LordJob_LoadAndEnterTransporters lordJob_LoadAndEnterTransporters && lordJob_LoadAndEnterTransporters.transportersGroup == groupID && map.lordManager.lords[num2] != lord)
 				{
 					map.lordManager.RemoveLord(map.lordManager.lords[num2]);
 				}
 			}
+		}
+
+		public static bool IncomingTransporterPreventingMapRemoval(Map map)
+		{
+			if (ModsConfig.OdysseyActive)
+			{
+				WorldComponent_GravshipController gravshipController = Find.GravshipController;
+				if (gravshipController != null && gravshipController.LandingAreaConfirmationInProgress)
+				{
+					return true;
+				}
+				if (Find.CurrentGravship != null && Find.CurrentGravship.destinationTile == map.Tile)
+				{
+					return true;
+				}
+			}
+			foreach (TravellingTransporters travellingTransporter in Find.WorldObjects.TravellingTransporters)
+			{
+				if (travellingTransporter.destinationTile == map.Tile)
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 }

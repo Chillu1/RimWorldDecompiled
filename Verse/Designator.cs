@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
 using Verse.Sound;
+using Verse.Steam;
 
 namespace Verse
 {
@@ -16,7 +17,7 @@ namespace Verse
 
 		public SoundDef soundDragChanged;
 
-		protected SoundDef soundSucceeded;
+		public SoundDef soundSucceeded;
 
 		protected SoundDef soundFailed = SoundDefOf.Designate_Failed;
 
@@ -24,23 +25,41 @@ namespace Verse
 
 		protected string designateAllLabel;
 
+		protected bool showReverseDesignatorDisabledReason;
+
+		protected DesignationDef[] removeAllOtherDesignationDefs;
+
 		private string cachedTutorTagSelect;
 
 		private string cachedTutorTagDesignate;
 
 		protected string cachedHighlightTag;
 
-		public Map Map => Find.CurrentMap;
+		private List<Designation> tmpAllDesignations = new List<Designation>();
 
-		public virtual int DraggableDimensions => 0;
+		private const float IconButtonSize = 48f;
+
+		private const float IconButtonGap = 16f;
+
+		private const float StyleButtonSize = 60f;
+
+		private const float StyleButtonLabelOffset = 27f;
+
+		public Map Map => Find.CurrentMap;
 
 		public virtual bool DragDrawMeasurements => false;
 
+		public virtual bool DrawHighlight => true;
+
 		protected override bool DoTooltip => false;
+
+		public virtual bool AlwaysDoGuiControls => false;
 
 		protected virtual DesignationDef Designation => null;
 
 		public virtual float PanelReadoutTitleExtraRightMargin => 0f;
+
+		public virtual DrawStyleCategoryDef DrawStyleCategory => null;
 
 		public override string TutorTagSelect
 		{
@@ -50,11 +69,7 @@ namespace Verse
 				{
 					return null;
 				}
-				if (cachedTutorTagSelect == null)
-				{
-					cachedTutorTagSelect = "SelectDesignator-" + tutorTag;
-				}
-				return cachedTutorTagSelect;
+				return cachedTutorTagSelect ?? (cachedTutorTagSelect = "SelectDesignator-" + tutorTag);
 			}
 		}
 
@@ -66,11 +81,7 @@ namespace Verse
 				{
 					return null;
 				}
-				if (cachedTutorTagDesignate == null)
-				{
-					cachedTutorTagDesignate = "Designate-" + tutorTag;
-				}
-				return cachedTutorTagDesignate;
+				return cachedTutorTagDesignate ?? (cachedTutorTagDesignate = "Designate-" + tutorTag);
 			}
 		}
 
@@ -110,12 +121,12 @@ namespace Verse
 					{
 						yield return new FloatMenuOption(designateAllLabel + " (" + "CountToDesignate".Translate(num) + ")", delegate
 						{
-							for (int k = 0; k < things.Count; k++)
+							for (int j = 0; j < things.Count; j++)
 							{
-								Thing t2 = things[k];
+								Thing t2 = things[j];
 								if (!t2.Fogged() && CanDesignateThing(t2).Accepted)
 								{
-									DesignateThing(things[k]);
+									DesignateThing(things[j]);
 								}
 							}
 						});
@@ -130,25 +141,31 @@ namespace Verse
 				{
 					yield break;
 				}
-				int num2 = 0;
-				List<Designation> designations = Map.designationManager.allDesignations;
-				for (int j = 0; j < designations.Count; j++)
+				tmpAllDesignations.Clear();
+				tmpAllDesignations.AddRange(Map.designationManager.designationsByDef[designation]);
+				if (removeAllOtherDesignationDefs != null)
 				{
-					if (designations[j].def == designation && RemoveAllDesignationsAffects(designations[j].target))
+					DesignationDef[] array = removeAllOtherDesignationDefs;
+					foreach (DesignationDef def in array)
 					{
-						num2++;
+						tmpAllDesignations.AddRange(Map.designationManager.designationsByDef[def]);
 					}
 				}
-				if (num2 > 0)
+				int num3 = 0;
+				foreach (Designation tmpAllDesignation in tmpAllDesignations)
 				{
-					yield return new FloatMenuOption((string)("RemoveAllDesignations".Translate() + " (") + num2 + ")", delegate
+					if (RemoveAllDesignationsAffects(tmpAllDesignation.target))
 					{
-						for (int num3 = designations.Count - 1; num3 >= 0; num3--)
+						num3++;
+					}
+				}
+				if (num3 > 0)
+				{
+					yield return new FloatMenuOption(string.Concat("RemoveAllDesignations".Translate() + " (", num3.ToString(), ")"), delegate
+					{
+						for (int num4 = tmpAllDesignations.Count - 1; num4 >= 0; num4--)
 						{
-							if (designations[num3].def == designation && RemoveAllDesignationsAffects(designations[num3].target))
-							{
-								Map.designationManager.RemoveDesignation(designations[num3]);
-							}
+							Map.designationManager.RemoveDesignation(tmpAllDesignations[num4]);
 						}
 					});
 				}
@@ -181,6 +198,52 @@ namespace Verse
 				base.ProcessInput(ev);
 				Find.DesignatorManager.Select(this);
 			}
+		}
+
+		public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth, GizmoRenderParms parms)
+		{
+			GizmoResult result = base.GizmoOnGUI(topLeft, maxWidth, parms);
+			if (DebugViewSettings.showArchitectMenuOrder)
+			{
+				Text.Anchor = TextAnchor.MiddleCenter;
+				Text.Font = GameFont.Tiny;
+				Widgets.Label(new Rect(topLeft.x, topLeft.y + 5f, GetWidth(maxWidth), 15f), Order.ToString());
+				Text.Font = GameFont.Small;
+				Text.Anchor = TextAnchor.UpperLeft;
+			}
+			return result;
+		}
+
+		public Command_Action CreateReverseDesignationGizmo(Thing t)
+		{
+			AcceptanceReport acceptanceReport = CanDesignateThing(t);
+			float angle;
+			Vector2 offset;
+			if (acceptanceReport.Accepted || (showReverseDesignatorDisabledReason && !acceptanceReport.Reason.NullOrEmpty()))
+			{
+				return new Command_Action
+				{
+					defaultLabel = LabelCapReverseDesignating(t),
+					icon = IconReverseDesignating(t, out angle, out offset),
+					iconAngle = angle,
+					iconOffset = offset,
+					defaultDesc = (acceptanceReport.Reason.NullOrEmpty() ? DescReverseDesignating(t) : acceptanceReport.Reason),
+					Order = ((this is Designator_Uninstall) ? (-11f) : (-20f)),
+					Disabled = !acceptanceReport.Accepted,
+					action = delegate
+					{
+						if (TutorSystem.AllowAction(TutorTagDesignate) && (Designation == null || Designation.targetType != TargetType.Thing || Map.designationManager.DesignationOn(t, Designation) == null))
+						{
+							DesignateThing(t);
+							Finalize(somethingSucceeded: true);
+						}
+					},
+					hotKey = hotKey,
+					groupKeyIgnoreContent = groupKeyIgnoreContent,
+					groupKey = groupKey
+				};
+			}
+			return null;
 		}
 
 		public virtual AcceptanceReport CanDesignateThing(Thing t)
@@ -232,7 +295,7 @@ namespace Verse
 			return false;
 		}
 
-		public new void Finalize(bool somethingSucceeded)
+		public void Finalize(bool somethingSucceeded)
 		{
 			if (somethingSucceeded)
 			{
@@ -278,7 +341,7 @@ namespace Verse
 		{
 			angle = iconAngle;
 			offset = iconOffset;
-			return icon;
+			return (Texture2D)icon;
 		}
 
 		protected virtual bool RemoveAllDesignationsAffects(LocalTargetInfo target)
@@ -290,7 +353,7 @@ namespace Verse
 		{
 			if (useMouseIcon)
 			{
-				GenUI.DrawMouseAttachment(icon, "", iconAngle, iconOffset);
+				GenUI.DrawMouseAttachment(hideMouseIcon ? null : icon, mouseText, iconAngle, iconOffset);
 			}
 		}
 
@@ -300,6 +363,66 @@ namespace Verse
 
 		public virtual void DoExtraGuiControls(float leftX, float bottomY)
 		{
+			Rect winRect = new Rect(leftX, bottomY - 90f, 200f, 90f);
+			DrawStyleDef style = Find.DesignatorManager.SelectedStyle;
+			List<DrawStyleDef> list = DrawStyleCategory?.styles;
+			if (style == null || list == null || list.Count <= 1)
+			{
+				return;
+			}
+			Find.WindowStack.ImmediateWindow(415111, winRect, WindowLayer.GameUI, delegate
+			{
+				using (new TextBlock(GameFont.Medium, TextAnchor.MiddleCenter))
+				{
+					Rect rect = winRect;
+					rect.x = 0f;
+					rect.y = 0f;
+					Rect rect2 = rect.MiddlePartPixels(48f, 48f);
+					if (Widgets.ButtonImage(rect2, style.uiIcon))
+					{
+						List<FloatMenuOption> list2 = new List<FloatMenuOption>();
+						foreach (DrawStyleDef style2 in DrawStyleCategory.styles)
+						{
+							DrawStyleDef lDef = style2;
+							list2.Add(new FloatMenuOption(style2.LabelCap, delegate
+							{
+								Find.DesignatorManager.SelectedStyle = lDef;
+							}));
+						}
+						Find.WindowStack.Add(new FloatMenu(list2));
+					}
+					Rect rect3 = rect.MiddlePartPixels(60f, 60f);
+					rect3.x = rect2.xMin - 16f - rect3.width;
+					Rect rect4 = rect2;
+					rect4.x = rect3.xMin + 27f;
+					rect4.xMax = rect3.xMax + 27f;
+					Rect butRect = rect3;
+					butRect.x = rect2.xMax + 16f;
+					Rect rect5 = rect2;
+					rect5.x = butRect.xMin - 27f;
+					rect5.xMax = butRect.xMax - 27f;
+					if (Widgets.ButtonImage(rect3, TexUI.ConcaveArrowTexLeft))
+					{
+						SoundDefOf.DragSlider.PlayOneShotOnCamera();
+						Find.DesignatorManager.PreviousDrawStyle();
+						Event.current.Use();
+					}
+					if (!SteamDeck.IsSteamDeck)
+					{
+						Widgets.Label(rect4, KeyBindingDefOf.Designator_PreviousDrawStyle.MainKeyLabel);
+					}
+					if (Widgets.ButtonImage(butRect, TexUI.ConcaveArrowTexRight))
+					{
+						SoundDefOf.DragSlider.PlayOneShotOnCamera();
+						Find.DesignatorManager.AdvanceDrawStyle();
+						Event.current.Use();
+					}
+					if (!SteamDeck.IsSteamDeck)
+					{
+						Widgets.Label(rect5, KeyBindingDefOf.Designator_NextDrawStyle.MainKeyLabel);
+					}
+				}
+			});
 		}
 
 		public virtual void SelectedUpdate()
@@ -308,10 +431,16 @@ namespace Verse
 
 		public virtual void SelectedProcessInput(Event ev)
 		{
-		}
-
-		public virtual void Rotate(RotationDirection rotDir)
-		{
+			if (KeyBindingDefOf.Designator_NextDrawStyle.KeyDownEvent)
+			{
+				SoundDefOf.DragSlider.PlayOneShotOnCamera();
+				Find.DesignatorManager.AdvanceDrawStyle();
+			}
+			if (KeyBindingDefOf.Designator_PreviousDrawStyle.KeyDownEvent)
+			{
+				SoundDefOf.DragSlider.PlayOneShotOnCamera();
+				Find.DesignatorManager.PreviousDrawStyle();
+			}
 		}
 
 		public virtual bool CanRemainSelected()
@@ -320,6 +449,10 @@ namespace Verse
 		}
 
 		public virtual void Selected()
+		{
+		}
+
+		public virtual void Deselected()
 		{
 		}
 

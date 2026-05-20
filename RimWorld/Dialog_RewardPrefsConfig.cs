@@ -44,7 +44,7 @@ namespace RimWorld
 			Widgets.Label(rect, text);
 			IEnumerable<Faction> allFactionsVisibleInViewOrder = Find.FactionManager.AllFactionsVisibleInViewOrder;
 			Rect outRect = new Rect(inRect);
-			outRect.yMax -= CloseButSize.y;
+			outRect.yMax -= Window.CloseButSize.y;
 			outRect.yMin += 44f + rect.height + 4f;
 			float curY = 0f;
 			Rect rect2 = new Rect(0f, curY, outRect.width - 16f, viewRectHeight);
@@ -70,7 +70,7 @@ namespace RimWorld
 						TooltipHandler.TipRegion(rect3, "AcceptRoyalFavorDesc".Translate(item.Named("FACTION")));
 						Widgets.DrawHighlight(rect3);
 					}
-					Widgets.Checkbox(rect2.width - 150f, curY + 12f, ref item.allowRoyalFavorRewards);
+					Widgets.Checkbox(rect2.width - 150f, curY + 12f, ref item.allowRoyalFavorRewards, 24f, disabled: false, paintable: true);
 					curY += 45f;
 				}
 				if (item.CanEverGiveGoodwillRewards)
@@ -87,8 +87,8 @@ namespace RimWorld
 						TooltipHandler.TipRegion(rect4, "AcceptGoodwillDesc".Translate(item.Named("FACTION")));
 						Widgets.DrawHighlight(rect4);
 					}
-					Widgets.Checkbox(rect2.width - 150f, curY + 12f, ref item.allowGoodwillRewards);
-					Widgets.Label(new Rect(rect2.width - 100f, curY, 100f, 35f), (item.PlayerGoodwill.ToStringWithSign() + "\n" + item.PlayerRelationKind.GetLabel()).Colorize(item.PlayerRelationKind.GetColor()));
+					Widgets.Checkbox(rect2.width - 150f, curY + 12f, ref item.allowGoodwillRewards, 24f, disabled: false, paintable: true);
+					Widgets.Label(new Rect(rect2.width - 100f, curY, 100f, 35f), (item.PlayerGoodwill.ToStringWithSign() + "\n" + item.PlayerRelationKind.GetLabelCap()).Colorize(item.PlayerRelationKind.GetColor()));
 					curY += 45f;
 				}
 			}
@@ -114,7 +114,7 @@ namespace RimWorld
 			curX += 250f;
 			if (Mouse.IsOver(rect2))
 			{
-				TipSignal tip = new TipSignal(() => faction.Name + "\n\n" + faction.def.description + "\n\n" + faction.PlayerRelationKind.GetLabel().Colorize(faction.PlayerRelationKind.GetColor()), faction.loadID ^ 0x4468077);
+				TipSignal tip = new TipSignal(() => faction.Name + "\n\n" + faction.def.Description + "\n\n" + faction.PlayerRelationKind.GetLabelCap().Colorize(faction.PlayerRelationKind.GetColor()), faction.loadID ^ 0x4468077);
 				TooltipHandler.TipRegion(rect2, tip);
 				Widgets.DrawHighlight(rect2);
 			}

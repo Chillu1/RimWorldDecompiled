@@ -122,6 +122,52 @@ namespace Verse
 			}
 		}
 
+		public bool WindowsPreventSave
+		{
+			get
+			{
+				for (int i = 0; i < windows.Count; i++)
+				{
+					if (windows[i].preventSave)
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+		}
+
+		public bool AnyWindowAbsorbingAllInput
+		{
+			get
+			{
+				foreach (Window window in windows)
+				{
+					if (window.absorbInputAroundWindow)
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+		}
+
+		public bool AnySearchWidgetFocused
+		{
+			get
+			{
+				foreach (Window window in windows)
+				{
+					QuickSearchWidget commonSearchWidget = window.CommonSearchWidget;
+					if (commonSearchWidget != null && commonSearchWidget.CurrentlyFocused())
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+		}
+
 		public void WindowsUpdate()
 		{
 			AdjustWindowsIfResolutionChanged();
@@ -133,9 +179,14 @@ namespace Verse
 
 		public void HandleEventsHighPriority()
 		{
-			if (Event.current.type == EventType.MouseDown && GetWindowAt(UI.GUIToScreenPoint(Event.current.mousePosition)) == null && CloseWindowsBecauseClicked(null))
+			if (Event.current.type == EventType.MouseDown && GetWindowAt(UI.GUIToScreenPoint(Event.current.mousePosition)) == null)
 			{
-				Event.current.Use();
+				bool num = CloseWindowsBecauseClicked(null);
+				NotifyOutsideClicks(null);
+				if (num)
+				{
+					Event.current.Use();
+				}
 			}
 			if (KeyBindingDefOf.Cancel.KeyDownEvent)
 			{
@@ -166,6 +217,10 @@ namespace Verse
 			{
 				if (windowStackOnGUITmpList[i].drawShadow)
 				{
+					if (!windowStackOnGUITmpList[i].drawInScreenshotMode && Find.UIRoot.screenshotMode.Active)
+					{
+						continue;
+					}
 					GUI.color = new Color(1f, 1f, 1f, windowStackOnGUITmpList[i].shadowAlpha);
 					Widgets.DrawShadowAround(windowStackOnGUITmpList[i].windowRect);
 					GUI.color = Color.white;
@@ -192,6 +247,7 @@ namespace Verse
 				Event.current.Use();
 			}
 			CloseWindowsBecauseClicked(window);
+			NotifyOutsideClicks(window);
 			updateInternalWindowsOrderLater = true;
 		}
 
@@ -265,6 +321,12 @@ namespace Verse
 			return windows.Contains(window);
 		}
 
+		public bool TryGetWindow<T>(out T window) where T : class
+		{
+			window = WindowOfType<T>();
+			return window != null;
+		}
+
 		public WindowType WindowOfType<WindowType>() where WindowType : class
 		{
 			for (int i = 0; i < windows.Count; i++)
@@ -304,7 +366,7 @@ namespace Verse
 			window.PostOpen();
 		}
 
-		public void ImmediateWindow(int ID, Rect rect, WindowLayer layer, Action doWindowFunc, bool doBackground = true, bool absorbInputAroundWindow = false, float shadowAlpha = 1f)
+		public void ImmediateWindow(int ID, Rect rect, WindowLayer layer, Action doWindowFunc, bool doBackground = true, bool absorbInputAroundWindow = false, float shadowAlpha = 1f, Action doClickOutsideFunc = null, bool ignoreScreenFader = false)
 		{
 			if (Event.current.type != EventType.Repaint)
 			{
@@ -324,17 +386,19 @@ namespace Verse
 					ImmediateWindow obj = (ImmediateWindow)windows[i];
 					obj.windowRect = rect;
 					obj.doWindowFunc = doWindowFunc;
+					obj.doClickOutsideFunc = doClickOutsideFunc;
 					obj.layer = layer;
 					obj.doWindowBackground = doBackground;
 					obj.absorbInputAroundWindow = absorbInputAroundWindow;
 					obj.shadowAlpha = shadowAlpha;
+					obj.ignoreScreenFader = ignoreScreenFader;
 					flag = true;
 					break;
 				}
 			}
 			if (!flag)
 			{
-				AddNewImmediateWindow(ID, rect, layer, doWindowFunc, doBackground, absorbInputAroundWindow, shadowAlpha);
+				AddNewImmediateWindow(ID, rect, layer, doWindowFunc, doBackground, absorbInputAroundWindow, shadowAlpha, doClickOutsideFunc, ignoreScreenFader);
 			}
 			immediateWindowsRequests.Add(ID);
 		}
@@ -378,6 +442,10 @@ namespace Verse
 			{
 				return false;
 			}
+			if (!window.OnCloseRequest())
+			{
+				return false;
+			}
 			if (doCloseSound && window.soundClose != null)
 			{
 				window.soundClose.PlayOneShotOnCamera();
@@ -412,7 +480,7 @@ namespace Verse
 			return null;
 		}
 
-		private void AddNewImmediateWindow(int ID, Rect rect, WindowLayer layer, Action doWindowFunc, bool doBackground, bool absorbInputAroundWindow, float shadowAlpha)
+		private void AddNewImmediateWindow(int ID, Rect rect, WindowLayer layer, Action doWindowFunc, bool doBackground, bool absorbInputAroundWindow, float shadowAlpha, Action doClickOutsideFunc, bool ignoreScreenFader)
 		{
 			if (ID >= 0)
 			{
@@ -423,9 +491,11 @@ namespace Verse
 			immediateWindow.ID = ID;
 			immediateWindow.layer = layer;
 			immediateWindow.doWindowFunc = doWindowFunc;
+			immediateWindow.doClickOutsideFunc = doClickOutsideFunc;
 			immediateWindow.doWindowBackground = doBackground;
 			immediateWindow.absorbInputAroundWindow = absorbInputAroundWindow;
 			immediateWindow.shadowAlpha = shadowAlpha;
+			immediateWindow.ignoreScreenFader = ignoreScreenFader;
 			immediateWindow.PreOpen();
 			immediateWindow.windowRect = rect;
 			InsertAtCorrectPositionInList(immediateWindow);
@@ -529,6 +599,17 @@ namespace Verse
 				if (removeWindowsOfTypeTmpList[i].onlyOneOfTypeAllowed && removeWindowsOfTypeTmpList[i].GetType() == type)
 				{
 					TryRemove(removeWindowsOfTypeTmpList[i]);
+				}
+			}
+		}
+
+		private void NotifyOutsideClicks(Window clickedWindow)
+		{
+			foreach (Window window in windows)
+			{
+				if (window != clickedWindow)
+				{
+					window.Notify_ClickOutsideWindow();
 				}
 			}
 		}

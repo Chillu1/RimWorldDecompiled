@@ -18,7 +18,7 @@ namespace RimWorld
 			this.FailOnDespawnedOrNull(TargetIndex.A);
 			this.FailOnAggroMentalState(TargetIndex.A);
 			this.FailOn(() => !StrippableUtility.CanBeStrippedByColony(base.TargetThingA));
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
 				pawn.pather.StartPath(base.TargetThingA, PathEndMode.ClosestTouch);
@@ -27,12 +27,15 @@ namespace RimWorld
 			toil.FailOnDespawnedNullOrForbidden(TargetIndex.A);
 			yield return toil;
 			yield return Toils_General.Wait(60).WithProgressBarToilDelay(TargetIndex.A);
-			Toil toil2 = new Toil();
+			Toil toil2 = ToilMaker.MakeToil("MakeNewToils");
 			toil2.initAction = delegate
 			{
 				Thing thing = job.targetA.Thing;
 				base.Map.designationManager.DesignationOn(thing, DesignationDefOf.Strip)?.Delete();
-				(thing as IStrippable)?.Strip();
+				if (thing is IStrippable strippable)
+				{
+					strippable.Strip();
+				}
 				pawn.records.Increment(RecordDefOf.BodiesStripped);
 			};
 			toil2.defaultCompleteMode = ToilCompleteMode.Instant;

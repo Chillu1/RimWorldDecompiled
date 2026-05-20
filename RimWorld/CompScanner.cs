@@ -17,7 +17,7 @@ namespace RimWorld
 
 		public CompProperties_Scanner Props => (CompProperties_Scanner)props;
 
-		public bool CanUseNow
+		public virtual AcceptanceReport CanUseNow
 		{
 			get
 			{
@@ -31,7 +31,7 @@ namespace RimWorld
 				}
 				if (RoofUtility.IsAnyCellUnderRoof(parent))
 				{
-					return false;
+					return "CannotUseScannerRoofed".Translate();
 				}
 				if (forbiddable != null && forbiddable.Forbidden)
 				{
@@ -78,7 +78,7 @@ namespace RimWorld
 
 		protected virtual bool TickDoesFind(float scanSpeed)
 		{
-			if (Find.TickManager.TicksGame % 59 == 0 && (Rand.MTBEventOccurs(Props.scanFindMtbDays / scanSpeed, 60000f, 59f) || (Props.scanFindGuaranteedDays > 0f && daysWorkingSinceLastFinding >= Props.scanFindGuaranteedDays)))
+			if (parent.IsHashIntervalTick(59) && (Rand.MTBEventOccurs(Props.scanFindMtbDays / scanSpeed, 60000f, 59f) || (Props.scanFindGuaranteedDays > 0f && daysWorkingSinceLastFinding >= Props.scanFindGuaranteedDays)))
 			{
 				return true;
 			}
@@ -87,22 +87,22 @@ namespace RimWorld
 
 		public override string CompInspectStringExtra()
 		{
-			string t = "";
+			string text = "";
 			if (lastScanTick > (float)(Find.TickManager.TicksGame - 30))
 			{
-				t += "UserScanAbility".Translate() + ": " + lastUserSpeed.ToStringPercent() + "\n" + "ScanAverageInterval".Translate() + ": " + "PeriodDays".Translate((Props.scanFindMtbDays / lastUserSpeed).ToString("F1")) + "\n";
+				text += "UserScanAbility".Translate() + ": " + lastUserSpeed.ToStringPercent() + "\n" + "ScanAverageInterval".Translate() + ": " + "PeriodDays".Translate((Props.scanFindMtbDays / lastUserSpeed).ToString("F1")) + "\n";
 			}
-			return t + "ScanningProgressToGuaranteedFind".Translate() + ": " + (daysWorkingSinceLastFinding / Props.scanFindGuaranteedDays).ToStringPercent();
+			return text + "ScanningProgressToGuaranteedFind".Translate() + ": " + (daysWorkingSinceLastFinding / Props.scanFindGuaranteedDays).ToStringPercent();
 		}
 
 		protected abstract void DoFind(Pawn worker);
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (Prefs.DevMode)
+			if (DebugSettings.ShowDevGizmos)
 			{
 				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "Dev: Find now";
+				command_Action.defaultLabel = "DEV: Find now";
 				command_Action.action = delegate
 				{
 					DoFind(PawnsFinder.AllMaps_FreeColonists.RandomElement());

@@ -4,9 +4,11 @@ namespace Verse
 	{
 		private const int HeatPushInterval = 60;
 
+		public bool enabled = true;
+
 		public CompProperties_HeatPusher Props => (CompProperties_HeatPusher)props;
 
-		protected virtual bool ShouldPushHeatNow
+		public virtual bool ShouldPushHeatNow
 		{
 			get
 			{
@@ -14,11 +16,11 @@ namespace Verse
 				{
 					return false;
 				}
-				CompProperties_HeatPusher props = Props;
+				CompProperties_HeatPusher compProperties_HeatPusher = Props;
 				float ambientTemperature = parent.AmbientTemperature;
-				if (ambientTemperature < props.heatPushMaxTemperature)
+				if (enabled && ambientTemperature < compProperties_HeatPusher.heatPushMaxTemperature)
 				{
-					return ambientTemperature > props.heatPushMinTemperature;
+					return ambientTemperature > compProperties_HeatPusher.heatPushMinTemperature;
 				}
 				return false;
 			}
@@ -38,8 +40,14 @@ namespace Verse
 			base.CompTickRare();
 			if (ShouldPushHeatNow)
 			{
-				GenTemperature.PushHeat(parent.PositionHeld, parent.MapHeld, Props.heatPerSecond * 4.16666651f);
+				GenTemperature.PushHeat(parent.PositionHeld, parent.MapHeld, Props.heatPerSecond * 4.1666665f);
 			}
+		}
+
+		public override void PostExposeData()
+		{
+			base.PostExposeData();
+			Scribe_Values.Look(ref enabled, "enabled", defaultValue: true);
 		}
 	}
 }

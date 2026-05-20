@@ -1,20 +1,24 @@
 using System;
 using System.Collections.Generic;
+using LudeonTK;
 
 namespace Verse
 {
 	public static class DebugTools_MapGen
 	{
-		public static List<DebugMenuOption> Options_Scatterers()
+		public static List<DebugActionNode> Options_Scatterers()
 		{
-			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			List<DebugActionNode> list = new List<DebugActionNode>();
 			foreach (Type item in typeof(GenStep_Scatterer).AllLeafSubclasses())
 			{
 				Type localSt = item;
-				list.Add(new DebugMenuOption(localSt.ToString(), DebugMenuOptionMode.Tool, delegate
+				list.Add(new DebugActionNode(localSt.ToString(), DebugActionType.ToolMap)
 				{
-					((GenStep_Scatterer)Activator.CreateInstance(localSt)).ForceScatterAt(UI.MouseCell(), Find.CurrentMap);
-				}));
+					action = delegate
+					{
+						((GenStep_Scatterer)Activator.CreateInstance(localSt)).ForceScatterAt(UI.MouseCell(), Find.CurrentMap);
+					}
+				});
 			}
 			return list;
 		}

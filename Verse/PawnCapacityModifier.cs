@@ -1,4 +1,5 @@
 using RimWorld;
+using UnityEngine;
 
 namespace Verse
 {
@@ -12,6 +13,8 @@ namespace Verse
 
 		public float postFactor = 1f;
 
+		public StatDef statFactorMod;
+
 		public SimpleCurve setMaxCurveOverride;
 
 		public StatDef setMaxCurveEvaluateStat;
@@ -20,7 +23,7 @@ namespace Verse
 		{
 			get
 			{
-				if (setMax == 999f)
+				if (Mathf.Approximately(setMax, 999f))
 				{
 					if (setMaxCurveOverride != null)
 					{

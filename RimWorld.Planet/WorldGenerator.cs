@@ -7,9 +7,9 @@ namespace RimWorld.Planet
 {
 	public static class WorldGenerator
 	{
-		private static List<WorldGenStepDef> tmpGenSteps = new List<WorldGenStepDef>();
-
 		public const float DefaultPlanetCoverage = 0.3f;
+
+		public const float DefaultPlanetCoverageOdyssey = 0.5f;
 
 		public const OverallRainfall DefaultOverallRainfall = OverallRainfall.Normal;
 
@@ -17,47 +17,59 @@ namespace RimWorld.Planet
 
 		public const OverallTemperature DefaultOverallTemperature = OverallTemperature.Normal;
 
-		public static IEnumerable<WorldGenStepDef> GenStepsInOrder => from x in DefDatabase<WorldGenStepDef>.AllDefs
-			orderby x.order, x.index
-			select x;
+		public const LandmarkDensity DefaultLandmarkDensity = LandmarkDensity.Normal;
 
-		public static World GenerateWorld(float planetCoverage, string seedString, OverallRainfall overallRainfall, OverallTemperature overallTemperature, OverallPopulation population)
+		public const float DefaultPollutionCoverage = 0.05f;
+
+		private static List<GameSetupStepDef> cachedGenSteps;
+
+		private static List<GameSetupStepDef> GameSetupStepsInOrder => cachedGenSteps ?? (cachedGenSteps = (from x in DefDatabase<GameSetupStepDef>.AllDefs
+			orderby x.order, x.index
+			select x).ToList());
+
+		public static World GenerateWorld(float planetCoverage, string seedString, OverallRainfall overallRainfall, OverallTemperature overallTemperature, OverallPopulation population, LandmarkDensity landmarkDensity, List<FactionDef> factions = null, float pollution = 0f)
 		{
 			DeepProfiler.Start("GenerateWorld");
 			Rand.PushState();
 			int seed = (Rand.Seed = GetSeedFromSeedString(seedString));
 			try
 			{
-				Current.CreatingWorld = new World();
-				Current.CreatingWorld.info.seedString = seedString;
-				Current.CreatingWorld.info.planetCoverage = planetCoverage;
-				Current.CreatingWorld.info.overallRainfall = overallRainfall;
-				Current.CreatingWorld.info.overallTemperature = overallTemperature;
-				Current.CreatingWorld.info.overallPopulation = population;
-				Current.CreatingWorld.info.name = NameGenerator.GenerateName(RulePackDefOf.NamerWorld);
-				tmpGenSteps.Clear();
-				tmpGenSteps.AddRange(GenStepsInOrder);
-				for (int i = 0; i < tmpGenSteps.Count; i++)
+				Current.CreatingWorld = new World
 				{
-					DeepProfiler.Start("WorldGenStep - " + tmpGenSteps[i]);
-					try
+					info = 
 					{
-						Rand.Seed = Gen.HashCombineInt(seed, GetSeedPart(tmpGenSteps, i));
-						tmpGenSteps[i].worldGenStep.GenerateFresh(seedString);
+						seedString = seedString,
+						planetCoverage = planetCoverage,
+						overallRainfall = overallRainfall,
+						overallTemperature = overallTemperature,
+						overallPopulation = population,
+						landmarkDensity = landmarkDensity,
+						name = NameGenerator.GenerateName(RulePackDefOf.NamerWorld),
+						factions = factions,
+						pollution = pollution
 					}
-					catch (Exception arg)
+				};
+				foreach (GameSetupStepDef item in GameSetupStepsInOrder)
+				{
+					Rand.Seed = Gen.HashCombineInt(seed, item.setupStep.SeedPart);
+					item.setupStep.GenerateFresh();
+				}
+				foreach (var (_, planetLayer2) in Find.WorldGrid.PlanetLayers.OrderBy((KeyValuePair<int, PlanetLayer> x) => x.Key))
+				{
+					GeneratePlanetLayer(planetLayer2, seedString, seed);
+					if (planetLayer2.Tiles.Count == 0)
 					{
-						Log.Error("Error in WorldGenStep: " + arg);
-					}
-					finally
-					{
-						DeepProfiler.End();
+						Log.Warning($"No tiles on layer {planetLayer2}, layer should have a world gen step worker which initializes tiles such as WorldGenStep_Tiles");
 					}
 				}
 				Rand.Seed = seed;
 				Current.CreatingWorld.grid.StandardizeTileData();
-				Current.CreatingWorld.FinalizeInit();
+				Current.CreatingWorld.FinalizeInit(fromLoad: false);
 				Find.Scenario.PostWorldGenerate();
+				if (!ModsConfig.IdeologyActive)
+				{
+					Find.Scenario.PostIdeoChosen();
+				}
 				return Current.CreatingWorld;
 			}
 			finally
@@ -68,22 +80,54 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public static void GenerateWithoutWorldData(string seedString)
+		public static void GeneratePlanetLayer(PlanetLayer layer, string seedString, int seed)
 		{
-			int seedFromSeedString = GetSeedFromSeedString(seedString);
-			tmpGenSteps.Clear();
-			tmpGenSteps.AddRange(GenStepsInOrder);
-			Rand.PushState();
-			for (int i = 0; i < tmpGenSteps.Count; i++)
+			List<WorldGenStepDef> genStepsInOrder = layer.Def.GenStepsInOrder;
+			DeepProfiler.Start($"WorldGen - {layer}");
+			for (int i = 0; i < genStepsInOrder.Count; i++)
 			{
+				DeepProfiler.Start($"WorldGenStep - {genStepsInOrder[i]}");
 				try
 				{
-					Rand.Seed = Gen.HashCombineInt(seedFromSeedString, GetSeedPart(tmpGenSteps, i));
-					tmpGenSteps[i].worldGenStep.GenerateWithoutWorldData(seedString);
+					Rand.Seed = Gen.HashCombineInt(seed, GetSeedPart(genStepsInOrder, i));
+					genStepsInOrder[i].worldGenStep.GenerateFresh(seedString, layer);
 				}
 				catch (Exception arg)
 				{
-					Log.Error("Error in WorldGenStep: " + arg);
+					Log.Error($"Error in WorldGenStep: {arg}");
+				}
+				finally
+				{
+					DeepProfiler.End();
+				}
+			}
+		}
+
+		public static void GenerateWithoutWorldData(string seedString)
+		{
+			int seedFromSeedString = GetSeedFromSeedString(seedString);
+			Rand.PushState();
+			foreach (GameSetupStepDef item in GameSetupStepsInOrder)
+			{
+				Rand.Seed = Gen.HashCombineInt(seedFromSeedString, item.setupStep.SeedPart);
+				item.setupStep.GenerateWithoutWorldData();
+			}
+			foreach (KeyValuePair<int, PlanetLayer> item2 in Find.WorldGrid.PlanetLayers.OrderBy((KeyValuePair<int, PlanetLayer> x) => x.Key))
+			{
+				item2.Deconstruct(out var _, out var value);
+				PlanetLayer planetLayer = value;
+				List<WorldGenStepDef> genStepsInOrder = planetLayer.Def.GenStepsInOrder;
+				for (int num = 0; num < genStepsInOrder.Count; num++)
+				{
+					try
+					{
+						Rand.Seed = Gen.HashCombineInt(seedFromSeedString, GetSeedPart(genStepsInOrder, num));
+						genStepsInOrder[num].worldGenStep.GenerateWithoutWorldData(seedString, planetLayer);
+					}
+					catch (Exception arg)
+					{
+						Log.Error($"Error in WorldGenStep: {arg}");
+					}
 				}
 			}
 			Rand.PopState();
@@ -92,19 +136,28 @@ namespace RimWorld.Planet
 		public static void GenerateFromScribe(string seedString)
 		{
 			int seedFromSeedString = GetSeedFromSeedString(seedString);
-			tmpGenSteps.Clear();
-			tmpGenSteps.AddRange(GenStepsInOrder);
 			Rand.PushState();
-			for (int i = 0; i < tmpGenSteps.Count; i++)
+			foreach (GameSetupStepDef item in GameSetupStepsInOrder)
 			{
-				try
+				Rand.Seed = Gen.HashCombineInt(seedFromSeedString, item.setupStep.SeedPart);
+				item.setupStep.GenerateFromScribe();
+			}
+			foreach (KeyValuePair<int, PlanetLayer> item2 in Find.WorldGrid.PlanetLayers.OrderBy((KeyValuePair<int, PlanetLayer> x) => x.Key))
+			{
+				item2.Deconstruct(out var _, out var value);
+				PlanetLayer planetLayer = value;
+				List<WorldGenStepDef> genStepsInOrder = planetLayer.Def.GenStepsInOrder;
+				for (int num = 0; num < genStepsInOrder.Count; num++)
 				{
-					Rand.Seed = Gen.HashCombineInt(seedFromSeedString, GetSeedPart(tmpGenSteps, i));
-					tmpGenSteps[i].worldGenStep.GenerateFromScribe(seedString);
-				}
-				catch (Exception arg)
-				{
-					Log.Error("Error in WorldGenStep: " + arg);
+					try
+					{
+						Rand.Seed = Gen.HashCombineInt(seedFromSeedString, GetSeedPart(genStepsInOrder, num));
+						genStepsInOrder[num].worldGenStep.GenerateFromScribe(seedString, planetLayer);
+					}
+					catch (Exception arg)
+					{
+						Log.Error($"Error in WorldGenStep: {arg}");
+					}
 				}
 			}
 			Rand.PopState();
@@ -116,7 +169,7 @@ namespace RimWorld.Planet
 			int num = 0;
 			for (int i = 0; i < index; i++)
 			{
-				if (tmpGenSteps[i].worldGenStep.SeedPart == seedPart)
+				if (genSteps[i].worldGenStep.SeedPart == seedPart)
 				{
 					num++;
 				}

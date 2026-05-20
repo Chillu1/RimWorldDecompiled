@@ -34,23 +34,42 @@ namespace RimWorld
 		public override void Notify_QuestSignalReceived(Signal signal)
 		{
 			base.Notify_QuestSignalReceived(signal);
-			if (signal.tag == inSignal && (targetWorld || mapParent != null) && gameCondition != null)
+			if (!(signal.tag == inSignal) || (!targetWorld && mapParent == null) || gameCondition == null)
 			{
-				gameCondition.quest = quest;
-				if (targetWorld)
-				{
-					Find.World.gameConditionManager.RegisterCondition(gameCondition);
-				}
-				else
-				{
-					mapParent.Map.gameConditionManager.RegisterCondition(gameCondition);
-				}
-				if (sendStandardLetter)
-				{
-					Find.LetterStack.ReceiveLetter(gameCondition.LabelCap, gameCondition.LetterText, gameCondition.def.letterDef, LookTargets.Invalid, null, quest);
-				}
-				gameCondition = null;
+				return;
 			}
+			gameCondition.quest = quest;
+			if (targetWorld)
+			{
+				Find.World.gameConditionManager.RegisterCondition(gameCondition);
+			}
+			else
+			{
+				Map map = mapParent.Map ?? quest.TryFindNewSuitableMapParentForRetarget()?.Map ?? Find.AnyPlayerHomeMap;
+				if (!gameCondition.CanApplyOnMap(map))
+				{
+					bool flag = false;
+					foreach (Map playerHomeMap in Current.Game.PlayerHomeMaps)
+					{
+						if (gameCondition.CanApplyOnMap(playerHomeMap))
+						{
+							map = playerHomeMap;
+							flag = true;
+							break;
+						}
+					}
+					if (!flag)
+					{
+						return;
+					}
+				}
+				map.gameConditionManager.RegisterCondition(gameCondition);
+			}
+			if (sendStandardLetter)
+			{
+				Find.LetterStack.ReceiveLetter(gameCondition.LabelCap, gameCondition.LetterText, gameCondition.def.letterDef, LookTargets.Invalid, null, quest);
+			}
+			gameCondition = null;
 		}
 
 		public override void ExposeData()

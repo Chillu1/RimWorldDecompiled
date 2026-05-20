@@ -23,10 +23,15 @@ namespace RimWorld
 
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
 		{
-			if (!pawn.Reserve(job.GetTarget(TargetIndex.B), job, 1, -1, null, errorOnFailed))
+			if (!HasChair || !Toils_Ingest.TryFindFreeSittingSpotOnThing(job.GetTarget(TargetIndex.B).Thing, pawn, out var cell))
+			{
+				cell = job.GetTarget(TargetIndex.B).Cell;
+			}
+			if (!pawn.ReserveSittableOrSpot(cell, pawn.CurJob))
 			{
 				return false;
 			}
+			job.SetTarget(TargetIndex.B, cell);
 			if (HasDrink && !pawn.Reserve(job.GetTarget(TargetIndex.C), job, 1, -1, null, errorOnFailed))
 			{
 				return false;
@@ -48,12 +53,12 @@ namespace RimWorld
 				yield return Toils_Haul.StartCarryThing(TargetIndex.C);
 			}
 			yield return Toils_Goto.GotoCell(TargetIndex.B, PathEndMode.OnCell);
-			Toil toil = new Toil();
-			toil.tickAction = delegate
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
+			toil.tickIntervalAction = delegate(int delta)
 			{
 				pawn.rotationTracker.FaceCell(ClosestGatherSpotParentCell);
-				pawn.GainComfortFromCellIfPossible();
-				JoyUtility.JoyTickCheckEnd(pawn, JoyTickFullJoyAction.GoToNextToil);
+				pawn.GainComfortFromCellIfPossible(delta);
+				JoyUtility.JoyTickCheckEnd(pawn, delta, JoyTickFullJoyAction.GoToNextToil);
 			};
 			toil.handlingFacing = true;
 			toil.defaultCompleteMode = ToilCompleteMode.Delay;
@@ -71,10 +76,10 @@ namespace RimWorld
 			}
 		}
 
-		public override bool ModifyCarriedThingDrawPos(ref Vector3 drawPos, ref bool behind, ref bool flip)
+		public override bool ModifyCarriedThingDrawPos(ref Vector3 drawPos, ref bool flip)
 		{
 			IntVec3 closestGatherSpotParentCell = ClosestGatherSpotParentCell;
-			return JobDriver_Ingest.ModifyCarriedThingDrawPosWorker(ref drawPos, ref behind, ref flip, closestGatherSpotParentCell, pawn);
+			return JobDriver_Ingest.ModifyCarriedThingDrawPosWorker(ref drawPos, ref flip, closestGatherSpotParentCell, pawn);
 		}
 	}
 }

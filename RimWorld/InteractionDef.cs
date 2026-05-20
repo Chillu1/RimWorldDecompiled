@@ -30,6 +30,8 @@ namespace RimWorld
 		[NoTranslate]
 		private string symbol;
 
+		public InteractionSymbolSource symbolSource;
+
 		public RulePack logRulesInitiator;
 
 		public RulePack logRulesRecipient;
@@ -53,7 +55,7 @@ namespace RimWorld
 			}
 		}
 
-		public Texture2D Symbol
+		private Texture2D Symbol
 		{
 			get
 			{
@@ -63,6 +65,32 @@ namespace RimWorld
 				}
 				return symbolTex;
 			}
+		}
+
+		public Texture2D GetSymbol(Faction initiatorFaction = null, Ideo initatorIdeo = null)
+		{
+			switch (symbolSource)
+			{
+			case InteractionSymbolSource.InitiatorIdeo:
+				if (Find.IdeoManager.classicMode)
+				{
+					return Symbol;
+				}
+				return initatorIdeo?.Icon;
+			case InteractionSymbolSource.InitiatorFaction:
+				return initiatorFaction?.def.FactionIcon;
+			default:
+				return Symbol;
+			}
+		}
+
+		public Color? GetSymbolColor(Faction initiatorFaction = null)
+		{
+			if (initiatorFaction != null && symbolSource == InteractionSymbolSource.InitiatorFaction)
+			{
+				return initiatorFaction.Color;
+			}
+			return null;
 		}
 
 		public override void ResolveReferences()

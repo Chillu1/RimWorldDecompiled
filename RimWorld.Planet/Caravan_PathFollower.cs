@@ -13,21 +13,21 @@ namespace RimWorld.Planet
 
 		private bool paused;
 
-		public int nextTile = -1;
+		public PlanetTile nextTile = PlanetTile.Invalid;
 
-		public int previousTileForDrawingIfInDoubt = -1;
+		public PlanetTile previousTileForDrawingIfInDoubt = PlanetTile.Invalid;
 
 		public float nextTileCostLeft;
 
 		public float nextTileCostTotal = 1f;
 
-		private int destTile;
+		private PlanetTile destTile;
 
 		private CaravanArrivalAction arrivalAction;
 
 		public WorldPath curPath;
 
-		public int lastPathedTargetTile;
+		public PlanetTile lastPathedTargetTile;
 
 		public const int MaxMoveTicks = 30000;
 
@@ -41,7 +41,7 @@ namespace RimWorld.Planet
 
 		public const int FinalNoRestPushMaxDurationTicks = 10000;
 
-		public int Destination => destTile;
+		public PlanetTile Destination => destTile;
 
 		public bool Moving
 		{
@@ -119,19 +119,19 @@ namespace RimWorld.Planet
 		{
 			Scribe_Values.Look(ref moving, "moving", defaultValue: true);
 			Scribe_Values.Look(ref paused, "paused", defaultValue: false);
-			Scribe_Values.Look(ref nextTile, "nextTile", 0);
-			Scribe_Values.Look(ref previousTileForDrawingIfInDoubt, "previousTileForDrawingIfInDoubt", 0);
+			Scribe_Values.Look(ref nextTile, "nextTile");
+			Scribe_Values.Look(ref previousTileForDrawingIfInDoubt, "previousTileForDrawingIfInDoubt");
 			Scribe_Values.Look(ref nextTileCostLeft, "nextTileCostLeft", 0f);
 			Scribe_Values.Look(ref nextTileCostTotal, "nextTileCostTotal", 0f);
-			Scribe_Values.Look(ref destTile, "destTile", 0);
+			Scribe_Values.Look(ref destTile, "destTile");
 			Scribe_Deep.Look(ref arrivalAction, "arrivalAction");
-			if (Scribe.mode == LoadSaveMode.PostLoadInit && Current.ProgramState != 0 && moving && !StartPath(destTile, arrivalAction, repathImmediately: true, resetPauseStatus: false))
+			if (Scribe.mode == LoadSaveMode.PostLoadInit && Current.ProgramState != ProgramState.Entry && moving && !StartPath(destTile, arrivalAction, repathImmediately: true, resetPauseStatus: false))
 			{
 				StopDead();
 			}
 		}
 
-		public bool StartPath(int destTile, CaravanArrivalAction arrivalAction, bool repathImmediately = false, bool resetPauseStatus = true)
+		public bool StartPath(PlanetTile destTile, CaravanArrivalAction arrivalAction, bool repathImmediately = false, bool resetPauseStatus = true)
 		{
 			caravan.autoJoinable = false;
 			if (resetPauseStatus)
@@ -159,11 +159,11 @@ namespace RimWorld.Planet
 			this.destTile = destTile;
 			this.arrivalAction = arrivalAction;
 			caravan.Notify_DestinationOrPauseStatusChanged();
-			if (nextTile < 0 || !IsNextTilePassable())
+			if (!nextTile.Valid || !IsNextTilePassable())
 			{
 				nextTile = caravan.Tile;
 				nextTileCostLeft = 0f;
-				previousTileForDrawingIfInDoubt = -1;
+				previousTileForDrawingIfInDoubt = PlanetTile.Invalid;
 			}
 			if (AtDestinationPosition())
 			{
@@ -193,13 +193,13 @@ namespace RimWorld.Planet
 			moving = false;
 			paused = false;
 			nextTile = caravan.Tile;
-			previousTileForDrawingIfInDoubt = -1;
+			previousTileForDrawingIfInDoubt = PlanetTile.Invalid;
 			arrivalAction = null;
 			nextTileCostLeft = 0f;
 			caravan.Notify_DestinationOrPauseStatusChanged();
 		}
 
-		public void PatherTick()
+		public void PatherTickInterval(int delta)
 		{
 			if (moving && arrivalAction != null && !arrivalAction.StillValid(caravan, Destination))
 			{
@@ -211,7 +211,7 @@ namespace RimWorld.Planet
 			{
 				if (nextTileCostLeft > 0f)
 				{
-					nextTileCostLeft -= CostToPayThisTick();
+					nextTileCostLeft -= CostToPayThisTick() * (float)delta;
 				}
 				else if (moving)
 				{
@@ -225,7 +225,7 @@ namespace RimWorld.Planet
 			StopDead();
 		}
 
-		private bool IsPassable(int tile)
+		private bool IsPassable(PlanetTile tile)
 		{
 			return !Find.World.Impassable(tile);
 		}
@@ -237,14 +237,14 @@ namespace RimWorld.Planet
 
 		private bool TryRecoverFromUnwalkablePosition()
 		{
-			if (GenWorldClosest.TryFindClosestTile(caravan.Tile, (int t) => IsPassable(t), out var foundTile))
+			if (GenWorldClosest.TryFindClosestTile(caravan.Tile, (PlanetTile t) => IsPassable(t), out var foundTile))
 			{
-				Log.Warning(string.Concat(caravan, " on unwalkable tile ", caravan.Tile, ". Teleporting to ", foundTile));
+				Log.Warning(caravan?.ToString() + " on unwalkable tile " + caravan.Tile.ToString() + ". Teleporting to " + foundTile);
 				caravan.Tile = foundTile;
 				caravan.Notify_Teleported();
 				return true;
 			}
-			Log.Error(string.Concat(caravan, " on unwalkable tile ", caravan.Tile, ". Could not find walkable position nearby. Removed."));
+			Log.Error(caravan?.ToString() + " on unwalkable tile " + caravan.Tile.ToString() + ". Could not find walkable position nearby. Removed.");
 			caravan.Destroy();
 			return false;
 		}
@@ -284,7 +284,7 @@ namespace RimWorld.Planet
 				}
 				else if (curPath.NodesLeftCount == 0)
 				{
-					Log.Error(string.Concat(caravan, " ran out of path nodes. Force-arriving."));
+					Log.Error(caravan?.ToString() + " ran out of path nodes. Force-arriving.");
 					PatherArrived();
 				}
 				else
@@ -298,32 +298,34 @@ namespace RimWorld.Planet
 		{
 			if (curPath.NodesLeftCount < 2)
 			{
-				Log.Error(string.Concat(caravan, " at ", caravan.Tile, " ran out of path nodes while pathing to ", destTile, "."));
+				Log.Error(caravan?.ToString() + " at " + caravan.Tile.ToString() + " ran out of path nodes while pathing to " + destTile.ToString() + ".");
 				PatherFailed();
-				return;
 			}
-			nextTile = curPath.ConsumeNextNode();
-			previousTileForDrawingIfInDoubt = -1;
-			if (Find.World.Impassable(nextTile))
+			else
 			{
-				Log.Error(string.Concat(caravan, " entering ", nextTile, " which is unwalkable."));
+				nextTile = curPath.ConsumeNextNode();
+				previousTileForDrawingIfInDoubt = PlanetTile.Invalid;
+				if (Find.World.Impassable(nextTile))
+				{
+					Log.Error(caravan?.ToString() + " entering " + nextTile.ToString() + " which is unwalkable.");
+				}
+				int num = CostToMove(caravan.Tile, nextTile);
+				nextTileCostTotal = num;
+				nextTileCostLeft = num;
 			}
-			int num = CostToMove(caravan.Tile, nextTile);
-			nextTileCostTotal = num;
-			nextTileCostLeft = num;
 		}
 
-		private int CostToMove(int start, int end)
+		private int CostToMove(PlanetTile start, PlanetTile end)
 		{
 			return CostToMove(caravan, start, end);
 		}
 
-		public static int CostToMove(Caravan caravan, int start, int end, int? ticksAbs = null)
+		public static int CostToMove(Caravan caravan, PlanetTile start, PlanetTile end, int? ticksAbs = null)
 		{
-			return CostToMove(caravan.TicksPerMove, start, end, ticksAbs);
+			return CostToMove(caravan.TicksPerMove, start, end, ticksAbs, perceivedStatic: false, null, null, caravan.ImmobilizedByMass);
 		}
 
-		public static int CostToMove(int caravanTicksPerMove, int start, int end, int? ticksAbs = null, bool perceivedStatic = false, StringBuilder explanation = null, string caravanTicksPerMoveExplanation = null)
+		public static int CostToMove(int caravanTicksPerMove, PlanetTile start, PlanetTile end, int? ticksAbs = null, bool perceivedStatic = false, StringBuilder explanation = null, string caravanTicksPerMoveExplanation = null, bool immobile = false)
 		{
 			if (start == end)
 			{
@@ -337,7 +339,7 @@ namespace RimWorld.Planet
 			StringBuilder stringBuilder = ((explanation != null) ? new StringBuilder() : null);
 			float num = ((!perceivedStatic || explanation != null) ? WorldPathGrid.CalculatedMovementDifficultyAt(end, perceivedStatic, ticksAbs, stringBuilder) : Find.WorldPathGrid.PerceivedMovementDifficultyAt(end));
 			float roadMovementDifficultyMultiplier = Find.WorldGrid.GetRoadMovementDifficultyMultiplier(start, end, stringBuilder);
-			if (explanation != null)
+			if (explanation != null && !immobile)
 			{
 				explanation.AppendLine();
 				explanation.Append("TileMovementDifficulty".Translate() + ":");
@@ -351,16 +353,23 @@ namespace RimWorld.Planet
 			if (explanation != null)
 			{
 				explanation.AppendLine();
-				explanation.AppendLine();
-				explanation.Append("FinalCaravanMovementSpeed".Translate() + ":");
-				int num2 = Mathf.CeilToInt((float)value / 1f);
-				explanation.AppendLine();
-				explanation.Append("  " + (60000f / (float)caravanTicksPerMove).ToString("0.#") + " / " + (num * roadMovementDifficultyMultiplier).ToString("0.#") + " = " + (60000f / (float)num2).ToString("0.#") + " " + "TilesPerDay".Translate());
+				if (immobile)
+				{
+					explanation.Append("EncumberedCaravanTilesPerDayTip".Translate());
+				}
+				else
+				{
+					explanation.AppendLine();
+					explanation.Append("FinalCaravanMovementSpeed".Translate() + ":");
+					int num2 = Mathf.CeilToInt((float)value / 1f);
+					explanation.AppendLine();
+					explanation.Append("  " + (60000f / (float)caravanTicksPerMove).ToString("0.#") + " / " + (num * roadMovementDifficultyMultiplier).ToString("0.#") + " = " + (60000f / (float)num2).ToString("0.#") + " " + "TilesPerDay".Translate());
+				}
 			}
 			return value;
 		}
 
-		public static bool IsValidFinalPushDestination(int tile)
+		public static bool IsValidFinalPushDestination(PlanetTile tile)
 		{
 			List<WorldObject> allWorldObjects = Find.WorldObjects.AllWorldObjects;
 			for (int i = 0; i < allWorldObjects.Count; i++)
@@ -405,10 +414,10 @@ namespace RimWorld.Planet
 
 		private WorldPath GenerateNewPath()
 		{
-			int num = ((moving && nextTile >= 0 && IsNextTilePassable()) ? nextTile : caravan.Tile);
+			PlanetTile planetTile = ((moving && nextTile.Valid && IsNextTilePassable()) ? nextTile : caravan.Tile);
 			lastPathedTargetTile = destTile;
-			WorldPath worldPath = Find.WorldPathFinder.FindPath(num, destTile, caravan);
-			if (worldPath.Found && num != caravan.Tile)
+			WorldPath worldPath = planetTile.Layer.Pather.FindPath(planetTile, destTile, caravan);
+			if (worldPath.Found && planetTile != caravan.Tile)
 			{
 				if (worldPath.NodesLeftCount >= 2 && worldPath.Peek(1) == caravan.Tile)
 				{
@@ -445,7 +454,7 @@ namespace RimWorld.Planet
 			}
 			for (int i = 0; i < 20 && i < curPath.NodesLeftCount; i++)
 			{
-				int tileID = curPath.Peek(i);
+				PlanetTile tileID = curPath.Peek(i);
 				if (Find.World.Impassable(tileID))
 				{
 					return true;

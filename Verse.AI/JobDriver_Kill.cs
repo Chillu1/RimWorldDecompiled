@@ -15,7 +15,7 @@ namespace Verse.AI
 		{
 			this.EndOnDespawnedOrNull(TargetIndex.A, JobCondition.Succeeded);
 			yield return Toils_Combat.TrySetJobToUseAttackVerb(TargetIndex.A);
-			Toil gotoCastPos = Toils_Combat.GotoCastPosition(TargetIndex.A, closeIfDowned: false, 0.95f);
+			Toil gotoCastPos = Toils_Combat.GotoCastPosition(TargetIndex.A, TargetIndex.None, closeIfDowned: false, 0.95f);
 			yield return gotoCastPos;
 			Toil jumpIfCannotHit = Toils_Jump.JumpIfTargetNotHittable(TargetIndex.A, gotoCastPos);
 			yield return jumpIfCannotHit;

@@ -7,21 +7,22 @@ namespace Verse
 	{
 		public Type workerClass;
 
+		public bool avoidViewingArtIfUnowned;
+
 		private List<RoomStatDef> relatedStats;
 
-		[Unsaved(false)]
 		private RoomRoleWorker workerInt;
 
-		public RoomRoleWorker Worker
+		public RoomRoleWorker Worker => workerInt ?? (workerInt = (RoomRoleWorker)Activator.CreateInstance(workerClass));
+
+		public string PostProcessedLabel(Room room)
 		{
-			get
-			{
-				if (workerInt == null)
-				{
-					workerInt = (RoomRoleWorker)Activator.CreateInstance(workerClass);
-				}
-				return workerInt;
-			}
+			return Worker.PostProcessedLabel(label, room);
+		}
+
+		public string PostProcessedLabelCap(Room room)
+		{
+			return PostProcessedLabel(room).CapitalizeFirst();
 		}
 
 		public bool IsStatRelated(RoomStatDef def)

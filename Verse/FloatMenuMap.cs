@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
@@ -25,8 +24,7 @@ namespace Verse
 
 		public override void DoWindowContents(Rect inRect)
 		{
-			Pawn selPawn = Find.Selector.SingleSelectedThing as Pawn;
-			if (selPawn == null)
+			if (!Find.Selector.AnyPawnSelected)
 			{
 				Find.WindowStack.TryRemove(this);
 				return;
@@ -34,7 +32,7 @@ namespace Verse
 			bool flag = options.Count >= 3;
 			if (Time.frameCount % 4 == 0 || lastOptionsForRevalidation == null)
 			{
-				lastOptionsForRevalidation = FloatMenuMakerMap.ChoicesAtFor(clickPos, selPawn);
+				lastOptionsForRevalidation = FloatMenuMakerMap.GetOptions(Find.Selector.SelectedPawns, clickPos, out var _);
 				cachedChoices.Clear();
 				cachedChoices.Add(clickPos, lastOptionsForRevalidation);
 				if (!flag)
@@ -65,20 +63,14 @@ namespace Verse
 			base.DoWindowContents(inRect);
 			void RevalidateOption(FloatMenuOption option)
 			{
-				if (!option.Disabled && !StillValid(option, lastOptionsForRevalidation, selPawn))
+				if (!option.Disabled && !StillValid(option, lastOptionsForRevalidation))
 				{
 					option.Disabled = true;
 				}
 			}
 		}
 
-		[Obsolete("Only need this overload to not break mod compatibility.")]
-		private static bool StillValid(FloatMenuOption opt, List<FloatMenuOption> curOpts, Pawn forPawn, ref List<FloatMenuOption> cachedChoices, ref Vector3 cachedChoicesForPos)
-		{
-			return StillValid(opt, curOpts, forPawn);
-		}
-
-		private static bool StillValid(FloatMenuOption opt, List<FloatMenuOption> curOpts, Pawn forPawn)
+		private static bool StillValid(FloatMenuOption opt, List<FloatMenuOption> curOpts)
 		{
 			if (opt.revalidateClickTarget == null)
 			{
@@ -92,14 +84,15 @@ namespace Verse
 			}
 			else
 			{
-				if (!opt.revalidateClickTarget.Spawned)
+				if (!opt.targetsDespawned && !opt.revalidateClickTarget.Spawned)
 				{
 					return false;
 				}
-				Vector3 key = opt.revalidateClickTarget.Position.ToVector3Shifted();
+				Vector3 key = opt.revalidateClickTarget.PositionHeld.ToVector3Shifted();
 				if (!cachedChoices.TryGetValue(key, out var value))
 				{
-					List<FloatMenuOption> list = FloatMenuMakerMap.ChoicesAtFor(key, forPawn);
+					FloatMenuContext context;
+					List<FloatMenuOption> list = FloatMenuMakerMap.GetOptions(Find.Selector.SelectedPawns, key, out context);
 					cachedChoices.Add(key, list);
 					value = list;
 				}
@@ -117,8 +110,7 @@ namespace Verse
 		public override void PreOptionChosen(FloatMenuOption opt)
 		{
 			base.PreOptionChosen(opt);
-			Pawn pawn = Find.Selector.SingleSelectedThing as Pawn;
-			if (!opt.Disabled && (pawn == null || !StillValid(opt, FloatMenuMakerMap.ChoicesAtFor(clickPos, pawn), pawn)))
+			if (!opt.Disabled && !StillValid(opt, FloatMenuMakerMap.GetOptions(Find.Selector.SelectedPawns, clickPos, out var _)))
 			{
 				opt.Disabled = true;
 			}

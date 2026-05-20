@@ -13,6 +13,12 @@ namespace RimWorld
 
 		public static BodyTypeDef Fat;
 
+		[MayRequireBiotech]
+		public static BodyTypeDef Baby;
+
+		[MayRequireBiotech]
+		public static BodyTypeDef Child;
+
 		static BodyTypeDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(BodyTypeDefOf));

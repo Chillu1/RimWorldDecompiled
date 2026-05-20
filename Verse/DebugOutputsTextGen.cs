@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
+using LudeonTK;
 using RimWorld;
+using Verse.Grammar;
 
 namespace Verse
 {
@@ -15,49 +19,35 @@ namespace Verse
 			IEnumerable<ManeuverDef> maneuvers = DefDatabase<ManeuverDef>.AllDefsListForReading;
 			Func<ManeuverDef, RulePackDef>[] results = new Func<ManeuverDef, RulePackDef>[5]
 			{
-				(ManeuverDef m) => new RulePackDef[4]
-				{
-					m.combatLogRulesHit,
-					m.combatLogRulesDeflect,
-					m.combatLogRulesMiss,
-					m.combatLogRulesDodge
-				}.RandomElement(),
+				(ManeuverDef m) => new RulePackDef[4] { m.combatLogRulesHit, m.combatLogRulesDeflect, m.combatLogRulesMiss, m.combatLogRulesDodge }.RandomElement(),
 				(ManeuverDef m) => m.combatLogRulesHit,
 				(ManeuverDef m) => m.combatLogRulesDeflect,
 				(ManeuverDef m) => m.combatLogRulesMiss,
 				(ManeuverDef m) => m.combatLogRulesDodge
 			};
-			string[] array = new string[5]
-			{
-				"(random)",
-				"Hit",
-				"Deflect",
-				"Miss",
-				"Dodge"
-			};
+			string[] array = new string[5] { "(random)", "Hit", "Deflect", "Miss", "Dodge" };
 			foreach (Pair<ManeuverDef, int> maneuverresult in maneuvers.Concat(null).Cross(Enumerable.Range(0, array.Length)))
 			{
 				DebugMenuOption item = new DebugMenuOption(string.Format("{0}/{1}", (maneuverresult.First == null) ? "(random)" : maneuverresult.First.defName, array[maneuverresult.Second]), DebugMenuOptionMode.Action, delegate
 				{
 					CreateDamagedDestroyedMenu(delegate(Action<List<BodyPartRecord>, List<bool>> bodyPartCreator)
 					{
-						StringBuilder stringBuilder7 = new StringBuilder();
-						ManeuverDef maneuver = default(ManeuverDef);
-						for (int num2 = 0; num2 < 100; num2++)
+						StringBuilder stringBuilder = new StringBuilder();
+						for (int i = 0; i < 100; i++)
 						{
-							maneuver = maneuverresult.First;
+							ManeuverDef maneuver = maneuverresult.First;
 							if (maneuver == null)
 							{
 								maneuver = maneuvers.RandomElement();
 							}
 							RulePackDef rulePackDef = results[maneuverresult.Second](maneuver);
-							List<BodyPartRecord> list8 = null;
-							List<bool> list9 = null;
+							List<BodyPartRecord> list2 = null;
+							List<bool> list3 = null;
 							if (rulePackDef == maneuver.combatLogRulesHit)
 							{
-								list8 = new List<BodyPartRecord>();
-								list9 = new List<bool>();
-								bodyPartCreator(list8, list9);
+								list2 = new List<BodyPartRecord>();
+								list3 = new List<bool>();
+								bodyPartCreator(list2, list3);
 							}
 							ImplementOwnerTypeDef implementOwnerTypeDef;
 							string toolLabel;
@@ -65,7 +55,7 @@ namespace Verse
 								where ttp.Second.capacities.Contains(maneuver.requiredCapacity)
 								select ttp).TryRandomElement(out var result))
 							{
-								Log.Warning(string.Concat("Melee weapon with tool with capacity ", maneuver.requiredCapacity, " not found."));
+								Log.Warning("Melee weapon with tool with capacity " + maneuver.requiredCapacity?.ToString() + " not found.");
 								implementOwnerTypeDef = ImplementOwnerTypeDefOf.Bodypart;
 								toolLabel = "(" + implementOwnerTypeDef.defName + ")";
 							}
@@ -75,99 +65,101 @@ namespace Verse
 								toolLabel = ((result.Second != null) ? result.Second.label : ("(" + implementOwnerTypeDef.defName + ")"));
 							}
 							BattleLogEntry_MeleeCombat battleLogEntry_MeleeCombat = new BattleLogEntry_MeleeCombat(rulePackDef, alwaysShowInCompact: false, RandomPawnForCombat(), RandomPawnForCombat(), implementOwnerTypeDef, toolLabel, result.First);
-							battleLogEntry_MeleeCombat.FillTargets(list8, list9, battleLogEntry_MeleeCombat.RuleDef.defName.Contains("Deflect"));
+							battleLogEntry_MeleeCombat.FillTargets(list2, list3, battleLogEntry_MeleeCombat.RuleDef.defName.Contains("Deflect"));
 							battleLogEntry_MeleeCombat.Debug_OverrideTicks(Rand.Int);
-							stringBuilder7.AppendLine(battleLogEntry_MeleeCombat.ToGameStringFromPOV(null));
+							stringBuilder.AppendLine(battleLogEntry_MeleeCombat.ToGameStringFromPOV(null));
 						}
-						Log.Message(stringBuilder7.ToString());
+						Log.Message(stringBuilder.ToString());
 					});
 				});
 				list.Add(item);
 			}
-			int rf;
-			for (rf = 0; rf < 2; rf++)
+			int rf = 0;
+			while (rf < 2)
 			{
 				list.Add(new DebugMenuOption((rf == 0) ? "Ranged fire singleshot" : "Ranged fire burst", DebugMenuOptionMode.Action, delegate
 				{
-					StringBuilder stringBuilder6 = new StringBuilder();
-					for (int num = 0; num < 100; num++)
+					StringBuilder stringBuilder = new StringBuilder();
+					for (int i = 0; i < 100; i++)
 					{
-						ThingDef thingDef = DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef td) => td.IsRangedWeapon && td.IsWeaponUsingProjectiles && !td.menuHidden).RandomElement();
+						ThingDef thingDef = DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef td) => td.IsRangedWeapon && td.IsWeaponUsingProjectiles && td.PlayerAcquirable).RandomElement();
 						bool flag = Rand.Value < 0.2f;
 						bool flag2 = !flag && Rand.Value < 0.95f;
 						BattleLogEntry_RangedFire battleLogEntry_RangedFire = new BattleLogEntry_RangedFire(RandomPawnForCombat(), flag ? null : RandomPawnForCombat(), flag2 ? null : thingDef, null, rf != 0);
 						battleLogEntry_RangedFire.Debug_OverrideTicks(Rand.Int);
-						stringBuilder6.AppendLine(battleLogEntry_RangedFire.ToGameStringFromPOV(null));
+						stringBuilder.AppendLine(battleLogEntry_RangedFire.ToGameStringFromPOV(null));
 					}
-					Log.Message(stringBuilder6.ToString());
+					Log.Message(stringBuilder.ToString());
 				}));
+				int num = rf + 1;
+				rf = num;
 			}
 			list.Add(new DebugMenuOption("Ranged impact hit", DebugMenuOptionMode.Action, delegate
 			{
 				CreateDamagedDestroyedMenu(delegate(Action<List<BodyPartRecord>, List<bool>> bodyPartCreator)
 				{
-					StringBuilder stringBuilder5 = new StringBuilder();
-					for (int n = 0; n < 100; n++)
+					StringBuilder stringBuilder = new StringBuilder();
+					for (int i = 0; i < 100; i++)
 					{
-						ThingDef weaponDef3 = DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef td) => td.IsRangedWeapon && td.IsWeaponUsingProjectiles && !td.menuHidden).RandomElement();
-						List<BodyPartRecord> list6 = new List<BodyPartRecord>();
-						List<bool> list7 = new List<bool>();
-						bodyPartCreator(list6, list7);
-						Pawn pawn2 = RandomPawnForCombat();
-						BattleLogEntry_RangedImpact battleLogEntry_RangedImpact3 = new BattleLogEntry_RangedImpact(RandomPawnForCombat(), pawn2, pawn2, weaponDef3, null, ThingDefOf.Wall);
-						battleLogEntry_RangedImpact3.FillTargets(list6, list7, Rand.Chance(0.5f));
-						battleLogEntry_RangedImpact3.Debug_OverrideTicks(Rand.Int);
-						stringBuilder5.AppendLine(battleLogEntry_RangedImpact3.ToGameStringFromPOV(null));
+						ThingDef weaponDef = DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef td) => td.IsRangedWeapon && td.IsWeaponUsingProjectiles && td.PlayerAcquirable).RandomElement();
+						List<BodyPartRecord> list2 = new List<BodyPartRecord>();
+						List<bool> list3 = new List<bool>();
+						bodyPartCreator(list2, list3);
+						Pawn pawn = RandomPawnForCombat();
+						BattleLogEntry_RangedImpact battleLogEntry_RangedImpact = new BattleLogEntry_RangedImpact(RandomPawnForCombat(), pawn, pawn, weaponDef, null, ThingDefOf.Wall);
+						battleLogEntry_RangedImpact.FillTargets(list2, list3, Rand.Chance(0.5f));
+						battleLogEntry_RangedImpact.Debug_OverrideTicks(Rand.Int);
+						stringBuilder.AppendLine(battleLogEntry_RangedImpact.ToGameStringFromPOV(null));
 					}
-					Log.Message(stringBuilder5.ToString());
+					Log.Message(stringBuilder.ToString());
 				});
 			}));
 			list.Add(new DebugMenuOption("Ranged impact miss", DebugMenuOptionMode.Action, delegate
 			{
-				StringBuilder stringBuilder4 = new StringBuilder();
-				for (int l = 0; l < 100; l++)
+				StringBuilder stringBuilder = new StringBuilder();
+				for (int i = 0; i < 100; i++)
 				{
-					ThingDef weaponDef2 = DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef td) => td.IsRangedWeapon && td.IsWeaponUsingProjectiles && !td.menuHidden).RandomElement();
-					BattleLogEntry_RangedImpact battleLogEntry_RangedImpact2 = new BattleLogEntry_RangedImpact(RandomPawnForCombat(), null, RandomPawnForCombat(), weaponDef2, null, ThingDefOf.Wall);
-					battleLogEntry_RangedImpact2.Debug_OverrideTicks(Rand.Int);
-					stringBuilder4.AppendLine(battleLogEntry_RangedImpact2.ToGameStringFromPOV(null));
+					ThingDef weaponDef = DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef td) => td.IsRangedWeapon && td.IsWeaponUsingProjectiles && td.PlayerAcquirable).RandomElement();
+					BattleLogEntry_RangedImpact battleLogEntry_RangedImpact = new BattleLogEntry_RangedImpact(RandomPawnForCombat(), null, RandomPawnForCombat(), weaponDef, null, ThingDefOf.Wall);
+					battleLogEntry_RangedImpact.Debug_OverrideTicks(Rand.Int);
+					stringBuilder.AppendLine(battleLogEntry_RangedImpact.ToGameStringFromPOV(null));
 				}
-				Log.Message(stringBuilder4.ToString());
+				Log.Message(stringBuilder.ToString());
 			}));
 			list.Add(new DebugMenuOption("Ranged impact hit incorrect", DebugMenuOptionMode.Action, delegate
 			{
 				CreateDamagedDestroyedMenu(delegate(Action<List<BodyPartRecord>, List<bool>> bodyPartCreator)
 				{
-					StringBuilder stringBuilder3 = new StringBuilder();
-					for (int k = 0; k < 100; k++)
+					StringBuilder stringBuilder = new StringBuilder();
+					for (int i = 0; i < 100; i++)
 					{
-						ThingDef weaponDef = DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef td) => td.IsRangedWeapon && td.IsWeaponUsingProjectiles && !td.menuHidden).RandomElement();
-						List<BodyPartRecord> list4 = new List<BodyPartRecord>();
-						List<bool> list5 = new List<bool>();
-						bodyPartCreator(list4, list5);
+						ThingDef weaponDef = DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef td) => td.IsRangedWeapon && td.IsWeaponUsingProjectiles && td.PlayerAcquirable).RandomElement();
+						List<BodyPartRecord> list2 = new List<BodyPartRecord>();
+						List<bool> list3 = new List<bool>();
+						bodyPartCreator(list2, list3);
 						BattleLogEntry_RangedImpact battleLogEntry_RangedImpact = new BattleLogEntry_RangedImpact(RandomPawnForCombat(), RandomPawnForCombat(), RandomPawnForCombat(), weaponDef, null, ThingDefOf.Wall);
-						battleLogEntry_RangedImpact.FillTargets(list4, list5, Rand.Chance(0.5f));
+						battleLogEntry_RangedImpact.FillTargets(list2, list3, Rand.Chance(0.5f));
 						battleLogEntry_RangedImpact.Debug_OverrideTicks(Rand.Int);
-						stringBuilder3.AppendLine(battleLogEntry_RangedImpact.ToGameStringFromPOV(null));
+						stringBuilder.AppendLine(battleLogEntry_RangedImpact.ToGameStringFromPOV(null));
 					}
-					Log.Message(stringBuilder3.ToString());
+					Log.Message(stringBuilder.ToString());
 				});
 			}));
 			foreach (RulePackDef transition in DefDatabase<RulePackDef>.AllDefsListForReading.Where((RulePackDef def) => def.defName.Contains("Transition") && !def.defName.Contains("Include")))
 			{
 				list.Add(new DebugMenuOption(transition.defName, DebugMenuOptionMode.Action, delegate
 				{
-					StringBuilder stringBuilder2 = new StringBuilder();
-					for (int j = 0; j < 100; j++)
+					StringBuilder stringBuilder = new StringBuilder();
+					for (int i = 0; i < 100; i++)
 					{
 						Pawn pawn = RandomPawnForCombat();
 						Pawn initiator = RandomPawnForCombat();
 						BodyPartRecord partRecord = pawn.health.hediffSet.GetNotMissingParts().RandomElement();
 						BattleLogEntry_StateTransition battleLogEntry_StateTransition = new BattleLogEntry_StateTransition(pawn, transition, initiator, HediffMaker.MakeHediff(DefDatabase<HediffDef>.AllDefsListForReading.RandomElement(), pawn, partRecord), pawn.RaceProps.body.AllParts.RandomElement());
 						battleLogEntry_StateTransition.Debug_OverrideTicks(Rand.Int);
-						stringBuilder2.AppendLine(battleLogEntry_StateTransition.ToGameStringFromPOV(null));
+						stringBuilder.AppendLine(battleLogEntry_StateTransition.ToGameStringFromPOV(null));
 					}
-					Log.Message(stringBuilder2.ToString());
+					Log.Message(stringBuilder.ToString());
 				}));
 			}
 			foreach (RulePackDef damageEvent in DefDatabase<RulePackDef>.AllDefsListForReading.Where((RulePackDef def) => def.defName.Contains("DamageEvent") && !def.defName.Contains("Include")))
@@ -194,6 +186,77 @@ namespace Verse
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}
 
+		[DebugOutput("Text generation", false)]
+		public static void CubeDescriptions()
+		{
+			if (ModsConfig.AnomalyActive)
+			{
+				List<Tale> list = new List<Tale>();
+				for (int i = 0; i < 10; i++)
+				{
+					list.Add(TaleFactory.MakeRandomTestTale());
+				}
+				List<(string, string)> list2 = new List<(string, string)>();
+				for (int j = 0; j < 40; j++)
+				{
+					TaleReference taleReference = new TaleReference(list[j % 10]);
+					TaggedString taggedString = taleReference.GenerateText(TextGenerationPurpose.ArtName, RulePackDefOf.NamerArtCubeSculpture);
+					TaggedString taggedString2 = taleReference.GenerateText(TextGenerationPurpose.ArtDescription, RulePackDefOf.ArtDescription_CubeSculpture);
+					list2.Add((taggedString, taggedString2));
+				}
+				DebugTables.MakeTablesDialog(list2, new TableDataGetter<(string, string)>("title", ((string title, string desc) g) => g.title), new TableDataGetter<(string, string)>("description", ((string title, string desc) g) => g.desc));
+			}
+		}
+
+		[DebugOutput("Text generation", false)]
+		public static void VoidSculptureDescriptions()
+		{
+			if (ModsConfig.AnomalyActive)
+			{
+				List<Tale> list = new List<Tale>();
+				for (int i = 0; i < 10; i++)
+				{
+					list.Add(TaleFactory.MakeRandomTestTale());
+				}
+				List<(string, string)> list2 = new List<(string, string)>();
+				for (int j = 0; j < 40; j++)
+				{
+					TaleReference taleReference = new TaleReference(list[j % 10]);
+					TaggedString taggedString = taleReference.GenerateText(TextGenerationPurpose.ArtName, RulePackDefOf.NamerArtVoidSculpture);
+					TaggedString taggedString2 = taleReference.GenerateText(TextGenerationPurpose.ArtDescription, RulePackDefOf.ArtDescription_VoidSculpture);
+					list2.Add((taggedString, taggedString2));
+				}
+				DebugTables.MakeTablesDialog(list2, new TableDataGetter<(string, string)>("title", ((string title, string desc) g) => g.title), new TableDataGetter<(string, string)>("description", ((string title, string desc) g) => g.desc));
+			}
+		}
+
+		[DebugOutput("Text generation", false)]
+		public static void Books()
+		{
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			foreach (ThingDef def in DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef x) => x.HasComp<CompBook>()).ToList())
+			{
+				list.Add(new DebugMenuOption(def.defName, DebugMenuOptionMode.Action, delegate
+				{
+					BookDefGenerated(def);
+				}));
+			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+		}
+
+		private static void BookDefGenerated(ThingDef def)
+		{
+			StringBuilder stringBuilder = new StringBuilder();
+			for (int i = 0; i < 30; i++)
+			{
+				Book book = BookUtility.MakeBook(def, ArtGenerationContext.Outsider);
+				stringBuilder.AppendLine(book.Label);
+				stringBuilder.AppendLine(book.FlavorUI);
+				stringBuilder.AppendLine();
+			}
+			Log.Message(stringBuilder.ToString());
+		}
+
 		public static Pawn RandomPawnForCombat()
 		{
 			PawnKindDef pawnKindDef = DefDatabase<PawnKindDef>.AllDefsListForReading.RandomElementByWeight(delegate(PawnKindDef pawnkind)
@@ -204,7 +267,7 @@ namespace Verse
 				}
 				return pawnkind.RaceProps.IsMechanoid ? 8f : 1f;
 			});
-			Faction faction = FactionUtility.DefaultFactionFrom(pawnKindDef.defaultFactionType);
+			Faction faction = FactionUtility.DefaultFactionFrom(pawnKindDef.defaultFactionDef);
 			return PawnGenerator.GeneratePawn(pawnKindDef, faction);
 		}
 
@@ -261,20 +324,15 @@ namespace Verse
 		[DebugOutput("Text generation", false)]
 		public static void NamesFromRulepack()
 		{
-			IEnumerable<RulePackDef> first = DefDatabase<FactionDef>.AllDefsListForReading.Select((FactionDef f) => f.factionNameMaker);
-			IEnumerable<RulePackDef> second = DefDatabase<FactionDef>.AllDefsListForReading.Select((FactionDef f) => f.settlementNameMaker);
-			IEnumerable<RulePackDef> second2 = DefDatabase<FactionDef>.AllDefsListForReading.Select((FactionDef f) => f.playerInitialSettlementNameMaker);
-			IEnumerable<RulePackDef> second3 = DefDatabase<FactionDef>.AllDefsListForReading.Select((FactionDef f) => f.pawnNameMaker);
-			IOrderedEnumerable<RulePackDef> orderedEnumerable = from d in (from d in Enumerable.Concat(second: DefDatabase<RulePackDef>.AllDefsListForReading.Where((RulePackDef d) => d.defName.Contains("Namer")), first: first.Concat(second).Concat(second2).Concat(second3))
-					where d != null
-					select d).Distinct()
+			IOrderedEnumerable<RulePackDef> orderedEnumerable = from d in DefDatabase<RulePackDef>.AllDefsListForReading
+				where d.directTestable || d.defName.StartsWith("Namer")
 				orderby d.defName
 				select d;
-			List<FloatMenuOption> list = new List<FloatMenuOption>();
-			foreach (RulePackDef item2 in orderedEnumerable)
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			foreach (RulePackDef item in orderedEnumerable)
 			{
-				RulePackDef localNamer = item2;
-				FloatMenuOption item = new FloatMenuOption(localNamer.defName, delegate
+				RulePackDef localNamer = item;
+				list.Add(new DebugMenuOption(localNamer.defName, DebugMenuOptionMode.Action, delegate
 				{
 					StringBuilder stringBuilder = new StringBuilder();
 					stringBuilder.AppendLine("Testing RulePack " + localNamer.defName + " as a name generator:");
@@ -284,10 +342,32 @@ namespace Verse
 						stringBuilder.AppendLine(NameGenerator.GenerateName(localNamer, null, appendNumberIfNameUsed: false, localNamer.FirstRuleKeyword, testPawnNameSymbol));
 					}
 					Log.Message(stringBuilder.ToString());
-				});
-				list.Add(item);
+				}));
 			}
-			Find.WindowStack.Add(new FloatMenu(list));
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+		}
+
+		[DebugOutput("Text generation", false)]
+		public static void LandmarkNames()
+		{
+			List<LandmarkDef> allDefsListForReading = DefDatabase<LandmarkDef>.AllDefsListForReading;
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			foreach (LandmarkDef landmark in allDefsListForReading)
+			{
+				RulePackDef localNamer = landmark.nameMaker;
+				list.Add(new DebugMenuOption(landmark.defName, DebugMenuOptionMode.Action, delegate
+				{
+					StringBuilder stringBuilder = new StringBuilder();
+					stringBuilder.AppendLine("Testing Landmark Namer " + landmark.defName + " using namer " + localNamer.defName);
+					for (int i = 0; i < 200; i++)
+					{
+						string testPawnNameSymbol = ((i % 2 == 0) ? "Smithee" : null);
+						stringBuilder.AppendLine(NameGenerator.GenerateName(localNamer, null, appendNumberIfNameUsed: false, "r_name", testPawnNameSymbol));
+					}
+					Log.Message(stringBuilder.ToString());
+				}));
+			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}
 
 		[DebugOutput("Text generation", true)]
@@ -432,6 +512,105 @@ namespace Verse
 				break;
 			}
 			return tr.GenerateText(TextGenerationPurpose.ArtDescription, extraInclude);
+		}
+
+		[DebugOutput("Text generation", false)]
+		private static void WordCount()
+		{
+			int words = 0;
+			Regex wordRegex = new Regex("\\w(?![^{]*})(?![^[]*])[^ \\W]*");
+			HashSet<string> results = new HashSet<string>();
+			foreach (KeyValuePair<string, LoadedLanguage.KeyedReplacement> keyedReplacement in LanguageDatabase.activeLanguage.keyedReplacements)
+			{
+				TryAdd(keyedReplacement.Value.value);
+			}
+			foreach (Type item in GenDefDatabase.AllDefTypesWithDatabases())
+			{
+				foreach (Def item2 in GenDefDatabase.GetAllDefsInDatabaseForDef(item))
+				{
+					if (item2.generated || item2 is RulePackDef)
+					{
+						continue;
+					}
+					FieldInfo[] fields = item.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
+					foreach (FieldInfo fieldInfo in fields)
+					{
+						if (fieldInfo.HasAttribute<MustTranslateAttribute>() || fieldInfo.HasAttribute<MayTranslateAttribute>())
+						{
+							ProcessField(fieldInfo.GetValue(item2));
+						}
+					}
+				}
+			}
+			foreach (RulePackDef item3 in DefDatabase<RulePackDef>.AllDefsListForReading)
+			{
+				List<Rule> rulesImmediate = item3.RulesImmediate;
+				if (rulesImmediate.NullOrEmpty())
+				{
+					continue;
+				}
+				foreach (Rule item4 in rulesImmediate)
+				{
+					if (item4 is Rule_String rule_String)
+					{
+						string text = ProcessString(rule_String.Generate());
+						if (results.Add(text))
+						{
+							words += wordRegex.Matches(text).Count;
+						}
+					}
+				}
+			}
+			Log.Message($"Word count: {words}");
+			void ProcessField(object obj)
+			{
+				if (obj != null)
+				{
+					if (obj is string str)
+					{
+						TryAdd(str);
+					}
+					else if (obj is TaggedString taggedString)
+					{
+						TryAdd(taggedString.RawText);
+					}
+					else
+					{
+						if (obj is IEnumerable<string> enumerable)
+						{
+							{
+								foreach (string item5 in enumerable)
+								{
+									TryAdd(item5);
+								}
+								return;
+							}
+						}
+						if (obj is IEnumerable<TaggedString> enumerable2)
+						{
+							foreach (TaggedString item6 in enumerable2)
+							{
+								TryAdd(item6);
+							}
+						}
+					}
+				}
+			}
+			static string ProcessString(string str)
+			{
+				return str.Flatten().Replace("-", "");
+			}
+			void TryAdd(string str)
+			{
+				if (!str.NullOrEmpty())
+				{
+					string text2 = ProcessString(str);
+					if (results.Add(text2))
+					{
+						words += wordRegex.Matches(text2).Count;
+					}
+				}
+			}
 		}
 	}
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Verse;
 
 namespace RimWorld
@@ -8,6 +9,8 @@ namespace RimWorld
 	{
 		public SkillDef skill;
 
+		public bool required = true;
+
 		public virtual float ValueFor(Pawn pawn)
 		{
 			throw new NotImplementedException();
@@ -15,7 +18,7 @@ namespace RimWorld
 
 		public virtual IEnumerable<string> ConfigErrors()
 		{
-			yield break;
+			return Enumerable.Empty<string>();
 		}
 	}
 }

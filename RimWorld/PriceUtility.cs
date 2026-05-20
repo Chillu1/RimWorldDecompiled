@@ -27,7 +27,7 @@ namespace RimWorld
 		public static float PawnQualityPriceFactor(Pawn pawn, StringBuilder explanation = null)
 		{
 			float num = 1f;
-			num *= Mathf.Lerp(0.199999988f, 1f, pawn.health.summaryHealth.SummaryHealthPercent);
+			num *= Mathf.Lerp(0.19999999f, 1f, pawn.health.summaryHealth.SummaryHealthPercent);
 			List<PawnCapacityDef> allDefsListForReading = DefDatabase<PawnCapacityDef>.AllDefsListForReading;
 			for (int i = 0; i < allDefsListForReading.Count; i++)
 			{
@@ -46,10 +46,13 @@ namespace RimWorld
 			num *= pawn.ageTracker.CurLifeStage.marketValueFactor;
 			if (pawn.story != null && pawn.story.traits != null)
 			{
-				for (int j = 0; j < pawn.story.traits.allTraits.Count; j++)
+				for (int num2 = 0; num2 < pawn.story.traits.allTraits.Count; num2++)
 				{
-					Trait trait = pawn.story.traits.allTraits[j];
-					num += trait.CurrentData.marketValueFactorOffset;
+					Trait trait = pawn.story.traits.allTraits[num2];
+					if (!trait.Suppressed)
+					{
+						num += trait.CurrentData.marketValueFactorOffset;
+					}
 				}
 			}
 			num += pawn.GetStatValue(StatDefOf.PawnBeauty) * 0.2f;

@@ -6,9 +6,13 @@ namespace Verse.AI
 
 		private static string lastCustomJobString;
 
+		private static bool silent;
+
 		public static string Reason => lastReason;
 
 		public static bool HaveReason => lastReason != null;
+
+		public static bool Silent => silent;
 
 		public static string CustomJobString => lastCustomJobString;
 
@@ -18,10 +22,16 @@ namespace Verse.AI
 			lastCustomJobString = customJobString;
 		}
 
+		public static void IsSilent()
+		{
+			silent = true;
+		}
+
 		public static void Clear()
 		{
 			lastReason = null;
 			lastCustomJobString = null;
+			silent = false;
 		}
 	}
 }

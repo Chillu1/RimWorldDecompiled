@@ -9,28 +9,21 @@ namespace RimWorld
 
 		public const float DefaultJoyPerTick = 3.5E-05f;
 
-		private LordToilData_Party Data => (LordToilData_Party)data;
-
 		public LordToil_Party(IntVec3 spot, GatheringDef gatheringDef, float joyPerTick = 3.5E-05f)
 			: base(spot, gatheringDef)
 		{
 			this.joyPerTick = joyPerTick;
-			data = new LordToilData_Party();
 		}
 
 		public override void LordToilTick()
 		{
+			base.LordToilTick();
 			List<Pawn> ownedPawns = lord.ownedPawns;
 			for (int i = 0; i < ownedPawns.Count; i++)
 			{
 				if (GatheringsUtility.InGatheringArea(ownedPawns[i].Position, spot, base.Map))
 				{
-					ownedPawns[i].needs.joy.GainJoy(joyPerTick, JoyKindDefOf.Social);
-					if (!Data.presentForTicks.ContainsKey(ownedPawns[i]))
-					{
-						Data.presentForTicks.Add(ownedPawns[i], 0);
-					}
-					Data.presentForTicks[ownedPawns[i]]++;
+					ownedPawns[i].needs.joy?.GainJoy(joyPerTick, JoyKindDefOf.Social);
 				}
 			}
 		}

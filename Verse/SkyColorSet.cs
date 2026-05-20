@@ -22,17 +22,41 @@ namespace Verse
 
 		public static SkyColorSet Lerp(SkyColorSet A, SkyColorSet B, float t)
 		{
-			SkyColorSet result = default(SkyColorSet);
-			result.sky = Color.Lerp(A.sky, B.sky, t);
-			result.shadow = Color.Lerp(A.shadow, B.shadow, t);
-			result.overlay = Color.Lerp(A.overlay, B.overlay, t);
-			result.saturation = Mathf.Lerp(A.saturation, B.saturation, t);
-			return result;
+			return new SkyColorSet
+			{
+				sky = Color.Lerp(A.sky, B.sky, t),
+				shadow = Color.Lerp(A.shadow, B.shadow, t),
+				overlay = Color.Lerp(A.overlay, B.overlay, t),
+				saturation = Mathf.Lerp(A.saturation, B.saturation, t)
+			};
+		}
+
+		public static SkyColorSet LerpDarken(SkyColorSet A, SkyColorSet B, float t)
+		{
+			return new SkyColorSet
+			{
+				sky = Color.Lerp(A.sky, A.sky.Min(B.sky), t),
+				shadow = Color.Lerp(A.shadow, A.shadow.Min(B.shadow), t),
+				overlay = Color.Lerp(A.overlay, A.overlay.Min(B.overlay), t),
+				saturation = Mathf.Lerp(A.saturation, Mathf.Min(A.saturation, B.saturation), t)
+			};
 		}
 
 		public override string ToString()
 		{
-			return string.Concat("(sky=", sky, ", shadow=", shadow, ", overlay=", overlay, ", sat=", saturation, ")");
+			string[] obj = new string[9] { "(sky=", null, null, null, null, null, null, null, null };
+			Color color = sky;
+			obj[1] = color.ToString();
+			obj[2] = ", shadow=";
+			color = shadow;
+			obj[3] = color.ToString();
+			obj[4] = ", overlay=";
+			color = overlay;
+			obj[5] = color.ToString();
+			obj[6] = ", sat=";
+			obj[7] = saturation.ToString();
+			obj[8] = ")";
+			return string.Concat(obj);
 		}
 	}
 }

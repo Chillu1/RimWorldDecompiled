@@ -22,8 +22,7 @@ namespace Verse
 			bool flag = false;
 			foreach (object selectedObject in Find.Selector.SelectedObjects)
 			{
-				IPlantToGrowSettable plantToGrowSettable = selectedObject as IPlantToGrowSettable;
-				if (plantToGrowSettable != null)
+				if (selectedObject is IPlantToGrowSettable plantToGrowSettable)
 				{
 					if (thingDef != null && thingDef != plantToGrowSettable.GetPlantDefToGrow())
 					{
@@ -66,28 +65,28 @@ namespace Verse
 				}
 			}
 			tmpAvailablePlants.SortBy((ThingDef x) => 0f - GetPlantListPriority(x), (ThingDef x) => x.label);
-			for (int i = 0; i < tmpAvailablePlants.Count; i++)
+			for (int num = 0; num < tmpAvailablePlants.Count; num++)
 			{
-				ThingDef plantDef = tmpAvailablePlants[i];
+				ThingDef plantDef = tmpAvailablePlants[num];
 				string text = plantDef.LabelCap;
 				if (plantDef.plant.sowMinSkill > 0)
 				{
-					text = text + (string)(" (" + "MinSkill".Translate() + ": ") + plantDef.plant.sowMinSkill + ")";
+					text = string.Concat(text, " (" + "MinSkill".Translate() + ": ", plantDef.plant.sowMinSkill.ToString(), ")");
 				}
 				list.Add(new FloatMenuOption(text, delegate
 				{
-					string s = tutorTag + "-" + plantDef.defName;
-					if (TutorSystem.AllowAction(s))
+					string text2 = tutorTag + "-" + plantDef.defName;
+					if (TutorSystem.AllowAction(text2))
 					{
 						bool flag = true;
-						for (int j = 0; j < settables.Count; j++)
+						for (int i = 0; i < settables.Count; i++)
 						{
-							settables[j].SetPlantDefToGrow(plantDef);
+							settables[i].SetPlantDefToGrow(plantDef);
 							if (flag && plantDef.plant.interferesWithRoof)
 							{
-								foreach (IntVec3 cell in settables[j].Cells)
+								foreach (IntVec3 cell in settables[i].Cells)
 								{
-									if (cell.Roofed(settables[j].Map))
+									if (cell.Roofed(settables[i].Map))
 									{
 										Messages.Message("MessagePlantIncompatibleWithRoof".Translate(Find.ActiveLanguageWorker.Pluralize(plantDef.LabelCap)), MessageTypeDefOf.CautionInput, historical: false);
 										flag = false;
@@ -98,11 +97,14 @@ namespace Verse
 						}
 						PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.SetGrowingZonePlant, KnowledgeAmount.Total);
 						WarnAsAppropriate(plantDef);
-						TutorSystem.Notify_Event(s);
+						TutorSystem.Notify_Event(text2);
 					}
-				}, plantDef, MenuOptionPriority.Default, null, null, 29f, (Rect rect) => Widgets.InfoCardButton(rect.x + 5f, rect.y + (rect.height - 24f) / 2f, plantDef)));
+				}, plantDef, null, forceBasicStyle: false, MenuOptionPriority.Default, null, null, 29f, (Rect rect) => Widgets.InfoCardButton(rect.x + 5f, rect.y + (rect.height - 24f) / 2f, plantDef)));
 			}
-			Find.WindowStack.Add(new FloatMenu(list));
+			if (list.Any())
+			{
+				Find.WindowStack.Add(new FloatMenu(list));
+			}
 		}
 
 		public override bool InheritInteractionsFrom(Gizmo other)
@@ -126,18 +128,25 @@ namespace Verse
 						return;
 					}
 				}
+				if (ModsConfig.BiotechActive && MechanitorUtility.AnyPlayerMechCanDoWork(WorkTypeDefOf.Growing, plantDef.plant.sowMinSkill, out var _))
+				{
+					return;
+				}
 				Find.WindowStack.Add(new Dialog_MessageBox("NoGrowerCanPlant".Translate(plantDef.label, plantDef.plant.sowMinSkill).CapitalizeFirst()));
 			}
-			if (!plantDef.plant.cavePlant)
+			if (!plantDef.plant.diesToLight && !plantDef.plant.cavePlant)
 			{
 				return;
 			}
 			IntVec3 cell = IntVec3.Invalid;
+			bool flag = !settable.Map.GameConditionManager.IsAlwaysDarkOutside;
 			for (int i = 0; i < settables.Count; i++)
 			{
 				foreach (IntVec3 cell2 in settables[i].Cells)
 				{
-					if (!cell2.Roofed(settables[i].Map) || settables[i].Map.glowGrid.GameGlowAt(cell2, ignoreCavePlants: true) > 0f)
+					bool num = !flag || cell2.Roofed(settables[i].Map);
+					bool flag2 = settables[i].Map.glowGrid.GroundGlowAt(cell2, ignoreCavePlants: true) <= 0f;
+					if (!num || !flag2)
 					{
 						cell = cell2;
 						break;
@@ -168,7 +177,11 @@ namespace Verse
 					return false;
 				}
 			}
-			if (plantDef.plant.mustBeWildToSow && !map.Biome.AllWildPlants.Contains(plantDef))
+			if (plantDef.plant.mustBePermanentDarknessToSow && !map.gameConditionManager.IsAlwaysDarkOutside)
+			{
+				return false;
+			}
+			if (plantDef.plant.mustBeWildToSow && !map.wildPlantSpawner.AllWildPlants.Contains(plantDef))
 			{
 				return false;
 			}

@@ -11,19 +11,25 @@ namespace RimWorld
 
 		public float offsetZ;
 
+		public bool alwaysShow;
+
 		private static readonly Material UnfilledMat = SolidColorMaterials.NewSolidColorMaterial(new Color(0.3f, 0.3f, 0.3f, 0.65f), ShaderDatabase.MetaOverlay);
 
 		private static readonly Material FilledMat = SolidColorMaterials.NewSolidColorMaterial(new Color(0.9f, 0.85f, 0.2f, 0.65f), ShaderDatabase.MetaOverlay);
 
-		public override void Draw()
+		protected virtual bool OnlyShowForClosestZoom => !alwaysShow;
+
+		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
 		{
 			UpdatePositionAndRotation();
-			if (Find.CameraDriver.CurrentZoom == CameraZoomRange.Closest)
+			if ((!OnlyShowForClosestZoom || Find.CameraDriver.CurrentZoom == CameraZoomRange.Closest) && !Find.ScreenshotModeHandler.Active)
 			{
-				GenDraw.FillableBarRequest r = default(GenDraw.FillableBarRequest);
-				r.center = exactPosition;
+				GenDraw.FillableBarRequest r = new GenDraw.FillableBarRequest
+				{
+					center = exactPosition
+				};
 				r.center.z += offsetZ;
-				r.size = new Vector2(exactScale.x, exactScale.z);
+				r.size = new Vector2(linearScale.x, linearScale.z);
 				r.fillPercent = progress;
 				r.filledMat = FilledMat;
 				r.unfilledMat = UnfilledMat;

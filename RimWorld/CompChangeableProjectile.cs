@@ -94,5 +94,9 @@ namespace RimWorld
 		{
 			return parent.def.building.fixedStorageSettings;
 		}
+
+		public void Notify_SettingsChanged()
+		{
+		}
 	}
 }

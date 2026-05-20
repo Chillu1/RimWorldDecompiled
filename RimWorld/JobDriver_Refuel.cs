@@ -10,7 +10,7 @@ namespace RimWorld
 
 		private const TargetIndex FuelInd = TargetIndex.B;
 
-		private const int RefuelingDuration = 240;
+		public const int RefuelingDuration = 240;
 
 		protected Thing Refuelable => job.GetTarget(TargetIndex.A).Thing;
 

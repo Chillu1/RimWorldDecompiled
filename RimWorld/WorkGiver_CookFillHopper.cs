@@ -28,8 +28,7 @@ namespace RimWorld
 
 		public override Job JobOnThing(Pawn pawn, Thing thing, bool forced = false)
 		{
-			ISlotGroupParent slotGroupParent = thing as ISlotGroupParent;
-			if (slotGroupParent == null)
+			if (!(thing is ISlotGroupParent hopperSgp))
 			{
 				return null;
 			}
@@ -37,25 +36,25 @@ namespace RimWorld
 			{
 				return null;
 			}
-			int num = 0;
+			float num = 0f;
 			List<Thing> list = pawn.Map.thingGrid.ThingsListAt(thing.Position);
 			for (int i = 0; i < list.Count; i++)
 			{
 				Thing thing2 = list[i];
 				if (Building_NutrientPasteDispenser.IsAcceptableFeedstock(thing2.def))
 				{
-					num += thing2.stackCount;
+					num = (float)thing2.stackCount / (float)thing2.def.stackLimit;
 				}
 			}
-			if (num > 25)
+			if (num > 0.35f)
 			{
 				JobFailReason.Is("AlreadyFilledLower".Translate());
 				return null;
 			}
-			return HopperFillFoodJob(pawn, slotGroupParent);
+			return HopperFillFoodJob(pawn, hopperSgp, forced);
 		}
 
-		public static Job HopperFillFoodJob(Pawn pawn, ISlotGroupParent hopperSgp)
+		public static Job HopperFillFoodJob(Pawn pawn, ISlotGroupParent hopperSgp, bool forced)
 		{
 			Building building = (Building)hopperSgp;
 			if (!pawn.CanReserveAndReach(building.Position, PathEndMode.Touch, pawn.NormalMaxDanger()))
@@ -81,11 +80,11 @@ namespace RimWorld
 			for (int i = 0; i < list.Count; i++)
 			{
 				Thing thing = list[i];
-				if (!thing.def.IsNutritionGivingIngestible || (thing.def.ingestible.preferability != FoodPreferability.RawBad && thing.def.ingestible.preferability != FoodPreferability.RawTasty) || !HaulAIUtility.PawnCanAutomaticallyHaul(pawn, thing, forced: false) || !pawn.Map.haulDestinationManager.SlotGroupAt(building.Position).Settings.AllowedToAccept(thing))
+				if (!thing.def.IsNutritionGivingIngestible || (thing.def.ingestible.preferability != FoodPreferability.RawBad && thing.def.ingestible.preferability != FoodPreferability.RawTasty) || !HaulAIUtility.PawnCanAutomaticallyHaul(pawn, thing, forced) || !pawn.Map.haulDestinationManager.SlotGroupAt(building.Position).Settings.AllowedToAccept(thing))
 				{
 					continue;
 				}
-				if ((int)StoreUtility.CurrentStoragePriorityOf(thing) >= (int)hopperSgp.GetSlotGroup().Settings.Priority)
+				if ((int)StoreUtility.CurrentStoragePriorityOf(thing, forced) >= (int)hopperSgp.GetSlotGroup().Settings.Priority)
 				{
 					flag = true;
 					JobFailReason.Is(TheOnlyAvailableFoodIsInStorageOfHigherPriorityTrans);

@@ -1,15 +1,22 @@
+using RimWorld;
+
 namespace Verse.AI
 {
-	internal class Toils_Interact
+	public static class Toils_Interact
 	{
 		public static Toil DestroyThing(TargetIndex ind)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("DestroyThing");
 			toil.initAction = delegate
 			{
-				Thing thing = toil.actor.jobs.curJob.GetTarget(ind).Thing;
+				Pawn actor = toil.actor;
+				Thing thing = actor.jobs.curJob.GetTarget(ind).Thing;
 				if (!thing.Destroyed)
 				{
+					if (thing.def.category == ThingCategory.Plant && thing.def.plant.IsTree && thing.def.plant.treeLoversCareIfChopped)
+					{
+						Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.CutTree, actor.Named(HistoryEventArgsNames.Doer)));
+					}
 					thing.Destroy();
 				}
 			};

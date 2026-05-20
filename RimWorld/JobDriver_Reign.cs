@@ -35,9 +35,8 @@ namespace RimWorld
 				job.SetTarget(TargetIndex.B, Throne.InteractionCell + Throne.Rotation.FacingCell);
 			});
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.InteractionCell);
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.FailOnCannotTouch(TargetIndex.A, PathEndMode.InteractionCell);
-			toil.FailOn(() => Throne.AssignedPawn != pawn);
 			toil.FailOn(() => RoomRoleWorker_ThroneRoom.Validate(Throne.GetRoom()) != null);
 			toil.FailOn(() => !MeditationUtility.CanMeditateNow(pawn) || !MeditationUtility.SafeEnvironmentalConditions(pawn, base.TargetLocA, base.Map));
 			toil.defaultCompleteMode = ToilCompleteMode.Delay;

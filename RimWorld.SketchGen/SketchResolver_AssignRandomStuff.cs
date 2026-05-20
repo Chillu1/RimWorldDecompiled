@@ -11,10 +11,10 @@ namespace RimWorld.SketchGen
 
 		private Stack<SketchThing> stack = new Stack<SketchThing>();
 
-		protected override void ResolveInt(ResolveParams parms)
+		protected override void ResolveInt(SketchResolveParams parms)
 		{
 			ThingDef assignRandomStuffTo = parms.assignRandomStuffTo;
-			bool flag = parms.connectedGroupsSameStuff ?? false;
+			bool valueOrDefault = parms.connectedGroupsSameStuff == true;
 			bool allowWood = parms.allowWood ?? true;
 			bool allowFlammableWalls = parms.allowFlammableWalls ?? true;
 			thingsAt.Clear();
@@ -44,7 +44,7 @@ namespace RimWorld.SketchGen
 				ThingDef stuff = GenStuff.RandomStuffInexpensiveFor(thing.def, null, (ThingDef x) => SketchGenUtility.IsStuffAllowed(x, allowWood, parms.useOnlyStonesAvailableOnMap, allowFlammableWalls, thing.def));
 				thing.stuff = stuff;
 				visited.Add(thing);
-				if (!flag)
+				if (!valueOrDefault)
 				{
 					continue;
 				}
@@ -60,12 +60,12 @@ namespace RimWorld.SketchGen
 						{
 							continue;
 						}
-						for (int i = 0; i < value2.Count; i++)
+						for (int num = 0; num < value2.Count; num++)
 						{
-							if (value2[i].def == thing.def && !visited.Contains(value2[i]))
+							if (value2[num].def == thing.def && !visited.Contains(value2[num]))
 							{
-								visited.Add(value2[i]);
-								stack.Push(value2[i]);
+								visited.Add(value2[num]);
+								stack.Push(value2[num]);
 							}
 						}
 					}
@@ -73,7 +73,7 @@ namespace RimWorld.SketchGen
 			}
 		}
 
-		protected override bool CanResolveInt(ResolveParams parms)
+		protected override bool CanResolveInt(SketchResolveParams parms)
 		{
 			return true;
 		}

@@ -20,12 +20,16 @@ namespace RimWorld
 
 		public override void QuestPartTick()
 		{
+			if (mapParent == null || mapParent.Destroyed)
+			{
+				mapParent = quest.TryFindNewSuitableMapParentForRetarget();
+			}
 			if (requiredCount <= 0 || Find.TickManager.TicksAbs % 500 != 0)
 			{
 				return;
 			}
 			int num = 0;
-			List<Pawn> allPawnsSpawned = mapParent.Map.mapPawns.AllPawnsSpawned;
+			IReadOnlyList<Pawn> allPawnsSpawned = mapParent.Map.mapPawns.AllPawnsSpawned;
 			for (int i = 0; i < allPawnsSpawned.Count; i++)
 			{
 				if (allPawnsSpawned[i].def == race && allPawnsSpawned[i].Faction == null)

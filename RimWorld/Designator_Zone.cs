@@ -1,13 +1,12 @@
-using System.Collections.Generic;
 using Verse;
 
 namespace RimWorld
 {
-	public abstract class Designator_Zone : Designator
+	public abstract class Designator_Zone : Designator_Cells
 	{
-		public override int DraggableDimensions => 2;
-
 		public override bool DragDrawMeasurements => true;
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Zones;
 
 		public override void SelectedUpdate()
 		{
@@ -19,11 +18,6 @@ namespace RimWorld
 				GenDraw.DrawFieldEdges(Find.Selector.SelectedZone.Cells);
 			}
 			GenDraw.DrawNoZoneEdgeLines();
-		}
-
-		public override void RenderHighlight(List<IntVec3> dragCells)
-		{
-			DesignatorUtility.RenderHighlightOverSelectableCells(this, dragCells);
 		}
 	}
 }

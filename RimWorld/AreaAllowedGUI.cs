@@ -53,7 +53,7 @@ namespace RimWorld
 			rect2.xMin += 3f;
 			rect2.yMin += 2f;
 			Widgets.Label(rect2, text);
-			if (p.playerSettings.AreaRestriction == area)
+			if (p.playerSettings.AreaRestrictionInPawnCurrentMap == area)
 			{
 				Widgets.DrawBox(rect, 2);
 			}
@@ -61,7 +61,7 @@ namespace RimWorld
 			{
 				dragging = false;
 			}
-			if (!Input.GetMouseButton(0) && Event.current.type != 0)
+			if (!Input.GetMouseButton(0) && Event.current.type != EventType.MouseDown)
 			{
 				dragging = false;
 			}
@@ -72,10 +72,10 @@ namespace RimWorld
 				{
 					dragging = true;
 				}
-				if (dragging && p.playerSettings.AreaRestriction != area)
+				if (dragging && p.playerSettings.AreaRestrictionInPawnCurrentMap != area)
 				{
-					p.playerSettings.AreaRestriction = area;
-					SoundDefOf.Designate_DragStandard_Changed.PlayOneShotOnCamera();
+					p.playerSettings.AreaRestrictionInPawnCurrentMap = area;
+					SoundDefOf.Designate_DragStandard_Changed_NoCam.PlayOneShotOnCamera();
 				}
 			}
 			Text.Anchor = TextAnchor.UpperLeft;

@@ -11,10 +11,7 @@ namespace RimWorld
 
 		public IncidentDef Incident => incident;
 
-		protected abstract string IncidentTag
-		{
-			get;
-		}
+		protected abstract string IncidentTag { get; }
 
 		public override void ExposeData()
 		{
@@ -25,6 +22,11 @@ namespace RimWorld
 				incident = RandomizableIncidents().FirstOrDefault();
 				Log.Error("ScenPart has null incident after loading. Changing to " + incident.ToStringSafe());
 			}
+		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode() ^ ((incident != null) ? incident.GetHashCode() : 0);
 		}
 
 		public override void DoEditInterface(Listing_ScenEdit listing)
@@ -54,20 +56,18 @@ namespace RimWorld
 
 		public override bool TryMerge(ScenPart other)
 		{
-			ScenPart_IncidentBase scenPart_IncidentBase = other as ScenPart_IncidentBase;
-			if (scenPart_IncidentBase != null && scenPart_IncidentBase.Incident == incident)
+			if (other is ScenPart_IncidentBase scenPart_IncidentBase)
 			{
-				return true;
+				return scenPart_IncidentBase.Incident == incident;
 			}
 			return false;
 		}
 
 		public override bool CanCoexistWith(ScenPart other)
 		{
-			ScenPart_IncidentBase scenPart_IncidentBase = other as ScenPart_IncidentBase;
-			if (scenPart_IncidentBase != null && scenPart_IncidentBase.Incident == incident)
+			if (other is ScenPart_IncidentBase scenPart_IncidentBase)
 			{
-				return false;
+				return scenPart_IncidentBase.Incident != incident;
 			}
 			return true;
 		}

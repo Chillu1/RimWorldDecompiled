@@ -7,6 +7,10 @@ namespace RimWorld
 	{
 		private Settlement settlement;
 
+		protected override int FirstCharLimit => 64;
+
+		protected override int SecondCharLimit => 64;
+
 		public Dialog_NamePlayerFactionAndSettlement(Settlement settlement)
 		{
 			this.settlement = settlement;

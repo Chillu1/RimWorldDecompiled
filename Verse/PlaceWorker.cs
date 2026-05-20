@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Verse
@@ -30,7 +31,26 @@ namespace Verse
 
 		public virtual IEnumerable<TerrainAffordanceDef> DisplayAffordances()
 		{
-			yield break;
+			return Enumerable.Empty<TerrainAffordanceDef>();
+		}
+
+		public virtual void DrawMouseAttachments(BuildableDef def)
+		{
+		}
+
+		public virtual void DrawPlaceMouseAttachments(float curX, ref float curY, BuildableDef def, IntVec3 center, Rot4 rot)
+		{
+		}
+
+		public virtual void DrawOnGUIExtra(BuildableDef def)
+		{
+		}
+
+		protected static void DrawTextLine(float curX, ref float y, string text)
+		{
+			float lineHeight = Text.LineHeight;
+			Widgets.Label(new Rect(curX, y, 999f, lineHeight), text);
+			y += lineHeight;
 		}
 	}
 }

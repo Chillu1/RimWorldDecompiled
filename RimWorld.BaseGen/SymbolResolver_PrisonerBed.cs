@@ -15,8 +15,7 @@ namespace RimWorld.BaseGen
 				{
 					prevPostThingSpawn(x);
 				}
-				Building_Bed building_Bed = x as Building_Bed;
-				if (building_Bed != null)
+				if (x is Building_Bed building_Bed)
 				{
 					building_Bed.ForPrisoners = true;
 				}

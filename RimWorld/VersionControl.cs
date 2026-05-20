@@ -180,7 +180,7 @@ namespace RimWorld
 			int major = 0;
 			int minor = 0;
 			int build = 0;
-			for (int i = 0; i < 3; i++)
+			for (int i = 0; i < array.Length; i++)
 			{
 				if (!int.TryParse(array[i], out var result))
 				{

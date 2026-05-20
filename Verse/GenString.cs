@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 
 namespace Verse
 {
@@ -47,6 +48,20 @@ namespace Verse
 				}
 				yield return str.Substring(i, chunkLength);
 			}
+		}
+
+		public static StringBuilder AppendLineIfNotEmpty(this StringBuilder sb)
+		{
+			if (sb.Length > 0)
+			{
+				sb.AppendLine();
+			}
+			return sb;
+		}
+
+		public static int GetHashCodeSafe(this string val)
+		{
+			return val?.GetHashCode() ?? 0;
 		}
 	}
 }

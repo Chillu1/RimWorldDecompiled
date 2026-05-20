@@ -7,9 +7,11 @@ namespace Verse
 {
 	public static class DefDatabase<T> where T : Def
 	{
-		private static List<T> defsList = new List<T>();
+		private static readonly List<T> defsList = new List<T>();
 
-		private static Dictionary<string, T> defsByName = new Dictionary<string, T>();
+		private static readonly Dictionary<string, T> defsByName = new Dictionary<string, T>();
+
+		private static readonly Dictionary<ushort, T> defsByShortHash = new Dictionary<ushort, T>();
 
 		public static IEnumerable<T> AllDefs => defsList;
 
@@ -22,16 +24,17 @@ namespace Verse
 			HashSet<string> hashSet = new HashSet<string>();
 			foreach (ModContentPack item in LoadedModManager.RunningMods.OrderBy((ModContentPack m) => m.OverwritePriority).ThenBy((ModContentPack x) => LoadedModManager.RunningModsListForReading.IndexOf(x)))
 			{
+				string sourceName = item.ToString();
 				hashSet.Clear();
 				foreach (T item2 in GenDefDatabase.DefsToGoInDatabase<T>(item))
 				{
 					if (!hashSet.Add(item2.defName))
 					{
-						Log.Error(string.Concat("Mod ", item, " has multiple ", typeof(T), "s named ", item2.defName, ". Skipping."));
+						Log.Error("Mod " + item?.ToString() + " has multiple " + typeof(T)?.ToString() + "s named " + item2.defName + ". Skipping.");
 					}
 					else
 					{
-						AddDef(item2, item.ToString());
+						AddDef(item2, sourceName);
 					}
 				}
 			}
@@ -39,13 +42,14 @@ namespace Verse
 			{
 				AddDef(item3, "Patches");
 			}
-			static void AddDef(T def, string sourceName)
+			static void AddDef(T def, string text2)
 			{
 				if (def.defName == "UnnamedDef")
 				{
 					string text = "Unnamed" + typeof(T).Name + Rand.Range(1, 100000) + "A";
-					Log.Error(typeof(T).Name + " in " + sourceName + " with label " + def.label + " lacks a defName. Giving name " + text);
+					Log.Error(typeof(T).Name + " in " + text2 + " with label " + def.label + " lacks a defName. Giving name " + text);
 					def.defName = text;
+					def.ResolveDefNameHash();
 				}
 				if (defsByName.TryGetValue(def.defName, out var value))
 				{
@@ -65,16 +69,22 @@ namespace Verse
 
 		public static void Add(T def)
 		{
+			if (def == null)
+			{
+				Log.Error("Tried to add null def to DefDatabase.");
+				return;
+			}
 			while (defsByName.ContainsKey(def.defName))
 			{
-				Log.Error(string.Concat("Adding duplicate ", typeof(T), " name: ", def.defName));
+				Log.Error("Adding duplicate " + typeof(T)?.ToString() + " name: " + def.defName);
 				def.defName += Mathf.RoundToInt(Rand.Value * 1000f);
+				def.ResolveDefNameHash();
 			}
 			defsList.Add(def);
 			defsByName.Add(def.defName, def);
 			if (defsList.Count > 65535)
 			{
-				Log.Error(string.Concat("Too many ", typeof(T), "; over ", ushort.MaxValue));
+				Log.Error("Too many " + typeof(T)?.ToString() + "; over " + ushort.MaxValue);
 			}
 			def.index = (ushort)(defsList.Count - 1);
 		}
@@ -90,6 +100,7 @@ namespace Verse
 		{
 			defsList.Clear();
 			defsByName.Clear();
+			defsByShortHash.Clear();
 		}
 
 		public static void ClearCachedData()
@@ -116,21 +127,22 @@ namespace Verse
 			{
 				Action<T> action = delegate(T def)
 				{
-					if (!onlyExactlyMyType || !(def.GetType() != typeof(T)))
+					if (onlyExactlyMyType && def.GetType() != typeof(T))
 					{
-						DeepProfiler.Start("Resolver call");
-						try
-						{
-							def.ResolveReferences();
-						}
-						catch (Exception ex)
-						{
-							Log.Error(string.Concat("Error while resolving references for def ", def, ": ", ex));
-						}
-						finally
-						{
-							DeepProfiler.End();
-						}
+						return;
+					}
+					DeepProfiler.Start("Resolver call");
+					try
+					{
+						def.ResolveReferences();
+					}
+					catch (Exception ex)
+					{
+						Log.Error("Error while resolving references for def " + def?.ToString() + ": " + ex);
+					}
+					finally
+					{
+						DeepProfiler.End();
 					}
 				};
 				if (parallel)
@@ -139,9 +151,9 @@ namespace Verse
 				}
 				else
 				{
-					for (int i = 0; i < defsList.Count; i++)
+					for (int num = 0; num < defsList.Count; num++)
 					{
-						action(defsList[i]);
+						action(defsList[num]);
 					}
 				}
 			}
@@ -166,6 +178,10 @@ namespace Verse
 			{
 				defsList[i].index = (ushort)i;
 			}
+			for (int j = 0; j < defsList.Count; j++)
+			{
+				defsList[j].PostSetIndices();
+			}
 		}
 
 		public static void ErrorCheckAllDefs()
@@ -180,7 +196,7 @@ namespace Verse
 					}
 					foreach (string item in allDef.ConfigErrors())
 					{
-						Log.Error(string.Concat("Config error in ", allDef, ": ", item));
+						Log.Error("Config error in " + allDef?.ToString() + ": " + item);
 					}
 				}
 				catch (Exception ex)
@@ -198,7 +214,7 @@ namespace Verse
 				{
 					return value;
 				}
-				Log.Error(string.Concat("Failed to find ", typeof(T), " named ", defName, ". There are ", defsList.Count, " defs of this type loaded."));
+				Log.Error("Failed to find " + typeof(T)?.ToString() + " named " + defName + ". There are " + defsList.Count + " defs of this type loaded.");
 				return null;
 			}
 			if (defsByName.TryGetValue(defName, out var value2))
@@ -215,14 +231,20 @@ namespace Verse
 
 		public static T GetByShortHash(ushort shortHash)
 		{
-			for (int i = 0; i < defsList.Count; i++)
+			if (defsByShortHash.TryGetValue(shortHash, out var value))
 			{
-				if (defsList[i].shortHash == shortHash)
-				{
-					return defsList[i];
-				}
+				return value;
 			}
 			return null;
+		}
+
+		public static void InitializeShortHashDictionary()
+		{
+			defsByShortHash.EnsureCapacity(defsList.Count);
+			for (int i = 0; i < defsList.Count; i++)
+			{
+				defsByShortHash[defsList[i].shortHash] = defsList[i];
+			}
 		}
 
 		public static T GetRandom()

@@ -6,13 +6,15 @@ using Verse.Noise;
 
 namespace RimWorld.Planet
 {
-	public sealed class World : IThingHolder, IExposable, IIncidentTarget, ILoadReferenceable
+	public sealed class World : IThingHolder, IExposable, IIncidentTarget, ILoadReferenceable, IDisposable
 	{
 		public WorldInfo info = new WorldInfo();
 
 		public List<WorldComponent> components = new List<WorldComponent>();
 
 		public FactionManager factionManager;
+
+		public IdeoManager ideoManager;
 
 		public WorldPawns worldPawns;
 
@@ -23,6 +25,10 @@ namespace RimWorld.Planet
 		public StoryState storyState;
 
 		public WorldFeatures features;
+
+		public WorldLandmarks landmarks;
+
+		public List<PocketMapParent> pocketMaps = new List<PocketMapParent>();
 
 		public WorldGrid grid;
 
@@ -36,13 +42,11 @@ namespace RimWorld.Planet
 
 		public WorldDynamicDrawManager dynamicDrawManager;
 
-		public WorldPathFinder pathFinder;
-
 		public WorldPathPool pathPool;
 
 		public WorldReachability reachability;
 
-		public WorldFloodFiller floodFiller;
+		public WorldTilesInRandomOrder tilesInRandomOrder;
 
 		public ConfiguredTicksAbsAtGameStartCache ticksAbsCache;
 
@@ -52,17 +56,17 @@ namespace RimWorld.Planet
 
 		private List<ThingDef> allNaturalRockDefs;
 
-		private static List<ThingDef> tmpNaturalRockDefs = new List<ThingDef>();
+		private static readonly List<ThingDef> tmpNaturalRockDefs = new List<ThingDef>();
 
-		private static List<int> tmpNeighbors = new List<int>();
+		private static readonly List<PlanetTile> tmpNeighbors = new List<PlanetTile>();
 
-		private static List<Rot4> tmpOceanDirs = new List<Rot4>();
+		private static readonly List<Rot4> tTpOceanDirs = new List<Rot4>();
 
 		public float PlanetCoverage => info.planetCoverage;
 
 		public IThingHolder ParentHolder => null;
 
-		public int Tile => -1;
+		public PlanetTile Tile => PlanetTile.Invalid;
 
 		public StoryState StoryState => storyState;
 
@@ -87,7 +91,7 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public IEnumerable<Pawn> PlayerPawnsForStoryteller => PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_OfPlayerFaction;
+		public IEnumerable<Pawn> PlayerPawnsForStoryteller => PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction;
 
 		public FloatRange IncidentPointsRandomFactorRange => FloatRange.One;
 
@@ -122,20 +126,46 @@ namespace RimWorld.Planet
 		public void ExposeComponents()
 		{
 			Scribe_Deep.Look(ref factionManager, "factionManager");
+			Scribe_Deep.Look(ref ideoManager, "ideoManager");
 			Scribe_Deep.Look(ref worldPawns, "worldPawns");
 			Scribe_Deep.Look(ref worldObjects, "worldObjects");
 			Scribe_Deep.Look(ref gameConditionManager, "gameConditionManager", this);
 			Scribe_Deep.Look(ref storyState, "storyState", this);
 			Scribe_Deep.Look(ref features, "features");
+			Scribe_Deep.Look(ref landmarks, "landmarks");
 			Scribe_Collections.Look(ref components, "components", LookMode.Deep, this);
+			Scribe_Collections.Look(ref pocketMaps, "pocketMaps", LookMode.Deep);
 			FillComponents();
 			BackCompatibility.PostExposeData(this);
+			if (Scribe.mode != LoadSaveMode.LoadingVars)
+			{
+				return;
+			}
+			if (pocketMaps == null)
+			{
+				pocketMaps = new List<PocketMapParent>();
+			}
+			if (landmarks == null)
+			{
+				landmarks = new WorldLandmarks();
+			}
+			if (!ModsConfig.OdysseyActive || !landmarks.landmarks.NullOrEmpty())
+			{
+				return;
+			}
+			foreach (Tile tile in grid.Surface.Tiles)
+			{
+				tile.mutatorsNullable?.Clear();
+			}
+			WorldGenStep_Mutators.AddMutatorsFromTile(grid.Surface);
+			new WorldGenStep_Landmarks().GenerateFresh(info.seedString, grid.Surface);
 		}
 
 		public void ConstructComponents()
 		{
 			worldObjects = new WorldObjectsHolder();
 			factionManager = new FactionManager();
+			ideoManager = new IdeoManager();
 			worldPawns = new WorldPawns();
 			gameConditionManager = new GameConditionManager(this);
 			storyState = new StoryState(this);
@@ -143,11 +173,10 @@ namespace RimWorld.Planet
 			UI = new WorldInterface();
 			debugDrawer = new WorldDebugDrawer();
 			dynamicDrawManager = new WorldDynamicDrawManager();
-			pathFinder = new WorldPathFinder();
 			pathPool = new WorldPathPool();
 			reachability = new WorldReachability();
-			floodFiller = new WorldFloodFiller();
 			ticksAbsCache = new ConfiguredTicksAbsAtGameStartCache();
+			tilesInRandomOrder = new WorldTilesInRandomOrder();
 			components.Clear();
 			FillComponents();
 		}
@@ -166,7 +195,7 @@ namespace RimWorld.Planet
 					}
 					catch (Exception ex)
 					{
-						Log.Error(string.Concat("Could not instantiate a WorldComponent of type ", item2, ": ", ex));
+						Log.Error("Could not instantiate a WorldComponent of type " + item2?.ToString() + ": " + ex);
 					}
 				}
 			}
@@ -174,11 +203,11 @@ namespace RimWorld.Planet
 			genData = GetComponent<WorldGenData>();
 		}
 
-		public void FinalizeInit()
+		public void FinalizeInit(bool fromLoad)
 		{
-			pathGrid.RecalculateAllPerceivedPathCosts();
+			pathGrid.RecalculateAllLayersPathCosts();
 			AmbientSoundManager.EnsureWorldAmbientSoundCreated();
-			WorldComponentUtility.FinalizeInit(this);
+			WorldComponentUtility.FinalizeInit(this, fromLoad);
 		}
 
 		public void WorldTick()
@@ -189,6 +218,7 @@ namespace RimWorld.Planet
 			debugDrawer.WorldDebugDrawerTick();
 			pathGrid.WorldPathGridTick();
 			WorldComponentUtility.WorldComponentTick(this);
+			ideoManager.IdeoManagerTick();
 		}
 
 		public void WorldPostTick()
@@ -205,27 +235,54 @@ namespace RimWorld.Planet
 
 		public void WorldUpdate()
 		{
-			bool worldRenderedNow = WorldRendererUtility.WorldRenderedNow;
+			bool worldRendered = WorldRendererUtility.WorldRendered;
 			renderer.CheckActivateWorldCamera();
-			if (worldRenderedNow)
+			if (worldRendered)
 			{
 				ExpandableWorldObjectsUtility.ExpandableWorldObjectsUpdate();
+				if (ModsConfig.OdysseyActive)
+				{
+					ExpandableLandmarksUtility.ExpandableLandmarksUpdate();
+				}
 				renderer.DrawWorldLayers();
 				dynamicDrawManager.DrawDynamicWorldObjects();
 				features.UpdateFeatures();
 				NoiseDebugUI.RenderPlanetNoise();
 			}
 			WorldComponentUtility.WorldComponentUpdate(this);
+			if (ModsConfig.BiotechActive)
+			{
+				try
+				{
+					CompDissolutionEffect_Goodwill.WorldUpdate();
+				}
+				catch (Exception ex)
+				{
+					Log.Error(ex.ToString());
+				}
+				try
+				{
+					CompDissolutionEffect_Pollution.WorldUpdate();
+				}
+				catch (Exception ex2)
+				{
+					Log.Error(ex2.ToString());
+				}
+			}
+		}
+
+		public void WorldOnGUI()
+		{
+			WorldComponentUtility.WorldComponentOnGUI(this);
 		}
 
 		public T GetComponent<T>() where T : WorldComponent
 		{
 			for (int i = 0; i < components.Count; i++)
 			{
-				T val = components[i] as T;
-				if (val != null)
+				if (components[i] is T result)
 				{
-					return val;
+					return result;
 				}
 			}
 			return null;
@@ -235,7 +292,7 @@ namespace RimWorld.Planet
 		{
 			for (int i = 0; i < components.Count; i++)
 			{
-				if (type.IsAssignableFrom(components[i].GetType()))
+				if (type.IsInstanceOfType(components[i]))
 				{
 					return components[i];
 				}
@@ -243,63 +300,109 @@ namespace RimWorld.Planet
 			return null;
 		}
 
-		public Rot4 CoastDirectionAt(int tileID)
+		public float? CoastAngleAt(PlanetTile tile, BiomeDef waterBiome)
 		{
-			if (!grid[tileID].biome.canBuildBase)
+			tmpNeighbors.Clear();
+			Find.World.grid.GetTileNeighbors(tile, tmpNeighbors);
+			IEnumerable<PlanetTile> source = tmpNeighbors.Where((PlanetTile t) => t.Tile.PrimaryBiome == waterBiome);
+			if (!source.Any())
+			{
+				return null;
+			}
+			float num = GenMath.MeanAngle(source.Select((PlanetTile t) => Find.WorldGrid.GetHeadingFromTo(t, tile)).ToList());
+			return (450f - num) % 360f;
+		}
+
+		public Rot4 CoastDirectionAt(PlanetTile tile)
+		{
+			if (!tile.Valid)
 			{
 				return Rot4.Invalid;
 			}
-			tmpOceanDirs.Clear();
-			grid.GetTileNeighbors(tileID, tmpNeighbors);
+			if (!tile.Tile.PrimaryBiome.canBuildBase)
+			{
+				return Rot4.Invalid;
+			}
+			tTpOceanDirs.Clear();
+			grid.GetTileNeighbors(tile, tmpNeighbors);
 			int i = 0;
 			for (int count = tmpNeighbors.Count; i < count; i++)
 			{
-				if (grid[tmpNeighbors[i]].biome == BiomeDefOf.Ocean)
+				if (grid[tmpNeighbors[i]].PrimaryBiome == BiomeDefOf.Ocean)
 				{
-					Rot4 rotFromTo = grid.GetRotFromTo(tileID, tmpNeighbors[i]);
-					if (!tmpOceanDirs.Contains(rotFromTo))
+					Rot4 rotFromTo = grid.GetRotFromTo(tile, tmpNeighbors[i]);
+					if (!tTpOceanDirs.Contains(rotFromTo))
 					{
-						tmpOceanDirs.Add(rotFromTo);
+						tTpOceanDirs.Add(rotFromTo);
 					}
 				}
 			}
-			if (tmpOceanDirs.Count == 0)
+			if (tTpOceanDirs.Count == 0)
 			{
 				return Rot4.Invalid;
 			}
 			Rand.PushState();
-			Rand.Seed = tileID;
-			int index = Rand.Range(0, tmpOceanDirs.Count);
+			Rand.Seed = tile.GetHashCode();
+			int index = Rand.Range(0, tTpOceanDirs.Count);
 			Rand.PopState();
-			return tmpOceanDirs[index];
+			return tTpOceanDirs[index];
 		}
 
-		public bool HasCaves(int tile)
+		public Rot4 LakeDirectionAt(PlanetTile tile)
 		{
-			Tile tile2 = grid[tile];
-			float chance;
-			if ((int)tile2.hilliness >= 4)
+			if (!tile.Valid)
 			{
-				chance = 0.5f;
+				return Rot4.Invalid;
 			}
-			else
+			if (!tile.Tile.PrimaryBiome.canBuildBase)
 			{
-				if ((int)tile2.hilliness < 3)
+				return Rot4.Invalid;
+			}
+			tTpOceanDirs.Clear();
+			grid.GetTileNeighbors(tile, tmpNeighbors);
+			int i = 0;
+			for (int count = tmpNeighbors.Count; i < count; i++)
+			{
+				if (grid[tmpNeighbors[i]].PrimaryBiome == BiomeDefOf.Lake)
 				{
-					return false;
+					Rot4 rotFromTo = grid.GetRotFromTo(tile, tmpNeighbors[i]);
+					if (!tTpOceanDirs.Contains(rotFromTo))
+					{
+						tTpOceanDirs.Add(rotFromTo);
+					}
 				}
-				chance = 0.25f;
 			}
-			return Rand.ChanceSeeded(chance, Gen.HashCombineInt(Find.World.info.Seed, tile));
+			if (tTpOceanDirs.Count == 0)
+			{
+				return Rot4.Invalid;
+			}
+			Rand.PushState();
+			Rand.Seed = tile.GetHashCode();
+			int index = Rand.Range(0, tTpOceanDirs.Count);
+			Rand.PopState();
+			return tTpOceanDirs[index];
 		}
 
-		public IEnumerable<ThingDef> NaturalRockTypesIn(int tile)
+		public bool HasCaves(PlanetTile tile)
 		{
+			return tile.Tile.Mutators.Any((TileMutatorDef m) => m.IsCave);
+		}
+
+		public IEnumerable<ThingDef> NaturalRockTypesIn(PlanetTile tile)
+		{
+			if (tile.Valid)
+			{
+				List<ThingDef> forceRockTypes = tile.Tile.PrimaryBiome.forceRockTypes;
+				if (forceRockTypes != null)
+				{
+					return forceRockTypes;
+				}
+			}
 			Rand.PushState();
-			Rand.Seed = tile;
+			Rand.Seed = tile.GetHashCode();
 			if (allNaturalRockDefs == null)
 			{
-				allNaturalRockDefs = DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.IsNonResourceNaturalRock).ToList();
+				allNaturalRockDefs = DefDatabase<ThingDef>.AllDefs.Where((ThingDef def) => def.IsNonResourceNaturalRock).ToList();
 			}
 			int num = Rand.RangeInclusive(2, 3);
 			if (num > allNaturalRockDefs.Count)
@@ -308,18 +411,25 @@ namespace RimWorld.Planet
 			}
 			tmpNaturalRockDefs.Clear();
 			tmpNaturalRockDefs.AddRange(allNaturalRockDefs);
-			List<ThingDef> list = new List<ThingDef>();
-			for (int i = 0; i < num; i++)
-			{
-				ThingDef item = tmpNaturalRockDefs.RandomElement();
-				tmpNaturalRockDefs.Remove(item);
-				list.Add(item);
-			}
+			List<ThingDef> result = tmpNaturalRockDefs.Where((ThingDef def) => RockAllowedInBiome(def, tile)).TakeRandomDistinct(num);
 			Rand.PopState();
-			return list;
+			return result;
 		}
 
-		public bool Impassable(int tileID)
+		private static bool RockAllowedInBiome(ThingDef def, PlanetTile tile)
+		{
+			if (def.building.biomeSpecific)
+			{
+				if (tile.Valid)
+				{
+					return tile.Tile.PrimaryBiome.extraRockTypes.NotNullAndContains(def);
+				}
+				return false;
+			}
+			return true;
+		}
+
+		public bool Impassable(PlanetTile tileID)
 		{
 			return !pathGrid.Passable(tileID);
 		}
@@ -335,27 +445,24 @@ namespace RimWorld.Planet
 			List<WorldObject> allWorldObjects = worldObjects.AllWorldObjects;
 			for (int i = 0; i < allWorldObjects.Count; i++)
 			{
-				IThingHolder thingHolder = allWorldObjects[i] as IThingHolder;
-				if (thingHolder != null)
+				if (allWorldObjects[i] is IThingHolder item)
 				{
-					outChildren.Add(thingHolder);
+					outChildren.Add(item);
 				}
 				List<WorldObjectComp> allComps = allWorldObjects[i].AllComps;
 				for (int j = 0; j < allComps.Count; j++)
 				{
-					IThingHolder thingHolder2 = allComps[j] as IThingHolder;
-					if (thingHolder2 != null)
+					if (allComps[j] is IThingHolder item2)
 					{
-						outChildren.Add(thingHolder2);
+						outChildren.Add(item2);
 					}
 				}
 			}
 			for (int k = 0; k < components.Count; k++)
 			{
-				IThingHolder thingHolder3 = components[k] as IThingHolder;
-				if (thingHolder3 != null)
+				if (components[k] is IThingHolder item3)
 				{
-					outChildren.Add(thingHolder3);
+					outChildren.Add(item3);
 				}
 			}
 		}
@@ -368,6 +475,11 @@ namespace RimWorld.Planet
 		public override string ToString()
 		{
 			return "World-" + info.name;
+		}
+
+		public void Dispose()
+		{
+			grid?.Dispose();
 		}
 	}
 }

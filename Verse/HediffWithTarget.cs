@@ -4,14 +4,11 @@ namespace Verse
 	{
 		public Thing target;
 
-		public override string LabelBase => base.LabelBase + " " + def.targetPrefix + " " + target?.LabelShortCap;
-
 		public override bool ShouldRemove
 		{
 			get
 			{
-				Pawn pawn;
-				if (target != null && ((pawn = target as Pawn) == null || !pawn.Dead))
+				if (target != null && !(target is Pawn { Dead: not false }))
 				{
 					return base.ShouldRemove;
 				}

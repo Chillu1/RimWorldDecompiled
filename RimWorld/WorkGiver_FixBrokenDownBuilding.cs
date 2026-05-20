@@ -37,8 +37,7 @@ namespace RimWorld
 
 		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			Building building = t as Building;
-			if (building == null)
+			if (!(t is Building building))
 			{
 				return false;
 			}
@@ -51,10 +50,6 @@ namespace RimWorld
 				return false;
 			}
 			if (!t.IsBrokenDown())
-			{
-				return false;
-			}
-			if (t.IsForbidden(pawn))
 			{
 				return false;
 			}
@@ -85,8 +80,8 @@ namespace RimWorld
 
 		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			Thing t2 = FindClosestComponent(pawn);
-			Job job = JobMaker.MakeJob(JobDefOf.FixBrokenDownBuilding, t, t2);
+			Thing thing = FindClosestComponent(pawn);
+			Job job = JobMaker.MakeJob(JobDefOf.FixBrokenDownBuilding, t, thing);
 			job.count = 1;
 			return job;
 		}

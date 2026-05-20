@@ -6,23 +6,23 @@ namespace RimWorld.Planet
 {
 	public static class SiteMaker
 	{
-		public static Site MakeSite(SitePartDef sitePart, int tile, Faction faction, bool ifHostileThenMustRemainHostile = true, float? threatPoints = null)
+		public static Site MakeSite(SitePartDef sitePart, PlanetTile tile, Faction faction, bool ifHostileThenMustRemainHostile = true, float? threatPoints = null, WorldObjectDef worldObjectDef = null)
 		{
-			return MakeSite((sitePart != null) ? Gen.YieldSingle(sitePart) : null, tile, faction, ifHostileThenMustRemainHostile, threatPoints);
+			return MakeSite((sitePart != null) ? Gen.YieldSingle(sitePart) : null, tile, faction, ifHostileThenMustRemainHostile, threatPoints, worldObjectDef);
 		}
 
-		public static Site MakeSite(IEnumerable<SitePartDef> siteParts, int tile, Faction faction, bool ifHostileThenMustRemainHostile = true, float? threatPoints = null)
+		public static Site MakeSite(IEnumerable<SitePartDef> siteParts, PlanetTile tile, Faction faction, bool ifHostileThenMustRemainHostile = true, float? threatPoints = null, WorldObjectDef worldObjectDef = null)
 		{
 			float num = threatPoints ?? StorytellerUtility.DefaultSiteThreatPointsNow();
 			SiteMakerHelper.GenerateDefaultParams(num, tile, faction, siteParts, out var sitePartDefsWithParams);
-			Site site = MakeSite(sitePartDefsWithParams, tile, faction, ifHostileThenMustRemainHostile);
+			Site site = MakeSite(sitePartDefsWithParams, tile, faction, ifHostileThenMustRemainHostile, worldObjectDef);
 			site.desiredThreatPoints = num;
 			return site;
 		}
 
-		public static Site MakeSite(IEnumerable<SitePartDefWithParams> siteParts, int tile, Faction faction, bool ifHostileThenMustRemainHostile = true)
+		public static Site MakeSite(IEnumerable<SitePartDefWithParams> siteParts, PlanetTile tile, Faction faction, bool ifHostileThenMustRemainHostile = true, WorldObjectDef worldObjectDef = null)
 		{
-			Site site = (Site)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.Site);
+			Site site = (Site)WorldObjectMaker.MakeWorldObject(worldObjectDef ?? WorldObjectDefOf.Site);
 			site.Tile = tile;
 			site.SetFaction(faction);
 			if (ifHostileThenMustRemainHostile && faction != null && faction.HostileTo(Faction.OfPlayer))
@@ -40,7 +40,7 @@ namespace RimWorld.Planet
 			return site;
 		}
 
-		public static Site TryMakeSite_SingleSitePart(IEnumerable<SitePartDef> singleSitePartCandidates, int tile, Faction faction = null, bool disallowNonHostileFactions = true, Predicate<Faction> extraFactionValidator = null, bool ifHostileThenMustRemainHostile = true, float? threatPoints = null)
+		public static Site TryMakeSite_SingleSitePart(IEnumerable<SitePartDef> singleSitePartCandidates, PlanetTile tile, Faction faction = null, bool disallowNonHostileFactions = true, Predicate<Faction> extraFactionValidator = null, bool ifHostileThenMustRemainHostile = true, float? threatPoints = null)
 		{
 			if (!SiteMakerHelper.TryFindSiteParams_SingleSitePart(singleSitePartCandidates, out var sitePart, out faction, faction, disallowNonHostileFactions, extraFactionValidator))
 			{
@@ -49,7 +49,7 @@ namespace RimWorld.Planet
 			return MakeSite(sitePart, tile, faction, ifHostileThenMustRemainHostile, threatPoints);
 		}
 
-		public static Site TryMakeSite_SingleSitePart(string singleSitePartTag, int tile, Faction faction = null, bool disallowNonHostileFactions = true, Predicate<Faction> extraFactionValidator = null, bool ifHostileThenMustRemainHostile = true, float? threatPoints = null)
+		public static Site TryMakeSite_SingleSitePart(string singleSitePartTag, PlanetTile tile, Faction faction = null, bool disallowNonHostileFactions = true, Predicate<Faction> extraFactionValidator = null, bool ifHostileThenMustRemainHostile = true, float? threatPoints = null)
 		{
 			if (!SiteMakerHelper.TryFindSiteParams_SingleSitePart(singleSitePartTag, out var sitePart, out faction, faction, disallowNonHostileFactions, extraFactionValidator))
 			{
@@ -58,7 +58,7 @@ namespace RimWorld.Planet
 			return MakeSite(sitePart, tile, faction, ifHostileThenMustRemainHostile, threatPoints);
 		}
 
-		public static Site TryMakeSite_MultipleSiteParts(IEnumerable<IEnumerable<SitePartDef>> sitePartsCandidates, int tile, Faction faction = null, bool disallowNonHostileFactions = true, Predicate<Faction> extraFactionValidator = null, bool ifHostileThenMustRemainHostile = true, float? threatPoints = null)
+		public static Site TryMakeSite_MultipleSiteParts(IEnumerable<IEnumerable<SitePartDef>> sitePartsCandidates, PlanetTile tile, Faction faction = null, bool disallowNonHostileFactions = true, Predicate<Faction> extraFactionValidator = null, bool ifHostileThenMustRemainHostile = true, float? threatPoints = null)
 		{
 			if (!SiteMakerHelper.TryFindSiteParams_MultipleSiteParts(sitePartsCandidates, out var siteParts, out faction, faction, disallowNonHostileFactions, extraFactionValidator))
 			{
@@ -67,7 +67,7 @@ namespace RimWorld.Planet
 			return MakeSite(siteParts, tile, faction, ifHostileThenMustRemainHostile, threatPoints);
 		}
 
-		public static Site TryMakeSite_MultipleSiteParts(List<string> sitePartsTags, int tile, Faction faction = null, bool disallowNonHostileFactions = true, Predicate<Faction> extraFactionValidator = null, bool ifHostileThenMustRemainHostile = true, float? threatPoints = null)
+		public static Site TryMakeSite_MultipleSiteParts(List<string> sitePartsTags, PlanetTile tile, Faction faction = null, bool disallowNonHostileFactions = true, Predicate<Faction> extraFactionValidator = null, bool ifHostileThenMustRemainHostile = true, float? threatPoints = null)
 		{
 			if (!SiteMakerHelper.TryFindSiteParams_MultipleSiteParts(sitePartsTags, out var siteParts, out faction, faction, disallowNonHostileFactions, extraFactionValidator))
 			{
@@ -76,7 +76,7 @@ namespace RimWorld.Planet
 			return MakeSite(siteParts, tile, faction, ifHostileThenMustRemainHostile, threatPoints);
 		}
 
-		public static Site TryMakeSite(IEnumerable<SitePartDef> siteParts, int tile, bool disallowNonHostileFactions = true, Predicate<Faction> extraFactionValidator = null, bool ifHostileThenMustRemainHostile = true, float? threatPoints = null)
+		public static Site TryMakeSite(IEnumerable<SitePartDef> siteParts, PlanetTile tile, bool disallowNonHostileFactions = true, Predicate<Faction> extraFactionValidator = null, bool ifHostileThenMustRemainHostile = true, float? threatPoints = null)
 		{
 			if (!SiteMakerHelper.TryFindRandomFactionFor(siteParts, out var faction, disallowNonHostileFactions, extraFactionValidator))
 			{

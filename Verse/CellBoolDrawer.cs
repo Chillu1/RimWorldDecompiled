@@ -114,13 +114,15 @@ namespace Verse
 			}
 			int num = 0;
 			int num2 = 0;
-			if (meshes.Count < num + 1)
+			if (meshes.Count < 1)
 			{
-				Mesh mesh = new Mesh();
-				mesh.name = "CellBoolDrawer";
-				meshes.Add(mesh);
+				Mesh item = new Mesh
+				{
+					name = "CellBoolDrawer"
+				};
+				meshes.Add(item);
 			}
-			Mesh mesh2 = meshes[num];
+			Mesh mesh = meshes[num];
 			CellRect cellRect = new CellRect(0, 0, mapSizeX, mapSizeZ);
 			float y = AltitudeLayer.MapDataOverlay.AltitudeFor();
 			bool careAboutVertexColors = false;
@@ -156,20 +158,22 @@ namespace Verse
 					num2++;
 					if (num2 >= 16383)
 					{
-						FinalizeWorkingDataIntoMesh(mesh2);
+						FinalizeWorkingDataIntoMesh(mesh);
 						num++;
 						if (meshes.Count < num + 1)
 						{
-							Mesh mesh3 = new Mesh();
-							mesh3.name = "CellBoolDrawer";
-							meshes.Add(mesh3);
+							Mesh item2 = new Mesh
+							{
+								name = "CellBoolDrawer"
+							};
+							meshes.Add(item2);
 						}
-						mesh2 = meshes[num];
+						mesh = meshes[num];
 						num2 = 0;
 					}
 				}
 			}
-			FinalizeWorkingDataIntoMesh(mesh2);
+			FinalizeWorkingDataIntoMesh(mesh);
 			CreateMaterialIfNeeded(careAboutVertexColors);
 			dirty = false;
 		}
@@ -196,6 +200,12 @@ namespace Verse
 				materialCaresAboutVertexColors = careAboutVertexColors;
 				material.renderQueue = renderQueue;
 			}
+		}
+
+		public void Notify_ColorChanged()
+		{
+			material = null;
+			SetDirty();
 		}
 	}
 }

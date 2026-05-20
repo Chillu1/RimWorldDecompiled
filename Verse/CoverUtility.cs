@@ -11,6 +11,10 @@ namespace Verse
 		{
 			IntVec3 cell = target.Cell;
 			List<CoverInfo> list = new List<CoverInfo>();
+			if (target.HasThing && !target.Thing.def.CanBenefitFromCover)
+			{
+				return list;
+			}
 			for (int i = 0; i < 8; i++)
 			{
 				IntVec3 intVec = cell + GenAdj.AdjacentCells[i];
@@ -26,10 +30,14 @@ namespace Verse
 		{
 			IntVec3 cell = target.Cell;
 			float num = 0f;
+			if (target.HasThing && !target.Thing.def.CanBenefitFromCover)
+			{
+				return num;
+			}
 			for (int i = 0; i < 8; i++)
 			{
 				IntVec3 intVec = cell + GenAdj.AdjacentCells[i];
-				if (intVec.InBounds(map) && TryFindAdjustedCoverInCell(shooterLoc, target, intVec, map, out var result))
+				if (intVec.InBounds(map) && !(shooterLoc == intVec) && TryFindAdjustedCoverInCell(shooterLoc, target, intVec, map, out var result))
 				{
 					num += (1f - num) * result.BlockChance;
 				}
@@ -102,8 +110,7 @@ namespace Verse
 
 		public static float BaseBlockChance(this Thing thing)
 		{
-			Building_Door building_Door = thing as Building_Door;
-			if (building_Door != null && building_Door.Open)
+			if (thing is Building_Door { Open: not false })
 			{
 				return 0f;
 			}
@@ -126,6 +133,28 @@ namespace Verse
 				}
 			}
 			return num;
+		}
+
+		public static bool ThingCovered(Thing thing, Map map)
+		{
+			foreach (IntVec3 item in thing.OccupiedRect())
+			{
+				List<Thing> thingList = item.GetThingList(map);
+				bool flag = false;
+				for (int i = 0; i < thingList.Count; i++)
+				{
+					if (thingList[i] != thing && thingList[i].def.Fillage == FillCategory.Full && thingList[i].def.Altitude >= thing.def.Altitude)
+					{
+						flag = true;
+						break;
+					}
+				}
+				if (!flag)
+				{
+					return false;
+				}
+			}
+			return true;
 		}
 	}
 }

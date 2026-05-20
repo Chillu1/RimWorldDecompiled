@@ -12,6 +12,9 @@ namespace Verse
 		[MustTranslate]
 		public string label;
 
+		[MustTranslate]
+		public string labelNoLocation;
+
 		[Unsaved(false)]
 		[TranslationHandle]
 		public string untranslatedLabel;
@@ -77,7 +80,7 @@ namespace Verse
 			return num;
 		}
 
-		public float AdjustedBaseMeleeDamageAmount_NewTmp(ThingDef ownerEquipment, ThingDef ownerEquipmentStuff, DamageDef damageDef)
+		public float AdjustedBaseMeleeDamageAmount(ThingDef ownerEquipment, ThingDef ownerEquipmentStuff, DamageDef damageDef)
 		{
 			float num = power;
 			if (ownerEquipmentStuff != null)
@@ -96,7 +99,7 @@ namespace Verse
 			return cooldownTime * (ownerEquipment?.GetStatValue(StatDefOf.MeleeWeapon_CooldownMultiplier) ?? 1f);
 		}
 
-		public float AdjustedCooldown_NewTmp(ThingDef ownerEquipment, ThingDef ownerEquipmentStuff)
+		public float AdjustedCooldown(ThingDef ownerEquipment, ThingDef ownerEquipmentStuff)
 		{
 			return cooldownTime * (ownerEquipment?.GetStatValueAbstract(StatDefOf.MeleeWeapon_CooldownMultiplier, ownerEquipmentStuff) ?? 1f);
 		}

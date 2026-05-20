@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Verse;
 using Verse.AI;
 
 namespace RimWorld
@@ -17,7 +18,7 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.atomicWithPrevious = true;
 			toil.defaultCompleteMode = ToilCompleteMode.Instant;
 			toil.initAction = delegate
@@ -28,7 +29,31 @@ namespace RimWorld
 				}
 			};
 			yield return toil;
-			yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.OnCell);
+			Toil toil2 = Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.OnCell);
+			toil2.tickAction = delegate
+			{
+				if (job.exitMapOnArrival && pawn.Map.exitMapGrid.IsExitCell(pawn.Position))
+				{
+					ExitMap();
+				}
+			};
+			toil2.FailOn(() => pawn.Downed && !pawn.health.CanCrawl);
+			yield return toil2;
+			Toil toil3 = ToilMaker.MakeToil("MakeNewToils");
+			toil3.initAction = delegate
+			{
+				if (job.exitMapOnArrival && (pawn.Position.OnEdge(pawn.Map) || pawn.Map.exitMapGrid.IsExitCell(pawn.Position)))
+				{
+					ExitMap();
+				}
+			};
+			toil3.defaultCompleteMode = ToilCompleteMode.Instant;
+			yield return toil3;
+		}
+
+		private void ExitMap()
+		{
+			pawn.ExitMap(allowedToJoinOrCreateCaravan: true, CellRect.WholeMap(base.Map).GetClosestEdge(pawn.Position));
 		}
 	}
 }

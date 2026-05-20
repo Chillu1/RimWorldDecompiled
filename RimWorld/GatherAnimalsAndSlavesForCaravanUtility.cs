@@ -8,17 +8,6 @@ namespace RimWorld
 {
 	public static class GatherAnimalsAndSlavesForCaravanUtility
 	{
-		[Obsolete]
-		public static bool IsFollowingAnyone(Pawn p)
-		{
-			return false;
-		}
-
-		[Obsolete]
-		public static void SetFollower(Pawn p, Pawn follower)
-		{
-		}
-
 		public static void CheckArrived(Lord lord, List<Pawn> pawns, IntVec3 meetingPoint, string memo, Predicate<Pawn> shouldCheckIfArrived, Predicate<Pawn> extraValidator = null)
 		{
 			bool flag = true;
@@ -35,6 +24,25 @@ namespace RimWorld
 			{
 				lord.ReceiveMemo(memo);
 			}
+		}
+
+		public static bool IsRopedByCaravanPawn(Pawn animal)
+		{
+			Lord lord = animal.GetLord();
+			if (lord != null && animal.roping.IsRopedByPawn)
+			{
+				return animal.roping.RopedByPawn?.GetLord() == lord;
+			}
+			return false;
+		}
+
+		public static bool CanRoperTakeAnimalToDest(Pawn pawn, Pawn animal, IntVec3 destSpot)
+		{
+			if (pawn.CanReach(animal, PathEndMode.Touch, Danger.Deadly))
+			{
+				return animal.Map.reachability.CanReach(animal.Position, destSpot, PathEndMode.OnCell, TraverseParms.For(pawn).WithFenceblockedOf(animal));
+			}
+			return false;
 		}
 	}
 }

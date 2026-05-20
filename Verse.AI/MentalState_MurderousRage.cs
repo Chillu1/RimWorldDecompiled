@@ -25,14 +25,14 @@ namespace Verse.AI
 			TryFindNewTarget();
 		}
 
-		public override void MentalStateTick()
+		public override void MentalStateTick(int delta)
 		{
-			base.MentalStateTick();
+			base.MentalStateTick(delta);
 			if (target != null && target.Dead)
 			{
 				RecoverFromState();
 			}
-			if (pawn.IsHashIntervalTick(120) && !IsTargetStillValidAndReachable())
+			if (pawn.IsHashIntervalTick(120, delta) && !IsTargetStillValidAndReachable())
 			{
 				if (!TryFindNewTarget())
 				{
@@ -40,11 +40,11 @@ namespace Verse.AI
 					return;
 				}
 				Messages.Message("MessageMurderousRageChangedTarget".Translate(pawn.NameShortColored, target.Label, pawn.Named("PAWN"), target.Named("TARGET")).Resolve().AdjustedFor(pawn), pawn, MessageTypeDefOf.NegativeEvent);
-				base.MentalStateTick();
+				base.MentalStateTick(delta);
 			}
 		}
 
-		public override string GetBeginLetterText()
+		public override TaggedString GetBeginLetterText()
 		{
 			if (target == null)
 			{
@@ -65,7 +65,7 @@ namespace Verse.AI
 		{
 			if (target != null && target.SpawnedParentOrMe != null && (!(target.SpawnedParentOrMe is Pawn) || target.SpawnedParentOrMe == target))
 			{
-				return pawn.CanReach(target.SpawnedParentOrMe, PathEndMode.Touch, Danger.Deadly, canBash: true);
+				return pawn.CanReach(target.SpawnedParentOrMe, PathEndMode.Touch, Danger.Deadly, canBashDoors: true);
 			}
 			return false;
 		}

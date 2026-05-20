@@ -1,21 +1,24 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
 namespace RimWorld
 {
-	public class ScenPart_ConfigPage_ConfigureStartingPawns : ScenPart_ConfigPage
+	public class ScenPart_ConfigPage_ConfigureStartingPawns : ScenPart_ConfigPage_ConfigureStartingPawnsBase
 	{
 		public int pawnCount = 3;
 
-		public int pawnChoiceCount = 10;
+		public DevelopmentalStage allowedDevelopmentalStages = DevelopmentalStage.Baby | DevelopmentalStage.Child | DevelopmentalStage.Adult;
+
+		public List<SkillDef> requiredSkills;
 
 		private string pawnCountBuffer;
 
 		private string pawnCountChoiceBuffer;
 
-		private const int MaxPawnCount = 10;
-
 		private const int MaxPawnChoiceCount = 10;
+
+		protected override int TotalPawnCount => pawnCount;
 
 		public override void DoEditInterface(Listing_ScenEdit listing)
 		{
@@ -36,12 +39,20 @@ namespace RimWorld
 		{
 			base.ExposeData();
 			Scribe_Values.Look(ref pawnCount, "pawnCount", 0);
-			Scribe_Values.Look(ref pawnChoiceCount, "pawnChoiceCount", 0);
 		}
 
 		public override string Summary(Scenario scen)
 		{
-			return "ScenPart_StartWithPawns".Translate(pawnCount, pawnChoiceCount);
+			if (pawnCount == 1)
+			{
+				return "ScenPart_StartWithPawn".Translate();
+			}
+			return "ScenPart_StartWithPawns".Translate(pawnCount);
+		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode() ^ pawnCount;
 		}
 
 		public override void Randomize()
@@ -50,24 +61,26 @@ namespace RimWorld
 			pawnChoiceCount = 10;
 		}
 
-		public override void PostWorldGenerate()
+		protected override void GenerateStartingPawns()
 		{
-			Find.GameInitData.startingPawnCount = pawnCount;
 			int num = 0;
 			do
 			{
 				StartingPawnUtility.ClearAllStartingPawns();
 				for (int i = 0; i < pawnCount; i++)
 				{
-					Find.GameInitData.startingAndOptionalPawns.Add(StartingPawnUtility.NewGeneratedStartingPawn());
+					StartingPawnUtility.AddNewPawn();
 				}
 				num++;
 			}
 			while (num <= 20 && !StartingPawnUtility.WorkTypeRequirementsSatisfied());
-			while (Find.GameInitData.startingAndOptionalPawns.Count < pawnChoiceCount)
-			{
-				Find.GameInitData.startingAndOptionalPawns.Add(StartingPawnUtility.NewGeneratedStartingPawn());
-			}
+		}
+
+		public override void PostIdeoChosen()
+		{
+			Find.GameInitData.allowedDevelopmentalStages = allowedDevelopmentalStages;
+			Find.GameInitData.startingSkillsRequired = requiredSkills;
+			base.PostIdeoChosen();
 		}
 	}
 }

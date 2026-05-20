@@ -13,15 +13,24 @@ namespace RimWorld
 			{
 				canTargetPawns = false,
 				canTargetBuildings = false,
-				canTargetItems = true,
-				mapObjectTargetsMustBeAutoAttackable = false,
-				validator = (TargetInfo x) => x.Thing is Corpse && BaseTargetValidator(x.Thing)
+				canTargetItems = false,
+				canTargetCorpses = true,
+				mapObjectTargetsMustBeAutoAttackable = false
 			};
 		}
 
 		public override IEnumerable<Thing> GetTargets(Thing targetChosenByPlayer = null)
 		{
 			yield return targetChosenByPlayer;
+		}
+
+		public override bool ValidateTarget(LocalTargetInfo target, bool showMessages = true)
+		{
+			if (target.Thing is Corpse)
+			{
+				return base.ValidateTarget(target.Thing, showMessages);
+			}
+			return false;
 		}
 	}
 }

@@ -24,7 +24,7 @@ namespace RimWorld
 
 		public override void DoWindowContents(Rect inRect)
 		{
-			GUI.BeginGroup(inRect);
+			Widgets.BeginGroup(inRect);
 			Rect rect = new Rect(0f, 0f, inRect.width / 2f, 70f);
 			Rect rect2 = new Rect(0f, rect.yMax, rect.width, 60f);
 			Rect rect3 = new Rect(inRect.width / 2f, 0f, inRect.width / 2f, 70f);
@@ -44,11 +44,11 @@ namespace RimWorld
 			{
 				FactionRelationKind playerRelationKind = faction.PlayerRelationKind;
 				GUI.color = playerRelationKind.GetColor();
-				Widgets.Label(new Rect(rect4.x, rect4.y + Text.CalcHeight(commTarget.GetInfoText(), rect4.width) + Text.SpaceBetweenLines, rect4.width, 30f), playerRelationKind.GetLabel());
+				Widgets.Label(new Rect(rect4.x, rect4.y + Text.CalcHeight(commTarget.GetInfoText(), rect4.width) + Text.SpaceBetweenLines, rect4.width, 30f), playerRelationKind.GetLabelCap());
 			}
 			Text.Anchor = TextAnchor.UpperLeft;
 			GUI.color = Color.white;
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			float num = 147f;
 			Rect rect5 = new Rect(0f, num, inRect.width, inRect.height - num);
 			DrawNode(rect5);

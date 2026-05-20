@@ -31,6 +31,7 @@ namespace RimWorld
 
 		public void RecalculateState()
 		{
+			bool active = Active;
 			ThoughtState thoughtState = CurrentStateInternal();
 			if (thoughtState.ActiveFor(def))
 			{
@@ -40,6 +41,31 @@ namespace RimWorld
 			else
 			{
 				curStageIndex = -1;
+			}
+			bool active2 = Active;
+			if (active && !active2)
+			{
+				Notify_BecameInactive();
+			}
+			if (!active && active2)
+			{
+				Notify_BecameActive();
+			}
+		}
+
+		protected virtual void Notify_BecameActive()
+		{
+			if (def.producesMemoryThought != null)
+			{
+				pawn.needs?.mood?.thoughts.memories.RemoveMemoriesOfDef(def.producesMemoryThought);
+			}
+		}
+
+		protected virtual void Notify_BecameInactive()
+		{
+			if (def.producesMemoryThought != null)
+			{
+				pawn.needs?.mood?.thoughts.memories.TryGainMemory(def.producesMemoryThought, null, sourcePrecept);
 			}
 		}
 

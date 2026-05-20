@@ -35,7 +35,11 @@ namespace RimWorld
 					outThoughtGroupsPresent.RemoveAt(num);
 				}
 			}
-			outThoughtGroupsPresent.SortByDescending((Thought t) => mood.thoughts.MoodOffsetOfGroup(t), (Thought t) => t.GetHashCode());
+			foreach (Thought item in outThoughtGroupsPresent)
+			{
+				item.cachedMoodOffsetOfGroup = mood.thoughts.MoodOffsetOfGroup(item);
+			}
+			outThoughtGroupsPresent.SortByDescending((Thought t) => t.cachedMoodOffsetOfGroup, (Thought t) => t.GetHashCode());
 		}
 	}
 }

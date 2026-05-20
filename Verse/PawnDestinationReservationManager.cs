@@ -62,20 +62,29 @@ namespace Verse
 
 		public void Reserve(Pawn p, Job job, IntVec3 loc)
 		{
-			if (p.Faction != null)
+			if (p.Faction == null)
 			{
-				if (p.Drafted && p.Faction == Faction.OfPlayer && IsReserved(loc, out var claimant) && claimant != p && !claimant.HostileTo(p) && claimant.Faction != p.Faction && (claimant.mindState == null || claimant.mindState.mentalStateHandler == null || !claimant.mindState.mentalStateHandler.InMentalState || (claimant.mindState.mentalStateHandler.CurStateDef.category != MentalStateCategory.Aggro && claimant.mindState.mentalStateHandler.CurStateDef.category != MentalStateCategory.Malicious)))
-				{
-					claimant.jobs.EndCurrentJob(JobCondition.InterruptForced);
-				}
-				ObsoleteAllClaimedBy(p);
-				GetPawnDestinationSetFor(p.Faction).list.Add(new PawnDestinationReservation
-				{
-					target = loc,
-					claimant = p,
-					job = job
-				});
+				return;
 			}
+			if (p.Drafted && p.Faction == Faction.OfPlayer && IsReserved(loc, out var claimant) && claimant != p && !claimant.HostileTo(p) && claimant.Faction != p.Faction)
+			{
+				MentalStateDef mentalStateDef = claimant.MentalStateDef;
+				if (mentalStateDef == null || mentalStateDef.category != MentalStateCategory.Aggro)
+				{
+					MentalStateDef mentalStateDef2 = claimant.MentalStateDef;
+					if (mentalStateDef2 == null || mentalStateDef2.category != MentalStateCategory.Malicious)
+					{
+						claimant.jobs.EndCurrentJob(JobCondition.InterruptForced);
+					}
+				}
+			}
+			ObsoleteAllClaimedBy(p);
+			GetPawnDestinationSetFor(p.Faction).list.Add(new PawnDestinationReservation
+			{
+				target = loc,
+				claimant = p,
+				job = job
+			});
 		}
 
 		public PawnDestinationReservation MostRecentReservationFor(Pawn p)

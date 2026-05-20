@@ -12,6 +12,8 @@ namespace RimWorld
 
 		public bool applyGoodwillImpactToLodgers = true;
 
+		public bool canTargetBosses = true;
+
 		public ClamorDef clamorType;
 
 		public int clamorRadius;
@@ -19,6 +21,10 @@ namespace RimWorld
 		public float screenShakeIntensity;
 
 		public SoundDef sound;
+
+		public SoundDef soundMale;
+
+		public SoundDef soundFemale;
 
 		public string customLetterLabel;
 
@@ -33,5 +39,7 @@ namespace RimWorld
 		public float weight = 1f;
 
 		public bool availableWhenTargetIsWounded = true;
+
+		public bool canTargetBaby = true;
 	}
 }

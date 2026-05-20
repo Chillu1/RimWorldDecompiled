@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using RimWorld;
 using UnityEngine;
 
@@ -14,10 +15,29 @@ namespace Verse
 
 		public int clusterSize = 1;
 
+		public QualityCategory? quality;
+
+		public bool minify;
+
+		public bool avoidUsedRects;
+
+		public bool createUsedRect;
+
+		public bool skipRoofed;
+
+		public ThingDef filthDef;
+
+		public int filthExpandBy;
+
+		public float filthChance = 0.5f;
+
 		public float terrainValidationRadius;
 
 		[NoTranslate]
 		private List<string> terrainValidationDisallowed;
+
+		[NoTranslate]
+		private List<string> terrainValidationAllowed;
 
 		[Unsaved(false)]
 		private IntVec3 clusterCenter;
@@ -58,13 +78,13 @@ namespace Verse
 
 		public override void Generate(Map map, GenStepParams parms)
 		{
-			if (!allowInWaterBiome && map.TileInfo.WaterCovered)
+			if (ShouldSkipMap(map))
 			{
 				return;
 			}
-			int count = CalculateFinalCount(map);
-			IntRange stackSizeRange = ((thingDef.ingestible != null && thingDef.ingestible.IsMeal && thingDef.stackLimit <= 10) ? IntRange.one : ((thingDef.stackLimit > 5) ? new IntRange(Mathf.RoundToInt((float)thingDef.stackLimit * 0.5f), thingDef.stackLimit) : new IntRange(thingDef.stackLimit, thingDef.stackLimit)));
-			List<int> list = CountDividedIntoStacks(count, stackSizeRange);
+			int num = CalculateFinalCount(map);
+			IntRange stackSizeRange = ((thingDef.ingestible != null && thingDef.ingestible.IsMeal && thingDef.stackLimit <= 10) ? IntRange.One : ((thingDef.stackLimit <= 5) ? new IntRange(thingDef.stackLimit, thingDef.stackLimit) : new IntRange(Mathf.RoundToInt((float)thingDef.stackLimit * 0.5f), thingDef.stackLimit)));
+			List<int> list = CountDividedIntoStacks(num, stackSizeRange);
 			for (int i = 0; i < list.Count; i++)
 			{
 				if (!TryFindScatterCell(map, out var result))
@@ -98,6 +118,24 @@ namespace Verse
 			return base.TryFindScatterCell(map, out result);
 		}
 
+		protected virtual Thing GenerateThing()
+		{
+			Thing thing = ThingMaker.MakeThing(thingDef, stuff);
+			if (thing.TryGetComp(out CompQuality comp))
+			{
+				comp.SetQuality(quality ?? QualityCategory.Normal, ArtGenerationContext.Outsider);
+			}
+			if (thingDef.IsIngestible && thingDef.ingestible.IsMeal)
+			{
+				FoodUtility.GenerateGoodIngredients(thing, Faction.OfPlayer.ideos.PrimaryIdeo);
+			}
+			if (minify && thingDef.Minifiable)
+			{
+				thing = thing.MakeMinified();
+			}
+			return thing;
+		}
+
 		protected override void ScatterAt(IntVec3 loc, Map map, GenStepParams parms, int stackCount = 1)
 		{
 			if (!TryGetRandomValidRotation(loc, map, out var rot))
@@ -112,11 +150,7 @@ namespace Verse
 					item.GetEdifice(map)?.Destroy();
 				}
 			}
-			Thing thing = ThingMaker.MakeThing(thingDef, stuff);
-			if (thingDef.Minifiable)
-			{
-				thing = thing.MakeMinified();
-			}
+			Thing thing = GenerateThing();
 			if (thing.def.category == ThingCategory.Item)
 			{
 				thing.stackCount = stackCount;
@@ -131,11 +165,29 @@ namespace Verse
 			{
 				GenSpawn.Spawn(thing, loc, map, rot);
 			}
+			if (filthDef != null)
+			{
+				foreach (IntVec3 item2 in thing.OccupiedRect().ExpandedBy(filthExpandBy))
+				{
+					if (Rand.Chance(filthChance) && item2.InBounds(thing.Map))
+					{
+						FilthMaker.TryMakeFilth(item2, thing.Map, filthDef);
+					}
+				}
+			}
+			if (createUsedRect)
+			{
+				MapGenerator.GetOrGenerateVar<List<CellRect>>("UsedRects").Add(thing.OccupiedRect());
+			}
 		}
 
 		protected override bool CanScatterAt(IntVec3 loc, Map map)
 		{
 			if (!base.CanScatterAt(loc, map))
+			{
+				return false;
+			}
+			if (!GenSpawn.CanSpawnAt(thingDef, loc, map))
 			{
 				return false;
 			}
@@ -152,9 +204,23 @@ namespace Verse
 						continue;
 					}
 					TerrainDef terrain = item.GetTerrain(map);
-					for (int i = 0; i < terrainValidationDisallowed.Count; i++)
+					if (terrainValidationDisallowed != null)
 					{
-						if (terrain.HasTag(terrainValidationDisallowed[i]))
+						foreach (string item2 in terrainValidationDisallowed)
+						{
+							if (terrain.HasTag(item2))
+							{
+								return false;
+							}
+						}
+					}
+					if (terrainValidationAllowed == null)
+					{
+						continue;
+					}
+					foreach (string item3 in terrainValidationAllowed)
+					{
+						if (!terrain.HasTag(item3))
 						{
 							return false;
 						}
@@ -185,11 +251,32 @@ namespace Verse
 
 		private bool IsRotationValid(IntVec3 loc, Rot4 rot, Map map)
 		{
-			if (!GenAdj.OccupiedRect(loc, rot, thingDef.size).InBounds(map))
+			CellRect cellRect = GenAdj.OccupiedRect(loc, rot, thingDef.size);
+			if (!cellRect.InBounds(map))
 			{
 				return false;
 			}
+			if (avoidUsedRects && MapGenerator.GetOrGenerateVar<List<CellRect>>("UsedRects").Any((CellRect ur) => ur.Overlaps(cellRect)))
+			{
+				return false;
+			}
+			if (thingDef.hasInteractionCell)
+			{
+				IntVec3 c = loc + thingDef.interactionCellOffset.RotatedBy(rot);
+				if (!c.InBounds(map) || !c.Walkable(map))
+				{
+					return false;
+				}
+			}
 			if (GenSpawn.WouldWipeAnythingWith(loc, rot, thingDef, map, (Thing x) => x.def == thingDef || (x.def.category != ThingCategory.Plant && x.def.category != ThingCategory.Filth)))
+			{
+				return false;
+			}
+			if (skipRoofed && cellRect.Any((IntVec3 c2) => c2.Roofed(map)))
+			{
+				return false;
+			}
+			if (!thingDef.CanSpawnAt(loc, rot, map))
 			{
 				return false;
 			}

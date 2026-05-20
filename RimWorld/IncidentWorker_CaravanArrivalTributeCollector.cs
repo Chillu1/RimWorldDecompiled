@@ -14,19 +14,23 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (Faction.OfEmpire == null)
+			{
+				return false;
+			}
 			Map map = (Map)parms.target;
-			parms.faction = Faction.Empire;
+			parms.faction = Faction.OfEmpire;
 			parms.traderKind = DefDatabase<TraderKindDef>.AllDefsListForReading.Where((TraderKindDef t) => t.category == "TributeCollector").RandomElementByWeight((TraderKindDef t) => TraderKindCommonality(t, map, parms.faction));
 			return true;
 		}
 
 		protected override bool CanFireNowSub(IncidentParms parms)
 		{
-			if (!base.CanFireNowSub(parms))
+			if (!base.CanFireNowSub(parms) || Faction.OfEmpire == null)
 			{
 				return false;
 			}
-			return FactionCanBeGroupSource(Faction.Empire, (Map)parms.target);
+			return FactionCanBeGroupSource(Faction.OfEmpire, parms);
 		}
 
 		protected override float TraderKindCommonality(TraderKindDef traderKind, Map map, Faction faction)

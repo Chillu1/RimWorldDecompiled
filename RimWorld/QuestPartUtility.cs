@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
@@ -22,8 +23,10 @@ namespace RimWorld
 
 		public static T MakeAndAddEndCondition<T>(Quest quest, string inSignalActivate, QuestEndOutcome outcome, Letter letter = null) where T : QuestPartActivable, new()
 		{
-			T val = new T();
-			val.inSignalEnable = inSignalActivate;
+			T val = new T
+			{
+				inSignalEnable = inSignalActivate
+			};
 			quest.AddPart(val);
 			if (letter != null)
 			{
@@ -77,11 +80,11 @@ namespace RimWorld
 			foreach (Thing thing2 in things)
 			{
 				bool flag = false;
-				for (int j = 0; j < tmpThings.Count; j++)
+				for (int i = 0; i < tmpThings.Count; i++)
 				{
-					if (tmpThings[j].First.CanStackWith(thing2))
+					if (tmpThings[i].First.CanStackWith(thing2))
 					{
-						tmpThings[j] = new Pair<Thing, int>(tmpThings[j].First, tmpThings[j].Second + thing2.stackCount);
+						tmpThings[i] = new Pair<Thing, int>(tmpThings[i].First, tmpThings[i].Second + thing2.stackCount);
 						flag = true;
 						break;
 					}
@@ -91,15 +94,14 @@ namespace RimWorld
 					tmpThings.Add(new Pair<Thing, int>(thing2, thing2.stackCount));
 				}
 			}
-			for (int i = 0; i < tmpThings.Count; i++)
+			for (int j = 0; j < tmpThings.Count; j++)
 			{
-				Thing thing = tmpThings[i].First.GetInnerIfMinified();
-				int second = tmpThings[i].Second;
-				Pawn value;
+				Thing thing = tmpThings[j].First.GetInnerIfMinified();
+				int second = tmpThings[j].Second;
 				string label;
-				if ((value = thing as Pawn) != null)
+				if (thing is Pawn pawn)
 				{
-					label = "PawnQuestReward".Translate(value);
+					label = "PawnQuestReward".Translate(pawn);
 				}
 				else
 				{
@@ -114,15 +116,27 @@ namespace RimWorld
 						if (Mouse.IsOver(rect))
 						{
 							Widgets.DrawHighlight(rect);
-							TaggedString t = (detailsHidden ? "NoMoreInfoAvailable".Translate() : "ClickForMoreInfo".Translate());
-							Pawn pawn;
-							if ((pawn = thing as Pawn) != null && pawn.RaceProps.Humanlike)
+							TaggedString ts = (detailsHidden ? "NoMoreInfoAvailable".Translate() : "ClickForMoreInfo".Translate());
+							ts = ts.Colorize(ColoredText.SubtleGrayColor);
+							if (thing is Pawn pawn2 && pawn2.RaceProps.Humanlike)
 							{
-								TooltipHandler.TipRegion(rect, pawn.LabelCap + "\n\n" + t);
+								string text = pawn2.LabelCap;
+								if (ModsConfig.BiotechActive && pawn2.genes != null)
+								{
+									text += (" (" + pawn2.genes.XenotypeLabel + ")").Colorize(ColoredText.SubtleGrayColor);
+									text = text + "\n\n" + pawn2.genes.XenotypeDescShort;
+								}
+								SkillRecord skillRecord = pawn2.skills.skills.MaxBy((SkillRecord s) => (!s.TotallyDisabled) ? s.Level : (-1));
+								string arg = new StringBuilder().Append("BestSkillLabel".Translate().Colorize(ColoredText.TipSectionTitleColor)).Append(": ").Append(skillRecord.def.LabelCap.ToString())
+									.Append(" (")
+									.Append("BestSkillInfoLevel".Translate(skillRecord.Level).ToString())
+									.Append(')')
+									.ToString();
+								TooltipHandler.TipRegion(rect, $"{text}\n\n{arg}\n\n{ts}");
 							}
 							else
 							{
-								TooltipHandler.TipRegion(rect, thing.DescriptionDetailed + "\n\n" + t);
+								TooltipHandler.TipRegion(rect, thing.DescriptionDetailed + "\n\n" + ts);
 							}
 						}
 						Widgets.ThingIcon(new Rect(rect2.x, rect2.y, 22f, 22f), thing);
@@ -152,11 +166,11 @@ namespace RimWorld
 			foreach (Reward_Items.RememberedItem thingDef in thingDefs)
 			{
 				bool flag = false;
-				for (int j = 0; j < tmpThingDefs.Count; j++)
+				for (int i = 0; i < tmpThingDefs.Count; i++)
 				{
-					if (tmpThingDefs[j].thing == thingDef.thing && tmpThingDefs[j].label == thingDef.label)
+					if (tmpThingDefs[i].thing == thingDef.thing && tmpThingDefs[i].label == thingDef.label)
 					{
-						tmpThingDefs[j] = new Reward_Items.RememberedItem(tmpThingDefs[j].thing, tmpThingDefs[j].stackCount + thingDef.stackCount, tmpThingDefs[j].label);
+						tmpThingDefs[i] = new Reward_Items.RememberedItem(tmpThingDefs[i].thing, tmpThingDefs[i].stackCount + thingDef.stackCount, tmpThingDefs[i].label);
 						flag = true;
 						break;
 					}
@@ -166,11 +180,11 @@ namespace RimWorld
 					tmpThingDefs.Add(thingDef);
 				}
 			}
-			for (int i = 0; i < tmpThingDefs.Count; i++)
+			for (int j = 0; j < tmpThingDefs.Count; j++)
 			{
-				ThingStuffPairWithQuality thing = tmpThingDefs[i].thing;
-				int stackCount = tmpThingDefs[i].stackCount;
-				string label = tmpThingDefs[i].label.CapitalizeFirst() + ((stackCount > 1) ? (" x" + stackCount) : "");
+				ThingStuffPairWithQuality thing = tmpThingDefs[j].thing;
+				int stackCount = tmpThingDefs[j].stackCount;
+				string label = tmpThingDefs[j].label.CapitalizeFirst() + ((stackCount > 1) ? (" x" + stackCount) : "");
 				yield return new GenUI.AnonymousStackElement
 				{
 					drawer = delegate(Rect rect)
@@ -180,7 +194,8 @@ namespace RimWorld
 						if (Mouse.IsOver(rect))
 						{
 							Widgets.DrawHighlight(rect);
-							TooltipHandler.TipRegion(rect, thing.thing.DescriptionDetailed + "\n\n" + "ClickForMoreInfo".Translate());
+							TaggedString taggedString = thing.thing.DescriptionDetailed + "\n\n" + "ClickForMoreInfo".Translate().Colorize(ColoredText.SubtleGrayColor);
+							TooltipHandler.TipRegion(rect, taggedString);
 						}
 						Widgets.ThingIcon(new Rect(rect2.x, rect2.y, 22f, 22f), thing.thing, thing.stuff);
 						Rect rect3 = rect2;

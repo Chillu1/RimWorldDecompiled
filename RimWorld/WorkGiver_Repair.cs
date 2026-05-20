@@ -27,27 +27,11 @@ namespace RimWorld
 
 		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
+			if (!RepairUtility.PawnCanRepairNow(pawn, t))
+			{
+				return false;
+			}
 			Building building = t as Building;
-			if (building == null)
-			{
-				return false;
-			}
-			if (!pawn.Map.listerBuildingsRepairable.Contains(pawn.Faction, building))
-			{
-				return false;
-			}
-			if (!building.def.building.repairable)
-			{
-				return false;
-			}
-			if (t.Faction != pawn.Faction)
-			{
-				return false;
-			}
-			if (!t.def.useHitPoints || t.HitPoints == t.MaxHitPoints)
-			{
-				return false;
-			}
 			if (pawn.Faction == Faction.OfPlayer && !pawn.Map.areaManager.Home[t.Position])
 			{
 				JobFailReason.Is(WorkGiver_FixBrokenDownBuilding.NotInHomeAreaTrans);
@@ -62,6 +46,10 @@ namespace RimWorld
 				return false;
 			}
 			if (building.def.mineable && building.Map.designationManager.DesignationAt(building.Position, DesignationDefOf.Mine) != null)
+			{
+				return false;
+			}
+			if (building.def.mineable && building.Map.designationManager.DesignationAt(building.Position, DesignationDefOf.MineVein) != null)
 			{
 				return false;
 			}

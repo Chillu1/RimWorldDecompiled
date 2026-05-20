@@ -36,8 +36,7 @@ namespace Verse
 				for (int i = 0; i < tmpCrushedThings.Count; i++)
 				{
 					Thing thing = tmpCrushedThings[i];
-					Corpse corpse;
-					if ((corpse = thing as Corpse) == null || !corpse.Bugged)
+					if (!(thing is Corpse { Bugged: not false }))
 					{
 						string item = thing.LabelShortCap;
 						if (thing.def.category == ThingCategory.Pawn)

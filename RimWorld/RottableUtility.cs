@@ -28,5 +28,15 @@ namespace RimWorld
 		{
 			return t.TryGetComp<CompRottable>()?.Stage ?? RotStage.Fresh;
 		}
+
+		public static RotDrawMode GetRotDrawMode(RotStage stage)
+		{
+			return stage switch
+			{
+				RotStage.Rotting => RotDrawMode.Rotting, 
+				RotStage.Dessicated => RotDrawMode.Dessicated, 
+				_ => RotDrawMode.Fresh, 
+			};
+		}
 	}
 }

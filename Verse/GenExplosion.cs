@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
+using UnityEngine;
 
 namespace Verse
 {
@@ -8,7 +9,9 @@ namespace Verse
 	{
 		private static readonly int PawnNotifyCellCount = GenRadial.NumCellsInRadius(4.5f);
 
-		public static void DoExplosion(IntVec3 center, Map map, float radius, DamageDef damType, Thing instigator, int damAmount = -1, float armorPenetration = -1f, SoundDef explosionSound = null, ThingDef weapon = null, ThingDef projectile = null, Thing intendedTarget = null, ThingDef postExplosionSpawnThingDef = null, float postExplosionSpawnChance = 0f, int postExplosionSpawnThingCount = 1, bool applyDamageToExplosionCellsNeighbors = false, ThingDef preExplosionSpawnThingDef = null, float preExplosionSpawnChance = 0f, int preExplosionSpawnThingCount = 1, float chanceToStartFire = 0f, bool damageFalloff = false, float? direction = null, List<Thing> ignoredThings = null)
+		private static readonly List<Room> exploderOverlapRooms = new List<Room>();
+
+		public static void DoExplosion(IntVec3 center, Map map, float radius, DamageDef damType, Thing instigator, int damAmount = -1, float armorPenetration = -1f, SoundDef explosionSound = null, ThingDef weapon = null, ThingDef projectile = null, Thing intendedTarget = null, ThingDef postExplosionSpawnThingDef = null, float postExplosionSpawnChance = 0f, int postExplosionSpawnThingCount = 1, GasType? postExplosionGasType = null, float? postExplosionGasRadiusOverride = null, int postExplosionGasAmount = 255, bool applyDamageToExplosionCellsNeighbors = false, ThingDef preExplosionSpawnThingDef = null, float preExplosionSpawnChance = 0f, int preExplosionSpawnThingCount = 1, float chanceToStartFire = 0f, bool damageFalloff = false, float? direction = null, List<Thing> ignoredThings = null, FloatRange? affectedAngle = null, bool doVisualEffects = true, float propagationSpeed = 1f, float excludeRadius = 0f, bool doSoundEffects = true, ThingDef postExplosionSpawnThingDefWater = null, float screenShakeFactor = 1f, SimpleCurve flammabilityChanceCurve = null, List<IntVec3> overrideCells = null, ThingDef postExplosionSpawnSingleThingDef = null, ThingDef preExplosionSpawnSingleThingDef = null)
 		{
 			if (map == null)
 			{
@@ -48,13 +51,27 @@ namespace Verse
 			obj.preExplosionSpawnChance = preExplosionSpawnChance;
 			obj.preExplosionSpawnThingCount = preExplosionSpawnThingCount;
 			obj.postExplosionSpawnThingDef = postExplosionSpawnThingDef;
+			obj.postExplosionSpawnThingDefWater = postExplosionSpawnThingDefWater;
 			obj.postExplosionSpawnChance = postExplosionSpawnChance;
 			obj.postExplosionSpawnThingCount = postExplosionSpawnThingCount;
+			obj.postExplosionGasType = postExplosionGasType;
+			obj.postExplosionGasRadiusOverride = postExplosionGasRadiusOverride;
+			obj.postExplosionGasAmount = postExplosionGasAmount;
 			obj.applyDamageToExplosionCellsNeighbors = applyDamageToExplosionCellsNeighbors;
 			obj.chanceToStartFire = chanceToStartFire;
 			obj.damageFalloff = damageFalloff;
 			obj.needLOSToCell1 = needLOSToCell;
 			obj.needLOSToCell2 = needLOSToCell2;
+			obj.excludeRadius = excludeRadius;
+			obj.affectedAngle = affectedAngle;
+			obj.doSoundEffects = doSoundEffects;
+			obj.screenShakeFactor = screenShakeFactor;
+			obj.flammabilityChanceCurve = flammabilityChanceCurve;
+			obj.doVisualEffects = doVisualEffects;
+			obj.propagationSpeed = propagationSpeed;
+			obj.overrideCells = overrideCells;
+			obj.postExplosionSpawnSingleThingDef = postExplosionSpawnSingleThingDef;
+			obj.preExplosionSpawnSingleThingDef = preExplosionSpawnSingleThingDef;
 			obj.StartExplosion(explosionSound, ignoredThings);
 		}
 
@@ -121,34 +138,62 @@ namespace Verse
 			}
 		}
 
-		public static void RenderPredictedAreaOfEffect(IntVec3 loc, float radius)
+		public static void RenderPredictedAreaOfEffect(IntVec3 loc, float radius, Color color)
 		{
-			GenDraw.DrawFieldEdges(DamageDefOf.Bomb.Worker.ExplosionCellsToHit(loc, Find.CurrentMap, radius).ToList());
+			GenDraw.DrawFieldEdges(DamageDefOf.Bomb.Worker.ExplosionCellsToHit(loc, Find.CurrentMap, radius).ToList(), color);
 		}
 
-		public static void NotifyNearbyPawnsOfDangerousExplosive(Thing exploder, DamageDef damage, Faction onlyFaction = null)
+		public static void NotifyNearbyPawnsOfDangerousExplosive(Thing exploder, DamageDef damage, Faction onlyFaction = null, Thing instigator = null)
 		{
-			Room room = exploder.GetRoom();
+			exploderOverlapRooms.Clear();
+			if (exploder.def.passability == Traversability.Impassable)
+			{
+				foreach (IntVec3 edgeCell in exploder.OccupiedRect().ExpandedBy(1).EdgeCells)
+				{
+					Room room = edgeCell.GetRoom(exploder.Map);
+					if (!exploderOverlapRooms.Contains(room))
+					{
+						exploderOverlapRooms.Add(room);
+					}
+				}
+			}
+			else
+			{
+				exploderOverlapRooms.Add(exploder.GetRoom());
+			}
+			Pawn pawn = instigator as Pawn;
+			if (pawn != null && pawn.Spawned && CanNotifyPawn(pawn))
+			{
+				pawn.mindState.Notify_DangerousExploderAboutToExplode(exploder);
+			}
 			for (int i = 0; i < PawnNotifyCellCount; i++)
 			{
 				IntVec3 c = exploder.Position + GenRadial.RadialPattern[i];
-				if (!c.InBounds(exploder.Map))
+				if (!c.InBounds(exploder.MapHeld))
 				{
 					continue;
 				}
-				List<Thing> thingList = c.GetThingList(exploder.Map);
+				List<Thing> thingList = c.GetThingList(exploder.MapHeld);
 				for (int j = 0; j < thingList.Count; j++)
 				{
-					Pawn pawn = thingList[j] as Pawn;
-					if (pawn != null && (int)pawn.RaceProps.intelligence >= 2 && (onlyFaction == null || pawn.Faction == onlyFaction) && damage.ExternalViolenceFor(pawn))
+					if (thingList[j] is Pawn pawn2 && CanNotifyPawn(pawn2) && pawn2 != pawn)
 					{
-						Room room2 = pawn.GetRoom();
-						if (room2 == null || room2.CellCount == 1 || (room2 == room && GenSight.LineOfSight(exploder.Position, pawn.Position, exploder.Map, skipFirstCell: true)))
+						Room room2 = pawn2.GetRoom();
+						if (room2 == null || room2.CellCount == 1 || (exploderOverlapRooms.Contains(room2) && GenSight.LineOfSightToThing(pawn2.Position, exploder, exploder.MapHeld, skipFirstCell: true)))
 						{
-							pawn.mindState.Notify_DangerousExploderAboutToExplode(exploder);
+							pawn2.mindState.Notify_DangerousExploderAboutToExplode(exploder);
 						}
 					}
 				}
+			}
+			exploderOverlapRooms.Clear();
+			bool CanNotifyPawn(Pawn p)
+			{
+				if ((int)p.RaceProps.intelligence >= 2 && (onlyFaction == null || p.Faction == onlyFaction))
+				{
+					return damage.ExternalViolenceFor(p);
+				}
+				return false;
 			}
 		}
 	}

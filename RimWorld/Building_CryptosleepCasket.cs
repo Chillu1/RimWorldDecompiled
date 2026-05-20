@@ -10,6 +10,8 @@ namespace RimWorld
 {
 	public class Building_CryptosleepCasket : Building_Casket
 	{
+		private static List<ThingDef> cachedCaskets;
+
 		public override bool TryAcceptThing(Thing thing, bool allowSpecialEffects = true)
 		{
 			if (base.TryAcceptThing(thing, allowSpecialEffects))
@@ -47,8 +49,24 @@ namespace RimWorld
 			string label = "EnterCryptosleepCasket".Translate();
 			Action action = delegate
 			{
-				Job job = JobMaker.MakeJob(jobDef, this);
-				myPawn.jobs.TryTakeOrderedJob(job);
+				if (ModsConfig.BiotechActive)
+				{
+					if (!(myPawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.PsychicBond) is Hediff_PsychicBond hediff_PsychicBond) || !ThoughtWorker_PsychicBondProximity.NearPsychicBondedPerson(myPawn, hediff_PsychicBond))
+					{
+						myPawn.jobs.TryTakeOrderedJob(JobMaker.MakeJob(jobDef, this), JobTag.Misc);
+					}
+					else
+					{
+						Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("PsychicBondDistanceWillBeActive_Cryptosleep".Translate(myPawn.Named("PAWN"), ((Pawn)hediff_PsychicBond.target).Named("BOND")), delegate
+						{
+							myPawn.jobs.TryTakeOrderedJob(JobMaker.MakeJob(jobDef, this), JobTag.Misc);
+						}, destructive: true));
+					}
+				}
+				else
+				{
+					myPawn.jobs.TryTakeOrderedJob(JobMaker.MakeJob(jobDef, this), JobTag.Misc);
+				}
 			};
 			yield return FloatMenuUtility.DecoratePrioritizedTask(new FloatMenuOption(label, action), myPawn, this);
 		}
@@ -80,8 +98,7 @@ namespace RimWorld
 			ThingDef filth_Slime = ThingDefOf.Filth_Slime;
 			foreach (Thing item in (IEnumerable<Thing>)innerContainer)
 			{
-				Pawn pawn = item as Pawn;
-				if (pawn != null)
+				if (item is Pawn pawn)
 				{
 					PawnComponentsUtility.AddComponentsForSpawn(pawn);
 					pawn.filth.GainFilth(filth_Slime);
@@ -100,12 +117,25 @@ namespace RimWorld
 
 		public static Building_CryptosleepCasket FindCryptosleepCasketFor(Pawn p, Pawn traveler, bool ignoreOtherReservations = false)
 		{
-			foreach (ThingDef item in DefDatabase<ThingDef>.AllDefs.Where((ThingDef def) => typeof(Building_CryptosleepCasket).IsAssignableFrom(def.thingClass)))
+			if (cachedCaskets == null)
 			{
-				Building_CryptosleepCasket building_CryptosleepCasket = (Building_CryptosleepCasket)GenClosest.ClosestThingReachable(p.Position, p.Map, ThingRequest.ForDef(item), PathEndMode.InteractionCell, TraverseParms.For(traveler), 9999f, (Thing x) => !((Building_CryptosleepCasket)x).HasAnyContents && traveler.CanReserve(x, 1, -1, null, ignoreOtherReservations));
+				cachedCaskets = DefDatabase<ThingDef>.AllDefs.Where((ThingDef def) => def.IsCryptosleepCasket).ToList();
+			}
+			foreach (ThingDef cachedCasket in cachedCaskets)
+			{
+				bool queuing = KeyBindingDefOf.QueueOrder.IsDownEvent;
+				Building_CryptosleepCasket building_CryptosleepCasket = (Building_CryptosleepCasket)GenClosest.ClosestThingReachable(p.PositionHeld, p.MapHeld, ThingRequest.ForDef(cachedCasket), PathEndMode.InteractionCell, TraverseParms.For(traveler), 9999f, Validator);
 				if (building_CryptosleepCasket != null)
 				{
 					return building_CryptosleepCasket;
+				}
+				bool Validator(Thing x)
+				{
+					if (!((Building_CryptosleepCasket)x).HasAnyContents && (!queuing || !traveler.HasReserved(x)))
+					{
+						return traveler.CanReserve(x, 1, -1, null, ignoreOtherReservations);
+					}
+					return false;
 				}
 			}
 			return null;

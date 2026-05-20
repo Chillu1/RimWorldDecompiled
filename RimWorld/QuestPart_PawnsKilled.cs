@@ -18,7 +18,7 @@ namespace RimWorld
 
 		private int killed;
 
-		public override string DescriptionPart => (string)("PawnsKilled".Translate(GenLabel.BestKindLabel(race.race.AnyPawnKind, Gender.None, plural: true)).CapitalizeFirst() + ": ") + killed + " / " + count;
+		public override string DescriptionPart => string.Concat("PawnsKilled".Translate(GenLabel.BestKindLabel(race.race.AnyPawnKind, Gender.None, plural: true)).CapitalizeFirst() + ": ", killed.ToString(), " / ", count.ToString());
 
 		public override IEnumerable<Faction> InvolvedFactions
 		{

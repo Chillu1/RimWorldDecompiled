@@ -20,13 +20,21 @@ namespace Verse
 
 			public string name = "";
 
+			public string shortName = "";
+
 			public string author = "Anonymous";
+
+			public List<string> authors;
+
+			public string modIconPath = "";
+
+			public string modVersion = "";
 
 			public string url = "";
 
 			public string description = "No description provided.";
 
-			public int steamAppId;
+			public uint steamAppId;
 
 			public List<string> supportedVersions;
 
@@ -41,6 +49,10 @@ namespace Verse
 
 			public List<string> incompatibleWith = new List<string>();
 
+			public List<string> forceLoadBefore = new List<string>();
+
+			public List<string> forceLoadAfter = new List<string>();
+
 			private VersionedData<string> descriptionsByVersion;
 
 			private VersionedData<List<ModDependency>> modDependenciesByVersion;
@@ -53,11 +65,7 @@ namespace Verse
 
 			public static readonly Regex PackageIdFormatRegex = new Regex("(?=.{1,60}$)^(?!\\.)(?=.*?[.])(?!.*([.])\\1+)[a-zA-Z0-9.]{1,}[a-zA-Z0-9]{1}$");
 
-			public List<System.Version> SupportedVersions
-			{
-				get;
-				private set;
-			}
+			public List<System.Version> SupportedVersions { get; private set; }
 
 			private bool TryParseVersion(string str, bool logIssues = true)
 			{
@@ -89,7 +97,7 @@ namespace Verse
 				}
 				bool flag = false;
 				SupportedVersions = new List<System.Version>();
-				if (packageId.ToLower() == ModContentPack.CoreModPackageId)
+				if (packageId.ToLower() == "ludeon.rimworld")
 				{
 					SupportedVersions.Add(VersionControl.CurrentVersion);
 				}
@@ -127,13 +135,13 @@ namespace Verse
 				bool flag = false;
 				if (packageId.NullOrEmpty())
 				{
-					string str = "none";
+					string text = "none";
 					if (!description.NullOrEmpty())
 					{
-						str = GenText.StableStringHash(description).ToString().Replace("-", "");
-						str = str.Substring(0, Math.Min(3, str.Length));
+						text = GenText.StableStringHash(description).ToString().Replace("-", "");
+						text = text.Substring(0, Math.Min(3, text.Length));
 					}
-					packageId = ConvertToASCII(author + str) + "." + ConvertToASCII(name);
+					packageId = ConvertToASCII(author + text) + "." + ConvertToASCII(name);
 					if (logIssues)
 					{
 						Log.Warning("Mod " + name + " is missing packageId in About.xml! (example: <packageId>AuthorName.ModName.Specific</packageId>)");
@@ -148,7 +156,7 @@ namespace Verse
 					}
 					flag = true;
 				}
-				if (!isOfficial && packageId.ToLower().Contains(ModContentPack.LudeonPackageIdAuthor))
+				if (!isOfficial && packageId.ToLower().Contains("ludeon"))
 				{
 					if (logIssues)
 					{
@@ -167,20 +175,14 @@ namespace Verse
 					char c = part[i];
 					if (!char.IsLetterOrDigit(c) || c >= '\u0080')
 					{
-						c = (char)((int)c % 25 + 65);
+						c = (char)(c % 25 + 65);
 					}
 					stringBuilder.Append(c);
 				}
 				return stringBuilder.ToString();
 			}
 
-			[Obsolete("Only need this overload to not break mod compatibility.")]
-			public void ValidateDependencies()
-			{
-				ValidateDependencies_NewTmp();
-			}
-
-			public void ValidateDependencies_NewTmp(bool logIssues = true)
+			public void ValidateDependencies(bool logIssues = true)
 			{
 				for (int num = modDependencies.Count - 1; num >= 0; num--)
 				{
@@ -210,7 +212,7 @@ namespace Verse
 						}
 						flag = true;
 					}
-					if (modDependency.downloadUrl.NullOrEmpty() && modDependency.steamWorkshopUrl.NullOrEmpty() && !modDependency.packageId.ToLower().Contains(ModContentPack.LudeonPackageIdAuthor))
+					if (modDependency.downloadUrl.NullOrEmpty() && modDependency.steamWorkshopUrl.NullOrEmpty() && !modDependency.packageId.ToLower().Contains("ludeon"))
 					{
 						if (logIssues)
 						{
@@ -301,6 +303,10 @@ namespace Verse
 
 		private bool previewImageWasLoaded;
 
+		private Texture2D iconImage;
+
+		private bool iconImageWasLoaded;
+
 		public bool enabled = true;
 
 		private ModMetaDataInternal meta = new ModMetaDataInternal();
@@ -315,13 +321,17 @@ namespace Verse
 
 		public bool translationMod;
 
-		private string packageIdLowerCase;
+		public string packageIdLowerCase;
 
 		private string descriptionCached;
 
 		private const string AboutFolderName = "About";
 
 		public static readonly string SteamModPostfix = "_steam";
+
+		private static readonly CachedTexture ModIcon = new CachedTexture("UI/Icons/Options/OptionsMod");
+
+		private static readonly string[] AndToken = new string[1] { " and " };
 
 		private List<string> unsatisfiedDepsList = new List<string>();
 
@@ -343,11 +353,37 @@ namespace Verse
 			}
 		}
 
+		public Texture2D Icon
+		{
+			get
+			{
+				if (iconImageWasLoaded)
+				{
+					return iconImage;
+				}
+				if (!ModIconPath.NullOrEmpty())
+				{
+					iconImage = ContentFinder<Texture2D>.Get(ModIconPath);
+				}
+				else if (File.Exists(ModIconImagePath))
+				{
+					iconImage = new Texture2D(0, 0);
+					iconImage.LoadImage(File.ReadAllBytes(ModIconImagePath));
+				}
+				else
+				{
+					iconImage = ModIcon.Texture;
+				}
+				iconImageWasLoaded = true;
+				return iconImage;
+			}
+		}
+
 		public string FolderName => RootDir.Name;
 
 		public DirectoryInfo RootDir => rootDirInt;
 
-		public bool IsCoreMod => SamePackageId(ModContentPack.CoreModPackageId);
+		public bool IsCoreMod => SamePackageId("ludeon.rimworld");
 
 		public bool Active
 		{
@@ -400,6 +436,18 @@ namespace Verse
 			}
 		}
 
+		public string ShortName
+		{
+			get
+			{
+				if (!meta.shortName.NullOrEmpty())
+				{
+					return meta.shortName;
+				}
+				return Name;
+			}
+		}
+
 		public string Description
 		{
 			get
@@ -413,31 +461,46 @@ namespace Verse
 			}
 		}
 
-		public string Author => meta.author;
+		public string AuthorsString => Authors.ToCommaList(useAnd: true);
 
-		public string Url => meta.url;
-
-		public int SteamAppId => meta.steamAppId;
-
-		[Obsolete("Deprecated, will be removed in the future. Use SupportedVersions instead")]
-		public string TargetVersion
+		public IEnumerable<string> Authors
 		{
 			get
 			{
-				if (SupportedVersionsReadOnly.Count == 0)
+				if (!meta.authors.NullOrEmpty())
 				{
-					return "Unknown";
+					foreach (string author in meta.authors)
+					{
+						yield return author;
+					}
 				}
-				System.Version version = meta.SupportedVersions[0];
-				return version.Major + "." + version.Minor;
+				else
+				{
+					if (string.IsNullOrWhiteSpace(meta.author))
+					{
+						yield break;
+					}
+					foreach (string item in meta.author.Split(AndToken, StringSplitOptions.RemoveEmptyEntries).SelectMany((string x) => x.Split(',')))
+					{
+						yield return item;
+					}
+				}
 			}
 		}
+
+		public virtual string ModVersion => meta.modVersion;
+
+		public string Url => meta.url;
+
+		public uint SteamAppId => meta.steamAppId;
 
 		public List<System.Version> SupportedVersionsReadOnly => meta.SupportedVersions;
 
 		IEnumerable<System.Version> WorkshopUploadable.SupportedVersions => SupportedVersionsReadOnly;
 
-		public string PreviewImagePath => rootDirInt.FullName + Path.DirectorySeparatorChar + "About" + Path.DirectorySeparatorChar + "Preview.png";
+		public string PreviewImagePath => Path.Combine(rootDirInt.FullName, "About", "Preview.png");
+
+		public string ModIconImagePath => Path.Combine(rootDirInt.FullName, "About", "ModIcon.png");
 
 		public bool Official
 		{
@@ -475,23 +538,34 @@ namespace Verse
 
 		public List<string> LoadAfter => meta.loadAfter;
 
+		public List<string> ForceLoadBefore => meta.forceLoadBefore;
+
+		public List<string> ForceLoadAfter => meta.forceLoadAfter;
+
 		public List<string> IncompatibleWith => meta.incompatibleWith;
 
-		public bool HadIncorrectlyFormattedVersionInMetadata
-		{
-			get;
-			private set;
-		}
+		public string ModIconPath => meta.modIconPath;
 
-		public bool HadIncorrectlyFormattedPackageId
-		{
-			get;
-			private set;
-		}
+		public bool HadIncorrectlyFormattedVersionInMetadata { get; private set; }
+
+		public bool HadIncorrectlyFormattedPackageId { get; private set; }
 
 		public bool OnSteamWorkshop => source == ContentSource.SteamWorkshop;
 
-		private string PublishedFileIdPath => rootDirInt.FullName + Path.DirectorySeparatorChar + "About" + Path.DirectorySeparatorChar + "PublishedFileId.txt";
+		private string PublishedFileIdPath
+		{
+			get
+			{
+				string[] obj = new string[5] { rootDirInt.FullName, null, null, null, null };
+				char directorySeparatorChar = Path.DirectorySeparatorChar;
+				obj[1] = directorySeparatorChar.ToString();
+				obj[2] = "About";
+				directorySeparatorChar = Path.DirectorySeparatorChar;
+				obj[3] = directorySeparatorChar.ToString();
+				obj[4] = "PublishedFileId.txt";
+				return string.Concat(obj);
+			}
+		}
 
 		public List<string> UnsatisfiedDependencies()
 		{
@@ -546,8 +620,10 @@ namespace Verse
 
 		private void Init()
 		{
-			meta = DirectXmlLoader.ItemFromXmlFile<ModMetaDataInternal>(RootDir.FullName + Path.DirectorySeparatorChar + "About" + Path.DirectorySeparatorChar + "About.xml");
-			loadFolders = DirectXmlLoader.ItemFromXmlFile<ModLoadFolders>(RootDir.FullName + Path.DirectorySeparatorChar + "LoadFolders.xml");
+			string fullName = RootDir.FullName;
+			char directorySeparatorChar = Path.DirectorySeparatorChar;
+			meta = DirectXmlLoader.ItemFromXmlFile<ModMetaDataInternal>(GenFile.ResolveCaseInsensitiveFilePath(fullName + directorySeparatorChar + "About", "About.xml"), resolveCrossRefs: false);
+			loadFolders = DirectXmlLoader.ItemFromXmlFile<ModLoadFolders>(GenFile.ResolveCaseInsensitiveFilePath(RootDir.FullName, "LoadFolders.xml"), resolveCrossRefs: false);
 			bool shouldLogIssues = ModLister.ShouldLogIssues;
 			HadIncorrectlyFormattedVersionInMetadata = !meta.TryParseSupportedVersions(!OnSteamWorkshop && shouldLogIssues);
 			if (meta.name.NullOrEmpty())
@@ -564,7 +640,7 @@ namespace Verse
 			HadIncorrectlyFormattedPackageId = !meta.TryParsePackageId(Official, !OnSteamWorkshop && shouldLogIssues);
 			packageIdLowerCase = meta.packageId.ToLower();
 			meta.InitVersionedData();
-			meta.ValidateDependencies_NewTmp(shouldLogIssues);
+			meta.ValidateDependencies(shouldLogIssues);
 			string publishedFileIdPath = PublishedFileIdPath;
 			if (File.Exists(PublishedFileIdPath) && ulong.TryParse(File.ReadAllText(publishedFileIdPath), out var result))
 			{
@@ -632,15 +708,9 @@ namespace Verse
 		{
 			if (!translationMod)
 			{
-				return new List<string>
-				{
-					"Mod"
-				};
+				return new List<string> { "Mod" };
 			}
-			return new List<string>
-			{
-				"Translation"
-			};
+			return new List<string> { "Translation" };
 		}
 
 		public DirectoryInfo GetWorkshopUploadDirectory()
@@ -659,13 +729,13 @@ namespace Verse
 
 		public IEnumerable<ModRequirement> GetRequirements()
 		{
-			for (int j = 0; j < Dependencies.Count; j++)
+			for (int i = 0; i < Dependencies.Count; i++)
 			{
-				yield return Dependencies[j];
+				yield return Dependencies[i];
 			}
-			for (int j = 0; j < meta.incompatibleWith.Count; j++)
+			for (int i = 0; i < meta.incompatibleWith.Count; i++)
 			{
-				ModMetaData modWithIdentifier = ModLister.GetModWithIdentifier(meta.incompatibleWith[j]);
+				ModMetaData modWithIdentifier = ModLister.GetModWithIdentifier(meta.incompatibleWith[i]);
 				if (modWithIdentifier != null)
 				{
 					yield return new ModIncompatibility

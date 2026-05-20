@@ -7,7 +7,23 @@ namespace RimWorld
 	{
 		private CompFlickable flickableComp;
 
+		private VacuumComponent intVacuum;
+
 		public override Graphic Graphic => flickableComp.CurrentGraphic;
+
+		private VacuumComponent Vacuum => intVacuum ?? (intVacuum = base.Map.GetComponent<VacuumComponent>());
+
+		public override bool ExchangeVacuum
+		{
+			get
+			{
+				if (!base.ExchangeVacuum)
+				{
+					return FlickUtility.WantsToBeOn(this);
+				}
+				return true;
+			}
+		}
 
 		public override void SpawnSetup(Map map, bool respawningAfterLoad)
 		{
@@ -20,6 +36,15 @@ namespace RimWorld
 			if (FlickUtility.WantsToBeOn(this))
 			{
 				GenTemperature.EqualizeTemperaturesThroughBuilding(this, 14f, twoWay: true);
+				base.Map.gasGrid.EqualizeGasThroughBuilding(this, twoWay: true);
+			}
+		}
+
+		protected override void ReceiveCompSignal(string signal)
+		{
+			if (signal == "FlickedOn" || signal == "FlickedOff")
+			{
+				Vacuum.Dirty();
 			}
 		}
 

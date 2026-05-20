@@ -20,6 +20,20 @@ namespace Verse
 			}
 		}
 
+		public virtual bool LastTickBeforeTimeout
+		{
+			get
+			{
+				if (TimeoutActive)
+				{
+					return disappearAtTick <= Find.TickManager.TicksGame + 1;
+				}
+				return false;
+			}
+		}
+
+		public override bool ShouldAutomaticallyOpenLetter => LastTickBeforeTimeout;
+
 		public override bool CanShowInLetterStack
 		{
 			get
@@ -52,8 +66,7 @@ namespace Verse
 			string text = base.PostProcessedLabel();
 			if (TimeoutActive)
 			{
-				int num = Mathf.RoundToInt((float)(disappearAtTick - Find.TickManager.TicksGame) / 2500f);
-				text += " (" + num + "LetterHour".Translate() + ")";
+				text += " (" + Mathf.RoundToInt((float)(disappearAtTick - Find.TickManager.TicksGame) / 2500f) + "LetterHour".Translate() + ")";
 			}
 			return text;
 		}

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld;
@@ -9,7 +10,8 @@ namespace Verse
 	{
 		public ThingDef race;
 
-		public FactionDef defaultFactionType;
+		[LoadAlias("defaultFactionType")]
+		public FactionDef defaultFactionDef;
 
 		[NoTranslate]
 		public List<BackstoryCategoryFilter> backstoryFilters;
@@ -27,11 +29,52 @@ namespace Verse
 
 		public List<AlternateGraphic> alternateGraphics;
 
+		[XmlInheritanceAllowDuplicateNodes]
+		public List<TraitRequirement> forcedTraits;
+
+		[XmlInheritanceAllowDuplicateNodes]
+		public List<TraitRequirement> disallowedTraitsWithDegree;
+
 		public List<TraitDef> disallowedTraits;
 
 		public float alternateGraphicChance;
 
+		public MutantDef mutant;
+
+		public XenotypeSet xenotypeSet;
+
+		public bool useFactionXenotypes = true;
+
+		[LoadAlias("hairTags")]
+		public List<StyleItemTagWeighted> styleItemTags;
+
+		public HairDef forcedHair;
+
+		public Color? forcedHairColor;
+
+		public List<MissingPart> missingParts;
+
+		public RulePackDef nameMaker;
+
+		public RulePackDef nameMakerFemale;
+
+		public List<AbilityDef> abilities;
+
+		public bool preventIdeo;
+
+		public bool studiableAsPrisoner;
+
+		public bool isBoss;
+
+		public Dictionary<string, float> moveSpeedFactorByTerrainTag = new Dictionary<string, float>();
+
+		public List<BackstoryDef> fixedChildBackstories = new List<BackstoryDef>();
+
+		public List<BackstoryDef> fixedAdultBackstories = new List<BackstoryDef>();
+
 		public float backstoryCryptosleepCommonality;
+
+		public FloatRange? chronologicalAgeRange;
 
 		public int minGenerationAge;
 
@@ -39,13 +82,64 @@ namespace Verse
 
 		public bool factionLeader;
 
+		public Gender? fixedGender;
+
+		public bool allowOldAgeInjuries = true;
+
+		public bool generateInitialNonFamilyRelations = true;
+
+		public DevelopmentalStage? pawnGroupDevelopmentStage;
+
 		public bool destroyGearOnDrop;
+
+		public bool canStrip = true;
 
 		public float defendPointRadius = -1f;
 
 		public bool factionHostileOnKill;
 
 		public bool factionHostileOnDeath;
+
+		public bool hostileToAll;
+
+		public FloatRange? initialResistanceRange;
+
+		public FloatRange? initialWillRange;
+
+		public bool forceNoDeathNotification;
+
+		public bool skipResistant;
+
+		public float controlGroupPortraitZoom = 1f;
+
+		public float? overrideDeathOnDownedChance;
+
+		public bool forceDeathOnDowned;
+
+		public bool immuneToGameConditionEffects;
+
+		public bool immuneToTraps;
+
+		public bool collidesWithPawns = true;
+
+		public bool ignoresPainShock;
+
+		public bool canMeleeAttack = true;
+
+		public float basePrisonBreakMtbDays = 60f;
+
+		public bool useFixedRotation;
+
+		public Rot4 fixedRotation;
+
+		public bool showInDebugSpawner = true;
+
+		public bool canOpenAnyDoor;
+
+		public bool canOpenDoors = true;
+
+		[NoTranslate]
+		public string overrideDebugActionCategory;
 
 		public float royalTitleChance;
 
@@ -59,6 +153,10 @@ namespace Verse
 
 		public bool allowRoyalApparelRequirements = true;
 
+		public List<InfectionPathwayDef> meleeAttackInfectionPathways;
+
+		public List<InfectionPathwayDef> rangedAttackInfectionPathways;
+
 		public bool isFighter = true;
 
 		public float combatPower = -1f;
@@ -67,13 +165,29 @@ namespace Verse
 
 		public bool canBeSapper;
 
-		public float baseRecruitDifficulty = 0.5f;
+		public bool isGoodBreacher;
+
+		public bool allowInMechClusters = true;
+
+		public int maxPerGroup = int.MaxValue;
+
+		public bool isGoodPsychicRitualInvoker;
+
+		public bool canBeScattered = true;
+
+		public bool appearsRandomlyInCombatGroups = true;
 
 		public bool aiAvoidCover;
 
 		public FloatRange fleeHealthThresholdRange = new FloatRange(-0.4f, 0.4f);
 
+		public float acceptArrestChanceFactor = 1f;
+
+		public bool canUseAvoidGrid;
+
 		public QualityCategory itemQuality = QualityCategory.Normal;
+
+		public QualityCategory? forceWeaponQuality;
 
 		public bool forceNormalGearQuality;
 
@@ -83,6 +197,10 @@ namespace Verse
 
 		[NoTranslate]
 		public List<string> weaponTags;
+
+		public ThingDef weaponStuffOverride;
+
+		public ThingStyleDef weaponStyleDef;
 
 		public FloatRange apparelMoney = FloatRange.Zero;
 
@@ -94,14 +212,23 @@ namespace Verse
 		[NoTranslate]
 		public List<string> apparelDisallowTags;
 
-		[NoTranslate]
-		public List<string> hairTags;
-
 		public float apparelAllowHeadgearChance = 1f;
+
+		public bool ignoreApparelAllowChance;
 
 		public bool apparelIgnoreSeasons;
 
+		public bool apparelIgnorePollution;
+
+		public bool ignoreFactionApparelStuffRequirements;
+
 		public Color apparelColor = Color.white;
+
+		public Color? skinColorOverride;
+
+		public ColorDef favoriteColor;
+
+		public bool ignoreIdeoApparelColors;
 
 		public List<SpecificApparelRequirement> specificApparelRequirements;
 
@@ -121,6 +248,18 @@ namespace Verse
 
 		public float biocodeWeaponChance;
 
+		public float humanPregnancyChance = 0.03f;
+
+		public List<StartingHediff> startingHediffs;
+
+		public float nakedChance;
+
+		public List<MiscDamage> existingDamage = new List<MiscDamage>();
+
+		public QualityCategory minApparelQuality;
+
+		public QualityCategory maxApparelQuality = QualityCategory.Excellent;
+
 		public List<ThingDefCountClass> fixedInventory = new List<ThingDefCountClass>();
 
 		public PawnInventoryOption inventoryOptions;
@@ -133,13 +272,23 @@ namespace Verse
 
 		public float combatEnhancingDrugsChance;
 
-		public IntRange combatEnhancingDrugsCount = IntRange.zero;
+		public IntRange combatEnhancingDrugsCount = IntRange.Zero;
+
+		public List<ChemicalDef> forcedAddictions = new List<ChemicalDef>();
 
 		public bool trader;
 
 		public List<SkillRange> skills;
 
 		public WorkTags requiredWorkTags;
+
+		public WorkTags disabledWorkTags;
+
+		public int extraSkillLevels;
+
+		public int minTotalSkillLevels;
+
+		public int minBestSkillLevel;
 
 		[MustTranslate]
 		public string labelMale;
@@ -153,9 +302,25 @@ namespace Verse
 		[MustTranslate]
 		public string labelFemalePlural;
 
-		public IntRange wildGroupSize = IntRange.one;
+		public IntRange wildGroupSize = IntRange.One;
 
 		public float ecoSystemWeight = 1f;
+
+		[NoTranslate]
+		public string flyingAnimationFramePathPrefix;
+
+		[NoTranslate]
+		public string flyingAnimationFramePathPrefixFemale;
+
+		public int flyingAnimationFrameCount;
+
+		public int flyingAnimationTicksPerFrame = -1;
+
+		public float flyingAnimationDrawSize = 1f;
+
+		public bool flyingAnimationDrawSizeIsMultiplier;
+
+		public bool flyingAnimationInheritColors;
 
 		private const int MaxWeaponMoney = 999999;
 
@@ -179,6 +344,32 @@ namespace Verse
 			return Find.ActiveLanguageWorker.Pluralize(label, count);
 		}
 
+		public string GetLabelGendered(Gender gender)
+		{
+			if (gender == Gender.Female && !labelFemale.NullOrEmpty())
+			{
+				return labelFemale;
+			}
+			if (gender == Gender.Male && !labelMale.NullOrEmpty())
+			{
+				return labelMale;
+			}
+			return label;
+		}
+
+		public RulePackDef GetNameMaker(Gender gender)
+		{
+			if (gender == Gender.Female && nameMakerFemale != null)
+			{
+				return nameMakerFemale;
+			}
+			if (nameMaker != null)
+			{
+				return nameMaker;
+			}
+			return null;
+		}
+
 		public override void PostLoad()
 		{
 			if (backstoryCategories != null && backstoryCategories.Count > 0)
@@ -192,11 +383,33 @@ namespace Verse
 					categories = backstoryCategories
 				});
 			}
+			LongEventHandler.ExecuteWhenFinished(delegate
+			{
+				foreach (PawnKindLifeStage lifeStage in lifeStages)
+				{
+					if (lifeStage.swimmingGraphicData != null && lifeStage.swimmingGraphicData.shaderType == null)
+					{
+						lifeStage.swimmingGraphicData.shaderType = ShaderTypeDefOf.Transparent;
+					}
+					if (lifeStage.femaleSwimmingGraphicData != null && lifeStage.femaleSwimmingGraphicData.shaderType == null)
+					{
+						lifeStage.femaleSwimmingGraphicData.shaderType = ShaderTypeDefOf.Transparent;
+					}
+					if (lifeStage.stationaryGraphicData != null && lifeStage.stationaryGraphicData.shaderType == null)
+					{
+						lifeStage.stationaryGraphicData.shaderType = ShaderTypeDefOf.Transparent;
+					}
+					if (lifeStage.femaleStationaryGraphicData != null && lifeStage.femaleStationaryGraphicData.shaderType == null)
+					{
+						lifeStage.femaleStationaryGraphicData.shaderType = ShaderTypeDefOf.Transparent;
+					}
+				}
+			});
 		}
 
 		public float GetAnimalPointsToHuntOrSlaughter()
 		{
-			return combatPower * 5f * (1f + RaceProps.manhunterOnDamageChance * 0.5f) * (1f + RaceProps.manhunterOnTameFailChance * 0.2f) * (1f + RaceProps.wildness) + race.BaseMarketValue;
+			return combatPower * 5f * (1f + RaceProps.manhunterOnDamageChance * 0.5f) * (1f + RaceProps.manhunterOnTameFailChance * 0.2f) * (1f + race.GetStatValueAbstract(StatDefOf.Wildness)) + race.BaseMarketValue;
 		}
 
 		public override IEnumerable<string> ConfigErrors()
@@ -213,29 +426,32 @@ namespace Verse
 			{
 				yield return "no race";
 			}
-			if (baseRecruitDifficulty > 1.0001f)
-			{
-				yield return defName + " recruitDifficulty is greater than 1. 1 means impossible to recruit.";
-			}
 			if (combatPower < 0f)
 			{
 				yield return defName + " has no combatPower.";
 			}
 			if (weaponMoney != FloatRange.Zero)
 			{
-				float num = 999999f;
-				int j;
-				for (j = 0; j < weaponTags.Count; j++)
+				if (weaponTags == null)
 				{
-					IEnumerable<ThingDef> source = DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.weaponTags != null && d.weaponTags.Contains(weaponTags[j]));
-					if (source.Any())
-					{
-						num = Mathf.Min(num, source.Min((ThingDef d) => PawnWeaponGenerator.CheapestNonDerpPriceFor(d)));
-					}
+					yield return "weaponMoney is set but weaponTags is not.";
 				}
-				if (num < 999999f && num > weaponMoney.min)
+				else
 				{
-					yield return "Cheapest weapon with one of my weaponTags costs " + num + " but weaponMoney min is " + weaponMoney.min + ", so could end up weaponless.";
+					float num = 999999f;
+					int i;
+					for (i = 0; i < weaponTags.Count; i++)
+					{
+						IEnumerable<ThingDef> source = DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.weaponTags != null && d.weaponTags.Contains(weaponTags[i]));
+						if (source.Any())
+						{
+							num = Mathf.Min(num, source.Min((Func<ThingDef, float>)PawnWeaponGenerator.CheapestNonDerpPriceFor));
+						}
+					}
+					if (num < 999999f && num > weaponMoney.min)
+					{
+						yield return "Cheapest weapon with one of my weaponTags costs " + num + " but weaponMoney min is " + weaponMoney.min + ", so could end up weaponless.";
+					}
 				}
 			}
 			if (!RaceProps.Humanlike && lifeStages.Count != RaceProps.lifeStageAges.Count)
@@ -244,26 +460,44 @@ namespace Verse
 			}
 			if (apparelRequired != null)
 			{
-				for (int i = 0; i < apparelRequired.Count; i++)
+				for (int i2 = 0; i2 < apparelRequired.Count; i2++)
 				{
-					for (int k = i + 1; k < apparelRequired.Count; k++)
+					for (int j = i2 + 1; j < apparelRequired.Count; j++)
 					{
-						if (!ApparelUtility.CanWearTogether(apparelRequired[i], apparelRequired[k], race.race.body))
+						if (!ApparelUtility.CanWearTogether(apparelRequired[i2], apparelRequired[j], race.race.body))
 						{
-							yield return string.Concat("required apparel can't be worn together (", apparelRequired[i], ", ", apparelRequired[k], ")");
+							yield return "required apparel can't be worn together (" + apparelRequired[i2]?.ToString() + ", " + apparelRequired[j]?.ToString() + ")";
 						}
 					}
 				}
 			}
-			if (alternateGraphics == null)
+			if (alternateGraphics != null)
+			{
+				foreach (AlternateGraphic alternateGraphic in alternateGraphics)
+				{
+					if (alternateGraphic.Weight < 0f)
+					{
+						yield return "alternate graphic has negative weight.";
+					}
+				}
+			}
+			if (RaceProps.Humanlike && !initialResistanceRange.HasValue)
+			{
+				yield return "initial resistance range is undefined for humanlike pawn kind.";
+			}
+			if (RaceProps.Humanlike && !initialWillRange.HasValue)
+			{
+				yield return "initial will range is undefined for humanlike pawn kind.";
+			}
+			if (startingHediffs == null)
 			{
 				yield break;
 			}
-			foreach (AlternateGraphic alternateGraphic in alternateGraphics)
+			foreach (StartingHediff startingHediff in startingHediffs)
 			{
-				if (alternateGraphic.Weight < 0f)
+				if (startingHediff.durationTicksRange.HasValue && startingHediff.def.CompProps<HediffCompProperties_Disappears>() == null)
 				{
-					yield return "alternate graphic has negative weight.";
+					yield return "starting hediff " + startingHediff.def.defName + " has duration ticks set but doesn't have Disappears comp.";
 				}
 			}
 		}

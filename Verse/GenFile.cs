@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -40,7 +41,7 @@ namespace Verse
 			}
 		}
 
-		public static void DirectoryCopy(string sourceDirName, string destDirName, bool copySubDirs, bool useLinuxLineEndings = false)
+		public static void DirectoryCopy(string sourceDirName, string destDirName, bool copySubDirs, bool useLinuxLineEndings = false, Func<string, string> destFileNameGetter = null)
 		{
 			DirectoryInfo directoryInfo = new DirectoryInfo(sourceDirName);
 			DirectoryInfo[] directories = directoryInfo.GetDirectories();
@@ -55,17 +56,22 @@ namespace Verse
 			FileInfo[] files = directoryInfo.GetFiles();
 			foreach (FileInfo fileInfo in files)
 			{
-				string text = Path.Combine(destDirName, fileInfo.Name);
+				string text = fileInfo.Name;
+				if (destFileNameGetter != null)
+				{
+					text = destFileNameGetter(text);
+				}
+				string text2 = Path.Combine(destDirName, text);
 				if (useLinuxLineEndings && (fileInfo.Extension == ".sh" || fileInfo.Extension == ".txt"))
 				{
-					if (!File.Exists(text))
+					if (!File.Exists(text2))
 					{
-						File.WriteAllText(text, File.ReadAllText(fileInfo.FullName).Replace("\r\n", "\n").Replace("\r", "\n"));
+						File.WriteAllText(text2, File.ReadAllText(fileInfo.FullName).Replace("\r\n", "\n").Replace("\r", "\n"));
 					}
 				}
 				else
 				{
-					fileInfo.CopyTo(text, overwrite: false);
+					fileInfo.CopyTo(text2, overwrite: false);
 				}
 			}
 			if (copySubDirs)
@@ -95,6 +101,30 @@ namespace Verse
 				text = "unnamed";
 			}
 			return text;
+		}
+
+		public static string ResolveCaseInsensitiveFilePath(string dir, string targetFileName)
+		{
+			string text = Path.Combine(dir, targetFileName);
+			if (File.Exists(text))
+			{
+				return text;
+			}
+			char directorySeparatorChar;
+			if (Directory.Exists(dir))
+			{
+				string[] files = Directory.GetFiles(dir);
+				foreach (string path in files)
+				{
+					if (string.Compare(Path.GetFileName(path), targetFileName, StringComparison.CurrentCultureIgnoreCase) == 0)
+					{
+						directorySeparatorChar = Path.DirectorySeparatorChar;
+						return dir + directorySeparatorChar + Path.GetFileName(path);
+					}
+				}
+			}
+			directorySeparatorChar = Path.DirectorySeparatorChar;
+			return dir + directorySeparatorChar + targetFileName;
 		}
 	}
 }

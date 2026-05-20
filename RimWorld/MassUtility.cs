@@ -52,16 +52,15 @@ namespace RimWorld
 				List<Apparel> wornApparel = p.apparel.WornApparel;
 				for (int i = 0; i < wornApparel.Count; i++)
 				{
-					num += wornApparel[i].GetStatValue(StatDefOf.Mass);
+					num += wornApparel[i].GetStatValue(StatDefOf.Mass, applyPostProcess: true, 1);
 				}
 			}
 			if (p.equipment != null)
 			{
 				foreach (ThingWithComps item in p.equipment.AllEquipmentListForReading)
 				{
-					num += item.GetStatValue(StatDefOf.Mass);
+					num += item.GetStatValue(StatDefOf.Mass, applyPostProcess: true, 1);
 				}
-				return num;
 			}
 			return num;
 		}
@@ -97,7 +96,7 @@ namespace RimWorld
 
 		public static bool CanEverCarryAnything(Pawn p)
 		{
-			if (!p.RaceProps.ToolUser)
+			if (!p.RaceProps.ToolUser || p.DevelopmentalStage.Baby() || p.IsSubhuman)
 			{
 				return p.RaceProps.packAnimal;
 			}

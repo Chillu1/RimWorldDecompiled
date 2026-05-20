@@ -20,11 +20,16 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!map.reachability.CanReachMapEdge(c, TraverseParms.For(TraverseMode.PassDoors)))
+			if (c.Fogged(map))
 			{
 				return false;
 			}
-			foreach (IntVec3 item in CellRect.CenteredOn(c, 8, 8))
+			CellRect rect = CellRect.CenteredOn(c, 8, 8);
+			if (MapGenerator.UsedRects.Any((CellRect ur) => ur.Overlaps(rect)))
+			{
+				return false;
+			}
+			foreach (IntVec3 item in rect)
 			{
 				if (!item.InBounds(map) || item.GetEdifice(map) != null)
 				{
@@ -48,26 +53,31 @@ namespace RimWorld
 				PrisonerWillingToJoinComp component = map.Parent.GetComponent<PrisonerWillingToJoinComp>();
 				singlePawnToSpawn = ((component == null || !component.pawn.Any) ? PrisonerWillingToJoinQuestUtility.GeneratePrisoner(map.Tile, faction) : component.pawn.Take(component.pawn[0]));
 			}
-			ResolveParams resolveParams = default(ResolveParams);
-			resolveParams.rect = cellRect;
-			resolveParams.faction = faction;
+			ResolveParams resolveParams = new ResolveParams
+			{
+				rect = cellRect,
+				faction = faction
+			};
 			RimWorld.BaseGen.BaseGen.globalSettings.map = map;
 			RimWorld.BaseGen.BaseGen.symbolStack.Push("prisonCell", resolveParams);
 			RimWorld.BaseGen.BaseGen.Generate();
-			ResolveParams resolveParams2 = default(ResolveParams);
-			resolveParams2.rect = cellRect;
-			resolveParams2.faction = faction;
-			resolveParams2.singlePawnToSpawn = singlePawnToSpawn;
-			resolveParams2.singlePawnSpawnCellExtraPredicate = (IntVec3 x) => x.GetDoor(map) == null;
-			resolveParams2.postThingSpawn = delegate(Thing x)
+			ResolveParams resolveParams2 = new ResolveParams
 			{
-				MapGenerator.rootsToUnfog.Add(x.Position);
-				((Pawn)x).mindState.WillJoinColonyIfRescued = true;
+				rect = cellRect,
+				faction = faction,
+				singlePawnToSpawn = singlePawnToSpawn,
+				singlePawnSpawnCellExtraPredicate = (IntVec3 x) => x.GetDoor(map) == null,
+				postThingSpawn = delegate(Thing x)
+				{
+					MapGenerator.rootsToUnfog.Add(x.Position);
+					((Pawn)x).mindState.WillJoinColonyIfRescued = true;
+				}
 			};
 			RimWorld.BaseGen.BaseGen.globalSettings.map = map;
 			RimWorld.BaseGen.BaseGen.symbolStack.Push("pawn", resolveParams2);
 			RimWorld.BaseGen.BaseGen.Generate();
 			MapGenerator.SetVar("RectOfInterest", cellRect);
+			map.fogGrid.Refog(cellRect.ContractedBy(1));
 		}
 	}
 }

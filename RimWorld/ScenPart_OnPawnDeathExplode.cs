@@ -57,5 +57,10 @@ namespace RimWorld
 			yield return DamageDefOf.Bomb;
 			yield return DamageDefOf.Flame;
 		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode() ^ ((damage != null) ? damage.GetHashCode() : 0) ^ radius.GetHashCode();
+		}
 	}
 }

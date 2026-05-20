@@ -9,9 +9,10 @@ namespace RimWorld
 		protected override ThoughtState CurrentStateInternal(Pawn p)
 		{
 			PsychicDroneLevel psychicDroneLevel = PsychicDroneLevel.None;
-			if (p.Map != null)
+			Map mapHeld = p.MapHeld;
+			if (mapHeld != null)
 			{
-				PsychicDroneLevel highestPsychicDroneLevelFor = p.Map.gameConditionManager.GetHighestPsychicDroneLevelFor(p.gender);
+				PsychicDroneLevel highestPsychicDroneLevelFor = mapHeld.gameConditionManager.GetHighestPsychicDroneLevelFor(p.gender, mapHeld);
 				if ((int)highestPsychicDroneLevelFor > (int)psychicDroneLevel)
 				{
 					psychicDroneLevel = highestPsychicDroneLevelFor;

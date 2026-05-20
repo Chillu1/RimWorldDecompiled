@@ -9,11 +9,13 @@ namespace RimWorld.Planet
 {
 	public class WorldSelector
 	{
-		public WorldDragBox dragBox = new WorldDragBox();
+		public readonly WorldDragBox dragBox = new WorldDragBox();
 
-		private List<WorldObject> selected = new List<WorldObject>();
+		private readonly List<WorldObject> selected = new List<WorldObject>();
 
-		public int selectedTile = -1;
+		private PlanetLayer selectedLayer;
+
+		private PlanetTile selectedTile = PlanetTile.Invalid;
 
 		private const int MaxNumSelected = 80;
 
@@ -28,6 +30,47 @@ namespace RimWorld.Planet
 					return Input.GetKey(KeyCode.RightShift);
 				}
 				return true;
+			}
+		}
+
+		public PlanetTile SelectedTile
+		{
+			get
+			{
+				return selectedTile;
+			}
+			set
+			{
+				if (selectedTile.Layer != value.Layer)
+				{
+					SelectedLayer = value.Layer;
+				}
+				selectedTile = value;
+			}
+		}
+
+		public PlanetLayer SelectedLayer
+		{
+			get
+			{
+				if (selectedLayer == null)
+				{
+					return Find.WorldGrid.Surface;
+				}
+				return selectedLayer;
+			}
+			set
+			{
+				if (selectedLayer != value)
+				{
+					selectedTile = PlanetTile.Invalid;
+					SelectedObjects.Clear();
+				}
+				selectedLayer = value;
+				if (selectedLayer.Def.isSpace)
+				{
+					LessonAutoActivator.TeachOpportunity(ConceptDefOf.Orbit, OpportunityType.GoodToKnow);
+				}
 			}
 		}
 
@@ -65,9 +108,24 @@ namespace RimWorld.Planet
 			{
 				if (NumSelectedObjects == 0)
 				{
-					return selectedTile >= 0;
+					return selectedTile.Valid;
 				}
 				return true;
+			}
+		}
+
+		public bool AnyCaravanSelected
+		{
+			get
+			{
+				for (int i = 0; i < selected.Count; i++)
+				{
+					if (selected[i] is Caravan)
+					{
+						return true;
+					}
+				}
+				return false;
 			}
 		}
 
@@ -112,8 +170,7 @@ namespace RimWorld.Planet
 					{
 						for (int i = 0; i < selected.Count; i++)
 						{
-							Caravan caravan2 = selected[i] as Caravan;
-							if (caravan2 != null && caravan2.IsPlayerControlled)
+							if (selected[i] is Caravan { IsPlayerControlled: not false } caravan2)
 							{
 								AutoOrderToTile(caravan2, GenWorld.MouseTile());
 							}
@@ -150,7 +207,7 @@ namespace RimWorld.Planet
 		{
 			WorldSelectionDrawer.Clear();
 			selected.Clear();
-			selectedTile = -1;
+			selectedTile = PlanetTile.Invalid;
 		}
 
 		public void Deselect(WorldObject obj)
@@ -168,7 +225,7 @@ namespace RimWorld.Planet
 				Log.Error("Cannot select null.");
 				return;
 			}
-			selectedTile = -1;
+			selectedTile = PlanetTile.Invalid;
 			if (selected.Count < 80 && !IsSelected(obj))
 			{
 				if (playSound)
@@ -233,10 +290,10 @@ namespace RimWorld.Planet
 						list3.RemoveAll((WorldObject x) => x.Faction != Faction.OfPlayer);
 					}
 				}
-				for (int k = 0; k < list3.Count; k++)
+				for (int num = 0; num < list3.Count; num++)
 				{
 					flag = true;
-					Select(list3[k]);
+					Select(list3[num]);
 				}
 			}
 			if (!flag)
@@ -284,9 +341,9 @@ namespace RimWorld.Planet
 			return list;
 		}
 
-		public static IEnumerable<WorldObject> SelectableObjectsAt(int tileID)
+		public static IEnumerable<WorldObject> SelectableObjectsAt(PlanetTile tile)
 		{
-			foreach (WorldObject item in Find.WorldObjects.ObjectsAt(tileID))
+			foreach (WorldObject item in Find.WorldObjects.ObjectsAt(tile))
 			{
 				if (item.SelectableNow)
 				{
@@ -323,30 +380,36 @@ namespace RimWorld.Planet
 			}
 			if (list.Count == 0)
 			{
-				if (!ShiftIsHeld)
+				if (ShiftIsHeld)
 				{
-					ClearSelection();
-					if (canSelectTile)
+					return;
+				}
+				PlanetTile planetTile = selectedTile;
+				ClearSelection();
+				if (canSelectTile)
+				{
+					selectedTile = GenWorld.MouseTile();
+					if (planetTile != selectedTile && selectedTile.Valid)
 					{
-						selectedTile = GenWorld.MouseTile();
+						SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
 					}
 				}
 			}
-			else if (list.Where((WorldObject obj) => selected.Contains(obj)).FirstOrDefault() != null)
+			else if (list.FirstOrDefault((WorldObject obj) => selected.Contains(obj)) != null)
 			{
-				if (!ShiftIsHeld)
+				if (ShiftIsHeld)
 				{
-					int tile = (canSelectTile ? GenWorld.MouseTile() : (-1));
-					SelectFirstOrNextFrom(list, tile);
+					foreach (WorldObject item in list)
+					{
+						if (selected.Contains(item))
+						{
+							Deselect(item);
+						}
+					}
 					return;
 				}
-				foreach (WorldObject item in list)
-				{
-					if (selected.Contains(item))
-					{
-						Deselect(item);
-					}
-				}
+				PlanetTile tile = (canSelectTile ? GenWorld.MouseTile() : PlanetTile.Invalid);
+				SelectFirstOrNextFrom(list, tile);
 			}
 			else
 			{
@@ -358,9 +421,9 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public void SelectFirstOrNextAt(int tileID)
+		public void SelectFirstOrNextAt(PlanetTile tile)
 		{
-			SelectFirstOrNextFrom(SelectableObjectsAt(tileID).ToList(), tileID);
+			SelectFirstOrNextFrom(SelectableObjectsAt(tile).ToList(), tile);
 		}
 
 		private void SelectAllMatchingObjectUnderMouseOnScreen()
@@ -381,9 +444,9 @@ namespace RimWorld.Planet
 			}
 		}
 
-		private void AutoOrderToTile(Caravan c, int tile)
+		private void AutoOrderToTile(Caravan c, PlanetTile tile)
 		{
-			if (tile < 0)
+			if (!tile.Valid)
 			{
 				return;
 			}
@@ -400,61 +463,61 @@ namespace RimWorld.Planet
 			}
 		}
 
-		private void AutoOrderToTileNow(Caravan c, int tile)
+		private void AutoOrderToTileNow(Caravan c, PlanetTile tile)
 		{
-			if (tile >= 0 && (tile != c.Tile || c.pather.Moving))
+			if (tile.Valid && (!(tile == c.Tile) || c.pather.Moving))
 			{
-				int num = CaravanUtility.BestGotoDestNear(tile, c);
-				if (num >= 0)
+				PlanetTile planetTile = CaravanUtility.BestGotoDestNear(tile, c);
+				if (planetTile.Valid)
 				{
-					c.pather.StartPath(num, null, repathImmediately: true);
-					c.gotoMote.OrderedToTile(num);
+					c.pather.StartPath(planetTile, null, repathImmediately: true);
+					c.gotoMote.OrderedToTile(planetTile);
 					SoundDefOf.ColonistOrdered.PlayOneShotOnCamera();
 				}
 			}
 		}
 
-		private void SelectFirstOrNextFrom(List<WorldObject> objects, int tile)
+		private void SelectFirstOrNextFrom(List<WorldObject> objects, PlanetTile tile)
 		{
 			int num = objects.FindIndex((WorldObject x) => selected.Contains(x));
+			PlanetTile planetTile = PlanetTile.Invalid;
 			int num2 = -1;
-			int num3 = -1;
 			if (num != -1)
 			{
 				if (num == objects.Count - 1 || selected.Count >= 2)
 				{
 					if (selected.Count >= 2)
 					{
-						num3 = 0;
+						num2 = 0;
 					}
-					else if (tile >= 0)
+					else if (tile.Valid)
 					{
-						num2 = tile;
+						planetTile = tile;
 					}
 					else
 					{
-						num3 = 0;
+						num2 = 0;
 					}
 				}
 				else
 				{
-					num3 = num + 1;
+					num2 = num + 1;
 				}
 			}
 			else if (objects.Count == 0)
 			{
-				num2 = tile;
+				planetTile = tile;
 			}
 			else
 			{
-				num3 = 0;
+				num2 = 0;
 			}
 			ClearSelection();
-			if (num3 >= 0)
+			if (num2 >= 0)
 			{
-				Select(objects[num3]);
+				Select(objects[num2]);
 			}
-			selectedTile = num2;
+			selectedTile = planetTile;
 		}
 	}
 }

@@ -1,3 +1,4 @@
+using System;
 using Verse;
 using Verse.AI;
 
@@ -5,6 +6,8 @@ namespace RimWorld
 {
 	public class JobGiver_Manhunter : ThinkNode_JobGiver
 	{
+		public bool canBashDoors = true;
+
 		private const float WaitChance = 0.75f;
 
 		private const int WaitTicks = 90;
@@ -21,19 +24,25 @@ namespace RimWorld
 			{
 				return null;
 			}
-			Pawn pawn2 = FindPawnTarget(pawn);
-			if (pawn2 != null && pawn.CanReach(pawn2, PathEndMode.Touch, Danger.Deadly))
+			bool fenceBlocked = pawn.FenceBlocked;
+			Pawn pawn2 = FindPawnTarget(pawn, fenceBlocked, canBashDoors);
+			if (pawn2 != null && pawn.CanReach(pawn2, PathEndMode.Touch, Danger.Deadly, canBashDoors: false, fenceBlocked))
 			{
-				return MeleeAttackJob(pawn, pawn2);
+				Job abilityJob = JobGiver_AIFightEnemy.GetAbilityJob(pawn, pawn2);
+				if (abilityJob != null)
+				{
+					return abilityJob;
+				}
+				return MeleeAttackJob(pawn2, fenceBlocked, canBashDoors);
 			}
-			Building building = FindTurretTarget(pawn);
+			Building building = FindTurretTarget(pawn, fenceBlocked);
 			if (building != null)
 			{
-				return MeleeAttackJob(pawn, building);
+				return MeleeAttackJob(building, fenceBlocked, canBashDoors);
 			}
 			if (pawn2 != null)
 			{
-				using (PawnPath pawnPath = pawn.Map.pathFinder.FindPath(pawn.Position, pawn2.Position, TraverseParms.For(pawn, Danger.Deadly, TraverseMode.PassDoors)))
+				using (PawnPath pawnPath = pawn.Map.pathFinder.FindPathNow(pawn.Position, pawn2.Position, TraverseParms.For(pawn, Danger.Deadly, canBashDoors ? TraverseMode.PassDoors : TraverseMode.NoPassClosedDoors)))
 				{
 					if (!pawnPath.Found)
 					{
@@ -41,8 +50,12 @@ namespace RimWorld
 					}
 					if (!pawnPath.TryFindLastCellBeforeBlockingDoor(pawn, out var result))
 					{
-						Log.Error(string.Concat(pawn, " did TryFindLastCellBeforeDoor but found none when it should have been one. Target: ", pawn2.LabelCap));
-						return null;
+						if (pawn2.Position.GetDoor(pawn2.Map) == null)
+						{
+							Log.Error(pawn?.ToString() + " did TryFindLastCellBeforeDoor but found none when it should have been one. Target: " + pawn2.LabelCap);
+							return null;
+						}
+						result = pawnPath.NodesReversed[1];
 					}
 					IntVec3 randomCell = CellFinder.RandomRegionNear(result.GetRegion(pawn.Map), 9, TraverseParms.For(pawn)).RandomCell;
 					if (randomCell == pawn.Position)
@@ -55,23 +68,29 @@ namespace RimWorld
 			return null;
 		}
 
-		private Job MeleeAttackJob(Pawn pawn, Thing target)
+		private Job MeleeAttackJob(Thing target, bool canBashFences, bool canBashDoors)
 		{
 			Job job = JobMaker.MakeJob(JobDefOf.AttackMelee, target);
 			job.maxNumMeleeAttacks = 1;
 			job.expiryInterval = Rand.Range(420, 900);
-			job.attackDoorIfTargetLost = true;
+			job.attackDoorIfTargetLost = canBashDoors;
+			job.canBashFences = canBashFences;
 			return job;
 		}
 
-		private Pawn FindPawnTarget(Pawn pawn)
+		private Pawn FindPawnTarget(Pawn pawn, bool canBashFences, bool canBashDoors)
 		{
-			return (Pawn)AttackTargetFinder.BestAttackTarget(pawn, TargetScanFlags.NeedThreat | TargetScanFlags.NeedAutoTargetable, (Thing x) => x is Pawn && (int)x.def.race.intelligence >= 1, 0f, 9999f, default(IntVec3), float.MaxValue, canBash: true);
+			Predicate<Thing> validator = (Thing x) => x is Pawn && (int)x.def.race.intelligence >= 1;
+			bool flag = canBashDoors;
+			bool canBashFences2 = canBashFences;
+			return (Pawn)AttackTargetFinder.BestAttackTarget(pawn, TargetScanFlags.NeedThreat | TargetScanFlags.NeedAutoTargetable, validator, 0f, 9999f, default(IntVec3), float.MaxValue, flag, canTakeTargetsCloserThanEffectiveMinRange: true, canBashFences2);
 		}
 
-		private Building FindTurretTarget(Pawn pawn)
+		private Building FindTurretTarget(Pawn pawn, bool canBashFences)
 		{
-			return (Building)AttackTargetFinder.BestAttackTarget(pawn, TargetScanFlags.NeedLOSToAll | TargetScanFlags.NeedReachable | TargetScanFlags.NeedThreat | TargetScanFlags.NeedAutoTargetable, (Thing t) => t is Building, 0f, 70f);
+			Predicate<Thing> validator = (Thing t) => t is Building;
+			bool canBashFences2 = canBashFences;
+			return (Building)AttackTargetFinder.BestAttackTarget(pawn, TargetScanFlags.NeedLOSToAll | TargetScanFlags.NeedReachable | TargetScanFlags.NeedThreat | TargetScanFlags.NeedAutoTargetable, validator, 0f, 70f, default(IntVec3), float.MaxValue, canBashDoors: false, canTakeTargetsCloserThanEffectiveMinRange: true, canBashFences2);
 		}
 	}
 }

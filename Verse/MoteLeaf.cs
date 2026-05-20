@@ -1,3 +1,4 @@
+using LudeonTK;
 using UnityEngine;
 
 namespace Verse
@@ -80,9 +81,9 @@ namespace Verse
 			}
 		}
 
-		public override void Draw()
+		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
 		{
-			Draw(front ? (def.altitudeLayer.AltitudeFor() + 0.1f * GenMath.InverseLerp(0f, treeHeight, currentSpatialPosition.y) * 2f) : def.altitudeLayer.AltitudeFor());
+			DrawMote(front ? (def.altitudeLayer.AltitudeFor() + 0.1f * GenMath.InverseLerp(0f, treeHeight, currentSpatialPosition.y) * 2f) : def.altitudeLayer.AltitudeFor());
 		}
 	}
 }

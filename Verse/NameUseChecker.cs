@@ -23,13 +23,11 @@ namespace Verse
 		{
 			foreach (Name item in AllPawnsNamesEverUsed)
 			{
-				NameTriple nameTriple = item as NameTriple;
-				if (nameTriple != null && (singleName == nameTriple.First || singleName == nameTriple.Nick || singleName == nameTriple.Last))
+				if (item is NameTriple nameTriple && (singleName == nameTriple.First || singleName == nameTriple.Nick || singleName == nameTriple.Last))
 				{
 					return true;
 				}
-				NameSingle nameSingle = item as NameSingle;
-				if (nameSingle != null && nameSingle.Name == singleName)
+				if (item is NameSingle nameSingle && nameSingle.Name == singleName)
 				{
 					return true;
 				}
@@ -41,10 +39,25 @@ namespace Verse
 		{
 			foreach (Pawn item in PawnsFinder.AllMapsWorldAndTemporary_AliveOrDead)
 			{
-				NameSingle nameSingle = item.Name as NameSingle;
-				if (nameSingle != null && nameSingle.Name == candidate)
+				if (item.Name is NameSingle nameSingle && nameSingle.Name == candidate)
 				{
 					return true;
+				}
+			}
+			return false;
+		}
+
+		public static bool XenotypeNameIsUsed(string candidate)
+		{
+			foreach (Pawn item in PawnsFinder.AllMapsWorldAndTemporary_AliveOrDead)
+			{
+				if (item.genes != null && item.genes.UniqueXenotype)
+				{
+					string xenotypeName = item.genes.xenotypeName;
+					if (candidate == xenotypeName)
+					{
+						return true;
+					}
 				}
 			}
 			return false;

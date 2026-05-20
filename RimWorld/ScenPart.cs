@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Verse;
 
 namespace RimWorld
@@ -15,6 +16,13 @@ namespace RimWorld
 		public static float RowHeight => Text.LineHeight;
 
 		public virtual string Label => def.LabelCap;
+
+		public virtual bool OverrideDangerMusic => false;
+
+		public virtual bool Valid()
+		{
+			return def != null;
+		}
 
 		public virtual void ExposeData()
 		{
@@ -45,7 +53,7 @@ namespace RimWorld
 
 		public virtual IEnumerable<string> GetSummaryListEntries(string tag)
 		{
-			yield break;
+			return Enumerable.Empty<string>();
 		}
 
 		public virtual void Randomize()
@@ -64,7 +72,7 @@ namespace RimWorld
 
 		public virtual IEnumerable<Page> GetConfigPages()
 		{
-			yield break;
+			return Enumerable.Empty<Page>();
 		}
 
 		public virtual bool AllowPlayerStartingPawn(Pawn pawn, bool tryingToRedress, PawnGenerationRequest req)
@@ -92,13 +100,17 @@ namespace RimWorld
 		{
 		}
 
+		public virtual void PostIdeoChosen()
+		{
+		}
+
 		public virtual void PreMapGenerate()
 		{
 		}
 
 		public virtual IEnumerable<Thing> PlayerStartingThings()
 		{
-			yield break;
+			return Enumerable.Empty<Thing>();
 		}
 
 		public virtual void GenerateIntoMap(Map map)
@@ -106,6 +118,14 @@ namespace RimWorld
 		}
 
 		public virtual void PostMapGenerate(Map map)
+		{
+		}
+
+		public virtual void PostGravshipLanded(Map map)
+		{
+		}
+
+		public virtual void MapRemoved(Map map)
 		{
 		}
 
@@ -117,17 +137,31 @@ namespace RimWorld
 		{
 		}
 
+		public virtual IEnumerable<Alert> GetAlerts()
+		{
+			return Enumerable.Empty<Alert>();
+		}
+
 		public virtual IEnumerable<string> ConfigErrors()
 		{
 			if (def == null)
 			{
-				yield return GetType().ToString() + " has null def.";
+				yield return GetType()?.ToString() + " has null def.";
 			}
 		}
 
 		public virtual bool HasNullDefs()
 		{
 			return def == null;
+		}
+
+		public override int GetHashCode()
+		{
+			if (def == null)
+			{
+				return 0;
+			}
+			return def.GetHashCode();
 		}
 	}
 }

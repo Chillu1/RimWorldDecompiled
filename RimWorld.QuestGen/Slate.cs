@@ -98,8 +98,7 @@ namespace RimWorld.QuestGen
 				name = prefix + "/" + name;
 			}
 			name = QuestGenUtility.NormalizeVarPath(name);
-			ISlateRef slateRef = var as ISlateRef;
-			if (slateRef != null)
+			if (var is ISlateRef slateRef)
 			{
 				slateRef.TryGetConvertedValue<object>(this, out var value);
 				vars[name] = value;
@@ -287,8 +286,8 @@ namespace RimWorld.QuestGen
 				{
 					stringBuilder.AppendLine();
 				}
-				string str = ((item.Value is IEnumerable && !(item.Value is string)) ? ((IEnumerable)item.Value).ToStringSafeEnumerable() : item.Value.ToStringSafe());
-				stringBuilder.Append(item.Key + "=" + str);
+				string text = ((item.Value is IEnumerable && !(item.Value is string)) ? ((IEnumerable)item.Value).ToStringSafeEnumerable() : item.Value.ToStringSafe());
+				stringBuilder.Append(item.Key + "=" + text);
 			}
 			if (stringBuilder.Length == 0)
 			{

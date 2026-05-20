@@ -64,7 +64,7 @@ namespace RimWorld
 				IntVec3 c = GenerateShrapnelLocation(center, angle, distanceFactor);
 				if (IsGoodShrapnelCell(c, map))
 				{
-					MoteMaker.ThrowDustPuff(c.ToVector3Shifted() + Gen.RandomHorizontalVector(0.5f), map, 2f);
+					FleckMaker.ThrowDustPuff(c.ToVector3Shifted() + Gen.RandomHorizontalVector(0.5f), map, 2f);
 				}
 			}
 		}
@@ -89,8 +89,8 @@ namespace RimWorld
 		private static IntVec3 GenerateShrapnelLocation(IntVec3 center, float angleOffset, float distanceFactor)
 		{
 			float num = ShrapnelAngleDistribution.Evaluate(Rand.Value);
-			float d = ShrapnelDistanceFromAngle.Evaluate(num) * Rand.Value * distanceFactor;
-			return (Vector3Utility.HorizontalVectorFromAngle(num + angleOffset) * d).ToIntVec3() + center;
+			float num2 = ShrapnelDistanceFromAngle.Evaluate(num) * Rand.Value * distanceFactor;
+			return (Vector3Utility.HorizontalVectorFromAngle(num + angleOffset) * num2).ToIntVec3() + center;
 		}
 	}
 }

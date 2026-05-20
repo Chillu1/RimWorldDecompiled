@@ -40,7 +40,9 @@ namespace Verse
 			}
 			Material material = MaterialAllocator.Create(shader);
 			material.color = col;
-			material.name = "SolidColorMat-" + shader.name + "-" + col;
+			string name = shader.name;
+			Color color = col;
+			material.name = "SolidColorMat-" + name + "-" + color.ToString();
 			return material;
 		}
 
@@ -56,9 +58,13 @@ namespace Verse
 				Log.Error("Tried to create a texture from a different thread.");
 				return null;
 			}
-			Texture2D texture2D = new Texture2D(1, 1);
-			texture2D.name = "SolidColorTex-" + color;
+			Texture2D texture2D = new Texture2D(2, 2);
+			Color color2 = color;
+			texture2D.name = "SolidColorTex-" + color2.ToString();
 			texture2D.SetPixel(0, 0, color);
+			texture2D.SetPixel(1, 0, color);
+			texture2D.SetPixel(0, 1, color);
+			texture2D.SetPixel(1, 1, color);
 			texture2D.Apply();
 			return texture2D;
 		}

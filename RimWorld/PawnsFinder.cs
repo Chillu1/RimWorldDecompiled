@@ -24,29 +24,47 @@ namespace RimWorld
 
 		private static List<Pawn> temporary_Dead_Result = new List<Pawn>();
 
-		private static List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_Result = new List<Pawn>();
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_Result = new List<Pawn>();
 
-		private static List<Pawn> allCaravansAndTravelingTransportPods_Alive_Result = new List<Pawn>();
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_AliveSpawned_Result = new List<Pawn>();
 
-		private static List<Pawn> allCaravansAndTravelingTransportPods_AliveOrDead_Result = new List<Pawn>();
+		private static List<Pawn> allCaravansAndTravellingTransporters_Alive_Result = new List<Pawn>();
 
-		private static List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_Colonists_Result = new List<Pawn>();
+		private static List<Pawn> allCaravansAndTravellingTransporters_AliveOrDead_Result = new List<Pawn>();
 
-		private static List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_Result = new List<Pawn>();
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_Colonists_Result = new List<Pawn>();
 
-		private static List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoLodgers_Result = new List<Pawn>();
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_Colonists_NoSlaves_Result = new List<Pawn>();
 
-		private static List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep_Result = new List<Pawn>();
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_Result = new List<Pawn>();
 
-		private static List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_OfPlayerFaction_Result = new List<Pawn>();
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists_Result = new List<Pawn>();
 
-		private static List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_OfPlayerFaction_NoCryptosleep_Result = new List<Pawn>();
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoLodgers_Result = new List<Pawn>();
 
-		private static List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_PrisonersOfColony_Result = new List<Pawn>();
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoSuspended_Result = new List<Pawn>();
 
-		private static List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners_Result = new List<Pawn>();
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists_NoSuspended_Result = new List<Pawn>();
 
-		private static List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners_NoCryptosleep_Result = new List<Pawn>();
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoCryptosleep_Result = new List<Pawn>();
+
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction_Result = new List<Pawn>();
+
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction_NoCryptosleep_Result = new List<Pawn>();
+
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_PrisonersOfColony_Result = new List<Pawn>();
+
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_AliveSpawned_PrisonersOfColony_Result = new List<Pawn>();
+
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_SlavesOfColony_Result = new List<Pawn>();
+
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonistsAndPrisoners_Result = new List<Pawn>();
+
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners_Result = new List<Pawn>();
+
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners_NoCryptosleep_Result = new List<Pawn>();
+
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonistsAndPrisoners_NoCryptosleep_Result = new List<Pawn>();
 
 		private static List<Pawn> allMaps_PrisonersOfColonySpawned_Result = new List<Pawn>();
 
@@ -60,7 +78,13 @@ namespace RimWorld
 
 		private static List<Pawn> allMaps_FreeColonistsAndPrisoners_Result = new List<Pawn>();
 
+		private static List<Pawn> allMaps_ColonySubhumansSpawned_Result = new List<Pawn>();
+
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_ColonySubhumans_NoSuspended_Result = new List<Pawn>();
+
 		private static Dictionary<Faction, List<Pawn>> allMaps_SpawnedPawnsInFaction_Result = new Dictionary<Faction, List<Pawn>>();
+
+		private static List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_Colonists_OfXenotype_Result = new List<Pawn>();
 
 		private static List<Pawn> homeMaps_FreeColonistsSpawned_Result = new List<Pawn>();
 
@@ -75,6 +99,10 @@ namespace RimWorld
 					allMapsWorldAndTemporary_AliveOrDead_Result.AddRange(Find.WorldPawns.AllPawnsDead);
 				}
 				allMapsWorldAndTemporary_AliveOrDead_Result.AddRange(Temporary_Dead);
+				if (Find.CurrentGravship != null)
+				{
+					allMapsWorldAndTemporary_AliveOrDead_Result.AddRange(Find.CurrentGravship.Pawns);
+				}
 				return allMapsWorldAndTemporary_AliveOrDead_Result;
 			}
 		}
@@ -90,6 +118,10 @@ namespace RimWorld
 					allMapsWorldAndTemporary_Alive_Result.AddRange(Find.WorldPawns.AllPawnsAlive);
 				}
 				allMapsWorldAndTemporary_Alive_Result.AddRange(Temporary_Alive);
+				if (Find.CurrentGravship != null)
+				{
+					allMapsWorldAndTemporary_Alive_Result.AddRange(Find.CurrentGravship.Pawns);
+				}
 				return allMapsWorldAndTemporary_Alive_Result;
 			}
 		}
@@ -104,6 +136,10 @@ namespace RimWorld
 				{
 					allMapsAndWorld_Alive_Result.AddRange(Find.WorldPawns.AllPawnsAlive);
 				}
+				if (Find.CurrentGravship != null)
+				{
+					allMapsAndWorld_Alive_Result.AddRange(Find.CurrentGravship.Pawns);
+				}
 				return allMapsAndWorld_Alive_Result;
 			}
 		}
@@ -113,7 +149,7 @@ namespace RimWorld
 			get
 			{
 				allMaps_Result.Clear();
-				if (Current.ProgramState != 0)
+				if (Current.ProgramState != ProgramState.Entry)
 				{
 					List<Map> maps = Find.Maps;
 					if (maps.Count == 1)
@@ -129,12 +165,12 @@ namespace RimWorld
 			}
 		}
 
-		public static List<Pawn> AllMaps_Spawned
+		public static IReadOnlyList<Pawn> AllMaps_Spawned
 		{
 			get
 			{
 				allMaps_Spawned_Result.Clear();
-				if (Current.ProgramState != 0)
+				if (Current.ProgramState != ProgramState.Entry)
 				{
 					List<Map> maps = Find.Maps;
 					if (maps.Count == 1)
@@ -155,14 +191,14 @@ namespace RimWorld
 			get
 			{
 				List<Pawn> allMapsWorldAndTemporary_AliveOrDead = AllMapsWorldAndTemporary_AliveOrDead;
-				List<Pawn> allCaravansAndTravelingTransportPods_AliveOrDead = AllCaravansAndTravelingTransportPods_AliveOrDead;
-				if (allCaravansAndTravelingTransportPods_AliveOrDead.Count == 0)
+				List<Pawn> allCaravansAndTravellingTransporters_AliveOrDead = AllCaravansAndTravellingTransporters_AliveOrDead;
+				if (allCaravansAndTravellingTransporters_AliveOrDead.Count == 0)
 				{
 					return allMapsWorldAndTemporary_AliveOrDead;
 				}
 				all_AliveOrDead_Result.Clear();
 				all_AliveOrDead_Result.AddRange(allMapsWorldAndTemporary_AliveOrDead);
-				all_AliveOrDead_Result.AddRange(allCaravansAndTravelingTransportPods_AliveOrDead);
+				all_AliveOrDead_Result.AddRange(allCaravansAndTravellingTransporters_AliveOrDead);
 				return all_AliveOrDead_Result;
 			}
 		}
@@ -183,10 +219,9 @@ namespace RimWorld
 					List<Thing> list = thingsBeingGeneratedNow[j];
 					for (int k = 0; k < list.Count; k++)
 					{
-						Pawn pawn = list[k] as Pawn;
-						if (pawn != null)
+						if (list[k] is Pawn item)
 						{
-							temporary_Result.Add(pawn);
+							temporary_Result.Add(item);
 						}
 					}
 				}
@@ -215,10 +250,9 @@ namespace RimWorld
 							ThingOwner things = sites[m].parts[n].things;
 							for (int num = 0; num < things.Count; num++)
 							{
-								Pawn pawn2 = things[num] as Pawn;
-								if (pawn2 != null)
+								if (things[num] is Pawn item2)
 								{
-									temporary_Result.Add(pawn2);
+									temporary_Result.Add(item2);
 								}
 							}
 						}
@@ -279,214 +313,377 @@ namespace RimWorld
 			}
 		}
 
-		public static List<Pawn> AllMapsCaravansAndTravelingTransportPods_Alive
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_Alive
 		{
 			get
 			{
 				List<Pawn> allMaps = AllMaps;
-				List<Pawn> allCaravansAndTravelingTransportPods_Alive = AllCaravansAndTravelingTransportPods_Alive;
-				if (allCaravansAndTravelingTransportPods_Alive.Count == 0)
+				List<Pawn> allCaravansAndTravellingTransporters_Alive = AllCaravansAndTravellingTransporters_Alive;
+				if (allCaravansAndTravellingTransporters_Alive.Count == 0)
 				{
 					return allMaps;
 				}
-				allMapsCaravansAndTravelingTransportPods_Alive_Result.Clear();
-				allMapsCaravansAndTravelingTransportPods_Alive_Result.AddRange(allMaps);
-				allMapsCaravansAndTravelingTransportPods_Alive_Result.AddRange(allCaravansAndTravelingTransportPods_Alive);
-				return allMapsCaravansAndTravelingTransportPods_Alive_Result;
+				allMapsCaravansAndTravellingTransporters_Alive_Result.Clear();
+				allMapsCaravansAndTravellingTransporters_Alive_Result.AddRange(allMaps);
+				allMapsCaravansAndTravellingTransporters_Alive_Result.AddRange(allCaravansAndTravellingTransporters_Alive);
+				return allMapsCaravansAndTravellingTransporters_Alive_Result;
 			}
 		}
 
-		public static List<Pawn> AllCaravansAndTravelingTransportPods_Alive
+		public static IReadOnlyList<Pawn> AllMapsCaravansAndTravellingTransporters_AliveSpawned
 		{
 			get
 			{
-				allCaravansAndTravelingTransportPods_Alive_Result.Clear();
-				List<Pawn> allCaravansAndTravelingTransportPods_AliveOrDead = AllCaravansAndTravelingTransportPods_AliveOrDead;
-				for (int i = 0; i < allCaravansAndTravelingTransportPods_AliveOrDead.Count; i++)
+				IReadOnlyList<Pawn> allMaps_Spawned = AllMaps_Spawned;
+				List<Pawn> allCaravansAndTravellingTransporters_Alive = AllCaravansAndTravellingTransporters_Alive;
+				if (allCaravansAndTravellingTransporters_Alive.Count == 0)
 				{
-					if (!allCaravansAndTravelingTransportPods_AliveOrDead[i].Dead)
+					return allMaps_Spawned;
+				}
+				allMapsCaravansAndTravellingTransporters_AliveSpawned_Result.Clear();
+				allMapsCaravansAndTravellingTransporters_AliveSpawned_Result.AddRange(allMaps_Spawned);
+				allMapsCaravansAndTravellingTransporters_AliveSpawned_Result.AddRange(allCaravansAndTravellingTransporters_Alive);
+				return allMapsCaravansAndTravellingTransporters_AliveSpawned_Result;
+			}
+		}
+
+		public static List<Pawn> AllCaravansAndTravellingTransporters_Alive
+		{
+			get
+			{
+				allCaravansAndTravellingTransporters_Alive_Result.Clear();
+				List<Pawn> allCaravansAndTravellingTransporters_AliveOrDead = AllCaravansAndTravellingTransporters_AliveOrDead;
+				for (int i = 0; i < allCaravansAndTravellingTransporters_AliveOrDead.Count; i++)
+				{
+					if (!allCaravansAndTravellingTransporters_AliveOrDead[i].Dead)
 					{
-						allCaravansAndTravelingTransportPods_Alive_Result.Add(allCaravansAndTravelingTransportPods_AliveOrDead[i]);
+						allCaravansAndTravellingTransporters_Alive_Result.Add(allCaravansAndTravellingTransporters_AliveOrDead[i]);
 					}
 				}
-				return allCaravansAndTravelingTransportPods_Alive_Result;
+				return allCaravansAndTravellingTransporters_Alive_Result;
 			}
 		}
 
-		public static List<Pawn> AllCaravansAndTravelingTransportPods_AliveOrDead
+		public static List<Pawn> AllCaravansAndTravellingTransporters_AliveOrDead
 		{
 			get
 			{
-				allCaravansAndTravelingTransportPods_AliveOrDead_Result.Clear();
+				allCaravansAndTravellingTransporters_AliveOrDead_Result.Clear();
 				if (Find.World != null)
 				{
 					List<Caravan> caravans = Find.WorldObjects.Caravans;
 					for (int i = 0; i < caravans.Count; i++)
 					{
-						allCaravansAndTravelingTransportPods_AliveOrDead_Result.AddRange(caravans[i].PawnsListForReading);
+						allCaravansAndTravellingTransporters_AliveOrDead_Result.AddRange(caravans[i].PawnsListForReading);
 					}
-					List<TravelingTransportPods> travelingTransportPods = Find.WorldObjects.TravelingTransportPods;
-					for (int j = 0; j < travelingTransportPods.Count; j++)
+					List<TravellingTransporters> travellingTransporters = Find.WorldObjects.TravellingTransporters;
+					for (int j = 0; j < travellingTransporters.Count; j++)
 					{
-						allCaravansAndTravelingTransportPods_AliveOrDead_Result.AddRange(travelingTransportPods[j].Pawns);
+						allCaravansAndTravellingTransporters_AliveOrDead_Result.AddRange(travellingTransporters[j].Pawns);
+					}
+					if (Find.CurrentGravship != null)
+					{
+						foreach (Pawn pawn in Find.CurrentGravship.Pawns)
+						{
+							if (!pawn.SpawnedOrAnyParentSpawned)
+							{
+								allCaravansAndTravellingTransporters_AliveOrDead_Result.Add(pawn);
+							}
+						}
 					}
 				}
-				return allCaravansAndTravelingTransportPods_AliveOrDead_Result;
+				return allCaravansAndTravellingTransporters_AliveOrDead_Result;
 			}
 		}
 
-		public static List<Pawn> AllMapsCaravansAndTravelingTransportPods_Alive_Colonists
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_Alive_Colonists
 		{
 			get
 			{
-				allMapsCaravansAndTravelingTransportPods_Alive_Colonists_Result.Clear();
-				List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive = AllMapsCaravansAndTravelingTransportPods_Alive;
-				for (int i = 0; i < allMapsCaravansAndTravelingTransportPods_Alive.Count; i++)
+				allMapsCaravansAndTravellingTransporters_Alive_Colonists_Result.Clear();
+				List<Pawn> allMapsCaravansAndTravellingTransporters_Alive = AllMapsCaravansAndTravellingTransporters_Alive;
+				for (int i = 0; i < allMapsCaravansAndTravellingTransporters_Alive.Count; i++)
 				{
-					if (allMapsCaravansAndTravelingTransportPods_Alive[i].IsColonist)
+					if (allMapsCaravansAndTravellingTransporters_Alive[i].IsColonist)
 					{
-						allMapsCaravansAndTravelingTransportPods_Alive_Colonists_Result.Add(allMapsCaravansAndTravelingTransportPods_Alive[i]);
+						allMapsCaravansAndTravellingTransporters_Alive_Colonists_Result.Add(allMapsCaravansAndTravellingTransporters_Alive[i]);
 					}
 				}
-				return allMapsCaravansAndTravelingTransportPods_Alive_Colonists_Result;
+				return allMapsCaravansAndTravellingTransporters_Alive_Colonists_Result;
 			}
 		}
 
-		public static List<Pawn> AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_Alive_Colonists_NoSlaves
 		{
 			get
 			{
-				allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_Result.Clear();
-				List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive = AllMapsCaravansAndTravelingTransportPods_Alive;
-				for (int i = 0; i < allMapsCaravansAndTravelingTransportPods_Alive.Count; i++)
+				allMapsCaravansAndTravellingTransporters_Alive_Colonists_NoSlaves_Result.Clear();
+				List<Pawn> allMapsCaravansAndTravellingTransporters_Alive = AllMapsCaravansAndTravellingTransporters_Alive;
+				for (int i = 0; i < allMapsCaravansAndTravellingTransporters_Alive.Count; i++)
 				{
-					if (allMapsCaravansAndTravelingTransportPods_Alive[i].IsFreeColonist)
+					if (allMapsCaravansAndTravellingTransporters_Alive[i].IsColonist && !allMapsCaravansAndTravellingTransporters_Alive[i].IsSlave)
 					{
-						allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_Result.Add(allMapsCaravansAndTravelingTransportPods_Alive[i]);
+						allMapsCaravansAndTravellingTransporters_Alive_Colonists_NoSlaves_Result.Add(allMapsCaravansAndTravellingTransporters_Alive[i]);
 					}
 				}
-				return allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_Result;
+				return allMapsCaravansAndTravellingTransporters_Alive_Colonists_NoSlaves_Result;
 			}
 		}
 
-		public static List<Pawn> AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoLodgers
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists
 		{
 			get
 			{
-				allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoLodgers_Result.Clear();
-				List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive = AllMapsCaravansAndTravelingTransportPods_Alive;
-				for (int i = 0; i < allMapsCaravansAndTravelingTransportPods_Alive.Count; i++)
+				allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_Result.Clear();
+				List<Pawn> allMapsCaravansAndTravellingTransporters_Alive = AllMapsCaravansAndTravellingTransporters_Alive;
+				for (int i = 0; i < allMapsCaravansAndTravellingTransporters_Alive.Count; i++)
 				{
-					if (allMapsCaravansAndTravelingTransportPods_Alive[i].IsFreeColonist && !allMapsCaravansAndTravelingTransportPods_Alive[i].IsQuestLodger())
+					if (allMapsCaravansAndTravellingTransporters_Alive[i].IsFreeColonist)
 					{
-						allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoLodgers_Result.Add(allMapsCaravansAndTravelingTransportPods_Alive[i]);
+						allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_Result.Add(allMapsCaravansAndTravellingTransporters_Alive[i]);
 					}
 				}
-				return allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoLodgers_Result;
+				return allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_Result;
 			}
 		}
 
-		public static List<Pawn> AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists
 		{
 			get
 			{
-				allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep_Result.Clear();
-				List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive = AllMapsCaravansAndTravelingTransportPods_Alive;
-				for (int i = 0; i < allMapsCaravansAndTravelingTransportPods_Alive.Count; i++)
+				allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists_Result.Clear();
+				IReadOnlyList<Pawn> allMapsCaravansAndTravellingTransporters_AliveSpawned = AllMapsCaravansAndTravellingTransporters_AliveSpawned;
+				for (int i = 0; i < allMapsCaravansAndTravellingTransporters_AliveSpawned.Count; i++)
 				{
-					if (allMapsCaravansAndTravelingTransportPods_Alive[i].IsFreeColonist && !allMapsCaravansAndTravelingTransportPods_Alive[i].Suspended)
+					if (allMapsCaravansAndTravellingTransporters_AliveSpawned[i].IsFreeColonist)
 					{
-						allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep_Result.Add(allMapsCaravansAndTravelingTransportPods_Alive[i]);
+						allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists_Result.Add(allMapsCaravansAndTravellingTransporters_AliveSpawned[i]);
 					}
 				}
-				return allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep_Result;
+				return allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists_Result;
 			}
 		}
 
-		public static List<Pawn> AllMapsCaravansAndTravelingTransportPods_Alive_OfPlayerFaction
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoLodgers
 		{
 			get
 			{
-				allMapsCaravansAndTravelingTransportPods_Alive_OfPlayerFaction_Result.Clear();
+				allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoLodgers_Result.Clear();
+				List<Pawn> allMapsCaravansAndTravellingTransporters_Alive = AllMapsCaravansAndTravellingTransporters_Alive;
+				for (int i = 0; i < allMapsCaravansAndTravellingTransporters_Alive.Count; i++)
+				{
+					if (allMapsCaravansAndTravellingTransporters_Alive[i].IsFreeColonist && !allMapsCaravansAndTravellingTransporters_Alive[i].IsQuestLodger())
+					{
+						allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoLodgers_Result.Add(allMapsCaravansAndTravellingTransporters_Alive[i]);
+					}
+				}
+				return allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoLodgers_Result;
+			}
+		}
+
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoSuspended
+		{
+			get
+			{
+				allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoSuspended_Result.Clear();
+				List<Pawn> allMapsCaravansAndTravellingTransporters_Alive = AllMapsCaravansAndTravellingTransporters_Alive;
+				for (int i = 0; i < allMapsCaravansAndTravellingTransporters_Alive.Count; i++)
+				{
+					if (allMapsCaravansAndTravellingTransporters_Alive[i].IsFreeColonist && !allMapsCaravansAndTravellingTransporters_Alive[i].Suspended)
+					{
+						allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoSuspended_Result.Add(allMapsCaravansAndTravellingTransporters_Alive[i]);
+					}
+				}
+				return allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoSuspended_Result;
+			}
+		}
+
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists_NoSuspended
+		{
+			get
+			{
+				allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists_NoSuspended_Result.Clear();
+				IReadOnlyList<Pawn> allMapsCaravansAndTravellingTransporters_AliveSpawned = AllMapsCaravansAndTravellingTransporters_AliveSpawned;
+				for (int i = 0; i < allMapsCaravansAndTravellingTransporters_AliveSpawned.Count; i++)
+				{
+					if (allMapsCaravansAndTravellingTransporters_AliveSpawned[i].IsFreeColonist && !allMapsCaravansAndTravellingTransporters_AliveSpawned[i].Suspended)
+					{
+						allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists_NoSuspended_Result.Add(allMapsCaravansAndTravellingTransporters_AliveSpawned[i]);
+					}
+				}
+				return allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists_NoSuspended_Result;
+			}
+		}
+
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoCryptosleep
+		{
+			get
+			{
+				allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoCryptosleep_Result.Clear();
+				List<Pawn> allMapsCaravansAndTravellingTransporters_Alive = AllMapsCaravansAndTravellingTransporters_Alive;
+				for (int i = 0; i < allMapsCaravansAndTravellingTransporters_Alive.Count; i++)
+				{
+					if (allMapsCaravansAndTravellingTransporters_Alive[i].IsFreeColonist && !allMapsCaravansAndTravellingTransporters_Alive[i].InCryptosleep)
+					{
+						allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoCryptosleep_Result.Add(allMapsCaravansAndTravellingTransporters_Alive[i]);
+					}
+				}
+				return allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoCryptosleep_Result;
+			}
+		}
+
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction
+		{
+			get
+			{
+				allMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction_Result.Clear();
 				Faction ofPlayer = Faction.OfPlayer;
-				List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive = AllMapsCaravansAndTravelingTransportPods_Alive;
-				for (int i = 0; i < allMapsCaravansAndTravelingTransportPods_Alive.Count; i++)
+				List<Pawn> allMapsCaravansAndTravellingTransporters_Alive = AllMapsCaravansAndTravellingTransporters_Alive;
+				for (int i = 0; i < allMapsCaravansAndTravellingTransporters_Alive.Count; i++)
 				{
-					if (allMapsCaravansAndTravelingTransportPods_Alive[i].Faction == ofPlayer)
+					if (allMapsCaravansAndTravellingTransporters_Alive[i].Faction == ofPlayer)
 					{
-						allMapsCaravansAndTravelingTransportPods_Alive_OfPlayerFaction_Result.Add(allMapsCaravansAndTravelingTransportPods_Alive[i]);
+						allMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction_Result.Add(allMapsCaravansAndTravellingTransporters_Alive[i]);
 					}
 				}
-				return allMapsCaravansAndTravelingTransportPods_Alive_OfPlayerFaction_Result;
+				return allMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction_Result;
 			}
 		}
 
-		public static List<Pawn> AllMapsCaravansAndTravelingTransportPods_Alive_OfPlayerFaction_NoCryptosleep
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction_NoCryptosleep
 		{
 			get
 			{
-				allMapsCaravansAndTravelingTransportPods_Alive_OfPlayerFaction_NoCryptosleep_Result.Clear();
+				allMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction_NoCryptosleep_Result.Clear();
 				Faction ofPlayer = Faction.OfPlayer;
-				List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive = AllMapsCaravansAndTravelingTransportPods_Alive;
-				for (int i = 0; i < allMapsCaravansAndTravelingTransportPods_Alive.Count; i++)
+				List<Pawn> allMapsCaravansAndTravellingTransporters_Alive = AllMapsCaravansAndTravellingTransporters_Alive;
+				for (int i = 0; i < allMapsCaravansAndTravellingTransporters_Alive.Count; i++)
 				{
-					if (allMapsCaravansAndTravelingTransportPods_Alive[i].Faction == ofPlayer && !allMapsCaravansAndTravelingTransportPods_Alive[i].Suspended)
+					if (allMapsCaravansAndTravellingTransporters_Alive[i].Faction == ofPlayer && !allMapsCaravansAndTravellingTransporters_Alive[i].Suspended)
 					{
-						allMapsCaravansAndTravelingTransportPods_Alive_OfPlayerFaction_NoCryptosleep_Result.Add(allMapsCaravansAndTravelingTransportPods_Alive[i]);
+						allMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction_NoCryptosleep_Result.Add(allMapsCaravansAndTravellingTransporters_Alive[i]);
 					}
 				}
-				return allMapsCaravansAndTravelingTransportPods_Alive_OfPlayerFaction_NoCryptosleep_Result;
+				return allMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction_NoCryptosleep_Result;
 			}
 		}
 
-		public static List<Pawn> AllMapsCaravansAndTravelingTransportPods_Alive_PrisonersOfColony
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_Alive_PrisonersOfColony
 		{
 			get
 			{
-				allMapsCaravansAndTravelingTransportPods_Alive_PrisonersOfColony_Result.Clear();
-				List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive = AllMapsCaravansAndTravelingTransportPods_Alive;
-				for (int i = 0; i < allMapsCaravansAndTravelingTransportPods_Alive.Count; i++)
+				allMapsCaravansAndTravellingTransporters_Alive_PrisonersOfColony_Result.Clear();
+				List<Pawn> allMapsCaravansAndTravellingTransporters_Alive = AllMapsCaravansAndTravellingTransporters_Alive;
+				for (int i = 0; i < allMapsCaravansAndTravellingTransporters_Alive.Count; i++)
 				{
-					if (allMapsCaravansAndTravelingTransportPods_Alive[i].IsPrisonerOfColony)
+					if (allMapsCaravansAndTravellingTransporters_Alive[i].IsPrisonerOfColony)
 					{
-						allMapsCaravansAndTravelingTransportPods_Alive_PrisonersOfColony_Result.Add(allMapsCaravansAndTravelingTransportPods_Alive[i]);
+						allMapsCaravansAndTravellingTransporters_Alive_PrisonersOfColony_Result.Add(allMapsCaravansAndTravellingTransporters_Alive[i]);
 					}
 				}
-				return allMapsCaravansAndTravelingTransportPods_Alive_PrisonersOfColony_Result;
+				return allMapsCaravansAndTravellingTransporters_Alive_PrisonersOfColony_Result;
 			}
 		}
 
-		public static List<Pawn> AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_AliveSpawned_PrisonersOfColony
 		{
 			get
 			{
-				List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists = AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists;
-				List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_PrisonersOfColony = AllMapsCaravansAndTravelingTransportPods_Alive_PrisonersOfColony;
-				if (allMapsCaravansAndTravelingTransportPods_Alive_PrisonersOfColony.Count == 0)
+				allMapsCaravansAndTravellingTransporters_AliveSpawned_PrisonersOfColony_Result.Clear();
+				IReadOnlyList<Pawn> allMapsCaravansAndTravellingTransporters_AliveSpawned = AllMapsCaravansAndTravellingTransporters_AliveSpawned;
+				for (int i = 0; i < allMapsCaravansAndTravellingTransporters_AliveSpawned.Count; i++)
 				{
-					return allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists;
+					if (allMapsCaravansAndTravellingTransporters_AliveSpawned[i].IsPrisonerOfColony)
+					{
+						allMapsCaravansAndTravellingTransporters_AliveSpawned_PrisonersOfColony_Result.Add(allMapsCaravansAndTravellingTransporters_AliveSpawned[i]);
+					}
 				}
-				allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners_Result.Clear();
-				allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners_Result.AddRange(allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists);
-				allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners_Result.AddRange(allMapsCaravansAndTravelingTransportPods_Alive_PrisonersOfColony);
-				return allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners_Result;
+				return allMapsCaravansAndTravellingTransporters_AliveSpawned_PrisonersOfColony_Result;
 			}
 		}
 
-		public static List<Pawn> AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners_NoCryptosleep
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_Alive_SlavesOfColony
 		{
 			get
 			{
-				allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners_NoCryptosleep_Result.Clear();
-				List<Pawn> allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners = AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners;
-				for (int i = 0; i < allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners.Count; i++)
+				allMapsCaravansAndTravellingTransporters_Alive_SlavesOfColony_Result.Clear();
+				List<Pawn> allMapsCaravansAndTravellingTransporters_Alive = AllMapsCaravansAndTravellingTransporters_Alive;
+				for (int i = 0; i < allMapsCaravansAndTravellingTransporters_Alive.Count; i++)
 				{
-					if (!allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners[i].Suspended)
+					if (allMapsCaravansAndTravellingTransporters_Alive[i].IsSlaveOfColony)
 					{
-						allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners_NoCryptosleep_Result.Add(allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners[i]);
+						allMapsCaravansAndTravellingTransporters_Alive_SlavesOfColony_Result.Add(allMapsCaravansAndTravellingTransporters_Alive[i]);
 					}
 				}
-				return allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners_NoCryptosleep_Result;
+				return allMapsCaravansAndTravellingTransporters_Alive_SlavesOfColony_Result;
+			}
+		}
+
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonistsAndPrisoners
+		{
+			get
+			{
+				List<Pawn> allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists = AllMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists;
+				List<Pawn> allMapsCaravansAndTravellingTransporters_AliveSpawned_PrisonersOfColony = AllMapsCaravansAndTravellingTransporters_AliveSpawned_PrisonersOfColony;
+				if (allMapsCaravansAndTravellingTransporters_AliveSpawned_PrisonersOfColony.Count == 0)
+				{
+					return allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists;
+				}
+				allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonistsAndPrisoners_Result.Clear();
+				allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonistsAndPrisoners_Result.AddRange(allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists);
+				allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonistsAndPrisoners_Result.AddRange(allMapsCaravansAndTravellingTransporters_AliveSpawned_PrisonersOfColony);
+				return allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonistsAndPrisoners_Result;
+			}
+		}
+
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners
+		{
+			get
+			{
+				List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_FreeColonists = AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists;
+				List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_PrisonersOfColony = AllMapsCaravansAndTravellingTransporters_Alive_PrisonersOfColony;
+				if (allMapsCaravansAndTravellingTransporters_Alive_PrisonersOfColony.Count == 0)
+				{
+					return allMapsCaravansAndTravellingTransporters_Alive_FreeColonists;
+				}
+				allMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners_Result.Clear();
+				allMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners_Result.AddRange(allMapsCaravansAndTravellingTransporters_Alive_FreeColonists);
+				allMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners_Result.AddRange(allMapsCaravansAndTravellingTransporters_Alive_PrisonersOfColony);
+				return allMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners_Result;
+			}
+		}
+
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners_NoCryptosleep
+		{
+			get
+			{
+				allMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners_NoCryptosleep_Result.Clear();
+				List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners = AllMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners;
+				for (int i = 0; i < allMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners.Count; i++)
+				{
+					if (!allMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners[i].Suspended)
+					{
+						allMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners_NoCryptosleep_Result.Add(allMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners[i]);
+					}
+				}
+				return allMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners_NoCryptosleep_Result;
+			}
+		}
+
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonistsAndPrisoners_NoCryptosleep
+		{
+			get
+			{
+				allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonistsAndPrisoners_NoCryptosleep_Result.Clear();
+				List<Pawn> allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonistsAndPrisoners = AllMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonistsAndPrisoners;
+				for (int i = 0; i < allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonistsAndPrisoners.Count; i++)
+				{
+					if (!allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonistsAndPrisoners[i].Suspended)
+					{
+						allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonistsAndPrisoners_NoCryptosleep_Result.Add(allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonistsAndPrisoners[i]);
+					}
+				}
+				return allMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonistsAndPrisoners_NoCryptosleep_Result;
 			}
 		}
 
@@ -495,7 +692,7 @@ namespace RimWorld
 			get
 			{
 				allMaps_PrisonersOfColonySpawned_Result.Clear();
-				if (Current.ProgramState != 0)
+				if (Current.ProgramState != ProgramState.Entry)
 				{
 					List<Map> maps = Find.Maps;
 					if (maps.Count == 1)
@@ -516,7 +713,7 @@ namespace RimWorld
 			get
 			{
 				allMaps_PrisonersOfColony_Result.Clear();
-				if (Current.ProgramState != 0)
+				if (Current.ProgramState != ProgramState.Entry)
 				{
 					List<Map> maps = Find.Maps;
 					if (maps.Count == 1)
@@ -537,7 +734,7 @@ namespace RimWorld
 			get
 			{
 				allMaps_FreeColonists_Result.Clear();
-				if (Current.ProgramState != 0)
+				if (Current.ProgramState != ProgramState.Entry)
 				{
 					List<Map> maps = Find.Maps;
 					if (maps.Count == 1)
@@ -558,7 +755,7 @@ namespace RimWorld
 			get
 			{
 				allMaps_FreeColonistsSpawned_Result.Clear();
-				if (Current.ProgramState != 0)
+				if (Current.ProgramState != ProgramState.Entry)
 				{
 					List<Map> maps = Find.Maps;
 					if (maps.Count == 1)
@@ -579,7 +776,7 @@ namespace RimWorld
 			get
 			{
 				allMaps_FreeColonistsAndPrisonersSpawned_Result.Clear();
-				if (Current.ProgramState != 0)
+				if (Current.ProgramState != ProgramState.Entry)
 				{
 					List<Map> maps = Find.Maps;
 					if (maps.Count == 1)
@@ -600,7 +797,7 @@ namespace RimWorld
 			get
 			{
 				allMaps_FreeColonistsAndPrisoners_Result.Clear();
-				if (Current.ProgramState != 0)
+				if (Current.ProgramState != ProgramState.Entry)
 				{
 					List<Map> maps = Find.Maps;
 					if (maps.Count == 1)
@@ -616,12 +813,50 @@ namespace RimWorld
 			}
 		}
 
+		public static List<Pawn> AllMaps_ColonySubhumansSpawnedPlayerControlled
+		{
+			get
+			{
+				allMaps_ColonySubhumansSpawned_Result.Clear();
+				if (Current.ProgramState != ProgramState.Entry)
+				{
+					List<Map> maps = Find.Maps;
+					if (maps.Count == 1)
+					{
+						return maps[0].mapPawns.SpawnedColonySubhumansPlayerControlled;
+					}
+					for (int i = 0; i < maps.Count; i++)
+					{
+						allMaps_ColonySubhumansSpawned_Result.AddRange(maps[i].mapPawns.SpawnedColonySubhumansPlayerControlled);
+					}
+				}
+				return allMaps_ColonySubhumansSpawned_Result;
+			}
+		}
+
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_Alive_ColonySubhumans_NoSuspended
+		{
+			get
+			{
+				allMapsCaravansAndTravellingTransporters_Alive_ColonySubhumans_NoSuspended_Result.Clear();
+				List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction = AllMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction;
+				for (int i = 0; i < allMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction.Count; i++)
+				{
+					if (allMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction[i].IsColonySubhuman && !allMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction[i].Suspended)
+					{
+						allMapsCaravansAndTravellingTransporters_Alive_ColonySubhumans_NoSuspended_Result.Add(allMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction[i]);
+					}
+				}
+				return allMapsCaravansAndTravellingTransporters_Alive_ColonySubhumans_NoSuspended_Result;
+			}
+		}
+
 		public static List<Pawn> HomeMaps_FreeColonistsSpawned
 		{
 			get
 			{
 				homeMaps_FreeColonistsSpawned_Result.Clear();
-				if (Current.ProgramState != 0)
+				if (Current.ProgramState != ProgramState.Entry)
 				{
 					List<Map> maps = Find.Maps;
 					if (maps.Count == 1)
@@ -652,7 +887,7 @@ namespace RimWorld
 				allMaps_SpawnedPawnsInFaction_Result.Add(faction, value);
 			}
 			value.Clear();
-			if (Current.ProgramState != 0)
+			if (Current.ProgramState != ProgramState.Entry)
 			{
 				List<Map> maps = Find.Maps;
 				if (maps.Count == 1)
@@ -667,6 +902,24 @@ namespace RimWorld
 			return value;
 		}
 
+		public static List<Pawn> AllMapsCaravansAndTravellingTransporters_Alive_Colonists_OfXenotype(XenotypeDef def)
+		{
+			allMapsCaravansAndTravellingTransporters_Alive_Colonists_OfXenotype_Result.Clear();
+			if (!ModsConfig.BiotechActive)
+			{
+				return allMapsCaravansAndTravellingTransporters_Alive_Colonists_OfXenotype_Result;
+			}
+			List<Pawn> allMapsCaravansAndTravellingTransporters_Alive_Colonists = AllMapsCaravansAndTravellingTransporters_Alive_Colonists;
+			for (int i = 0; i < allMapsCaravansAndTravellingTransporters_Alive_Colonists.Count; i++)
+			{
+				if (allMapsCaravansAndTravellingTransporters_Alive_Colonists[i].genes != null && allMapsCaravansAndTravellingTransporters_Alive_Colonists[i].genes.Xenotype == def)
+				{
+					allMapsCaravansAndTravellingTransporters_Alive_Colonists_OfXenotype_Result.Add(allMapsCaravansAndTravellingTransporters_Alive_Colonists[i]);
+				}
+			}
+			return allMapsCaravansAndTravellingTransporters_Alive_Colonists_OfXenotype_Result;
+		}
+
 		public static void Clear()
 		{
 			allMapsWorldAndTemporary_AliveOrDead_Result.Clear();
@@ -678,17 +931,18 @@ namespace RimWorld
 			temporary_Result.Clear();
 			temporary_Alive_Result.Clear();
 			temporary_Dead_Result.Clear();
-			allMapsCaravansAndTravelingTransportPods_Alive_Result.Clear();
-			allCaravansAndTravelingTransportPods_Alive_Result.Clear();
-			allCaravansAndTravelingTransportPods_AliveOrDead_Result.Clear();
-			allMapsCaravansAndTravelingTransportPods_Alive_Colonists_Result.Clear();
-			allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_Result.Clear();
-			allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep_Result.Clear();
-			allMapsCaravansAndTravelingTransportPods_Alive_OfPlayerFaction_Result.Clear();
-			allMapsCaravansAndTravelingTransportPods_Alive_OfPlayerFaction_NoCryptosleep_Result.Clear();
-			allMapsCaravansAndTravelingTransportPods_Alive_PrisonersOfColony_Result.Clear();
-			allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners_Result.Clear();
-			allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners_NoCryptosleep_Result.Clear();
+			allMapsCaravansAndTravellingTransporters_Alive_Result.Clear();
+			allCaravansAndTravellingTransporters_Alive_Result.Clear();
+			allCaravansAndTravellingTransporters_AliveOrDead_Result.Clear();
+			allMapsCaravansAndTravellingTransporters_Alive_Colonists_Result.Clear();
+			allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_Result.Clear();
+			allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoSuspended_Result.Clear();
+			allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoCryptosleep_Result.Clear();
+			allMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction_Result.Clear();
+			allMapsCaravansAndTravellingTransporters_Alive_OfPlayerFaction_NoCryptosleep_Result.Clear();
+			allMapsCaravansAndTravellingTransporters_Alive_PrisonersOfColony_Result.Clear();
+			allMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners_Result.Clear();
+			allMapsCaravansAndTravellingTransporters_Alive_FreeColonistsAndPrisoners_NoCryptosleep_Result.Clear();
 			allMaps_PrisonersOfColonySpawned_Result.Clear();
 			allMaps_PrisonersOfColony_Result.Clear();
 			allMaps_FreeColonists_Result.Clear();
@@ -697,7 +951,9 @@ namespace RimWorld
 			allMaps_FreeColonistsAndPrisoners_Result.Clear();
 			allMaps_SpawnedPawnsInFaction_Result.Clear();
 			homeMaps_FreeColonistsSpawned_Result.Clear();
-			allMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoLodgers_Result.Clear();
+			allMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoLodgers_Result.Clear();
+			allMapsCaravansAndTravellingTransporters_Alive_Colonists_NoSlaves_Result.Clear();
+			allMapsCaravansAndTravellingTransporters_Alive_Colonists_OfXenotype_Result.Clear();
 		}
 	}
 }

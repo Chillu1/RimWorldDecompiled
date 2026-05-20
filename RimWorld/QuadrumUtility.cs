@@ -1,11 +1,32 @@
 using System.Collections.Generic;
+using UnityEngine;
 using Verse;
 
 namespace RimWorld
 {
 	public static class QuadrumUtility
 	{
+		private static readonly List<Quadrum> quadrumList = new List<Quadrum>
+		{
+			Quadrum.Aprimay,
+			Quadrum.Decembary,
+			Quadrum.Jugust,
+			Quadrum.Septober
+		};
+
+		private static readonly List<Quadrum> quadrumListInChronologicanOrder = new List<Quadrum>
+		{
+			Quadrum.Aprimay,
+			Quadrum.Jugust,
+			Quadrum.Septober,
+			Quadrum.Decembary
+		};
+
 		public static Quadrum FirstQuadrum => Quadrum.Aprimay;
+
+		public static List<Quadrum> Quadrums => quadrumList;
+
+		public static List<Quadrum> QuadrumsInChronologicalOrder => quadrumListInChronologicanOrder;
 
 		public static Twelfth GetFirstTwelfth(this Quadrum quadrum)
 		{
@@ -60,6 +81,11 @@ namespace RimWorld
 			};
 		}
 
+		public static Season GetSeason(this Quadrum q, Vector2 location)
+		{
+			return q.GetSeason(location.y);
+		}
+
 		public static Season GetSeason(this Quadrum q, float latitude)
 		{
 			return SeasonUtility.GetReportedSeason(q.GetMiddleYearPct(), latitude);
@@ -99,7 +125,7 @@ namespace RimWorld
 			{
 				if (!twelfths.Contains(twelfth))
 				{
-					Log.Error(string.Concat("Twelfths doesn't contain ", twelfth, " (", leftMostTwelfth, "..", rightMostTwelfth, ")"));
+					Log.Error("Twelfths doesn't contain " + twelfth.ToString() + " (" + leftMostTwelfth.ToString() + ".." + rightMostTwelfth.ToString() + ")");
 					break;
 				}
 				twelfths.Remove(twelfth);

@@ -5,7 +5,7 @@ namespace Verse
 		public CameraMapConfig_SmoothZoom()
 		{
 			smoothZoom = true;
-			minSize = 8.2f;
+			sizeRange.min = 8.2f;
 		}
 	}
 }

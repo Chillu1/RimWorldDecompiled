@@ -4,8 +4,7 @@ namespace Verse
 	{
 		public static bool IsEdifice(this BuildableDef def)
 		{
-			ThingDef thingDef = def as ThingDef;
-			if (thingDef != null && thingDef.category == ThingCategory.Building)
+			if (def is ThingDef { category: ThingCategory.Building } thingDef)
 			{
 				return thingDef.building.isEdifice;
 			}

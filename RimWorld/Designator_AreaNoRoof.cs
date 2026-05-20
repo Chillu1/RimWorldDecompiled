@@ -4,13 +4,13 @@ using Verse;
 
 namespace RimWorld
 {
-	public class Designator_AreaNoRoof : Designator_Area
+	public class Designator_AreaNoRoof : Designator_Cells
 	{
-		private static List<IntVec3> justAddedCells = new List<IntVec3>();
-
-		public override int DraggableDimensions => 2;
+		private static readonly List<IntVec3> justAddedCells = new List<IntVec3>();
 
 		public override bool DragDrawMeasurements => true;
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Areas;
 
 		public Designator_AreaNoRoof()
 		{

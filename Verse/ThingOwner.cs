@@ -40,28 +40,37 @@ namespace Verse
 		{
 		}
 
-		public ThingOwner(IThingHolder owner, bool oneStackOnly, LookMode contentsLookMode = LookMode.Deep)
-			: base(owner, oneStackOnly, contentsLookMode)
+		public ThingOwner(IThingHolder owner, LookMode contentsLookMode = LookMode.Deep, bool removeContentsIfDestroyed = true)
+			: base(owner)
+		{
+		}
+
+		public ThingOwner(IThingHolder owner, bool oneStackOnly, LookMode contentsLookMode = LookMode.Deep, bool removeContentsIfDestroyed = true)
+			: base(owner, oneStackOnly, contentsLookMode, removeContentsIfDestroyed)
 		{
 		}
 
 		public override void ExposeData()
 		{
 			base.ExposeData();
-			Scribe_Collections.Look(ref innerList, true, "innerList", contentsLookMode);
+			Scribe_Collections.Look(ref innerList, "innerList", true, contentsLookMode);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
-				innerList.RemoveAll((T x) => x == null);
+				int num = innerList.RemoveAll((T x) => x == null || (x is MinifiedThing minifiedThing && minifiedThing.InnerThing == null));
+				if (num > 0)
+				{
+					Log.Warning($"ThingOwner removed {num} invalid entries during PostLoadInit.");
+				}
 			}
 			if (Scribe.mode != LoadSaveMode.LoadingVars && Scribe.mode != LoadSaveMode.PostLoadInit)
 			{
 				return;
 			}
-			for (int i = 0; i < innerList.Count; i++)
+			for (int num2 = 0; num2 < innerList.Count; num2++)
 			{
-				if (innerList[i] != null)
+				if (innerList[num2] != null)
 				{
-					innerList[i].holdingOwner = this;
+					innerList[num2].holdingOwner = this;
 				}
 			}
 		}
@@ -93,7 +102,7 @@ namespace Verse
 			}
 			if (Contains(item))
 			{
-				Log.Warning(string.Concat("Tried to add ", item, " to ThingOwner but this item is already here."));
+				Log.Warning("Tried to add " + item?.ToString() + " to ThingOwner but this item is already here.");
 				return 0;
 			}
 			if (item.holdingOwner != null)
@@ -118,6 +127,11 @@ namespace Verse
 				}
 				return stackCount - item.stackCount;
 			}
+			CompPushable compPushable = item.TryGetComp<CompPushable>();
+			if (compPushable != null && owner is Pawn pawn)
+			{
+				compPushable.OnStartedCarrying(pawn);
+			}
 			return num;
 		}
 
@@ -128,8 +142,7 @@ namespace Verse
 				Log.Warning("Tried to add null item to ThingOwner.");
 				return false;
 			}
-			T val = item as T;
-			if (val == null)
+			if (!(item is T item2))
 			{
 				return false;
 			}
@@ -151,20 +164,20 @@ namespace Verse
 			{
 				for (int i = 0; i < innerList.Count; i++)
 				{
-					T val2 = innerList[i];
-					if (!val2.CanStackWith(item))
+					T val = innerList[i];
+					if (!val.CanStackWith(item))
 					{
 						continue;
 					}
-					int num = Mathf.Min(item.stackCount, val2.def.stackLimit - val2.stackCount);
+					int num = Mathf.Min(item.stackCount, val.def.stackLimit - val.stackCount);
 					if (num > 0)
 					{
 						Thing other = item.SplitOff(num);
-						int stackCount = val2.stackCount;
-						val2.TryAbsorbStack(other, respectStackLimit: true);
-						if (val2.stackCount > stackCount)
+						int stackCount = val.stackCount;
+						val.TryAbsorbStack(other, respectStackLimit: true);
+						if (val.stackCount > stackCount)
 						{
-							NotifyAddedAndMergedWith(val2, val2.stackCount - stackCount);
+							NotifyAddedAndMergedWith(val, val.stackCount - stackCount);
 						}
 						if (item.Destroyed || item.stackCount == 0)
 						{
@@ -178,9 +191,27 @@ namespace Verse
 				return false;
 			}
 			item.holdingOwner = this;
-			innerList.Add(val);
-			NotifyAdded(val);
+			innerList.Add(item2);
+			NotifyAdded(item2);
 			return true;
+		}
+
+		protected override void NotifyAdded(Thing item)
+		{
+			if (owner is IThingHolderEvents<T> thingHolderEvents)
+			{
+				thingHolderEvents.Notify_ItemAdded(item as T);
+			}
+			base.NotifyAdded(item);
+		}
+
+		protected override void NotifyRemoved(Thing item)
+		{
+			if (owner is IThingHolderEvents<T> thingHolderEvents)
+			{
+				thingHolderEvents.Notify_ItemRemoved(item as T);
+			}
+			base.NotifyRemoved(item);
 		}
 
 		public void TryAddRangeOrTransfer(IEnumerable<T> things, bool canMergeWithExistingStacks = true, bool destroyLeftover = false)
@@ -189,8 +220,7 @@ namespace Verse
 			{
 				return;
 			}
-			ThingOwner thingOwner = things as ThingOwner;
-			if (thingOwner != null)
+			if (things is ThingOwner thingOwner)
 			{
 				thingOwner.TryTransferAllToContainer(this, canMergeWithExistingStacks);
 				if (destroyLeftover)
@@ -199,8 +229,7 @@ namespace Verse
 				}
 				return;
 			}
-			IList<T> list = things as IList<T>;
-			if (list != null)
+			if (things is IList<T> list)
 			{
 				for (int i = 0; i < list.Count; i++)
 				{
@@ -222,12 +251,11 @@ namespace Verse
 
 		public override int IndexOf(Thing item)
 		{
-			T val = item as T;
-			if (val == null)
+			if (!(item is T item2))
 			{
 				return -1;
 			}
-			return innerList.IndexOf(val);
+			return innerList.IndexOf(item2);
 		}
 
 		public override bool Remove(Thing item)
@@ -263,6 +291,17 @@ namespace Verse
 		protected override Thing GetAt(int index)
 		{
 			return innerList[index];
+		}
+
+		public void GetThingsOfType<J>(List<J> list) where J : Thing
+		{
+			for (int i = 0; i < innerList.Count; i++)
+			{
+				if (innerList[i] is J item)
+				{
+					list.Add(item);
+				}
+			}
 		}
 
 		public int TryTransferToContainer(Thing item, ThingOwner otherContainer, int stackCount, out T resultingTransferredItem, bool canMergeWithExistingStacks = true)
@@ -326,7 +365,7 @@ namespace Verse
 				};
 			}
 			Thing lastResultingThing2;
-			bool result = TryDrop_NewTmp(thing, dropLoc, map, mode, out lastResultingThing2, placedAction2, nearPlaceValidator);
+			bool result = TryDrop(thing, dropLoc, map, mode, out lastResultingThing2, placedAction2, nearPlaceValidator, playDropSound: true);
 			lastResultingThing = (T)lastResultingThing2;
 			return result;
 		}
@@ -379,14 +418,15 @@ namespace Verse
 
 		public LookMode contentsLookMode = LookMode.Deep;
 
+		public bool removeContentsIfDestroyed = true;
+
+		public bool dontTickContents;
+
 		private const int InfMaxStacks = 999999;
 
 		public IThingHolder Owner => owner;
 
-		public abstract int Count
-		{
-			get;
-		}
+		public abstract int Count { get; }
 
 		public Thing this[int index] => GetAt(index);
 
@@ -432,6 +472,8 @@ namespace Verse
 
 		bool ICollection<Thing>.IsReadOnly => true;
 
+		public event Action OnContentsChanged;
+
 		public ThingOwner()
 		{
 		}
@@ -441,63 +483,42 @@ namespace Verse
 			this.owner = owner;
 		}
 
-		public ThingOwner(IThingHolder owner, bool oneStackOnly, LookMode contentsLookMode = LookMode.Deep)
+		public ThingOwner(IThingHolder owner, LookMode contentsLookMode = LookMode.Deep, bool removeContentsIfDestroyed = true)
+		{
+			this.owner = owner;
+			this.contentsLookMode = contentsLookMode;
+			this.removeContentsIfDestroyed = removeContentsIfDestroyed;
+		}
+
+		public ThingOwner(IThingHolder owner, bool oneStackOnly, LookMode contentsLookMode = LookMode.Deep, bool removeContentsIfDestroyed = true)
 			: this(owner)
 		{
 			maxStacks = (oneStackOnly ? 1 : 999999);
 			this.contentsLookMode = contentsLookMode;
+			this.removeContentsIfDestroyed = removeContentsIfDestroyed;
 		}
 
 		public virtual void ExposeData()
 		{
 			Scribe_Values.Look(ref maxStacks, "maxStacks", 999999);
 			Scribe_Values.Look(ref contentsLookMode, "contentsLookMode", LookMode.Deep);
+			Scribe_Values.Look(ref removeContentsIfDestroyed, "removeContentsIfDestroyed", defaultValue: true);
+			Scribe_Values.Look(ref dontTickContents, "dontTickContents", defaultValue: false);
 		}
 
-		public void ThingOwnerTick(bool removeIfDestroyed = true)
+		public void DoTick()
 		{
-			for (int num = Count - 1; num >= 0; num--)
+			if (dontTickContents)
 			{
-				Thing at = GetAt(num);
-				if (at.def.tickerType == TickerType.Normal)
-				{
-					at.Tick();
-					if (at.Destroyed && removeIfDestroyed)
-					{
-						Remove(at);
-					}
-				}
+				return;
 			}
-		}
-
-		public void ThingOwnerTickRare(bool removeIfDestroyed = true)
-		{
 			for (int num = Count - 1; num >= 0; num--)
 			{
 				Thing at = GetAt(num);
-				if (at.def.tickerType == TickerType.Rare)
+				at.DoTick();
+				if (at.Destroyed && removeContentsIfDestroyed)
 				{
-					at.TickRare();
-					if (at.Destroyed && removeIfDestroyed)
-					{
-						Remove(at);
-					}
-				}
-			}
-		}
-
-		public void ThingOwnerTickLong(bool removeIfDestroyed = true)
-		{
-			for (int num = Count - 1; num >= 0; num--)
-			{
-				Thing at = GetAt(num);
-				if (at.def.tickerType == TickerType.Long)
-				{
-					at.TickRare();
-					if (at.Destroyed && removeIfDestroyed)
-					{
-						Remove(at);
-					}
+					Remove(at);
 				}
 			}
 		}
@@ -641,8 +662,7 @@ namespace Verse
 			{
 				return;
 			}
-			ThingOwner thingOwner = things as ThingOwner;
-			if (thingOwner != null)
+			if (things is ThingOwner thingOwner)
 			{
 				thingOwner.TryTransferAllToContainer(this, canMergeWithExistingStacks);
 				if (destroyLeftover)
@@ -651,8 +671,7 @@ namespace Verse
 				}
 				return;
 			}
-			IList<Thing> list = things as IList<Thing>;
-			if (list != null)
+			if (things is IList<Thing> list)
 			{
 				for (int i = 0; i < list.Count; i++)
 				{
@@ -701,7 +720,7 @@ namespace Verse
 		{
 			if (!Contains(item))
 			{
-				Log.Error(string.Concat("Can't transfer item ", item, " because it's not here. owner=", owner.ToStringSafe()));
+				Log.Error("Can't transfer item " + item?.ToString() + " because it's not here. owner=" + owner.ToStringSafe());
 				resultingTransferredItem = null;
 				return 0;
 			}
@@ -735,6 +754,7 @@ namespace Verse
 			if (otherContainer.TryAdd(thing, canMergeWithExistingStacks))
 			{
 				resultingTransferredItem = thing;
+				item.MapHeld?.resourceCounter?.CheckUpdateResource(thing);
 				return thing.stackCount;
 			}
 			resultingTransferredItem = null;
@@ -744,9 +764,22 @@ namespace Verse
 				if (item != thing)
 				{
 					item.TryAbsorbStack(thing, respectStackLimit: false);
+				}
+				else
+				{
+					TryAdd(thing, canMergeWithExistingStacks: false);
+				}
+				Map mapHeld = item.MapHeld;
+				if (mapHeld != null)
+				{
+					ResourceCounter resourceCounter = mapHeld.resourceCounter;
+					if (resourceCounter != null)
+					{
+						resourceCounter.CheckUpdateResource(thing);
+						return result;
+					}
 					return result;
 				}
-				TryAdd(thing, canMergeWithExistingStacks: false);
 				return result;
 			}
 			return thing.stackCount;
@@ -793,7 +826,7 @@ namespace Verse
 			IntVec3 rootPosition = ThingOwnerUtility.GetRootPosition(owner);
 			if (rootMap == null || !rootPosition.IsValid)
 			{
-				Log.Error(string.Concat("Cannot drop ", thing, " without a dropLoc and with an owner whose map is null."));
+				Log.Error("Cannot drop " + thing?.ToString() + " without a dropLoc and with an owner whose map is null.");
 				lastResultingThing = null;
 				return false;
 			}
@@ -810,12 +843,12 @@ namespace Verse
 			}
 			if (thing.stackCount < count)
 			{
-				Log.Error(string.Concat("Tried to drop ", count, " of ", thing, " while only having ", thing.stackCount));
+				Log.Error("Tried to drop " + count + " of " + thing?.ToString() + " while only having " + thing.stackCount);
 				count = thing.stackCount;
 			}
 			if (count == thing.stackCount)
 			{
-				if (GenDrop.TryDropSpawn_NewTmp(thing, dropLoc, map, mode, out resultingThing, placedAction, nearPlaceValidator))
+				if (GenDrop.TryDropSpawn(thing, dropLoc, map, mode, out resultingThing, placedAction, nearPlaceValidator))
 				{
 					Remove(thing);
 					return true;
@@ -823,7 +856,7 @@ namespace Verse
 				return false;
 			}
 			Thing thing2 = thing.SplitOff(count);
-			if (GenDrop.TryDropSpawn_NewTmp(thing2, dropLoc, map, mode, out resultingThing, placedAction, nearPlaceValidator))
+			if (GenDrop.TryDropSpawn(thing2, dropLoc, map, mode, out resultingThing, placedAction, nearPlaceValidator))
 			{
 				return true;
 			}
@@ -837,20 +870,14 @@ namespace Verse
 			IntVec3 rootPosition = ThingOwnerUtility.GetRootPosition(owner);
 			if (rootMap == null || !rootPosition.IsValid)
 			{
-				Log.Error(string.Concat("Cannot drop ", thing, " without a dropLoc and with an owner whose map is null."));
+				Log.Error("Cannot drop " + thing?.ToString() + " without a dropLoc and with an owner whose map is null.");
 				lastResultingThing = null;
 				return false;
 			}
-			return TryDrop_NewTmp(thing, rootPosition, rootMap, mode, out lastResultingThing, placedAction, nearPlaceValidator);
+			return TryDrop(thing, rootPosition, rootMap, mode, out lastResultingThing, placedAction, nearPlaceValidator);
 		}
 
-		[Obsolete("Only used for mod compatibility")]
-		public bool TryDrop(Thing thing, IntVec3 dropLoc, Map map, ThingPlaceMode mode, out Thing lastResultingThing, Action<Thing, int> placedAction = null, Predicate<IntVec3> nearPlaceValidator = null)
-		{
-			return TryDrop_NewTmp(thing, dropLoc, map, mode, out lastResultingThing, placedAction, nearPlaceValidator);
-		}
-
-		public bool TryDrop_NewTmp(Thing thing, IntVec3 dropLoc, Map map, ThingPlaceMode mode, out Thing lastResultingThing, Action<Thing, int> placedAction = null, Predicate<IntVec3> nearPlaceValidator = null, bool playDropSound = true)
+		public bool TryDrop(Thing thing, IntVec3 dropLoc, Map map, ThingPlaceMode mode, out Thing lastResultingThing, Action<Thing, int> placedAction = null, Predicate<IntVec3> nearPlaceValidator = null, bool playDropSound = true)
 		{
 			if (!Contains(thing))
 			{
@@ -858,7 +885,7 @@ namespace Verse
 				lastResultingThing = null;
 				return false;
 			}
-			if (GenDrop.TryDropSpawn_NewTmp(thing, dropLoc, map, mode, out lastResultingThing, placedAction, nearPlaceValidator, playDropSound))
+			if (GenDrop.TryDropSpawn(thing, dropLoc, map, mode, out lastResultingThing, placedAction, nearPlaceValidator, playDropSound))
 			{
 				Remove(thing);
 				return true;
@@ -866,12 +893,12 @@ namespace Verse
 			return false;
 		}
 
-		public bool TryDropAll(IntVec3 dropLoc, Map map, ThingPlaceMode mode, Action<Thing, int> placeAction = null, Predicate<IntVec3> nearPlaceValidator = null)
+		public bool TryDropAll(IntVec3 dropLoc, Map map, ThingPlaceMode mode, Action<Thing, int> placeAction = null, Predicate<IntVec3> nearPlaceValidator = null, bool playDropSound = true)
 		{
 			bool result = true;
 			for (int num = Count - 1; num >= 0; num--)
 			{
-				if (!TryDrop_NewTmp(GetAt(num), dropLoc, map, mode, out var _, placeAction, nearPlaceValidator))
+				if (!TryDrop(GetAt(num), dropLoc, map, mode, out var _, placeAction, nearPlaceValidator, playDropSound))
 				{
 					result = false;
 				}
@@ -928,7 +955,7 @@ namespace Verse
 			}
 		}
 
-		protected void NotifyAdded(Thing item)
+		protected virtual void NotifyAdded(Thing item)
 		{
 			if (ThingOwnerUtility.ShouldAutoExtinguishInnerThings(owner) && item.HasAttachment(ThingDefOf.Fire))
 			{
@@ -942,31 +969,71 @@ namespace Verse
 					maps[i].designationManager.RemoveAllDesignationsOn(item);
 				}
 			}
-			(owner as CompTransporter)?.Notify_ThingAdded(item);
-			(owner as Caravan)?.Notify_PawnAdded((Pawn)item);
-			(owner as Pawn_ApparelTracker)?.Notify_ApparelAdded((Apparel)item);
-			(owner as Pawn_EquipmentTracker)?.Notify_EquipmentAdded((ThingWithComps)item);
+			if ((owner is Thing thing && thing.Faction.IsPlayerSafe()) || (owner is WorldObject worldObject && worldObject.Faction.IsPlayerSafe()) || (owner is Pawn_InventoryTracker pawn_InventoryTracker && pawn_InventoryTracker.pawn.Faction.IsPlayerSafe()))
+			{
+				item.EverSeenByPlayer = true;
+			}
+			if (owner is CompTransporter compTransporter)
+			{
+				compTransporter.Notify_ThingAdded(item);
+			}
+			if (owner is Caravan caravan)
+			{
+				caravan.Notify_PawnAdded((Pawn)item);
+			}
+			if (owner is Pawn_ApparelTracker pawn_ApparelTracker)
+			{
+				pawn_ApparelTracker.Notify_ApparelAdded((Apparel)item);
+				if (pawn_ApparelTracker.pawn.Faction.IsPlayerSafe())
+				{
+					item.EverSeenByPlayer = true;
+				}
+			}
+			if (owner is Pawn_EquipmentTracker pawn_EquipmentTracker)
+			{
+				pawn_EquipmentTracker.Notify_EquipmentAdded((ThingWithComps)item);
+				if (pawn_EquipmentTracker.pawn.Faction.IsPlayerSafe())
+				{
+					item.EverSeenByPlayer = true;
+				}
+			}
 			NotifyColonistBarIfColonistCorpse(item);
+			this.OnContentsChanged?.Invoke();
 		}
 
 		protected void NotifyAddedAndMergedWith(Thing item, int mergedCount)
 		{
-			(owner as CompTransporter)?.Notify_ThingAddedAndMergedWith(item, mergedCount);
+			if (owner is CompTransporter compTransporter)
+			{
+				compTransporter.Notify_ThingAddedAndMergedWith(item, mergedCount);
+			}
 		}
 
-		protected void NotifyRemoved(Thing item)
+		protected virtual void NotifyRemoved(Thing item)
 		{
-			(owner as Pawn_InventoryTracker)?.Notify_ItemRemoved(item);
-			(owner as Pawn_ApparelTracker)?.Notify_ApparelRemoved((Apparel)item);
-			(owner as Pawn_EquipmentTracker)?.Notify_EquipmentRemoved((ThingWithComps)item);
-			(owner as Caravan)?.Notify_PawnRemoved((Pawn)item);
+			if (owner is Pawn_InventoryTracker pawn_InventoryTracker)
+			{
+				pawn_InventoryTracker.Notify_ItemRemoved(item);
+			}
+			if (owner is Pawn_ApparelTracker pawn_ApparelTracker)
+			{
+				pawn_ApparelTracker.Notify_ApparelRemoved((Apparel)item);
+			}
+			if (owner is Pawn_EquipmentTracker pawn_EquipmentTracker)
+			{
+				pawn_EquipmentTracker.Notify_EquipmentRemoved((ThingWithComps)item);
+			}
+			if (owner is Caravan caravan)
+			{
+				caravan.Notify_PawnRemoved((Pawn)item);
+			}
 			NotifyColonistBarIfColonistCorpse(item);
+			this.OnContentsChanged?.Invoke();
 		}
 
 		private void NotifyColonistBarIfColonistCorpse(Thing thing)
 		{
-			Corpse corpse = thing as Corpse;
-			if (corpse != null && !corpse.Bugged && corpse.InnerPawn.Faction != null && corpse.InnerPawn.Faction.IsPlayer && Current.ProgramState == ProgramState.Playing)
+			if (thing is Corpse { Bugged: false } corpse && corpse.InnerPawn.Faction != null && corpse.InnerPawn.Faction.IsPlayer && Current.ProgramState == ProgramState.Playing)
 			{
 				Find.ColonistBar.MarkColonistsDirty();
 			}

@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using RimWorld;
 
@@ -10,25 +9,41 @@ namespace Verse
 	{
 		public List<HediffComp> comps = new List<HediffComp>();
 
+		public override string LabelBase
+		{
+			get
+			{
+				StringBuilder stringBuilder = new StringBuilder();
+				for (int i = 0; i < comps?.Count; i++)
+				{
+					string compLabelPrefix = comps[i].CompLabelPrefix;
+					if (!compLabelPrefix.NullOrEmpty())
+					{
+						stringBuilder.Append(compLabelPrefix);
+						stringBuilder.Append(" ");
+					}
+				}
+				stringBuilder.Append(base.LabelBase);
+				return stringBuilder.ToString();
+			}
+		}
+
 		public override string LabelInBrackets
 		{
 			get
 			{
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.Append(base.LabelInBrackets);
-				if (comps != null)
+				for (int i = 0; i < comps?.Count; i++)
 				{
-					for (int i = 0; i < comps.Count; i++)
+					string compLabelInBracketsExtra = comps[i].CompLabelInBracketsExtra;
+					if (!compLabelInBracketsExtra.NullOrEmpty())
 					{
-						string compLabelInBracketsExtra = comps[i].CompLabelInBracketsExtra;
-						if (!compLabelInBracketsExtra.NullOrEmpty())
+						if (stringBuilder.Length != 0)
 						{
-							if (stringBuilder.Length != 0)
-							{
-								stringBuilder.Append(", ");
-							}
-							stringBuilder.Append(compLabelInBracketsExtra);
+							stringBuilder.Append(", ");
 						}
+						stringBuilder.Append(compLabelInBracketsExtra);
 					}
 				}
 				return stringBuilder.ToString();
@@ -75,6 +90,7 @@ namespace Verse
 		{
 			get
 			{
+				bool flag = false;
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.Append(base.TipStringExtra);
 				if (comps != null)
@@ -84,8 +100,31 @@ namespace Verse
 						string compTipStringExtra = comps[i].CompTipStringExtra;
 						if (!compTipStringExtra.NullOrEmpty())
 						{
+							if (stringBuilder.Length > 0 && !flag)
+							{
+								stringBuilder.AppendLine();
+								flag = true;
+							}
 							stringBuilder.AppendLine(compTipStringExtra);
 						}
+					}
+				}
+				return stringBuilder.ToString();
+			}
+		}
+
+		public override string Description
+		{
+			get
+			{
+				StringBuilder stringBuilder = new StringBuilder(base.Description);
+				for (int i = 0; i < comps?.Count; i++)
+				{
+					string compDescriptionExtra = comps[i].CompDescriptionExtra;
+					if (!compDescriptionExtra.NullOrEmpty())
+					{
+						stringBuilder.Append(" ");
+						stringBuilder.Append(compDescriptionExtra);
 					}
 				}
 				return stringBuilder.ToString();
@@ -105,6 +144,41 @@ namespace Verse
 					}
 				}
 				return TextureAndColor.None;
+			}
+		}
+
+		public override IEnumerable<Gizmo> GetGizmos()
+		{
+			for (int i = 0; i < comps.Count; i++)
+			{
+				IEnumerable<Gizmo> enumerable = comps[i].CompGetGizmos();
+				if (enumerable == null)
+				{
+					continue;
+				}
+				foreach (Gizmo item in enumerable)
+				{
+					yield return item;
+				}
+			}
+		}
+
+		public override void CopyFrom(Hediff other)
+		{
+			base.CopyFrom(other);
+			if (!(other is HediffWithComps hediffWithComps))
+			{
+				return;
+			}
+			foreach (HediffComp comp in comps)
+			{
+				foreach (HediffComp comp2 in hediffWithComps.comps)
+				{
+					if (!(comp.GetType() != comp2.GetType()))
+					{
+						comp.CopyFrom(comp2);
+					}
+				}
 			}
 		}
 
@@ -134,13 +208,28 @@ namespace Verse
 
 		public override void PostTick()
 		{
-			base.PostTick();
 			if (comps != null)
 			{
 				float severityAdjustment = 0f;
 				for (int i = 0; i < comps.Count; i++)
 				{
 					comps[i].CompPostTick(ref severityAdjustment);
+				}
+				if (severityAdjustment != 0f)
+				{
+					Severity += severityAdjustment;
+				}
+			}
+		}
+
+		public override void PostTickInterval(int delta)
+		{
+			if (comps != null)
+			{
+				float severityAdjustment = 0f;
+				for (int i = 0; i < comps.Count; i++)
+				{
+					comps[i].CompPostTickInterval(ref severityAdjustment, delta);
 				}
 				if (severityAdjustment != 0f)
 				{
@@ -165,17 +254,11 @@ namespace Verse
 			}
 		}
 
-		[Obsolete("Only need this overload to not break mod compatibility.")]
-		public override void Tended(float quality, int batchPosition = 0)
-		{
-			Tended_NewTemp(quality, 1f, batchPosition);
-		}
-
-		public override void Tended_NewTemp(float quality, float maxQuality, int batchPosition = 0)
+		public override void Tended(float quality, float maxQuality, int batchPosition = 0)
 		{
 			for (int i = 0; i < comps.Count; i++)
 			{
-				comps[i].CompTended_NewTemp(quality, maxQuality, batchPosition);
+				comps[i].CompTended(quality, maxQuality, batchPosition);
 			}
 		}
 
@@ -192,12 +275,12 @@ namespace Verse
 			return false;
 		}
 
-		public override void Notify_PawnDied()
+		public override void Notify_PawnDied(DamageInfo? dinfo, Hediff culprit = null)
 		{
-			base.Notify_PawnDied();
-			for (int i = 0; i < comps.Count; i++)
+			base.Notify_PawnDied(dinfo, culprit);
+			for (int num = comps.Count - 1; num >= 0; num--)
 			{
-				comps[i].Notify_PawnDied();
+				comps[num].Notify_PawnDied(dinfo, culprit);
 			}
 		}
 
@@ -207,6 +290,15 @@ namespace Verse
 			for (int i = 0; i < comps.Count; i++)
 			{
 				comps[i].Notify_PawnKilled();
+			}
+		}
+
+		public override void Notify_KilledPawn(Pawn victim, DamageInfo? dinfo)
+		{
+			base.Notify_KilledPawn(victim, dinfo);
+			for (int i = 0; i < comps.Count; i++)
+			{
+				comps[i].Notify_KilledPawn(victim, dinfo);
 			}
 		}
 
@@ -254,6 +346,33 @@ namespace Verse
 			}
 		}
 
+		public override void Notify_Spawned()
+		{
+			base.Notify_Spawned();
+			for (int i = 0; i < comps.Count; i++)
+			{
+				comps[i].Notify_Spawned();
+			}
+		}
+
+		public override void Notify_SurgicallyRemoved(Pawn surgeon)
+		{
+			base.Notify_SurgicallyRemoved(surgeon);
+			for (int i = 0; i < comps.Count; i++)
+			{
+				comps[i].Notify_SurgicallyRemoved(surgeon);
+			}
+		}
+
+		public override void Notify_SurgicallyReplaced(Pawn surgeon)
+		{
+			base.Notify_SurgicallyReplaced(surgeon);
+			for (int i = 0; i < comps.Count; i++)
+			{
+				comps[i].Notify_SurgicallyReplaced(surgeon);
+			}
+		}
+
 		public override void PostMake()
 		{
 			base.PostMake();
@@ -264,9 +383,9 @@ namespace Verse
 				{
 					comps[num].CompPostMake();
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Error("Error in HediffComp.CompPostMake(): " + arg);
+					Log.Error("Error in HediffComp.CompPostMake(): " + ex);
 					comps.RemoveAt(num);
 				}
 			}
@@ -289,12 +408,24 @@ namespace Verse
 					hediffComp.parent = this;
 					comps.Add(hediffComp);
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Error("Could not instantiate or initialize a HediffComp: " + arg);
+					Log.Error("Could not instantiate or initialize a HediffComp: " + ex);
 					comps.Remove(hediffComp);
 				}
 			}
+		}
+
+		public T GetComp<T>() where T : HediffComp
+		{
+			for (int i = 0; i < comps.Count; i++)
+			{
+				if (comps[i] is T)
+				{
+					return comps[i] as T;
+				}
+			}
+			return null;
 		}
 
 		public override string DebugString()
@@ -305,12 +436,12 @@ namespace Verse
 			{
 				for (int i = 0; i < comps.Count; i++)
 				{
-					string str = ((!comps[i].ToString().Contains('_')) ? comps[i].ToString() : comps[i].ToString().Split('_')[1]);
-					stringBuilder.AppendLine("--" + str);
-					string text = comps[i].CompDebugString();
-					if (!text.NullOrEmpty())
+					string text = ((!comps[i].ToString().Contains('_')) ? comps[i].ToString() : comps[i].ToString().Split('_')[1]);
+					stringBuilder.AppendLine("--" + text);
+					string text2 = comps[i].CompDebugString();
+					if (!text2.NullOrEmpty())
 					{
-						stringBuilder.AppendLine(text.TrimEnd().Indented());
+						stringBuilder.AppendLine(text2.TrimEnd().Indented());
 					}
 				}
 			}

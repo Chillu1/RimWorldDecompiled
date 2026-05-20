@@ -18,43 +18,53 @@ namespace Verse
 
 		public void UpdateRotation()
 		{
-			if (pawn.Destroyed || pawn.jobs.HandlingFacing)
+			if (pawn.Destroyed)
 			{
 				return;
 			}
-			if (pawn.pather.Moving)
+			if (pawn.kindDef.useFixedRotation)
 			{
-				if (pawn.pather.curPath != null && pawn.pather.curPath.NodesLeftCount >= 1)
-				{
-					FaceAdjacentCell(pawn.pather.nextCell);
-				}
-				return;
+				pawn.Rotation = pawn.kindDef.fixedRotation;
 			}
-			Stance_Busy stance_Busy = pawn.stances.curStance as Stance_Busy;
-			if (stance_Busy != null && stance_Busy.focusTarg.IsValid)
+			else
 			{
-				if (stance_Busy.focusTarg.HasThing)
+				if (pawn.jobs.HandlingFacing || (pawn.stances.stunner.Stunned && pawn.stances.stunner.DisableRotation))
 				{
-					Face(stance_Busy.focusTarg.Thing.DrawPos);
+					return;
 				}
-				else
+				if (pawn.stances.curStance is Stance_Busy stance_Busy && stance_Busy.focusTarg.IsValid)
 				{
-					FaceCell(stance_Busy.focusTarg.Cell);
+					if (stance_Busy.focusTarg.HasThing)
+					{
+						Face(stance_Busy.focusTarg.Thing.DrawPos);
+					}
+					else
+					{
+						FaceCell(stance_Busy.focusTarg.Cell);
+					}
+					return;
 				}
-				return;
-			}
-			if (pawn.jobs.curJob != null)
-			{
-				LocalTargetInfo target = pawn.CurJob.GetTarget(pawn.jobs.curDriver.rotateToFace);
-				FaceTarget(target);
-			}
-			if (pawn.Drafted)
-			{
-				pawn.Rotation = Rot4.South;
+				if (pawn.pather.Moving)
+				{
+					if (pawn.pather.curPath != null && pawn.pather.curPath.NodesLeftCount >= 1)
+					{
+						FaceAdjacentCell(pawn.pather.nextCell);
+					}
+					return;
+				}
+				if (pawn.jobs.curJob != null)
+				{
+					LocalTargetInfo target = pawn.CurJob.GetTarget(pawn.jobs.curDriver.rotateToFace);
+					FaceTarget(target);
+				}
+				if (pawn.Drafted)
+				{
+					pawn.Rotation = Rot4.South;
+				}
 			}
 		}
 
-		public void RotationTrackerTick()
+		public void ProcessPostTickVisuals(int ticksPassed)
 		{
 			UpdateRotation();
 		}

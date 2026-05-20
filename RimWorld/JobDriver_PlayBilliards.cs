@@ -21,15 +21,16 @@ namespace RimWorld
 			yield return chooseCell;
 			yield return Toils_Reserve.Reserve(TargetIndex.B);
 			yield return Toils_Goto.GotoCell(TargetIndex.B, PathEndMode.OnCell);
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
 				job.locomotionUrgency = LocomotionUrgency.Walk;
 			};
-			toil.tickAction = delegate
+			toil.tickIntervalAction = delegate(int delta)
 			{
 				pawn.rotationTracker.FaceCell(base.TargetA.Thing.OccupiedRect().ClosestCellTo(pawn.Position));
-				if (ticksLeftThisToil == 300)
+				int num = 300;
+				if (ticksLeftThisToil + delta > num && ticksLeftThisToil <= num)
 				{
 					SoundDefOf.PlayBilliards.PlayOneShot(new TargetInfo(pawn.Position, pawn.Map));
 				}
@@ -39,7 +40,7 @@ namespace RimWorld
 				}
 				else
 				{
-					JoyUtility.JoyTickCheckEnd(pawn, JoyTickFullJoyAction.EndJob, 1f, (Building)base.TargetThingA);
+					JoyUtility.JoyTickCheckEnd(pawn, delta, JoyTickFullJoyAction.EndJob, 1f, (Building)base.TargetThingA);
 				}
 			};
 			toil.handlingFacing = true;

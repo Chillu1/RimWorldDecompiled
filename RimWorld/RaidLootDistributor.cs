@@ -24,12 +24,12 @@ namespace RimWorld
 			this.parms = parms;
 			this.allPawns = allPawns;
 			this.loot = loot;
-			unusedPawns = new List<Pawn>(allPawns);
+			unusedPawns = new List<Pawn>(allPawns.Where((Pawn x) => !x.RaceProps.Animal));
 		}
 
 		public void DistributeLoot()
 		{
-			recipient = allPawns.MaxBy((Pawn p) => p.kindDef.combatPower);
+			recipient = unusedPawns.MaxBy((Pawn p) => p.kindDef.combatPower);
 			recipientMassGiven = 0f;
 			foreach (IGrouping<ThingDef, Thing> item in from t in loot
 				group t by t.def)

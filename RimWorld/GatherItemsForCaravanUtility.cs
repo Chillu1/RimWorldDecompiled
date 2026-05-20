@@ -8,7 +8,7 @@ namespace RimWorld
 {
 	public static class GatherItemsForCaravanUtility
 	{
-		private static HashSet<Thing> neededItems = new HashSet<Thing>();
+		private static readonly HashSet<Thing> neededItems = new HashSet<Thing>();
 
 		public static Thing FindThingToHaul(Pawn p, Lord lord)
 		{
@@ -29,7 +29,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			Thing result = GenClosest.ClosestThingReachable(p.Position, p.Map, ThingRequest.ForGroup(ThingRequestGroup.HaulableEver), PathEndMode.Touch, TraverseParms.For(p), 9999f, (Thing x) => neededItems.Contains(x) && p.CanReserve(x));
+			Thing result = GenClosest.ClosestThingReachable(p.Position, p.Map, ThingRequest.ForGroup(ThingRequestGroup.HaulableEver), PathEndMode.Touch, TraverseParms.For(p), 9999f, (Thing x) => neededItems.Contains(x) && p.CanReserve(x), null, 0, -1, forceAllowGlobalSearch: false, RegionType.Set_Passable, ignoreEntirelyForbiddenRegions: false, lookInHaulSources: true);
 			neededItems.Clear();
 			return result;
 		}
@@ -50,7 +50,7 @@ namespace RimWorld
 				Log.Warning("Can't determine transferable count hauled by others because transferable has 0 things.");
 				return 0;
 			}
-			List<Pawn> allPawnsSpawned = lord.Map.mapPawns.AllPawnsSpawned;
+			IReadOnlyList<Pawn> allPawnsSpawned = lord.Map.mapPawns.AllPawnsSpawned;
 			int num = 0;
 			for (int i = 0; i < allPawnsSpawned.Count; i++)
 			{

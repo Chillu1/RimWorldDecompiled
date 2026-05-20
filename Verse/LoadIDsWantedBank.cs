@@ -41,9 +41,9 @@ namespace Verse
 			}
 		}
 
-		private List<IdRecord> idsRead = new List<IdRecord>();
+		private Dictionary<(IExposable, string), IdRecord> idsRead = new Dictionary<(IExposable, string), IdRecord>();
 
-		private List<IdListRecord> idListsRead = new List<IdListRecord>();
+		private Dictionary<(IExposable, string), IdListRecord> idListsRead = new Dictionary<(IExposable, string), IdListRecord>();
 
 		public void ConfirmClear()
 		{
@@ -54,17 +54,17 @@ namespace Verse
 				if (idsRead.Count > 0)
 				{
 					stringBuilder.AppendLine("Singles:");
-					for (int i = 0; i < idsRead.Count; i++)
+					foreach (KeyValuePair<(IExposable, string), IdRecord> item in idsRead)
 					{
-						stringBuilder.AppendLine(string.Concat("  ", idsRead[i].targetLoadID.ToStringSafe(), " of type ", idsRead[i].targetType, ". pathRelToParent=", idsRead[i].pathRelToParent, ", parent=", idsRead[i].parent.ToStringSafe()));
+						stringBuilder.AppendLine("  " + item.Value.targetLoadID.ToStringSafe() + " of type " + item.Value.targetType?.ToString() + ". pathRelToParent=" + item.Value.pathRelToParent + ", parent=" + item.Value.parent.ToStringSafe());
 					}
 				}
 				if (idListsRead.Count > 0)
 				{
 					stringBuilder.AppendLine("Lists:");
-					for (int j = 0; j < idListsRead.Count; j++)
+					foreach (KeyValuePair<(IExposable, string), IdListRecord> item2 in idListsRead)
 					{
-						stringBuilder.AppendLine("  List with " + ((idListsRead[j].targetLoadIDs != null) ? idListsRead[j].targetLoadIDs.Count : 0) + " elements. pathRelToParent=" + idListsRead[j].pathRelToParent + ", parent=" + idListsRead[j].parent.ToStringSafe());
+						stringBuilder.AppendLine("  List with " + ((item2.Value.targetLoadIDs != null) ? item2.Value.targetLoadIDs.Count : 0) + " elements. pathRelToParent=" + item2.Value.pathRelToParent + ", parent=" + item2.Value.parent.ToStringSafe());
 					}
 				}
 				Log.Warning(stringBuilder.ToString().TrimEndNewlines());
@@ -80,15 +80,15 @@ namespace Verse
 
 		public void RegisterLoadIDReadFromXml(string targetLoadID, Type targetType, string pathRelToParent, IExposable parent)
 		{
-			for (int i = 0; i < idsRead.Count; i++)
+			if (idsRead.ContainsKey((parent, pathRelToParent)))
 			{
-				if (idsRead[i].parent == parent && idsRead[i].pathRelToParent == pathRelToParent)
-				{
-					Log.Error("Tried to register the same load ID twice: " + targetLoadID + ", pathRelToParent=" + pathRelToParent + ", parent=" + parent.ToStringSafe());
-					return;
-				}
+				Log.Error("Tried to register the same load ID twice: " + targetLoadID + ", pathRelToParent=" + pathRelToParent + ", parent=" + parent.ToStringSafe());
 			}
-			idsRead.Add(new IdRecord(targetLoadID, targetType, pathRelToParent, parent));
+			else
+			{
+				IdRecord value = new IdRecord(targetLoadID, targetType, pathRelToParent, parent);
+				idsRead.Add((parent, pathRelToParent), value);
+			}
 		}
 
 		public void RegisterLoadIDReadFromXml(string targetLoadID, Type targetType, string toAppendToPathRelToParent)
@@ -103,15 +103,13 @@ namespace Verse
 
 		public void RegisterLoadIDListReadFromXml(List<string> targetLoadIDList, string pathRelToParent, IExposable parent)
 		{
-			for (int i = 0; i < idListsRead.Count; i++)
+			if (idListsRead.ContainsKey((parent, pathRelToParent)))
 			{
-				if (idListsRead[i].parent == parent && idListsRead[i].pathRelToParent == pathRelToParent)
-				{
-					Log.Error("Tried to register the same list of load IDs twice. pathRelToParent=" + pathRelToParent + ", parent=" + parent.ToStringSafe());
-					return;
-				}
+				Log.Error("Tried to register the same list of load IDs twice. pathRelToParent=" + pathRelToParent + ", parent=" + parent.ToStringSafe());
+				return;
 			}
-			idListsRead.Add(new IdListRecord(targetLoadIDList, pathRelToParent, parent));
+			IdListRecord value = new IdListRecord(targetLoadIDList, pathRelToParent, parent);
+			idListsRead.Add((parent, pathRelToParent), value);
 		}
 
 		public void RegisterLoadIDListReadFromXml(List<string> targetLoadIDList, string toAppendToPathRelToParent)
@@ -126,18 +124,15 @@ namespace Verse
 
 		public string Take<T>(string pathRelToParent, IExposable parent)
 		{
-			for (int i = 0; i < idsRead.Count; i++)
+			if (idsRead.TryGetValue((parent, pathRelToParent), out var value))
 			{
-				if (idsRead[i].parent == parent && idsRead[i].pathRelToParent == pathRelToParent)
+				string targetLoadID = value.targetLoadID;
+				if (typeof(T) != value.targetType)
 				{
-					string targetLoadID = idsRead[i].targetLoadID;
-					if (typeof(T) != idsRead[i].targetType)
-					{
-						Log.Error(string.Concat("Trying to get load ID of object of type ", typeof(T), ", but it was registered as ", idsRead[i].targetType, ". pathRelToParent=", pathRelToParent, ", parent=", parent.ToStringSafe()));
-					}
-					idsRead.RemoveAt(i);
-					return targetLoadID;
+					Log.Error("Trying to get load ID of object of type " + typeof(T)?.ToString() + ", but it was registered as " + value.targetType?.ToString() + ". pathRelToParent=" + pathRelToParent + ", parent=" + parent.ToStringSafe());
 				}
+				idsRead.Remove((parent, pathRelToParent));
+				return targetLoadID;
 			}
 			Log.Error("Could not get load ID. We're asking for something which was never added during LoadingVars. pathRelToParent=" + pathRelToParent + ", parent=" + parent.ToStringSafe());
 			return null;
@@ -145,14 +140,11 @@ namespace Verse
 
 		public List<string> TakeList(string pathRelToParent, IExposable parent)
 		{
-			for (int i = 0; i < idListsRead.Count; i++)
+			if (idListsRead.TryGetValue((parent, pathRelToParent), out var value))
 			{
-				if (idListsRead[i].parent == parent && idListsRead[i].pathRelToParent == pathRelToParent)
-				{
-					List<string> targetLoadIDs = idListsRead[i].targetLoadIDs;
-					idListsRead.RemoveAt(i);
-					return targetLoadIDs;
-				}
+				List<string> targetLoadIDs = value.targetLoadIDs;
+				idListsRead.Remove((parent, pathRelToParent));
+				return targetLoadIDs;
 			}
 			Log.Error("Could not get load IDs list. We're asking for something which was never added during LoadingVars. pathRelToParent=" + pathRelToParent + ", parent=" + parent.ToStringSafe());
 			return new List<string>();

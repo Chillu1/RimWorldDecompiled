@@ -12,7 +12,7 @@ namespace RimWorld
 
 		public override bool ShouldSkip(Pawn pawn, bool forced = false)
 		{
-			List<Pawn> allPawnsSpawned = pawn.Map.mapPawns.AllPawnsSpawned;
+			IReadOnlyList<Pawn> allPawnsSpawned = pawn.Map.mapPawns.AllPawnsSpawned;
 			for (int i = 0; i < allPawnsSpawned.Count; i++)
 			{
 				if (allPawnsSpawned[i].inventory.UnloadEverything)

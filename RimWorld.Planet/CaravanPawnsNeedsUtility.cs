@@ -7,11 +7,11 @@ namespace RimWorld.Planet
 	{
 		public static bool CanEatForNutritionEver(ThingDef food, Pawn pawn)
 		{
-			if (food.IsNutritionGivingIngestible && pawn.WillEat(food, null, careIfNotAcceptableForTitle: false) && (int)food.ingestible.preferability > 1)
+			if (food.IsNutritionGivingIngestible && pawn.WillEat(food, null, careIfNotAcceptableForTitle: false) && (int)food.ingestible.preferability > 1 && (!food.IsDrug || !pawn.IsTeetotaler()) && food.ingestible.canAutoSelectAsFoodForCaravan && (!food.IsDrug || new HistoryEvent(HistoryEventDefOf.IngestedDrug, pawn.Named(HistoryEventArgsNames.Doer)).DoerWillingToDo()) && (!food.IsNonMedicalDrug || new HistoryEvent(HistoryEventDefOf.IngestedRecreationalDrug, pawn.Named(HistoryEventArgsNames.Doer)).DoerWillingToDo()))
 			{
-				if (food.IsDrug)
+				if (food.IsDrug && food.ingestible.drugCategory == DrugCategory.Hard)
 				{
-					return !pawn.IsTeetotaler();
+					return new HistoryEvent(HistoryEventDefOf.IngestedHardDrug, pawn.Named(HistoryEventArgsNames.Doer)).DoerWillingToDo();
 				}
 				return true;
 			}
@@ -60,6 +60,10 @@ namespace RimWorld.Planet
 		{
 			if (pawn.RaceProps.Humanlike)
 			{
+				if (food.ingestible.lowPriorityCaravanFood)
+				{
+					return 2f;
+				}
 				return (int)food.ingestible.preferability;
 			}
 			float num = 0f;
@@ -79,7 +83,7 @@ namespace RimWorld.Planet
 			{
 				num = 2f;
 			}
-			else if ((int)food.ingestible.preferability < 6)
+			else if ((int)food.ingestible.preferability < 7)
 			{
 				num = 1f;
 			}

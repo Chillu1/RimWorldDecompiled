@@ -32,7 +32,7 @@ namespace RimWorld
 		public override void RandomizeSettings(float points, Map map, List<Rule> outExtraDescriptionRules, Dictionary<string, string> outExtraDescriptionConstants)
 		{
 			base.RandomizeSettings(points, map, outExtraDescriptionRules, outExtraDescriptionConstants);
-			weather = DefDatabase<WeatherDef>.AllDefsListForReading.Where((WeatherDef def) => def.isBad).RandomElement();
+			weather = DefDatabase<WeatherDef>.AllDefsListForReading.Where((WeatherDef def) => def.isBad && def.canOccurAsRandomForcedEvent).RandomElement();
 			outExtraDescriptionRules.AddRange(GrammarUtility.RulesForDef("forcedWeather", weather));
 		}
 	}

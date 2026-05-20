@@ -25,7 +25,11 @@ namespace RimWorld
 
 		private bool IsWildMan(StatRequest req)
 		{
-			return (req.Thing as Pawn)?.IsWildMan() ?? false;
+			if (req.Thing is Pawn p)
+			{
+				return p.IsWildMan();
+			}
+			return false;
 		}
 	}
 }

@@ -5,15 +5,9 @@ namespace RimWorld
 {
 	public interface IPlantToGrowSettable
 	{
-		Map Map
-		{
-			get;
-		}
+		Map Map { get; }
 
-		IEnumerable<IntVec3> Cells
-		{
-			get;
-		}
+		IEnumerable<IntVec3> Cells { get; }
 
 		ThingDef GetPlantDefToGrow();
 

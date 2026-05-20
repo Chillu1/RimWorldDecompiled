@@ -17,7 +17,6 @@ namespace RimWorld
 		{
 			generated.relations.AddDirectRelation(PawnRelationDefOf.Fiance, other);
 			LovePartnerRelationUtility.TryToShareChildrenForGeneratedLovePartner(generated, other, request, 0.7f);
-			ResolveMySkinColor(ref request, generated, other);
 		}
 
 		private float GetOldAgeFactor(Pawn pawn)
@@ -27,15 +26,8 @@ namespace RimWorld
 
 		public override void OnRelationCreated(Pawn firstPawn, Pawn secondPawn)
 		{
-			firstPawn.relations.nextMarriageNameChange = (secondPawn.relations.nextMarriageNameChange = SpouseRelationUtility.Roll_NameChangeOnMarriage());
-		}
-
-		private static void ResolveMySkinColor(ref PawnGenerationRequest request, Pawn generated, Pawn other)
-		{
-			if (!request.FixedMelanin.HasValue)
-			{
-				request.SetFixedMelanin(PawnSkinColors.GetRandomMelaninSimilarTo(other.story.melanin));
-			}
+			Pawn pawn = ((firstPawn.Ideo != secondPawn.Ideo) ? ((Rand.Value < 0.5f) ? firstPawn : secondPawn) : firstPawn);
+			firstPawn.relations.nextMarriageNameChange = (secondPawn.relations.nextMarriageNameChange = SpouseRelationUtility.Roll_NameChangeOnMarriage(pawn));
 		}
 	}
 }

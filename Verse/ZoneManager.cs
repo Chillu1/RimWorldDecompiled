@@ -4,7 +4,7 @@ namespace Verse
 {
 	public sealed class ZoneManager : IExposable
 	{
-		public Map map;
+		public readonly Map map;
 
 		private List<Zone> allZones = new List<Zone>();
 
@@ -59,6 +59,10 @@ namespace Verse
 		{
 			allZones.Remove(oldZone);
 			oldZone.PostDeregister();
+			if (Find.Selector.SelectedZone == oldZone)
+			{
+				Find.Selector.ClearSelection();
+			}
 		}
 
 		internal void AddZoneGridCell(Zone zone, IntVec3 c)

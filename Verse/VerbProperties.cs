@@ -1,20 +1,13 @@
 using System;
 using System.Collections.Generic;
 using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
 {
 	public class VerbProperties
 	{
-		private enum RangeCategory : byte
-		{
-			Touch,
-			Short,
-			Medium,
-			Long
-		}
-
 		public VerbCategory category = VerbCategory.Misc;
 
 		[TranslationHandle]
@@ -35,9 +28,13 @@ namespace Verse
 
 		public float range = 1.42f;
 
+		public StatDef rangeStat;
+
 		public int burstShotCount = 1;
 
 		public int ticksBetweenBurstShots = 15;
+
+		public bool showBurstShotStats = true;
 
 		public float noiseRadius = 3f;
 
@@ -67,6 +64,27 @@ namespace Verse
 
 		public float consumeFuelPerShot;
 
+		public float consumeFuelPerBurst;
+
+		public bool stunTargetOnCastStart;
+
+		public string invalidTargetPawn;
+
+		public float commonalityVsEdificeFactor = 1f;
+
+		public SimpleCurve flammabilityAttachFireChanceCurve;
+
+		public bool useableInPocketMaps = true;
+
+		public bool useableInVacuum = true;
+
+		[MustTranslate]
+		public string mouseTargetingText;
+
+		public List<PlanetLayerDef> layerWhitelist;
+
+		public List<PlanetLayerDef> layerBlacklist;
+
 		public float warmupTime;
 
 		public float defaultCooldownTime;
@@ -83,11 +101,27 @@ namespace Verse
 
 		public ThingDef impactMote;
 
+		public FleckDef impactFleck;
+
 		public bool drawAimPie = true;
 
 		public EffecterDef warmupEffecter;
 
 		public bool drawHighlightWithLineOfSight;
+
+		public ThingDef aimingLineMote;
+
+		public float? aimingLineMoteFixedLength;
+
+		public ThingDef aimingChargeMote;
+
+		public float aimingChargeMoteOffset;
+
+		public ThingDef aimingTargetMote;
+
+		public EffecterDef aimingTargetEffecter;
+
+		public Color explosionRadiusRingColor = Color.white;
 
 		public BodyPartGroupDef linkedBodyPartsGroup;
 
@@ -105,9 +139,23 @@ namespace Verse
 
 		public float ai_AvoidFriendlyFireRadius;
 
+		public bool ai_RangedAlawaysShootGroundBelowTarget;
+
+		public bool ai_IsDoorDestroyer;
+
+		public bool ai_ProjectileLaunchingIgnoresMeleeThreats;
+
+		public float ai_TargetHasRangedAttackScoreOffset;
+
 		public ThingDef defaultProjectile;
 
-		public float forcedMissRadius;
+		private float forcedMissRadius;
+
+		private float forcedMissRadiusClassicMortars = -1f;
+
+		public bool forcedMissEvenDispersal;
+
+		private bool isMortar;
 
 		public float accuracyTouch = 1f;
 
@@ -117,13 +165,85 @@ namespace Verse
 
 		public float accuracyLong = 1f;
 
+		public bool canGoWild = true;
+
+		public DamageDef beamDamageDef;
+
+		public float beamWidth = 1f;
+
+		public float beamMaxDeviation;
+
+		public FleckDef beamGroundFleckDef;
+
+		public EffecterDef beamEndEffecterDef;
+
+		public ThingDef beamMoteDef;
+
+		public float beamFleckChancePerTick;
+
+		public float beamCurvature;
+
+		public float beamChanceToStartFire;
+
+		public float beamChanceToAttachFire;
+
+		public float beamStartOffset;
+
+		public float beamFullWidthRange;
+
+		public FleckDef beamLineFleckDef;
+
+		public SimpleCurve beamLineFleckChanceCurve;
+
+		public FloatRange beamFireSizeRange = FloatRange.ZeroToOne;
+
+		public SoundDef soundCastBeam;
+
+		public bool beamTargetsGround;
+
+		public bool beamSetsGroundOnFire;
+
+		public float beamTotalDamage;
+
+		public bool beamHitsNeighborCells;
+
+		public bool beamCantHitWithinMinRange;
+
+		public bool beamHitsNeighborCellsRequiresLOS;
+
+		public bool ai_BeamIsIncendiary;
+
+		public float sprayWidth;
+
+		public float sprayArching;
+
+		public int sprayNumExtraCells;
+
+		public int sprayThicknessCells = 1;
+
+		public EffecterDef sprayEffecterDef;
+
+		public Color? highlightColor;
+
+		public Color? secondaryHighlightColor;
+
 		public ThingDef spawnDef;
 
 		public TaleDef colonyWideTaleDef;
 
+		public int affectedCellCount;
+
 		public BodyPartTagDef bodypartTagTarget;
 
 		public RulePackDef rangedFireRulepack;
+
+		public SoundDef soundLanding;
+
+		public EffecterDef flightEffecterDef;
+
+		public bool flyWithCarriedThing = true;
+
+		public MechWorkModeDef workModeDef;
 
 		public const float DefaultArmorPenetrationPerDamage = 0.015f;
 
@@ -145,6 +265,18 @@ namespace Verse
 
 		public bool LaunchesProjectile => typeof(Verb_LaunchProjectile).IsAssignableFrom(verbClass);
 
+		public bool Ranged
+		{
+			get
+			{
+				if (!LaunchesProjectile && !typeof(Verb_ShootBeam).IsAssignableFrom(verbClass) && !typeof(Verb_SpewFire).IsAssignableFrom(verbClass))
+				{
+					return typeof(Verb_Spray).IsAssignableFrom(verbClass);
+				}
+				return true;
+			}
+		}
+
 		public string AccuracySummaryString => accuracyTouch.ToStringPercent() + " - " + accuracyShort.ToStringPercent() + " - " + accuracyMedium.ToStringPercent() + " - " + accuracyLong.ToStringPercent();
 
 		public bool IsMeleeAttack => typeof(Verb_MeleeAttack).IsAssignableFrom(verbClass);
@@ -163,6 +295,32 @@ namespace Verse
 				}
 				return true;
 			}
+		}
+
+		public float ForcedMissRadius
+		{
+			get
+			{
+				if (isMortar && forcedMissRadiusClassicMortars >= 0f && Find.Storyteller?.difficulty != null && Find.Storyteller.difficulty.classicMortars)
+				{
+					return forcedMissRadiusClassicMortars;
+				}
+				return forcedMissRadius;
+			}
+		}
+
+		public float AdjustedRange(Verb ownerVerb, Thing attacker)
+		{
+			float num = ((rangeStat == null) ? range : attacker.GetStatValue(rangeStat));
+			if (ownerVerb?.EquipmentSource == null || !ownerVerb.EquipmentSource.TryGetComp<CompUniqueWeapon>(out var comp) || !comp.IgnoreAccuracyMaluses)
+			{
+				Map mapHeld = attacker.MapHeld;
+				if (mapHeld != null && mapHeld.weatherManager.CurWeatherMaxRangeCap >= 0f)
+				{
+					num = Mathf.Min(num, attacker.Map.weatherManager.CurWeatherMaxRangeCap);
+				}
+			}
+			return num;
 		}
 
 		public float AdjustedMeleeDamageAmount(Verb ownerVerb, Pawn attacker)
@@ -189,13 +347,13 @@ namespace Verse
 			return num;
 		}
 
-		public float AdjustedMeleeDamageAmount_NewTmp(Tool tool, Pawn attacker, ThingDef equipment, ThingDef equipmentStuff, HediffComp_VerbGiver hediffCompSource)
+		public float AdjustedMeleeDamageAmount(Tool tool, Pawn attacker, ThingDef equipment, ThingDef equipmentStuff, HediffComp_VerbGiver hediffCompSource)
 		{
 			if (!IsMeleeAttack)
 			{
 				Log.ErrorOnce($"Attempting to get melee damage for a non-melee verb {this}", 26181238);
 			}
-			float num = tool?.AdjustedBaseMeleeDamageAmount_NewTmp(equipment, equipmentStuff, meleeDamageDef) ?? ((float)meleeDamageBaseAmount);
+			float num = tool?.AdjustedBaseMeleeDamageAmount(equipment, equipmentStuff, meleeDamageDef) ?? ((float)meleeDamageBaseAmount);
 			if (attacker != null)
 			{
 				num *= GetDamageFactorFor(tool, attacker, hediffCompSource);
@@ -228,12 +386,12 @@ namespace Verse
 			return num;
 		}
 
-		public float AdjustedArmorPenetration_NewTmp(Tool tool, Pawn attacker, ThingDef equipment, ThingDef equipmentStuff, HediffComp_VerbGiver hediffCompSource)
+		public float AdjustedArmorPenetration(Tool tool, Pawn attacker, ThingDef equipment, ThingDef equipmentStuff, HediffComp_VerbGiver hediffCompSource)
 		{
 			float num = tool?.armorPenetration ?? meleeArmorPenetrationBase;
 			if (num < 0f)
 			{
-				num = AdjustedMeleeDamageAmount_NewTmp(tool, attacker, equipment, equipmentStuff, hediffCompSource) * 0.015f;
+				num = AdjustedMeleeDamageAmount(tool, attacker, equipment, equipmentStuff, hediffCompSource) * 0.015f;
 			}
 			else if (equipment != null)
 			{
@@ -256,15 +414,15 @@ namespace Verse
 			return 0f;
 		}
 
-		private float AdjustedExpectedDamageForVerbUsableInMelee_NewTmp(Tool tool, Pawn attacker, ThingDef equipment, ThingDef equipmentStuff, HediffComp_VerbGiver hediffCompSource)
+		private float AdjustedExpectedDamageForVerbUsableInMelee(Tool tool, Pawn attacker, ThingDef equipment, ThingDef equipmentStuff, HediffComp_VerbGiver hediffCompSource)
 		{
 			if (IsMeleeAttack)
 			{
-				return AdjustedMeleeDamageAmount_NewTmp(tool, attacker, equipment, equipmentStuff, hediffCompSource);
+				return AdjustedMeleeDamageAmount(tool, attacker, equipment, equipmentStuff, hediffCompSource);
 			}
 			if (LaunchesProjectile && defaultProjectile != null)
 			{
-				return defaultProjectile.projectile.GetDamageAmount_NewTmp(equipment, equipmentStuff);
+				return defaultProjectile.projectile.GetDamageAmount(equipment, equipmentStuff);
 			}
 			return 0f;
 		}
@@ -307,7 +465,7 @@ namespace Verse
 			return num;
 		}
 
-		public float AdjustedMeleeSelectionWeight_NewTmp(Tool tool, Pawn attacker, ThingDef equipment, ThingDef equipmentStuff, HediffComp_VerbGiver hediffCompSource, bool comesFromPawnNativeVerbs)
+		public float AdjustedMeleeSelectionWeight(Tool tool, Pawn attacker, ThingDef equipment, ThingDef equipmentStuff, HediffComp_VerbGiver hediffCompSource, bool comesFromPawnNativeVerbs)
 		{
 			if (!IsMeleeAttack)
 			{
@@ -318,7 +476,7 @@ namespace Verse
 				return 0f;
 			}
 			float num = 1f;
-			float num2 = AdjustedExpectedDamageForVerbUsableInMelee_NewTmp(tool, attacker, equipment, equipmentStuff, hediffCompSource);
+			float num2 = AdjustedExpectedDamageForVerbUsableInMelee(tool, attacker, equipment, equipmentStuff, hediffCompSource);
 			if (num2 >= 0.001f || !typeof(Verb_MeleeApplyHediff).IsAssignableFrom(verbClass))
 			{
 				num *= num2 * num2;
@@ -347,28 +505,38 @@ namespace Verse
 
 		public float AdjustedCooldown(Tool tool, Pawn attacker, Thing equipment)
 		{
+			float num = defaultCooldownTime;
 			if (tool != null)
 			{
-				return tool.AdjustedCooldown(equipment);
+				num = tool.AdjustedCooldown(equipment);
 			}
-			if (equipment != null && !IsMeleeAttack)
+			else if (equipment != null && !IsMeleeAttack)
 			{
-				return equipment.GetStatValue(StatDefOf.RangedWeapon_Cooldown);
+				num = equipment.GetStatValue(StatDefOf.RangedWeapon_Cooldown);
 			}
-			return defaultCooldownTime;
+			if (attacker != null)
+			{
+				num = ((!IsMeleeAttack) ? (num * attacker.GetStatValue(StatDefOf.RangedCooldownFactor)) : (num * attacker.GetStatValue(StatDefOf.MeleeCooldownFactor)));
+			}
+			return num;
 		}
 
-		public float AdjustedCooldown_NewTmp(Tool tool, Pawn attacker, ThingDef equipment, ThingDef equipmentStuff)
+		public float AdjustedCooldown(Tool tool, Pawn attacker, ThingDef equipment, ThingDef equipmentStuff)
 		{
+			float num = defaultCooldownTime;
 			if (tool != null)
 			{
-				return tool.AdjustedCooldown_NewTmp(equipment, equipmentStuff);
+				num = tool.AdjustedCooldown(equipment, equipmentStuff);
 			}
-			if (equipment != null && !IsMeleeAttack)
+			else if (equipment != null && !IsMeleeAttack)
 			{
-				return equipment.GetStatValueAbstract(StatDefOf.RangedWeapon_Cooldown, equipmentStuff);
+				num = equipment.GetStatValueAbstract(StatDefOf.RangedWeapon_Cooldown, equipmentStuff);
 			}
-			return defaultCooldownTime;
+			if (attacker != null)
+			{
+				num = ((!IsMeleeAttack) ? (num * attacker.GetStatValue(StatDefOf.RangedCooldownFactor)) : (num * attacker.GetStatValue(StatDefOf.MeleeCooldownFactor)));
+			}
+			return num;
 		}
 
 		public int AdjustedCooldownTicks(Verb ownerVerb, Pawn attacker)
@@ -410,7 +578,7 @@ namespace Verse
 
 		public float AdjustedFullCycleTime(Verb ownerVerb, Pawn attacker)
 		{
-			return warmupTime + AdjustedCooldown(ownerVerb, attacker) + ((burstShotCount - 1) * ticksBetweenBurstShots).TicksToSeconds();
+			return warmupTime + AdjustedCooldown(ownerVerb, attacker) + ((ownerVerb.BurstShotCount - 1) * ownerVerb.TicksBetweenBurstShots).TicksToSeconds();
 		}
 
 		public float GetDamageFactorFor(Verb ownerVerb, Pawn attacker)
@@ -428,7 +596,7 @@ namespace Verse
 			float num = 1f;
 			if (attacker != null)
 			{
-				if (hediffCompSource != null)
+				if (hediffCompSource != null && hediffCompSource.parent.Part != null)
 				{
 					num *= PawnCapacityUtility.CalculatePartEfficiency(hediffCompSource.Pawn.health.hediffSet, hediffCompSource.parent.Part, ignoreAddedParts: true);
 				}
@@ -444,6 +612,7 @@ namespace Verse
 				if (attacker != null && IsMeleeAttack)
 				{
 					num *= attacker.ageTracker.CurLifeStage.meleeDamageFactor;
+					num *= attacker.GetStatValue(StatDefOf.MeleeDamageFactor);
 				}
 			}
 			return num;
@@ -484,18 +653,28 @@ namespace Verse
 			return Mathf.Clamp(value, 0.01f, 1f);
 		}
 
-		public void DrawRadiusRing(IntVec3 center)
+		public float GetForceMissFactorFor(Thing equipment, Pawn caster)
 		{
-			if (Find.CurrentMap == null || IsMeleeAttack || !targetable)
+			if (equipment.def.building != null && equipment.def.building.IsMortar)
+			{
+				return caster.GetStatValueForPawn(StatDefOf.MortarMissRadiusFactor, caster);
+			}
+			return 1f;
+		}
+
+		public void DrawRadiusRing(IntVec3 center, Verb verb = null)
+		{
+			if (Find.CurrentMap == null || Find.World.renderer.wantedMode == WorldRenderMode.Planet || IsMeleeAttack || !targetable)
 			{
 				return;
 			}
 			float num = EffectiveMinRange(allowAdjacentShot: true);
+			float num2 = verb?.EffectiveRange ?? range;
 			if (num > 0f && num < GenRadial.MaxRadialPatternRadius)
 			{
 				GenDraw.DrawRadiusRing(center, num);
 			}
-			if (!(range < (float)(Find.CurrentMap.Size.x + Find.CurrentMap.Size.z)) || !(range < GenRadial.MaxRadialPatternRadius))
+			if (!(num2 < (float)(Find.CurrentMap.Size.x + Find.CurrentMap.Size.z)) || !(num2 < GenRadial.MaxRadialPatternRadius))
 			{
 				return;
 			}
@@ -504,13 +683,13 @@ namespace Verse
 			{
 				predicate = (IntVec3 c) => GenSight.LineOfSight(center, c, Find.CurrentMap);
 			}
-			GenDraw.DrawRadiusRing(center, range, Color.white, predicate);
+			GenDraw.DrawRadiusRing(center, num2, Color.white, predicate);
 		}
 
 		public override string ToString()
 		{
-			string str = (label.NullOrEmpty() ? ("range=" + range + ", defaultProjectile=" + defaultProjectile.ToStringSafe()) : label);
-			return "VerbProperties(" + str + ")";
+			string text = (label.NullOrEmpty() ? ("range=" + range + ", defaultProjectile=" + defaultProjectile.ToStringSafe()) : label);
+			return "VerbProperties(" + text + ")";
 		}
 
 		public new VerbProperties MemberwiseClone()
@@ -522,7 +701,7 @@ namespace Verse
 		{
 			if (parent.race != null && linkedBodyPartsGroup != null && !parent.race.body.AllParts.Any((BodyPartRecord part) => part.groups.Contains(linkedBodyPartsGroup)))
 			{
-				yield return string.Concat("has verb with linkedBodyPartsGroup ", linkedBodyPartsGroup, " but body ", parent.race.body, " has no parts with that group.");
+				yield return "has verb with linkedBodyPartsGroup " + linkedBodyPartsGroup?.ToString() + " but body " + parent.race.body?.ToString() + " has no parts with that group.";
 			}
 			if (LaunchesProjectile && defaultProjectile != null && forcedMissRadius > 0f != CausesExplosion)
 			{

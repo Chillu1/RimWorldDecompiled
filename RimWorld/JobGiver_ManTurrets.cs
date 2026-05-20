@@ -1,4 +1,3 @@
-using System;
 using Verse;
 using Verse.AI;
 
@@ -17,7 +16,16 @@ namespace RimWorld
 
 		protected override Job TryGiveJob(Pawn pawn)
 		{
-			Predicate<Thing> validator = delegate(Thing t)
+			Thing thing = GenClosest.ClosestThingReachable(GetRoot(pawn), pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.BuildingArtificial), PathEndMode.InteractionCell, TraverseParms.For(pawn), maxDistFromPoint, Validator);
+			if (thing != null)
+			{
+				Job job = JobMaker.MakeJob(JobDefOf.ManTurret, thing);
+				job.expiryInterval = 2000;
+				job.checkOverrideOnExpire = true;
+				return job;
+			}
+			return null;
+			bool Validator(Thing t)
 			{
 				if (!t.def.hasInteractionCell)
 				{
@@ -31,17 +39,17 @@ namespace RimWorld
 				{
 					return false;
 				}
-				return (JobDriver_ManTurret.FindAmmoForTurret(pawn, (Building_TurretGun)t) != null) ? true : false;
-			};
-			Thing thing = GenClosest.ClosestThingReachable(GetRoot(pawn), pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.BuildingArtificial), PathEndMode.InteractionCell, TraverseParms.For(pawn), maxDistFromPoint, validator);
-			if (thing != null)
-			{
-				Job job = JobMaker.MakeJob(JobDefOf.ManTurret, thing);
-				job.expiryInterval = 2000;
-				job.checkOverrideOnExpire = true;
-				return job;
+				if (JobDriver_ManTurret.FindAmmoForTurret(pawn, (Building_TurretGun)t) == null)
+				{
+					return false;
+				}
+				CompRefuelable compRefuelable = t.TryGetComp<CompRefuelable>();
+				if (compRefuelable != null && !compRefuelable.HasFuel && JobDriver_ManTurret.FindFuelForTurret(pawn, (Building_TurretGun)t) == null)
+				{
+					return false;
+				}
+				return true;
 			}
-			return null;
 		}
 
 		protected abstract IntVec3 GetRoot(Pawn pawn);

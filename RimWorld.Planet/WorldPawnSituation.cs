@@ -12,6 +12,7 @@ namespace RimWorld.Planet
 		InTravelingTransportPod,
 		ForSaleBySettlement,
 		ReservedByQuest,
-		Teleporting
+		Teleporting,
+		StartingPawnLeftBehind
 	}
 }

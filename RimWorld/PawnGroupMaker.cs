@@ -21,7 +21,10 @@ namespace RimWorld
 
 		public List<PawnGenOption> guards = new List<PawnGenOption>();
 
-		public float MinPointsToGenerateAnything => kindDef.Worker.MinPointsToGenerateAnything(this);
+		public float MinPointsToGenerateAnything(FactionDef faction, PawnGroupMakerParms parms = null)
+		{
+			return kindDef.Worker.MinPointsToGenerateAnything(this, faction, parms);
+		}
 
 		public IEnumerable<Pawn> GeneratePawns(PawnGroupMakerParms parms, bool errorOnZeroResults = true)
 		{
@@ -40,6 +43,14 @@ namespace RimWorld
 				return false;
 			}
 			if (disallowedStrategies != null && disallowedStrategies.Contains(parms.raidStrategy))
+			{
+				return false;
+			}
+			if (parms.points < MinPointsToGenerateAnything(parms.faction.def, parms))
+			{
+				return false;
+			}
+			if (parms.raidStrategy != null && parms.raidStrategy.Worker is RaidStrategyWorker_WithRequiredPawnKinds raidStrategyWorker_WithRequiredPawnKinds && !raidStrategyWorker_WithRequiredPawnKinds.CanUseWithGroupMaker(this))
 			{
 				return false;
 			}

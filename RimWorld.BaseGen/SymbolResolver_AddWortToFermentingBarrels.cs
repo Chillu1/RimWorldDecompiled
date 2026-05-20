@@ -12,15 +12,14 @@ namespace RimWorld.BaseGen
 		{
 			Map map = BaseGen.globalSettings.map;
 			barrels.Clear();
-			foreach (IntVec3 item in rp.rect)
+			foreach (IntVec3 item2 in rp.rect)
 			{
-				List<Thing> thingList = item.GetThingList(map);
+				List<Thing> thingList = item2.GetThingList(map);
 				for (int i = 0; i < thingList.Count; i++)
 				{
-					Building_FermentingBarrel building_FermentingBarrel = thingList[i] as Building_FermentingBarrel;
-					if (building_FermentingBarrel != null && !barrels.Contains(building_FermentingBarrel))
+					if (thingList[i] is Building_FermentingBarrel item && !barrels.Contains(item))
 					{
-						barrels.Add(building_FermentingBarrel);
+						barrels.Add(item);
 					}
 				}
 			}

@@ -28,7 +28,7 @@ namespace RimWorld
 				}
 				else
 				{
-					Log.ErrorOnce(string.Concat("Tried spawning sleeping mechanoid ", spawnedMechanoids[i], " without CompCanBeDormant!"), 0x12EA9A79 ^ spawnedMechanoids[i].def.defName.GetHashCode());
+					Log.ErrorOnce("Tried spawning sleeping mechanoid " + spawnedMechanoids[i]?.ToString() + " without CompCanBeDormant!", 0x12EA9A79 ^ spawnedMechanoids[i].def.defName.GetHashCode());
 				}
 			}
 		}
@@ -54,13 +54,13 @@ namespace RimWorld
 			{
 				return;
 			}
-			bool @bool = Rand.Bool;
+			bool wakeUpIfTargetClose = Rand.Bool;
 			foreach (Pawn item2 in list)
 			{
 				CompWakeUpDormant comp = item2.GetComp<CompWakeUpDormant>();
 				if (comp != null)
 				{
-					comp.wakeUpIfColonistClose = @bool;
+					comp.wakeUpIfTargetClose = wakeUpIfTargetClose;
 				}
 			}
 			LordMaker.MakeNewLord(Faction.OfMechanoids, new LordJob_SleepThenAssaultColony(Faction.OfMechanoids), map, list);
@@ -70,11 +70,13 @@ namespace RimWorld
 		private IEnumerable<Pawn> GeneratePawns(GenStepParams parms, Map map)
 		{
 			float points = ((parms.sitePart != null) ? parms.sitePart.parms.threatPoints : defaultPointsRange.RandomInRange);
-			PawnGroupMakerParms pawnGroupMakerParms = new PawnGroupMakerParms();
-			pawnGroupMakerParms.groupKind = PawnGroupKindDefOf.Combat;
-			pawnGroupMakerParms.tile = map.Tile;
-			pawnGroupMakerParms.faction = Faction.OfMechanoids;
-			pawnGroupMakerParms.points = points;
+			PawnGroupMakerParms pawnGroupMakerParms = new PawnGroupMakerParms
+			{
+				groupKind = PawnGroupKindDefOf.Combat,
+				tile = map.Tile,
+				faction = Faction.OfMechanoids,
+				points = points
+			};
 			if (parms.sitePart != null)
 			{
 				pawnGroupMakerParms.seed = SleepingMechanoidsSitePartUtility.GetPawnGroupMakerSeed(parms.sitePart.parms);

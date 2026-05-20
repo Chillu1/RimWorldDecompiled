@@ -8,8 +8,6 @@ namespace RimWorld
 {
 	public class LordJob_Joinable_Party : LordJob_Joinable_Gathering
 	{
-		private int durationTicks;
-
 		public override bool AllowStartNewGatherings => false;
 
 		protected virtual ThoughtDef AttendeeThought => ThoughtDefOf.AttendedParty;
@@ -19,8 +17,6 @@ namespace RimWorld
 		protected virtual ThoughtDef OrganizerThought => ThoughtDefOf.AttendedParty;
 
 		protected virtual TaleDef OrganizerTale => TaleDefOf.AttendedParty;
-
-		public int DurationTicks => durationTicks;
 
 		public LordJob_Joinable_Party()
 		{
@@ -50,7 +46,7 @@ namespace RimWorld
 			LordToil_End lordToil_End = new LordToil_End();
 			stateGraph.AddToil(lordToil_End);
 			Transition transition = new Transition(party, lordToil_End);
-			transition.AddTrigger(new Trigger_TickCondition(() => ShouldBeCalledOff()));
+			transition.AddTrigger(new Trigger_TickCondition(ShouldBeCalledOff));
 			transition.AddTrigger(new Trigger_PawnKilled());
 			transition.AddTrigger(new Trigger_PawnLost(PawnLostCondition.LeftVoluntarily, organizer));
 			transition.AddPreAction(new TransitionAction_Custom((Action)delegate
@@ -71,20 +67,15 @@ namespace RimWorld
 			return stateGraph;
 		}
 
-		protected virtual Trigger_TicksPassed GetTimeoutTrigger()
-		{
-			return new Trigger_TicksPassed(durationTicks);
-		}
-
 		private void ApplyOutcome(LordToil_Party toil)
 		{
 			List<Pawn> ownedPawns = lord.ownedPawns;
-			LordToilData_Party lordToilData_Party = (LordToilData_Party)toil.data;
+			LordToilData_Gathering lordToilData_Gathering = (LordToilData_Gathering)toil.data;
 			for (int i = 0; i < ownedPawns.Count; i++)
 			{
 				Pawn pawn = ownedPawns[i];
 				bool flag = pawn == organizer;
-				if (lordToilData_Party.presentForTicks.TryGetValue(pawn, out var value) && value > 0)
+				if (lordToilData_Gathering.presentForTicks.TryGetValue(pawn, out var value) && value > 0)
 				{
 					if (ownedPawns[i].needs.mood != null)
 					{
@@ -103,7 +94,6 @@ namespace RimWorld
 		public override void ExposeData()
 		{
 			base.ExposeData();
-			Scribe_Values.Look(ref durationTicks, "durationTicks", 0);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit && gatheringDef == null)
 			{
 				gatheringDef = GatheringDefOf.Party;

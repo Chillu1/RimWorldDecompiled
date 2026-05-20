@@ -10,7 +10,7 @@ namespace Verse
 
 		protected CompBreakdownable breakdownableComp;
 
-		protected override bool ShouldPushHeatNow
+		public override bool ShouldPushHeatNow
 		{
 			get
 			{

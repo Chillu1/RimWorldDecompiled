@@ -7,14 +7,13 @@ namespace RimWorld
 	{
 		protected override Job TryGiveJob(Pawn pawn)
 		{
-			MentalState_MurderousRage mentalState_MurderousRage = pawn.MentalState as MentalState_MurderousRage;
-			if (mentalState_MurderousRage == null || !mentalState_MurderousRage.IsTargetStillValidAndReachable())
+			if (!(pawn.MentalState is MentalState_MurderousRage mentalState_MurderousRage) || !mentalState_MurderousRage.IsTargetStillValidAndReachable())
 			{
 				return null;
 			}
 			Thing spawnedParentOrMe = mentalState_MurderousRage.target.SpawnedParentOrMe;
 			Job job = JobMaker.MakeJob(JobDefOf.AttackMelee, spawnedParentOrMe);
-			job.canBash = true;
+			job.canBashDoors = true;
 			job.killIncappedTarget = true;
 			if (spawnedParentOrMe != mentalState_MurderousRage.target)
 			{

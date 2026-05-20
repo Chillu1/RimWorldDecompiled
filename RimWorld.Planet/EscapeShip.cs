@@ -41,7 +41,7 @@ namespace RimWorld.Planet
 				}
 				if (cachedPostGenerateMat == null)
 				{
-					cachedPostGenerateMat = MaterialPool.MatFrom(base.Faction.def.settlementTexturePath, ShaderDatabase.WorldOverlayTransparentLit, base.Faction.Color, WorldMaterials.WorldObjectRenderQueue);
+					cachedPostGenerateMat = MaterialPool.MatFrom(base.Faction.def.settlementTexturePath, ShaderDatabase.WorldOverlayTransparentLit, base.Faction.Color, 3550);
 				}
 				return cachedPostGenerateMat;
 			}
@@ -50,7 +50,7 @@ namespace RimWorld.Planet
 		public override void PostMapGenerate()
 		{
 			base.PostMapGenerate();
-			Find.World.renderer.SetDirty<WorldLayer_WorldObjects>();
+			Find.World.renderer.SetDirty<WorldDrawLayer_WorldObjects>(base.Tile.Layer);
 		}
 	}
 }

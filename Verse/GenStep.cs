@@ -4,11 +4,12 @@ namespace Verse
 	{
 		public GenStepDef def;
 
-		public abstract int SeedPart
-		{
-			get;
-		}
+		public abstract int SeedPart { get; }
 
 		public abstract void Generate(Map map, GenStepParams parms);
+
+		public virtual void PostMapInitialized(Map map, GenStepParams parms)
+		{
+		}
 	}
 }

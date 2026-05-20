@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -26,6 +27,11 @@ namespace RimWorld
 		[NoTranslate]
 		public string icon;
 
+		public bool specialTrainable;
+
+		[Obsolete]
+		public AbilityDef enablesAbility;
+
 		[Unsaved(false)]
 		public int indent;
 
@@ -50,9 +56,9 @@ namespace RimWorld
 			{
 				return true;
 			}
-			for (int i = 0; i < tags.Count; i++)
+			foreach (string tag2 in tags)
 			{
-				if (tags[i] == tag)
+				if (tag2 == tag)
 				{
 					return true;
 				}

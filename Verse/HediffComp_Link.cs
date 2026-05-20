@@ -1,17 +1,18 @@
-using System.Linq;
 using RimWorld;
 
 namespace Verse
 {
 	public class HediffComp_Link : HediffComp
 	{
-		public Pawn other;
+		public Thing other;
 
 		private MoteDualAttached mote;
 
 		public bool drawConnection;
 
 		public HediffCompProperties_Link Props => (HediffCompProperties_Link)props;
+
+		public Pawn OtherPawn => (Pawn)other;
 
 		public override bool CompShouldRemove
 		{
@@ -21,27 +22,33 @@ namespace Verse
 				{
 					return true;
 				}
-				if (other == null || !parent.pawn.Spawned || !other.Spawned)
+				if (other == null || !parent.pawn.SpawnedOrAnyParentSpawned || !other.SpawnedOrAnyParentSpawned)
 				{
 					return true;
 				}
-				if (Props.maxDistance > 0f && !parent.pawn.Position.InHorDistOf(other.Position, Props.maxDistance))
+				if (Props.maxDistance > 0f && !parent.pawn.PositionHeld.InHorDistOf(other.PositionHeld, Props.maxDistance))
 				{
 					return true;
 				}
-				foreach (Hediff hediff in other.health.hediffSet.hediffs)
+				if (Props.requireLinkOnOtherPawn)
 				{
-					HediffWithComps hediffWithComps = hediff as HediffWithComps;
-					if (hediffWithComps != null && hediffWithComps.comps.FirstOrDefault(delegate(HediffComp c)
+					if (!(other is Pawn pawn))
 					{
-						HediffComp_Link hediffComp_Link = c as HediffComp_Link;
-						return hediffComp_Link != null && hediffComp_Link.other == parent.pawn && hediffComp_Link.parent.def == parent.def;
-					}) != null)
-					{
-						return false;
+						Log.Error("HediffComp_Link requires link on other pawn, but other thing is not a pawn!");
 					}
+					else
+					{
+						foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
+						{
+							if (hediff is HediffWithComps hediffWithComps && hediffWithComps.comps.FirstOrDefault((HediffComp c) => c is HediffComp_Link hediffComp_Link && hediffComp_Link.other == parent.pawn && hediffComp_Link.parent.def == parent.def) != null)
+							{
+								return false;
+							}
+						}
+					}
+					return true;
 				}
-				return true;
+				return false;
 			}
 		}
 
@@ -59,12 +66,12 @@ namespace Verse
 
 		public override void CompPostTick(ref float severityAdjustment)
 		{
-			base.CompPostTick(ref severityAdjustment);
-			if (drawConnection)
+			if (drawConnection && other.MapHeld == parent.pawn.MapHeld)
 			{
+				ThingDef moteDef = Props.customMote ?? ThingDefOf.Mote_PsychicLinkLine;
 				if (mote == null)
 				{
-					mote = MoteMaker.MakeInteractionOverlay(ThingDefOf.Mote_PsychicLinkLine, parent.pawn, other);
+					mote = MoteMaker.MakeInteractionOverlay(moteDef, parent.pawn, other);
 				}
 				mote.Maintain();
 			}
@@ -74,6 +81,7 @@ namespace Verse
 		{
 			base.CompExposeData();
 			Scribe_References.Look(ref other, "other");
+			Scribe_Values.Look(ref drawConnection, "drawConnection", defaultValue: false);
 		}
 	}
 }

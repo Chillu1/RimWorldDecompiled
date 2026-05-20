@@ -14,10 +14,15 @@ namespace RimWorld
 			List<Verb> allVerbs = p.equipment.Primary.GetComp<CompEquippable>().AllVerbs;
 			for (int i = 0; i < allVerbs.Count; i++)
 			{
-				if (allVerbs[i].IsIncendiary())
+				if (allVerbs[i].IsIncendiary_Ranged() || allVerbs[i].IsIncendiary_Melee())
 				{
 					return true;
 				}
+			}
+			Ability ability = p.equipment.Primary.GetComp<CompEquippableAbility>()?.AbilityForReading;
+			if (ability != null && ability.IsIncendiary())
+			{
+				return true;
 			}
 			return false;
 		}

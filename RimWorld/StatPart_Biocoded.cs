@@ -4,7 +4,7 @@ namespace RimWorld
 	{
 		public override void TransformValue(StatRequest req, ref float val)
 		{
-			if (req.HasThing && EquipmentUtility.IsBiocoded(req.Thing))
+			if (req.HasThing && CompBiocodable.IsBiocoded(req.Thing))
 			{
 				val *= 0f;
 			}

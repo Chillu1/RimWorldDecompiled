@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using LudeonTK;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -21,6 +22,8 @@ namespace RimWorld
 		private List<Thing> windPathBlockedByThings = new List<Thing>();
 
 		private List<IntVec3> windPathBlockedCells = new List<IntVec3>();
+
+		private bool blockedDueToInOrbit;
 
 		private float spinPosition;
 
@@ -56,7 +59,7 @@ namespace RimWorld
 
 		protected override float DesiredPowerOutput => cachedPowerOutput;
 
-		private float PowerPercent => base.PowerOutput / ((0f - base.Props.basePowerConsumption) * 1.5f);
+		private float PowerPercent => base.PowerOutput / ((0f - base.Props.PowerConsumption) * 1.5f);
 
 		public override void PostSpawnSetup(bool respawningAfterLoad)
 		{
@@ -66,13 +69,20 @@ namespace RimWorld
 			spinPosition = Rand.Range(0f, 15f);
 		}
 
-		public override void PostDeSpawn(Map map)
+		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
 		{
-			base.PostDeSpawn(map);
+			base.PostDeSpawn(map, mode);
+			windPathCells.Clear();
+			Sustainer sustainer = this.sustainer;
 			if (sustainer != null && !sustainer.Ended)
 			{
-				sustainer.End();
+				this.sustainer.End();
 			}
+		}
+
+		public override void PostSwapMap()
+		{
+			RecalculateBlockages();
 		}
 
 		public override void PostExposeData()
@@ -95,9 +105,13 @@ namespace RimWorld
 			{
 				float num = Mathf.Min(parent.Map.windManager.WindSpeed, 1.5f);
 				ticksSinceWeatherUpdate = 0;
-				cachedPowerOutput = 0f - base.Props.basePowerConsumption * num;
+				cachedPowerOutput = 0f - base.Props.PowerConsumption * num;
 				RecalculateBlockages();
-				if (windPathBlockedCells.Count > 0)
+				if (blockedDueToInOrbit)
+				{
+					cachedPowerOutput = 0f;
+				}
+				else if (windPathBlockedCells.Count > 0)
 				{
 					float num2 = 0f;
 					for (int i = 0; i < windPathBlockedCells.Count; i++)
@@ -126,14 +140,15 @@ namespace RimWorld
 		public override void PostDraw()
 		{
 			base.PostDraw();
-			GenDraw.FillableBarRequest fillableBarRequest = default(GenDraw.FillableBarRequest);
-			fillableBarRequest.center = parent.DrawPos + Vector3.up * 0.1f;
-			fillableBarRequest.size = BarSize;
-			fillableBarRequest.fillPercent = PowerPercent;
-			fillableBarRequest.filledMat = WindTurbineBarFilledMat;
-			fillableBarRequest.unfilledMat = WindTurbineBarUnfilledMat;
-			fillableBarRequest.margin = 0.15f;
-			GenDraw.FillableBarRequest r = fillableBarRequest;
+			GenDraw.FillableBarRequest r = new GenDraw.FillableBarRequest
+			{
+				center = parent.DrawPos + Vector3.up * 0.1f,
+				size = BarSize,
+				fillPercent = PowerPercent,
+				filledMat = WindTurbineBarFilledMat,
+				unfilledMat = WindTurbineBarUnfilledMat,
+				margin = 0.15f
+			};
 			Rot4 rotation = parent.Rotation;
 			rotation.Rotate(RotationDirection.Clockwise);
 			r.rotation = rotation;
@@ -141,19 +156,19 @@ namespace RimWorld
 			Vector3 pos = parent.TrueCenter();
 			pos += parent.Rotation.FacingCell.ToVector3() * VerticalBladeOffset;
 			pos += parent.Rotation.RighthandCell.ToVector3() * HorizontalBladeOffset;
-			pos.y += 3f / 70f;
+			pos.y += 0.03658537f;
 			float num = BladeWidth * Mathf.Sin(spinPosition);
 			if (num < 0f)
 			{
 				num *= -1f;
 			}
-			bool num2 = spinPosition % (float)Math.PI * 2f < (float)Math.PI;
+			bool num2 = spinPosition % MathF.PI * 2f < MathF.PI;
 			Vector2 vector = new Vector2(num, 1f);
 			Vector3 s = new Vector3(vector.x, 1f, vector.y);
 			Matrix4x4 matrix = default(Matrix4x4);
 			matrix.SetTRS(pos, parent.Rotation.AsQuat, s);
 			Graphics.DrawMesh(num2 ? MeshPool.plane10 : MeshPool.plane10Flip, matrix, WindTurbineBladesMat, 0);
-			pos.y -= 3f / 35f;
+			pos.y -= 0.07317074f;
 			matrix.SetTRS(pos, parent.Rotation.AsQuat, s);
 			Graphics.DrawMesh(num2 ? MeshPool.plane10Flip : MeshPool.plane10, matrix, WindTurbineBladesMat, 0);
 		}
@@ -179,6 +194,14 @@ namespace RimWorld
 					stringBuilder.Append("WindTurbine_WindPathIsBlockedByRoof".Translate());
 				}
 			}
+			if (blockedDueToInOrbit)
+			{
+				if (stringBuilder.Length > 0)
+				{
+					stringBuilder.AppendLine();
+				}
+				stringBuilder.Append("CannotFunctionOnLayer".Translate(parent.Map.Tile.LayerDef.label).CapitalizeFirst().Colorize(ColoredText.WarningColor));
+			}
 			return stringBuilder.ToString();
 		}
 
@@ -191,6 +214,7 @@ namespace RimWorld
 			}
 			windPathBlockedCells.Clear();
 			windPathBlockedByThings.Clear();
+			blockedDueToInOrbit = parent.Map.Biome.inVacuum;
 			for (int i = 0; i < windPathCells.Count; i++)
 			{
 				IntVec3 intVec = windPathCells[i];

@@ -19,6 +19,9 @@ namespace RimWorld.QuestGen
 		[NoTranslate]
 		public SlateRef<string> inSignalRemovePawn;
 
+		[NoTranslate]
+		public SlateRef<IEnumerable<string>> inSignalsRemovePawn;
+
 		protected override void RunInt()
 		{
 			Faction value = faction.GetValue(QuestGen.slate);
@@ -39,7 +42,8 @@ namespace RimWorld.QuestGen
 				affectedPawns = pawns.GetValue(QuestGen.slate).ToList(),
 				extraFaction = new ExtraFaction(value, factionType.GetValue(QuestGen.slate)),
 				areHelpers = areHelpers.GetValue(QuestGen.slate),
-				inSignalRemovePawn = inSignalRemovePawn.GetValue(QuestGen.slate)
+				inSignalRemovePawn = inSignalRemovePawn.GetValue(QuestGen.slate),
+				inSignalsRemovePawn = inSignalsRemovePawn.GetValue(QuestGen.slate).ToList()
 			});
 		}
 

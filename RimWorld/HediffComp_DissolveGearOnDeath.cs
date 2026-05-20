@@ -10,19 +10,25 @@ namespace RimWorld
 	{
 		public HediffCompProperties_DissolveGearOnDeath Props => (HediffCompProperties_DissolveGearOnDeath)props;
 
-		public override void Notify_PawnDied()
+		public override void Notify_PawnDied(DamageInfo? dinfo, Hediff culprit = null)
 		{
-			base.Notify_PawnDied();
-			if (Props.injuryCreatedOnDeath != null)
+			base.Notify_PawnDied(dinfo, culprit);
+			if (Props.injuryCreatedOnDeath == null)
 			{
-				List<BodyPartRecord> list = new List<BodyPartRecord>(base.Pawn.RaceProps.body.AllParts.Where((BodyPartRecord part) => part.coverageAbs > 0f && !base.Pawn.health.hediffSet.PartIsMissing(part)));
-				int num = Mathf.Min(Props.injuryCount.RandomInRange, list.Count);
-				for (int i = 0; i < num; i++)
+				return;
+			}
+			List<BodyPartRecord> list = new List<BodyPartRecord>(from part in base.Pawn.health.hediffSet.GetNotMissingParts()
+				where part.coverageAbs > 0f
+				select part);
+			int num = Mathf.Min(Props.injuryCount.RandomInRange, list.Count);
+			for (int num2 = 0; num2 < num; num2++)
+			{
+				int index = Rand.Range(0, list.Count);
+				BodyPartRecord bodyPartRecord = list[index];
+				list.RemoveAt(index);
+				if (base.Pawn.health.hediffSet.GetNotMissingParts().Contains(bodyPartRecord))
 				{
-					int index = Rand.Range(0, list.Count);
-					BodyPartRecord part2 = list[index];
-					list.RemoveAt(index);
-					base.Pawn.health.AddHediff(Props.injuryCreatedOnDeath, part2);
+					base.Pawn.health.AddHediff(Props.injuryCreatedOnDeath, bodyPartRecord);
 				}
 			}
 		}
@@ -35,13 +41,21 @@ namespace RimWorld
 			{
 				return;
 			}
-			if (Props.mote != null)
+			if (Props.mote != null || Props.fleck != null)
 			{
 				Vector3 drawPos = base.Pawn.DrawPos;
 				for (int i = 0; i < Props.moteCount; i++)
 				{
 					Vector2 vector = Rand.InsideUnitCircle * Props.moteOffsetRange.RandomInRange * Rand.Sign;
-					MoteMaker.MakeStaticMote(new Vector3(drawPos.x + vector.x, drawPos.y, drawPos.z + vector.y), base.Pawn.Map, Props.mote);
+					Vector3 loc = new Vector3(drawPos.x + vector.x, drawPos.y, drawPos.z + vector.y);
+					if (Props.mote != null)
+					{
+						MoteMaker.MakeStaticMote(loc, base.Pawn.Map, Props.mote);
+					}
+					else
+					{
+						FleckMaker.Static(loc, base.Pawn.Map, Props.fleck);
+					}
 				}
 			}
 			if (Props.filth != null)

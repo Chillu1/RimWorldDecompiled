@@ -86,16 +86,16 @@ namespace RimWorld.IO
 				list2.Add(root);
 				foreach (TarEntry item in list.Where((TarEntry e) => e.IsDirectory && !string.IsNullOrEmpty(e.Name)))
 				{
-					string str = FormatFolderPath(item.Name);
-					list2.Add(new TarDirectory(fullPath + "/" + str, str));
+					string text = FormatFolderPath(item.Name);
+					list2.Add(new TarDirectory(fullPath + "/" + text, text));
 				}
 				foreach (TarEntry item2 in list.Where((TarEntry e) => !e.IsDirectory))
 				{
-					string b = FormatFolderPath(Path.GetDirectoryName(item2.Name));
+					string text2 = FormatFolderPath(Path.GetDirectoryName(item2.Name));
 					TarDirectory tarDirectory = null;
 					foreach (TarDirectory item3 in list2)
 					{
-						if (item3.inArchiveFullPath == b)
+						if (item3.inArchiveFullPath == text2)
 						{
 							tarDirectory = item3;
 							break;
@@ -109,11 +109,11 @@ namespace RimWorld.IO
 					{
 						continue;
 					}
-					string b2 = FormatFolderPath(Path.GetDirectoryName(item4.inArchiveFullPath));
+					string text3 = FormatFolderPath(Path.GetDirectoryName(item4.inArchiveFullPath));
 					TarDirectory tarDirectory2 = null;
 					foreach (TarDirectory item5 in list2)
 					{
-						if (item5.inArchiveFullPath == b2)
+						if (item5.inArchiveFullPath == text3)
 						{
 							tarDirectory2 = item5;
 							break;
@@ -205,7 +205,11 @@ namespace RimWorld.IO
 
 		private TarDirectory(string fullPath, string inArchiveFullPath)
 		{
-			name = Path.GetFileNameWithoutExtension(fullPath);
+			name = Path.GetFileName(fullPath);
+			if (name.IndexOf(".tar") == name.Length - 4)
+			{
+				name = name.Substring(0, name.Length - 4);
+			}
 			this.fullPath = fullPath;
 			this.inArchiveFullPath = inArchiveFullPath;
 			exists = true;
@@ -243,7 +247,7 @@ namespace RimWorld.IO
 			{
 				virtualDirectory = virtualDirectory.GetDirectory(array[i]);
 			}
-			filename = array[array.Length - 1];
+			filename = array[^1];
 			if (virtualDirectory == this)
 			{
 				foreach (TarFile file in files)

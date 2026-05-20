@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using RimWorld.QuestGen;
 
@@ -12,13 +13,17 @@ namespace Verse.Grammar
 
 		private float priority;
 
-		private static Regex pattern = new Regex("\r\n\t\t# hold on to your butts, this is gonna get weird\r\n\r\n\t\t^\r\n\t\t(?<keyword>[a-zA-Z0-9_/]+)\t\t\t\t\t# keyword; roughly limited to standard C# identifier rules\r\n\t\t(\t\t\t\t\t\t\t\t\t\t\t# parameter list is optional, open the capture group so we can keep it or ignore it\r\n\t\t\t\\(\t\t\t\t\t\t\t\t\t\t# this is the actual parameter list opening\r\n\t\t\t\t(\t\t\t\t\t\t\t\t\t# unlimited number of parameter groups\r\n\t\t\t\t\t(?<paramname>[a-zA-Z0-9_/]+)\t# parameter name is similar\r\n\t\t\t\t\t(?<paramoperator>==|=|!=|>=|<=|>|<|) # operators; empty operator is allowed\r\n\t\t\t\t\t(?<paramvalue>[^\\,\\)]*)\t\t\t# parameter value, however, allows everything except comma and closeparen!\r\n\t\t\t\t\t,?\t\t\t\t\t\t\t\t# comma can be used to separate blocks; it is also silently ignored if it's a trailing comma\r\n\t\t\t\t)*\r\n\t\t\t\\)\r\n\t\t)?\r\n\t\t->(?<output>.*)\t\t\t\t\t\t\t\t# output is anything-goes\r\n\t\t$\r\n\r\n\t\t", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
+		private static readonly List<string> ValidOperators = new List<string> { "==", "!=", ">", "<", ">=", "<=", "[less_than]", "[greater_than]" };
+
+		private static readonly Regex Pattern = new Regex("\r\n        # hold on to your butts, this is gonna get weird\r\n\r\n        ^\r\n        (?<keyword>[a-zA-Z0-9_/]+)\t\t\t\t\t# keyword; roughly limited to standard C# identifier rules\r\n        (\t\t\t\t\t\t\t\t\t\t\t# parameter list is optional, open the capture group so we can keep it or ignore it\r\n            \\(\t\t\t\t\t\t\t\t\t\t# this is the actual parameter list opening\r\n                (\t\t\t\t\t\t\t\t\t# unlimited number of parameter groups\r\n                    [ ]*                            # leading whitespace for readability\r\n                    (?<paramname>[a-zA-Z0-9_/]+)\t# parameter name is similar\r\n                    (?<paramoperator>==|=|!=|>=|<=|>|<|\\[less_than\\]|\\[greater_than\\]) # operators; empty operator is allowed\r\n                    (?<paramvalue>[^\\,\\)]*)\t\t\t# parameter value, however, allows everything except comma and closeparen!\r\n                    ,?\t\t\t\t\t\t\t\t# comma can be used to separate blocks; it is also silently ignored if it's a trailing comma\r\n                )*\r\n            \\)\r\n        )?\r\n        [ ]*                                        # leading whitespace before -> for readability\r\n        ->(?<output>.*)\t\t\t\t\t\t\t\t# output is anything-goes\r\n        $\r\n\r\n        ", RegexOptions.ExplicitCapture | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
 
 		private static string tmpPrefix;
 
 		public override float BaseSelectionWeight => weight;
 
 		public override float Priority => priority;
+
+		public bool OutputNull => output == null;
 
 		public override Rule DeepCopy()
 		{
@@ -41,10 +46,10 @@ namespace Verse.Grammar
 
 		public Rule_String(string rawString)
 		{
-			Match match = pattern.Match(rawString);
+			Match match = Pattern.Match(rawString);
 			if (!match.Success)
 			{
-				Log.Error($"Bad string pass when reading rule {rawString}");
+				Log.Error("Bad string pass when reading rule " + rawString);
 				return;
 			}
 			keyword = match.Groups["keyword"].Value;
@@ -59,47 +64,50 @@ namespace Verse.Grammar
 				case "p":
 					if (value2 != "=")
 					{
-						Log.Error($"Attempt to compare p instead of assigning in rule {rawString}");
+						Log.Error("Attempt to compare p instead of assigning in rule " + rawString);
 					}
 					weight = float.Parse(value3);
-					continue;
+					break;
 				case "priority":
 					if (value2 != "=")
 					{
-						Log.Error($"Attempt to compare priority instead of assigning in rule {rawString}");
+						Log.Error("Attempt to compare priority instead of assigning in rule " + rawString);
 					}
 					priority = float.Parse(value3);
-					continue;
+					break;
 				case "tag":
 					if (value2 != "=")
 					{
-						Log.Error($"Attempt to compare tag instead of assigning in rule {rawString}");
+						Log.Error("Attempt to compare tag instead of assigning in rule " + rawString);
 					}
 					tag = value3;
-					continue;
+					break;
 				case "requiredTag":
 					if (value2 != "=")
 					{
-						Log.Error($"Attempt to compare requiredTag instead of assigning in rule {rawString}");
+						Log.Error("Attempt to compare requiredTag instead of assigning in rule " + rawString);
 					}
 					requiredTag = value3;
-					continue;
+					break;
+				case "uses":
+					if (value2 != "=")
+					{
+						Log.Error("Attempt to compare uses instead of assigning in rule " + rawString);
+					}
+					usesLimit = int.Parse(value3);
+					break;
 				case "debug":
-					Log.Error($"Rule {rawString} contains debug flag; fix before commit");
-					continue;
-				}
-				switch (value2)
-				{
-				case "==":
-				case "!=":
-				case ">":
-				case "<":
-				case ">=":
-				case "<=":
-					AddConstantConstraint(value, value3, value2);
+					Log.Error("Rule " + rawString + " contains debug flag; fix before commit");
 					break;
 				default:
-					Log.Error($"Unknown parameter {value} in rule {rawString}");
+					if (ValidOperators.Contains(value2))
+					{
+						AddConstantConstraint(value, value3, value2);
+					}
+					else
+					{
+						Log.Error("Unknown parameter " + value + " in rule " + rawString);
+					}
 					break;
 				}
 			}
@@ -112,7 +120,7 @@ namespace Verse.Grammar
 
 		public override string ToString()
 		{
-			return ((keyword != null) ? keyword : "null_keyword") + " → " + ((output != null) ? output.Replace("\n", "\\n") : "null_output");
+			return (keyword ?? "null_keyword") + " → " + ((output != null) ? output.Replace("\n", "\\n") : "null_output");
 		}
 
 		public void AppendPrefixToAllKeywords(string prefix)
@@ -130,8 +138,10 @@ namespace Verse.Grammar
 			}
 			for (int i = 0; i < constantConstraints.Count; i++)
 			{
-				ConstantConstraint value = default(ConstantConstraint);
-				value.key = constantConstraints[i].key;
+				ConstantConstraint value = new ConstantConstraint
+				{
+					key = constantConstraints[i].key
+				};
 				if (!prefix.NullOrEmpty())
 				{
 					value.key = prefix + "/" + value.key;

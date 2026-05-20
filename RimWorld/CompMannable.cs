@@ -43,25 +43,38 @@ namespace RimWorld
 			pawn.mindState.lastMannedThing = parent;
 		}
 
+		public override string CompInspectStringExtra()
+		{
+			if (parent.Spawned && !Props.planetLayerWhitelist.NullOrEmpty() && !Props.planetLayerWhitelist.Contains(parent.Map.Tile.LayerDef))
+			{
+				return "CannotFunctionOnLayer".Translate(parent.Map.Tile.LayerDef.label).CapitalizeFirst().Colorize(ColoredText.WarningColor);
+			}
+			return null;
+		}
+
 		public override IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn pawn)
 		{
 			if (!pawn.RaceProps.ToolUser || !pawn.CanReserveAndReach(parent, PathEndMode.InteractionCell, Danger.Deadly))
 			{
 				yield break;
 			}
-			if (Props.manWorkType != 0 && pawn.WorkTagIsDisabled(Props.manWorkType))
+			if (Props.manWorkType != WorkTags.None && pawn.WorkTagIsDisabled(Props.manWorkType))
 			{
 				if (Props.manWorkType == WorkTags.Violent)
 				{
 					yield return new FloatMenuOption("CannotManThing".Translate(parent.LabelShort, parent) + " (" + "IsIncapableOfViolenceLower".Translate(pawn.LabelShort, pawn) + ")", null);
 				}
 			}
+			else if (!Props.planetLayerWhitelist.NullOrEmpty() && !Props.planetLayerWhitelist.Contains(pawn.Map.Tile.LayerDef))
+			{
+				yield return new FloatMenuOption("CannotManThing".Translate(parent.LabelShort, parent) + " (" + "CannotFunctionOnLayer".Translate(pawn.Map.Tile.LayerDef.label) + ")", null);
+			}
 			else
 			{
 				yield return new FloatMenuOption("OrderManThing".Translate(parent.LabelShort, parent), delegate
 				{
 					Job job = JobMaker.MakeJob(JobDefOf.ManTurret, parent);
-					pawn.jobs.TryTakeOrderedJob(job);
+					pawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
 				});
 			}
 		}

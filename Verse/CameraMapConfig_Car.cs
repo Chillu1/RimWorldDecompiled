@@ -5,12 +5,6 @@ namespace Verse
 {
 	public class CameraMapConfig_Car : CameraMapConfig
 	{
-		private float targetAngle;
-
-		private float angle;
-
-		private float speed;
-
 		private const float SpeedChangeSpeed = 1.2f;
 
 		private const float AngleChangeSpeed = 0.72f;
@@ -23,33 +17,31 @@ namespace Verse
 			moveSpeedScale = 1f;
 		}
 
-		public override void ConfigFixedUpdate_60(ref Vector3 velocity)
+		public override void ConfigFixedUpdate_60(ref Vector3 rootPos, ref Vector3 velocity)
 		{
-			base.ConfigFixedUpdate_60(ref velocity);
-			float num = 0.0166666675f;
+			float num = 1f / 60f;
 			if (KeyBindingDefOf.MapDolly_Left.IsDown)
 			{
-				targetAngle += 0.72f * num;
+				autoPanTargetAngle += 0.72f * num;
 			}
 			if (KeyBindingDefOf.MapDolly_Right.IsDown)
 			{
-				targetAngle -= 0.72f * num;
+				autoPanTargetAngle -= 0.72f * num;
 			}
 			if (KeyBindingDefOf.MapDolly_Up.IsDown)
 			{
-				speed += 1.2f * num;
+				autoPanSpeed += 1.2f * num;
 			}
 			if (KeyBindingDefOf.MapDolly_Down.IsDown)
 			{
-				speed -= 1.2f * num;
-				if (speed < 0f)
+				autoPanSpeed -= 1.2f * num;
+				if (autoPanSpeed < 0f)
 				{
-					speed = 0f;
+					autoPanSpeed = 0f;
 				}
 			}
-			angle = Mathf.Lerp(angle, targetAngle, 0.02f);
-			velocity.x = Mathf.Cos(angle) * speed;
-			velocity.z = Mathf.Sin(angle) * speed;
+			autoPanAngle = Mathf.Lerp(autoPanAngle, autoPanTargetAngle, 0.02f);
+			base.ConfigFixedUpdate_60(ref rootPos, ref velocity);
 		}
 	}
 }

@@ -21,8 +21,7 @@ namespace Verse.Sound
 			{
 				return false;
 			}
-			ResolvedGrain_Silence resolvedGrain_Silence = obj as ResolvedGrain_Silence;
-			if (resolvedGrain_Silence == null)
+			if (!(obj is ResolvedGrain_Silence resolvedGrain_Silence))
 			{
 				return false;
 			}

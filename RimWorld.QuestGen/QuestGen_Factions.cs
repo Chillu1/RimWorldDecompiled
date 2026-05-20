@@ -19,28 +19,17 @@ namespace RimWorld.QuestGen
 			return questPart_AssaultColony;
 		}
 
-		public static QuestPart_ExtraFaction ExtraFaction(this Quest quest, Faction faction, IEnumerable<Pawn> pawns, ExtraFactionType factionType, bool areHelpers = false, string inSignalRemovePawn = null)
+		public static QuestPart_ExtraFaction ExtraFaction(this Quest quest, Faction faction, IEnumerable<Pawn> pawns, ExtraFactionType factionType, bool areHelpers = false, List<string> inSignalsRemovePawn = null)
 		{
 			QuestPart_ExtraFaction questPart_ExtraFaction = new QuestPart_ExtraFaction
 			{
 				affectedPawns = pawns.ToList(),
 				extraFaction = new ExtraFaction(faction, factionType),
 				areHelpers = areHelpers,
-				inSignalRemovePawn = inSignalRemovePawn
+				inSignalsRemovePawn = inSignalsRemovePawn
 			};
 			quest.AddPart(questPart_ExtraFaction);
 			return questPart_ExtraFaction;
-		}
-
-		public static QuestPart_SetFactionRelations SetFactionRelations(this Quest quest, Faction faction, FactionRelationKind relationKind, string inSignal = null, bool? canSendLetter = null)
-		{
-			QuestPart_SetFactionRelations questPart_SetFactionRelations = new QuestPart_SetFactionRelations();
-			questPart_SetFactionRelations.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal) ?? QuestGen.slate.Get<string>("inSignal");
-			questPart_SetFactionRelations.faction = faction;
-			questPart_SetFactionRelations.relationKind = relationKind;
-			questPart_SetFactionRelations.canSendLetter = canSendLetter ?? true;
-			quest.AddPart(questPart_SetFactionRelations);
-			return questPart_SetFactionRelations;
 		}
 
 		public static QuestPart_ReserveFaction ReserveFaction(this Quest quest, Faction faction)
@@ -51,7 +40,18 @@ namespace RimWorld.QuestGen
 			return questPart_ReserveFaction;
 		}
 
-		public static QuestPart_FactionGoodwillChange FactionGoodwillChange(this Quest quest, Faction faction, int change = 0, string inSignal = null, bool canSendMessage = true, bool canSendHostilityLetter = true, string reason = null, bool getLookTargetFromSignal = true, QuestPart.SignalListenMode signalListenMode = QuestPart.SignalListenMode.OngoingOnly)
+		public static QuestPart_FactionRelationChange FactionRelationToPlayerChange(this Quest quest, Faction faction, FactionRelationKind relationKind, bool canSendHostilityLetter = true, string inSignal = null)
+		{
+			QuestPart_FactionRelationChange questPart_FactionRelationChange = new QuestPart_FactionRelationChange();
+			questPart_FactionRelationChange.faction = faction;
+			questPart_FactionRelationChange.relationKind = relationKind;
+			questPart_FactionRelationChange.canSendHostilityLetter = canSendHostilityLetter;
+			questPart_FactionRelationChange.inSignal = inSignal ?? QuestGen.slate.Get<string>("inSignal");
+			quest.AddPart(questPart_FactionRelationChange);
+			return questPart_FactionRelationChange;
+		}
+
+		public static QuestPart_FactionGoodwillChange FactionGoodwillChange(this Quest quest, Faction faction, int change, string inSignal = null, bool canSendMessage = true, bool canSendHostilityLetter = true, bool getLookTargetFromSignal = true, HistoryEventDef historyEvent = null, QuestPart.SignalListenMode signalListenMode = QuestPart.SignalListenMode.OngoingOnly, bool ensureMakesHostile = false)
 		{
 			QuestPart_FactionGoodwillChange questPart_FactionGoodwillChange = new QuestPart_FactionGoodwillChange();
 			questPart_FactionGoodwillChange.faction = faction;
@@ -59,9 +59,10 @@ namespace RimWorld.QuestGen
 			questPart_FactionGoodwillChange.inSignal = inSignal ?? QuestGen.slate.Get<string>("inSignal");
 			questPart_FactionGoodwillChange.canSendMessage = canSendMessage;
 			questPart_FactionGoodwillChange.canSendHostilityLetter = canSendHostilityLetter;
-			questPart_FactionGoodwillChange.reason = reason;
 			questPart_FactionGoodwillChange.getLookTargetFromSignal = getLookTargetFromSignal;
 			questPart_FactionGoodwillChange.signalListenMode = signalListenMode;
+			questPart_FactionGoodwillChange.historyEvent = historyEvent;
+			questPart_FactionGoodwillChange.ensureMakesHostile = ensureMakesHostile;
 			quest.AddPart(questPart_FactionGoodwillChange);
 			return questPart_FactionGoodwillChange;
 		}

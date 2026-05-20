@@ -62,7 +62,7 @@ namespace RimWorld
 					List<Thing> list = x.ListerThings.ThingsInGroup(ThingRequestGroup.AttackTarget);
 					for (int i = 0; i < list.Count; i++)
 					{
-						if (GenHostility.IsActiveThreatTo((IAttackTarget)list[i], pawn.Faction))
+						if (GenHostility.IsActiveThreatTo((IAttackTarget)list[i], pawn.Faction, ignoreHives: false))
 						{
 							foundActiveThreat = true;
 							break;

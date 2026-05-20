@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Verse;
@@ -14,16 +13,11 @@ namespace RimWorld.Planet
 				Log.Warning("Called IsOwner with null faction.");
 				return false;
 			}
-			if (!pawn.NonHumanlikeOrWildMan() && pawn.Faction == caravanFaction)
+			if (!pawn.NonHumanlikeOrWildMan() && pawn.Faction == caravanFaction && pawn.HostFaction == null)
 			{
-				return pawn.HostFaction == null;
+				return !pawn.IsSlave;
 			}
 			return false;
-		}
-
-		public static Caravan GetCaravan(this Pawn pawn)
-		{
-			return pawn.ParentHolder as Caravan;
 		}
 
 		public static bool IsCaravanMember(this Pawn pawn)
@@ -36,22 +30,26 @@ namespace RimWorld.Planet
 			return pawn.GetCaravan()?.IsPlayerControlled ?? false;
 		}
 
-		public static int BestGotoDestNear(int tile, Caravan c)
+		public static PlanetTile BestGotoDestNear(PlanetTile tile, Caravan c)
 		{
-			Predicate<int> predicate = delegate(int t)
+			if (IsGoodDest(tile))
+			{
+				return tile;
+			}
+			GenWorldClosest.TryFindClosestTile(tile, IsGoodDest, out var foundTile, 50);
+			return foundTile;
+			bool IsGoodDest(PlanetTile t)
 			{
 				if (Find.World.Impassable(t))
 				{
 					return false;
 				}
-				return c.CanReach(t) ? true : false;
-			};
-			if (predicate(tile))
-			{
-				return tile;
+				if (!c.CanReach(t))
+				{
+					return false;
+				}
+				return true;
 			}
-			GenWorldClosest.TryFindClosestTile(tile, predicate, out var foundTile, 50);
-			return foundTile;
 		}
 
 		public static bool PlayerHasAnyCaravan()
@@ -83,6 +81,37 @@ namespace RimWorld.Planet
 				return true;
 			}
 			return false;
+		}
+
+		public static PlanetTile GetTileCurrentlyOver(this Caravan caravan)
+		{
+			if (caravan.pather.Moving && caravan.pather.IsNextTilePassable() && 1f - caravan.pather.nextTileCostLeft / caravan.pather.nextTileCostTotal > 0.5f)
+			{
+				return caravan.pather.nextTile;
+			}
+			return caravan.Tile;
+		}
+
+		public static Caravan GetCaravan(this Thing thing)
+		{
+			if (thing.ParentHolder is Caravan result)
+			{
+				return result;
+			}
+			if (thing.ParentHolder is Pawn_InventoryTracker pawn_InventoryTracker)
+			{
+				return pawn_InventoryTracker.pawn.GetCaravan();
+			}
+			if (thing.ParentHolder is Thing thing2)
+			{
+				return thing2.GetCaravan();
+			}
+			return null;
+		}
+
+		public static bool IsInCaravan(this Thing thing)
+		{
+			return thing.GetCaravan() != null;
 		}
 	}
 }

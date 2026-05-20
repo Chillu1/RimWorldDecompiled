@@ -12,10 +12,9 @@ namespace RimWorld
 		{
 			for (int i = 0; i < instances.Count; i++)
 			{
-				T val = instances[i] as T;
-				if (val != null)
+				if (instances[i] is T result)
 				{
-					return val;
+					return result;
 				}
 			}
 			SkyOverlay skyOverlay = Activator.CreateInstance<T>();

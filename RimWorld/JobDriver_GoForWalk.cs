@@ -15,7 +15,7 @@ namespace RimWorld
 		{
 			this.FailOn(() => !JoyUtility.EnjoyableOutsideNow(pawn));
 			Toil goToil = Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.OnCell);
-			goToil.tickAction = delegate
+			goToil.tickIntervalAction = delegate(int delta)
 			{
 				if (Find.TickManager.TicksGame > startTick + job.def.joyDuration)
 				{
@@ -23,11 +23,11 @@ namespace RimWorld
 				}
 				else
 				{
-					JoyUtility.JoyTickCheckEnd(pawn);
+					JoyUtility.JoyTickCheckEnd(pawn, delta);
 				}
 			};
 			yield return goToil;
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
 				if (job.targetQueueA.Count > 0)

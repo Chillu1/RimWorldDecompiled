@@ -12,7 +12,13 @@ namespace Verse
 
 		public const string MayRequireAttributeName = "MayRequire";
 
+		public const string MayRequireAnyAttributeName = "MayRequireAnyOf";
+
+		public const char MayRequireModDelimiter = ',';
+
 		public const string IfModActiveAttributeName = "IfModActive";
+
+		public const string IfModActiveAllAttributeName = "IfModActiveAll";
 
 		public const string IfModNotActiveAttributeName = "IfModNotActive";
 

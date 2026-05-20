@@ -1,4 +1,5 @@
 using UnityEngine;
+using Verse;
 
 namespace RimWorld
 {
@@ -10,13 +11,22 @@ namespace RimWorld
 		{
 			get
 			{
-				if (base.SelPawn.RaceProps.Animal && base.SelPawn.Faction == null)
+				if (SelPawn.RaceProps.Animal && SelPawn.Faction == null)
 				{
 					return false;
 				}
-				if (base.SelPawn.needs != null)
+				if (SelPawn.RaceProps.Insect && SelPawn.Faction != Faction.OfPlayer)
 				{
-					return base.SelPawn.needs.AllNeeds.Count > 0;
+					return false;
+				}
+				CompHoldingPlatformTarget compHoldingPlatformTarget = SelPawn.TryGetComp<CompHoldingPlatformTarget>();
+				if (compHoldingPlatformTarget != null && compHoldingPlatformTarget.CurrentlyHeldOnPlatform)
+				{
+					return false;
+				}
+				if (SelPawn.needs != null)
+				{
+					return SelPawn.needs.AllNeeds.Count > 0;
 				}
 				return false;
 			}
@@ -35,12 +45,12 @@ namespace RimWorld
 
 		protected override void FillTab()
 		{
-			NeedsCardUtility.DoNeedsMoodAndThoughts(new Rect(0f, 0f, size.x, size.y), base.SelPawn, ref thoughtScrollPosition);
+			NeedsCardUtility.DoNeedsMoodAndThoughts(new Rect(0f, 0f, size.x, size.y), SelPawn, ref thoughtScrollPosition);
 		}
 
 		protected override void UpdateSize()
 		{
-			size = NeedsCardUtility.GetSize(base.SelPawn);
+			size = NeedsCardUtility.GetSize(SelPawn);
 		}
 	}
 }

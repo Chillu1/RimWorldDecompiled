@@ -14,7 +14,13 @@ namespace RimWorld.BaseGen
 
 		public int minBarracks;
 
+		public int requiredWorshippedTerminalRooms;
+
+		public int requiredGravcoreRooms;
+
 		public int minThroneRooms;
+
+		public int maxFarms = -1;
 
 		public CellRect mainRect;
 
@@ -28,9 +34,15 @@ namespace RimWorld.BaseGen
 
 		public int basePart_throneRoomsResolved;
 
+		public int basePart_worshippedTerminalsResolved;
+
+		public int basePart_gravcoresResolved;
+
 		public float basePart_batteriesCoverage;
 
 		public float basePart_farmsCoverage;
+
+		public int basePart_farmsCount;
 
 		public float basePart_powerPlantsCoverage;
 
@@ -43,9 +55,12 @@ namespace RimWorld.BaseGen
 			map = null;
 			minBuildings = 0;
 			minBarracks = 0;
+			requiredWorshippedTerminalRooms = 0;
+			requiredGravcoreRooms = 0;
 			minEmptyNodes = 0;
 			minLandingPads = 0;
 			minThroneRooms = 0;
+			maxFarms = -1;
 			mainRect = CellRect.Empty;
 			basePart_buildingsResolved = 0;
 			basePart_emptyNodesResolved = 0;
@@ -54,8 +69,11 @@ namespace RimWorld.BaseGen
 			basePart_throneRoomsResolved = 0;
 			basePart_batteriesCoverage = 0f;
 			basePart_farmsCoverage = 0f;
+			basePart_farmsCount = 0;
 			basePart_powerPlantsCoverage = 0f;
 			basePart_breweriesCoverage = 0f;
+			basePart_worshippedTerminalsResolved = 0;
+			basePart_gravcoresResolved = 0;
 		}
 
 		public void ClearResult()

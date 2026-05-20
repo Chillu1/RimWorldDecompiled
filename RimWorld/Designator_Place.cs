@@ -5,26 +5,27 @@ using Verse.Sound;
 
 namespace RimWorld
 {
-	public abstract class Designator_Place : Designator
+	public abstract class Designator_Place : DesignatorWithEyedropper
 	{
 		protected Rot4 placingRot = Rot4.North;
 
 		protected static float middleMouseDownTime;
 
-		private const float RotButSize = 64f;
-
-		private const float RotButSpacing = 10f;
-
 		public static readonly Color CanPlaceColor = new Color(0.5f, 1f, 0.6f, 0.4f);
 
 		public static readonly Color CannotPlaceColor = new Color(1f, 0f, 0f, 0.4f);
 
+		public static readonly Vector2 PlaceMouseAttachmentDrawOffset = new Vector2(19f, 17f);
+
 		private static List<Thing> tmpThings = new List<Thing>();
 
-		public abstract BuildableDef PlacingDef
-		{
-			get;
-		}
+		public abstract BuildableDef PlacingDef { get; }
+
+		public abstract ThingStyleDef ThingStyleDefForPreview { get; }
+
+		public abstract ThingDef StuffDef { get; }
+
+		public override DrawStyleCategoryDef DrawStyleCategory => PlacingDef.drawStyleCategory;
 
 		public Designator_Place()
 		{
@@ -38,8 +39,22 @@ namespace RimWorld
 			base.DrawMouseAttachments();
 			Map currentMap = Find.CurrentMap;
 			currentMap.deepResourceGrid.DrawPlacingMouseAttachments(PlacingDef);
-			ThingDef thingDef;
-			if (currentMap == null || (thingDef = PlacingDef as ThingDef) == null || thingDef.displayNumbersBetweenSameDefDistRange.max <= 0f)
+			Vector2 vector = Event.current.mousePosition + PlaceMouseAttachmentDrawOffset;
+			float x = vector.x;
+			float curY = vector.y;
+			DrawPlaceMouseAttachments(x, ref curY);
+			if (PlacingDef.PlaceWorkers != null)
+			{
+				foreach (PlaceWorker placeWorker in PlacingDef.PlaceWorkers)
+				{
+					placeWorker.DrawPlaceMouseAttachments(x, ref curY, PlacingDef, UI.MouseCell(), placingRot);
+				}
+				foreach (PlaceWorker placeWorker2 in PlacingDef.PlaceWorkers)
+				{
+					placeWorker2.DrawMouseAttachments(PlacingDef);
+				}
+			}
+			if (currentMap == null || !(PlacingDef is ThingDef thingDef) || thingDef.displayNumbersBetweenSameDefDistRange.max <= 0f)
 			{
 				return;
 			}
@@ -73,6 +88,10 @@ namespace RimWorld
 			tmpThings.Clear();
 		}
 
+		protected virtual void DrawPlaceMouseAttachments(float curX, ref float curY)
+		{
+		}
+
 		protected virtual bool CanDrawNumbersBetween(Thing thing, ThingDef def, IntVec3 a, IntVec3 b, Map map)
 		{
 			return !GenThing.CloserThingBetween(def, a, b, map);
@@ -80,55 +99,44 @@ namespace RimWorld
 
 		public override void DoExtraGuiControls(float leftX, float bottomY)
 		{
-			ThingDef thingDef = PlacingDef as ThingDef;
-			if (thingDef == null || !thingDef.rotatable)
+			if (PlacingDef.PlaceWorkers != null)
 			{
-				return;
+				foreach (PlaceWorker placeWorker in PlacingDef.PlaceWorkers)
+				{
+					placeWorker.DrawOnGUIExtra(PlacingDef);
+				}
 			}
-			Rect winRect = new Rect(leftX, bottomY - 90f, 200f, 90f);
-			Find.WindowStack.ImmediateWindow(73095, winRect, WindowLayer.GameUI, delegate
+			if (PlacingDef is ThingDef { rotatable: not false })
 			{
-				RotationDirection rotationDirection = RotationDirection.None;
-				Text.Anchor = TextAnchor.MiddleCenter;
-				Text.Font = GameFont.Medium;
-				Rect rect = new Rect(winRect.width / 2f - 64f - 5f, 15f, 64f, 64f);
-				if (Widgets.ButtonImage(rect, TexUI.RotLeftTex))
+				DesignatorUtility.GUIDoRotationControls(leftX, bottomY, placingRot, delegate(Rot4 rot)
 				{
-					SoundDefOf.DragSlider.PlayOneShotOnCamera();
-					rotationDirection = RotationDirection.Counterclockwise;
-					Event.current.Use();
-				}
-				Widgets.Label(rect, KeyBindingDefOf.Designator_RotateLeft.MainKeyLabel);
-				Rect rect2 = new Rect(winRect.width / 2f + 5f, 15f, 64f, 64f);
-				if (Widgets.ButtonImage(rect2, TexUI.RotRightTex))
-				{
-					SoundDefOf.DragSlider.PlayOneShotOnCamera();
-					rotationDirection = RotationDirection.Clockwise;
-					Event.current.Use();
-				}
-				Widgets.Label(rect2, KeyBindingDefOf.Designator_RotateRight.MainKeyLabel);
-				if (rotationDirection != 0)
-				{
-					placingRot.Rotate(rotationDirection);
-				}
-				Text.Anchor = TextAnchor.UpperLeft;
-				Text.Font = GameFont.Small;
-			});
+					placingRot = rot;
+				});
+			}
+			else
+			{
+				base.DoExtraGuiControls(leftX, bottomY);
+			}
 		}
 
 		public override void SelectedProcessInput(Event ev)
 		{
-			base.SelectedProcessInput(ev);
-			ThingDef thingDef = PlacingDef as ThingDef;
-			if (thingDef != null && thingDef.rotatable)
+			if (PlacingDef is ThingDef { rotatable: not false })
 			{
 				HandleRotationShortcuts();
+			}
+			else
+			{
+				base.SelectedProcessInput(ev);
 			}
 		}
 
 		public override void SelectedUpdate()
 		{
-			GenDraw.DrawNoBuildEdgeLines();
+			if (!base.Map.IsPocketMap)
+			{
+				GenDraw.DrawNoBuildEdgeLines();
+			}
 			IntVec3 intVec = UI.MouseCell();
 			if (ArchitectCategoryTab.InfoRect.Contains(UI.MousePositionOnUIInverted) || !intVec.InBounds(base.Map))
 			{
@@ -137,25 +145,48 @@ namespace RimWorld
 			if (PlacingDef is TerrainDef)
 			{
 				GenUI.RenderMouseoverBracket();
+				DrawPlaceWorkers();
 				return;
 			}
+			DrawBeforeGhost();
 			Color ghostCol = ((!CanDesignateCell(intVec).Accepted) ? CannotPlaceColor : CanPlaceColor);
 			DrawGhost(ghostCol);
 			if (CanDesignateCell(intVec).Accepted && PlacingDef.specialDisplayRadius > 0.01f)
 			{
 				GenDraw.DrawRadiusRing(intVec, PlacingDef.specialDisplayRadius);
 			}
-			GenDraw.DrawInteractionCell((ThingDef)PlacingDef, intVec, placingRot);
+			GenDraw.DrawInteractionCells((ThingDef)PlacingDef, intVec, placingRot);
+			if (PlacingDef is ThingDef { building: not null } thingDef && thingDef.building.isAttachment && GenConstruct.GetWallAttachedTo(intVec, placingRot, Find.CurrentMap) == null && HasPotentialAttachment(intVec))
+			{
+				HandleRotation(RotationDirection.Clockwise);
+			}
+		}
+
+		protected virtual void DrawBeforeGhost()
+		{
+			if (PlacingDef is ThingDef def)
+			{
+				MeditationUtility.DrawMeditationFociAffectedByBuildingOverlay(base.Map, def, Faction.OfPlayer, UI.MouseCell(), placingRot);
+				GauranlenUtility.DrawConnectionsAffectedByBuildingOverlay(base.Map, def, Faction.OfPlayer, UI.MouseCell(), placingRot);
+				PsychicRitualUtility.DrawPsychicRitualSpotsAffectedByThingOverlay(base.Map, def, UI.MouseCell(), placingRot);
+			}
 		}
 
 		protected virtual void DrawGhost(Color ghostCol)
 		{
-			ThingDef def;
-			if ((def = PlacingDef as ThingDef) != null)
+			GhostDrawer.DrawGhostThing(UI.MouseCell(), placingRot, (ThingDef)PlacingDef, ThingStyleDefForPreview?.Graphic, ghostCol, AltitudeLayer.Blueprint, null, drawPlaceWorkers: true, StuffDef);
+		}
+
+		protected virtual void DrawPlaceWorkers()
+		{
+			if (PlacingDef.PlaceWorkers == null)
 			{
-				MeditationUtility.DrawMeditationFociAffectedByBuildingOverlay(base.Map, def, Faction.OfPlayer, UI.MouseCell(), placingRot);
+				return;
 			}
-			GhostDrawer.DrawGhostThing_NewTmp(UI.MouseCell(), placingRot, (ThingDef)PlacingDef, null, ghostCol, AltitudeLayer.Blueprint);
+			foreach (PlaceWorker placeWorker in PlacingDef.PlaceWorkers)
+			{
+				placeWorker.DrawGhost(null, UI.MouseCell(), placingRot, CanPlaceColor);
+			}
 		}
 
 		private void HandleRotationShortcuts()
@@ -181,16 +212,45 @@ namespace RimWorld
 			{
 				rotationDirection = RotationDirection.Counterclockwise;
 			}
-			if (rotationDirection == RotationDirection.Clockwise)
+			if (rotationDirection != RotationDirection.None)
+			{
+				HandleRotation(rotationDirection);
+			}
+		}
+
+		private void HandleRotation(RotationDirection dir)
+		{
+			IntVec3 intVec = UI.MouseCell();
+			ThingDef obj = PlacingDef as ThingDef;
+			if (obj != null && obj.building.isAttachment && HasPotentialAttachment(intVec))
+			{
+				placingRot.Rotate(dir);
+				while (GenConstruct.GetWallAttachedTo(intVec, placingRot, Find.CurrentMap) == null)
+				{
+					placingRot.Rotate(dir);
+				}
+			}
+			else
 			{
 				SoundDefOf.DragSlider.PlayOneShotOnCamera();
-				placingRot.Rotate(RotationDirection.Clockwise);
+				placingRot.Rotate(dir);
 			}
-			if (rotationDirection == RotationDirection.Counterclockwise)
+		}
+
+		private bool HasPotentialAttachment(IntVec3 cell)
+		{
+			if (!(PlacingDef is ThingDef thingDef) || !thingDef.building.isAttachment)
 			{
-				SoundDefOf.DragSlider.PlayOneShotOnCamera();
-				placingRot.Rotate(RotationDirection.Counterclockwise);
+				return false;
 			}
+			foreach (Rot4 allRotation in Rot4.AllRotations)
+			{
+				if (GenConstruct.GetWallAttachedTo(cell, allRotation, Find.CurrentMap) != null)
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 
 		public override void Selected()

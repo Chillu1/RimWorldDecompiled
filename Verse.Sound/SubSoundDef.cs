@@ -7,6 +7,8 @@ namespace Verse.Sound
 {
 	public class SubSoundDef : Editable
 	{
+		public const string DefaultName = "UnnamedSubSoundDef";
+
 		[Description("A name to help you identify the sound.")]
 		[DefaultValue("UnnamedSubSoundDef")]
 		[MayTranslate]
@@ -61,6 +63,10 @@ namespace Verse.Sound
 		[Description("A range of game speeds this sound can be played on.")]
 		public IntRange gameSpeedRange = new IntRange(0, 999);
 
+		[Description("One shots sharing the same tag are treated as the same sound when determining importance.")]
+		[NoTranslate]
+		public string tag;
+
 		[Description("If true, each sample in the sustainer will be looped and ended only after sustainerLoopDurationRange. If not, the sounds will just play once and end after their own length.")]
 		[DefaultValue(true)]
 		public bool sustainLoop = true;
@@ -76,6 +82,10 @@ namespace Verse.Sound
 		[DefaultFloatRange(0f, 0f)]
 		public FloatRange sustainIntervalRange = FloatRange.Zero;
 
+		[Description("The time between when one sample ends and the next starts.\n\nSet to negative if you wish samples to overlap.")]
+		[LoadAlias("sustainIntervalFactorByAggregateSize")]
+		public SimpleCurve sustainIntervalFactorByAggregateSize;
+
 		[EditSliderRange(0f, 2f)]
 		[Description("The fade-in time of each sample. The sample will start at 0 volume and fade in over this number of seconds.")]
 		[DefaultValue(0f)]
@@ -89,6 +99,13 @@ namespace Verse.Sound
 		[Description("The fade-out time of each sample. At this number of seconds before the sample ends, it will start fading out. Its volume will be zero at the moment it finishes fading out.")]
 		[DefaultValue(0f)]
 		public float sustainRelease;
+
+		[Description("Whether to start the sample at a random point in the sound.")]
+		[DefaultValue(false)]
+		public bool randomStartPoint;
+
+		[DefaultValue(true)]
+		public bool canVacuumDampen = true;
 
 		[Unsaved(false)]
 		public SoundDef parentDef;
@@ -131,7 +148,7 @@ namespace Verse.Sound
 		{
 			if (resolvedGrains.Count == 0)
 			{
-				Log.Error(string.Concat("Cannot play ", parentDef, " (subSound ", this, "_: No resolved grains."));
+				Log.Error("Cannot play " + parentDef?.ToString() + " (subSound " + this?.ToString() + "_: No resolved grains.");
 			}
 			else
 			{
@@ -140,8 +157,7 @@ namespace Verse.Sound
 					return;
 				}
 				ResolvedGrain resolvedGrain = RandomizedResolvedGrain();
-				ResolvedGrain_Clip resolvedGrain_Clip = resolvedGrain as ResolvedGrain_Clip;
-				if (resolvedGrain_Clip != null)
+				if (resolvedGrain is ResolvedGrain_Clip resolvedGrain_Clip)
 				{
 					if (SampleOneShot.TryMakeAndPlay(this, resolvedGrain_Clip.clip, info) == null)
 					{
@@ -149,26 +165,44 @@ namespace Verse.Sound
 					}
 					SoundSlotManager.Notify_Played(parentDef.slot, resolvedGrain_Clip.clip.length);
 				}
-				if (distinctResolvedGrainsCount <= 1)
+				Notify_GrainPlayed(resolvedGrain);
+			}
+		}
+
+		public void Notify_GrainPlayed(ResolvedGrain chosenGrain)
+		{
+			if (distinctResolvedGrainsCount <= 1)
+			{
+				return;
+			}
+			if (repeatMode == RepeatSelectMode.NeverLastHalf)
+			{
+				while (recentlyPlayedResolvedGrains.Count >= numToAvoid)
 				{
-					return;
+					recentlyPlayedResolvedGrains.Dequeue();
 				}
-				if (repeatMode == RepeatSelectMode.NeverLastHalf)
+				if (recentlyPlayedResolvedGrains.Count < numToAvoid)
 				{
-					while (recentlyPlayedResolvedGrains.Count >= numToAvoid)
-					{
-						recentlyPlayedResolvedGrains.Dequeue();
-					}
-					if (recentlyPlayedResolvedGrains.Count < numToAvoid)
-					{
-						recentlyPlayedResolvedGrains.Enqueue(resolvedGrain);
-					}
-				}
-				else if (repeatMode == RepeatSelectMode.NeverTwice)
-				{
-					lastPlayedResolvedGrain = resolvedGrain;
+					recentlyPlayedResolvedGrains.Enqueue(chosenGrain);
 				}
 			}
+			else if (repeatMode == RepeatSelectMode.NeverTwice)
+			{
+				lastPlayedResolvedGrain = chosenGrain;
+			}
+		}
+
+		public bool IsSameOrHasSameTag(SubSoundDef other)
+		{
+			if (this == other)
+			{
+				return true;
+			}
+			if (tag.NullOrEmpty() || other.tag.NullOrEmpty())
+			{
+				return false;
+			}
+			return tag == other.tag;
 		}
 
 		public ResolvedGrain RandomizedResolvedGrain()
@@ -183,7 +217,7 @@ namespace Verse.Sound
 				}
 				if (repeatMode == RepeatSelectMode.NeverLastHalf)
 				{
-					if (!recentlyPlayedResolvedGrains.Where((ResolvedGrain g) => g.Equals(chosenGrain)).Any())
+					if (!recentlyPlayedResolvedGrains.Any((ResolvedGrain g) => g.Equals(chosenGrain)))
 					{
 						break;
 					}
@@ -219,16 +253,20 @@ namespace Verse.Sound
 				{
 					numToAvoid++;
 				}
+				if (resolvedGrains.Count == 0)
+				{
+					Log.Error($"{parentDef.defName} SubSound {this} has no resolvedGrains.");
+				}
 			});
 		}
 
 		public override IEnumerable<string> ConfigErrors()
 		{
-			if (resolvedGrains.Count == 0)
+			foreach (string item in base.ConfigErrors())
 			{
-				yield return "No grains resolved.";
+				yield return item;
 			}
-			if (sustainAttack + sustainRelease > sustainLoopDurationRange.TrueMin)
+			if (sustainAttack + sustainRelease > sustainLoopDurationRange.TrueMin && sustainLoopDurationRange != FloatRange.Zero)
 			{
 				yield return "Attack + release < min loop duration. Sustain samples will cut off.";
 			}
@@ -251,13 +289,10 @@ namespace Verse.Sound
 					yield return "At least one parameter mapping is missing an in or out parameter.";
 					break;
 				}
-				if (paramMapping.outParam != null)
+				Type neededFilter = paramMapping.outParam?.NeededFilterType;
+				if (neededFilter != null && !filters.Any((SoundFilter fil) => fil.GetType() == neededFilter))
 				{
-					Type neededFilter = paramMapping.outParam.NeededFilterType;
-					if (neededFilter != null && !filters.Where((SoundFilter fil) => fil.GetType() == neededFilter).Any())
-					{
-						yield return "A parameter wants to modify the " + neededFilter.ToString() + " filter, but this sound doesn't have it.";
-					}
+					yield return "A parameter wants to modify the " + neededFilter?.ToString() + " filter, but this sound doesn't have it.";
 				}
 			}
 		}

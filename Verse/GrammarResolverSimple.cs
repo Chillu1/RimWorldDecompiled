@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,7 +9,9 @@ namespace Verse
 {
 	public static class GrammarResolverSimple
 	{
-		private static bool working;
+		private static bool formatterWorking;
+
+		private static bool symbolParserWorking;
 
 		private static StringBuilder tmpResultBuffer = new StringBuilder();
 
@@ -18,13 +21,23 @@ namespace Verse
 
 		private static StringBuilder tmpSymbolBuffer_subSymbol = new StringBuilder();
 
+		private static StringBuilder tmpSymbolBuffer_function = new StringBuilder();
+
 		private static StringBuilder tmpSymbolBuffer_args = new StringBuilder();
+
+		private static StringBuilder tmpSymbolBuffer_functionArgs = new StringBuilder();
 
 		private static List<string> tmpArgsLabels = new List<string>();
 
 		private static List<object> tmpArgsObjects = new List<object>();
 
 		private static StringBuilder tmpArg = new StringBuilder();
+
+		private static List<string> numCaseArgs = new List<string>();
+
+		private static List<string> replaceArgs = new List<string>();
+
+		private static List<string> functionArgs = new List<string>();
 
 		public static TaggedString Formatted(TaggedString str, List<string> argsLabelsArg, List<object> argsObjectsArg)
 		{
@@ -34,20 +47,12 @@ namespace Verse
 			}
 			bool flag;
 			StringBuilder stringBuilder;
-			StringBuilder stringBuilder2;
-			StringBuilder stringBuilder3;
-			StringBuilder stringBuilder4;
-			StringBuilder stringBuilder5;
 			List<string> list;
 			List<object> list2;
-			if (working)
+			if (formatterWorking)
 			{
 				flag = false;
 				stringBuilder = new StringBuilder();
-				stringBuilder2 = new StringBuilder();
-				stringBuilder3 = new StringBuilder();
-				stringBuilder4 = new StringBuilder();
-				stringBuilder5 = new StringBuilder();
 				list = argsLabelsArg.ToList();
 				list2 = argsObjectsArg.ToList();
 			}
@@ -55,10 +60,6 @@ namespace Verse
 			{
 				flag = true;
 				stringBuilder = tmpResultBuffer;
-				stringBuilder2 = tmpSymbolBuffer;
-				stringBuilder3 = tmpSymbolBuffer_objectLabel;
-				stringBuilder4 = tmpSymbolBuffer_subSymbol;
-				stringBuilder5 = tmpSymbolBuffer_args;
 				list = tmpArgsLabels;
 				list.Clear();
 				list.AddRange(argsLabelsArg);
@@ -68,125 +69,243 @@ namespace Verse
 			}
 			if (flag)
 			{
-				working = true;
+				formatterWorking = true;
 			}
 			try
 			{
 				stringBuilder.Length = 0;
-				for (int i = 0; i < str.Length; i++)
-				{
-					char c = str[i];
-					if (c == '{')
-					{
-						stringBuilder2.Length = 0;
-						stringBuilder3.Length = 0;
-						stringBuilder4.Length = 0;
-						stringBuilder5.Length = 0;
-						bool flag2 = false;
-						bool flag3 = false;
-						bool flag4 = false;
-						i++;
-						bool flag5 = i < str.Length && str[i] == '{';
-						for (; i < str.Length; i++)
-						{
-							char c2 = str[i];
-							if (c2 == '}')
-							{
-								flag2 = true;
-								break;
-							}
-							stringBuilder2.Append(c2);
-							if (c2 == '_' && !flag3)
-							{
-								flag3 = true;
-							}
-							else if (c2 == '?' && !flag4)
-							{
-								flag4 = true;
-							}
-							else if (flag4)
-							{
-								stringBuilder5.Append(c2);
-							}
-							else if (flag3)
-							{
-								stringBuilder4.Append(c2);
-							}
-							else
-							{
-								stringBuilder3.Append(c2);
-							}
-						}
-						if (!flag2)
-						{
-							Log.ErrorOnce("Could not find matching '}' in \"" + str + "\".", str.GetHashCode() ^ 0xB9D492D);
-							continue;
-						}
-						if (flag5)
-						{
-							stringBuilder.Append(stringBuilder2);
-							continue;
-						}
-						if (flag4)
-						{
-							while (stringBuilder4.Length != 0 && stringBuilder4[stringBuilder4.Length - 1] == ' ')
-							{
-								stringBuilder4.Length--;
-							}
-						}
-						string text = stringBuilder3.ToString();
-						bool flag6 = false;
-						int result = -1;
-						if (int.TryParse(text, out result))
-						{
-							if (result >= 0 && result < list2.Count && TryResolveSymbol(list2[result], stringBuilder4.ToString(), stringBuilder5.ToString(), out var resolvedStr, str))
-							{
-								flag6 = true;
-								stringBuilder.Append(resolvedStr.RawText);
-							}
-						}
-						else
-						{
-							for (int j = 0; j < list.Count; j++)
-							{
-								if (list[j] == text)
-								{
-									if (TryResolveSymbol(list2[j], stringBuilder4.ToString(), stringBuilder5.ToString(), out var resolvedStr2, str))
-									{
-										flag6 = true;
-										stringBuilder.Append(resolvedStr2.RawText);
-									}
-									break;
-								}
-							}
-						}
-						if (!flag6)
-						{
-							Log.ErrorOnce(string.Concat("Could not resolve symbol \"", stringBuilder2, "\" for string \"") + str + "\".", str.GetHashCode() ^ stringBuilder2.ToString().GetHashCode() ^ 0x346E76FE);
-						}
-					}
-					else
-					{
-						stringBuilder.Append(c);
-					}
-				}
-				string translation = GenText.CapitalizeSentences(stringBuilder.ToString(), capitalizeFirstSentence: false);
-				translation = Find.ActiveLanguageWorker.PostProcessedKeyedTranslation(translation);
-				return translation;
+				TryResolveInner(str, 0, stringBuilder, list, list2);
+				string str2 = GenText.CapitalizeSentences(stringBuilder.ToString(), capitalizeFirstSentence: false);
+				str2 = Find.ActiveLanguageWorker.PostProcessed(str2);
+				return str2;
 			}
 			finally
 			{
 				if (flag)
 				{
-					working = false;
+					formatterWorking = false;
 				}
 			}
 		}
 
+		private static int TryResolveInner(TaggedString str, int strOffset, StringBuilder resultBuffer, List<string> argsLabels, List<object> argsObjects, bool recursive = false)
+		{
+			bool flag = false;
+			StringBuilder stringBuilder;
+			StringBuilder stringBuilder2;
+			StringBuilder stringBuilder3;
+			StringBuilder stringBuilder4;
+			StringBuilder stringBuilder5;
+			StringBuilder stringBuilder6;
+			if (symbolParserWorking)
+			{
+				stringBuilder = new StringBuilder();
+				stringBuilder2 = new StringBuilder();
+				stringBuilder3 = new StringBuilder();
+				stringBuilder4 = new StringBuilder();
+				stringBuilder5 = new StringBuilder();
+				stringBuilder6 = new StringBuilder();
+			}
+			else
+			{
+				flag = true;
+				symbolParserWorking = true;
+				stringBuilder = tmpSymbolBuffer;
+				stringBuilder2 = tmpSymbolBuffer_objectLabel;
+				stringBuilder3 = tmpSymbolBuffer_subSymbol;
+				stringBuilder4 = tmpSymbolBuffer_function;
+				stringBuilder5 = tmpSymbolBuffer_args;
+				stringBuilder6 = tmpSymbolBuffer_functionArgs;
+			}
+			int num = 0;
+			int num2 = strOffset;
+			while (num2 < str.Length)
+			{
+				char c = str[num2];
+				if (c == '{')
+				{
+					stringBuilder.Length = 0;
+					stringBuilder4.Length = 0;
+					stringBuilder2.Length = 0;
+					stringBuilder3.Length = 0;
+					stringBuilder5.Length = 0;
+					stringBuilder6.Length = 0;
+					bool flag2 = false;
+					bool flag3 = false;
+					bool flag4 = false;
+					bool flag5 = false;
+					num2++;
+					bool flag6 = num2 < str.Length && str[num2] == '{';
+					if (!flag6)
+					{
+						bool flag7 = false;
+						int num3 = num2;
+						int num4 = 0;
+						while (num3 < str.Length)
+						{
+							char c2 = str[num3];
+							if (c2 == '{' || c2 == '}' || c2 == '?' || (c2 == ' ' && flag7))
+							{
+								break;
+							}
+							if (c2 != ' ')
+							{
+								flag7 = true;
+							}
+							if (c2 == ':')
+							{
+								flag5 = true;
+								break;
+							}
+							stringBuilder4.Append(c2);
+							num3++;
+							num4++;
+						}
+						if (flag5)
+						{
+							num2 = num3 + 1;
+							num += num4 + 1;
+						}
+					}
+					while (num2 < str.Length)
+					{
+						char c3 = str[num2];
+						if (c3 == '}')
+						{
+							flag2 = true;
+							num++;
+							break;
+						}
+						if (c3 == '{' && !flag6)
+						{
+							if (flag4 || flag5)
+							{
+								int num5 = TryResolveInner(str, num2, flag5 ? stringBuilder6 : stringBuilder5, argsLabels, argsObjects, recursive: true);
+								num2 += num5;
+								num += num5;
+							}
+							else
+							{
+								Log.ErrorOnce("Tried to use nested symbol for something but a symbol argument, this is not supported. For string: " + str, str.GetHashCode() ^ 0xB9D4932);
+							}
+						}
+						else
+						{
+							stringBuilder.Append(c3);
+							if (!flag5)
+							{
+								if (c3 == '_' && !flag3)
+								{
+									flag3 = true;
+								}
+								else if (c3 == '?' && !flag4)
+								{
+									flag4 = true;
+								}
+								else if (flag4)
+								{
+									stringBuilder5.Append(c3);
+								}
+								else if (flag3)
+								{
+									stringBuilder3.Append(c3);
+								}
+								else
+								{
+									stringBuilder2.Append(c3);
+								}
+							}
+							else
+							{
+								stringBuilder6.Append(c3);
+							}
+						}
+						num2++;
+						num++;
+					}
+					if (!flag2)
+					{
+						Log.ErrorOnce("Could not find matching '}' in \"" + str + "\".", str.GetHashCode() ^ 0xB9D492D);
+					}
+					else if (flag6)
+					{
+						resultBuffer.Append(stringBuilder);
+					}
+					else if (flag5)
+					{
+						resultBuffer.Append(ResolveFunction(stringBuilder4.ToString(), stringBuilder6.ToString(), str));
+					}
+					else
+					{
+						if (flag4)
+						{
+							while (stringBuilder3.Length != 0 && stringBuilder3[stringBuilder3.Length - 1] == ' ')
+							{
+								stringBuilder3.Length--;
+							}
+						}
+						string text = stringBuilder2.ToString();
+						bool flag8 = false;
+						int result = -1;
+						if (int.TryParse(text, out result))
+						{
+							if (result >= 0 && result < argsObjects.Count && TryResolveSymbol(argsObjects[result], stringBuilder3.ToString(), stringBuilder5.ToString(), out var resolvedStr, str))
+							{
+								flag8 = true;
+								resultBuffer.Append(resolvedStr.RawText);
+							}
+						}
+						else
+						{
+							for (int i = 0; i < argsLabels.Count; i++)
+							{
+								if (argsLabels[i] == text)
+								{
+									if (TryResolveSymbol(argsObjects[i], stringBuilder3.ToString(), stringBuilder5.ToString(), out var resolvedStr2, str))
+									{
+										flag8 = true;
+										resultBuffer.Append(resolvedStr2.RawText);
+									}
+									break;
+								}
+							}
+							for (int j = 0; j < argsLabels.Count; j++)
+							{
+								if (argsLabels[j] == text + "_" + stringBuilder3 && argsObjects[j] is Gender gender)
+								{
+									flag8 = true;
+									resultBuffer.Append(ResolveGenderSymbol(gender, animal: false, stringBuilder5.ToString(), str));
+									break;
+								}
+							}
+						}
+						if (!flag8)
+						{
+							Log.ErrorOnce("Could not resolve symbol \"" + stringBuilder?.ToString() + "\" for string \"" + str + "\".", str.GetHashCode() ^ stringBuilder.ToString().GetHashCode() ^ 0x346E76FE);
+						}
+					}
+					if (recursive)
+					{
+						break;
+					}
+				}
+				else
+				{
+					resultBuffer.Append(c);
+				}
+				num2++;
+				num++;
+			}
+			if (flag)
+			{
+				symbolParserWorking = false;
+			}
+			return num;
+		}
+
 		private static bool TryResolveSymbol(object obj, string subSymbol, string symbolArgs, out TaggedString resolvedStr, string fullStringForReference)
 		{
-			Pawn pawn = obj as Pawn;
-			if (pawn != null)
+			if (obj is Pawn pawn)
 			{
 				switch (subSymbol)
 				{
@@ -202,8 +321,16 @@ namespace Verse
 					resolvedStr = ((pawn.Name != null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.Name.ToStringFull, pawn.gender, plural: false, name: true).ApplyTag(TagType.Name) : ((TaggedString)pawn.KindLabelDefinite()));
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 					return true;
+				case "parentage":
+					resolvedStr = pawn.GetParentage();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
 				case "label":
 					resolvedStr = pawn.LabelNoCountColored;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelNoParenthesis":
+					resolvedStr = pawn.LabelNoParenthesis;
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 					return true;
 				case "labelShort":
@@ -236,6 +363,10 @@ namespace Verse
 					return true;
 				case "objective":
 					resolvedStr = pawn.gender.GetObjective();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "genderNoun":
+					resolvedStr = pawn.gender.GetGenderNoun();
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 					return true;
 				case "factionName":
@@ -295,7 +426,7 @@ namespace Verse
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 					return true;
 				case "kindBase":
-					resolvedStr = pawn.kindDef.label;
+					resolvedStr = GenLabel.BestKindLabel(pawn.kindDef, pawn.gender);
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 					return true;
 				case "kindBaseDef":
@@ -307,7 +438,7 @@ namespace Verse
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 					return true;
 				case "kindBasePlural":
-					resolvedStr = pawn.kindDef.GetLabelPlural();
+					resolvedStr = GenLabel.BestKindLabel(pawn.kindDef, pawn.gender, plural: true, 2);
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 					return true;
 				case "kindBasePluralDef":
@@ -346,16 +477,20 @@ namespace Verse
 					resolvedStr = pawn.ageTracker.CurLifeStage.Adjective;
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 					return true;
+				case "legalStatus":
+					resolvedStr = pawn.LegalStatus;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
 				case "title":
 					resolvedStr = ((pawn.story != null) ? pawn.story.Title : "");
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 					return true;
 				case "titleDef":
-					resolvedStr = ((pawn.story != null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.story.Title, pawn.gender) : "");
+					resolvedStr = ((pawn.story != null) ? Find.ActiveLanguageWorker.WithDefiniteArticle(pawn.story.Title, ResolveGender(pawn.story.Title, pawn.gender)) : "");
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 					return true;
 				case "titleIndef":
-					resolvedStr = ((pawn.story != null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.story.Title, pawn.gender) : "");
+					resolvedStr = ((pawn.story != null) ? Find.ActiveLanguageWorker.WithIndefiniteArticle(pawn.story.Title, ResolveGender(pawn.story.Title, pawn.gender)) : "");
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 					return true;
 				case "bestRoyalTitle":
@@ -386,6 +521,9 @@ namespace Verse
 					resolvedStr = pawn.ageTracker.AgeBiologicalYears.ToString();
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 					return true;
+				case "age_numCase":
+					resolvedStr = ResolveNumCase(pawn.ageTracker.AgeBiologicalYears.ToString(), symbolArgs, fullStringForReference);
+					return true;
 				case "chronologicalAge":
 					resolvedStr = pawn.ageTracker.AgeChronologicalYears.ToString();
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
@@ -413,16 +551,21 @@ namespace Verse
 				case "gender":
 					resolvedStr = ResolveGenderSymbol(pawn.gender, pawn.RaceProps.Animal, symbolArgs, fullStringForReference);
 					return true;
+				case "genderResolved":
+					resolvedStr = ResolveGenderSymbol((pawn.Name != null) ? pawn.gender : ResolveGender(pawn.KindLabel, pawn.gender), pawn.RaceProps.Animal, symbolArgs, fullStringForReference);
+					return true;
 				case "humanlike":
 					resolvedStr = ResolveHumanlikeSymbol(pawn.RaceProps.Humanlike, symbolArgs, fullStringForReference);
+					return true;
+				case "xenotype":
+					resolvedStr = pawn.genes.XenotypeLabel;
 					return true;
 				default:
 					resolvedStr = "";
 					return false;
 				}
 			}
-			Thing thing = obj as Thing;
-			if (thing != null)
+			if (obj is Thing thing)
 			{
 				switch (subSymbol)
 				{
@@ -432,6 +575,22 @@ namespace Verse
 					return true;
 				case "label":
 					resolvedStr = thing.Label;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelCap":
+					resolvedStr = thing.LabelCap;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelNoParenthesis":
+					resolvedStr = thing.LabelNoParenthesis;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelNoParenthesisDef":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(thing.LabelNoParenthesis);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelNoParenthesisIndef":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(thing.LabelNoParenthesis);
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 					return true;
 				case "labelPlural":
@@ -448,6 +607,14 @@ namespace Verse
 					return true;
 				case "labelShort":
 					resolvedStr = thing.LabelShort;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelShortDef":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(thing.LabelShort);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelShortIndef":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(thing.LabelShort);
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 					return true;
 				case "definite":
@@ -477,14 +644,25 @@ namespace Verse
 				case "gender":
 					resolvedStr = ResolveGenderSymbol(LanguageDatabase.activeLanguage.ResolveGender(thing.LabelNoCount), animal: false, symbolArgs, fullStringForReference);
 					return true;
+				case "quality":
+				{
+					resolvedStr = (thing.TryGetQuality(out var qc) ? qc.GetLabel() : "");
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				}
 				default:
 					resolvedStr = "";
 					return false;
 				}
 			}
-			Hediff hediff = obj as Hediff;
-			if (hediff != null)
+			if (obj is Hediff hediff)
 			{
+				if (subSymbol != null && subSymbol.Length == 0)
+				{
+					resolvedStr = hediff.Label;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				}
 				if (subSymbol == "label")
 				{
 					resolvedStr = hediff.Label;
@@ -498,8 +676,7 @@ namespace Verse
 					return true;
 				}
 			}
-			WorldObject worldObject = obj as WorldObject;
-			if (worldObject != null)
+			if (obj is WorldObject worldObject)
 			{
 				switch (subSymbol)
 				{
@@ -509,6 +686,10 @@ namespace Verse
 					return true;
 				case "label":
 					resolvedStr = worldObject.Label;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelCap":
+					resolvedStr = worldObject.LabelCap;
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 					return true;
 				case "labelPlural":
@@ -555,8 +736,7 @@ namespace Verse
 					return false;
 				}
 			}
-			Faction faction = obj as Faction;
-			if (faction != null)
+			if (obj is Faction faction)
 			{
 				switch (subSymbol)
 				{
@@ -617,11 +797,81 @@ namespace Verse
 					return false;
 				}
 			}
-			Def def = obj as Def;
-			if (def != null)
+			if (obj is Ideo ideo)
 			{
-				PawnKindDef pawnKindDef = def as PawnKindDef;
-				if (pawnKindDef != null)
+				switch (subSymbol)
+				{
+				case "":
+					resolvedStr = ideo.name.ApplyTag(ideo);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "name":
+					resolvedStr = ideo.name.ApplyTag(ideo);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "memberName":
+					resolvedStr = ideo.memberName;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "memberNamePlural":
+					resolvedStr = ideo.MemberNamePlural;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "memberNameIndef":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(ideo.memberName);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "memberNameDef":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(ideo.memberName);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "adjective":
+					resolvedStr = ideo.adjective;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				default:
+					resolvedStr = "";
+					return false;
+				}
+			}
+			if (obj is Precept precept)
+			{
+				switch (subSymbol)
+				{
+				case "":
+				case "label":
+				case "name":
+					resolvedStr = precept.Label;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelIndef":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(precept.Label);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelCap":
+					resolvedStr = precept.LabelCap;
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelCapIndef":
+					resolvedStr = Find.ActiveLanguageWorker.WithIndefiniteArticle(precept.Label).CapitalizeFirst();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelDef":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(precept.Label, plural: false, !precept.usesDefiniteArticle);
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "labelCapDef":
+					resolvedStr = Find.ActiveLanguageWorker.WithDefiniteArticle(precept.Label, plural: false, !precept.usesDefiniteArticle).CapitalizeFirst();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				default:
+					resolvedStr = "";
+					return false;
+				}
+			}
+			if (obj is Def def)
+			{
+				if (def is PawnKindDef pawnKindDef)
 				{
 					switch (subSymbol)
 					{
@@ -689,8 +939,7 @@ namespace Verse
 					return false;
 				}
 			}
-			RoyalTitle royalTitle = obj as RoyalTitle;
-			if (royalTitle != null)
+			if (obj is RoyalTitle royalTitle)
 			{
 				if (subSymbol == null || subSymbol.Length != 0)
 				{
@@ -713,8 +962,7 @@ namespace Verse
 				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 				return true;
 			}
-			string text2 = obj as string;
-			if (text2 != null)
+			if (obj is string text2)
 			{
 				switch (subSymbol)
 				{
@@ -757,33 +1005,53 @@ namespace Verse
 				case "gender":
 					resolvedStr = ResolveGenderSymbol(LanguageDatabase.activeLanguage.ResolveGender(text2), animal: false, symbolArgs, fullStringForReference);
 					return true;
+				case "replace":
+					resolvedStr = ResolveReplace(text2, symbolArgs);
+					return true;
+				case "numCase":
+					resolvedStr = ResolveNumCase(text2, symbolArgs, fullStringForReference);
+					return true;
 				default:
 					resolvedStr = "";
 					return false;
 				}
 			}
-			if (obj is int || obj is long)
+			if (obj is int || obj is long || obj is float)
 			{
-				int num = (int)((obj is int) ? ((int)obj) : ((long)obj));
-				if (subSymbol == null || subSymbol.Length != 0)
+				int num = (int)((obj is int) ? ((int)obj) : ((obj is float) ? ((int)(float)obj) : ((long)obj)));
+				float f = (obj as float?) ?? ((float)num);
+				switch (subSymbol)
 				{
-					if (!(subSymbol == "ordinal"))
-					{
-						if (subSymbol == "multiple")
-						{
-							resolvedStr = ResolveMultipleSymbol(num, symbolArgs, fullStringForReference);
-							return true;
-						}
-						resolvedStr = "";
-						return false;
-					}
+				case "":
+					resolvedStr = num.ToString();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "ordinal":
 					resolvedStr = Find.ActiveLanguageWorker.OrdinalNumber(num).ToString();
 					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
 					return true;
+				case "multiple":
+					resolvedStr = ResolveMultipleSymbol(num, symbolArgs, fullStringForReference);
+					return true;
+				case "numCase":
+					resolvedStr = ResolveNumCase(num.ToString(), symbolArgs, fullStringForReference);
+					return true;
+				case "percentage":
+					resolvedStr = f.ToStringPercent();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "percentageEmptyZero":
+					resolvedStr = f.ToStringPercentEmptyZero();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				case "time":
+					resolvedStr = num.ToStringTicksToPeriod();
+					EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
+					return true;
+				default:
+					resolvedStr = "";
+					return false;
 				}
-				resolvedStr = num.ToString();
-				EnsureNoArgs(subSymbol, symbolArgs, fullStringForReference);
-				return true;
 			}
 			if (obj is TaggedString)
 			{
@@ -815,7 +1083,7 @@ namespace Verse
 			}
 		}
 
-		private static string ResolveGenderSymbol(Gender gender, bool animal, string args, string fullStringForReference)
+		public static string ResolveGenderSymbol(Gender gender, bool animal, string args, string fullStringForReference)
 		{
 			if (args.NullOrEmpty())
 			{
@@ -873,12 +1141,17 @@ namespace Verse
 			return "";
 		}
 
-		private static int GetArgsCount(string args)
+		public static Gender ResolveGender(string word, Gender defaultGender)
+		{
+			return LanguageDatabase.activeLanguage.ResolveGender(word, null, defaultGender);
+		}
+
+		public static int GetArgsCount(string args, char delimiter = ':')
 		{
 			int num = 1;
 			for (int i = 0; i < args.Length; i++)
 			{
-				if (args[i] == ':')
+				if (args[i] == delimiter)
 				{
 					num++;
 				}
@@ -886,13 +1159,13 @@ namespace Verse
 			return num;
 		}
 
-		private static string GetArg(string args, int argIndex)
+		public static string GetArg(string args, int argIndex, char delimiter = ':')
 		{
 			tmpArg.Length = 0;
 			int num = 0;
 			foreach (char c in args)
 			{
-				if (c == ':')
+				if (c == delimiter)
 				{
 					num++;
 				}
@@ -950,6 +1223,95 @@ namespace Verse
 				}
 			}
 			return "";
+		}
+
+		public static string ResolveNumCase(string number, string args, string fullStringForReference)
+		{
+			LanguageWorker activeLanguageWorker = Find.ActiveLanguageWorker;
+			int num = LanguageDatabase.activeLanguage.info.totalNumCaseCount ?? activeLanguageWorker.TotalNumCaseCount;
+			if (GetArgsCount(args) != num)
+			{
+				Log.Error("Invalid argument count for _numCase, expected " + num + " arguments. Full string: " + fullStringForReference);
+				return "";
+			}
+			numCaseArgs.Clear();
+			for (int i = 0; i < num; i++)
+			{
+				numCaseArgs.Add(GetArg(args, i));
+			}
+			if (float.TryParse(number, out var result))
+			{
+				return activeLanguageWorker.ResolveNumCase(result, numCaseArgs);
+			}
+			return "";
+		}
+
+		public static string ResolveReplace(string symbol, string args)
+		{
+			LanguageWorker activeLanguageWorker = Find.ActiveLanguageWorker;
+			int argsCount = GetArgsCount(args);
+			replaceArgs.Clear();
+			replaceArgs.Add(symbol);
+			for (int i = 0; i < argsCount; i++)
+			{
+				replaceArgs.Add(GetArg(args, i));
+			}
+			return activeLanguageWorker.ResolveReplace(replaceArgs);
+		}
+
+		public static string ResolveFunction(string name, string args, string fullStringForReference)
+		{
+			functionArgs.Clear();
+			int argsCount = GetArgsCount(args, ';');
+			for (int i = 0; i < argsCount; i++)
+			{
+				functionArgs.Add(GetArg(args, i, ';'));
+			}
+			return Find.ActiveLanguageWorker.ResolveFunction(name, functionArgs, fullStringForReference);
+		}
+
+		public static List<string> TryParseNumCase(string str)
+		{
+			int num = str.IndexOf("{0_numCase", StringComparison.Ordinal);
+			if (num != -1)
+			{
+				int i = num + 10;
+				bool flag = false;
+				bool flag2 = false;
+				string text = "";
+				for (; i < str.Length; i++)
+				{
+					if (str[i] == '?')
+					{
+						flag = true;
+						continue;
+					}
+					if (str[i] == '}')
+					{
+						flag2 = true;
+						break;
+					}
+					if (flag)
+					{
+						text += str[i];
+					}
+				}
+				if (!flag2)
+				{
+					return null;
+				}
+				int argsCount = GetArgsCount(text);
+				if (argsCount > 0)
+				{
+					List<string> list = new List<string>();
+					for (int j = 0; j < argsCount; j++)
+					{
+						list.Add(GetArg(text, j));
+					}
+					return list;
+				}
+			}
+			return null;
 		}
 	}
 }

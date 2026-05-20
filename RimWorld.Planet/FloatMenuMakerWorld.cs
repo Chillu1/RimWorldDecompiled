@@ -34,7 +34,7 @@ namespace RimWorld.Planet
 			return list;
 		}
 
-		public static List<FloatMenuOption> ChoicesAtFor(int tile, Caravan caravan)
+		public static List<FloatMenuOption> ChoicesAtFor(PlanetTile tile, Caravan caravan)
 		{
 			List<FloatMenuOption> list = new List<FloatMenuOption>();
 			List<WorldObject> allWorldObjects = Find.WorldObjects.AllWorldObjects;

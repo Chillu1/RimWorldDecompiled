@@ -21,7 +21,7 @@ namespace Verse
 			{
 				return true;
 			}
-			if (to.IsAssignableFrom(obj.GetType()))
+			if (to.IsInstanceOfType(obj))
 			{
 				return true;
 			}
@@ -33,7 +33,7 @@ namespace Verse
 			{
 				return true;
 			}
-			if (obj is string && typeof(Def).IsAssignableFrom(to))
+			if (obj is string && GenTypes.IsDef(to))
 			{
 				return true;
 			}
@@ -49,25 +49,21 @@ namespace Verse
 			{
 				return true;
 			}
-			if (to.IsGenericType && (to.GetGenericTypeDefinition() == typeof(IEnumerable<>) || to.GetGenericTypeDefinition() == typeof(List<>)) && to.GetGenericArguments().Length >= 1 && (!(to.GetGenericArguments()[0] == typeof(string)) || !(obj is string)))
+			if (to.IsGenericType && (to.GetGenericTypeDefinition() == typeof(IEnumerable<>) || to.GetGenericTypeDefinition() == typeof(List<>)) && to.GetGenericArguments().Length >= 1 && (!(to.GetGenericArguments()[0] == typeof(string)) || !(obj is string)) && obj is IEnumerable enumerable)
 			{
-				IEnumerable enumerable = obj as IEnumerable;
-				if (enumerable != null)
+				Type to2 = to.GetGenericArguments()[0];
+				bool flag = true;
+				foreach (object item in enumerable)
 				{
-					Type to2 = to.GetGenericArguments()[0];
-					bool flag = true;
-					foreach (object item in enumerable)
+					if (!CanConvert(item, to2))
 					{
-						if (!CanConvert(item, to2))
-						{
-							flag = false;
-							break;
-						}
+						flag = false;
+						break;
 					}
-					if (flag)
-					{
-						return true;
-					}
+				}
+				if (flag)
+				{
+					return true;
 				}
 			}
 			if (obj is IEnumerable && !(obj is string))
@@ -100,19 +96,18 @@ namespace Verse
 				}
 				return true;
 			}
-			IConvertible convertible = obj as IConvertible;
-			if (convertible == null)
+			if (!(obj is IConvertible obj2))
 			{
 				return false;
 			}
-			Type left = Nullable.GetUnderlyingType(to) ?? to;
-			if (left != typeof(bool) && left != typeof(byte) && left != typeof(char) && left != typeof(DateTime) && left != typeof(decimal) && left != typeof(double) && left != typeof(short) && left != typeof(int) && left != typeof(long) && left != typeof(sbyte) && left != typeof(float) && left != typeof(string) && left != typeof(ushort) && left != typeof(uint) && left != typeof(ulong))
+			Type type = Nullable.GetUnderlyingType(to) ?? to;
+			if (type != typeof(bool) && type != typeof(byte) && type != typeof(char) && type != typeof(DateTime) && type != typeof(decimal) && type != typeof(double) && type != typeof(short) && type != typeof(int) && type != typeof(long) && type != typeof(sbyte) && type != typeof(float) && type != typeof(string) && type != typeof(ushort) && type != typeof(uint) && type != typeof(ulong))
 			{
 				return false;
 			}
 			try
 			{
-				ConvertToPrimitive(convertible, to, null);
+				ConvertToPrimitive(obj2, to, null);
 			}
 			catch (FormatException)
 			{
@@ -158,7 +153,7 @@ namespace Verse
 				}
 				return ParseHelper.FromString(text, to);
 			}
-			if (text != null && typeof(Def).IsAssignableFrom(to))
+			if (text != null && GenTypes.IsDef(to))
 			{
 				if (text == "")
 				{
@@ -194,6 +189,10 @@ namespace Verse
 						return allFactionsListForReading[k];
 					}
 				}
+				if (text == "OfPlayer")
+				{
+					return Faction.OfPlayer;
+				}
 				return defaultValue;
 			}
 			if (CanConvertBetweenDataTypes(obj.GetType(), to))
@@ -224,31 +223,27 @@ namespace Verse
 					DirectXmlCrossRefLoader.Clear();
 				}
 			}
-			if (to.IsGenericType && (to.GetGenericTypeDefinition() == typeof(IEnumerable<>) || to.GetGenericTypeDefinition() == typeof(List<>)) && to.GetGenericArguments().Length >= 1 && (!(to.GetGenericArguments()[0] == typeof(string)) || !(obj is string)))
+			if (to.IsGenericType && (to.GetGenericTypeDefinition() == typeof(IEnumerable<>) || to.GetGenericTypeDefinition() == typeof(List<>)) && to.GetGenericArguments().Length >= 1 && (!(to.GetGenericArguments()[0] == typeof(string)) || !(obj is string)) && obj is IEnumerable enumerable)
 			{
-				IEnumerable enumerable = obj as IEnumerable;
-				if (enumerable != null)
+				Type type2 = to.GetGenericArguments()[0];
+				bool flag = true;
+				foreach (object item in enumerable)
 				{
-					Type type2 = to.GetGenericArguments()[0];
-					bool flag = true;
-					foreach (object item in enumerable)
+					if (!CanConvert(item, type2))
 					{
-						if (!CanConvert(item, type2))
-						{
-							flag = false;
-							break;
-						}
+						flag = false;
+						break;
 					}
-					if (flag)
+				}
+				if (flag)
+				{
+					IList list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(type2));
 					{
-						IList list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(type2));
+						foreach (object item2 in enumerable)
 						{
-							foreach (object item2 in enumerable)
-							{
-								list.Add(Convert(item2, type2));
-							}
-							return list;
+							list.Add(Convert(item2, type2));
 						}
+						return list;
 					}
 				}
 			}
@@ -293,14 +288,13 @@ namespace Verse
 				}
 				return Gen.YieldSingleNonGeneric(obj);
 			}
-			IConvertible convertible = obj as IConvertible;
-			if (convertible == null)
+			if (!(obj is IConvertible obj4))
 			{
 				return defaultValue;
 			}
 			try
 			{
-				return ConvertToPrimitive(convertible, to, defaultValue);
+				return ConvertToPrimitive(obj4, to, defaultValue);
 			}
 			catch (FormatException)
 			{
@@ -314,8 +308,7 @@ namespace Verse
 			{
 				return false;
 			}
-			string text = obj as string;
-			if (text == null || text.IndexOf('<') < 0 || text.IndexOf('>') < 0)
+			if (!(obj is string text) || text.IndexOf('<') < 0 || text.IndexOf('>') < 0)
 			{
 				return false;
 			}
@@ -330,64 +323,64 @@ namespace Verse
 		private static object ConvertToPrimitive(IConvertible obj, Type to, object defaultValue)
 		{
 			CultureInfo invariantCulture = CultureInfo.InvariantCulture;
-			Type left = Nullable.GetUnderlyingType(to) ?? to;
-			if (left == typeof(bool))
+			Type type = Nullable.GetUnderlyingType(to) ?? to;
+			if (type == typeof(bool))
 			{
 				return System.Convert.ToBoolean(obj, invariantCulture);
 			}
-			if (left == typeof(byte))
+			if (type == typeof(byte))
 			{
 				return System.Convert.ToByte(obj, invariantCulture);
 			}
-			if (left == typeof(char))
+			if (type == typeof(char))
 			{
 				return System.Convert.ToChar(obj, invariantCulture);
 			}
-			if (left == typeof(DateTime))
+			if (type == typeof(DateTime))
 			{
 				return System.Convert.ToDateTime(obj, invariantCulture);
 			}
-			if (left == typeof(decimal))
+			if (type == typeof(decimal))
 			{
 				return System.Convert.ToDecimal(obj, invariantCulture);
 			}
-			if (left == typeof(double))
+			if (type == typeof(double))
 			{
 				return System.Convert.ToDouble(obj, invariantCulture);
 			}
-			if (left == typeof(short))
+			if (type == typeof(short))
 			{
 				return System.Convert.ToInt16(obj, invariantCulture);
 			}
-			if (left == typeof(int))
+			if (type == typeof(int))
 			{
 				return System.Convert.ToInt32(obj, invariantCulture);
 			}
-			if (left == typeof(long))
+			if (type == typeof(long))
 			{
 				return System.Convert.ToInt64(obj, invariantCulture);
 			}
-			if (left == typeof(sbyte))
+			if (type == typeof(sbyte))
 			{
 				return System.Convert.ToSByte(obj, invariantCulture);
 			}
-			if (left == typeof(float))
+			if (type == typeof(float))
 			{
 				return System.Convert.ToSingle(obj, invariantCulture);
 			}
-			if (left == typeof(string))
+			if (type == typeof(string))
 			{
 				return System.Convert.ToString(obj, invariantCulture);
 			}
-			if (left == typeof(ushort))
+			if (type == typeof(ushort))
 			{
 				return System.Convert.ToUInt16(obj, invariantCulture);
 			}
-			if (left == typeof(uint))
+			if (type == typeof(uint))
 			{
 				return System.Convert.ToUInt32(obj, invariantCulture);
 			}
-			if (left == typeof(ulong))
+			if (type == typeof(ulong))
 			{
 				return System.Convert.ToUInt64(obj, invariantCulture);
 			}
@@ -409,21 +402,13 @@ namespace Verse
 
 		private static object ConvertBetweenDataTypes(object from, Type to)
 		{
-			if (from is IntRange)
+			if (from is IntRange intRange && to == typeof(FloatRange))
 			{
-				IntRange intRange = (IntRange)from;
-				if (to == typeof(FloatRange))
-				{
-					return new FloatRange(intRange.min, intRange.max);
-				}
+				return new FloatRange(intRange.min, intRange.max);
 			}
-			if (from is FloatRange)
+			if (from is FloatRange floatRange && to == typeof(IntRange))
 			{
-				FloatRange floatRange = (FloatRange)from;
-				if (to == typeof(IntRange))
-				{
-					return new IntRange(Mathf.RoundToInt(floatRange.min), Mathf.RoundToInt(floatRange.max));
-				}
+				return new IntRange(Mathf.RoundToInt(floatRange.min), Mathf.RoundToInt(floatRange.max));
 			}
 			return null;
 		}

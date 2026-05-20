@@ -18,10 +18,7 @@ namespace RimWorld
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
 			Toil toil = Toils_General.Wait(job.def.joyDuration);
 			toil.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
-			toil.tickAction = delegate
-			{
-				WaitTickAction();
-			};
+			toil.tickIntervalAction = WaitTickAction;
 			toil.AddFinishAction(delegate
 			{
 				JoyUtility.TryGainRecRoomThought(pawn);
@@ -29,6 +26,6 @@ namespace RimWorld
 			yield return toil;
 		}
 
-		protected abstract void WaitTickAction();
+		protected abstract void WaitTickAction(int delta);
 	}
 }

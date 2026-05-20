@@ -1,4 +1,5 @@
 using System;
+using LudeonTK;
 using RimWorld;
 using UnityEngine;
 
@@ -28,7 +29,7 @@ namespace Verse
 
 		public override void DrawWorker(Vector3 loc, Rot4 rot, ThingDef thingDef, Thing thing, float extraRotation)
 		{
-			if (shadowMesh != null && thingDef != null && shadowInfo != null && (Find.CurrentMap == null || !loc.ToIntVec3().InBounds(Find.CurrentMap) || !Find.CurrentMap.roofGrid.Roofed(loc.ToIntVec3())) && DebugViewSettings.drawShadows)
+			if (shadowMesh != null && thingDef != null && shadowInfo != null && (Find.CurrentMap == null || !Find.CurrentMap.Biome.disableShadows) && (Find.CurrentMap == null || !loc.ToIntVec3().InBounds(Find.CurrentMap) || !Find.CurrentMap.roofGrid.Roofed(loc.ToIntVec3())) && DebugViewSettings.drawShadows)
 			{
 				Vector3 position = loc + shadowInfo.offset;
 				position.y = AltitudeLayer.Shadows.AltitudeFor();
@@ -36,7 +37,7 @@ namespace Verse
 			}
 		}
 
-		public override void Print(SectionLayer layer, Thing thing)
+		public override void Print(SectionLayer layer, Thing thing, float extraRotation)
 		{
 			Vector3 center = thing.TrueCenter() + (shadowInfo.offset + new Vector3(GlobalShadowPosOffsetX, 0f, GlobalShadowPosOffsetZ)).RotatedBy(thing.Rotation);
 			center.y = AltitudeLayer.Shadows.AltitudeFor();
@@ -45,7 +46,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return string.Concat("Graphic_Shadow(", shadowInfo, ")");
+			return "Graphic_Shadow(" + shadowInfo?.ToString() + ")";
 		}
 	}
 }

@@ -15,6 +15,10 @@ namespace RimWorld
 
 		public bool skipThreatBigIfRaidBeacon;
 
+		public float spaceMtbDayFactor = 2f;
+
+		public float spaceMinSpacingDays = 2f;
+
 		public StorytellerCompProperties_RandomMain()
 		{
 			compClass = typeof(StorytellerComp_RandomMain);

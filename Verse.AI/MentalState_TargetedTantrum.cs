@@ -9,26 +9,26 @@ namespace Verse.AI
 
 		private static List<Thing> tmpThings = new List<Thing>();
 
-		public override void MentalStateTick()
+		public override void MentalStateTick(int delta)
 		{
-			if (base.target == null || base.target.Destroyed)
+			if (target == null || target.Destroyed)
 			{
 				RecoverFromState();
 			}
-			else if (!base.target.Spawned || !pawn.CanReach(base.target, PathEndMode.Touch, Danger.Deadly))
+			else if (!target.Spawned || !pawn.CanReach(target, PathEndMode.Touch, Danger.Deadly))
 			{
-				Thing target = base.target;
+				Thing thing = target;
 				if (!TryFindNewTarget())
 				{
 					RecoverFromState();
 					return;
 				}
-				Messages.Message("MessageTargetedTantrumChangedTarget".Translate(pawn.LabelShort, target.Label, base.target.Label, pawn.Named("PAWN"), target.Named("OLDTARGET"), base.target.Named("TARGET")).AdjustedFor(pawn), pawn, MessageTypeDefOf.NegativeEvent);
-				base.MentalStateTick();
+				Messages.Message("MessageTargetedTantrumChangedTarget".Translate(pawn.LabelShort, thing.Label, target.Label, pawn.Named("PAWN"), thing.Named("OLDTARGET"), target.Named("TARGET")).AdjustedFor(pawn), pawn, MessageTypeDefOf.NegativeEvent);
+				base.MentalStateTick(delta);
 			}
 			else
 			{
-				base.MentalStateTick();
+				base.MentalStateTick(delta);
 			}
 		}
 
@@ -46,7 +46,7 @@ namespace Verse.AI
 			return result;
 		}
 
-		public override string GetBeginLetterText()
+		public override TaggedString GetBeginLetterText()
 		{
 			if (target == null)
 			{

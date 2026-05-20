@@ -9,6 +9,8 @@ namespace RimWorld
 	{
 		protected List<Pawn> assignedPawns = new List<Pawn>();
 
+		protected List<Pawn> uninstalledAssignedPawns = new List<Pawn>();
+
 		public CompProperties_AssignableToPawn Props => (CompProperties_AssignableToPawn)props;
 
 		public int MaxAssignedPawnsCount => Props.maxAssignedPawnsCount;
@@ -50,6 +52,8 @@ namespace RimWorld
 
 		public bool HasFreeSlot => assignedPawns.Count < Props.maxAssignedPawnsCount;
 
+		public int TotalSlots => Props.maxAssignedPawnsCount;
+
 		protected virtual bool CanDrawOverlayForPawn(Pawn pawn)
 		{
 			return true;
@@ -57,14 +61,19 @@ namespace RimWorld
 
 		public override void DrawGUIOverlay()
 		{
-			if (Props.drawAssignmentOverlay && (Props.drawUnownedAssignmentOverlay || assignedPawns.Any()) && Find.CameraDriver.CurrentZoom == CameraZoomRange.Closest && PlayerCanSeeAssignments)
+			if (!Props.drawAssignmentOverlay || (!Props.drawUnownedAssignmentOverlay && !assignedPawns.Any()) || Find.CameraDriver.CurrentZoom != CameraZoomRange.Closest || !PlayerCanSeeAssignments)
 			{
-				Color defaultThingLabelColor = GenMapUI.DefaultThingLabelColor;
-				if (!assignedPawns.Any())
-				{
-					GenMapUI.DrawThingLabel(parent, "Unowned".Translate(), defaultThingLabelColor);
-				}
-				if (assignedPawns.Count == 1 && CanDrawOverlayForPawn(assignedPawns[0]))
+				return;
+			}
+			Color defaultThingLabelColor = GenMapUI.DefaultThingLabelColor;
+			if (!assignedPawns.Any())
+			{
+				GenMapUI.DrawThingLabel(parent, "Unowned".Translate(), defaultThingLabelColor);
+			}
+			if (assignedPawns.Count == 1)
+			{
+				Pawn pawn = assignedPawns[0];
+				if (CanDrawOverlayForPawn(pawn) && (!pawn.RaceProps.Animal || Prefs.AnimalNameMode.ShouldDisplayAnimalName(pawn)))
 				{
 					GenMapUI.DrawThingLabel(parent, assignedPawns[0].LabelShort, defaultThingLabelColor);
 				}
@@ -73,6 +82,7 @@ namespace RimWorld
 
 		protected virtual void SortAssignedPawns()
 		{
+			assignedPawns.RemoveAll((Pawn x) => x == null);
 			assignedPawns.SortBy((Pawn x) => x.thingIDNumber);
 		}
 
@@ -91,6 +101,7 @@ namespace RimWorld
 			{
 				assignedPawns.Remove(pawn);
 			}
+			uninstalledAssignedPawns.Remove(pawn);
 			SortAssignedPawns();
 		}
 
@@ -99,8 +110,14 @@ namespace RimWorld
 			return AcceptanceReport.WasAccepted;
 		}
 
+		public virtual bool IdeoligionForbids(Pawn pawn)
+		{
+			return false;
+		}
+
 		public virtual void TryAssignPawn(Pawn pawn)
 		{
+			uninstalledAssignedPawns.Remove(pawn);
 			if (!assignedPawns.Contains(pawn))
 			{
 				assignedPawns.Add(pawn);
@@ -108,11 +125,15 @@ namespace RimWorld
 			}
 		}
 
-		public virtual void TryUnassignPawn(Pawn pawn, bool sort = true)
+		public virtual void TryUnassignPawn(Pawn pawn, bool sort = true, bool uninstall = false)
 		{
 			if (assignedPawns.Contains(pawn))
 			{
 				assignedPawns.Remove(pawn);
+				if (uninstall && pawn != null && !uninstalledAssignedPawns.Contains(pawn))
+				{
+					uninstalledAssignedPawns.Add(pawn);
+				}
 				if (sort)
 				{
 					SortAssignedPawns();
@@ -153,6 +174,10 @@ namespace RimWorld
 					Find.WindowStack.Add(new Dialog_AssignBuildingOwner(this));
 				};
 				command_Action.hotKey = KeyBindingDefOf.Misc4;
+				if (!Props.noAssignablePawnsDesc.NullOrEmpty() && !AssigningCandidates.Any())
+				{
+					command_Action.Disable(Props.noAssignablePawnsDesc);
+				}
 				yield return command_Action;
 			}
 		}
@@ -161,18 +186,53 @@ namespace RimWorld
 		{
 			base.PostExposeData();
 			Scribe_Collections.Look(ref assignedPawns, "assignedPawns", LookMode.Reference);
+			Scribe_Collections.Look(ref uninstalledAssignedPawns, "uninstalledAssignedPawns", LookMode.Reference);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				assignedPawns.RemoveAll((Pawn x) => x == null);
+				uninstalledAssignedPawns.RemoveAll((Pawn x) => x == null);
 			}
 		}
 
-		public override void PostDeSpawn(Map map)
+		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
+		{
+			if (mode != DestroyMode.WillReplace)
+			{
+				for (int num = assignedPawns.Count - 1; num >= 0; num--)
+				{
+					TryUnassignPawn(assignedPawns[num], sort: false, !parent.DestroyedOrNull());
+				}
+			}
+		}
+
+		public override void PostSpawnSetup(bool respawningAfterLoad)
+		{
+			base.PostSpawnSetup(respawningAfterLoad);
+			for (int num = uninstalledAssignedPawns.Count - 1; num >= 0; num--)
+			{
+				Pawn pawn = uninstalledAssignedPawns[num];
+				if (CanSetUninstallAssignedPawn(pawn))
+				{
+					TryAssignPawn(pawn);
+				}
+			}
+			uninstalledAssignedPawns.Clear();
+		}
+
+		public override void PostSwapMap()
 		{
 			for (int num = assignedPawns.Count - 1; num >= 0; num--)
 			{
-				TryUnassignPawn(assignedPawns[num], sort: false);
+				if (assignedPawns[num].DestroyedOrNull() || !assignedPawns[num].SpawnedOrAnyParentSpawned)
+				{
+					TryUnassignPawn(assignedPawns[num]);
+				}
 			}
+		}
+
+		protected virtual bool CanSetUninstallAssignedPawn(Pawn pawn)
+		{
+			return false;
 		}
 	}
 }

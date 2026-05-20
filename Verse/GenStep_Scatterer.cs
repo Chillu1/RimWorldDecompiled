@@ -20,35 +20,76 @@ namespace Verse
 
 		public int minDistToPlayerStart;
 
+		public float minDistToPlayerStartPct;
+
 		public int minEdgeDist;
+
+		public float minEdgeDistPct;
 
 		public int extraNoBuildEdgeDist;
 
 		public List<ScattererValidator> validators = new List<ScattererValidator>();
 
+		public List<ScattererValidator> fallbackValidators = new List<ScattererValidator>();
+
 		public bool allowInWaterBiome = true;
 
 		public bool allowFoggedPositions = true;
+
+		public bool allowRoofed = true;
+
+		public bool onlyOnStartingMap;
+
+		public float minPollution;
+
+		public bool allowMechanoidDatacoreReadOrLost = true;
+
+		public bool isJunk;
 
 		public bool warnOnFail = true;
 
 		[Unsaved(false)]
 		protected List<IntVec3> usedSpots = new List<IntVec3>();
 
+		[Unsaved(false)]
+		protected bool useFallback;
+
 		private const int ScatterNearPlayerRadius = 20;
+
+		private bool HasFallbackValidators
+		{
+			get
+			{
+				if (fallbackValidators != null)
+				{
+					return fallbackValidators.Count > 0;
+				}
+				return false;
+			}
+		}
 
 		public override void Generate(Map map, GenStepParams parms)
 		{
-			if (!allowInWaterBiome && map.TileInfo.WaterCovered)
+			useFallback = false;
+			if (ShouldSkipMap(map))
 			{
 				return;
 			}
+			usedSpots.Clear();
 			int num = CalculateFinalCount(map);
 			for (int i = 0; i < num; i++)
 			{
 				if (!TryFindScatterCell(map, out var result))
 				{
-					return;
+					if (!HasFallbackValidators)
+					{
+						return;
+					}
+					useFallback = true;
+					if (!TryFindScatterCell(map, out result))
+					{
+						return;
+					}
 				}
 				ScatterAt(result, map, parms);
 				usedSpots.Add(result);
@@ -56,11 +97,32 @@ namespace Verse
 			usedSpots.Clear();
 		}
 
+		protected virtual bool ShouldSkipMap(Map map)
+		{
+			if (!allowInWaterBiome && map.TileInfo.WaterCovered)
+			{
+				return true;
+			}
+			if (onlyOnStartingMap && !map.IsStartingMap)
+			{
+				return true;
+			}
+			if (ModsConfig.BiotechActive && map.TileInfo.pollution < minPollution)
+			{
+				return true;
+			}
+			if (ModsConfig.BiotechActive && Find.History.mechanoidDatacoreReadOrLost && !allowMechanoidDatacoreReadOrLost)
+			{
+				return true;
+			}
+			return false;
+		}
+
 		protected virtual bool TryFindScatterCell(Map map, out IntVec3 result)
 		{
 			if (nearMapCenter)
 			{
-				if (RCellFinder.TryFindRandomCellNearWith(map.Center, (IntVec3 x) => CanScatterAt(x, map), map, out result, 3))
+				if (RCellFinder.TryFindRandomCellNearTheCenterOfTheMapWith((IntVec3 x) => CanScatterAt(x, map), map, out result))
 				{
 					return true;
 				}
@@ -79,7 +141,14 @@ namespace Verse
 			}
 			if (warnOnFail)
 			{
-				Log.Warning("Scatterer " + ToString() + " could not find cell to generate at.");
+				if (HasFallbackValidators && !useFallback)
+				{
+					Log.Warning("Scatterer " + ToString() + " from def " + def.defName + " could not find cell to generate at, trying fallback validators.");
+				}
+				else
+				{
+					Log.Warning("Scatterer " + ToString() + " from def " + def.defName + " could not find cell to generate at.");
+				}
 			}
 			return false;
 		}
@@ -88,6 +157,13 @@ namespace Verse
 
 		protected virtual bool CanScatterAt(IntVec3 loc, Map map)
 		{
+			foreach (LayoutStructureSketch layoutStructureSketch in map.layoutStructureSketches)
+			{
+				if (layoutStructureSketch.layoutSketch.OccupiedRect.Contains(loc))
+				{
+					return false;
+				}
+			}
 			if (extraNoBuildEdgeDist > 0 && loc.CloseToEdge(map, extraNoBuildEdgeDist + 10))
 			{
 				return false;
@@ -96,13 +172,24 @@ namespace Verse
 			{
 				return false;
 			}
-			if (NearUsedSpot(loc, minSpacing))
+			if (minEdgeDistPct > 0f && loc.CloseToEdge(map, (int)(minEdgeDistPct * (float)Mathf.Min(map.Size.x, map.Size.z))))
 			{
 				return false;
 			}
-			if ((map.Center - loc).LengthHorizontalSquared < minDistToPlayerStart * minDistToPlayerStart)
+			if (NearUsedSpot(loc, CalculateFinalMinSpacing(map)))
 			{
 				return false;
+			}
+			if (!useFallback)
+			{
+				if (minDistToPlayerStart > 0 && (map.Center - loc).LengthHorizontalSquared < minDistToPlayerStart * minDistToPlayerStart)
+				{
+					return false;
+				}
+				if (minDistToPlayerStartPct > 0f && (map.Center - loc).LengthHorizontal < minDistToPlayerStartPct * (float)Mathf.Min(map.Size.x, map.Size.z))
+				{
+					return false;
+				}
 			}
 			if (spotMustBeStandable && !loc.Standable(map))
 			{
@@ -112,11 +199,28 @@ namespace Verse
 			{
 				return false;
 			}
-			if (validators != null)
+			if (!allowRoofed && loc.Roofed(map))
 			{
-				for (int i = 0; i < validators.Count; i++)
+				return false;
+			}
+			if (useFallback)
+			{
+				if (fallbackValidators != null)
 				{
-					if (!validators[i].Allows(loc, map))
+					for (int i = 0; i < fallbackValidators.Count; i++)
+					{
+						if (!fallbackValidators[i].Allows(loc, map))
+						{
+							return false;
+						}
+					}
+				}
+			}
+			else if (validators != null)
+			{
+				for (int j = 0; j < validators.Count; j++)
+				{
+					if (!validators[j].Allows(loc, map))
 					{
 						return false;
 					}
@@ -137,13 +241,26 @@ namespace Verse
 			return false;
 		}
 
-		protected int CalculateFinalCount(Map map)
+		protected virtual int CalculateFinalCount(Map map)
 		{
 			if (count < 0)
 			{
-				return CountFromPer10kCells(countPer10kCellsRange.RandomInRange, map);
+				return Mathf.RoundToInt((float)CountFromPer10kCells(countPer10kCellsRange.RandomInRange, map) * GetPlacementFactor(map));
 			}
-			return count;
+			return Mathf.RoundToInt((float)count * GetPlacementFactor(map));
+		}
+
+		protected virtual float GetPlacementFactor(Map map)
+		{
+			float num = 1f;
+			if (isJunk)
+			{
+				foreach (TileMutatorDef mutator in map.TileInfo.Mutators)
+				{
+					num *= mutator.junkDensityFactor;
+				}
+			}
+			return num;
 		}
 
 		public static int CountFromPer10kCells(float countPer10kCells, Map map, int mapSize = -1)
@@ -154,6 +271,16 @@ namespace Verse
 			}
 			int num = Mathf.RoundToInt(10000f / countPer10kCells);
 			return Mathf.RoundToInt((float)(mapSize * mapSize) / (float)num);
+		}
+
+		public virtual float CalculateFinalMinSpacing(Map map)
+		{
+			float placementFactor = GetPlacementFactor(map);
+			if (placementFactor <= 0f)
+			{
+				return 0f;
+			}
+			return minSpacing / placementFactor;
 		}
 
 		public void ForceScatterAt(IntVec3 loc, Map map)

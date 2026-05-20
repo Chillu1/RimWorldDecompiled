@@ -40,7 +40,7 @@ namespace RimWorld
 				else
 				{
 					scrollPosition = Vector2.zero;
-					GUI.BeginGroup(rect);
+					Widgets.BeginGroup(rect);
 				}
 				if (!Prefs.ResourceReadoutCategorized)
 				{
@@ -56,7 +56,7 @@ namespace RimWorld
 				}
 				else
 				{
-					GUI.EndGroup();
+					Widgets.EndGroup();
 				}
 			}
 		}
@@ -78,7 +78,7 @@ namespace RimWorld
 
 		private void DoReadoutSimple(Rect rect, float outRectHeight)
 		{
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			Text.Anchor = TextAnchor.MiddleLeft;
 			float num = 0f;
 			foreach (KeyValuePair<ThingDef, int> allCountedAmount in Find.CurrentMap.resourceCounter.AllCountedAmounts)
@@ -95,7 +95,7 @@ namespace RimWorld
 			}
 			Text.Anchor = TextAnchor.UpperLeft;
 			lastDrawnHeight = num;
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		public void DrawResourceSimple(Rect rect, ThingDef thingDef)
@@ -114,8 +114,8 @@ namespace RimWorld
 			GUI.color = color;
 			if (Mouse.IsOver(rect))
 			{
-				TaggedString str = thingDef.LabelCap + ": " + thingDef.description.CapitalizeFirst();
-				TooltipHandler.TipRegion(rect, str);
+				TaggedString taggedString = thingDef.LabelCap + ": " + thingDef.description.CapitalizeFirst();
+				TooltipHandler.TipRegion(rect, taggedString);
 			}
 		}
 	}

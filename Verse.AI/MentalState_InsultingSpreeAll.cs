@@ -26,17 +26,17 @@ namespace Verse.AI
 			ChooseNextTarget();
 		}
 
-		public override void MentalStateTick()
+		public override void MentalStateTick(int delta)
 		{
 			if (target != null && !InsultingSpreeMentalStateUtility.CanChaseAndInsult(pawn, target))
 			{
 				ChooseNextTarget();
 			}
-			if (pawn.IsHashIntervalTick(250) && (target == null || insultedTargetAtLeastOnce))
+			if (pawn.IsHashIntervalTick(250, delta) && (target == null || insultedTargetAtLeastOnce))
 			{
 				ChooseNextTarget();
 			}
-			base.MentalStateTick();
+			base.MentalStateTick(delta);
 		}
 
 		private void ChooseNextTarget()

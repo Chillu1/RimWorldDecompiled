@@ -76,6 +76,7 @@ namespace RimWorld
 		{
 			bill.deleted = true;
 			bills.Remove(bill);
+			billGiver.Notify_BillDeleted(bill);
 		}
 
 		public void Clear()
@@ -100,7 +101,9 @@ namespace RimWorld
 			{
 				if (!bills[num].CompletableEver)
 				{
-					bills.Remove(bills[num]);
+					Bill bill = bills[num];
+					bills.Remove(bill);
+					billGiver.Notify_BillDeleted(bill);
 				}
 			}
 		}
@@ -123,9 +126,9 @@ namespace RimWorld
 				{
 					Log.Error("Some bills had null recipe after loading.");
 				}
-				for (int i = 0; i < bills.Count; i++)
+				for (int num = 0; num < bills.Count; num++)
 				{
-					bills[i].billStack = this;
+					bills[num].billStack = this;
 				}
 			}
 		}
@@ -133,7 +136,7 @@ namespace RimWorld
 		public Bill DoListing(Rect rect, Func<List<FloatMenuOption>> recipeOptionsMaker, ref Vector2 scrollPosition, ref float viewHeight)
 		{
 			Bill result = null;
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			Text.Font = GameFont.Small;
 			if (Count < 15)
 			{
@@ -165,7 +168,7 @@ namespace RimWorld
 				viewHeight = num + 60f;
 			}
 			Widgets.EndScrollView();
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			return result;
 		}
 	}

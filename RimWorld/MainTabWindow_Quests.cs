@@ -44,6 +44,8 @@ namespace RimWorld
 
 		private bool showAll;
 
+		private QuickSearchWidget quickSearchWidget = new QuickSearchWidget();
+
 		private const float LeftRectWidthFraction = 0.36f;
 
 		private const float RowHeight = 32f;
@@ -56,6 +58,8 @@ namespace RimWorld
 
 		private const float TimeInfoWidth = 35f;
 
+		private const float CharityIconWidth = 32f;
+
 		private static readonly Color TimeLimitColor = new Color(1f, 1f, 1f, 0.7f);
 
 		private static readonly Color AcceptanceRequirementsColor = new Color(1f, 0.25f, 0.25f);
@@ -63,6 +67,18 @@ namespace RimWorld
 		private static readonly Color AcceptanceRequirementsBoxColor = new Color(0.62f, 0.18f, 0.18f);
 
 		private static readonly Color acceptanceRequirementsBoxBgColor = new Color(0.13f, 0.13f, 0.13f);
+
+		private static readonly Color IdeoCharityTextColor = new Color32(byte.MaxValue, 237, 38, byte.MaxValue);
+
+		private static readonly Color IdeoCharityBoxBorderColor = new Color32(205, 207, 18, byte.MaxValue);
+
+		private static readonly Color IdeoCharityBoxBackgroundColor = new Color(0.13f, 0.13f, 0.13f);
+
+		private static readonly Color QuestCompletedColor = GenColor.FromHex("1e591a");
+
+		private static readonly Color QuestFailedColor = GenColor.FromHex("5e2f2f");
+
+		private static readonly Color QuestExpiredColor = GenColor.FromHex("916e2d");
 
 		private const int RowIconSize = 15;
 
@@ -78,11 +94,21 @@ namespace RimWorld
 
 		private static readonly Texture2D QuestDismissedIcon = ContentFinder<Texture2D>.Get("UI/Icons/DismissedQuestIcon");
 
+		private static readonly Texture2D CharityQuestIcon = ContentFinder<Texture2D>.Get("UI/Icons/CharityQuestIcon");
+
+		private const float IndentWidth = 10f;
+
+		private const float SearchBoxHeight = 24f;
+
 		private static List<Quest> tmpQuestsToShow = new List<Quest>();
 
-		private static List<GenUI.AnonymousStackElement> tmpStackElements = new List<GenUI.AnonymousStackElement>();
+		private static HashSet<Quest> tmpQuestsVisited = new HashSet<Quest>();
 
-		private static List<Rect> layoutRewardsRects = new List<Rect>();
+		private static List<Thing> tmpColonistsForIdeo = new List<Thing>();
+
+		private static readonly HashSet<string> uniqueEntries = new HashSet<string>();
+
+		private static List<GenUI.AnonymousStackElement> tmpStackElements = new List<GenUI.AnonymousStackElement>();
 
 		private static List<QuestPart> tmpRemainingQuestParts = new List<QuestPart>();
 
@@ -95,6 +121,7 @@ namespace RimWorld
 		public override void PreOpen()
 		{
 			base.PreOpen();
+			quickSearchWidget.Reset();
 			if (RatingIcon == null)
 			{
 				RatingIcon = ContentFinder<Texture2D>.Get("UI/Icons/ChallengeRatingIcon");
@@ -120,7 +147,6 @@ namespace RimWorld
 
 		public override void DoWindowContents(Rect rect)
 		{
-			base.DoWindowContents(rect);
 			Rect rect2 = rect;
 			rect2.yMin += 4f;
 			rect2.xMax = rect2.width * 0.36f;
@@ -130,12 +156,6 @@ namespace RimWorld
 			rect3.yMin += 4f;
 			rect3.xMin = rect2.xMax + 17f;
 			DoSelectedQuestInfo(rect3);
-		}
-
-		[Obsolete]
-		public Rect DoFavorCheckBoxes(Rect rect)
-		{
-			return default(Rect);
 		}
 
 		public Rect DoRewardsPrefsButton(Rect rect)
@@ -182,57 +202,86 @@ namespace RimWorld
 		{
 			Rect rect2 = rect;
 			rect2.yMin += 32f;
+			Rect rect3 = new Rect(0f, rect2.yMax - 24f, rect2.width, 24f);
+			quickSearchWidget.OnGUI(rect3);
+			rect2.yMax -= 28f;
 			Widgets.DrawMenuSection(rect2);
 			TabDrawer.DrawTabs(rect2, tabs);
-			if (Prefs.DevMode)
+			if (DebugSettings.godMode)
 			{
-				Widgets.CheckboxLabeled(new Rect(rect.width - 135f, rect.height - 24f + 5f, 120f, 24f), "Dev: Show all", ref showAll);
+				showAll = true;
+			}
+			else if (Prefs.DevMode)
+			{
+				Widgets.CheckboxLabeled(new Rect(rect.width - 135f, rect2.yMax - 24f, 120f, 24f), "DEV: Show all", ref showAll);
 			}
 			else
 			{
 				showAll = false;
 			}
 			SortQuestsByTab();
+			Rect scrollOutRect;
+			Rect scrollViewRect;
+			Vector2 scrollPosition;
+			float curY;
 			if (tmpQuestsToShow.Count != 0)
 			{
-				Rect rect3 = rect2;
-				rect3 = rect3.ContractedBy(10f);
-				rect3.xMax += 6f;
-				Rect viewRect = new Rect(0f, 0f, rect3.width - 16f, (float)tmpQuestsToShow.Count * 32f);
-				Vector2 vector = default(Vector2);
+				scrollOutRect = rect2;
+				scrollOutRect = scrollOutRect.ContractedBy(10f);
+				scrollOutRect.xMax += 6f;
+				scrollViewRect = new Rect(0f, 0f, scrollOutRect.width - 16f, (float)tmpQuestsToShow.Count * 32f);
+				scrollPosition = default(Vector2);
 				switch (curTab)
 				{
 				case QuestsTab.Available:
-					Widgets.BeginScrollView(rect3, ref scrollPosition_available, viewRect);
-					vector = scrollPosition_available;
+					Widgets.BeginScrollView(scrollOutRect, ref scrollPosition_available, scrollViewRect);
+					scrollPosition = scrollPosition_available;
 					break;
 				case QuestsTab.Active:
-					Widgets.BeginScrollView(rect3, ref scrollPosition_active, viewRect);
-					vector = scrollPosition_active;
+					Widgets.BeginScrollView(scrollOutRect, ref scrollPosition_active, scrollViewRect);
+					scrollPosition = scrollPosition_active;
 					break;
 				case QuestsTab.Historical:
-					Widgets.BeginScrollView(rect3, ref scrollPosition_historical, viewRect);
-					vector = scrollPosition_historical;
+					Widgets.BeginScrollView(scrollOutRect, ref scrollPosition_historical, scrollViewRect);
+					scrollPosition = scrollPosition_historical;
 					break;
 				}
-				float num = 0f;
-				for (int i = 0; i < tmpQuestsToShow.Count; i++)
+				curY = 0f;
+				foreach (Quest item in tmpQuestsToShow)
 				{
-					Quest quest = tmpQuestsToShow[i];
-					float num2 = vector.y - 32f;
-					float num3 = vector.y + rect3.height;
-					if (num > num2 && num < num3)
-					{
-						DoRow(new Rect(0f, num, viewRect.width - 4f, 32f), quest);
-					}
-					num += 32f;
+					DrawQuest(item);
 				}
+				tmpQuestsVisited.Clear();
 				tmpQuestsToShow.Clear();
 				Widgets.EndScrollView();
 			}
 			else
 			{
 				Widgets.NoneLabel(rect2.y + 17f, rect2.width);
+			}
+			void DrawQuest(Quest quest, int indent = 0)
+			{
+				if (tmpQuestsVisited.Contains(quest) || (quest.parent != null && tmpQuestsToShow.Contains(quest.parent) && !tmpQuestsVisited.Contains(quest.parent)))
+				{
+					return;
+				}
+				float num = scrollPosition.y - 32f;
+				float num2 = scrollPosition.y + scrollOutRect.height;
+				if (curY > num && curY < num2)
+				{
+					float num3 = (float)indent * 10f;
+					DoRow(new Rect(num3, curY, scrollViewRect.width - 4f - num3, 32f), quest);
+				}
+				curY += 32f;
+				tmpQuestsVisited.Add(quest);
+				indent++;
+				foreach (Quest subquest in quest.GetSubquests())
+				{
+					if (tmpQuestsToShow.Contains(subquest))
+					{
+						DrawQuest(subquest, indent);
+					}
+				}
 			}
 		}
 
@@ -242,7 +291,7 @@ namespace RimWorld
 			tmpQuestsToShow.Clear();
 			for (int i = 0; i < questsInDisplayOrder.Count; i++)
 			{
-				if (ShouldListNow(questsInDisplayOrder[i]))
+				if (ShouldListNow(questsInDisplayOrder[i]) && quickSearchWidget.filter.Matches(questsInDisplayOrder[i].name))
 				{
 					tmpQuestsToShow.Add(questsInDisplayOrder[i]);
 				}
@@ -250,7 +299,7 @@ namespace RimWorld
 			switch (curTab)
 			{
 			case QuestsTab.Available:
-				tmpQuestsToShow.SortBy((Quest q) => q.ticksUntilAcceptanceExpiry);
+				tmpQuestsToShow.SortBy((Quest q) => q.TicksUntilExpiry);
 				break;
 			case QuestsTab.Active:
 				tmpQuestsToShow.SortBy((Quest q) => q.TicksSinceAccepted);
@@ -271,6 +320,22 @@ namespace RimWorld
 			Rect rect4 = rect;
 			rect4.xMax = rect3.xMin;
 			rect4.xMin = rect4.xMax - 60f;
+			if (quest.Historical)
+			{
+				Rect position = rect.ContractedBy(2f);
+				switch (quest.State)
+				{
+				case QuestState.EndedSuccess:
+					Widgets.DrawRectFast(position, QuestCompletedColor);
+					break;
+				case QuestState.EndedFailed:
+					Widgets.DrawRectFast(position, QuestFailedColor);
+					break;
+				default:
+					Widgets.DrawRectFast(position, QuestExpiredColor);
+					break;
+				}
+			}
 			if (selected == quest)
 			{
 				Widgets.DrawHighlightSelected(rect);
@@ -306,9 +371,22 @@ namespace RimWorld
 					Widgets.DrawHighlight(rect6);
 				}
 			}
-			for (int i = 0; i < quest.challengeRating; i++)
+			if (ModsConfig.IdeologyActive && quest.charity && !quest.Historical && !quest.dismissed)
 			{
-				GUI.DrawTexture(new Rect(rect4.xMax - (float)(15 * (i + 1)), rect4.y + rect4.height / 2f - 7f, 15f, 15f), RatingIcon);
+				Rect rect7 = new Rect(rect4.x - 15f, rect4.y + rect4.height / 2f - 7f, 15f, 15f);
+				GUI.DrawTexture(rect7, CharityQuestIcon);
+				rect7.height = rect5.height;
+				rect7.y = rect5.y;
+				if (Mouse.IsOver(rect7))
+				{
+					TooltipHandler.TipRegion(rect7, "CharityQuestTip".Translate());
+					Widgets.DrawHighlight(rect7);
+				}
+			}
+			int num = Mathf.Max(quest.challengeRating, 1);
+			for (int num2 = 0; num2 < num; num2++)
+			{
+				GUI.DrawTexture(new Rect(rect4.xMax - (float)(15 * (num2 + 1)), rect4.y + rect4.height / 2f - 7f, 15f, 15f), RatingIcon);
 			}
 			if (Mouse.IsOver(rect4))
 			{
@@ -328,11 +406,11 @@ namespace RimWorld
 			color = Color.gray;
 			if (quest.State == QuestState.NotYetAccepted)
 			{
-				if (quest.ticksUntilAcceptanceExpiry >= 0)
+				if (quest.TicksUntilExpiry >= 0)
 				{
-					color = ColoredText.RedReadable;
-					tip = "QuestExpiresIn".Translate(quest.ticksUntilAcceptanceExpiry.ToStringTicksToPeriod());
-					return quest.ticksUntilAcceptanceExpiry.ToStringTicksToPeriod(allowSeconds: true, shortForm: true);
+					color = ColorLibrary.RedReadable;
+					tip = "QuestExpiresIn".Translate(quest.TicksUntilExpiry.ToStringTicksToPeriod());
+					return quest.TicksUntilExpiry.ToStringTicksToPeriod(allowSeconds: true, shortForm: true);
 				}
 			}
 			else
@@ -346,10 +424,9 @@ namespace RimWorld
 				{
 					foreach (QuestPart item in quest.PartsListForReading)
 					{
-						QuestPart_Delay questPart_Delay = item as QuestPart_Delay;
-						if (questPart_Delay != null && questPart_Delay.State == QuestPartState.Enabled && questPart_Delay.isBad && !questPart_Delay.expiryInfoPart.NullOrEmpty())
+						if (item is QuestPart_Delay { State: QuestPartState.Enabled, isBad: not false } questPart_Delay && !questPart_Delay.expiryInfoPart.NullOrEmpty())
 						{
-							color = ColoredText.RedReadable;
+							color = ColorLibrary.RedReadable;
 							tip = "QuestExpiresIn".Translate(questPart_Delay.TicksLeft.ToStringTicksToPeriod());
 							return questPart_Delay.TicksLeft.ToStringTicksToPeriod(allowSeconds: false, shortForm: true, canUseDecimals: false);
 						}
@@ -385,6 +462,7 @@ namespace RimWorld
 			float curY = 0f;
 			DoTitle(rect3, ref curY);
 			DoDismissButton(rect3, ref curY);
+			DoCharityIcon(rect3);
 			if (selected != null)
 			{
 				float curYBeforeAcceptButton = curY;
@@ -393,6 +471,7 @@ namespace RimWorld
 				DoOutcomeInfo(rect3, ref curY);
 				DoDescription(rect3, ref curY);
 				DoAcceptanceRequirementInfo(innerRect, flag, ref curY);
+				DoIdeoCharityInfo(innerRect, flag, ref curY);
 				DoRewards(rect3, ref curY);
 				DoLookTargets(rect3, ref curY);
 				DoSelectTargets(rect3, ref curY);
@@ -400,7 +479,7 @@ namespace RimWorld
 				DoDefHyperlinks(rect3, ref curY);
 				float num2 = curY;
 				curY = num;
-				if (!selected.root.hideFactionInfoInWindow)
+				if (selected.root != null && !selected.root.hideInvolvedFactionsInfo)
 				{
 					DoFactionInfo(rect4, ref curY);
 				}
@@ -439,6 +518,10 @@ namespace RimWorld
 					return;
 				}
 				selected.dismissed = !selected.dismissed;
+				foreach (Quest subquest in selected.GetSubquests())
+				{
+					subquest.dismissed = selected.dismissed;
+				}
 				if (selected.dismissed)
 				{
 					SoundDefOf.Tick_Low.PlayOneShotOnCamera();
@@ -457,6 +540,19 @@ namespace RimWorld
 			}
 		}
 
+		private void DoCharityIcon(Rect innerRect)
+		{
+			if (selected != null && selected.charity && ModsConfig.IdeologyActive)
+			{
+				Rect rect = new Rect(innerRect.xMax - 32f - 26f - 32f - 4f, innerRect.y, 32f, 32f);
+				GUI.DrawTexture(rect, CharityQuestIcon);
+				if (Mouse.IsOver(rect))
+				{
+					TooltipHandler.TipRegion(rect, "CharityQuestTip".Translate());
+				}
+			}
+		}
+
 		private void DoDebugInfoToggle(Rect innerRect, ref float curY)
 		{
 			if (!Prefs.DevMode)
@@ -464,7 +560,12 @@ namespace RimWorld
 				showDebugInfo = false;
 				return;
 			}
-			Widgets.CheckboxLabeled(new Rect(innerRect.xMax - 110f, curY, 110f, 30f), "Dev: Debug", ref showDebugInfo);
+			if (DebugSettings.godMode)
+			{
+				showDebugInfo = true;
+				return;
+			}
+			Widgets.CheckboxLabeled(new Rect(innerRect.xMax - 110f, curY, 110f, 30f), "DEV: Show debug info", ref showDebugInfo);
 			curY += 30f;
 		}
 
@@ -485,7 +586,7 @@ namespace RimWorld
 				return;
 			}
 			curY += 17f;
-			if (selected.State != 0)
+			if (selected.State != QuestState.NotYetAccepted)
 			{
 				return;
 			}
@@ -493,9 +594,11 @@ namespace RimWorld
 			if (questPart_Choice == null)
 			{
 				Rect rect = new Rect(num, curY, 180f, 40f);
-				if (!QuestUtility.CanAcceptQuest(selected))
+				AcceptanceReport acceptanceReport = QuestUtility.CanAcceptQuest(selected);
+				if (!acceptanceReport.Accepted)
 				{
 					GUI.color = Color.grey;
+					TooltipHandler.TipRegion(rect, acceptanceReport.Reason.Colorize(ColoredText.WarningColor));
 				}
 				if (Widgets.ButtonText(rect, "AcceptQuest".Translate()))
 				{
@@ -504,14 +607,14 @@ namespace RimWorld
 				num += rect.width + 10f;
 				GUI.color = Color.white;
 			}
-			if (Prefs.DevMode && Widgets.ButtonText(new Rect(num, curY, 180f, 40f), "Dev: Accept instantly"))
+			if (Prefs.DevMode && Widgets.ButtonText(new Rect(num, curY, 180f, 40f), "DEV: Accept instantly"))
 			{
 				SoundDefOf.Quest_Accepted.PlayOneShotOnCamera();
-				if (questPart_Choice.choices.Any())
+				if (questPart_Choice != null && questPart_Choice.choices.Any())
 				{
 					questPart_Choice.Choose(questPart_Choice.choices.RandomElement());
 				}
-				selected.Accept(PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep.Where((Pawn p) => QuestUtility.CanPawnAcceptQuest(p, selected)).RandomElementWithFallback());
+				selected.Accept(PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoSuspended.Where((Pawn p) => QuestUtility.CanPawnAcceptQuest(p, selected)).RandomElementWithFallback());
 				selected.dismissed = false;
 				Select(selected);
 			}
@@ -574,7 +677,7 @@ namespace RimWorld
 				}
 				num += Text.LineHeight;
 			}
-			if (selected.State == QuestState.NotYetAccepted && selected.ticksUntilAcceptanceExpiry > 0)
+			if (selected.State == QuestState.NotYetAccepted && selected.TicksUntilExpiry > 0)
 			{
 				if (!flag)
 				{
@@ -584,14 +687,14 @@ namespace RimWorld
 				Rect rect3 = new Rect(innerRect.x, num, innerRect.width, 25f);
 				GUI.color = TimeLimitColor;
 				Text.Anchor = TextAnchor.MiddleRight;
-				string text2 = "QuestExpiresIn".Translate(selected.ticksUntilAcceptanceExpiry.ToStringTicksToPeriod());
+				string text2 = "QuestExpiresIn".Translate(selected.TicksUntilExpiry.ToStringTicksToPeriod());
 				Widgets.Label(rect3, text2);
 				GUI.color = Color.white;
 				Text.Anchor = TextAnchor.UpperLeft;
 				rect3.xMin = rect3.xMax - Text.CalcSize(text2).x;
 				if (Mouse.IsOver(rect3))
 				{
-					TooltipHandler.TipRegion(rect3, "QuestExpiresOn".Translate(GenDate.DateFullStringWithHourAt(Find.TickManager.TicksAbs + selected.ticksUntilAcceptanceExpiry, locForDates)));
+					TooltipHandler.TipRegion(rect3, "QuestExpiresOn".Translate(GenDate.DateFullStringWithHourAt(Find.TickManager.TicksAbs + selected.TicksUntilExpiry, locForDates)));
 				}
 				num += Text.LineHeight;
 			}
@@ -600,15 +703,9 @@ namespace RimWorld
 				tmpQuestParts.Clear();
 				tmpQuestParts.AddRange(selected.PartsListForReading);
 				tmpQuestParts.SortBy((QuestPart x) => (x is QuestPartActivable) ? ((QuestPartActivable)x).EnableTick : 0);
-				for (int i = 0; i < tmpQuestParts.Count; i++)
+				for (int num2 = 0; num2 < tmpQuestParts.Count; num2++)
 				{
-					QuestPartActivable questPartActivable = tmpQuestParts[i] as QuestPartActivable;
-					if (questPartActivable == null || questPartActivable.State != QuestPartState.Enabled)
-					{
-						continue;
-					}
-					string expiryInfoPart = questPartActivable.ExpiryInfoPart;
-					if (expiryInfoPart.NullOrEmpty())
+					if (!(tmpQuestParts[num2] is QuestPartActivable { State: QuestPartState.Enabled, ExpiryInfoPart: var expiryInfoPart } questPartActivable) || expiryInfoPart.NullOrEmpty())
 					{
 						continue;
 					}
@@ -641,51 +738,110 @@ namespace RimWorld
 
 		private void DoAcceptanceRequirementInfo(Rect innerRect, bool scrollBarVisible, ref float curY)
 		{
-			if (selected.EverAccepted)
+			if (!selected.EverAccepted && !selected.Historical)
+			{
+				IEnumerable<string> enumerable = ListUnmetAcceptRequirements();
+				int num = enumerable.Count();
+				if (num != 0)
+				{
+					bool flag = num > 1;
+					string text = "QuestAcceptanceRequirementsDescription".Translate() + (flag ? ": " : " ") + (flag ? ("\n" + enumerable.ToLineList("  - ", capitalizeItems: true)) : (enumerable.First() + "."));
+					curY += 17f;
+					DrawInfoBox(innerRect, scrollBarVisible, ref curY, text, acceptanceRequirementsBoxBgColor, AcceptanceRequirementsBoxColor, AcceptanceRequirementsColor);
+					new LookTargets(ListUnmetAcceptRequirementCulprits()).TryHighlight(arrow: true, colonistBar: true, circleOverlay: true);
+				}
+			}
+		}
+
+		private void DoIdeoCharityInfo(Rect innerRect, bool scrollBarVisible, ref float curY)
+		{
+			if (!selected.charity || !ModsConfig.IdeologyActive)
 			{
 				return;
 			}
-			IEnumerable<string> enumerable = ListUnmetAcceptRequirements();
-			int num = enumerable.Count();
-			if (num != 0)
+			List<Pawn> allMaps_FreeColonistsSpawned = PawnsFinder.AllMaps_FreeColonistsSpawned;
+			List<Ideo> ideosListForReading = Find.IdeoManager.IdeosListForReading;
+			string text = "";
+			for (int i = 0; i < ideosListForReading.Count; i++)
 			{
-				bool flag = num > 1;
-				string text = "QuestAcceptanceRequirementsDescription".Translate() + (flag ? ": " : " ") + (flag ? ("\n" + enumerable.ToLineList("  - ", capitalizeItems: true)) : (enumerable.First() + "."));
-				curY += 17f;
-				float num2 = 0f;
-				float x = innerRect.x + 8f;
-				float num3 = innerRect.width - 16f;
-				if (scrollBarVisible)
+				Ideo ideo = ideosListForReading[i];
+				List<Precept> preceptsListForReading = ideo.PreceptsListForReading;
+				bool flag = false;
+				for (int j = 0; j < preceptsListForReading.Count; j++)
 				{
-					num3 -= 31f;
+					if (preceptsListForReading[j].def.issue == IssueDefOf.Charity)
+					{
+						flag = true;
+						break;
+					}
 				}
-				Rect rect = new Rect(x, curY, num3, 10000f);
-				num2 += Text.CalcHeight(text, rect.width);
-				Rect rect2 = new Rect(x, curY, num3, num2).ExpandedBy(8f);
-				Widgets.DrawBoxSolid(rect2, acceptanceRequirementsBoxBgColor);
-				GUI.color = AcceptanceRequirementsColor;
-				Widgets.Label(rect, text);
-				GUI.color = AcceptanceRequirementsBoxColor;
-				Widgets.DrawBox(rect2, 2);
-				curY += num2;
-				GUI.color = Color.white;
-				new LookTargets(ListUnmetAcceptRequirementCulprits()).TryHighlight(arrow: true, colonistBar: true, circleOverlay: true);
+				if (!flag)
+				{
+					continue;
+				}
+				tmpColonistsForIdeo.Clear();
+				for (int k = 0; k < allMaps_FreeColonistsSpawned.Count; k++)
+				{
+					Pawn pawn = allMaps_FreeColonistsSpawned[k];
+					if (pawn != null && pawn.Ideo == ideo && !pawn.IsQuestReward(selected))
+					{
+						tmpColonistsForIdeo.Add(pawn);
+					}
+				}
+				if (tmpColonistsForIdeo.Count != 0)
+				{
+					if (!text.NullOrEmpty())
+					{
+						text += "\n\n";
+					}
+					text += "IdeoCharityQuestInfo".Translate(ideo.name, GenThing.ThingsToCommaList(tmpColonistsForIdeo));
+				}
 			}
+			if (!text.NullOrEmpty())
+			{
+				curY += 17f;
+				DrawInfoBox(innerRect, scrollBarVisible, ref curY, text, IdeoCharityBoxBackgroundColor, IdeoCharityBoxBorderColor, IdeoCharityTextColor);
+			}
+		}
+
+		private void DrawInfoBox(Rect innerRect, bool scrollBarVisible, ref float curY, string text, Color boxBackground, Color boxBorder, Color textColor)
+		{
+			float num = 0f;
+			float x = innerRect.x + 8f;
+			float num2 = innerRect.width - 16f;
+			if (scrollBarVisible)
+			{
+				num2 -= 31f;
+			}
+			Rect rect = new Rect(x, curY, num2, 10000f);
+			num += Text.CalcHeight(text, rect.width);
+			Rect rect2 = new Rect(x, curY, num2, num).ExpandedBy(8f);
+			Widgets.DrawBoxSolid(rect2, boxBackground);
+			GUI.color = textColor;
+			Widgets.Label(rect, text);
+			GUI.color = boxBorder;
+			Widgets.DrawBox(rect2, 2);
+			curY += num;
+			GUI.color = Color.white;
 		}
 
 		private IEnumerable<string> ListUnmetAcceptRequirements()
 		{
+			uniqueEntries.Clear();
 			for (int i = 0; i < selected.PartsListForReading.Count; i++)
 			{
-				QuestPart_RequirementsToAccept questPart_RequirementsToAccept = selected.PartsListForReading[i] as QuestPart_RequirementsToAccept;
-				if (questPart_RequirementsToAccept != null)
+				if (selected.PartsListForReading[i] is QuestPart_RequirementsToAccept { ShowInRequirementBox: not false } questPart_RequirementsToAccept)
 				{
 					AcceptanceReport acceptanceReport = questPart_RequirementsToAccept.CanAccept();
 					if (!acceptanceReport.Accepted)
 					{
-						yield return acceptanceReport.Reason;
+						uniqueEntries.Add(acceptanceReport.Reason);
 					}
 				}
+			}
+			foreach (string uniqueEntry in uniqueEntries)
+			{
+				yield return uniqueEntry;
 			}
 		}
 
@@ -693,8 +849,7 @@ namespace RimWorld
 		{
 			for (int i = 0; i < selected.PartsListForReading.Count; i++)
 			{
-				QuestPart_RequirementsToAccept questPart_RequirementsToAccept = selected.PartsListForReading[i] as QuestPart_RequirementsToAccept;
-				if (questPart_RequirementsToAccept == null)
+				if (!(selected.PartsListForReading[i] is QuestPart_RequirementsToAccept questPart_RequirementsToAccept))
 				{
 					continue;
 				}
@@ -730,14 +885,13 @@ namespace RimWorld
 			tmpQuestParts.Clear();
 			tmpQuestParts.AddRange(selected.PartsListForReading);
 			tmpQuestParts.SortBy((QuestPart x) => (x is QuestPartActivable) ? ((QuestPartActivable)x).EnableTick : 0);
-			for (int i = 0; i < tmpQuestParts.Count; i++)
+			for (int num = 0; num < tmpQuestParts.Count; num++)
 			{
-				QuestPartActivable questPartActivable = tmpQuestParts[i] as QuestPartActivable;
-				if (questPartActivable != null && questPartActivable.State != QuestPartState.Enabled)
+				if (tmpQuestParts[num] is QuestPartActivable { State: not QuestPartState.Enabled })
 				{
 					continue;
 				}
-				string descriptionPart = tmpQuestParts[i].DescriptionPart;
+				string descriptionPart = tmpQuestParts[num].DescriptionPart;
 				if (!descriptionPart.NullOrEmpty())
 				{
 					if (stringBuilder.Length != 0)
@@ -776,10 +930,6 @@ namespace RimWorld
 			}
 			bool flag = selected.State == QuestState.NotYetAccepted;
 			bool flag2 = true;
-			if (Event.current.type == EventType.Layout)
-			{
-				layoutRewardsRects.Clear();
-			}
 			for (int j = 0; j < choice.choices.Count; j++)
 			{
 				tmpStackElements.Clear();
@@ -793,7 +943,7 @@ namespace RimWorld
 				{
 					continue;
 				}
-				if (num > 0f)
+				if (num > 0f && (choice.choices[j].rewards.Count != 1 || !(choice.choices[j].rewards[0] is Reward_Items { items: not null } reward_Items) || reward_Items.items.Count != 1 || !(reward_Items.items[0].StyleSourcePrecept is Precept_Relic)))
 				{
 					TaggedString totalValueStr = "TotalValue".Translate(num.ToStringMoney("F0"));
 					tmpStackElements.Add(new GenUI.AnonymousStackElement
@@ -822,24 +972,19 @@ namespace RimWorld
 				{
 					rect2.xMin += 100f;
 				}
-				if (j < layoutRewardsRects.Count)
-				{
-					Widgets.DrawBoxSolid(layoutRewardsRects[j], new Color(0.13f, 0.13f, 0.13f));
-					GUI.color = new Color(1f, 1f, 1f, 0.3f);
-					Widgets.DrawHighlightIfMouseover(layoutRewardsRects[j]);
-					GUI.color = Color.white;
-				}
-				rect.height = GenUI.DrawElementStack(rect2, 24f, tmpStackElements, delegate(Rect r, GenUI.AnonymousStackElement obj)
+				rect.height = GenUI.DrawElementStack(rect2, 24f, tmpStackElements, null, (GenUI.AnonymousStackElement obj) => obj.width, 4f, 5f, allowOrderOptimization: false).height + 20f;
+				Widgets.DrawBoxSolid(rect, new Color(0.13f, 0.13f, 0.13f));
+				GUI.color = new Color(1f, 1f, 1f, 0.3f);
+				Widgets.DrawHighlightIfMouseover(rect);
+				GUI.color = Color.white;
+				GenUI.DrawElementStack(rect2, 24f, tmpStackElements, delegate(Rect r, GenUI.AnonymousStackElement obj)
 				{
 					obj.drawer(r);
-				}, (GenUI.AnonymousStackElement obj) => obj.width, 4f, 5f, allowOrderOptimization: false).height + 20f;
-				if (Event.current.type == EventType.Layout)
-				{
-					layoutRewardsRects.Add(rect);
-				}
+				}, (GenUI.AnonymousStackElement obj) => obj.width, 4f, 5f, allowOrderOptimization: false);
 				if (flag)
 				{
-					if (!QuestUtility.CanAcceptQuest(selected))
+					AcceptanceReport acceptanceReport = QuestUtility.CanAcceptQuest(selected);
+					if (!acceptanceReport)
 					{
 						GUI.color = Color.grey;
 					}
@@ -848,15 +993,15 @@ namespace RimWorld
 					{
 						tmpRemainingQuestParts.Clear();
 						tmpRemainingQuestParts.AddRange(selected.PartsListForReading);
-						for (int l = 0; l < choice.choices.Count; l++)
+						for (int num2 = 0; num2 < choice.choices.Count; num2++)
 						{
-							if (j == l)
+							if (j == num2)
 							{
 								continue;
 							}
-							for (int m = 0; m < choice.choices[l].questParts.Count; m++)
+							for (int num3 = 0; num3 < choice.choices[num2].questParts.Count; num3++)
 							{
-								QuestPart item = choice.choices[l].questParts[m];
+								QuestPart item = choice.choices[num2].questParts[num3];
 								if (!choice.choices[j].questParts.Contains(item))
 								{
 									tmpRemainingQuestParts.Remove(item);
@@ -864,9 +1009,9 @@ namespace RimWorld
 							}
 						}
 						bool requiresAccepter = false;
-						for (int n = 0; n < tmpRemainingQuestParts.Count; n++)
+						for (int num4 = 0; num4 < tmpRemainingQuestParts.Count; num4++)
 						{
-							if (tmpRemainingQuestParts[n].RequiresAccepter)
+							if (tmpRemainingQuestParts[num4].RequiresAccepter)
 							{
 								requiresAccepter = true;
 								break;
@@ -879,14 +1024,15 @@ namespace RimWorld
 							choice.Choose(localChoice);
 						}, requiresAccepter);
 					}
-					TooltipHandler.TipRegionByKey(rect3, "AcceptQuestForTip");
+					TaggedString taggedString = "AcceptQuestForTip".Translate();
+					if (!acceptanceReport && !acceptanceReport.Reason.NullOrEmpty())
+					{
+						taggedString += "\n\n" + acceptanceReport.Reason.Colorize(ColorLibrary.RedReadable);
+					}
+					TooltipHandler.TipRegion(rect3, taggedString);
 					GUI.color = Color.white;
 				}
 				curY += rect.height;
-			}
-			if (Event.current.type == EventType.Repaint)
-			{
-				layoutRewardsRects.Clear();
 			}
 			tmpStackElements.Clear();
 		}
@@ -921,24 +1067,25 @@ namespace RimWorld
 				return (!(x.WorldObject is Settlement) || ((Settlement)x.WorldObject).Faction != Faction.OfPlayer) ? 3 : 4;
 			}, (GlobalTargetInfo x) => x.Label);
 			bool flag = false;
-			for (int j = 0; j < tmpLookTargets.Count; j++)
+			for (int num2 = 0; num2 < tmpLookTargets.Count; num2++)
 			{
-				GlobalTargetInfo globalTargetInfo = tmpLookTargets[j];
-				if (globalTargetInfo.HasWorldObject)
+				GlobalTargetInfo globalTargetInfo = tmpLookTargets[num2];
+				if (globalTargetInfo.HasWorldObject && globalTargetInfo.WorldObject is MapParent mapParent && (!mapParent.HasMap || !mapParent.Map.IsPlayerHome))
 				{
-					MapParent mapParent = globalTargetInfo.WorldObject as MapParent;
-					if (mapParent != null && (!mapParent.HasMap || !mapParent.Map.IsPlayerHome))
-					{
-						flag = true;
-						break;
-					}
+					flag = true;
+					break;
 				}
 			}
 			bool flag2 = false;
-			for (int k = 0; k < tmpLookTargets.Count; k++)
+			for (int num3 = 0; num3 < tmpLookTargets.Count; num3++)
 			{
-				GlobalTargetInfo globalTargetInfo2 = tmpLookTargets[k];
-				if (CameraJumper.CanJump(globalTargetInfo2) && (num != 1 || !(globalTargetInfo2 == Find.AnyPlayerHomeMap.Parent) || flag))
+				GlobalTargetInfo globalTargetInfo2 = tmpLookTargets[num3];
+				if (!CameraJumper.CanJump(globalTargetInfo2))
+				{
+					continue;
+				}
+				Map anyPlayerHomeMap = Find.AnyPlayerHomeMap;
+				if (num != 1 || anyPlayerHomeMap == null || !(globalTargetInfo2 == anyPlayerHomeMap.Parent) || flag)
 				{
 					if (!flag2)
 					{
@@ -1025,7 +1172,28 @@ namespace RimWorld
 			foreach (Dialog_InfoCard.Hyperlink hyperlink in selected.Hyperlinks)
 			{
 				float num = Text.CalcHeight(hyperlink.Label, rect.width);
-				Widgets.HyperlinkWithIcon(new Rect(rect.x, curY, rect.width / 2f, num), hyperlink, "ViewHyperlink".Translate(hyperlink.Label));
+				float width = rect.width / 2f;
+				Rect rect2 = new Rect(rect.x, curY, width, num);
+				Color value = Widgets.NormalOptionColor;
+				if (hyperlink.quest != null && (hyperlink.quest.IsSubquestOf(selected) || selected.IsSubquestOf(hyperlink.quest)))
+				{
+					if (!selected.hidden && !hyperlink.quest.hidden)
+					{
+						string text = "";
+						if (hyperlink.quest.Historical)
+						{
+							text += "(" + "Finished".Translate().ToLower() + ") ";
+							value = Color.gray;
+						}
+						text += (hyperlink.quest.IsSubquestOf(selected) ? "HasSubquest".Translate() : "SubquestOf".Translate());
+						text = text + ": " + hyperlink.Label;
+						Widgets.HyperlinkWithIcon(rect2, hyperlink, text, 2f, 6f, value, truncateLabel: true);
+					}
+				}
+				else
+				{
+					Widgets.HyperlinkWithIcon(rect2, hyperlink, "ViewHyperlink".Translate(hyperlink.Label), 2f, 6f, value);
+				}
 				curY += num;
 			}
 		}
@@ -1045,7 +1213,7 @@ namespace RimWorld
 					partsListForReading[i].DoDebugWindowContents(innerRect, ref curY);
 				}
 			}
-			if (selected.State == QuestState.Ongoing)
+			if (selected.State == QuestState.Ongoing || selected.State == QuestState.NotYetAccepted)
 			{
 				Rect rect = new Rect(innerRect.x, curY, 210f, 25f);
 				debugSendSignalTextField = Widgets.TextField(rect, debugSendSignalTextField);
@@ -1073,34 +1241,33 @@ namespace RimWorld
 				}
 				curY += rect.height + 4f;
 			}
-			string arg = "-----------------";
-			arg = arg + "\nId: " + selected.id;
-			arg = arg + "\nState: " + selected.State;
-			arg += "\nData:";
-			arg = arg + "\n" + Scribe.saver.DebugOutputFor(selected);
-			arg += "\n";
-			arg += "\nActive QuestParts:";
+			string text = "-----------------";
+			text = text + "\nId: " + selected.id;
+			text = text + "\nState: " + selected.State;
+			text += "\nData:";
+			text = text + "\n" + Scribe.saver.DebugOutputFor(selected);
+			text += "\n";
+			text += "\nActive QuestParts:";
 			bool flag = false;
-			for (int j = 0; j < partsListForReading.Count; j++)
+			for (int num = 0; num < partsListForReading.Count; num++)
 			{
-				QuestPartActivable questPartActivable = partsListForReading[j] as QuestPartActivable;
-				if (questPartActivable != null && questPartActivable.State == QuestPartState.Enabled)
+				if (partsListForReading[num] is QuestPartActivable { State: QuestPartState.Enabled } questPartActivable)
 				{
-					arg = arg + "\n" + questPartActivable.ToString();
+					text = text + "\n" + questPartActivable.ToString();
 					flag = true;
 				}
 			}
 			if (!flag)
 			{
-				arg += "\nNone";
+				text += "\nNone";
 			}
 			Rect rect3 = new Rect(innerRect.x, curY, 180f, 40f);
 			if (Widgets.ButtonText(rect3, "Copy debug to clipboard"))
 			{
-				GUIUtility.systemCopyBuffer = arg;
+				GUIUtility.systemCopyBuffer = text;
 			}
 			curY += rect3.height + 4f;
-			Widgets.LongLabel(innerRect.x, innerRect.width, arg, ref curY);
+			Widgets.LongLabel(innerRect.x, innerRect.width, text, ref curY);
 		}
 
 		private bool ShouldListNow(Quest quest)
@@ -1149,137 +1316,133 @@ namespace RimWorld
 
 		private string GetAcceptedAgoByString(Quest quest)
 		{
-			string value = quest.TicksSinceAccepted.ToStringTicksToPeriod();
+			string text = quest.TicksSinceAccepted.ToStringTicksToPeriod();
 			if (!quest.AccepterPawnLabelCap.NullOrEmpty())
 			{
-				return "AcceptedAgoBy".Translate(value, quest.AccepterPawnLabelCap);
+				return "AcceptedAgoBy".Translate(text, quest.AccepterPawnLabelCap);
 			}
-			return "AcceptedAgo".Translate(value);
+			return "AcceptedAgo".Translate(text);
 		}
 
 		private string GetAcceptedOnByString(Quest quest)
 		{
 			Vector2 locForDates = QuestUtility.GetLocForDates();
-			string value = GenDate.DateFullStringWithHourAt(GenDate.TickGameToAbs(quest.acceptanceTick), locForDates);
+			string text = GenDate.DateFullStringWithHourAt(GenDate.TickGameToAbs(quest.acceptanceTick), locForDates);
 			if (!quest.AccepterPawnLabelCap.NullOrEmpty())
 			{
-				return "AcceptedOnBy".Translate(value, quest.AccepterPawnLabelCap);
+				return "AcceptedOnBy".Translate(text, quest.AccepterPawnLabelCap);
 			}
-			return "AcceptedOn".Translate(value);
+			return "AcceptedOn".Translate(text);
 		}
 
 		private void AcceptQuestByInterface(Action preAcceptAction = null, bool requiresAccepter = false)
 		{
-			if (QuestUtility.CanAcceptQuest(selected))
+			if (!QuestUtility.CanAcceptQuest(selected))
 			{
-				if (requiresAccepter)
+				Messages.Message("MessageCannotAcceptQuest".Translate(), MessageTypeDefOf.RejectInput, historical: false);
+				return;
+			}
+			if (!requiresAccepter)
+			{
+				SoundDefOf.Quest_Accepted.PlayOneShotOnCamera();
+				if (preAcceptAction != null)
 				{
-					List<FloatMenuOption> list = new List<FloatMenuOption>();
-					foreach (Pawn p in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep)
-					{
-						if (!QuestUtility.CanPawnAcceptQuest(p, selected))
-						{
-							continue;
-						}
-						Pawn pLocal = p;
-						string text = "AcceptWith".Translate(p);
-						if (p.royalty != null && p.royalty.AllTitlesInEffectForReading.Any())
-						{
-							text = text + " (" + p.royalty.MostSeniorTitle.def.GetLabelFor(pLocal) + ")";
-						}
-						list.Add(new FloatMenuOption(text, delegate
-						{
-							if (QuestUtility.CanPawnAcceptQuest(pLocal, selected))
-							{
-								QuestPart_GiveRoyalFavor questPart_GiveRoyalFavor = selected.PartsListForReading.OfType<QuestPart_GiveRoyalFavor>().FirstOrDefault();
-								if (questPart_GiveRoyalFavor != null && questPart_GiveRoyalFavor.giveToAccepter)
-								{
-									IEnumerable<Trait> conceitedTraits = RoyalTitleUtility.GetConceitedTraits(p);
-									IEnumerable<Trait> traitsAffectingPsylinkNegatively = RoyalTitleUtility.GetTraitsAffectingPsylinkNegatively(p);
-									bool totallyDisabled = p.skills.GetSkill(SkillDefOf.Social).TotallyDisabled;
-									bool flag = conceitedTraits.Any();
-									bool flag2 = !p.HasPsylink && traitsAffectingPsylinkNegatively.Any();
-									if (totallyDisabled || flag || flag2)
-									{
-										NamedArgument arg = p.Named("PAWN");
-										NamedArgument arg2 = questPart_GiveRoyalFavor.faction.Named("FACTION");
-										TaggedString t2 = null;
-										if (totallyDisabled)
-										{
-											t2 = "RoyalIncapableOfSocial".Translate(arg, arg2);
-										}
-										TaggedString t3 = null;
-										if (flag)
-										{
-											t3 = "RoyalWithConceitedTrait".Translate(arg, arg2, conceitedTraits.Select((Trait t) => t.Label).ToCommaList(useAnd: true));
-										}
-										TaggedString t4 = null;
-										if (flag2)
-										{
-											t4 = "RoyalWithTraitAffectingPsylinkNegatively".Translate(arg, arg2, traitsAffectingPsylinkNegatively.Select((Trait t) => t.Label).ToCommaList(useAnd: true));
-										}
-										TaggedString text2 = "QuestGivesRoyalFavor".Translate(arg, arg2);
-										if (totallyDisabled)
-										{
-											text2 += "\n\n" + t2;
-										}
-										if (flag)
-										{
-											text2 += "\n\n" + t3;
-										}
-										if (flag2)
-										{
-											text2 += "\n\n" + t4;
-										}
-										text2 += "\n\n" + "WantToContinue".Translate();
-										Find.WindowStack.Add(new Dialog_MessageBox(text2, "Confirm".Translate(), AcceptAction, "GoBack".Translate()));
-									}
-									else
-									{
-										AcceptAction();
-									}
-								}
-								else
-								{
-									AcceptAction();
-								}
-							}
-						}));
-						void AcceptAction()
-						{
-							SoundDefOf.Quest_Accepted.PlayOneShotOnCamera();
-							if (preAcceptAction != null)
-							{
-								preAcceptAction();
-							}
-							selected.Accept(pLocal);
-							Select(selected);
-							Messages.Message("MessageQuestAccepted".Translate(pLocal, selected.name), pLocal, MessageTypeDefOf.TaskCompletion, historical: false);
-						}
-					}
-					if (list.Count > 0)
-					{
-						Find.WindowStack.Add(new FloatMenu(list));
-					}
-					else
-					{
-						Messages.Message("MessageNoColonistCanAcceptQuest".Translate(Faction.OfPlayer.def.pawnsPlural), MessageTypeDefOf.RejectInput, historical: false);
-					}
+					preAcceptAction();
 				}
-				else
+				selected.Accept(null);
+				Select(selected);
+				return;
+			}
+			List<FloatMenuOption> list = new List<FloatMenuOption>();
+			foreach (Pawn p in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoSuspended)
+			{
+				if (!QuestUtility.CanPawnAcceptQuest(p, selected))
+				{
+					continue;
+				}
+				Pawn pLocal = p;
+				string text = "AcceptWith".Translate(p);
+				if (p.royalty != null && p.royalty.AllTitlesInEffectForReading.Any())
+				{
+					text = text + " (" + p.royalty.MostSeniorTitle.def.GetLabelFor(pLocal) + ")";
+				}
+				list.Add(new FloatMenuOption(text, delegate
+				{
+					if (QuestUtility.CanPawnAcceptQuest(pLocal, selected))
+					{
+						QuestPart_GiveRoyalFavor questPart_GiveRoyalFavor = selected.PartsListForReading.OfType<QuestPart_GiveRoyalFavor>().FirstOrDefault();
+						if (questPart_GiveRoyalFavor != null && questPart_GiveRoyalFavor.giveToAccepter)
+						{
+							IEnumerable<Trait> conceitedTraits = RoyalTitleUtility.GetConceitedTraits(p);
+							IEnumerable<Trait> traitsAffectingPsylinkNegatively = RoyalTitleUtility.GetTraitsAffectingPsylinkNegatively(p);
+							bool totallyDisabled = p.skills.GetSkill(SkillDefOf.Social).TotallyDisabled;
+							bool flag = conceitedTraits.Any();
+							bool flag2 = !p.HasPsylink && traitsAffectingPsylinkNegatively.Any();
+							if (totallyDisabled || flag || flag2)
+							{
+								NamedArgument arg = p.Named("PAWN");
+								NamedArgument arg2 = questPart_GiveRoyalFavor.faction.Named("FACTION");
+								TaggedString taggedString = null;
+								if (totallyDisabled)
+								{
+									taggedString = "RoyalIncapableOfSocial".Translate(arg, arg2);
+								}
+								TaggedString taggedString2 = null;
+								if (flag)
+								{
+									taggedString2 = "RoyalWithConceitedTrait".Translate(arg, arg2, conceitedTraits.Select((Trait t) => t.Label).ToCommaList(useAnd: true));
+								}
+								TaggedString taggedString3 = null;
+								if (flag2)
+								{
+									taggedString3 = "RoyalWithTraitAffectingPsylinkNegatively".Translate(arg, arg2, traitsAffectingPsylinkNegatively.Select((Trait t) => t.Label).ToCommaList(useAnd: true));
+								}
+								TaggedString text2 = "QuestGivesRoyalFavor".Translate(arg, arg2);
+								if (totallyDisabled)
+								{
+									text2 += "\n\n" + taggedString;
+								}
+								if (flag)
+								{
+									text2 += "\n\n" + taggedString2;
+								}
+								if (flag2)
+								{
+									text2 += "\n\n" + taggedString3;
+								}
+								text2 += "\n\n" + "WantToContinue".Translate();
+								Find.WindowStack.Add(new Dialog_MessageBox(text2, "Confirm".Translate(), AcceptAction, "GoBack".Translate()));
+							}
+							else
+							{
+								AcceptAction();
+							}
+						}
+						else
+						{
+							AcceptAction();
+						}
+					}
+				}));
+				void AcceptAction()
 				{
 					SoundDefOf.Quest_Accepted.PlayOneShotOnCamera();
 					if (preAcceptAction != null)
 					{
 						preAcceptAction();
 					}
-					selected.Accept(null);
+					selected.Accept(pLocal);
 					Select(selected);
+					Messages.Message("MessageQuestAccepted".Translate(pLocal, selected.name), pLocal, MessageTypeDefOf.TaskCompletion, historical: false);
 				}
+			}
+			if (list.Count > 0)
+			{
+				Find.WindowStack.Add(new FloatMenu(list));
 			}
 			else
 			{
-				Messages.Message("MessageCannotAcceptQuest".Translate(), MessageTypeDefOf.RejectInput, historical: false);
+				Messages.Message("MessageNoColonistCanAcceptQuest".Translate(Faction.OfPlayer.def.pawnsPlural), MessageTypeDefOf.RejectInput, historical: false);
 			}
 		}
 	}

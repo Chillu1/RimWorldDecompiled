@@ -6,6 +6,13 @@ namespace RimWorld
 {
 	public static class DrugStatsUtility
 	{
+		public static readonly SimpleCurve ToleranceToAddictivenessFactorCurve = new SimpleCurve
+		{
+			new CurvePoint(0f, 1f),
+			new CurvePoint(0.5f, 5f),
+			new CurvePoint(0.8f, 15f)
+		};
+
 		public static CompProperties_Drug GetDrugComp(ThingDef d)
 		{
 			return d.GetCompProperties<CompProperties_Drug>();
@@ -18,12 +25,22 @@ namespace RimWorld
 
 		public static NeedDef GetNeed(ThingDef d)
 		{
-			return GetChemical(d)?.addictionHediff?.causesNeed;
+			return GetChemical(d)?.addictionHediff?.chemicalNeed;
 		}
 
 		public static HediffDef GetTolerance(ThingDef d)
 		{
 			return GetChemical(d)?.toleranceHediff;
+		}
+
+		public static float GetAddictivenessAtTolerance(ThingDef d, float tolerance)
+		{
+			float num = GetDrugComp(d).addictiveness;
+			if (GetTolerance(d) != null && tolerance > 0f)
+			{
+				num *= ToleranceToAddictivenessFactorCurve.Evaluate(tolerance);
+			}
+			return num;
 		}
 
 		public static IngestionOutcomeDoer_GiveHediff GetDrugHighGiver(ThingDef d)
@@ -34,8 +51,7 @@ namespace RimWorld
 			}
 			foreach (IngestionOutcomeDoer outcomeDoer in d.ingestible.outcomeDoers)
 			{
-				IngestionOutcomeDoer_GiveHediff ingestionOutcomeDoer_GiveHediff;
-				if ((ingestionOutcomeDoer_GiveHediff = outcomeDoer as IngestionOutcomeDoer_GiveHediff) != null && typeof(Hediff_High).IsAssignableFrom(ingestionOutcomeDoer_GiveHediff.hediffDef.hediffClass))
+				if (outcomeDoer is IngestionOutcomeDoer_GiveHediff ingestionOutcomeDoer_GiveHediff && typeof(Hediff_High).IsAssignableFrom(ingestionOutcomeDoer_GiveHediff.hediffDef.hediffClass))
 				{
 					return ingestionOutcomeDoer_GiveHediff;
 				}
@@ -51,8 +67,7 @@ namespace RimWorld
 			}
 			foreach (IngestionOutcomeDoer outcomeDoer in d.ingestible.outcomeDoers)
 			{
-				IngestionOutcomeDoer_GiveHediff ingestionOutcomeDoer_GiveHediff;
-				if ((ingestionOutcomeDoer_GiveHediff = outcomeDoer as IngestionOutcomeDoer_GiveHediff) != null && ingestionOutcomeDoer_GiveHediff.hediffDef == GetTolerance(d))
+				if (outcomeDoer is IngestionOutcomeDoer_GiveHediff ingestionOutcomeDoer_GiveHediff && ingestionOutcomeDoer_GiveHediff.hediffDef == GetTolerance(d))
 				{
 					return ingestionOutcomeDoer_GiveHediff;
 				}
@@ -81,8 +96,7 @@ namespace RimWorld
 			{
 				foreach (IngestionOutcomeDoer outcomeDoer in d.ingestible.outcomeDoers)
 				{
-					IngestionOutcomeDoer_GiveHediff ingestionOutcomeDoer_GiveHediff;
-					if ((ingestionOutcomeDoer_GiveHediff = outcomeDoer as IngestionOutcomeDoer_GiveHediff) != null && ingestionOutcomeDoer_GiveHediff.hediffDef == tolerance)
+					if (outcomeDoer is IngestionOutcomeDoer_GiveHediff ingestionOutcomeDoer_GiveHediff && ingestionOutcomeDoer_GiveHediff.hediffDef == tolerance)
 					{
 						return ingestionOutcomeDoer_GiveHediff.severity;
 					}
@@ -121,7 +135,7 @@ namespace RimWorld
 			return 0f;
 		}
 
-		public static float GetSafeDoseInterval(ThingDef d)
+		public static float GetSafeDoseInterval(ThingDef d, float bodySizeFactor = 1f)
 		{
 			CompProperties_Drug drugComp = GetDrugComp(d);
 			if (drugComp == null || !drugComp.Addictive)
@@ -132,8 +146,12 @@ namespace RimWorld
 			{
 				return -1f;
 			}
+			if (bodySizeFactor == 0f)
+			{
+				return -1f;
+			}
 			float num = Mathf.Abs(GetToleranceOffsetPerDay(d));
-			return Mathf.Max(drugComp.overdoseSeverityOffset.TrueMax, (num > 0f) ? (GetToleranceGiver(d).severity / num) : (-1f));
+			return Mathf.Max(drugComp.overdoseSeverityOffset.TrueMax, (num > 0f) ? (GetToleranceGiver(d).severity / num) : (-1f)) / bodySizeFactor;
 		}
 
 		public static string GetSafeDoseIntervalReadout(ThingDef d)
@@ -191,7 +209,8 @@ namespace RimWorld
 					float num2 = Mathf.Abs(GetAddictionOffsetPerDay(def));
 					if (num2 > 0f)
 					{
-						yield return new StatDrawEntry(valueString: "PeriodDays".Translate((addictionHediff.initialSeverity / num2).ToString("F1")), category: StatCategoryDefOf.DrugAddiction, label: "AddictionRecoveryTime".Translate(), reportText: "Stat_Thing_Drug_AddictionRecoveryTime_Desc".Translate(), displayPriorityWithinCategory: 2395);
+						float num3 = addictionHediff.initialSeverity / num2;
+						yield return new StatDrawEntry(StatCategoryDefOf.DrugAddiction, "AddictionRecoveryTime".Translate(), "PeriodDays".Translate(num3.ToString("F1")), "Stat_Thing_Drug_AddictionRecoveryTime_Desc".Translate(), 2395);
 					}
 					yield return new StatDrawEntry(StatCategoryDefOf.DrugAddiction, "AddictionSeverityInitial".Translate(), addictionHediff.initialSeverity.ToStringPercent(), "Stat_Thing_Drug_AddictionSeverityInitial_Desc".Translate(), 2427);
 				}
@@ -208,7 +227,21 @@ namespace RimWorld
 				yield return new StatDrawEntry(StatCategoryDefOf.DrugAddiction, "AddictionSeverityPerDose".Translate(), drugComp.existingAddictionSeverityOffset.ToStringPercent(), "Stat_Thing_Drug_AddictionSeverityPerDose_Desc".Translate(), 2424);
 			}
 			yield return new StatDrawEntry(StatCategoryDefOf.Drug, "RandomODChance".Translate(), drugComp.largeOverdoseChance.ToStringPercent(), "Stat_Thing_Drug_RandomODChance_Desc".Translate(), 2380);
-			yield return new StatDrawEntry(StatCategoryDefOf.Drug, "SafeDoseInterval".Translate(), GetSafeDoseIntervalReadout(def), "Stat_Thing_Drug_SafeDoseInterval_Desc".Translate(), 2435);
+			string text = "Stat_Thing_Drug_SafeDoseInterval_Desc".Translate();
+			if (ModsConfig.BiotechActive && GetSafeDoseInterval(def) > 0f)
+			{
+				IngestionOutcomeDoer_GiveHediff toleranceGiver = GetToleranceGiver(def);
+				if (((toleranceGiver != null) ? (GetDrugComp(def).minToleranceToAddict / toleranceGiver.severity) : 0f) >= 1f)
+				{
+					for (int i = 0; i < ThingDefOf.Human.race.lifeStageAges.Count; i++)
+					{
+						LifeStageAge lifeStageAge = ThingDefOf.Human.race.lifeStageAges[i];
+						string text2 = ((i < ThingDefOf.Human.race.lifeStageAges.Count - 1) ? "AgeXToY".Translate(lifeStageAge.minAge, ThingDefOf.Human.race.lifeStageAges[i + 1].minAge - 1f) : "AgePlus".Translate(lifeStageAge.minAge));
+						text += "\n  - " + lifeStageAge.def.LabelCap + " (" + text2 + ")" + ": " + "PeriodDays".Translate(GetSafeDoseInterval(def, lifeStageAge.def.bodySizeFactor).ToString("F1"));
+					}
+				}
+			}
+			yield return new StatDrawEntry(StatCategoryDefOf.Drug, "SafeDoseInterval".Translate(), GetSafeDoseIntervalReadout(def), text, 2435);
 		}
 	}
 }

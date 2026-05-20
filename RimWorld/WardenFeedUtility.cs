@@ -18,7 +18,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!HealthAIUtility.ShouldSeekMedicalRest(p))
+			if (!p.Downed && !HealthAIUtility.ShouldSeekMedicalRest(p))
 			{
 				return false;
 			}

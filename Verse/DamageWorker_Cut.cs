@@ -46,7 +46,7 @@ namespace Verse
 					}
 				}
 				list2 = (from x in enumerable.Except(dinfo.HitPart).InRandomOrder().Take(num2)
-					where !x.def.conceptual
+					where !x.def.conceptual && x.coverageAbs > 0f
 					select x).ToList();
 			}
 			else
@@ -59,10 +59,10 @@ namespace Verse
 			{
 				num3 = ReduceDamageToPreserveOutsideParts(num3, dinfo, pawn);
 			}
-			for (int j = 0; j < list2.Count; j++)
+			for (int num4 = 0; num4 < list2.Count; num4++)
 			{
 				DamageInfo dinfo3 = dinfo;
-				dinfo3.SetHitPart(list2[j]);
+				dinfo3.SetHitPart(list2[num4]);
 				FinalizeAndAddInjury(pawn, num3, dinfo3, result);
 			}
 		}

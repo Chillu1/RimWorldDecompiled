@@ -7,6 +7,10 @@ namespace RimWorld
 	{
 		private bool forbiddenInt;
 
+		private OverlayHandle? overlayHandle;
+
+		public CompProperties_Forbiddable Props => (CompProperties_Forbiddable)props;
+
 		public bool Forbidden
 		{
 			get
@@ -37,39 +41,60 @@ namespace RimWorld
 						parent.Map.reachability.ClearCache();
 					}
 				}
+				UpdateOverlayHandle();
 			}
+		}
+
+		private OverlayTypes MyOverlayType
+		{
+			get
+			{
+				if (parent is Blueprint || parent is Frame)
+				{
+					if (parent.def.size.x > 1 || parent.def.size.z > 1)
+					{
+						return OverlayTypes.ForbiddenBig;
+					}
+					return OverlayTypes.Forbidden;
+				}
+				if (parent.def.category == ThingCategory.Building)
+				{
+					return OverlayTypes.ForbiddenBig;
+				}
+				return OverlayTypes.Forbidden;
+			}
+		}
+
+		private void UpdateOverlayHandle()
+		{
+			if (parent.Spawned)
+			{
+				parent.Map.overlayDrawer.Disable(parent, ref overlayHandle);
+				if (parent.Spawned && forbiddenInt)
+				{
+					overlayHandle = parent.Map.overlayDrawer.Enable(parent, MyOverlayType);
+				}
+			}
+		}
+
+		public override void PostPostMake()
+		{
+			base.PostPostMake();
+			if (Props.forbidOnMake)
+			{
+				forbiddenInt = true;
+				parent.SetForbidden(value: true);
+			}
+		}
+
+		public override void PostSpawnSetup(bool respawningAfterLoad)
+		{
+			UpdateOverlayHandle();
 		}
 
 		public override void PostExposeData()
 		{
 			Scribe_Values.Look(ref forbiddenInt, "forbidden", defaultValue: false);
-		}
-
-		public override void PostDraw()
-		{
-			if (!forbiddenInt)
-			{
-				return;
-			}
-			if (parent is Blueprint || parent is Frame)
-			{
-				if (parent.def.size.x > 1 || parent.def.size.z > 1)
-				{
-					parent.Map.overlayDrawer.DrawOverlay(parent, OverlayTypes.ForbiddenBig);
-				}
-				else
-				{
-					parent.Map.overlayDrawer.DrawOverlay(parent, OverlayTypes.Forbidden);
-				}
-			}
-			else if (parent.def.category == ThingCategory.Building)
-			{
-				parent.Map.overlayDrawer.DrawOverlay(parent, OverlayTypes.ForbiddenBig);
-			}
-			else
-			{
-				parent.Map.overlayDrawer.DrawOverlay(parent, OverlayTypes.Forbidden);
-			}
 		}
 
 		public override void PostSplitOff(Thing piece)
@@ -79,7 +104,7 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (parent is Building && parent.Faction != Faction.OfPlayer)
+			if ((parent is Building && !Props.allowNonPlayer && parent.Faction != Faction.OfPlayer) || (parent.SpawnedParentOrMe is Building building && parent != building))
 			{
 				yield break;
 			}

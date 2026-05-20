@@ -7,7 +7,15 @@ namespace Verse.AI
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			this.FailOnDespawnedOrNull(TargetIndex.A);
-			Toil toil = new Toil();
+			this.FailOn(() => !job.ability.CanCast && !job.ability.Casting);
+			AddFinishAction(delegate
+			{
+				if (job.ability != null && job.def.abilityCasting)
+				{
+					job.ability.StartCooldown(job.ability.def.cooldownTicksRange.RandomInRange);
+				}
+			});
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
 				pawn.pather.StopDead();

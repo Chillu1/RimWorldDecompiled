@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 using Verse.AI;
 using Verse.AI.Group;
@@ -37,7 +38,38 @@ namespace RimWorld
 				pawn.jobs.ClearQueuedJobs();
 				if (pawn.jobs.curJob != null && pawn.jobs.IsCurrentJobPlayerInterruptible())
 				{
-					pawn.jobs.EndCurrentJob(JobCondition.InterruptForced);
+					if (pawn.jobs.curDriver is JobDriver_Ingest { EatingFromInventory: not false })
+					{
+						pawn.inventory.innerContainer.TryAddRangeOrTransfer(pawn.carryTracker.innerContainer);
+					}
+					ChildcareUtility.BreastfeedFailReason? reason;
+					if (!value)
+					{
+						if (pawn.carryTracker.CarriedThing is Pawn baby && ChildcareUtility.CanSuckle(baby, out reason))
+						{
+							Job newJob = ChildcareUtility.MakeBringBabyToSafetyJob(pawn, baby);
+							Pawn_JobTracker jobs = pawn.jobs;
+							bool? keepCarryingThingOverride = true;
+							jobs.StartJob(newJob, JobCondition.InterruptForced, null, resumeCurJobAfterwards: false, cancelBusyStances: true, null, null, fromQueue: false, canReturnCurJobToPool: false, keepCarryingThingOverride);
+						}
+						else if (pawn.IsCarrying())
+						{
+							pawn.carryTracker.TryDropCarriedThing(pawn.Position, ThingPlaceMode.Near, out var _);
+							pawn.jobs.EndCurrentJob(JobCondition.InterruptForced);
+						}
+						else
+						{
+							pawn.jobs.EndCurrentJob(JobCondition.InterruptForced);
+						}
+					}
+					else
+					{
+						if (pawn.carryTracker.CarriedThing is Pawn baby2 && ChildcareUtility.CanSuckle(baby2, out reason))
+						{
+							Messages.Message("MessageDraftedPawnCarryingBaby".Translate(pawn), pawn, MessageTypeDefOf.NeutralEvent);
+						}
+						pawn.jobs.EndCurrentJob(JobCondition.InterruptForced);
+					}
 				}
 				if (draftedInt)
 				{
@@ -47,10 +79,20 @@ namespace RimWorld
 						lord.Notify_PawnLost(pawn, PawnLostCondition.Drafted);
 					}
 					autoUndrafter.Notify_Drafted();
+					pawn.jobs?.SetFormingCaravanTick(clear: true);
+					pawn.inventory.DropAllPackingCaravanThings();
+					pawn.TryGetComp<CompCanBeDormant>()?.WakeUp();
 				}
-				else if (pawn.playerSettings != null)
+				else
 				{
-					pawn.playerSettings.animalsReleased = false;
+					if (pawn.playerSettings != null)
+					{
+						pawn.playerSettings.animalsReleased = false;
+					}
+					if (pawn.IsFormingCaravan())
+					{
+						pawn.jobs?.SetFormingCaravanTick();
+					}
 				}
 				foreach (Pawn item in PawnUtility.SpawnedMasteredPawns(pawn))
 				{
@@ -75,6 +117,22 @@ namespace RimWorld
 			}
 		}
 
+		public bool ShowDraftGizmo
+		{
+			get
+			{
+				if (ModsConfig.BiotechActive && pawn.IsColonyMech && pawn.GetMechControlGroup() == null)
+				{
+					return false;
+				}
+				if (pawn.IsSubhuman && !pawn.IsColonySubhumanPlayerControlled)
+				{
+					return false;
+				}
+				return true;
+			}
+		}
+
 		public Pawn_DraftController(Pawn pawn)
 		{
 			this.pawn = pawn;
@@ -88,58 +146,69 @@ namespace RimWorld
 			Scribe_Deep.Look(ref autoUndrafter, "autoUndrafter", pawn);
 		}
 
-		public void DraftControllerTick()
+		public void DraftControllerTickInterval(int delta)
 		{
-			autoUndrafter.AutoUndraftTick();
+			autoUndrafter.AutoUndraftTickInterval(delta);
 		}
 
 		internal IEnumerable<Gizmo> GetGizmos()
 		{
-			Command_Toggle command_Toggle = new Command_Toggle();
-			command_Toggle.hotKey = KeyBindingDefOf.Command_ColonistDraft;
-			command_Toggle.isActive = () => Drafted;
-			command_Toggle.toggleAction = delegate
+			if (ShowDraftGizmo)
 			{
-				Drafted = !Drafted;
-				PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.Drafting, KnowledgeAmount.SpecificInteraction);
-				if (Drafted)
+				Command_Toggle command_Toggle = new Command_Toggle
 				{
-					LessonAutoActivator.TeachOpportunity(ConceptDefOf.QueueOrders, OpportunityType.GoodToKnow);
+					hotKey = KeyBindingDefOf.Command_ColonistDraft,
+					isActive = () => Drafted,
+					toggleAction = delegate
+					{
+						Drafted = !Drafted;
+						PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.Drafting, KnowledgeAmount.SpecificInteraction);
+						if (Drafted)
+						{
+							LessonAutoActivator.TeachOpportunity(ConceptDefOf.QueueOrders, OpportunityType.GoodToKnow);
+						}
+					},
+					defaultDesc = "CommandToggleDraftDesc".Translate(),
+					icon = TexCommand.Draft,
+					turnOnSound = SoundDefOf.DraftOn,
+					turnOffSound = SoundDefOf.DraftOff,
+					groupKeyIgnoreContent = 81729172,
+					defaultLabel = (Drafted ? "CommandUndraftLabel" : "CommandDraftLabel").Translate()
+				};
+				if (pawn.Downed)
+				{
+					command_Toggle.Disable("IsIncapped".Translate(pawn.LabelShort, pawn));
 				}
-			};
-			command_Toggle.defaultDesc = "CommandToggleDraftDesc".Translate();
-			command_Toggle.icon = TexCommand.Draft;
-			command_Toggle.turnOnSound = SoundDefOf.DraftOn;
-			command_Toggle.turnOffSound = SoundDefOf.DraftOff;
-			command_Toggle.groupKey = 81729172;
-			command_Toggle.defaultLabel = (Drafted ? "CommandUndraftLabel" : "CommandDraftLabel").Translate();
-			if (pawn.Downed)
-			{
-				command_Toggle.Disable("IsIncapped".Translate(pawn.LabelShort, pawn));
+				if (pawn.Deathresting)
+				{
+					command_Toggle.Disable("IsDeathresting".Translate(pawn.Named("PAWN")));
+				}
+				if (ModsConfig.BiotechActive && pawn.IsColonyMech)
+				{
+					AcceptanceReport acceptanceReport = MechanitorUtility.CanDraftMech(pawn);
+					if (!acceptanceReport)
+					{
+						command_Toggle.Disable(acceptanceReport.Reason);
+					}
+				}
+				command_Toggle.tutorTag = ((!Drafted) ? "Draft" : "Undraft");
+				yield return command_Toggle;
 			}
-			if (!Drafted)
-			{
-				command_Toggle.tutorTag = "Draft";
-			}
-			else
-			{
-				command_Toggle.tutorTag = "Undraft";
-			}
-			yield return command_Toggle;
 			if (Drafted && pawn.equipment.Primary != null && pawn.equipment.Primary.def.IsRangedWeapon)
 			{
-				Command_Toggle command_Toggle2 = new Command_Toggle();
-				command_Toggle2.hotKey = KeyBindingDefOf.Misc6;
-				command_Toggle2.isActive = () => FireAtWill;
-				command_Toggle2.toggleAction = delegate
+				yield return new Command_Toggle
 				{
-					FireAtWill = !FireAtWill;
+					hotKey = KeyBindingDefOf.Misc6,
+					isActive = () => FireAtWill,
+					toggleAction = delegate
+					{
+						FireAtWill = !FireAtWill;
+					},
+					icon = TexCommand.FireAtWill,
+					defaultLabel = "CommandFireAtWillLabel".Translate(),
+					defaultDesc = "CommandFireAtWillDesc".Translate(),
+					tutorTag = "FireAtWillToggle"
 				};
-				command_Toggle2.icon = TexCommand.FireAtWill;
-				command_Toggle2.defaultLabel = "CommandFireAtWillLabel".Translate();
-				command_Toggle2.defaultDesc = "CommandFireAtWillDesc".Translate();
-				command_Toggle2.tutorTag = "FireAtWillToggle";
-				yield return command_Toggle2;
 			}
 		}
 

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using RimWorld;
 
 namespace Verse
@@ -14,6 +15,11 @@ namespace Verse
 		public virtual FloatRange PsyfocusCostRange => FloatRange.ZeroToOne;
 
 		public virtual string PsyfocusCostExplanation => "";
+
+		public virtual IEnumerable<string> ExtraStatSummary()
+		{
+			return Enumerable.Empty<string>();
+		}
 
 		public virtual IEnumerable<string> ConfigErrors(AbilityDef parentDef)
 		{

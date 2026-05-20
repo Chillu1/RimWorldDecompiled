@@ -90,6 +90,8 @@ namespace RimWorld
 			}
 		}
 
+		public override Vector2 DrawSize => new Vector2(45f, 100f);
+
 		public override void ExposeData()
 		{
 			base.ExposeData();
@@ -115,7 +117,7 @@ namespace RimWorld
 			CreateSustainer();
 		}
 
-		public override void Tick()
+		protected override void Tick()
 		{
 			if (!base.Spawned)
 			{
@@ -126,7 +128,7 @@ namespace RimWorld
 				Log.Error("Tornado sustainer is null.");
 				CreateSustainer();
 			}
-			sustainer.Maintain();
+			sustainer?.Maintain();
 			UpdateSustainerVolume();
 			GetComp<CompWindSource>().wind = 5f * FadeInOutFactor;
 			if (leftFadeOutTicks > 0)
@@ -143,7 +145,7 @@ namespace RimWorld
 				directionNoise = new Perlin(0.0020000000949949026, 2.0, 0.5, 4, 1948573612, QualityMode.Medium);
 			}
 			direction += (float)directionNoise.GetValue(Find.TickManager.TicksAbs, (float)(thingIDNumber % 500) * 1000f, 0.0) * 0.78f;
-			realPosition = realPosition.Moved(direction, 17f / 600f);
+			realPosition = realPosition.Moved(direction, 0.028333334f);
 			IntVec3 intVec = new Vector3(realPosition.x, 0f, realPosition.y).ToIntVec3();
 			if (intVec.InBounds(base.Map))
 			{
@@ -172,9 +174,9 @@ namespace RimWorld
 				if (this.IsHashIntervalTick(4) && !CellImmuneToDamage(base.Position))
 				{
 					float num = Rand.Range(0.6f, 1f);
-					Vector3 a = new Vector3(realPosition.x, 0f, realPosition.y);
-					a.y = AltitudeLayer.MoteOverhead.AltitudeFor();
-					MoteMaker.ThrowTornadoDustPuff(a + Vector3Utility.RandomHorizontalOffset(1.5f), base.Map, Rand.Range(1.5f, 3f), new Color(num, num, num));
+					Vector3 vector = new Vector3(realPosition.x, 0f, realPosition.y);
+					vector.y = AltitudeLayer.MoteOverhead.AltitudeFor();
+					FleckMaker.ThrowTornadoDustPuff(vector + Vector3Utility.RandomHorizontalOffset(1.5f), base.Map, Rand.Range(1.5f, 3f), new Color(num, num, num));
 				}
 			}
 			else
@@ -184,7 +186,7 @@ namespace RimWorld
 			}
 		}
 
-		public override void Draw()
+		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
 		{
 			Rand.PushState();
 			Rand.Seed = thingIDNumber;
@@ -204,7 +206,7 @@ namespace RimWorld
 			Vector2 vector = realPosition.Moved(num3, AdjustedDistanceFromCenter(distanceFromCenter));
 			vector.y += distanceFromCenter * 4f;
 			vector.y += ZOffsetBias;
-			Vector3 a = new Vector3(vector.x, AltitudeLayer.Weather.AltitudeFor() + 3f / 70f * Rand.Range(0f, 1f), vector.y);
+			Vector3 vector2 = new Vector3(vector.x, AltitudeLayer.Weather.AltitudeFor() + 0.03658537f * Rand.Range(0f, 1f), vector.y);
 			float num4 = distanceFromCenter * 3f;
 			float num5 = 1f;
 			if (num3 > 270f)
@@ -216,11 +218,11 @@ namespace RimWorld
 				num5 = GenMath.LerpDouble(180f, 270f, 1f, 0f, num3);
 			}
 			float num6 = Mathf.Min(distanceFromCenter / (PartsDistanceFromCenter.max + 2f), 1f);
-			float d = Mathf.InverseLerp(0.18f, 0.4f, num6);
-			Vector3 a2 = new Vector3(Mathf.Sin((float)ticksGame / 1000f + (float)(thingIDNumber * 10)) * 2f, 0f, 0f);
-			Vector3 pos = a + a2 * d;
-			float a3 = Mathf.Max(1f - num6, 0f) * num5 * FadeInOutFactor;
-			Color value = new Color(colorMultiplier, colorMultiplier, colorMultiplier, a3);
+			float num7 = Mathf.InverseLerp(0.18f, 0.4f, num6);
+			Vector3 vector3 = new Vector3(Mathf.Sin((float)ticksGame / 1000f + (float)(thingIDNumber * 10)) * 2f, 0f, 0f);
+			Vector3 pos = vector2 + vector3 * num7;
+			float a = Mathf.Max(1f - num6, 0f) * num5 * FadeInOutFactor;
+			Color value = new Color(colorMultiplier, colorMultiplier, colorMultiplier, a);
 			matPropertyBlock.SetColor(ShaderPropertyIDs.Color, value);
 			Matrix4x4 matrix = Matrix4x4.TRS(pos, Quaternion.Euler(0f, num3, 0f), new Vector3(num4, 1f, num4));
 			Graphics.DrawMesh(MeshPool.plane10, matrix, TornadoMaterial, 0, null, 0, matPropertyBlock);

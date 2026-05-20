@@ -24,6 +24,8 @@ namespace RimWorld
 
 		private int nextAreaID;
 
+		private int nextAnimalPenID;
+
 		private int nextTransporterGroupID;
 
 		private int nextAncientCryptosleepCasketGroupID;
@@ -48,9 +50,45 @@ namespace RimWorld
 
 		private int nextZoneID;
 
+		private int nextPlanID;
+
 		private int nextQuestID;
 
 		private int nextGameConditionID;
+
+		private int nextIdeoID;
+
+		private int nextPreceptID;
+
+		private int nextRitualObligationID;
+
+		private int nextPresenceDemandID;
+
+		private int nextTransportShipID;
+
+		private int nextShipJobID;
+
+		private int nextRitualRoleID;
+
+		private int nextAbilityID;
+
+		private int nextGeneID;
+
+		private int nextCocoonGroupID;
+
+		private int nextStorageGroupID;
+
+		private int nextPitGateIncidentID;
+
+		private int nextPsychicRitualToilID;
+
+		private int nextPsychicRitualID;
+
+		private int nextStructureSketchID;
+
+		private int nextRoomID;
+
+		private bool wasLoaded;
 
 		public int GetNextThingID()
 		{
@@ -100,6 +138,11 @@ namespace RimWorld
 		public int GetNextAreaID()
 		{
 			return GetNextID(ref nextAreaID);
+		}
+
+		public int GetNextAnimalPenID()
+		{
+			return GetNextID(ref nextAnimalPenID);
 		}
 
 		public int GetNextTransporterGroupID()
@@ -162,6 +205,11 @@ namespace RimWorld
 			return GetNextID(ref nextZoneID);
 		}
 
+		public int GetNextPlanID()
+		{
+			return GetNextID(ref nextPlanID);
+		}
+
 		public int GetNextQuestID()
 		{
 			return GetNextID(ref nextQuestID);
@@ -172,6 +220,86 @@ namespace RimWorld
 			return GetNextID(ref nextGameConditionID);
 		}
 
+		public int GetNextIdeoID()
+		{
+			return GetNextID(ref nextIdeoID);
+		}
+
+		public int GetNextPreceptID()
+		{
+			return GetNextID(ref nextPreceptID);
+		}
+
+		public int GetNextRitualObligationID()
+		{
+			return GetNextID(ref nextRitualObligationID);
+		}
+
+		public int GetNextPresenceDemandID()
+		{
+			return GetNextID(ref nextPresenceDemandID);
+		}
+
+		public int GetNextTransportShipID()
+		{
+			return GetNextID(ref nextTransportShipID);
+		}
+
+		public int GetNextShipJobID()
+		{
+			return GetNextID(ref nextShipJobID);
+		}
+
+		public int GetNextRitualRoleID()
+		{
+			return GetNextID(ref nextRitualRoleID);
+		}
+
+		public int GetNextAbilityID()
+		{
+			return GetNextID(ref nextAbilityID);
+		}
+
+		public int GetNextGeneID()
+		{
+			return GetNextID(ref nextGeneID);
+		}
+
+		public int GetNextCocoonGroupID()
+		{
+			return GetNextID(ref nextCocoonGroupID);
+		}
+
+		public int GetNextStorageGroupID()
+		{
+			return GetNextID(ref nextStorageGroupID);
+		}
+
+		public int GetNextPitGateIncidentID()
+		{
+			return GetNextID(ref nextPitGateIncidentID);
+		}
+
+		public int GetNextPsychicRitualID()
+		{
+			return GetNextID(ref nextPsychicRitualID);
+		}
+
+		public int GetNextPsychicRitualToilID()
+		{
+			return GetNextID(ref nextPsychicRitualToilID);
+		}
+
+		public int GetNextStructureSketchID()
+		{
+			return GetNextID(ref nextStructureSketchID);
+		}
+
+		public int GetNextRoomID()
+		{
+			return GetNextID(ref nextRoomID);
+		}
+
 		public UniqueIDsManager()
 		{
 			nextThingID = Rand.Range(0, 1000);
@@ -179,9 +307,14 @@ namespace RimWorld
 
 		private static int GetNextID(ref int nextID)
 		{
-			if (Scribe.mode == LoadSaveMode.Saving || Scribe.mode == LoadSaveMode.LoadingVars)
+			if (Scribe.mode == LoadSaveMode.LoadingVars && !Find.UniqueIDsManager.wasLoaded)
 			{
-				Log.Warning("Getting next unique ID during saving or loading. This may cause bugs.");
+				Log.Warning("Getting next unique ID during LoadingVars before UniqueIDsManager was loaded. Assigning a random value.");
+				return Rand.Int;
+			}
+			if (Scribe.mode == LoadSaveMode.Saving)
+			{
+				Log.Warning("Getting next unique ID during saving This may cause bugs.");
 			}
 			int result = nextID;
 			nextID++;
@@ -205,6 +338,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref nextMapID, "nextMapID", 0);
 			Scribe_Values.Look(ref nextCaravanID, "nextCaravanID", 0);
 			Scribe_Values.Look(ref nextAreaID, "nextAreaID", 0);
+			Scribe_Values.Look(ref nextAnimalPenID, "nextAnimalPenID", 0);
 			Scribe_Values.Look(ref nextTransporterGroupID, "nextTransporterGroupID", 0);
 			Scribe_Values.Look(ref nextAncientCryptosleepCasketGroupID, "nextAncientCryptosleepCasketGroupID", 0);
 			Scribe_Values.Look(ref nextJobID, "nextJobID", 0);
@@ -217,8 +351,29 @@ namespace RimWorld
 			Scribe_Values.Look(ref nextArchivedDialogID, "nextArchivedDialogID", 0);
 			Scribe_Values.Look(ref nextMessageID, "nextMessageID", 0);
 			Scribe_Values.Look(ref nextZoneID, "nextZoneID", 0);
+			Scribe_Values.Look(ref nextPlanID, "nextPlanID", 0);
 			Scribe_Values.Look(ref nextQuestID, "nextQuestID", 0);
 			Scribe_Values.Look(ref nextGameConditionID, "nextGameConditionID", 0);
+			Scribe_Values.Look(ref nextIdeoID, "nextIdeoID", 0);
+			Scribe_Values.Look(ref nextPreceptID, "nextPreceptID", 0);
+			Scribe_Values.Look(ref nextRitualObligationID, "nextRitualObligationID", 0);
+			Scribe_Values.Look(ref nextPresenceDemandID, "nextPresenceDemandID", 0);
+			Scribe_Values.Look(ref nextTransportShipID, "nextTransportShipID", 0);
+			Scribe_Values.Look(ref nextShipJobID, "nextShipJobID", 0);
+			Scribe_Values.Look(ref nextRitualRoleID, "nextRitualRoleID", 0);
+			Scribe_Values.Look(ref nextAbilityID, "nextAbilityID", 0);
+			Scribe_Values.Look(ref nextGeneID, "nextGeneID", 0);
+			Scribe_Values.Look(ref nextCocoonGroupID, "nextCocoonGroupID", 0);
+			Scribe_Values.Look(ref nextStorageGroupID, "nextStorageGroupID", 0);
+			Scribe_Values.Look(ref nextPitGateIncidentID, "nextPitGateIncidentID", 0);
+			Scribe_Values.Look(ref nextPsychicRitualToilID, "nextPsychicRitualToilID", 0);
+			Scribe_Values.Look(ref nextPsychicRitualID, "nextPsychicRitualID", 0);
+			Scribe_Values.Look(ref nextStructureSketchID, "nextStructureSketchID", 0);
+			Scribe_Values.Look(ref nextRoomID, "nextRoomID", 0);
+			if (Scribe.mode == LoadSaveMode.LoadingVars)
+			{
+				wasLoaded = true;
+			}
 		}
 	}
 }

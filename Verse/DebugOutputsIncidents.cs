@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using RimWorld;
 
 namespace Verse
@@ -14,12 +15,43 @@ namespace Verse
 			List<StorytellerComp> storytellerComps = Find.Storyteller.storytellerComps;
 			for (int i = 0; i < storytellerComps.Count; i++)
 			{
-				StorytellerComp_CategoryMTB storytellerComp_CategoryMTB = storytellerComps[i] as StorytellerComp_CategoryMTB;
-				if (storytellerComp_CategoryMTB != null && ((StorytellerCompProperties_CategoryMTB)storytellerComp_CategoryMTB.props).category == IncidentCategoryDefOf.Misc)
+				if (storytellerComps[i] is StorytellerComp_CategoryMTB storytellerComp_CategoryMTB && ((StorytellerCompProperties_CategoryMTB)storytellerComp_CategoryMTB.props).category == IncidentCategoryDefOf.Misc)
 				{
 					storytellerComp_CategoryMTB.DebugTablesIncidentChances();
 				}
 			}
+		}
+
+		[DebugOutput("Incidents", false)]
+		public static void IncidentChancesSampled()
+		{
+			Dictionary<IncidentDef, int> samples = new Dictionary<IncidentDef, int>();
+			int fireCount = 0;
+			List<StorytellerComp> storytellerComps = Find.Storyteller.storytellerComps;
+			for (int i = 0; i < storytellerComps.Count; i++)
+			{
+				StorytellerComp storytellerComp = storytellerComps[i];
+				if (storytellerComp == null)
+				{
+					continue;
+				}
+				for (int j = 0; j < 50000; j++)
+				{
+					foreach (FiringIncident item in storytellerComp.MakeIntervalIncidents(Find.AnyPlayerHomeMap))
+					{
+						if (samples.TryGetValue(item.def, out var value))
+						{
+							samples[item.def] = value + 1;
+						}
+						else
+						{
+							samples.Add(item.def, 1);
+						}
+						fireCount++;
+					}
+				}
+			}
+			DebugTables.MakeTablesDialog(samples.Keys, new TableDataGetter<IncidentDef>("defName", (IncidentDef d) => d.defName), new TableDataGetter<IncidentDef>("category", (IncidentDef d) => d.category), new TableDataGetter<IncidentDef>("amount fired", (IncidentDef d) => samples[d]), new TableDataGetter<IncidentDef>("fire chance", (IncidentDef d) => ((float)samples[d] / (float)fireCount).ToString("0.0000")));
 		}
 
 		[DebugOutput("Incidents", true)]
@@ -38,6 +70,33 @@ namespace Verse
 		public static void IncidentTargetsList()
 		{
 			StorytellerUtility.DebugLogTestIncidentTargets();
+		}
+
+		[DebugOutput("Incidents", false)]
+		public static void MinThreatPoints()
+		{
+			int ticksGame = Find.TickManager.TicksGame;
+			DebugTables.MakeTablesDialog(hourOffsets(), new TableDataGetter<int>("hours passed", (int h) => h), new TableDataGetter<int>("days passed", (int h) => h / 24), new TableDataGetter<int>("points min", (int h) => StorytellerUtility.GlobalPointsMin()), new TableDataGetter<int>("points min ceiling", (int h) => Find.Storyteller.difficulty.MinThreatPointsCeiling), new TableDataGetter<int>("points min floor", (int h) => 35f));
+			Find.TickManager.DebugSetTicksGame(ticksGame);
+			static IEnumerable<int> hourOffsets()
+			{
+				for (int i = 0; i < 1200; i += 6)
+				{
+					Find.TickManager.DebugSetTicksGame(2500 * i);
+					yield return i;
+				}
+			}
+		}
+
+		[DebugOutput("Incidents", false)]
+		public static void CurrentThreatPoints()
+		{
+			Map currentMap = Find.CurrentMap;
+			if (currentMap != null)
+			{
+				currentMap.wealthWatcher.ForceRecount();
+				Log.Message(StorytellerUtility.DefaultThreatPointsNow(currentMap).ToString("F2"));
+			}
 		}
 
 		[DebugOutput("Incidents", false)]
@@ -71,15 +130,37 @@ namespace Verse
 			foreach (TraderKindDef allDef in DefDatabase<TraderKindDef>.AllDefs)
 			{
 				TraderKindDef localTk = allDef;
-				string defName = localTk.defName;
-				defName = defName.Replace("_", "\n");
-				defName = defName.Shorten();
-				list.Add(new TableDataGetter<ThingDef>(defName, (ThingDef td) => localTk.WillTrade(td).ToStringCheckBlank()));
+				list.Add(new TableDataGetter<ThingDef>(localTk.defName.Replace("_", "\n").Shorten(), (ThingDef td) => TraderTradeability(localTk, td)));
 			}
 			DebugTables.MakeTablesDialog(from d in DefDatabase<ThingDef>.AllDefs
-				where (d.category == ThingCategory.Item && d.BaseMarketValue > 0.001f && !d.isUnfinishedThing && !d.IsCorpse && !d.destroyOnDrop && d != ThingDefOf.Silver && !d.thingCategories.NullOrEmpty()) || (d.category == ThingCategory.Building && d.Minifiable) || d.category == ThingCategory.Pawn
+				where (d.category == ThingCategory.Item && d.BaseMarketValue > 0.001f && !d.isUnfinishedThing && !d.IsCorpse && d.PlayerAcquirable && d != ThingDefOf.Silver && !d.thingCategories.NullOrEmpty()) || (d.category == ThingCategory.Building && d.Minifiable) || d.category == ThingCategory.Pawn
 				orderby d.thingCategories.NullOrEmpty() ? "zzzzzzz" : d.thingCategories[0].defName, d.BaseMarketValue
 				select d, list.ToArray());
+			static string TraderTradeability(TraderKindDef tk, ThingDef td)
+			{
+				Tradeability tradeability = Tradeability.None;
+				foreach (StockGenerator stockGenerator in tk.stockGenerators)
+				{
+					Tradeability tradeability2 = stockGenerator.TradeabilityFor(td);
+					if (tradeability == Tradeability.None)
+					{
+						tradeability = tradeability2;
+					}
+					else if ((tradeability == Tradeability.Buyable && tradeability2 == Tradeability.Sellable) || (tradeability == Tradeability.Sellable && tradeability2 == Tradeability.Buyable))
+					{
+						tradeability = Tradeability.All;
+						break;
+					}
+				}
+				return tradeability switch
+				{
+					Tradeability.None => "", 
+					Tradeability.All => "✓", 
+					Tradeability.Buyable => "sell", 
+					Tradeability.Sellable => "buy", 
+					_ => td.tradeability.ToString(), 
+				};
+			}
 		}
 
 		[DebugOutput("Incidents", false)]
@@ -120,15 +201,22 @@ namespace Verse
 			StringBuilder sb = new StringBuilder();
 			Action<StockGenerator> obj = delegate(StockGenerator gen)
 			{
-				sb.AppendLine(gen.GetType().ToString());
+				if (gen is StockGenerator_Tag stockGenerator_Tag && !stockGenerator_Tag.tradeTag.NullOrEmpty())
+				{
+					sb.AppendLine(gen.GetType()?.ToString() + " (" + stockGenerator_Tag.tradeTag + ")");
+				}
+				else
+				{
+					sb.AppendLine(gen.GetType().ToString());
+				}
 				sb.AppendLine("ALLOWED DEFS:");
-				foreach (ThingDef item in DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => gen.HandlesThingDef(d)))
+				foreach (ThingDef item in DefDatabase<ThingDef>.AllDefs.Where(gen.HandlesThingDef))
 				{
 					sb.AppendLine(item.defName + " [" + item.BaseMarketValue + "]");
 				}
 				sb.AppendLine();
 				sb.AppendLine("GENERATION TEST:");
-				gen.countRange = IntRange.one;
+				gen.countRange = IntRange.One;
 				for (int i = 0; i < 30; i++)
 				{
 					foreach (Thing item2 in gen.GenerateThings(Find.CurrentMap.Tile))
@@ -138,11 +226,39 @@ namespace Verse
 				}
 				sb.AppendLine("---------------------------------------------------------");
 			};
-			obj(new StockGenerator_Armor());
-			obj(new StockGenerator_WeaponsRanged());
-			obj(new StockGenerator_Clothes());
-			obj(new StockGenerator_Art());
+			obj(new StockGenerator_MarketValue
+			{
+				tradeTag = "Armor"
+			});
+			obj(new StockGenerator_MarketValue
+			{
+				tradeTag = "WeaponRanged"
+			});
+			obj(new StockGenerator_MarketValue
+			{
+				tradeTag = "WeaponMelee"
+			});
+			obj(new StockGenerator_MarketValue
+			{
+				tradeTag = "BasicClothing"
+			});
+			obj(new StockGenerator_MarketValue
+			{
+				tradeTag = "Clothing"
+			});
+			obj(new StockGenerator_MarketValue
+			{
+				tradeTag = "Art"
+			});
 			Log.Message(sb.ToString());
+		}
+
+		[DebugOutput("Incidents", false)]
+		public static void TraderAnimalTags()
+		{
+			TableDataGetter<TraderKindDef>[] getters = (from tag in DefDatabase<TraderKindDef>.AllDefs.SelectMany((TraderKindDef k) => k.stockGenerators.Where((StockGenerator g) => g is StockGenerator_Animals).Cast<StockGenerator_Animals>().SelectMany((StockGenerator_Animals g) => g.AllRelevantTradeTags)).Distinct()
+				select new TableDataGetter<TraderKindDef>(tag, (TraderKindDef def) => def.stockGenerators.Where((StockGenerator g) => g is StockGenerator_Animals).Cast<StockGenerator_Animals>().FirstOrDefault()?.GetInterestInTradeTag(tag) ?? "-")).Prepend(new TableDataGetter<TraderKindDef>("name", (TraderKindDef def) => def.defName)).ToArray();
+			DebugTables.MakeTablesDialog(DefDatabase<TraderKindDef>.AllDefs, getters);
 		}
 
 		[DebugOutput("Incidents", false)]
@@ -159,12 +275,10 @@ namespace Verse
 				list.Add(new DebugMenuOption(localFac.Name + " (" + localFac.def.defName + ")", DebugMenuOptionMode.Action, delegate
 				{
 					List<DebugMenuOption> list2 = new List<DebugMenuOption>();
-					float localP = default(float);
-					float maxPawnCost = default(float);
 					foreach (float item in DebugActionsUtility.PointsOptions(extended: true))
 					{
-						localP = item;
-						maxPawnCost = PawnGroupMakerUtility.MaxPawnCost(localFac, localP, null, PawnGroupKindDefOf.Combat);
+						float localP = item;
+						float maxPawnCost = PawnGroupMakerUtility.MaxPawnCost(localFac, localP, null, PawnGroupKindDefOf.Combat);
 						string defName = (from op in localFac.def.pawnGroupMakers.SelectMany((PawnGroupMaker gm) => gm.options)
 							where op.Cost <= maxPawnCost
 							select op).MaxBy((PawnGenOption op) => op.Cost).kind.defName;
@@ -278,6 +392,51 @@ namespace Verse
 				minSpacingDays = 0.04f,
 				numIncidentsRange = new FloatRange(1f, 2f)
 			});
+		}
+
+		[DebugOutput("Incidents", false)]
+		private static void RaidsInfoSampled()
+		{
+			if (Find.CurrentMap == null)
+			{
+				return;
+			}
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			foreach (float item2 in DebugActionsUtility.PointsOptions(extended: true))
+			{
+				float localP = item2;
+				list.Add(new DebugMenuOption(localP + " points", DebugMenuOptionMode.Action, delegate
+				{
+					int ticksGame = Find.TickManager.TicksGame;
+					Find.TickManager.DebugSetTicksGame(36000000);
+					Faction lastRaidFaction = Find.CurrentMap.StoryState.lastRaidFaction;
+					List<Tuple<IncidentParms, List<Pawn>>> list2 = new List<Tuple<IncidentParms, List<Pawn>>>();
+					for (int i = 0; i < 100; i++)
+					{
+						IncidentParms incidentParms = new IncidentParms
+						{
+							target = Find.CurrentMap,
+							points = localP
+						};
+						if (((IncidentWorker_RaidEnemy)IncidentDefOf.RaidEnemy.Worker).TryGenerateRaidInfo(incidentParms, out var pawns, debugTest: true))
+						{
+							list2.Add(new Tuple<IncidentParms, List<Pawn>>(incidentParms, pawns));
+						}
+					}
+					DebugTables.MakeTablesDialog(list2, new TableDataGetter<Tuple<IncidentParms, List<Pawn>>>("faction def", (Tuple<IncidentParms, List<Pawn>> t) => t.Item1.faction.def.defName), new TableDataGetter<Tuple<IncidentParms, List<Pawn>>>("faction name", (Tuple<IncidentParms, List<Pawn>> t) => t.Item1.faction.Name), new TableDataGetter<Tuple<IncidentParms, List<Pawn>>>("arrival mode", (Tuple<IncidentParms, List<Pawn>> t) => t.Item1.raidArrivalMode.defName), new TableDataGetter<Tuple<IncidentParms, List<Pawn>>>("strategy", (Tuple<IncidentParms, List<Pawn>> t) => t.Item1.raidStrategy.defName), new TableDataGetter<Tuple<IncidentParms, List<Pawn>>>("age restriction", (Tuple<IncidentParms, List<Pawn>> t) => t.Item1.raidAgeRestriction?.defName), new TableDataGetter<Tuple<IncidentParms, List<Pawn>>>("points", (Tuple<IncidentParms, List<Pawn>> t) => t.Item1.points), new TableDataGetter<Tuple<IncidentParms, List<Pawn>>>("pawn points\ntotal", (Tuple<IncidentParms, List<Pawn>> t) => t.Item2.Sum((Pawn x) => x.kindDef.combatPower)), new TableDataGetter<Tuple<IncidentParms, List<Pawn>>>("pawns", (Tuple<IncidentParms, List<Pawn>> t) => PawnUtility.PawnKindsToCommaList(t.Item2)));
+					foreach (Tuple<IncidentParms, List<Pawn>> item3 in list2)
+					{
+						List<Pawn> item = item3.Item2;
+						for (int num = 0; num < item.Count; num++)
+						{
+							item[num].DestroyOrPassToWorld();
+						}
+					}
+					Find.TickManager.DebugSetTicksGame(ticksGame);
+					Find.CurrentMap.storyState.lastRaidFaction = lastRaidFaction;
+				}));
+			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}
 	}
 }

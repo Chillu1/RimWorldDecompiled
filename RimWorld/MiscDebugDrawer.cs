@@ -12,8 +12,7 @@ namespace RimWorld
 			}
 			foreach (object selectedObject in Find.Selector.SelectedObjects)
 			{
-				Thing thing = selectedObject as Thing;
-				if (thing != null)
+				if (selectedObject is Thing thing)
 				{
 					CellRenderer.RenderCell(thing.InteractionCell);
 				}

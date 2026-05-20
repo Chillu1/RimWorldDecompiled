@@ -18,7 +18,7 @@ namespace RimWorld
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			this.FailOnDestroyedOrNull(TargetIndex.A);
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
 				pawn.pather.StopDead();
@@ -26,7 +26,7 @@ namespace RimWorld
 			toil.defaultCompleteMode = ToilCompleteMode.Delay;
 			toil.defaultDuration = 30;
 			yield return toil;
-			Toil toil2 = new Toil();
+			Toil toil2 = ToilMaker.MakeToil("MakeNewToils");
 			toil2.initAction = delegate
 			{
 				if (!pawn.equipment.TryDropEquipment(TargetEquipment, out var _, pawn.Position))

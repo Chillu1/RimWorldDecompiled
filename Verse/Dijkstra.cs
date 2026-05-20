@@ -35,8 +35,7 @@ namespace Verse
 			distances.Clear();
 			queue.Clear();
 			outParents?.Clear();
-			IList<T> list = startingNodes as IList<T>;
-			if (list != null)
+			if (startingNodes is IList<T> list)
 			{
 				for (int i = 0; i < list.Count; i++)
 				{
@@ -72,8 +71,7 @@ namespace Verse
 				{
 					continue;
 				}
-				IList<T> list2 = enumerable as IList<T>;
-				if (list2 != null)
+				if (enumerable is IList<T> list2)
 				{
 					for (int j = 0; j < list2.Count; j++)
 					{

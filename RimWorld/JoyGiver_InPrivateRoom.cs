@@ -8,20 +8,32 @@ namespace RimWorld
 	{
 		public override Job TryGiveJob(Pawn pawn)
 		{
-			if (pawn.ownership == null)
+			Room room = null;
+			if (ModsConfig.IdeologyActive)
+			{
+				room = MeditationUtility.UsableWorshipRooms(pawn).RandomElementWithFallback();
+			}
+			if (room == null)
+			{
+				room = pawn.ownership?.OwnedRoom;
+			}
+			if (room == null)
 			{
 				return null;
 			}
-			Room ownedRoom = pawn.ownership.OwnedRoom;
-			if (ownedRoom == null)
-			{
-				return null;
-			}
-			if (!ownedRoom.Cells.Where((IntVec3 c) => c.Standable(pawn.Map) && !c.IsForbidden(pawn) && pawn.CanReserveAndReach(c, PathEndMode.OnCell, Danger.None)).TryRandomElement(out var result))
+			if (!room.Cells.Where(Validator).TryRandomElement(out var result))
 			{
 				return null;
 			}
 			return JobMaker.MakeJob(def.jobDef, result);
+			bool Validator(IntVec3 c)
+			{
+				if (c.Standable(pawn.Map) && !c.Fogged(pawn.Map) && !c.IsForbidden(pawn))
+				{
+					return pawn.CanReserveAndReach(c, PathEndMode.OnCell, Danger.None);
+				}
+				return false;
+			}
 		}
 
 		public override Job TryGiveJobWhileInBed(Pawn pawn)

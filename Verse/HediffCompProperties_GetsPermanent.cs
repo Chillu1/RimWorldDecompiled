@@ -4,8 +4,10 @@ namespace Verse
 	{
 		public float becomePermanentChanceFactor = 1f;
 
+		[MustTranslate]
 		public string permanentLabel;
 
+		[MustTranslate]
 		public string instantlyPermanentLabel;
 
 		public HediffCompProperties_GetsPermanent()

@@ -6,6 +6,7 @@ namespace RimWorld
 	{
 		public SimpleCurve countdownCurveTicks;
 
+		[NoTranslate]
 		public string signalTag;
 
 		public CompProperties_SendSignalOnCountdown()

@@ -38,9 +38,15 @@ namespace RimWorld
 
 		private static int TicksGame => Find.TickManager.TicksGame;
 
+		private static int TicksSinceSettle => Find.TickManager.TicksSinceSettle;
+
 		public static int DaysPassed => DaysPassedAt(TicksGame);
 
+		public static int DaysPassedSinceSettle => DaysPassedAt(TicksSinceSettle);
+
 		public static float DaysPassedFloat => (float)TicksGame / 60000f;
+
+		public static float DaysPassedSinceSettleFloat => (float)TicksSinceSettle / 60000f;
 
 		public static int TwelfthsPassed => TwelfthsPassedAt(TicksGame);
 
@@ -60,6 +66,11 @@ namespace RimWorld
 			return gameTick + Find.TickManager.gameStartAbsTick;
 		}
 
+		public static int TickGameToSettled(int gameTick)
+		{
+			return gameTick - Find.TickManager.SettleTick;
+		}
+
 		public static int DaysPassedAt(int gameTicks)
 		{
 			return Mathf.FloorToInt((float)gameTicks / 60000f);
@@ -75,7 +86,7 @@ namespace RimWorld
 			return Mathf.FloorToInt((float)gameTicks / 3600000f);
 		}
 
-		private static long LocalTicksOffsetFromLongitude(float longitude)
+		public static long LocalTicksOffsetFromLongitude(float longitude)
 		{
 			return (long)TimeZoneAt(longitude) * 2500L;
 		}
@@ -164,8 +175,13 @@ namespace RimWorld
 		public static string DateFullStringAt(long absTicks, Vector2 location)
 		{
 			int num = DayOfSeason(absTicks, location.x) + 1;
-			string value = Find.ActiveLanguageWorker.OrdinalNumber(num);
-			return "FullDate".Translate(value, Quadrum(absTicks, location.x).Label(), Year(absTicks, location.x), num);
+			string text = Find.ActiveLanguageWorker.OrdinalNumber(num);
+			return "FullDate".Translate(text, Quadrum(absTicks, location.x).Label(), Year(absTicks, location.x), num);
+		}
+
+		public static string DateMonthYearStringAt(long absTicks, Vector2 location)
+		{
+			return "MonthYearDate".Translate(Quadrum(absTicks, location.x).Label(), Year(absTicks, location.x));
 		}
 
 		public static string DateFullStringWithHourAt(long absTicks, Vector2 location)
@@ -176,21 +192,21 @@ namespace RimWorld
 		public static string DateReadoutStringAt(long absTicks, Vector2 location)
 		{
 			int num = DayOfSeason(absTicks, location.x) + 1;
-			string value = Find.ActiveLanguageWorker.OrdinalNumber(num);
-			return "DateReadout".Translate(value, Quadrum(absTicks, location.x).Label(), Year(absTicks, location.x), num);
+			string text = Find.ActiveLanguageWorker.OrdinalNumber(num);
+			return "DateReadout".Translate(text, Quadrum(absTicks, location.x).Label(), Year(absTicks, location.x), num);
 		}
 
 		public static string DateShortStringAt(long absTicks, Vector2 location)
 		{
-			int value = DayOfSeason(absTicks, location.x) + 1;
-			return "ShortDate".Translate(value, Quadrum(absTicks, location.x).LabelShort(), Year(absTicks, location.x), value);
+			int num = DayOfSeason(absTicks, location.x) + 1;
+			return "ShortDate".Translate(num, Quadrum(absTicks, location.x).LabelShort(), Year(absTicks, location.x), num);
 		}
 
 		public static string SeasonDateStringAt(long absTicks, Vector2 longLat)
 		{
 			int num = DayOfSeason(absTicks, longLat.x) + 1;
-			string value = Find.ActiveLanguageWorker.OrdinalNumber(num);
-			return "SeasonFullDate".Translate(value, Season(absTicks, longLat).Label(), num);
+			string text = Find.ActiveLanguageWorker.OrdinalNumber(num);
+			return "SeasonFullDate".Translate(text, Season(absTicks, longLat).Label(), num);
 		}
 
 		public static string SeasonDateStringAt(Twelfth twelfth, Vector2 longLat)
@@ -201,8 +217,8 @@ namespace RimWorld
 		public static string QuadrumDateStringAt(long absTicks, float longitude)
 		{
 			int num = DayOfQuadrum(absTicks, longitude) + 1;
-			string value = Find.ActiveLanguageWorker.OrdinalNumber(num);
-			return "SeasonFullDate".Translate(value, Quadrum(absTicks, longitude).Label(), num);
+			string text = Find.ActiveLanguageWorker.OrdinalNumber(num);
+			return "SeasonFullDate".Translate(text, Quadrum(absTicks, longitude).Label(), num);
 		}
 
 		public static string QuadrumDateStringAt(Quadrum quadrum)
@@ -220,6 +236,11 @@ namespace RimWorld
 			return (float)numTicks / 60000f;
 		}
 
+		public static int DaysToTicks(float days)
+		{
+			return Mathf.RoundToInt(days * 60000f);
+		}
+
 		public static string ToStringTicksToDays(this int numTicks, string format = "F1")
 		{
 			string text = numTicks.TicksToDays().ToString(format);
@@ -227,17 +248,17 @@ namespace RimWorld
 			{
 				return "Period1Day".Translate();
 			}
-			return text + " " + "DaysLower".Translate();
+			return "PeriodDays".Translate(text);
 		}
 
-		public static string ToStringTicksToPeriod(this int numTicks, bool allowSeconds = true, bool shortForm = false, bool canUseDecimals = true, bool allowYears = true)
+		public static string ToStringTicksToPeriod(this int numTicks, bool allowSeconds = true, bool shortForm = false, bool canUseDecimals = true, bool allowYears = true, bool canUseDecimalsShortForm = false)
 		{
 			if (allowSeconds && numTicks < 2500 && (numTicks < 600 || Math.Round((float)numTicks / 2500f, 1) == 0.0))
 			{
 				int num = Mathf.RoundToInt((float)numTicks / 60f);
 				if (shortForm)
 				{
-					return num + (string)"LetterSecond".Translate();
+					return num.ToString() + "LetterSecond".Translate();
 				}
 				if (num == 1)
 				{
@@ -249,11 +270,15 @@ namespace RimWorld
 			{
 				if (shortForm)
 				{
-					return Mathf.RoundToInt((float)numTicks / 2500f) + (string)"LetterHour".Translate();
+					if (canUseDecimals && canUseDecimalsShortForm)
+					{
+						return ((float)numTicks / 2500f).ToString("F1") + "LetterHour".Translate();
+					}
+					return Mathf.RoundToInt((float)numTicks / 2500f).ToString() + "LetterHour".Translate();
 				}
 				if (numTicks < 2500)
 				{
-					string text = ((float)numTicks / 2500f).ToString("0.#");
+					string text = ((float)numTicks / 2500f).ToString(canUseDecimals ? "0.#" : "0");
 					if (text == "1")
 					{
 						return "Period1Hour".Translate();
@@ -271,7 +296,11 @@ namespace RimWorld
 			{
 				if (shortForm)
 				{
-					return Mathf.RoundToInt((float)numTicks / 60000f) + (string)"LetterDay".Translate();
+					if (canUseDecimals && canUseDecimalsShortForm)
+					{
+						return ((float)numTicks / 60000f).ToString("F1") + "LetterDay".Translate();
+					}
+					return Mathf.RoundToInt((float)numTicks / 60000f).ToString() + "LetterDay".Translate();
 				}
 				string text2 = ((!canUseDecimals) ? Mathf.RoundToInt((float)numTicks / 60000f).ToString() : ((float)numTicks / 60000f).ToStringDecimalIfSmall());
 				if (text2 == "1")
@@ -282,7 +311,11 @@ namespace RimWorld
 			}
 			if (shortForm)
 			{
-				return Mathf.RoundToInt((float)numTicks / 3600000f) + (string)"LetterYear".Translate();
+				if (canUseDecimals && canUseDecimalsShortForm)
+				{
+					return ((float)numTicks / 3600000f).ToString("F1") + "LetterYear".Translate();
+				}
+				return Mathf.RoundToInt((float)numTicks / 3600000f).ToString() + "LetterYear".Translate();
 			}
 			string text3 = ((!canUseDecimals) ? Mathf.RoundToInt((float)numTicks / 3600000f).ToString() : ((float)numTicks / 3600000f).ToStringDecimalIfSmall());
 			if (text3 == "1")

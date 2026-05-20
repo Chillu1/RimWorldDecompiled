@@ -8,10 +8,10 @@ namespace RimWorld
 		public override void Arrive(List<Pawn> pawns, IncidentParms parms)
 		{
 			Map map = (Map)parms.target;
-			bool canRoofPunch = parms.faction != null && parms.faction.HostileTo(Faction.OfPlayer);
+			bool flag = parms.faction != null && parms.faction.HostileTo(Faction.OfPlayer);
 			for (int i = 0; i < pawns.Count; i++)
 			{
-				DropPodUtility.DropThingsNear(DropCellFinder.RandomDropSpot(map), map, Gen.YieldSingle((Thing)pawns[i]), parms.podOpenDelay, canInstaDropDuringInit: false, leaveSlag: true, canRoofPunch);
+				DropPodUtility.DropThingsNear(DropCellFinder.RandomDropSpot(map), map, Gen.YieldSingle((Thing)pawns[i]), parms.podOpenDelay, canInstaDropDuringInit: false, leaveSlag: true, parms.canRoofPunch ?? flag, forbid: true, allowFogged: true, parms.faction);
 			}
 		}
 

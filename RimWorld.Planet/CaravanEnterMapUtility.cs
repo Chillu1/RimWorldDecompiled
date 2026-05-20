@@ -12,7 +12,7 @@ namespace RimWorld.Planet
 		{
 			if (enterMode == CaravanEnterMode.None)
 			{
-				Log.Error(string.Concat("Caravan ", caravan, " tried to enter map ", map, " with enter mode ", enterMode));
+				Log.Error("Caravan " + caravan?.ToString() + " tried to enter map " + map?.ToString() + " with enter mode " + enterMode);
 				enterMode = CaravanEnterMode.Edge;
 			}
 			IntVec3 enterCell = GetEnterCell(caravan, map, enterMode, extraCellValidator);
@@ -24,10 +24,27 @@ namespace RimWorld.Planet
 		{
 			tmpPawns.Clear();
 			tmpPawns.AddRange(caravan.PawnsListForReading);
+			Building_PassengerShuttle shuttle = caravan.Shuttle;
+			if (shuttle != null)
+			{
+				CaravanInventoryUtility.GetOwnerOf(caravan, shuttle).inventory.innerContainer.Remove(shuttle);
+			}
 			for (int i = 0; i < tmpPawns.Count; i++)
 			{
 				IntVec3 loc = spawnCellGetter(tmpPawns[i]);
 				GenSpawn.Spawn(tmpPawns[i], loc, map, Rot4.Random);
+			}
+			if (shuttle != null)
+			{
+				if (!CellFinder.TryFindRandomCellNear(tmpPawns.RandomElement().Position, map, 20, (IntVec3 c) => RoyalTitlePermitWorker_CallShuttle.ShuttleCanLandHere(c, map), out var result) && !CellFinder.TryFindRandomCell(map, (IntVec3 c) => RoyalTitlePermitWorker_CallShuttle.ShuttleCanLandHere(c, map), out result))
+				{
+					result = tmpPawns.RandomElement().Position;
+				}
+				if (!GenPlace.TryPlaceThing(shuttle, result, map, ThingPlaceMode.Near))
+				{
+					Log.Error("Failed to find a location to place the shuttle for caravan.");
+				}
+				CaravanShuttleUtility.LoadCaravanItemsIntoContainer(tmpPawns, shuttle.TransporterComp.innerContainer);
 			}
 			switch (dropInventoryMode)
 			{
@@ -36,9 +53,9 @@ namespace RimWorld.Planet
 				break;
 			case CaravanDropInventoryMode.UnloadIndividually:
 			{
-				for (int j = 0; j < tmpPawns.Count; j++)
+				for (int num = 0; num < tmpPawns.Count; num++)
 				{
-					tmpPawns[j].inventory.UnloadEverything = true;
+					tmpPawns[num].inventory.UnloadEverything = true;
 				}
 				break;
 			}
@@ -47,13 +64,17 @@ namespace RimWorld.Planet
 			{
 				DraftColonists(tmpPawns);
 			}
+			if (!draftColonists && map.IsPlayerHome)
+			{
+				CaravanFormingUtility.LeadAnimalsToPen(tmpPawns);
+			}
 			if (map.IsPlayerHome)
 			{
-				for (int k = 0; k < tmpPawns.Count; k++)
+				for (int num2 = 0; num2 < tmpPawns.Count; num2++)
 				{
-					if (tmpPawns[k].IsPrisoner)
+					if (tmpPawns[num2].IsPrisoner)
 					{
-						tmpPawns[k].guest.WaitInsteadOfEscapingForDefaultTicks();
+						tmpPawns[num2].guest.WaitInsteadOfEscapingForDefaultTicks();
 					}
 				}
 			}
@@ -77,9 +98,9 @@ namespace RimWorld.Planet
 
 		private static IntVec3 FindNearEdgeCell(Map map, Predicate<IntVec3> extraCellValidator)
 		{
-			Predicate<IntVec3> baseValidator = (IntVec3 x) => x.Standable(map) && !x.Fogged(map);
+			Predicate<IntVec3> baseValidator = (IntVec3 x) => x.Standable(map);
 			Faction hostFaction = map.ParentFaction;
-			if (CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => baseValidator(x) && (extraCellValidator == null || extraCellValidator(x)) && ((hostFaction != null && map.reachability.CanReachFactionBase(x, hostFaction)) || (hostFaction == null && map.reachability.CanReachBiggestMapEdgeRoom(x))), map, CellFinder.EdgeRoadChance_Neutral, out var result))
+			if (CellFinder.TryFindRandomEdgeCellWith((IntVec3 x) => baseValidator(x) && (extraCellValidator == null || extraCellValidator(x)) && ((hostFaction != null && map.reachability.CanReachFactionBase(x, hostFaction)) || (hostFaction == null && map.reachability.CanReachBiggestMapEdgeDistrict(x))), map, CellFinder.EdgeRoadChance_Neutral, out var result))
 			{
 				return CellFinder.RandomClosewalkCellNear(result, map, 5);
 			}
@@ -97,8 +118,8 @@ namespace RimWorld.Planet
 
 		private static IntVec3 FindCenterCell(Map map, Predicate<IntVec3> extraCellValidator)
 		{
-			TraverseParms traverseParms = TraverseParms.For(TraverseMode.NoPassClosedDoors);
-			Predicate<IntVec3> baseValidator = (IntVec3 x) => x.Standable(map) && !x.Fogged(map) && map.reachability.CanReachMapEdge(x, traverseParms);
+			TraverseParms traverseParms = TraverseParms.For(TraverseMode.NoPassClosedDoors).WithFenceblocked(forceFenceblocked: true);
+			Predicate<IntVec3> baseValidator = (IntVec3 x) => x.Standable(map) && map.reachability.CanReachMapEdge(x, traverseParms);
 			if (extraCellValidator != null && RCellFinder.TryFindRandomCellNearTheCenterOfTheMapWith((IntVec3 x) => baseValidator(x) && extraCellValidator(x), map, out var result))
 			{
 				return result;
@@ -123,16 +144,11 @@ namespace RimWorld.Planet
 		{
 			for (int i = 0; i < pawns.Count; i++)
 			{
-				if (pawns[i].IsColonist)
+				if (pawns[i].IsColonist && !pawns[i].InMentalState)
 				{
 					pawns[i].drafter.Drafted = true;
 				}
 			}
-		}
-
-		private static bool TryRandomNonOccupiedClosewalkCellNear(IntVec3 root, Map map, int radius, out IntVec3 result)
-		{
-			return CellFinder.TryFindRandomReachableCellNear(root, map, radius, TraverseParms.For(TraverseMode.NoPassClosedDoors), (IntVec3 c) => c.Standable(map) && c.GetFirstPawn(map) == null, null, out result);
 		}
 	}
 }

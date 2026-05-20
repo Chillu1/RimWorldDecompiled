@@ -17,32 +17,30 @@ namespace RimWorld
 
 		protected static int[] groupID;
 
-		private static List<int> tmpNeighbors = new List<int>();
+		private static readonly List<PlanetTile> tmpNeighbors = new List<PlanetTile>();
 
-		private static HashSet<int> tmpTilesForTextDrawPosCalculationSet = new HashSet<int>();
+		private static readonly HashSet<PlanetTile> tmpTilesForTextDrawPosCalculationSet = new HashSet<PlanetTile>();
 
-		private static List<int> tmpEdgeTiles = new List<int>();
+		private static readonly List<PlanetTile> tmpEdgeTiles = new List<PlanetTile>();
 
-		private static List<Pair<int, int>> tmpTraversedTiles = new List<Pair<int, int>>();
+		private static readonly List<(PlanetTile tile, int traversalDistance)> tmpTraversedTiles = new List<(PlanetTile, int)>();
 
-		public abstract void GenerateWhereAppropriate();
+		public abstract void GenerateWhereAppropriate(PlanetLayer layer);
 
-		protected void AddFeature(List<int> members, List<int> tilesForTextDrawPosCalculation)
+		protected void AddFeature(PlanetLayer layer, List<PlanetTile> members, List<PlanetTile> tilesForTextDrawPosCalculation)
 		{
-			WorldFeature worldFeature = new WorldFeature();
-			worldFeature.uniqueID = Find.UniqueIDsManager.GetNextWorldFeatureID();
-			worldFeature.def = def;
+			WorldFeature worldFeature = new WorldFeature(def, layer);
 			worldFeature.name = NameGenerator.GenerateName(def.nameMaker, Find.WorldFeatures.features.Select((WorldFeature x) => x.name), appendNumberIfNameUsed: false, "r_name");
 			WorldGrid worldGrid = Find.WorldGrid;
-			for (int i = 0; i < members.Count; i++)
+			for (int num = 0; num < members.Count; num++)
 			{
-				worldGrid[members[i]].feature = worldFeature;
+				worldGrid[members[num]].feature = worldFeature;
 			}
-			AssignBestDrawPos(worldFeature, tilesForTextDrawPosCalculation);
+			AssignBestDrawPos(layer, worldFeature, tilesForTextDrawPosCalculation);
 			Find.WorldFeatures.features.Add(worldFeature);
 		}
 
-		private void AssignBestDrawPos(WorldFeature newFeature, List<int> tilesForTextDrawPosCalculation)
+		private void AssignBestDrawPos(PlanetLayer layer, WorldFeature newFeature, List<PlanetTile> tilesForTextDrawPosCalculation)
 		{
 			WorldGrid worldGrid = Find.WorldGrid;
 			tmpEdgeTiles.Clear();
@@ -51,12 +49,12 @@ namespace RimWorld
 			Vector3 zero = Vector3.zero;
 			for (int i = 0; i < tilesForTextDrawPosCalculation.Count; i++)
 			{
-				int num = tilesForTextDrawPosCalculation[i];
-				zero += worldGrid.GetTileCenter(num);
-				bool flag = worldGrid.IsOnEdge(num);
+				PlanetTile planetTile = tilesForTextDrawPosCalculation[i];
+				zero += worldGrid.GetTileCenter(planetTile);
+				bool flag = worldGrid.IsOnEdge(planetTile);
 				if (!flag)
 				{
-					worldGrid.GetTileNeighbors(num, tmpNeighbors);
+					worldGrid.GetTileNeighbors(planetTile, tmpNeighbors);
 					for (int j = 0; j < tmpNeighbors.Count; j++)
 					{
 						if (!tmpTilesForTextDrawPosCalculationSet.Contains(tmpNeighbors[j]))
@@ -68,7 +66,7 @@ namespace RimWorld
 				}
 				if (flag)
 				{
-					tmpEdgeTiles.Add(num);
+					tmpEdgeTiles.Add(planetTile);
 				}
 			}
 			zero /= (float)tilesForTextDrawPosCalculation.Count;
@@ -78,49 +76,50 @@ namespace RimWorld
 			}
 			int bestTileDist = 0;
 			tmpTraversedTiles.Clear();
-			Find.WorldFloodFiller.FloodFill(-1, (int x) => tmpTilesForTextDrawPosCalculationSet.Contains(x), delegate(int tile, int traversalDist)
+			layer.Filler.FloodFill(PlanetTile.Invalid, (Predicate<PlanetTile>)((PlanetTile item) => tmpTilesForTextDrawPosCalculationSet.Contains(item)), (Predicate<PlanetTile, int>)Process, int.MaxValue, (IEnumerable<PlanetTile>)tmpEdgeTiles);
+			PlanetTile tile = PlanetTile.Invalid;
+			float num = -1f;
+			for (int num2 = 0; num2 < tmpTraversedTiles.Count; num2++)
 			{
-				tmpTraversedTiles.Add(new Pair<int, int>(tile, traversalDist));
-				bestTileDist = traversalDist;
-				return false;
-			}, int.MaxValue, tmpEdgeTiles);
-			int num2 = -1;
-			float num3 = -1f;
-			for (int k = 0; k < tmpTraversedTiles.Count; k++)
-			{
-				if (tmpTraversedTiles[k].Second == bestTileDist)
+				if (tmpTraversedTiles[num2].traversalDistance == bestTileDist)
 				{
-					float sqrMagnitude = (worldGrid.GetTileCenter(tmpTraversedTiles[k].First) - zero).sqrMagnitude;
-					if (num2 == -1 || sqrMagnitude < num3)
+					float sqrMagnitude = (worldGrid.GetTileCenter(tmpTraversedTiles[num2].tile) - zero).sqrMagnitude;
+					if (!tile.Valid || sqrMagnitude < num)
 					{
-						num2 = tmpTraversedTiles[k].First;
-						num3 = sqrMagnitude;
+						tile = tmpTraversedTiles[num2].tile;
+						num = sqrMagnitude;
 					}
 				}
 			}
 			float maxDrawSizeInTiles = (float)bestTileDist * 2f * 1.2f;
-			newFeature.drawCenter = worldGrid.GetTileCenter(num2);
+			newFeature.drawCenter = worldGrid.GetTileCenter(tile);
 			newFeature.maxDrawSizeInTiles = maxDrawSizeInTiles;
+			bool Process(PlanetTile item, int traversalDist)
+			{
+				tmpTraversedTiles.Add((item, traversalDist));
+				bestTileDist = traversalDist;
+				return false;
+			}
 		}
 
-		protected static void ClearVisited()
+		protected static void ClearVisited(PlanetLayer layer)
 		{
-			ClearOrCreate(ref visited);
+			ClearOrCreate(layer, ref visited);
 		}
 
-		protected static void ClearGroupSizes()
+		protected static void ClearGroupSizes(PlanetLayer layer)
 		{
-			ClearOrCreate(ref groupSize);
+			ClearOrCreate(layer, ref groupSize);
 		}
 
-		protected static void ClearGroupIDs()
+		protected static void ClearGroupIDs(PlanetLayer layer)
 		{
-			ClearOrCreate(ref groupID);
+			ClearOrCreate(layer, ref groupID);
 		}
 
-		private static void ClearOrCreate<T>(ref T[] array)
+		private static void ClearOrCreate<T>(PlanetLayer layer, ref T[] array)
 		{
-			int tilesCount = Find.WorldGrid.TilesCount;
+			int tilesCount = layer.TilesCount;
 			if (array == null || array.Length != tilesCount)
 			{
 				array = new T[tilesCount];

@@ -8,8 +8,15 @@ namespace RimWorld
 		public Designator_AreaSnowClearClear()
 			: base(DesignateMode.Remove)
 		{
-			defaultLabel = "DesignatorAreaSnowClearClear".Translate();
-			defaultDesc = "DesignatorAreaSnowClearClearDesc".Translate();
+			string key = "DesignatorAreaSnowClearClear";
+			string key2 = "DesignatorAreaSnowClearClearDesc";
+			if (ModsConfig.OdysseyActive)
+			{
+				key = "DesignatorAreaSnowOrSandClearClear";
+				key2 = "DesignatorAreaSnowOrSandClearClearDesc";
+			}
+			defaultLabel = key.Translate();
+			defaultDesc = key2.Translate();
 			icon = ContentFinder<Texture2D>.Get("UI/Designators/SnowClearAreaOff");
 			soundDragSustain = SoundDefOf.Designate_DragAreaDelete;
 			soundDragChanged = null;

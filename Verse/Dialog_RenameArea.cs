@@ -1,13 +1,10 @@
 namespace Verse
 {
-	public class Dialog_RenameArea : Dialog_Rename
+	public class Dialog_RenameArea : Dialog_Rename<Area>
 	{
-		private Area area;
-
 		public Dialog_RenameArea(Area area)
+			: base(area)
 		{
-			this.area = area;
-			curName = area.Label;
 		}
 
 		protected override AcceptanceReport NameIsValid(string name)
@@ -17,16 +14,11 @@ namespace Verse
 			{
 				return result;
 			}
-			if (area.Map.areaManager.AllAreas.Any((Area a) => a != area && a.Label == name))
+			if (renaming.Map.areaManager.AllAreas.Any((Area a) => a != renaming && a.Label == name))
 			{
 				return "NameIsInUse".Translate();
 			}
 			return true;
-		}
-
-		protected override void SetName(string name)
-		{
-			area.SetLabel(curName);
 		}
 	}
 }

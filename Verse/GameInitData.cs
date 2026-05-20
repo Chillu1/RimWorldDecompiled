@@ -7,11 +7,15 @@ namespace Verse
 {
 	public class GameInitData
 	{
-		public int startingTile = -1;
+		public PlanetTile startingTile = PlanetTile.Invalid;
+
+		public MapGeneratorDef mapGeneratorDef;
 
 		public int mapSize = 250;
 
 		public List<Pawn> startingAndOptionalPawns = new List<Pawn>();
+
+		public Dictionary<Pawn, List<ThingDefCount>> startingPossessions = new Dictionary<Pawn, List<ThingDefCount>>();
 
 		public int startingPawnCount = -1;
 
@@ -22,6 +26,18 @@ namespace Verse
 		public bool permadeathChosen;
 
 		public bool permadeath;
+
+		public PawnKindDef startingPawnKind;
+
+		public List<PawnKindCount> startingPawnsRequired;
+
+		public List<XenotypeCount> startingXenotypesRequired;
+
+		public List<MutantCount> startingMutantsRequired;
+
+		public DevelopmentalStage allowedDevelopmentalStages = DevelopmentalStage.Baby | DevelopmentalStage.Child | DevelopmentalStage.Adult;
+
+		public List<SkillDef> startingSkillsRequired;
 
 		public bool startedFromEntry;
 
@@ -51,12 +67,12 @@ namespace Verse
 			Current.Game.World = null;
 			startingAndOptionalPawns.Clear();
 			playerFaction = null;
-			startingTile = -1;
+			startingTile = PlanetTile.Invalid;
 		}
 
 		public override string ToString()
 		{
-			return "startedFromEntry: " + startedFromEntry.ToString() + "\nstartingAndOptionalPawns: " + startingAndOptionalPawns.Count;
+			return $"startedFromEntry: {startedFromEntry}\nstartingAndOptionalPawns: {startingAndOptionalPawns.Count}";
 		}
 
 		public void PrepForMapGen()
@@ -64,8 +80,11 @@ namespace Verse
 			while (startingAndOptionalPawns.Count > startingPawnCount)
 			{
 				PawnComponentsUtility.RemoveComponentsOnDespawned(startingAndOptionalPawns[startingPawnCount]);
+				startingAndOptionalPawns[startingPawnCount].wasLeftBehindStartingPawn = true;
 				Find.WorldPawns.PassToWorld(startingAndOptionalPawns[startingPawnCount], PawnDiscardDecideMode.KeepForever);
-				startingAndOptionalPawns.RemoveAt(startingPawnCount);
+				Pawn pawn = startingAndOptionalPawns[startingPawnCount];
+				startingAndOptionalPawns.Remove(pawn);
+				startingPossessions.Remove(pawn);
 			}
 			List<Pawn> list = startingAndOptionalPawns;
 			foreach (Pawn item in list)
@@ -104,6 +123,18 @@ namespace Verse
 				if (source.Any())
 				{
 					source.InRandomOrder().MaxBy((Pawn c) => c.skills.AverageOfRelevantSkillsFor(w)).workSettings.SetPriority(w, 3);
+				}
+			}
+			if (!ModsConfig.BiotechActive)
+			{
+				return;
+			}
+			for (int num = 0; num < startingAndOptionalPawns.Count; num++)
+			{
+				CustomXenotype forcedCustomXenotype = StartingPawnUtility.GetGenerationRequest(num).ForcedCustomXenotype;
+				if (forcedCustomXenotype != null && !Current.Game.customXenotypeDatabase.customXenotypes.Contains(forcedCustomXenotype))
+				{
+					Current.Game.customXenotypeDatabase.customXenotypes.Add(forcedCustomXenotype);
 				}
 			}
 		}

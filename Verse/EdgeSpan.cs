@@ -32,7 +32,15 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return string.Concat("(root=", root, ", dir=", dir.ToString(), " + length=", length, ")");
+			string[] obj = new string[7] { "(root=", null, null, null, null, null, null };
+			IntVec3 intVec = root;
+			obj[1] = intVec.ToString();
+			obj[2] = ", dir=";
+			obj[3] = dir.ToString();
+			obj[4] = " + length=";
+			obj[5] = length.ToString();
+			obj[6] = ")";
+			return string.Concat(obj);
 		}
 
 		public EdgeSpan(IntVec3 root, SpanDirection dir, int length)

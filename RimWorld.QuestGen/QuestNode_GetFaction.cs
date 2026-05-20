@@ -69,7 +69,7 @@ namespace RimWorld.QuestGen
 
 		private bool TryFindFaction(out Faction faction, Slate slate)
 		{
-			return (from x in Find.FactionManager.GetFactions_NewTemp(allowHidden: true)
+			return (from x in Find.FactionManager.GetFactions(allowHidden: true)
 				where IsGoodFaction(x, slate)
 				select x).TryRandomElement(out faction);
 		}
@@ -104,7 +104,8 @@ namespace RimWorld.QuestGen
 			{
 				return false;
 			}
-			if (!(allowPermanentEnemy.GetValue(slate) ?? true) && faction.def.permanentEnemy)
+			bool? value = allowPermanentEnemy.GetValue(slate);
+			if (value.HasValue && value != true && faction.def.permanentEnemy)
 			{
 				return false;
 			}
@@ -132,8 +133,8 @@ namespace RimWorld.QuestGen
 			{
 				return false;
 			}
-			Thing value = mustBeHostileToFactionOf.GetValue(slate);
-			if (value != null && value.Faction != null && (value.Faction == faction || !faction.HostileTo(value.Faction)))
+			Thing value2 = mustBeHostileToFactionOf.GetValue(slate);
+			if (value2 != null && value2.Faction != null && (value2.Faction == faction || !faction.HostileTo(value2.Faction)))
 			{
 				return false;
 			}

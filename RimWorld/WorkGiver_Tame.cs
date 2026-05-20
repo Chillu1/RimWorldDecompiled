@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 using Verse;
 using Verse.AI;
 
@@ -21,12 +22,15 @@ namespace RimWorld
 
 		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			Pawn pawn2 = t as Pawn;
-			if (pawn2 == null || !TameUtility.CanTame(pawn2))
+			if (!(t is Pawn pawn2) || !TameUtility.CanTame(pawn2))
 			{
 				return null;
 			}
 			if (pawn.Map.designationManager.DesignationOn(t, DesignationDefOf.Tame) == null)
+			{
+				return null;
+			}
+			if (!CanInteractWithAnimal(pawn, pawn2, forced))
 			{
 				return null;
 			}
@@ -35,20 +39,23 @@ namespace RimWorld
 				JobFailReason.Is(WorkGiver_InteractAnimal.AnimalInteractedTooRecentlyTrans);
 				return null;
 			}
-			if (!CanInteractWithAnimal(pawn, pawn2, forced))
+			Thing thing = null;
+			int count = -1;
+			if (pawn2.RaceProps.EatsFood && pawn2.needs?.food != null && !HasFoodToInteractAnimal(pawn, pawn2))
 			{
-				return null;
-			}
-			if (pawn2.RaceProps.EatsFood && !HasFoodToInteractAnimal(pawn, pawn2))
-			{
-				Job job = TakeFoodForAnimalInteractJob(pawn, pawn2);
-				if (job == null)
+				thing = FoodUtility.BestFoodSourceOnMap(pawn, pawn2, desperate: false, out var foodDef, FoodPreferability.RawTasty, allowPlant: false, allowDrug: false, allowCorpse: false, allowDispenserFull: false, allowDispenserEmpty: false, allowForbidden: false, allowSociallyImproper: false, allowHarvest: false, forceScanWholeMap: false, ignoreReservations: false, calculateWantedStackCount: false, FoodPreferability.Undefined, JobDriver_InteractAnimal.RequiredNutritionPerFeed(pawn2) * 2f * 4f);
+				if (thing == null)
 				{
-					JobFailReason.Is(WorkGiver_InteractAnimal.NoUsableFoodTrans);
+					JobFailReason.Is("NoFood".Translate());
+					return null;
 				}
-				return job;
+				float num = JobDriver_InteractAnimal.RequiredNutritionPerFeed(pawn2) * 2f * 4f;
+				float nutrition = FoodUtility.GetNutrition(pawn2, thing, foodDef);
+				count = Mathf.CeilToInt(num / nutrition);
 			}
-			return JobMaker.MakeJob(JobDefOf.Tame, t);
+			Job job = JobMaker.MakeJob(JobDefOf.Tame, t, null, thing);
+			job.count = count;
+			return job;
 		}
 	}
 }

@@ -30,9 +30,13 @@ namespace RimWorld
 
 		public List<WorkTypeDef> requiredAnyNonDisabledWorkType;
 
+		public WorkTags requiredNonDisabledWorkTags;
+
 		public List<PawnCapacityDef> requiredCapacities;
 
 		public List<SkillDef> associatedSkills;
+
+		public float minAge;
 
 		public List<StatModifier> statOffsets;
 

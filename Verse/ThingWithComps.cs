@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
@@ -10,7 +12,20 @@ namespace Verse
 	{
 		private List<ThingComp> comps;
 
+		private Dictionary<Type, ThingComp[]> compsByType;
+
+		[Unsaved(false)]
+		public CompStyleable compStyleable;
+
+		[Unsaved(false)]
+		public CompForbiddable compForbiddable;
+
+		[Unsaved(false)]
+		public CompQuality compQuality;
+
 		private static readonly List<ThingComp> EmptyCompsList = new List<ThingComp>();
+
+		private static List<FloatMenuOption> tmpFloatMenuOptions = new List<FloatMenuOption>();
 
 		public List<ThingComp> AllComps
 		{
@@ -32,6 +47,14 @@ namespace Verse
 				if (comp != null && comp.Active)
 				{
 					return comp.Color;
+				}
+				foreach (ThingComp allComp in AllComps)
+				{
+					Color? color = allComp.ForceColor();
+					if (color.HasValue)
+					{
+						return color.Value;
+					}
 				}
 				return base.DrawColor;
 			}
@@ -99,22 +122,45 @@ namespace Verse
 
 		public T GetComp<T>() where T : ThingComp
 		{
-			if (comps != null)
+			if (comps == null)
 			{
-				int i = 0;
-				for (int count = comps.Count; i < count; i++)
+				return null;
+			}
+			int count = comps.Count;
+			if (count < 3)
+			{
+				if (comps[0] is T result)
 				{
-					T val = comps[i] as T;
-					if (val != null)
-					{
-						return val;
-					}
+					return result;
+				}
+				if (count == 2 && comps[1] is T result2)
+				{
+					return result2;
+				}
+				return null;
+			}
+			if (compsByType != null)
+			{
+				if (compsByType.TryGetValue(typeof(T), out var value))
+				{
+					return (T)value[0];
+				}
+				if (typeof(T).IsSealedWithCache())
+				{
+					return null;
+				}
+			}
+			for (int i = 0; i < count; i++)
+			{
+				if (comps[i] is T result3)
+				{
+					return result3;
 				}
 			}
 			return null;
 		}
 
-		public IEnumerable<T> GetComps<T>() where T : ThingComp
+		public IEnumerable<T> GetComps<T>() where T : class
 		{
 			if (comps == null)
 			{
@@ -122,22 +168,20 @@ namespace Verse
 			}
 			for (int i = 0; i < comps.Count; i++)
 			{
-				T val = comps[i] as T;
-				if (val != null)
+				if (comps[i] is T val)
 				{
 					yield return val;
 				}
 			}
 		}
 
-		public ThingComp GetCompByDef(CompProperties def)
+		public ThingComp GetCompByDefType(CompProperties def)
 		{
 			if (comps != null)
 			{
-				int i = 0;
-				for (int count = comps.Count; i < count; i++)
+				for (int i = 0; i < comps.Count; i++)
 				{
-					if (comps[i].props == def)
+					if (comps[i].props.compClass == def.compClass)
 					{
 						return comps[i];
 					}
@@ -163,12 +207,17 @@ namespace Verse
 					comps.Add(thingComp);
 					thingComp.Initialize(def.comps[i]);
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Error("Could not instantiate or initialize a ThingComp: " + arg);
+					Log.Error("Could not instantiate or initialize a ThingComp: " + ex);
 					comps.Remove(thingComp);
 				}
 			}
+			compsByType = (from c in comps
+				group c by c.GetType()).ToDictionary((IGrouping<Type, ThingComp> g) => g.Key, (IGrouping<Type, ThingComp> g) => g.ToArray());
+			compStyleable = GetComp<CompStyleable>();
+			compForbiddable = GetComp<CompForbiddable>();
+			compQuality = GetComp<CompQuality>();
 		}
 
 		public override string GetCustomLabelNoCount(bool includeHp = true)
@@ -238,25 +287,39 @@ namespace Verse
 			{
 				for (int i = 0; i < comps.Count; i++)
 				{
-					comps[i].PostDeSpawn(map);
+					comps[i].PostDeSpawn(map, mode);
 				}
 			}
 		}
 
 		public override void Destroy(DestroyMode mode = DestroyMode.Vanish)
 		{
-			Map map = base.Map;
+			Map mapHeld = base.MapHeld;
 			base.Destroy(mode);
 			if (comps != null)
 			{
 				for (int i = 0; i < comps.Count; i++)
 				{
-					comps[i].PostDestroy(mode, map);
+					comps[i].PostDestroy(mode, mapHeld);
 				}
 			}
 		}
 
-		public override void Tick()
+		public override void Kill(DamageInfo? dinfo = null, Hediff exactCulprit = null)
+		{
+			Map prevMap = ((!(this is Pawn pawn)) ? base.MapHeld : (pawn.prevMap ?? base.MapHeld));
+			base.Kill(dinfo, exactCulprit);
+			if (comps == null)
+			{
+				return;
+			}
+			foreach (ThingComp comp in comps)
+			{
+				comp.Notify_Killed(prevMap, dinfo);
+			}
+		}
+
+		protected override void Tick()
 		{
 			if (comps != null)
 			{
@@ -264,6 +327,18 @@ namespace Verse
 				for (int count = comps.Count; i < count; i++)
 				{
 					comps[i].CompTick();
+				}
+			}
+		}
+
+		protected override void TickInterval(int delta)
+		{
+			if (comps != null)
+			{
+				int i = 0;
+				for (int count = comps.Count; i < count; i++)
+				{
+					comps[i].CompTickInterval(delta);
 				}
 			}
 		}
@@ -301,7 +376,7 @@ namespace Verse
 			}
 			for (int i = 0; i < comps.Count; i++)
 			{
-				comps[i].PostPreApplyDamage(dinfo, out absorbed);
+				comps[i].PostPreApplyDamage(ref dinfo, out absorbed);
 				if (absorbed)
 				{
 					break;
@@ -321,10 +396,36 @@ namespace Verse
 			}
 		}
 
-		public override void Draw()
+		public virtual IEnumerable<ThingDefCountClass> GetAdditionalLeavings(DestroyMode mode)
 		{
-			base.Draw();
+			for (int i = 0; i < AllComps.Count; i++)
+			{
+				foreach (ThingDefCountClass additionalLeaving in AllComps[i].GetAdditionalLeavings(base.Map, mode))
+				{
+					yield return additionalLeaving;
+				}
+			}
+		}
+
+		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
+		{
+			if (!CompsPreventDrawing())
+			{
+				base.DrawAt(drawLoc, flip);
+			}
+			Comps_DrawAt(drawLoc, flip);
 			Comps_PostDraw();
+		}
+
+		protected void Comps_DrawAt(Vector3 drawLoc, bool flip)
+		{
+			if (comps != null)
+			{
+				for (int i = 0; i < comps.Count; i++)
+				{
+					comps[i].DrawAt(drawLoc, flip);
+				}
+			}
 		}
 
 		protected void Comps_PostDraw()
@@ -352,7 +453,10 @@ namespace Verse
 
 		public override void Print(SectionLayer layer)
 		{
-			base.Print(layer);
+			if (!CompsPreventDrawing())
+			{
+				base.Print(layer);
+			}
 			if (comps != null)
 			{
 				for (int i = 0; i < comps.Count; i++)
@@ -360,6 +464,22 @@ namespace Verse
 					comps[i].PostPrintOnto(layer);
 				}
 			}
+		}
+
+		private bool CompsPreventDrawing()
+		{
+			if (comps == null)
+			{
+				return false;
+			}
+			for (int i = 0; i < comps.Count; i++)
+			{
+				if (comps[i].DontDrawParent())
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 
 		public virtual void PrintForPowerGrid(SectionLayer layer)
@@ -375,6 +495,10 @@ namespace Verse
 
 		public override IEnumerable<Gizmo> GetGizmos()
 		{
+			foreach (Gizmo gizmo in base.GetGizmos())
+			{
+				yield return gizmo;
+			}
 			if (comps == null)
 			{
 				yield break;
@@ -437,6 +561,29 @@ namespace Verse
 			return true;
 		}
 
+		public override TipSignal GetTooltip()
+		{
+			string text = base.LabelNoParenthesisCap.AsTipTitle() + GenLabel.LabelExtras(this, includeHp: true, includeQuality: true);
+			text = text + "\n\n" + DescriptionDetailed;
+			if (def.useHitPoints)
+			{
+				text = text + "\n" + HitPoints + " / " + base.MaxHitPoints;
+			}
+			text += "\n";
+			if (comps != null)
+			{
+				for (int i = 0; i < comps.Count; i++)
+				{
+					string text2 = comps[i].CompTipStringExtra();
+					if (!text2.NullOrEmpty())
+					{
+						text = text + "\n" + text2;
+					}
+				}
+			}
+			return new TipSignal(text, thingIDNumber * 251235);
+		}
+
 		public override string GetInspectString()
 		{
 			StringBuilder stringBuilder = new StringBuilder();
@@ -467,7 +614,7 @@ namespace Verse
 				{
 					if (Prefs.DevMode && char.IsWhiteSpace(text[text.Length - 1]))
 					{
-						Log.ErrorOnce(string.Concat(comps[i].GetType(), " CompInspectStringExtra ended with whitespace: ", text), 25612);
+						Log.ErrorOnce(comps[i].GetType()?.ToString() + " CompInspectStringExtra ended with whitespace: " + text, 25612);
 						text = text.TrimEndNewlines();
 					}
 					if (stringBuilder.Length != 0)
@@ -494,24 +641,35 @@ namespace Verse
 
 		public override IEnumerable<FloatMenuOption> GetFloatMenuOptions(Pawn selPawn)
 		{
+			tmpFloatMenuOptions.Clear();
 			foreach (FloatMenuOption floatMenuOption in base.GetFloatMenuOptions(selPawn))
 			{
 				yield return floatMenuOption;
 			}
-			if (comps == null)
+			if (comps != null)
 			{
-				yield break;
-			}
-			for (int i = 0; i < comps.Count; i++)
-			{
-				foreach (FloatMenuOption item in comps[i].CompFloatMenuOptions(selPawn))
+				for (int i = 0; i < comps.Count; i++)
 				{
-					yield return item;
+					try
+					{
+						foreach (FloatMenuOption item in comps[i].CompFloatMenuOptions(selPawn))
+						{
+							tmpFloatMenuOptions.Add(item);
+						}
+					}
+					catch (Exception ex)
+					{
+						Log.Error("Exception in CompFloatMenuOptions for " + comps[i].GetType()?.ToString() + " of " + this?.ToString() + " at " + selPawn?.ToString() + ": " + ex);
+					}
 				}
+			}
+			foreach (FloatMenuOption tmpFloatMenuOption in tmpFloatMenuOptions)
+			{
+				yield return tmpFloatMenuOption;
 			}
 		}
 
-		public override IEnumerable<FloatMenuOption> GetMultiSelectFloatMenuOptions(List<Pawn> selPawns)
+		public override IEnumerable<FloatMenuOption> GetMultiSelectFloatMenuOptions(IEnumerable<Pawn> selPawns)
 		{
 			foreach (FloatMenuOption multiSelectFloatMenuOption in base.GetMultiSelectFloatMenuOptions(selPawns))
 			{
@@ -542,7 +700,7 @@ namespace Verse
 			base.PreTraded(action, playerNegotiator, trader);
 		}
 
-		public override void PostGeneratedForTrader(TraderKindDef trader, int forTile, Faction forFaction)
+		public override void PostGeneratedForTrader(TraderKindDef trader, PlanetTile forTile, Faction forFaction)
 		{
 			base.PostGeneratedForTrader(trader, forTile, forFaction);
 			if (comps != null)
@@ -578,6 +736,30 @@ namespace Verse
 			}
 		}
 
+		public override void Notify_DefsHotReloaded()
+		{
+			base.Notify_DefsHotReloaded();
+			if (comps != null)
+			{
+				for (int i = 0; i < comps.Count; i++)
+				{
+					comps[i].Notify_DefsHotReloaded();
+				}
+			}
+		}
+
+		public override void PostMapInit()
+		{
+			base.PostMapInit();
+			if (comps != null)
+			{
+				for (int i = 0; i < comps.Count; i++)
+				{
+					comps[i].PostMapInit();
+				}
+			}
+		}
+
 		public override void Notify_SignalReceived(Signal signal)
 		{
 			base.Notify_SignalReceived(signal);
@@ -586,6 +768,18 @@ namespace Verse
 				for (int i = 0; i < comps.Count; i++)
 				{
 					comps[i].Notify_SignalReceived(signal);
+				}
+			}
+		}
+
+		public override void Notify_RecipeProduced(Pawn pawn)
+		{
+			base.Notify_RecipeProduced(pawn);
+			if (comps != null)
+			{
+				for (int i = 0; i < comps.Count; i++)
+				{
+					comps[i].Notify_RecipeProduced(pawn);
 				}
 			}
 		}
@@ -614,9 +808,45 @@ namespace Verse
 			}
 		}
 
+		public override void Notify_Unequipped(Pawn pawn)
+		{
+			base.Notify_Unequipped(pawn);
+			if (comps != null)
+			{
+				for (int i = 0; i < comps.Count; i++)
+				{
+					comps[i].Notify_Unequipped(pawn);
+				}
+			}
+		}
+
+		public override void Notify_UsedVerb(Pawn pawn, Verb verb)
+		{
+			base.Notify_UsedVerb(pawn, verb);
+			if (comps != null)
+			{
+				for (int i = 0; i < comps.Count; i++)
+				{
+					comps[i].Notify_UsedVerb(pawn, verb);
+				}
+			}
+		}
+
 		public override void Notify_UsedWeapon(Pawn pawn)
 		{
 			base.Notify_UsedWeapon(pawn);
+			if (ModsConfig.IdeologyActive && pawn.Ideo != null)
+			{
+				switch (pawn.Ideo.GetDispositionForWeapon(def))
+				{
+				case IdeoWeaponDisposition.Despised:
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.UsedDespisedWeapon, pawn.Named(HistoryEventArgsNames.Doer)));
+					break;
+				case IdeoWeaponDisposition.Noble:
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.UsedNobleWeapon, pawn.Named(HistoryEventArgsNames.Doer)));
+					break;
+				}
+			}
 			if (comps != null)
 			{
 				for (int i = 0; i < comps.Count; i++)
@@ -628,11 +858,71 @@ namespace Verse
 
 		public void Notify_KilledPawn(Pawn pawn)
 		{
+			if (ModsConfig.IdeologyActive && pawn.Ideo != null && def.IsWeapon)
+			{
+				switch (pawn.Ideo.GetDispositionForWeapon(def))
+				{
+				case IdeoWeaponDisposition.Despised:
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.KillWithDespisedWeapon, pawn.Named(HistoryEventArgsNames.Doer)));
+					break;
+				case IdeoWeaponDisposition.Noble:
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.KillWithNobleWeapon, pawn.Named(HistoryEventArgsNames.Doer)));
+					break;
+				}
+			}
 			if (comps != null)
 			{
 				for (int i = 0; i < comps.Count; i++)
 				{
 					comps[i].Notify_KilledPawn(pawn);
+				}
+			}
+		}
+
+		public override void Notify_AbandonedAtTile(PlanetTile tile)
+		{
+			base.Notify_AbandonedAtTile(tile);
+			if (comps != null)
+			{
+				for (int i = 0; i < comps.Count; i++)
+				{
+					comps[i].Notify_AbandonedAtTile(tile);
+				}
+			}
+		}
+
+		public override void Notify_KilledLeavingsLeft(List<Thing> leavings)
+		{
+			base.Notify_KilledLeavingsLeft(leavings);
+			if (comps != null)
+			{
+				for (int i = 0; i < comps.Count; i++)
+				{
+					comps[i].Notify_KilledLeavingsLeft(leavings);
+				}
+			}
+		}
+
+		public override void Notify_Studied(Pawn studier, float amount, KnowledgeCategoryDef category = null)
+		{
+			List<ThingComp> allComps = AllComps;
+			for (int i = 0; i < allComps.Count; i++)
+			{
+				if (allComps[i] is IThingStudied thingStudied)
+				{
+					thingStudied.OnStudied(studier, amount, category);
+				}
+			}
+		}
+
+		public override void Notify_ColorChanged()
+		{
+			base.Notify_ColorChanged();
+			if (comps != null)
+			{
+				for (int i = 0; i < comps.Count; i++)
+				{
+					comps[i].Notify_ColorChanged();
 				}
 			}
 		}
@@ -667,7 +957,43 @@ namespace Verse
 			CompWakeUpDormant comp = GetComp<CompWakeUpDormant>();
 			if (comp != null && (explosion.Position - base.Position).LengthHorizontal <= explosion.radius)
 			{
-				comp.Activate();
+				comp.Activate(explosion.instigator);
+			}
+		}
+
+		public override void Notify_MyMapRemoved()
+		{
+			base.Notify_MyMapRemoved();
+			if (def.notifyMapRemoved && comps != null)
+			{
+				for (int i = 0; i < comps.Count; i++)
+				{
+					comps[i].Notify_MapRemoved();
+				}
+			}
+		}
+
+		public override void PreSwapMap()
+		{
+			base.PreSwapMap();
+			if (comps != null)
+			{
+				for (int i = 0; i < comps.Count; i++)
+				{
+					comps[i].PreSwapMap();
+				}
+			}
+		}
+
+		public override void PostSwapMap()
+		{
+			base.PostSwapMap();
+			if (comps != null)
+			{
+				for (int i = 0; i < comps.Count; i++)
+				{
+					comps[i].PostSwapMap();
+				}
 			}
 		}
 	}

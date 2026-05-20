@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Verse;
 
@@ -6,14 +5,7 @@ namespace RimWorld
 {
 	public class ThoughtWorker_RoyalTitleApparelMinQualityNotMet : ThoughtWorker
 	{
-		[Obsolete("Will be removed in the future")]
-		private static RoyalTitleDef Validate(Pawn p, out QualityCategory minQuality)
-		{
-			minQuality = QualityCategory.Awful;
-			return null;
-		}
-
-		private RoyalTitle Validate_NewTemp(Pawn p, out QualityCategory minQuality)
+		private RoyalTitle Validate(Pawn p, out QualityCategory minQuality)
 		{
 			minQuality = QualityCategory.Awful;
 			foreach (RoyalTitle item in p.royalty.AllTitlesInEffectForReading)
@@ -34,7 +26,7 @@ namespace RimWorld
 		public override string PostProcessLabel(Pawn p, string label)
 		{
 			QualityCategory minQuality;
-			RoyalTitle royalTitle = Validate_NewTemp(p, out minQuality);
+			RoyalTitle royalTitle = Validate(p, out minQuality);
 			if (royalTitle == null)
 			{
 				return string.Empty;
@@ -45,7 +37,7 @@ namespace RimWorld
 		public override string PostProcessDescription(Pawn p, string description)
 		{
 			QualityCategory minQuality;
-			RoyalTitle royalTitle = Validate_NewTemp(p, out minQuality);
+			RoyalTitle royalTitle = Validate(p, out minQuality);
 			if (royalTitle == null)
 			{
 				return string.Empty;
@@ -59,7 +51,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (Validate_NewTemp(p, out var _) == null)
+			if (Validate(p, out var _) == null)
 			{
 				return ThoughtState.Inactive;
 			}

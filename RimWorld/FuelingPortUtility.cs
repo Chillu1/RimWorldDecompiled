@@ -26,8 +26,7 @@ namespace RimWorld
 			List<Thing> thingList = c.GetThingList(map);
 			for (int i = 0; i < thingList.Count; i++)
 			{
-				Building building = thingList[i] as Building;
-				if (building != null && building.def.building.hasFuelingPort)
+				if (thingList[i] is Building building && building.def.building.hasFuelingPort)
 				{
 					return building;
 				}
@@ -47,8 +46,7 @@ namespace RimWorld
 				List<Thing> thingList = c2.GetThingList(map);
 				for (int j = 0; j < thingList.Count; j++)
 				{
-					Building building = thingList[j] as Building;
-					if (building != null && building.def.building.hasFuelingPort && GetFuelingPortCell(building) == c)
+					if (thingList[j] is Building building && building.def.building.hasFuelingPort && GetFuelingPortCell(building) == c)
 					{
 						return building;
 					}

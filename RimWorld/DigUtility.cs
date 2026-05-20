@@ -25,7 +25,7 @@ namespace RimWorld
 			if (pawn.equipment != null && pawn.equipment.Primary != null)
 			{
 				Verb primaryVerb = pawn.equipment.PrimaryEq.PrimaryVerb;
-				if (primaryVerb.verbProps.ai_IsBuildingDestroyer && (!primaryVerb.IsIncendiary() || blocker.FlammableNow))
+				if (primaryVerb.verbProps.ai_IsBuildingDestroyer && (!primaryVerb.IsIncendiary_Ranged() || blocker.FlammableNow))
 				{
 					Job job = JobMaker.MakeJob(JobDefOf.UseVerbOnThing);
 					job.targetA = blocker;

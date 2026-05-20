@@ -5,7 +5,7 @@ namespace RimWorld
 {
 	public class GameCondition_VolcanicWinter : GameCondition
 	{
-		private float MaxTempOffset = -7f;
+		private const float MaxTempOffset = -7f;
 
 		private const float AnimalDensityImpact = 0.5f;
 
@@ -13,7 +13,7 @@ namespace RimWorld
 
 		private const float MaxSkyLerpFactor = 0.3f;
 
-		private SkyColorSet VolcanicWinterColors = new SkyColorSet(new ColorInt(0, 0, 0).ToColor, Color.white, new Color(0.6f, 0.6f, 0.6f), 0.65f);
+		private readonly SkyColorSet VolcanicWinterColors = new SkyColorSet(new ColorInt(0, 0, 0).ToColor, Color.white, new Color(0.6f, 0.6f, 0.6f), 0.65f);
 
 		public override int TransitionTicks => 50000;
 
@@ -29,7 +29,7 @@ namespace RimWorld
 
 		public override float TemperatureOffset()
 		{
-			return GameConditionUtility.LerpInOutValue(this, TransitionTicks, MaxTempOffset);
+			return GameConditionUtility.LerpInOutValue(this, TransitionTicks, -7f);
 		}
 
 		public override float AnimalDensityFactor(Map map)

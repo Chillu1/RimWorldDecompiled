@@ -4,6 +4,10 @@ namespace Verse
 	{
 		public override string WithIndefiniteArticle(string str, Gender gender, bool plural = false, bool name = false)
 		{
+			if (str.NullOrEmpty())
+			{
+				return str;
+			}
 			if (name)
 			{
 				return str;
@@ -84,6 +88,14 @@ namespace Verse
 		public override string Pluralize(string str, Gender gender, int count = -1)
 		{
 			if (str.NullOrEmpty())
+			{
+				return str;
+			}
+			if (TryLookupPluralForm(str, gender, out var plural, count))
+			{
+				return plural;
+			}
+			if (count != -1 && count < 2)
 			{
 				return str;
 			}

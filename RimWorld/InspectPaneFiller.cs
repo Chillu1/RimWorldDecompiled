@@ -15,11 +15,15 @@ namespace RimWorld
 
 		private static readonly Texture2D HealthTex = SolidColorMaterials.NewSolidColorTexture(new ColorInt(35, 35, 35).ToColor);
 
+		private static readonly Texture2D EnergyTex = SolidColorMaterials.NewSolidColorTexture(new ColorInt(0, 52, 75).ToColor);
+
+		private static readonly Texture2D HungerTex = SolidColorMaterials.NewSolidColorTexture(new ColorInt(184, 156, 90).ToColor);
+
 		private const float BarWidth = 93f;
 
 		private const float BarSpacing = 6f;
 
-		private static bool debug_inspectStringExceptionErrored = false;
+		private static bool debug_inspectStringExceptionErrored;
 
 		private static Vector2 inspectStringScrollPos;
 
@@ -27,23 +31,33 @@ namespace RimWorld
 		{
 			try
 			{
-				GUI.BeginGroup(rect);
+				Widgets.BeginGroup(rect);
 				float num = 0f;
-				Thing thing = sel as Thing;
 				Pawn pawn = sel as Pawn;
-				if (thing != null)
+				if (sel is Thing thing && !thing.def.onlyShowInspectString)
 				{
 					num += 3f;
 					WidgetRow row = new WidgetRow(0f, num);
 					DrawHealth(row, thing);
 					if (pawn != null)
 					{
-						DrawMood(row, pawn);
-						if (pawn.timetable != null)
+						if (pawn.IsGhoul && pawn.needs.food != null)
+						{
+							DrawHunger(row, pawn);
+						}
+						else
+						{
+							DrawMood(row, pawn);
+						}
+						if (pawn.timetable != null && !pawn.IsPrisonerOfColony)
 						{
 							DrawTimetableSetting(row, pawn);
 						}
 						DrawAreaAllowed(row, pawn);
+						if (pawn.needs?.energy != null)
+						{
+							DrawMechEnergy(row, pawn);
+						}
 					}
 					num += 18f;
 				}
@@ -51,22 +65,30 @@ namespace RimWorld
 				rect2.yMin = num;
 				DrawInspectStringFor(sel, rect2);
 			}
-			catch (Exception ex)
+			catch (Exception arg)
 			{
-				Log.ErrorOnce(string.Concat("Error in DoPaneContentsFor ", Find.Selector.FirstSelectedObject, ": ", ex.ToString()), 754672);
+				Log.ErrorOnce($"Error in DoPaneContentsFor {Find.Selector.FirstSelectedObject}: {arg}", 754672);
 			}
 			finally
 			{
-				GUI.EndGroup();
+				Widgets.EndGroup();
 			}
+		}
+
+		public static void DoPaneContentsForStorageGroup(StorageGroup group, Rect rect)
+		{
+			Widgets.BeginGroup(rect);
+			string text = string.Format("\n{0}: {1} ", "StorageGroupLabel".Translate(), group.RenamableLabel.CapitalizeFirst());
+			text = ((group.MemberCount <= 1) ? (text + string.Format("({0})", "OneBuilding".Translate())) : (text + string.Format("({0})", "NumBuildings".Translate(group.MemberCount))));
+			DrawInspectString(text, rect.AtZero());
+			Widgets.EndGroup();
 		}
 
 		public static void DrawHealth(WidgetRow row, Thing t)
 		{
-			Pawn pawn = t as Pawn;
 			float fillPct;
 			string label;
-			if (pawn == null)
+			if (!(t is Pawn pawn))
 			{
 				if (!t.def.useHitPoints)
 				{
@@ -118,18 +140,18 @@ namespace RimWorld
 
 		private static void DrawAreaAllowed(WidgetRow row, Pawn pawn)
 		{
-			if (pawn.playerSettings == null || !pawn.playerSettings.RespectsAllowedArea)
+			if (pawn.playerSettings == null || !pawn.playerSettings.SupportsAllowedAreas || pawn.Faction != Faction.OfPlayer || pawn.HostFaction != null || (pawn.IsMutant && !pawn.mutant.Def.respectsAllowedArea))
 			{
 				return;
 			}
 			row.Gap(6f);
-			bool flag = pawn.playerSettings != null && pawn.playerSettings.EffectiveAreaRestriction != null;
-			Rect rect = row.FillableBar(fillTex: (!flag) ? BaseContent.GreyTex : pawn.playerSettings.EffectiveAreaRestriction.ColorTexture, width: 93f, height: 16f, fillPct: 1f, label: AreaUtility.AreaAllowedLabel(pawn));
+			bool flag = pawn.playerSettings?.AreaRestrictionInPawnCurrentMap != null;
+			Rect rect = row.FillableBar(fillTex: (!flag) ? BaseContent.GreyTex : pawn.playerSettings.AreaRestrictionInPawnCurrentMap.ColorTexture, width: 93f, height: 16f, fillPct: 1f, label: AreaUtility.AreaAllowedLabel(pawn));
 			if (Mouse.IsOver(rect))
 			{
 				if (flag)
 				{
-					pawn.playerSettings.EffectiveAreaRestriction.MarkForDraw();
+					pawn.playerSettings.AreaRestrictionInPawnCurrentMap.MarkForDraw();
 				}
 				Widgets.DrawBox(rect.ContractedBy(-1f));
 			}
@@ -137,9 +159,21 @@ namespace RimWorld
 			{
 				AreaUtility.MakeAllowedAreaListFloatMenu(delegate(Area a)
 				{
-					pawn.playerSettings.AreaRestriction = a;
-				}, addNullAreaOption: true, addManageOption: true, pawn.Map);
+					pawn.playerSettings.AreaRestrictionInPawnCurrentMap = a;
+				}, addNullAreaOption: true, addManageOption: true, pawn.MapHeld);
 			}
+		}
+
+		private static void DrawMechEnergy(WidgetRow row, Pawn pawn)
+		{
+			row.Gap(6f);
+			row.FillableBar(93f, 16f, pawn.needs.energy.CurLevelPercentage, "Energy".Translate(), EnergyTex, BarBGTex);
+		}
+
+		private static void DrawHunger(WidgetRow row, Pawn pawn)
+		{
+			row.Gap(6f);
+			row.FillableBar(93f, 16f, pawn.needs.food.CurLevelPercentage, pawn.needs.food.CurCategory.GetLabel(), HungerTex, BarBGTex);
 		}
 
 		public static void DrawInspectStringFor(ISelectable sel, Rect rect)
@@ -148,8 +182,7 @@ namespace RimWorld
 			try
 			{
 				text = sel.GetInspectString();
-				Thing thing = sel as Thing;
-				if (thing != null)
+				if (sel is Thing thing)
 				{
 					string inspectStringLowPriority = thing.GetInspectStringLowPriority();
 					if (!inspectStringLowPriority.NullOrEmpty())
@@ -162,9 +195,9 @@ namespace RimWorld
 					}
 				}
 			}
-			catch (Exception ex)
+			catch (Exception arg)
 			{
-				text = "GetInspectString exception on " + sel.ToString() + ":\n" + ex.ToString();
+				text = $"GetInspectString exception on {sel}:\n{arg}";
 				if (!debug_inspectStringExceptionErrored)
 				{
 					Log.Error(text);

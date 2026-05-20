@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using LudeonTK;
 using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;
@@ -34,9 +35,9 @@ namespace Verse
 				}
 				lastInfo.SetHitPart(parent);
 			}
-			if (flag && !lastInfo.HitPart.def.IsSolid(lastInfo.HitPart, pawn.health.hediffSet.hediffs) && lastInfo.HitPart.depth == BodyPartDepth.Outside && (from x in pawn.health.hediffSet.GetNotMissingParts()
-				where x.parent == lastInfo.HitPart && x.def.IsSolid(x, pawn.health.hediffSet.hediffs) && x.depth == BodyPartDepth.Inside
-				select x).TryRandomElementByWeight((BodyPartRecord x) => x.coverageAbs, out var result2))
+			if (flag && !lastInfo.HitPart.def.IsSolid(lastInfo.HitPart, pawn.health.hediffSet.hediffs) && lastInfo.HitPart.depth == BodyPartDepth.Outside && (from bodyPartRecord in pawn.health.hediffSet.GetNotMissingParts()
+				where bodyPartRecord.parent == lastInfo.HitPart && bodyPartRecord.def.IsSolid(bodyPartRecord, pawn.health.hediffSet.hediffs) && bodyPartRecord.depth == BodyPartDepth.Inside
+				select bodyPartRecord).TryRandomElementByWeight((BodyPartRecord bodyPartRecord) => bodyPartRecord.coverageAbs, out var result2))
 			{
 				DamageInfo dinfo2 = lastInfo;
 				dinfo2.SetHitPart(result2);
@@ -65,8 +66,8 @@ namespace Verse
 			}
 			if (simpleCurve != null)
 			{
-				float x2 = totalDamage / pawn.def.race.body.corePart.def.GetMaxHealth(pawn);
-				if (Rand.Chance(simpleCurve.Evaluate(x2)))
+				float x = totalDamage / pawn.def.race.body.corePart.def.GetMaxHealth(pawn);
+				if (Rand.Chance(simpleCurve.Evaluate(x)))
 				{
 					DamageInfo dinfo3 = dinfo;
 					dinfo3.Def = DamageDefOf.Stun;
@@ -82,9 +83,9 @@ namespace Verse
 			Func<ThingDef, float, bool, string> bluntBodyStunChance = delegate(ThingDef d, float dam, bool onHead)
 			{
 				SimpleCurve obj = (onHead ? DamageDefOf.Blunt.bluntStunChancePerDamagePctOfCorePartToHeadCurve : DamageDefOf.Blunt.bluntStunChancePerDamagePctOfCorePartToBodyCurve);
-				Pawn pawn2 = PawnGenerator.GeneratePawn(new PawnGenerationRequest(d.race.AnyPawnKind, Find.FactionManager.FirstFactionOfDef(d.race.AnyPawnKind.defaultFactionType), PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: true));
-				float x = dam / d.race.body.corePart.def.GetMaxHealth(pawn2);
-				Find.WorldPawns.PassToWorld(pawn2, PawnDiscardDecideMode.Discard);
+				Pawn pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(d.race.AnyPawnKind, Find.FactionManager.FirstFactionOfDef(d.race.AnyPawnKind.defaultFactionDef), PawnGenerationContext.NonPlayer, null, forceGenerateNewPawn: true));
+				float x = dam / d.race.body.corePart.def.GetMaxHealth(pawn);
+				Find.WorldPawns.PassToWorld(pawn, PawnDiscardDecideMode.Discard);
 				return Mathf.Clamp01(obj.Evaluate(x)).ToStringPercent();
 			};
 			List<TableDataGetter<ThingDef>> list = new List<TableDataGetter<ThingDef>>();
@@ -94,7 +95,7 @@ namespace Verse
 			list.Add(new TableDataGetter<ThingDef>("body size\n* health scale", (ThingDef d) => (d.race.baseHealthScale * d.race.baseBodySize).ToString("F2")));
 			list.Add(new TableDataGetter<ThingDef>("core part\nhealth", delegate(ThingDef d)
 			{
-				Pawn pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(d.race.AnyPawnKind, Find.FactionManager.FirstFactionOfDef(d.race.AnyPawnKind.defaultFactionType), PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: true));
+				Pawn pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(d.race.AnyPawnKind, Find.FactionManager.FirstFactionOfDef(d.race.AnyPawnKind.defaultFactionDef), PawnGenerationContext.NonPlayer, null, forceGenerateNewPawn: true));
 				float maxHealth = d.race.body.corePart.def.GetMaxHealth(pawn);
 				Find.WorldPawns.PassToWorld(pawn, PawnDiscardDecideMode.Discard);
 				return maxHealth;

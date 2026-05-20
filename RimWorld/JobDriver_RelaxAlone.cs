@@ -53,7 +53,7 @@ namespace RimWorld
 			else
 			{
 				yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.OnCell);
-				toil = new Toil();
+				toil = ToilMaker.MakeToil("MakeNewToils");
 				toil.initAction = delegate
 				{
 					faceDir = (job.def.faceDir.IsValid ? job.def.faceDir : Rot4.Random);
@@ -62,14 +62,14 @@ namespace RimWorld
 			}
 			toil.defaultCompleteMode = ToilCompleteMode.Delay;
 			toil.defaultDuration = job.def.joyDuration;
-			toil.AddPreTickAction(delegate
+			toil.AddPreTickIntervalAction(delegate(int delta)
 			{
 				if (faceDir.IsValid)
 				{
 					pawn.rotationTracker.FaceCell(pawn.Position + faceDir.FacingCell);
 				}
-				pawn.GainComfortFromCellIfPossible();
-				JoyUtility.JoyTickCheckEnd(pawn);
+				pawn.GainComfortFromCellIfPossible(delta);
+				JoyUtility.JoyTickCheckEnd(pawn, delta);
 			});
 			yield return toil;
 		}

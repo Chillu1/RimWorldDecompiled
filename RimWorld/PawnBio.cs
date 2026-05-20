@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Verse;
 
 namespace RimWorld
@@ -10,11 +9,13 @@ namespace RimWorld
 
 		public NameTriple name;
 
-		public Backstory childhood;
+		public BackstoryDef childhood;
 
-		public Backstory adulthood;
+		public BackstoryDef adulthood;
 
 		public bool pirateKing;
+
+		public bool rare;
 
 		public PawnBioType BioType
 		{
@@ -32,56 +33,17 @@ namespace RimWorld
 			}
 		}
 
-		public void PostLoad()
-		{
-			if (childhood != null)
-			{
-				childhood.PostLoad();
-			}
-			if (adulthood != null)
-			{
-				adulthood.PostLoad();
-			}
-		}
-
 		public void ResolveReferences()
 		{
 			if (adulthood.spawnCategories.Count == 1 && adulthood.spawnCategories[0] == "Trader")
 			{
 				adulthood.spawnCategories.Add("Civil");
 			}
-			if (childhood != null)
-			{
-				childhood.ResolveReferences();
-			}
-			if (adulthood != null)
-			{
-				adulthood.ResolveReferences();
-			}
-		}
-
-		public IEnumerable<string> ConfigErrors()
-		{
-			if (childhood != null)
-			{
-				foreach (string item in childhood.ConfigErrors(ignoreNoSpawnCategories: true))
-				{
-					yield return string.Concat(name, ", ", childhood.title, ": ", item);
-				}
-			}
-			if (adulthood == null)
-			{
-				yield break;
-			}
-			foreach (string item2 in adulthood.ConfigErrors(ignoreNoSpawnCategories: false))
-			{
-				yield return string.Concat(name, ", ", adulthood.title, ": ", item2);
-			}
 		}
 
 		public override string ToString()
 		{
-			return string.Concat("PawnBio(", name, ")");
+			return "PawnBio(" + name?.ToString() + ")";
 		}
 	}
 }

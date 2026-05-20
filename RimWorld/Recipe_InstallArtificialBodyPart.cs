@@ -11,7 +11,14 @@ namespace RimWorld
 			return MedicalRecipesUtility.GetFixedPartsToApplyOn(recipe, pawn, delegate(BodyPartRecord record)
 			{
 				IEnumerable<Hediff> source = pawn.health.hediffSet.hediffs.Where((Hediff x) => x.Part == record);
-				if (source.Count() == 1 && source.First().def == recipe.addsHediff)
+				if (typeof(Hediff_AddedPart).IsAssignableFrom(recipe.addsHediff.hediffClass))
+				{
+					if (source.Count() == 1 && source.First().def == recipe.addsHediff)
+					{
+						return false;
+					}
+				}
+				else if (source.Any((Hediff hd) => hd.def == recipe.addsHediff))
 				{
 					return false;
 				}
@@ -27,6 +34,7 @@ namespace RimWorld
 		{
 			bool flag = MedicalRecipesUtility.IsClean(pawn, part);
 			bool flag2 = !PawnGenerator.IsBeingGenerated(pawn) && IsViolationOnPawn(pawn, part, Faction.OfPlayer);
+			Hediff hediff = null;
 			if (billDoer != null)
 			{
 				if (CheckSurgeryFail(billDoer, pawn, ingredients, part, bill))
@@ -34,25 +42,37 @@ namespace RimWorld
 					return;
 				}
 				TaleRecorder.RecordTale(TaleDefOf.DidSurgery, billDoer, pawn);
-				MedicalRecipesUtility.RestorePartAndSpawnAllPreviousParts(pawn, part, billDoer.Position, billDoer.Map);
+				hediff = pawn.health.hediffSet.GetDirectlyAddedPartFor(part);
+				if (part != null)
+				{
+					MedicalRecipesUtility.RestorePartAndSpawnAllPreviousParts(pawn, part, billDoer.Position, billDoer.Map);
+				}
 				if (flag && flag2 && part.def.spawnThingOnRemoved != null)
 				{
-					ThoughtUtility.GiveThoughtsForPawnOrganHarvested(pawn);
+					ThoughtUtility.GiveThoughtsForPawnOrganHarvested(pawn, billDoer);
 				}
 				if (flag2)
 				{
-					ReportViolation(pawn, billDoer, pawn.FactionOrExtraMiniOrHomeFaction, -70, "GoodwillChangedReason_NeedlesslyInstalledWorseBodyPart".Translate(recipe.addsHediff.label));
+					ReportViolation(pawn, billDoer, pawn.HomeFaction, -70);
+				}
+				if (ModsConfig.IdeologyActive)
+				{
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.InstalledProsthetic, billDoer.Named(HistoryEventArgsNames.Doer)));
 				}
 			}
 			else if (pawn.Map != null)
 			{
-				MedicalRecipesUtility.RestorePartAndSpawnAllPreviousParts(pawn, part, pawn.Position, pawn.Map);
+				if (part != null)
+				{
+					MedicalRecipesUtility.RestorePartAndSpawnAllPreviousParts(pawn, part, pawn.Position, pawn.Map);
+				}
 			}
-			else
+			else if (part != null)
 			{
 				pawn.health.RestorePart(part);
 			}
 			pawn.health.AddHediff(recipe.addsHediff, part);
+			hediff?.Notify_SurgicallyReplaced(billDoer);
 		}
 
 		public override bool IsViolationOnPawn(Pawn pawn, BodyPartRecord part, Faction billDoerFaction)

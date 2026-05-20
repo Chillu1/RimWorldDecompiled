@@ -1,4 +1,6 @@
+using System.Collections.Generic;
 using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
@@ -10,6 +12,10 @@ namespace Verse
 		public string permadeathModeUniqueName;
 
 		private float realPlayTimeInteracting;
+
+		public PlanetTile startingTile = PlanetTile.Invalid;
+
+		public List<Pawn> startingAndOptionalPawns = new List<Pawn>();
 
 		private float lastInputRealTime;
 
@@ -36,6 +42,19 @@ namespace Verse
 			Scribe_Values.Look(ref realPlayTimeInteracting, "realPlayTimeInteracting", 0f);
 			Scribe_Values.Look(ref permadeathMode, "permadeathMode", defaultValue: false);
 			Scribe_Values.Look(ref permadeathModeUniqueName, "permadeathModeUniqueName");
+			Scribe_Values.Look(ref startingTile, "startingTile", PlanetTile.Invalid);
+			Scribe_Collections.Look(ref startingAndOptionalPawns, "startingAndOptionalPawns", LookMode.Reference);
+			if (Scribe.mode != LoadSaveMode.PostLoadInit)
+			{
+				return;
+			}
+			for (int num = startingAndOptionalPawns.Count - 1; num >= 0; num--)
+			{
+				if (startingAndOptionalPawns[num] == null)
+				{
+					startingAndOptionalPawns.RemoveAt(num);
+				}
+			}
 		}
 	}
 }

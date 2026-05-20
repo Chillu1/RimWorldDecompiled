@@ -1,16 +1,17 @@
-using System.Collections.Generic;
+using UnityEngine;
 using Verse;
 
 namespace RimWorld
 {
-	public class HairDef : Def
+	public class HairDef : StyleItemDef
 	{
-		[NoTranslate]
-		public string texPath;
-
-		public HairGender hairGender = HairGender.Any;
-
-		[NoTranslate]
-		public List<string> hairTags = new List<string>();
+		public override Graphic GraphicFor(Pawn pawn, Color color)
+		{
+			if (noGraphic)
+			{
+				return null;
+			}
+			return GraphicDatabase.Get<Graphic_Multi>(texPath, overrideShaderTypeDef?.Shader ?? ShaderDatabase.CutoutHair, Vector2.one, color);
+		}
 	}
 }

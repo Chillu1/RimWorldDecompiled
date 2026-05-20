@@ -8,6 +8,8 @@ namespace RimWorld
 	{
 		private List<Pawn> patientsResult = new List<Pawn>();
 
+		private StringBuilder sb = new StringBuilder();
+
 		private List<Pawn> Patients
 		{
 			get
@@ -21,9 +23,9 @@ namespace RimWorld
 						continue;
 					}
 					bool flag = false;
-					foreach (Pawn freeColonist in maps[i].mapPawns.FreeColonists)
+					foreach (Pawn item in maps[i].mapPawns.FreeColonistsSpawned)
 					{
-						if ((freeColonist.Spawned || freeColonist.BrieflyDespawned()) && !freeColonist.Downed && freeColonist.workSettings != null && freeColonist.workSettings.WorkIsActive(WorkTypeDefOf.Doctor))
+						if ((item.Spawned || item.BrieflyDespawned()) && !item.Downed && item.workSettings != null && item.workSettings.WorkIsActive(WorkTypeDefOf.Doctor))
 						{
 							flag = true;
 							break;
@@ -33,11 +35,11 @@ namespace RimWorld
 					{
 						continue;
 					}
-					foreach (Pawn freeColonist2 in maps[i].mapPawns.FreeColonists)
+					foreach (Pawn item2 in maps[i].mapPawns.FreeColonistsSpawned)
 					{
-						if ((freeColonist2.Spawned || freeColonist2.BrieflyDespawned()) && ((freeColonist2.Downed && freeColonist2.needs != null && (int)freeColonist2.needs.food.CurCategory < 0 && freeColonist2.InBed()) || HealthAIUtility.ShouldBeTendedNowByPlayer(freeColonist2)))
+						if ((item2.Spawned || item2.BrieflyDespawned()) && ((item2.Downed && !LifeStageUtility.AlwaysDowned(item2) && item2.needs?.food != null && (int)item2.needs.food.CurCategory > 0 && item2.InBed()) || HealthAIUtility.ShouldBeTendedNowByPlayer(item2)))
 						{
-							patientsResult.Add(freeColonist2);
+							patientsResult.Add(item2);
 						}
 					}
 				}
@@ -53,12 +55,12 @@ namespace RimWorld
 
 		public override TaggedString GetExplanation()
 		{
-			StringBuilder stringBuilder = new StringBuilder();
-			foreach (Pawn patient in Patients)
+			sb.Length = 0;
+			foreach (Pawn item in patientsResult)
 			{
-				stringBuilder.AppendLine("  - " + patient.NameShortColored.Resolve());
+				sb.AppendLine("  - " + item.NameShortColored.Resolve());
 			}
-			return "NeedDoctorDesc".Translate(stringBuilder.ToString());
+			return "NeedDoctorDesc".Translate(sb.ToString().TrimEndNewlines());
 		}
 
 		public override AlertReport GetReport()

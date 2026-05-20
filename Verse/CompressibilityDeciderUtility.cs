@@ -22,6 +22,14 @@ namespace Verse
 			{
 				return false;
 			}
+			if (t.Position.GetMaxItemsAllowedInCell(t.Map) > 1 && t.def.category == ThingCategory.Item)
+			{
+				return false;
+			}
+			if (t is Building { canChangeTerrainOnDestroyed: false })
+			{
+				return false;
+			}
 			bool flag = false;
 			List<Map> maps = Find.Maps;
 			for (int i = 0; i < maps.Count; i++)

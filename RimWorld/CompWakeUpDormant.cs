@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using UnityEngine;
 using Verse;
 using Verse.AI;
 using Verse.Sound;
@@ -6,21 +8,28 @@ namespace RimWorld
 {
 	public class CompWakeUpDormant : ThingComp
 	{
-		public bool wakeUpIfColonistClose;
+		public bool wakeUpIfTargetClose;
 
 		private bool sentSignal;
 
+		public int groupID = -1;
+
+		private CompCanBeDormant dormantComp;
+
+		private static List<Thing> tmpActivatedThings = new List<Thing>();
+
 		private CompProperties_WakeUpDormant Props => (CompProperties_WakeUpDormant)props;
+
+		private CompCanBeDormant DormantComp => dormantComp ?? (dormantComp = parent.TryGetComp<CompCanBeDormant>());
 
 		public override void Initialize(CompProperties props)
 		{
 			base.Initialize(props);
-			wakeUpIfColonistClose = Props.wakeUpIfAnyColonistClose;
+			wakeUpIfTargetClose = Props.wakeUpIfAnyTargetClose;
 		}
 
 		public override void CompTick()
 		{
-			base.CompTick();
 			if (parent.IsHashIntervalTick(250))
 			{
 				TickRareWorker();
@@ -29,13 +38,13 @@ namespace RimWorld
 
 		public void TickRareWorker()
 		{
-			if (!parent.Spawned)
+			if (!parent.Spawned || parent.Faction == Faction.OfPlayer)
 			{
 				return;
 			}
-			if (wakeUpIfColonistClose)
+			if (wakeUpIfTargetClose)
 			{
-				int num = GenRadial.NumCellsInRadius(Props.anyColonistCloseCheckRadius);
+				int num = GenRadial.NumCellsInRadius(Props.wakeUpCheckRadius);
 				for (int i = 0; i < num; i++)
 				{
 					IntVec3 intVec = parent.Position + GenRadial.RadialPattern[i];
@@ -43,26 +52,33 @@ namespace RimWorld
 					{
 						continue;
 					}
-					foreach (Thing thing in intVec.GetThingList(parent.Map))
+					foreach (Thing thing2 in intVec.GetThingList(parent.Map))
 					{
-						Pawn pawn = thing as Pawn;
-						if (pawn != null && pawn.IsColonist)
+						if (Props.wakeUpTargetingParams.CanTarget(thing2))
 						{
-							Activate();
+							Activate(thing2);
 							return;
 						}
 					}
 				}
 			}
-			if (Props.wakeUpOnThingConstructedRadius > 0f && GenClosest.ClosestThingReachable(parent.Position, parent.Map, ThingRequest.ForGroup(ThingRequestGroup.BuildingArtificial), PathEndMode.OnCell, TraverseParms.For(TraverseMode.NoPassClosedDoors), Props.wakeUpOnThingConstructedRadius, (Thing t) => t.Faction == Faction.OfPlayer) != null)
+			if (Props.wakeUpOnThingConstructedRadius > 0f)
 			{
-				Activate();
+				Thing thing = GenClosest.ClosestThingReachable(parent.Position, parent.Map, ThingRequest.ForGroup(ThingRequestGroup.BuildingArtificial), PathEndMode.OnCell, TraverseParms.For(TraverseMode.NoPassClosedDoors), Props.wakeUpOnThingConstructedRadius, (Thing t) => (t.def.building == null || t.def.building.wakeDormantPawnsOnConstruction) && t.Faction == Faction.OfPlayer);
+				if (thing != null)
+				{
+					Activate(thing);
+				}
 			}
 		}
 
-		public void Activate(bool sendSignal = true, bool silent = false)
+		public void Activate(Thing waker, bool sendSignal = true, bool silent = false, bool instant = false)
 		{
-			if (sendSignal && !sentSignal)
+			if (DormantComp != null && DormantComp.Awake)
+			{
+				return;
+			}
+			if (sendSignal && (!sentSignal || !Props.onlySendSignalOnce))
 			{
 				if (!string.IsNullOrEmpty(Props.wakeUpSignalTag))
 				{
@@ -79,32 +95,77 @@ namespace RimWorld
 				{
 					Props.wakeUpSound.PlayOneShot(new TargetInfo(parent.Position, parent.Map));
 				}
+				if (parent.Spawned && waker is Pawn && !silent && (!Props.activateMessageKey.NullOrEmpty() || !Props.activatePluralMessageKey.NullOrEmpty()))
+				{
+					tmpActivatedThings.Clear();
+					if (groupID >= 0)
+					{
+						List<Thing> list = parent.Map.listerThings.ThingsInGroup(ThingRequestGroup.WakeUpDormant);
+						for (int i = 0; i < list.Count; i++)
+						{
+							if (list[i].TryGetComp<CompWakeUpDormant>().groupID == groupID)
+							{
+								tmpActivatedThings.Add(list[i]);
+							}
+						}
+					}
+					else
+					{
+						tmpActivatedThings.Add(parent);
+					}
+					if (tmpActivatedThings.Count > 1 && !Props.activatePluralMessageKey.NullOrEmpty())
+					{
+						Messages.Message(Props.activatePluralMessageKey.Translate(waker.Named("WAKER")), tmpActivatedThings, Props.activateMessageType ?? MessageTypeDefOf.NegativeEvent, historical: false);
+					}
+					else if (tmpActivatedThings.Count > 0 && !Props.activateMessageKey.NullOrEmpty())
+					{
+						Messages.Message(Props.activateMessageKey.Translate(waker.Named("WAKER")), tmpActivatedThings, Props.activateMessageType ?? MessageTypeDefOf.NegativeEvent, historical: false);
+					}
+					tmpActivatedThings.Clear();
+				}
 				sentSignal = true;
 			}
-			parent.TryGetComp<CompCanBeDormant>()?.WakeUp();
+			if (DormantComp != null)
+			{
+				if (Props.wakeUpWithDelay && !instant)
+				{
+					DormantComp.WakeUpWithDelay();
+				}
+				else
+				{
+					DormantComp.WakeUp();
+				}
+			}
 		}
 
 		public override void PostPostApplyDamage(DamageInfo dinfo, float totalDamageDealt)
 		{
-			if (Props.wakeUpOnDamage && totalDamageDealt > 0f && dinfo.Def.ExternalViolenceFor(parent))
+			if (Props.wakeUpOnDamage && dinfo.Def.ExternalViolenceFor(parent))
 			{
-				Activate();
+				Activate(dinfo.Instigator, sendSignal: true, silent: false, instant: true);
 			}
 		}
 
-		public override void Notify_SignalReceived(Signal signal)
+		public override string CompInspectStringExtra()
 		{
-			if (!string.IsNullOrEmpty(Props.wakeUpSignalTag))
+			string text = base.CompInspectStringExtra();
+			if (wakeUpIfTargetClose && !Props.radiusCheckInspectPaneKey.NullOrEmpty())
 			{
-				sentSignal = true;
+				if (!text.NullOrEmpty())
+				{
+					text += "\n";
+				}
+				text = string.Concat(text, Props.radiusCheckInspectPaneKey.Translate() + ": ", Mathf.RoundToInt(Props.wakeUpCheckRadius).ToString());
 			}
+			return text;
 		}
 
 		public override void PostExposeData()
 		{
 			base.PostExposeData();
-			Scribe_Values.Look(ref wakeUpIfColonistClose, "wakeUpIfColonistClose", defaultValue: false);
 			Scribe_Values.Look(ref sentSignal, "sentSignal", defaultValue: false);
+			Scribe_Values.Look(ref groupID, "groupID", -1);
+			Scribe_Values.Look(ref wakeUpIfTargetClose, "wakeUpIfColonistClose", defaultValue: false);
 		}
 	}
 }

@@ -22,13 +22,26 @@ namespace RimWorld.Planet
 			for (int i = 0; i < pawnsListForReading.Count; i++)
 			{
 				Pawn pawn = pawnsListForReading[i];
-				for (int j = 0; j < pawn.inventory.innerContainer.Count; j++)
+				for (int num = pawn.inventory.innerContainer.Count - 1; num >= 0; num--)
 				{
-					Thing item = pawn.inventory.innerContainer[j];
+					Thing item = pawn.inventory.innerContainer[num];
 					inventoryItems.Add(item);
 				}
 			}
 			return inventoryItems;
+		}
+
+		public static Building_PassengerShuttle FindShuttle(Caravan caravan)
+		{
+			List<Thing> list = AllInventoryItems(caravan);
+			for (int i = 0; i < list.Count; i++)
+			{
+				if (list[i] is Building_PassengerShuttle result)
+				{
+					return result;
+				}
+			}
+			return null;
 		}
 
 		public static void CaravanInventoryUtilityStaticUpdate()
@@ -79,10 +92,9 @@ namespace RimWorld.Planet
 			return false;
 		}
 
-		public static bool TryGetDrugToSatisfyChemicalNeed(Caravan caravan, Pawn forPawn, Need_Chemical chemical, out Thing drug, out Pawn owner)
+		public static bool TryGetDrugToSatisfyChemicalNeed(Caravan caravan, Pawn forPawn, Hediff hediff, out Thing drug, out Pawn owner)
 		{
-			Hediff_Addiction addictionHediff = chemical.AddictionHediff;
-			if (addictionHediff == null)
+			if (hediff == null)
 			{
 				drug = null;
 				owner = null;
@@ -93,10 +105,15 @@ namespace RimWorld.Planet
 			for (int i = 0; i < list.Count; i++)
 			{
 				Thing thing2 = list[i];
-				if (thing2.IngestibleNow && thing2.def.IsDrug)
+				if (!thing2.IngestibleNow || !thing2.def.IsDrug)
 				{
-					CompDrug compDrug = thing2.TryGetComp<CompDrug>();
-					if (compDrug != null && compDrug.Props.chemical != null && compDrug.Props.chemical.addictionHediff == addictionHediff.def && (forPawn.drugs == null || forPawn.drugs.CurrentPolicy[thing2.def].allowedForAddiction || forPawn.story == null || forPawn.story.traits.DegreeOfTrait(TraitDefOf.DrugDesire) > 0))
+					continue;
+				}
+				CompDrug compDrug = thing2.TryGetComp<CompDrug>();
+				if (compDrug != null && compDrug.Props.chemical != null && (!(hediff is Hediff_ChemicalDependency hediff_ChemicalDependency) || compDrug.Props.chemical == hediff_ChemicalDependency.chemical) && (!(hediff is Hediff_Addiction hediff_Addiction) || compDrug.Props.chemical.addictionHediff == hediff_Addiction.def))
+				{
+					DrugPolicy drugPolicy = forPawn.drugs?.CurrentPolicy;
+					if (drugPolicy == null || drugPolicy[thing2.def].allowedForAddiction || forPawn.story == null || forPawn.story.traits.DegreeOfTrait(TraitDefOf.DrugDesire) > 0)
 					{
 						thing = thing2;
 						break;
@@ -182,7 +199,7 @@ namespace RimWorld.Planet
 		{
 			if (numToMove < 0 || numToMove > item.stackCount)
 			{
-				Log.Warning(string.Concat("Tried to move item ", item, " with numToMove=", numToMove, " (item stack count = ", item.stackCount, ")"));
+				Log.Warning("Tried to move item " + item?.ToString() + " with numToMove=" + numToMove + " (item stack count = " + item.stackCount + ")");
 			}
 			else
 			{
@@ -284,7 +301,7 @@ namespace RimWorld.Planet
 		{
 			if (AllInventoryItems(caravan).Contains(thing))
 			{
-				Log.Error(string.Concat("Tried to give the same item twice (", thing, ") to a caravan (", caravan, ")."));
+				Log.Error("Tried to give the same item twice (" + thing?.ToString() + ") to a caravan (" + caravan?.ToString() + ").");
 				return;
 			}
 			Pawn pawn = FindPawnToMoveInventoryTo(thing, caravan.PawnsListForReading, null);
@@ -313,6 +330,19 @@ namespace RimWorld.Planet
 				}
 			}
 			return num >= count;
+		}
+
+		public static IEnumerable<Thing> GetAllDissolvingThings(Caravan caravan)
+		{
+			ThingRequest group = ThingRequest.ForGroup(ThingRequestGroup.Dissolving);
+			List<Thing> items = AllInventoryItems(caravan);
+			for (int i = 0; i < items.Count; i++)
+			{
+				if (group.Accepts(items[i]))
+				{
+					yield return items[i];
+				}
+			}
 		}
 	}
 }

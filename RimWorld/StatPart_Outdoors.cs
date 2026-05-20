@@ -15,10 +15,10 @@ namespace RimWorld
 
 		public override string ExplanationPart(StatRequest req)
 		{
-			if (req.HasThing && req.Thing.GetRoom(RegionType.Set_All) != null)
+			if (req.HasThing && req.Thing.GetRoom() != null)
 			{
-				string str = ((!ConsideredOutdoors(req)) ? ((string)"Indoors".Translate()) : ((string)"Outdoors".Translate()));
-				return str + ": x" + OutdoorsFactor(req).ToStringPercent();
+				string text = ((!ConsideredOutdoors(req)) ? ((string)"Indoors".Translate()) : ((string)"Outdoors".Translate().CapitalizeFirst()));
+				return text + ": x" + OutdoorsFactor(req).ToStringPercent();
 			}
 			return null;
 		}
@@ -36,7 +36,7 @@ namespace RimWorld
 		{
 			if (req.HasThing)
 			{
-				Room room = req.Thing.GetRoom(RegionType.Set_All);
+				Room room = req.Thing.GetRoom();
 				if (room != null)
 				{
 					if (room.OutdoorsForWork)

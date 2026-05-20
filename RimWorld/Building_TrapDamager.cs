@@ -7,12 +7,12 @@ namespace RimWorld
 	{
 		private static readonly FloatRange DamageRandomFactorRange = new FloatRange(0.8f, 1.2f);
 
-		private static readonly float DamageCount = 5f;
+		public const float DamageCount = 5f;
 
 		public override void SpawnSetup(Map map, bool respawningAfterLoad)
 		{
 			base.SpawnSetup(map, respawningAfterLoad);
-			if (!respawningAfterLoad)
+			if (!respawningAfterLoad && !base.BeingTransportedOnGravship)
 			{
 				SoundDefOf.TrapArm.PlayOneShot(new TargetInfo(base.Position, map));
 			}
@@ -20,14 +20,17 @@ namespace RimWorld
 
 		protected override void SpringSub(Pawn p)
 		{
-			SoundDefOf.TrapSpring.PlayOneShot(new TargetInfo(base.Position, base.Map));
+			if (base.Spawned)
+			{
+				SoundDefOf.TrapSpring.PlayOneShot(new TargetInfo(base.Position, base.Map));
+			}
 			if (p == null)
 			{
 				return;
 			}
-			float num = this.GetStatValue(StatDefOf.TrapMeleeDamage) * DamageRandomFactorRange.RandomInRange / DamageCount;
+			float num = this.GetStatValue(StatDefOf.TrapMeleeDamage) * DamageRandomFactorRange.RandomInRange;
 			float armorPenetration = num * 0.015f;
-			for (int i = 0; (float)i < DamageCount; i++)
+			for (int i = 0; (float)i < 5f; i++)
 			{
 				DamageInfo dinfo = new DamageInfo(DamageDefOf.Stab, num, armorPenetration, -1f, this);
 				DamageWorker.DamageResult damageResult = p.TakeDamage(dinfo);

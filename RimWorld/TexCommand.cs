@@ -18,6 +18,8 @@ namespace RimWorld
 
 		public static readonly Texture2D Install = ContentFinder<Texture2D>.Get("UI/Commands/Install");
 
+		public static readonly Texture2D Replant = ContentFinder<Texture2D>.Get("UI/Designators/ReplantTree");
+
 		public static readonly Texture2D SquadAttack = ContentFinder<Texture2D>.Get("UI/Commands/SquadAttack");
 
 		public static readonly Texture2D AttackMelee = ContentFinder<Texture2D>.Get("UI/Commands/AttackMelee");
@@ -43,5 +45,13 @@ namespace RimWorld
 		public static readonly Texture2D RemoveRoutePlannerWaypoint = ContentFinder<Texture2D>.Get("UI/Designators/Cancel");
 
 		public static readonly Texture2D OpenLinkedQuestTex = ContentFinder<Texture2D>.Get("UI/Commands/ViewQuest");
+
+		public static readonly Texture2D DropCarriedPawn = ContentFinder<Texture2D>.Get("UI/Commands/DropCarriedPawn");
+
+		public static readonly Texture2D SelectCarriedPawn = ContentFinder<Texture2D>.Get("UI/Commands/SelectCarriedPawn");
+
+		public static readonly Texture2D SelectCarriedThing = ContentFinder<Texture2D>.Get("UI/Commands/SelectCarriedThing");
+
+		public static readonly Texture2D SelectShelf = ContentFinder<Texture2D>.Get("UI/Commands/SelectShelf");
 	}
 }

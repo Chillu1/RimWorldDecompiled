@@ -35,13 +35,15 @@ namespace Verse
 
 		public static List<string> loadErrors = new List<string>();
 
+		private static HashSet<XmlNode> treatAsList = new HashSet<XmlNode>();
+
 		private static Dictionary<string, string> tKeyToNormalizedTranslationKey = new Dictionary<string, string>();
 
 		private static Dictionary<string, string> translationKeyToTKey = new Dictionary<string, string>();
 
-		private static HashSet<XmlNode> treatAsList = new HashSet<XmlNode>();
-
 		public const string AttributeName = "TKey";
+
+		private static bool ShouldUseHardcodedMapping => true;
 
 		public static void Clear()
 		{
@@ -67,6 +69,19 @@ namespace Verse
 
 		public static void BuildMappings()
 		{
+			if (ShouldUseHardcodedMapping)
+			{
+				tKeyToNormalizedTranslationKey.AddRange(TKeySystemHardcodedMapping.TKeyToNormalizedTranslationKey);
+				translationKeyToTKey.AddRange(TKeySystemHardcodedMapping.TranslationKeyToTKey);
+			}
+			else
+			{
+				BuildMappings_Calculate();
+			}
+		}
+
+		private static void BuildMappings_Calculate()
+		{
 			Dictionary<string, string> tmpTranslationKeyToTKey = new Dictionary<string, string>();
 			foreach (TKeyRef key in keys)
 			{
@@ -87,13 +102,40 @@ namespace Verse
 				{
 					if (translationAllowed && !TryGetNormalizedPath(suggestedPath, out var _) && TrySuggestTKeyPath(normalizedPath, out var tKeyPath, tmpTranslationKeyToTKey))
 					{
-						tmpTranslationKeyToTKey.Add(suggestedPath, tKeyPath);
+						if (tmpTranslationKeyToTKey.ContainsKey(suggestedPath) && tmpTranslationKeyToTKey[suggestedPath] != tKeyPath)
+						{
+							Log.Error("Trying to add duplicate TKey with different path. '" + tmpTranslationKeyToTKey[suggestedPath] + "' will be overwritten by '" + tKeyPath + "'.");
+						}
+						tmpTranslationKeyToTKey.SetOrAdd(suggestedPath, tKeyPath);
 					}
 				});
 			}
 			foreach (KeyValuePair<string, string> item2 in tmpTranslationKeyToTKey)
 			{
 				translationKeyToTKey.Add(item2.Key, item2.Value);
+			}
+			Compare(tKeyToNormalizedTranslationKey, TKeySystemHardcodedMapping.TKeyToNormalizedTranslationKey, "tKeyToNormalizedTranslationKey(calculated)", "TKeySystemHardcodedMapping.TKeyToNormalizedTranslationKey");
+			Compare(translationKeyToTKey, TKeySystemHardcodedMapping.TranslationKeyToTKey, "translationKeyToTKey(calculated)", "TKeySystemHardcodedMapping.TranslationKeyToTKey");
+			static void Compare(Dictionary<string, string> a, Dictionary<string, string> b, string aName, string bName)
+			{
+				foreach (KeyValuePair<string, string> item3 in a)
+				{
+					if (!b.TryGetValue(item3.Key, out var value2))
+					{
+						Log.Warning(bName + " is missing " + item3.Key);
+					}
+					else if (item3.Value != value2)
+					{
+						Log.Warning(bName + "'s value doesn't match for " + item3.Key + ". Should be " + item3.Value);
+					}
+				}
+				foreach (KeyValuePair<string, string> item4 in b)
+				{
+					if (!a.ContainsKey(item4.Key))
+					{
+						Log.Warning(bName + " has " + item4.Key + " but it's not present in " + aName + ". We should most likely remove it from the list.");
+					}
+				}
 			}
 		}
 
@@ -158,16 +200,42 @@ namespace Verse
 			XmlNode currentNode;
 			for (currentNode = tKeyRef.node; currentNode != tKeyRef.defRootNode; currentNode = currentNode.ParentNode)
 			{
-				text = ((!(currentNode.Name == "li") && !treatAsList.Contains(currentNode.ParentNode)) ? ("." + currentNode.Name + text) : ("." + currentNode.ParentNode.ChildNodes.Cast<XmlNode>().FirstIndexOf((XmlNode n) => n == currentNode) + text));
+				text = ((!(currentNode.Name == "li") && !treatAsList.Contains(currentNode.ParentNode)) ? ("." + currentNode.Name + text) : ("." + (from XmlNode n in currentNode.ParentNode.ChildNodes
+					where ShouldConsiderNode(n)
+					select n).FirstIndexOf((XmlNode n) => n == currentNode) + text));
 			}
 			return tKeyRef.defName + text;
+			static bool ShouldConsiderNode(XmlNode node)
+			{
+				string text2 = node.Attributes["MayRequire"]?.Value;
+				if (text2 != null && !ModLister.AllModsActiveNoSuffix(text2.Split(',')))
+				{
+					return false;
+				}
+				string[] array = node.Attributes?["MayRequire"]?.Value.ToLower().Split(',');
+				if (!array.NullOrEmpty() && !ModLister.AnyModActiveNoSuffix(array))
+				{
+					return false;
+				}
+				return true;
+			}
 		}
 
 		private static void ParseDefNode(XmlNode node)
 		{
-			string text = (from XmlNode n in node.ChildNodes
-				where n.Name == "defName"
-				select n.InnerText).FirstOrDefault();
+			if (ShouldUseHardcodedMapping)
+			{
+				return;
+			}
+			string text = null;
+			foreach (XmlNode childNode in node.ChildNodes)
+			{
+				if (childNode.Name == "defName")
+				{
+					text = childNode.InnerText;
+					break;
+				}
+			}
 			TKeyRef tKeyRefTemplate;
 			if (!string.IsNullOrWhiteSpace(text))
 			{
@@ -180,9 +248,9 @@ namespace Verse
 			void CrawlNodesRecursive(XmlNode n)
 			{
 				ProcessNode(n);
-				foreach (XmlNode childNode in n.ChildNodes)
+				foreach (XmlNode childNode2 in n.ChildNodes)
 				{
-					CrawlNodesRecursive(childNode);
+					CrawlNodesRecursive(childNode2);
 				}
 			}
 			void ProcessNode(XmlNode n)

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Verse;
 
@@ -5,7 +6,33 @@ namespace RimWorld
 {
 	public static class DeepDrillUtility
 	{
+		private static List<ThingDef> rocks;
+
 		public const int NumCellsToScan = 21;
+
+		public static List<ThingDef> Rocks
+		{
+			get
+			{
+				if (rocks == null)
+				{
+					rocks = DefDatabase<ThingDef>.AllDefs.Where((ThingDef def) => def.IsNonResourceNaturalRock).ToList();
+				}
+				return rocks;
+			}
+		}
+
+		public static ThingDef RockForTerrain(TerrainDef terrain)
+		{
+			foreach (ThingDef rock in Rocks)
+			{
+				if (rock.building.naturalTerrain == terrain)
+				{
+					return rock;
+				}
+			}
+			return null;
+		}
 
 		public static ThingDef GetNextResource(IntVec3 p, Map map)
 		{
@@ -41,6 +68,11 @@ namespace RimWorld
 			if (!map.Biome.hasBedrock)
 			{
 				return null;
+			}
+			ThingDef thingDef = RockForTerrain(map.terrainGrid.BaseTerrainAt(cell));
+			if (thingDef != null)
+			{
+				return thingDef.building.mineableThing;
 			}
 			Rand.PushState();
 			Rand.Seed = cell.GetHashCode();

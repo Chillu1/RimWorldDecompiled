@@ -14,15 +14,23 @@ namespace RimWorld
 
 		private List<NameTriple> cachedNames;
 
+		private static readonly List<NameTriple> Blacklist = new List<NameTriple>();
+
+		private static readonly List<NameTriple> cachedSearch = new List<NameTriple>();
+
+		private string lastSearch;
+
 		public override Vector2 InitialSize => new Vector2(400f, 650f);
 
 		public Dialog_AddPreferredName()
 		{
 			doCloseButton = true;
 			absorbInputAroundWindow = true;
+			lastSearch = "";
 			cachedNames = (from n in SolidBioDatabase.allBios.Select((PawnBio b) => b.name).Concat(PawnNameDatabaseSolid.AllNames())
 				orderby n.Last descending
 				select n).ToList();
+			CacheBlacklist();
 		}
 
 		public override void DoWindowContents(Rect inRect)
@@ -37,17 +45,31 @@ namespace RimWorld
 				searchWords = searchName.Replace("'", "").Split(' ');
 			}
 			listing_Standard.Gap(4f);
+			int num = Mathf.FloorToInt((inRect.height - (Window.CloseButSize.y + 8f) - listing_Standard.CurHeight) / (30f + listing_Standard.verticalSpacing));
 			if (searchName.Length > 1)
 			{
-				foreach (NameTriple item in cachedNames.Where(FilterMatch))
+				if (searchName != lastSearch)
 				{
-					if (listing_Standard.ButtonText(item.ToString()))
+					lastSearch = searchName;
+					cachedSearch.Clear();
+					foreach (NameTriple item in cachedNames.Where(FilterMatch))
 					{
-						TryChooseName(item);
+						cachedSearch.Add(item);
+						if (listing_Standard.ButtonText(item.ToString()))
+						{
+							TryChooseName(item);
+						}
+						if (cachedSearch.Count >= num)
+						{
+							break;
+						}
 					}
-					if (listing_Standard.CurHeight + 30f > inRect.height - (CloseButSize.y + 8f))
+				}
+				foreach (NameTriple item2 in cachedSearch)
+				{
+					if (listing_Standard.ButtonText(item2.ToString()))
 					{
-						break;
+						TryChooseName(item2);
 					}
 				}
 			}
@@ -56,7 +78,7 @@ namespace RimWorld
 
 		private bool FilterMatch(NameTriple n)
 		{
-			if (n.First == "Tynan" && n.Last == "Sylvester")
+			if (IsBlacklisted(n))
 			{
 				return false;
 			}
@@ -71,6 +93,22 @@ namespace RimWorld
 					return n.Nick.StartsWith(searchName, StringComparison.OrdinalIgnoreCase);
 				}
 				return true;
+			}
+			if (searchWords.Length > 1)
+			{
+				string value = searchName.Replace("'", "");
+				if (n.First.IndexOf(' ') >= 0)
+				{
+					return n.First.StartsWith(value, StringComparison.OrdinalIgnoreCase);
+				}
+				if (n.Last.IndexOf(' ') >= 0)
+				{
+					return n.Last.StartsWith(value, StringComparison.OrdinalIgnoreCase);
+				}
+				if (n.Nick.IndexOf(' ') >= 0)
+				{
+					return n.Nick.StartsWith(value, StringComparison.OrdinalIgnoreCase);
+				}
 			}
 			if (searchWords.Length == 2)
 			{
@@ -101,6 +139,28 @@ namespace RimWorld
 		private bool AlreadyPreferred(NameTriple name)
 		{
 			return Prefs.PreferredNames.Contains(name.ToString());
+		}
+
+		private void CacheBlacklist()
+		{
+			if (!Blacklist.Any())
+			{
+				Blacklist.AddRange((from b in SolidBioDatabase.allBios
+					where b.rare
+					select b.name).ToList());
+			}
+		}
+
+		private static bool IsBlacklisted(NameTriple triple)
+		{
+			foreach (NameTriple item in Blacklist)
+			{
+				if (item.First.EqualsIgnoreCase(triple.First) && item.Last.EqualsIgnoreCase(triple.Last))
+				{
+					return true;
+				}
+			}
+			return false;
 		}
 	}
 }

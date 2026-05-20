@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Verse;
 using Verse.AI;
@@ -32,16 +31,12 @@ namespace RimWorld
 		{
 			return Toils_General.Do(delegate
 			{
-				if (pawn.interactions.TryInteractWith(Target, InteractionDefOf.Insult))
+				if (pawn.interactions.TryInteractWith(Target, InteractionDefOf.Insult) && pawn.MentalState is MentalState_InsultingSpree mentalState_InsultingSpree)
 				{
-					MentalState_InsultingSpree mentalState_InsultingSpree = pawn.MentalState as MentalState_InsultingSpree;
-					if (mentalState_InsultingSpree != null)
+					mentalState_InsultingSpree.lastInsultTicks = Find.TickManager.TicksGame;
+					if (mentalState_InsultingSpree.target == Target)
 					{
-						mentalState_InsultingSpree.lastInsultTicks = Find.TickManager.TicksGame;
-						if (mentalState_InsultingSpree.target == Target)
-						{
-							mentalState_InsultingSpree.insultedTargetAtLeastOnce = true;
-						}
+						mentalState_InsultingSpree.insultedTargetAtLeastOnce = true;
 					}
 				}
 			});
@@ -49,21 +44,22 @@ namespace RimWorld
 
 		private Toil InsultingSpreeDelayToil()
 		{
-			Action action = delegate
+			Toil toil = ToilMaker.MakeToil("InsultingSpreeDelayToil");
+			toil.initAction = WaitAction;
+			toil.tickIntervalAction = delegate
 			{
-				MentalState_InsultingSpree mentalState_InsultingSpree = pawn.MentalState as MentalState_InsultingSpree;
-				if (mentalState_InsultingSpree == null || Find.TickManager.TicksGame - mentalState_InsultingSpree.lastInsultTicks >= 1200)
+				WaitAction();
+			};
+			toil.socialMode = RandomSocialMode.Off;
+			toil.defaultCompleteMode = ToilCompleteMode.Never;
+			return toil;
+			void WaitAction()
+			{
+				if (!(pawn.MentalState is MentalState_InsultingSpree mentalState_InsultingSpree) || Find.TickManager.TicksGame - mentalState_InsultingSpree.lastInsultTicks >= 1200)
 				{
 					pawn.jobs.curDriver.ReadyForNextToil();
 				}
-			};
-			return new Toil
-			{
-				initAction = action,
-				tickAction = action,
-				socialMode = RandomSocialMode.Off,
-				defaultCompleteMode = ToilCompleteMode.Never
-			};
+			}
 		}
 	}
 }

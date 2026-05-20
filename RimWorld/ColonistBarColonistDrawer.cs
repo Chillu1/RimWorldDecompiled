@@ -9,9 +9,27 @@ namespace RimWorld
 	[StaticConstructorOnStartup]
 	public class ColonistBarColonistDrawer
 	{
+		private struct IconDrawCall
+		{
+			public Texture2D texture;
+
+			public string tooltip;
+
+			public Color? color;
+
+			public IconDrawCall(Texture2D texture, string tooltip = null, Color? color = null)
+			{
+				this.texture = texture;
+				this.tooltip = tooltip;
+				this.color = color;
+			}
+		}
+
 		private Dictionary<string, string> pawnLabelsCache = new Dictionary<string, string>();
 
 		private static readonly Texture2D MoodBGTex = SolidColorMaterials.NewSolidColorTexture(new Color(0.4f, 0.47f, 0.53f, 0.44f));
+
+		private static readonly Texture2D MoodAtlas = ContentFinder<Texture2D>.Get("UI/Widgets/SubtleGradient");
 
 		private static readonly Texture2D DeadColonistTex = ContentFinder<Texture2D>.Get("UI/Misc/DeadColonist");
 
@@ -35,6 +53,8 @@ namespace RimWorld
 
 		private static readonly Texture2D Icon_Inspired = ContentFinder<Texture2D>.Get("UI/Icons/ColonistBar/Inspired");
 
+		private static readonly Texture2D MoodGradient = ContentFinder<Texture2D>.Get("UI/Widgets/MoodGradient");
+
 		public static readonly Vector2 PawnTextureSize = new Vector2(ColonistBar.BaseSize.x - 2f, 75f);
 
 		public static readonly Vector3 PawnTextureCameraOffset = new Vector3(0f, 0f, 0.3f);
@@ -43,33 +63,62 @@ namespace RimWorld
 
 		private const float PawnTextureHorizontalPadding = 1f;
 
-		private const float BaseIconSize = 20f;
+		private static readonly float BaseIconAreaWidth = PawnTextureSize.x;
+
+		private static readonly float BaseIconMaxSize = 20f;
 
 		private const float BaseGroupFrameMargin = 12f;
 
 		public const float DoubleClickTime = 0.5f;
 
-		private static Vector2[] bracketLocs = new Vector2[4];
+		public const float FactionIconSpacing = 2f;
+
+		public const float IdeoRoleIconSpacing = 2f;
+
+		public const float SlaveIconSpacing = 2f;
+
+		private const float MoodGradientHeight = 35f;
+
+		private static List<IconDrawCall> tmpIconsToDraw = new List<IconDrawCall>();
 
 		private ColonistBar ColonistBar => Find.ColonistBar;
 
 		public void DrawColonist(Rect rect, Pawn colonist, Map pawnMap, bool highlight, bool reordering)
 		{
 			float alpha = ColonistBar.GetEntryRectAlpha(rect);
+			bool num = Prefs.VisibleMood && colonist.needs?.mood != null && colonist.mindState.mentalBreaker.CanDoRandomMentalBreaks && !colonist.Dead && !colonist.Downed;
+			MoodThreshold moodThreshold = MoodThresholdExtensions.CurrentMoodThresholdFor(colonist);
+			Color color = moodThreshold.GetColor();
+			color.a *= alpha;
 			ApplyEntryInAnotherMapAlphaFactor(pawnMap, ref alpha);
 			if (reordering)
 			{
 				alpha *= 0.5f;
 			}
 			Color color2 = (GUI.color = new Color(1f, 1f, 1f, alpha));
+			if (num && alpha >= 1f)
+			{
+				float num2 = moodThreshold.EdgeExpansion();
+				if (num2 > 0f)
+				{
+					GUI.color = color;
+					Widgets.DrawAtlas(rect.ExpandedBy(num2), MoodAtlas);
+					GUI.color = color2;
+				}
+			}
 			GUI.DrawTexture(rect, ColonistBar.BGTex);
 			if (colonist.needs != null && colonist.needs.mood != null)
 			{
 				Rect position = rect.ContractedBy(2f);
-				float num = position.height * colonist.needs.mood.CurLevelPercentage;
-				position.yMin = position.yMax - num;
-				position.height = num;
+				float num3 = position.height * colonist.needs.mood.CurLevelPercentage;
+				position.yMin = position.yMax - num3;
+				position.height = num3;
 				GUI.DrawTexture(position, MoodBGTex);
+			}
+			if (num && alpha >= 1f)
+			{
+				float transparency = ((moodThreshold < MoodThreshold.Major) ? 0.1f : 0.15f);
+				Widgets.DrawBoxSolid(rect, moodThreshold.GetColor().ToTransparent(transparency));
 			}
 			if (highlight)
 			{
@@ -79,15 +128,26 @@ namespace RimWorld
 				GUI.color = color2;
 			}
 			Rect rect2 = rect.ContractedBy(-2f * ColonistBar.Scale);
-			if ((colonist.Dead ? Find.Selector.SelectedObjects.Contains(colonist.Corpse) : Find.Selector.SelectedObjects.Contains(colonist)) && !WorldRendererUtility.WorldRenderedNow)
+			if ((colonist.Dead ? Find.Selector.SelectedObjects.Contains(colonist.Corpse) : Find.Selector.SelectedObjects.Contains(colonist)) && !WorldRendererUtility.WorldSelected)
 			{
 				DrawSelectionOverlayOnGUI(colonist, rect2);
 			}
-			else if (WorldRendererUtility.WorldRenderedNow && colonist.IsCaravanMember() && Find.WorldSelector.IsSelected(colonist.GetCaravan()))
+			else if (WorldRendererUtility.WorldSelected && colonist.IsCaravanMember() && Find.WorldSelector.IsSelected(colonist.GetCaravan()))
 			{
 				DrawCaravanSelectionOverlayOnGUI(colonist.GetCaravan(), rect2);
 			}
-			GUI.DrawTexture(GetPawnTextureRect(rect.position), PortraitsCache.Get(colonist, PawnTextureSize, PawnTextureCameraOffset, 1.28205f));
+			GUI.DrawTexture(GetPawnTextureRect(rect.position), PortraitsCache.Get(colonist, PawnTextureSize, Rot4.South, PawnTextureCameraOffset, 1.28205f));
+			if (num)
+			{
+				Rect rect3 = rect.ContractedBy(1f);
+				Widgets.BeginGroup(rect3);
+				Rect position2 = rect3.AtZero();
+				position2.yMin = position2.yMax - 35f;
+				GUI.color = color;
+				GUI.DrawTexture(position2, MoodGradient);
+				GUI.color = color2;
+				Widgets.EndGroup();
+			}
 			GUI.color = new Color(1f, 1f, 1f, alpha * 0.8f);
 			DrawIcons(rect, colonist);
 			GUI.color = color2;
@@ -95,8 +155,8 @@ namespace RimWorld
 			{
 				GUI.DrawTexture(rect, DeadColonistTex);
 			}
-			float num2 = 4f * ColonistBar.Scale;
-			Vector2 pos = new Vector2(rect.center.x, rect.yMax - num2);
+			float num4 = 4f * ColonistBar.Scale;
+			Vector2 pos = new Vector2(rect.center.x, rect.yMax - num4);
 			GenMapUI.DrawPawnLabel(colonist, pos, alpha, rect.width + ColonistBar.SpaceBetweenColonistsHorizontal - 2f, pawnLabelsCache);
 			Text.Font = GameFont.Small;
 			GUI.color = Color.white;
@@ -125,7 +185,7 @@ namespace RimWorld
 		{
 			Rect position = GroupFrameRect(group);
 			Map map = ColonistBar.Entries.Find((ColonistBar.Entry x) => x.group == group).map;
-			float num = ((map == null) ? ((!WorldRendererUtility.WorldRenderedNow) ? 0.75f : 1f) : ((map == Find.CurrentMap && !WorldRendererUtility.WorldRenderedNow) ? 1f : 0.75f));
+			float num = ((map == null) ? ((!WorldRendererUtility.WorldSelected) ? 0.75f : 1f) : ((map == Find.CurrentMap && !WorldRendererUtility.WorldSelected) ? 1f : 0.75f));
 			Widgets.DrawRectFast(position, new Color(0.5f, 0.5f, 0.5f, 0.4f * num));
 		}
 
@@ -133,12 +193,12 @@ namespace RimWorld
 		{
 			if (map == null)
 			{
-				if (!WorldRendererUtility.WorldRenderedNow)
+				if (!WorldRendererUtility.WorldSelected)
 				{
 					alpha = Mathf.Min(alpha, 0.4f);
 				}
 			}
-			else if (map != Find.CurrentMap || WorldRendererUtility.WorldRenderedNow)
+			else if (map != Find.CurrentMap || WorldRendererUtility.WorldSelected)
 			{
 				alpha = Mathf.Min(alpha, 0.4f);
 			}
@@ -163,8 +223,8 @@ namespace RimWorld
 			Rect rect = GroupFrameRect(group);
 			if (Event.current.type == EventType.MouseUp && Event.current.button == 0 && Mouse.IsOver(rect) && !ColonistBar.AnyColonistOrCorpseAt(UI.MousePositionOnUIInverted))
 			{
-				bool worldRenderedNow = WorldRendererUtility.WorldRenderedNow;
-				if ((!worldRenderedNow && !Find.Selector.dragBox.IsValidAndActive) || (worldRenderedNow && !Find.WorldSelector.dragBox.IsValidAndActive))
+				bool worldSelected = WorldRendererUtility.WorldSelected;
+				if ((!worldSelected && !Find.Selector.dragBox.IsValidAndActive) || (worldSelected && !Find.WorldSelector.dragBox.IsValidAndActive))
 				{
 					Find.Selector.dragBox.active = false;
 					Find.WorldSelector.dragBox.active = false;
@@ -172,7 +232,7 @@ namespace RimWorld
 					Map map = entry.map;
 					if (map == null)
 					{
-						if (WorldRendererUtility.WorldRenderedNow)
+						if (WorldRendererUtility.WorldSelected)
 						{
 							CameraJumper.TrySelect(entry.pawn);
 						}
@@ -202,6 +262,11 @@ namespace RimWorld
 			pawnLabelsCache.Clear();
 		}
 
+		public void ClearLabelCache()
+		{
+			pawnLabelsCache.Clear();
+		}
+
 		public Rect GetPawnTextureRect(Vector2 pos)
 		{
 			float x = pos.x;
@@ -216,8 +281,7 @@ namespace RimWorld
 			{
 				return;
 			}
-			float num = 20f * ColonistBar.Scale;
-			Vector2 pos = new Vector2(rect.x + 1f, rect.yMax - num - 1f);
+			tmpIconsToDraw.Clear();
 			bool flag = false;
 			if (colonist.CurJob != null)
 			{
@@ -226,93 +290,135 @@ namespace RimWorld
 				{
 					flag = true;
 				}
-				else if (def == JobDefOf.Wait_Combat)
+				else if (def == JobDefOf.Wait_Combat && colonist.stances.curStance is Stance_Busy stance_Busy && stance_Busy.focusTarg.IsValid)
 				{
-					Stance_Busy stance_Busy = colonist.stances.curStance as Stance_Busy;
-					if (stance_Busy != null && stance_Busy.focusTarg.IsValid)
-					{
-						flag = true;
-					}
+					flag = true;
 				}
 			}
 			if (colonist.IsFormingCaravan())
 			{
-				DrawIcon(Icon_FormingCaravan, ref pos, "ActivityIconFormingCaravan".Translate());
+				tmpIconsToDraw.Add(new IconDrawCall(Icon_FormingCaravan, "ActivityIconFormingCaravan".Translate()));
 			}
 			if (colonist.InAggroMentalState)
 			{
-				DrawIcon(Icon_MentalStateAggro, ref pos, colonist.MentalStateDef.LabelCap);
+				tmpIconsToDraw.Add(new IconDrawCall(Icon_MentalStateAggro, colonist.MentalStateDef.LabelCap));
 			}
 			else if (colonist.InMentalState)
 			{
-				DrawIcon(Icon_MentalStateNonAggro, ref pos, colonist.MentalStateDef.LabelCap);
+				tmpIconsToDraw.Add(new IconDrawCall(Icon_MentalStateNonAggro, colonist.MentalStateDef.LabelCap));
 			}
 			else if (colonist.InBed() && colonist.CurrentBed().Medical)
 			{
-				DrawIcon(Icon_MedicalRest, ref pos, "ActivityIconMedicalRest".Translate());
+				tmpIconsToDraw.Add(new IconDrawCall(Icon_MedicalRest, "ActivityIconMedicalRest".Translate()));
 			}
-			else if (colonist.CurJob != null && colonist.jobs.curDriver.asleep)
+			else
 			{
-				DrawIcon(Icon_Sleeping, ref pos, "ActivityIconSleeping".Translate());
+				if (colonist.CurJob != null && colonist.jobs.curDriver.asleep)
+				{
+					goto IL_01c5;
+				}
+				if (colonist.GetCaravan() != null)
+				{
+					Pawn_NeedsTracker needs = colonist.needs;
+					if (needs != null && needs.rest?.Resting == true)
+					{
+						goto IL_01c5;
+					}
+				}
+				if (colonist.CurJob != null && colonist.CurJob.def == JobDefOf.FleeAndCower)
+				{
+					tmpIconsToDraw.Add(new IconDrawCall(Icon_Fleeing, "ActivityIconFleeing".Translate()));
+				}
+				else if (flag)
+				{
+					tmpIconsToDraw.Add(new IconDrawCall(Icon_Attacking, "ActivityIconAttacking".Translate()));
+				}
+				else if (colonist.mindState.IsIdle && GenDate.DaysPassed >= 1)
+				{
+					tmpIconsToDraw.Add(new IconDrawCall(Icon_Idle, "ActivityIconIdle".Translate()));
+				}
 			}
-			else if (colonist.CurJob != null && colonist.CurJob.def == JobDefOf.FleeAndCower)
+			goto IL_02b4;
+			IL_01c5:
+			tmpIconsToDraw.Add(new IconDrawCall(Icon_Sleeping, "ActivityIconSleeping".Translate()));
+			goto IL_02b4;
+			IL_02b4:
+			if (colonist.IsBurning())
 			{
-				DrawIcon(Icon_Fleeing, ref pos, "ActivityIconFleeing".Translate());
+				tmpIconsToDraw.Add(new IconDrawCall(Icon_Burning, "ActivityIconBurning".Translate()));
 			}
-			else if (flag)
+			if (colonist.Inspired)
 			{
-				DrawIcon(Icon_Attacking, ref pos, "ActivityIconAttacking".Translate());
+				tmpIconsToDraw.Add(new IconDrawCall(Icon_Inspired, colonist.InspirationDef.LabelCap));
 			}
-			else if (colonist.mindState.IsIdle && GenDate.DaysPassed >= 1)
+			if (colonist.IsSlaveOfColony)
 			{
-				DrawIcon(Icon_Idle, ref pos, "ActivityIconIdle".Translate());
+				tmpIconsToDraw.Add(new IconDrawCall(colonist.guest.GetIcon()));
 			}
-			if (colonist.IsBurning() && pos.x + num <= rect.xMax)
+			else
 			{
-				DrawIcon(Icon_Burning, ref pos, "ActivityIconBurning".Translate());
+				bool flag2 = false;
+				if (colonist.Ideo != null)
+				{
+					Ideo ideo = colonist.Ideo;
+					Precept_Role role = ideo.GetRole(colonist);
+					if (role != null)
+					{
+						tmpIconsToDraw.Add(new IconDrawCall(role.Icon, null, ideo.Color));
+						flag2 = true;
+					}
+				}
+				if (!flag2)
+				{
+					Faction faction = null;
+					if (colonist.HasExtraMiniFaction())
+					{
+						faction = colonist.GetExtraMiniFaction();
+					}
+					else if (colonist.HasExtraHomeFaction())
+					{
+						faction = colonist.GetExtraHomeFaction();
+					}
+					if (faction != null)
+					{
+						tmpIconsToDraw.Add(new IconDrawCall(faction.def.FactionIcon, null, faction.Color));
+					}
+				}
 			}
-			if (colonist.Inspired && pos.x + num <= rect.xMax)
+			float num = Mathf.Min(BaseIconAreaWidth / (float)tmpIconsToDraw.Count, BaseIconMaxSize) * ColonistBar.Scale;
+			Vector2 pos = new Vector2(rect.x + 1f, rect.yMax - num - 1f);
+			foreach (IconDrawCall item in tmpIconsToDraw)
 			{
-				DrawIcon(Icon_Inspired, ref pos, colonist.InspirationDef.LabelCap);
+				GUI.color = item.color ?? Color.white;
+				DrawIcon(item.texture, ref pos, num, item.tooltip);
+				GUI.color = Color.white;
 			}
 		}
 
-		private void DrawIcon(Texture2D icon, ref Vector2 pos, string tooltip)
+		private void DrawIcon(Texture2D icon, ref Vector2 pos, float iconSize, string tooltip = null)
 		{
-			float num = 20f * ColonistBar.Scale;
-			Rect rect = new Rect(pos.x, pos.y, num, num);
+			Rect rect = new Rect(pos.x, pos.y, iconSize, iconSize);
 			GUI.DrawTexture(rect, icon);
-			TooltipHandler.TipRegion(rect, tooltip);
-			pos.x += num;
+			if (tooltip != null)
+			{
+				TooltipHandler.TipRegion(rect, tooltip);
+			}
+			pos.x += iconSize;
 		}
 
 		private void DrawSelectionOverlayOnGUI(Pawn colonist, Rect rect)
 		{
-			Thing obj = colonist;
+			Thing target = colonist;
 			if (colonist.Dead)
 			{
-				obj = colonist.Corpse;
+				target = colonist.Corpse;
 			}
-			float num = 0.4f * ColonistBar.Scale;
-			SelectionDrawerUtility.CalculateSelectionBracketPositionsUI(textureSize: new Vector2((float)SelectionDrawerUtility.SelectedTexGUI.width * num, (float)SelectionDrawerUtility.SelectedTexGUI.height * num), bracketLocs: bracketLocs, obj: obj, rect: rect, selectTimes: SelectionDrawer.SelectTimes, jumpDistanceFactor: 20f * ColonistBar.Scale);
-			DrawSelectionOverlayOnGUI(bracketLocs, num);
+			SelectionDrawerUtility.DrawSelectionOverlayOnGUI(target, rect, 0.4f * ColonistBar.Scale, 20f * ColonistBar.Scale);
 		}
 
 		private void DrawCaravanSelectionOverlayOnGUI(Caravan caravan, Rect rect)
 		{
-			float num = 0.4f * ColonistBar.Scale;
-			SelectionDrawerUtility.CalculateSelectionBracketPositionsUI(textureSize: new Vector2((float)SelectionDrawerUtility.SelectedTexGUI.width * num, (float)SelectionDrawerUtility.SelectedTexGUI.height * num), bracketLocs: bracketLocs, obj: caravan, rect: rect, selectTimes: WorldSelectionDrawer.SelectTimes, jumpDistanceFactor: 20f * ColonistBar.Scale);
-			DrawSelectionOverlayOnGUI(bracketLocs, num);
-		}
-
-		private void DrawSelectionOverlayOnGUI(Vector2[] bracketLocs, float selectedTexScale)
-		{
-			int num = 90;
-			for (int i = 0; i < 4; i++)
-			{
-				Widgets.DrawTextureRotated(bracketLocs[i], SelectionDrawerUtility.SelectedTexGUI, num, selectedTexScale);
-				num += 90;
-			}
+			SelectionDrawerUtility.DrawSelectionOverlayOnGUI(caravan, rect, 0.4f * ColonistBar.Scale, 20f * ColonistBar.Scale);
 		}
 	}
 }

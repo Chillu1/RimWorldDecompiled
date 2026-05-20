@@ -8,6 +8,10 @@ namespace RimWorld
 
 		public float leaflessPlantKillChance = 0.05f;
 
+		public bool ignoreSpecialTrees;
+
+		public bool messageOnCropDeath = true;
+
 		public SimpleCurve radiusPerDayCurve;
 
 		public CompProperties_PlantHarmRadius()

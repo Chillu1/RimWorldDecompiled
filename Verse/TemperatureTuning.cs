@@ -40,5 +40,7 @@ namespace Verse
 		public const float DropPodTemperature = 14f;
 
 		public const float TradeShipTemperature = 14f;
+
+		public const float TransporterTemperature = 14f;
 	}
 }

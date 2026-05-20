@@ -9,7 +9,7 @@ namespace Verse
 		{
 		}
 
-		public override void SubTrigger(TargetInfo A, TargetInfo B)
+		public override void SubTrigger(TargetInfo A, TargetInfo B, int overrideSpawnTick = -1, bool force = false)
 		{
 			def.soundDef.PlayOneShot(new TargetInfo(A.Cell, A.Map));
 		}

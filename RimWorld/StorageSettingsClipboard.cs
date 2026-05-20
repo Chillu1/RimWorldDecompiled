@@ -17,11 +17,13 @@ namespace RimWorld
 		{
 			clipboard.CopyFrom(s);
 			copied = true;
+			Messages.Message("StorageSettingsCopiedToClipboard".Translate(), null, MessageTypeDefOf.NeutralEvent, historical: false);
 		}
 
 		public static void PasteInto(StorageSettings s)
 		{
 			s.CopyFrom(clipboard);
+			Messages.Message("StorageSettingsPastedFromClipboard".Translate(), null, MessageTypeDefOf.NeutralEvent, historical: false);
 		}
 
 		public static IEnumerable<Gizmo> CopyPasteGizmosFor(StorageSettings s)

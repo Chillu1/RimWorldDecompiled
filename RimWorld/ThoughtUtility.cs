@@ -1,6 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -17,104 +18,126 @@ namespace RimWorld
 			situationalNonSocialThoughtDefs = DefDatabase<ThoughtDef>.AllDefs.Where((ThoughtDef x) => x.IsSituational && !x.IsSocial).ToList();
 		}
 
-		public static void GiveThoughtsForPawnExecuted(Pawn victim, PawnExecutionKind kind)
+		public static void GiveThoughtsForPawnExecuted(Pawn victim, Pawn executioner, PawnExecutionKind kind)
 		{
 			if (!victim.RaceProps.Humanlike)
 			{
 				return;
 			}
-			int forcedStage = 1;
+			int num = 0;
 			if (victim.guilt.IsGuilty)
 			{
-				forcedStage = 0;
+				num = 0;
 			}
 			else
 			{
 				switch (kind)
 				{
 				case PawnExecutionKind.GenericHumane:
-					forcedStage = 1;
+					num = 1;
 					break;
 				case PawnExecutionKind.GenericBrutal:
-					forcedStage = 2;
+					num = 2;
 					break;
 				case PawnExecutionKind.OrganHarvesting:
-					forcedStage = 3;
+					num = 3;
+					break;
+				case PawnExecutionKind.Ripscanned:
+					num = (ModsConfig.BiotechActive ? 4 : 3);
 					break;
 				}
 			}
-			ThoughtDef def = ((!victim.IsColonist) ? ThoughtDefOf.KnowGuestExecuted : ThoughtDefOf.KnowColonistExecuted);
-			foreach (Pawn allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners)
+			if (victim.IsPrisoner)
 			{
-				if (allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner.IsColonist && allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner.needs.mood != null)
+				if (executioner?.Faction != null)
 				{
-					allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner.needs.mood.thoughts.memories.TryGainMemory(ThoughtMaker.MakeThought(def, forcedStage));
+					executioner.Faction.lastExecutionTick = Find.TickManager.TicksGame;
+				}
+				Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.ExecutedPrisoner, executioner.Named(HistoryEventArgsNames.Doer), num.Named(HistoryEventArgsNames.ExecutionThoughtStage)));
+				if (victim.guilt.IsGuilty)
+				{
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.ExecutedPrisonerGuilty, executioner.Named(HistoryEventArgsNames.Doer)));
+				}
+				else
+				{
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.ExecutedPrisonerInnocent, executioner.Named(HistoryEventArgsNames.Doer)));
+				}
+			}
+			else if (victim.HostFaction != null)
+			{
+				Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.ExecutedGuest, executioner.Named(HistoryEventArgsNames.Doer), num.Named(HistoryEventArgsNames.ExecutionThoughtStage)));
+			}
+			else
+			{
+				Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.ExecutedColonist, executioner.Named(HistoryEventArgsNames.Doer), num.Named(HistoryEventArgsNames.ExecutionThoughtStage)));
+			}
+		}
+
+		public static void GiveThoughtsForPawnOrganHarvested(Pawn victim, Pawn billDoer)
+		{
+			if (victim.RaceProps.Humanlike)
+			{
+				if (victim.needs.mood != null)
+				{
+					victim.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.MyOrganHarvested);
+				}
+				if (ModsConfig.IdeologyActive)
+				{
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.HarvestedOrgan, billDoer.Named(HistoryEventArgsNames.Doer)));
+				}
+				if (billDoer.needs.mood != null && billDoer.story?.traits != null && billDoer.story.traits.HasTrait(TraitDefOf.Bloodlust))
+				{
+					billDoer.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.HarvestedOrgan_Bloodlust);
+				}
+				if (victim.IsColonist)
+				{
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.HarvestedOrganFromColonist, billDoer.Named(HistoryEventArgsNames.Doer)));
+				}
+				else if (victim.HostFaction == Faction.OfPlayer)
+				{
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.HarvestedOrganFromGuest, billDoer.Named(HistoryEventArgsNames.Doer)));
 				}
 			}
 		}
 
-		public static void GiveThoughtsForPawnOrganHarvested(Pawn victim)
+		public static Gene NullifyingGene(ThoughtDef def, Pawn pawn)
 		{
-			if (!victim.RaceProps.Humanlike)
+			if (!ModsConfig.BiotechActive)
 			{
-				return;
+				return null;
 			}
-			ThoughtDef thoughtDef = null;
-			if (victim.IsColonist)
+			if (def.nullifyingGenes != null && pawn.genes != null)
 			{
-				thoughtDef = ThoughtDefOf.KnowColonistOrganHarvested;
-			}
-			else if (victim.HostFaction == Faction.OfPlayer)
-			{
-				thoughtDef = ThoughtDefOf.KnowGuestOrganHarvested;
-			}
-			foreach (Pawn allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoners)
-			{
-				if (allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner.needs.mood != null)
+				for (int i = 0; i < def.nullifyingGenes.Count; i++)
 				{
-					if (allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner == victim)
+					Gene gene = pawn.genes.GetGene(def.nullifyingGenes[i]);
+					if (gene != null)
 					{
-						allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner.needs.mood.thoughts.memories.TryGainMemory(ThoughtDefOf.MyOrganHarvested);
-					}
-					else if (thoughtDef != null)
-					{
-						allMapsCaravansAndTravelingTransportPods_Alive_FreeColonistsAndPrisoner.needs.mood.thoughts.memories.TryGainMemory(thoughtDef);
+						return gene;
 					}
 				}
 			}
+			return null;
 		}
 
 		public static Hediff NullifyingHediff(ThoughtDef def, Pawn pawn)
 		{
-			if (def.IsMemory)
+			return pawn.health.hediffSet.ThoughtNullifyingHediff(def);
+		}
+
+		public static bool NeverNullified(ThoughtDef def, Pawn pawn)
+		{
+			if (!def.neverNullifyIfAnyTrait.NullOrEmpty())
 			{
-				return null;
-			}
-			float num = 0f;
-			List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
-			Hediff result = null;
-			for (int i = 0; i < hediffs.Count; i++)
-			{
-				HediffStage curStage = hediffs[i].CurStage;
-				if (curStage != null && curStage.pctConditionalThoughtsNullified > num)
+				for (int i = 0; i < def.neverNullifyIfAnyTrait.Count; i++)
 				{
-					num = curStage.pctConditionalThoughtsNullified;
-					result = hediffs[i];
+					if (pawn.story.traits.GetTrait(def.neverNullifyIfAnyTrait[i]) != null)
+					{
+						return true;
+					}
 				}
 			}
-			if (num == 0f)
-			{
-				return null;
-			}
-			Rand.PushState();
-			Rand.Seed = pawn.thingIDNumber * 31 + def.index * 139;
-			bool num2 = Rand.Value < num;
-			Rand.PopState();
-			if (!num2)
-			{
-				return null;
-			}
-			return result;
+			return false;
 		}
 
 		public static Trait NullifyingTrait(ThoughtDef def, Pawn pawn)
@@ -127,6 +150,17 @@ namespace RimWorld
 					if (trait != null)
 					{
 						return trait;
+					}
+				}
+			}
+			if (def.nullifyingTraitDegrees != null)
+			{
+				for (int j = 0; j < def.nullifyingTraitDegrees.Count; j++)
+				{
+					Trait trait2 = def.nullifyingTraitDegrees[j].GetTrait(pawn);
+					if (trait2 != null)
+					{
+						return trait2;
 					}
 				}
 			}
@@ -148,43 +182,109 @@ namespace RimWorld
 			return null;
 		}
 
+		public static PreceptDef NullifyingPrecept(ThoughtDef def, Pawn pawn)
+		{
+			if (def.nullifyingPrecepts != null)
+			{
+				for (int i = 0; i < def.nullifyingPrecepts.Count; i++)
+				{
+					if (pawn.Ideo != null && pawn.Ideo.HasPrecept(def.nullifyingPrecepts[i]))
+					{
+						return def.nullifyingPrecepts[i];
+					}
+				}
+			}
+			return null;
+		}
+
 		public static void RemovePositiveBedroomThoughts(Pawn pawn)
 		{
-			if (pawn.needs.mood != null)
+			if (pawn?.needs?.mood != null)
 			{
 				pawn.needs.mood.thoughts.memories.RemoveMemoriesOfDefIf(ThoughtDefOf.SleptInBedroom, (Thought_Memory thought) => thought.MoodOffset() > 0f);
 				pawn.needs.mood.thoughts.memories.RemoveMemoriesOfDefIf(ThoughtDefOf.SleptInBarracks, (Thought_Memory thought) => thought.MoodOffset() > 0f);
 			}
 		}
 
-		[Obsolete("Only need this overload to not break mod compatibility.")]
-		public static bool CanGetThought(Pawn pawn, ThoughtDef def)
-		{
-			return CanGetThought_NewTemp(pawn, def);
-		}
-
-		public static bool CanGetThought_NewTemp(Pawn pawn, ThoughtDef def, bool checkIfNullified = false)
+		public static bool CanGetThought(Pawn pawn, ThoughtDef def, bool checkIfNullified = false)
 		{
 			try
 			{
+				if (!def.developmentalStageFilter.Has(pawn.DevelopmentalStage))
+				{
+					return false;
+				}
+				if (def.gender != Gender.None && pawn.gender != def.gender && !def.IsSocial)
+				{
+					return false;
+				}
+				if (def.doNotApplyToQuestLodgers && pawn.IsQuestLodger())
+				{
+					return false;
+				}
+				if (def.minExpectation != null)
+				{
+					if (!pawn.Spawned)
+					{
+						return false;
+					}
+					ExpectationDef expectationDef = ExpectationsUtility.CurrentExpectationFor(pawn.MapHeld);
+					if (expectationDef != null && expectationDef.order < def.minExpectation.order)
+					{
+						return false;
+					}
+				}
 				if (!def.validWhileDespawned && !pawn.Spawned && !def.IsMemory)
 				{
 					return false;
 				}
-				if (!def.requiredTraits.NullOrEmpty())
+				if (pawn.story.traits.IsThoughtDisallowed(def))
 				{
-					bool flag = false;
-					for (int i = 0; i < def.requiredTraits.Count; i++)
+					return false;
+				}
+				bool flag = false;
+				bool flag2 = false;
+				if (!def.requiredHediffs.NullOrEmpty())
+				{
+					flag = true;
+					for (int i = 0; i < def.requiredHediffs.Count; i++)
 					{
-						if (pawn.story.traits.HasTrait(def.requiredTraits[i]) && (!def.RequiresSpecificTraitsDegree || def.requiredTraitsDegree == pawn.story.traits.DegreeOfTrait(def.requiredTraits[i])))
+						if (pawn.health.hediffSet.HasHediff(def.requiredHediffs[i]))
 						{
-							flag = true;
+							flag2 = true;
 							break;
 						}
 					}
-					if (!flag)
+				}
+				if (!def.requiredTraits.NullOrEmpty() && !flag2)
+				{
+					flag = true;
+					for (int j = 0; j < def.requiredTraits.Count; j++)
+					{
+						if (pawn.story.traits.HasTrait(def.requiredTraits[j]) && (!def.RequiresSpecificTraitsDegree || def.requiredTraitsDegree == pawn.story.traits.DegreeOfTrait(def.requiredTraits[j])))
+						{
+							flag2 = true;
+							break;
+						}
+					}
+				}
+				if (flag && !flag2)
+				{
+					return false;
+				}
+				if (ModsConfig.BiotechActive && !def.requiredGenes.NullOrEmpty())
+				{
+					if (pawn.genes == null)
 					{
 						return false;
+					}
+					for (int k = 0; k < def.requiredGenes.Count; k++)
+					{
+						Gene gene = pawn.genes.GetGene(def.requiredGenes[k]);
+						if (gene == null || !gene.Active)
+						{
+							return false;
+						}
 					}
 				}
 				if (def.nullifiedIfNotColonist && !pawn.IsColonist)
@@ -204,6 +304,10 @@ namespace RimWorld
 
 		public static bool ThoughtNullified(Pawn pawn, ThoughtDef def)
 		{
+			if (NeverNullified(def, pawn))
+			{
+				return false;
+			}
 			if (NullifyingTrait(def, pawn) != null)
 			{
 				return true;
@@ -216,28 +320,101 @@ namespace RimWorld
 			{
 				return true;
 			}
+			if (NullifyingPrecept(def, pawn) != null)
+			{
+				return true;
+			}
+			if (NullifyingGene(def, pawn) != null)
+			{
+				return true;
+			}
 			return false;
 		}
 
 		public static string ThoughtNullifiedMessage(Pawn pawn, ThoughtDef def)
 		{
-			TaggedString t = "ThoughtNullifiedBy".Translate().CapitalizeFirst() + ": ";
+			if (NeverNullified(def, pawn))
+			{
+				return "";
+			}
 			Trait trait = NullifyingTrait(def, pawn);
 			if (trait != null)
 			{
-				return t + trait.LabelCap;
+				return "ThoughtNullifiedBy".Translate().CapitalizeFirst() + ": " + trait.LabelCap;
 			}
 			Hediff hediff = NullifyingHediff(def, pawn);
 			if (hediff != null)
 			{
-				return t + hediff.def.LabelCap;
+				return "ThoughtNullifiedBy".Translate().CapitalizeFirst() + ": " + hediff.def.LabelCap;
 			}
 			TaleDef taleDef = NullifyingTale(def, pawn);
 			if (taleDef != null)
 			{
-				return t + taleDef.LabelCap;
+				return "ThoughtNullifiedBy".Translate().CapitalizeFirst() + ": " + taleDef.LabelCap;
+			}
+			PreceptDef preceptDef = NullifyingPrecept(def, pawn);
+			if (preceptDef != null)
+			{
+				return "DisabledByPrecept".Translate(preceptDef.issue.LabelCap) + ": " + preceptDef.LabelCap;
+			}
+			Gene gene = NullifyingGene(def, pawn);
+			if (gene != null)
+			{
+				return "DisabledByGene".Translate() + ": " + gene.LabelCap;
 			}
 			return "";
+		}
+
+		public static bool Witnessed(Pawn p, Pawn victim)
+		{
+			if (!p.Awake() || PawnUtility.IsBiologicallyOrArtificiallyBlind(p))
+			{
+				return false;
+			}
+			if (victim.IsCaravanMember())
+			{
+				return victim.GetCaravan() == p.GetCaravan();
+			}
+			if (!victim.Spawned || !p.Spawned)
+			{
+				return false;
+			}
+			if (!p.Position.InHorDistOf(victim.Position, 12f))
+			{
+				return false;
+			}
+			if (!GenSight.LineOfSight(victim.Position, p.Position, victim.Map))
+			{
+				return false;
+			}
+			return true;
+		}
+
+		public static IEnumerable<TraitRequirement> GetNullifyingTraits(ThoughtDef thoughtDef)
+		{
+			if (thoughtDef.nullifyingTraits != null)
+			{
+				for (int i = 0; i < thoughtDef.nullifyingTraits.Count; i++)
+				{
+					yield return new TraitRequirement
+					{
+						def = thoughtDef.nullifyingTraits[i]
+					};
+				}
+			}
+			if (thoughtDef.nullifyingTraitDegrees != null)
+			{
+				for (int i = 0; i < thoughtDef.nullifyingTraitDegrees.Count; i++)
+				{
+					yield return thoughtDef.nullifyingTraitDegrees[i];
+				}
+			}
+		}
+
+		public static string GenerateBabyTalk(string str)
+		{
+			string[] syllables = "BabyTalk".Translate().ToString().Split(',');
+			return GenText.CapitalizeSentences(Regex.Replace(str, "(\\p{L}|')+", (Match word) => string.Join("", Enumerable.Repeat(syllables[Rand.RangeSeeded(0, syllables.Length, GenText.StableStringHash(word.ToString()))], (word.Length <= 6) ? 1 : 2))));
 		}
 	}
 }

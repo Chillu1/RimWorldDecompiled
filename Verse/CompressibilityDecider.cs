@@ -20,7 +20,7 @@ namespace Verse
 		public void DetermineReferences()
 		{
 			referencedThings.Clear();
-			foreach (Thing item in map.designationManager.allDesignations.Select((Designation des) => des.target.Thing))
+			foreach (Thing item in map.designationManager.AllDesignations.Select((Designation des) => des.target.Thing))
 			{
 				referencedThings.Add(item);
 			}
@@ -28,10 +28,10 @@ namespace Verse
 			{
 				referencedThings.Add(item2);
 			}
-			List<Pawn> allPawnsSpawned = map.mapPawns.AllPawnsSpawned;
-			for (int i = 0; i < allPawnsSpawned.Count; i++)
+			IReadOnlyList<Pawn> allPawnsSpawned = map.mapPawns.AllPawnsSpawned;
+			for (int num = 0; num < allPawnsSpawned.Count; num++)
 			{
-				Job curJob = allPawnsSpawned[i].jobs.curJob;
+				Job curJob = allPawnsSpawned[num].jobs.curJob;
 				if (curJob != null)
 				{
 					if (curJob.targetA.HasThing)
@@ -49,9 +49,9 @@ namespace Verse
 				}
 			}
 			List<Thing> list = map.listerThings.ThingsInGroup(ThingRequestGroup.Projectile);
-			for (int j = 0; j < list.Count; j++)
+			for (int num2 = 0; num2 < list.Count; num2++)
 			{
-				Projectile projectile = (Projectile)list[j];
+				Projectile projectile = (Projectile)list[num2];
 				if (projectile.usedTarget.HasThing)
 				{
 					referencedThings.Add(projectile.usedTarget.Thing);
@@ -62,36 +62,35 @@ namespace Verse
 				}
 			}
 			List<Lord> lords = map.lordManager.lords;
-			for (int k = 0; k < lords.Count; k++)
+			for (int num3 = 0; num3 < lords.Count; num3++)
 			{
-				LordJob_FormAndSendCaravan lordJob_FormAndSendCaravan = lords[k].LordJob as LordJob_FormAndSendCaravan;
-				if (lordJob_FormAndSendCaravan == null)
+				if (!(lords[num3].LordJob is LordJob_FormAndSendCaravan lordJob_FormAndSendCaravan))
 				{
 					continue;
 				}
-				for (int l = 0; l < lordJob_FormAndSendCaravan.transferables.Count; l++)
+				for (int num4 = 0; num4 < lordJob_FormAndSendCaravan.transferables.Count; num4++)
 				{
-					TransferableOneWay transferableOneWay = lordJob_FormAndSendCaravan.transferables[l];
-					for (int m = 0; m < transferableOneWay.things.Count; m++)
+					TransferableOneWay transferableOneWay = lordJob_FormAndSendCaravan.transferables[num4];
+					for (int num5 = 0; num5 < transferableOneWay.things.Count; num5++)
 					{
-						referencedThings.Add(transferableOneWay.things[m]);
+						referencedThings.Add(transferableOneWay.things[num5]);
 					}
 				}
 			}
 			List<Thing> list2 = map.listerThings.ThingsInGroup(ThingRequestGroup.Transporter);
-			for (int n = 0; n < list2.Count; n++)
+			for (int num6 = 0; num6 < list2.Count; num6++)
 			{
-				CompTransporter compTransporter = list2[n].TryGetComp<CompTransporter>();
+				CompTransporter compTransporter = list2[num6].TryGetComp<CompTransporter>();
 				if (compTransporter.leftToLoad == null)
 				{
 					continue;
 				}
-				for (int num = 0; num < compTransporter.leftToLoad.Count; num++)
+				for (int num7 = 0; num7 < compTransporter.leftToLoad.Count; num7++)
 				{
-					TransferableOneWay transferableOneWay2 = compTransporter.leftToLoad[num];
-					for (int num2 = 0; num2 < transferableOneWay2.things.Count; num2++)
+					TransferableOneWay transferableOneWay2 = compTransporter.leftToLoad[num7];
+					for (int num8 = 0; num8 < transferableOneWay2.things.Count; num8++)
 					{
-						referencedThings.Add(transferableOneWay2.things[num2]);
+						referencedThings.Add(transferableOneWay2.things[num8]);
 					}
 				}
 			}

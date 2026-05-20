@@ -45,11 +45,11 @@ namespace RimWorld.Planet
 
 		private bool sourceDaysWorthOfFoodDirty = true;
 
-		private Pair<float, float> cachedSourceDaysWorthOfFood;
+		private (float days, float tillRot) cachedSourceDaysWorthOfFood;
 
 		private bool sourceForagedFoodPerDayDirty = true;
 
-		private Pair<ThingDef, float> cachedSourceForagedFoodPerDay;
+		private (ThingDef food, float perDay) cachedSourceForagedFoodPerDay;
 
 		private string cachedSourceForagedFoodPerDayExplanation;
 
@@ -77,11 +77,11 @@ namespace RimWorld.Planet
 
 		private bool destDaysWorthOfFoodDirty = true;
 
-		private Pair<float, float> cachedDestDaysWorthOfFood;
+		private (float days, float tillRot) cachedDestDaysWorthOfFood;
 
 		private bool destForagedFoodPerDayDirty = true;
 
-		private Pair<ThingDef, float> cachedDestForagedFoodPerDay;
+		private (ThingDef food, float perDay) cachedDestForagedFoodPerDay;
 
 		private string cachedDestForagedFoodPerDayExplanation;
 
@@ -145,42 +145,42 @@ namespace RimWorld.Planet
 				{
 					sourceTilesPerDayDirty = false;
 					StringBuilder stringBuilder = new StringBuilder();
-					cachedSourceTilesPerDay = TilesPerDayCalculator.ApproxTilesPerDayLeftAfterTransfer(transferables, SourceMassUsage, SourceMassCapacity, caravan.Tile, caravan.pather.Moving ? caravan.pather.nextTile : (-1), stringBuilder);
+					cachedSourceTilesPerDay = TilesPerDayCalculator.ApproxTilesPerDayLeftAfterTransfer(transferables, SourceMassUsage, SourceMassCapacity, caravan.Tile, caravan.pather.Moving ? caravan.pather.nextTile : PlanetTile.Invalid, caravan.Shuttle != null, stringBuilder);
 					cachedSourceTilesPerDayExplanation = stringBuilder.ToString();
 				}
 				return cachedSourceTilesPerDay;
 			}
 		}
 
-		private Pair<float, float> SourceDaysWorthOfFood
+		private (float days, float tillRot) SourceDaysWorthOfFood
 		{
 			get
 			{
 				if (sourceDaysWorthOfFoodDirty)
 				{
 					sourceDaysWorthOfFoodDirty = false;
-					float first;
-					float second;
+					float item;
+					float item2;
 					if (caravan.pather.Moving)
 					{
-						using (Find.WorldPathFinder.FindPath(caravan.Tile, caravan.pather.Destination, null))
+						using (caravan.Tile.Layer.Pather.FindPath(caravan.Tile, caravan.pather.Destination, null))
 						{
-							first = DaysWorthOfFoodCalculator.ApproxDaysWorthOfFoodLeftAfterTransfer(transferables, caravan.Tile, IgnorePawnsInventoryMode.Ignore, caravan.Faction, caravan.pather.curPath, caravan.pather.nextTileCostLeft, caravan.TicksPerMove);
-							second = DaysUntilRotCalculator.ApproxDaysUntilRotLeftAfterTransfer(transferables, caravan.Tile, IgnorePawnsInventoryMode.Ignore, caravan.pather.curPath, caravan.pather.nextTileCostLeft, caravan.TicksPerMove);
+							item = DaysWorthOfFoodCalculator.ApproxDaysWorthOfFoodLeftAfterTransfer(transferables, caravan.Tile, IgnorePawnsInventoryMode.Ignore, caravan.Faction, caravan.pather.curPath, caravan.pather.nextTileCostLeft, caravan.TicksPerMove);
+							item2 = DaysUntilRotCalculator.ApproxDaysUntilRotLeftAfterTransfer(transferables, caravan.Tile, IgnorePawnsInventoryMode.Ignore, caravan.pather.curPath, caravan.pather.nextTileCostLeft, caravan.TicksPerMove);
 						}
 					}
 					else
 					{
-						first = DaysWorthOfFoodCalculator.ApproxDaysWorthOfFoodLeftAfterTransfer(transferables, caravan.Tile, IgnorePawnsInventoryMode.Ignore, caravan.Faction);
-						second = DaysUntilRotCalculator.ApproxDaysUntilRotLeftAfterTransfer(transferables, caravan.Tile, IgnorePawnsInventoryMode.Ignore);
+						item = DaysWorthOfFoodCalculator.ApproxDaysWorthOfFoodLeftAfterTransfer(transferables, caravan.Tile, IgnorePawnsInventoryMode.Ignore, caravan.Faction);
+						item2 = DaysUntilRotCalculator.ApproxDaysUntilRotLeftAfterTransfer(transferables, caravan.Tile, IgnorePawnsInventoryMode.Ignore);
 					}
-					cachedSourceDaysWorthOfFood = new Pair<float, float>(first, second);
+					cachedSourceDaysWorthOfFood = (days: item, tillRot: item2);
 				}
 				return cachedSourceDaysWorthOfFood;
 			}
 		}
 
-		private Pair<ThingDef, float> SourceForagedFoodPerDay
+		private (ThingDef food, float perDay) SourceForagedFoodPerDay
 		{
 			get
 			{
@@ -246,39 +246,39 @@ namespace RimWorld.Planet
 				{
 					destTilesPerDayDirty = false;
 					StringBuilder stringBuilder = new StringBuilder();
-					cachedDestTilesPerDay = TilesPerDayCalculator.ApproxTilesPerDay(transferables, DestMassUsage, DestMassCapacity, caravan.Tile, caravan.pather.Moving ? caravan.pather.nextTile : (-1), stringBuilder);
+					cachedDestTilesPerDay = TilesPerDayCalculator.ApproxTilesPerDay(transferables, DestMassUsage, DestMassCapacity, caravan.Tile, caravan.pather.Moving ? caravan.pather.nextTile : PlanetTile.Invalid, caravan.Shuttle != null, stringBuilder);
 					cachedDestTilesPerDayExplanation = stringBuilder.ToString();
 				}
 				return cachedDestTilesPerDay;
 			}
 		}
 
-		private Pair<float, float> DestDaysWorthOfFood
+		private (float days, float tillRot) DestDaysWorthOfFood
 		{
 			get
 			{
 				if (destDaysWorthOfFoodDirty)
 				{
 					destDaysWorthOfFoodDirty = false;
-					float first;
-					float second;
+					float item;
+					float item2;
 					if (caravan.pather.Moving)
 					{
-						first = DaysWorthOfFoodCalculator.ApproxDaysWorthOfFood(transferables, caravan.Tile, IgnorePawnsInventoryMode.Ignore, caravan.Faction, caravan.pather.curPath, caravan.pather.nextTileCostLeft, caravan.TicksPerMove);
-						second = DaysUntilRotCalculator.ApproxDaysUntilRot(transferables, caravan.Tile, IgnorePawnsInventoryMode.Ignore, caravan.pather.curPath, caravan.pather.nextTileCostLeft, caravan.TicksPerMove);
+						item = DaysWorthOfFoodCalculator.ApproxDaysWorthOfFood(transferables, caravan.Tile, IgnorePawnsInventoryMode.Ignore, caravan.Faction, caravan.pather.curPath, caravan.pather.nextTileCostLeft, caravan.TicksPerMove);
+						item2 = DaysUntilRotCalculator.ApproxDaysUntilRot(transferables, caravan.Tile, IgnorePawnsInventoryMode.Ignore, caravan.pather.curPath, caravan.pather.nextTileCostLeft, caravan.TicksPerMove);
 					}
 					else
 					{
-						first = DaysWorthOfFoodCalculator.ApproxDaysWorthOfFood(transferables, caravan.Tile, IgnorePawnsInventoryMode.Ignore, caravan.Faction);
-						second = DaysUntilRotCalculator.ApproxDaysUntilRot(transferables, caravan.Tile, IgnorePawnsInventoryMode.Ignore);
+						item = DaysWorthOfFoodCalculator.ApproxDaysWorthOfFood(transferables, caravan.Tile, IgnorePawnsInventoryMode.Ignore, caravan.Faction);
+						item2 = DaysUntilRotCalculator.ApproxDaysUntilRot(transferables, caravan.Tile, IgnorePawnsInventoryMode.Ignore);
 					}
-					cachedDestDaysWorthOfFood = new Pair<float, float>(first, second);
+					cachedDestDaysWorthOfFood = (days: item, tillRot: item2);
 				}
 				return cachedDestDaysWorthOfFood;
 			}
 		}
 
-		private Pair<ThingDef, float> DestForagedFoodPerDay
+		private (ThingDef food, float perDay) DestForagedFoodPerDay
 		{
 			get
 			{
@@ -346,7 +346,7 @@ namespace RimWorld.Planet
 			Widgets.Label(rect, "SplitCaravan".Translate());
 			Text.Font = GameFont.Small;
 			Text.Anchor = TextAnchor.UpperLeft;
-			CaravanUIUtility.DrawCaravanInfo(new CaravanUIUtility.CaravanInfo(SourceMassUsage, SourceMassCapacity, cachedSourceMassCapacityExplanation, SourceTilesPerDay, cachedSourceTilesPerDayExplanation, SourceDaysWorthOfFood, SourceForagedFoodPerDay, cachedSourceForagedFoodPerDayExplanation, SourceVisibility, cachedSourceVisibilityExplanation), new CaravanUIUtility.CaravanInfo(DestMassUsage, DestMassCapacity, cachedDestMassCapacityExplanation, DestTilesPerDay, cachedDestTilesPerDayExplanation, DestDaysWorthOfFood, DestForagedFoodPerDay, cachedDestForagedFoodPerDayExplanation, DestVisibility, cachedDestVisibilityExplanation), caravan.Tile, caravan.pather.Moving ? new int?(TicksToArrive) : null, -9999f, new Rect(12f, 35f, inRect.width - 24f, 40f));
+			CaravanUIUtility.DrawCaravanInfo(new CaravanUIUtility.CaravanInfo(SourceMassUsage, SourceMassCapacity, cachedSourceMassCapacityExplanation, SourceTilesPerDay, cachedSourceTilesPerDayExplanation, SourceDaysWorthOfFood, SourceForagedFoodPerDay, cachedSourceForagedFoodPerDayExplanation, SourceVisibility, cachedSourceVisibilityExplanation), new CaravanUIUtility.CaravanInfo(DestMassUsage, DestMassCapacity, cachedDestMassCapacityExplanation, DestTilesPerDay, cachedDestTilesPerDayExplanation, DestDaysWorthOfFood, DestForagedFoodPerDay, cachedDestForagedFoodPerDayExplanation, DestVisibility, cachedDestVisibilityExplanation), caravan.Tile, caravan.pather.Moving ? new int?(TicksToArrive) : ((int?)null), -9999f, new Rect(12f, 35f, inRect.width - 24f, 40f));
 			tabsList.Clear();
 			tabsList.Add(new TabRecord("PawnsTab".Translate(), delegate
 			{
@@ -356,7 +356,7 @@ namespace RimWorld.Planet
 			{
 				tab = Tab.Items;
 			}, tab == Tab.Items));
-			tabsList.Add(new TabRecord("FoodAndMedicineTab".Translate(), delegate
+			tabsList.Add(new TabRecord("TravelSupplies".Translate(), delegate
 			{
 				tab = Tab.FoodAndMedicine;
 			}, tab == Tab.FoodAndMedicine));
@@ -364,7 +364,7 @@ namespace RimWorld.Planet
 			Widgets.DrawMenuSection(inRect);
 			TabDrawer.DrawTabs(inRect, tabsList);
 			inRect = inRect.ContractedBy(17f);
-			GUI.BeginGroup(inRect);
+			Widgets.BeginGroup(inRect);
 			Rect rect2 = inRect.AtZero();
 			DoBottomButtons(rect2);
 			Rect inRect2 = rect2;
@@ -386,7 +386,7 @@ namespace RimWorld.Planet
 			{
 				CountToTransferChanged();
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		public override bool CausesMessageBackground()
@@ -436,7 +436,7 @@ namespace RimWorld.Planet
 			transferables = new List<TransferableOneWay>();
 			AddPawnsToTransferables();
 			AddItemsToTransferables();
-			CaravanUIUtility.CreateCaravanTransferableWidgets_NewTmp(transferables, out pawnsTransfer, out itemsTransfer, out foodAndMedicineTransfer, "SplitCaravanThingCountTip".Translate(), IgnorePawnsInventoryMode.Ignore, () => DestMassCapacity - DestMassUsage, ignoreSpawnedCorpsesGearAndInventoryMass: false, caravan.Tile);
+			CaravanUIUtility.CreateCaravanTransferableWidgets(transferables, out pawnsTransfer, out itemsTransfer, out foodAndMedicineTransfer, "SplitCaravanThingCountTip".Translate(), IgnorePawnsInventoryMode.Ignore, () => DestMassCapacity - DestMassUsage, ignoreSpawnedCorpsesGearAndInventoryMass: false, caravan.Tile);
 			CountToTransferChanged();
 		}
 
@@ -457,14 +457,14 @@ namespace RimWorld.Planet
 			}
 			Caravan newCaravan = CaravanMaker.MakeCaravan(pawnsFromTransferables, caravan.Faction, caravan.Tile, addToWorldPawnsIfNotAlready: true);
 			transferables.RemoveAll((TransferableOneWay x) => x.AnyThing is Pawn);
-			for (int k = 0; k < transferables.Count; k++)
+			for (int num = 0; num < transferables.Count; num++)
 			{
-				TransferableUtility.TransferNoSplit(transferables[k].things, transferables[k].CountToTransfer, delegate(Thing thing, int numToTake)
+				TransferableUtility.TransferNoSplit(transferables[num].things, transferables[num].CountToTransfer, delegate(Thing thing, int numToTake)
 				{
 					Pawn ownerOf = CaravanInventoryUtility.GetOwnerOf(caravan, thing);
 					if (ownerOf == null)
 					{
-						Log.Error(string.Concat("Error while splitting a caravan: Thing ", thing, " has no owner. Where did it come from then?"));
+						Log.Error("Error while splitting a caravan: Thing " + thing?.ToString() + " has no owner. Where did it come from then?");
 					}
 					else
 					{
@@ -479,12 +479,26 @@ namespace RimWorld.Planet
 		{
 			if (!pawns.Any((Pawn x) => CaravanUtility.IsOwner(x, Faction.OfPlayer) && !x.Downed))
 			{
-				Messages.Message("CaravanMustHaveAtLeastOneColonist".Translate(), caravan, MessageTypeDefOf.RejectInput, historical: false);
+				if (ModsConfig.IdeologyActive)
+				{
+					Messages.Message("CaravanMustHaveAtLeastOneNonSlaveColonist".Translate(), MessageTypeDefOf.RejectInput, historical: false);
+				}
+				else
+				{
+					Messages.Message("CaravanMustHaveAtLeastOneColonist".Translate(), caravan, MessageTypeDefOf.RejectInput, historical: false);
+				}
 				return false;
 			}
 			if (!AnyNonDownedColonistLeftInSourceCaravan(pawns))
 			{
-				Messages.Message("SourceCaravanMustHaveAtLeastOneColonist".Translate(), caravan, MessageTypeDefOf.RejectInput, historical: false);
+				if (ModsConfig.IdeologyActive)
+				{
+					Messages.Message("SourceCaravanMustHaveAtLeastOneNonSlaveColonist".Translate(), caravan, MessageTypeDefOf.RejectInput, historical: false);
+				}
+				else
+				{
+					Messages.Message("SourceCaravanMustHaveAtLeastOneColonist".Translate(), caravan, MessageTypeDefOf.RejectInput, historical: false);
+				}
 				return false;
 			}
 			return true;
@@ -510,11 +524,7 @@ namespace RimWorld.Planet
 
 		private bool AnyNonDownedColonistLeftInSourceCaravan(List<Pawn> pawnsToTransfer)
 		{
-			return transferables.Any((TransferableOneWay x) => x.things.Any(delegate(Thing y)
-			{
-				Pawn pawn = y as Pawn;
-				return pawn != null && CaravanUtility.IsOwner(pawn, Faction.OfPlayer) && !pawn.Downed && !pawnsToTransfer.Contains(pawn);
-			}));
+			return transferables.Any((TransferableOneWay x) => x.things.Any((Thing y) => y is Pawn pawn && CaravanUtility.IsOwner(pawn, Faction.OfPlayer) && !pawn.Downed && !pawnsToTransfer.Contains(pawn)));
 		}
 
 		private void CountToTransferChanged()

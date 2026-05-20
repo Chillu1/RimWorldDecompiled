@@ -47,13 +47,13 @@ namespace RimWorld.BaseGen
 				}
 				else
 				{
-					PawnKindDef pawnKindDef = rp.singlePawnKindDef ?? DefDatabase<PawnKindDef>.AllDefsListForReading.Where((PawnKindDef x) => x.defaultFactionType == null || !x.defaultFactionType.isPlayer).RandomElement();
+					PawnKindDef pawnKindDef = rp.singlePawnKindDef ?? DefDatabase<PawnKindDef>.AllDefsListForReading.Where((PawnKindDef x) => x.defaultFactionDef == null || !x.defaultFactionDef.isPlayer).RandomElement();
 					Faction result = rp.faction;
 					if (result == null && pawnKindDef.RaceProps.Humanlike)
 					{
-						if (pawnKindDef.defaultFactionType != null)
+						if (pawnKindDef.defaultFactionDef != null)
 						{
-							result = FactionUtility.DefaultFactionFrom(pawnKindDef.defaultFactionType);
+							result = FactionUtility.DefaultFactionFrom(pawnKindDef.defaultFactionDef);
 							if (result == null)
 							{
 								return;
@@ -64,7 +64,7 @@ namespace RimWorld.BaseGen
 							return;
 						}
 					}
-					request = new PawnGenerationRequest(pawnKindDef, result, PawnGenerationContext.NonPlayer, map.Tile);
+					request = new PawnGenerationRequest(pawnKindDef, result, PawnGenerationContext.NonPlayer, map.Tile, forceGenerateNewPawn: false, allowDead: false, result.deactivated);
 				}
 				pawn = PawnGenerator.GeneratePawn(request);
 				if (rp.postThingGenerate != null)

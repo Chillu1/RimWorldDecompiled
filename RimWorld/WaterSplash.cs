@@ -5,9 +5,9 @@ namespace RimWorld
 {
 	public class WaterSplash : Projectile
 	{
-		protected override void Impact(Thing hitThing)
+		protected override void Impact(Thing hitThing, bool blockedByShield = false)
 		{
-			base.Impact(hitThing);
+			base.Impact(hitThing, blockedByShield);
 			List<Thing> list = new List<Thing>();
 			foreach (Thing item in base.Map.thingGrid.ThingsAt(base.Position))
 			{

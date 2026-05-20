@@ -10,7 +10,7 @@ namespace RimWorld.SketchGen
 
 		private const int MinRectHeight = 7;
 
-		protected override void ResolveInt(ResolveParams parms)
+		protected override void ResolveInt(SketchResolveParams parms)
 		{
 			CellRect outerRect = parms.rect ?? parms.sketch.OccupiedRect;
 			HashSet<IntVec3> processed = new HashSet<IntVec3>();
@@ -22,7 +22,7 @@ namespace RimWorld.SketchGen
 					int newX = Rand.RangeInclusive(5, cellRect.Width - 2);
 					int newZ = Rand.RangeInclusive(5, cellRect.Height - 2);
 					Sketch sketch = new Sketch();
-					ResolveParams parms2 = parms;
+					SketchResolveParams parms2 = parms;
 					parms2.sketch = sketch;
 					parms2.monumentSize = new IntVec2(newX, newZ);
 					parms2.rect = null;
@@ -32,7 +32,7 @@ namespace RimWorld.SketchGen
 			}
 		}
 
-		protected override bool CanResolveInt(ResolveParams parms)
+		protected override bool CanResolveInt(SketchResolveParams parms)
 		{
 			return true;
 		}

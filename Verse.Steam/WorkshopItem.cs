@@ -32,14 +32,15 @@ namespace Verse.Steam
 			WorkshopItem workshopItem = null;
 			if (!itemInstallInfo)
 			{
-				workshopItem = new WorkshopItem_NotInstalled();
+				workshopItem = new WorkshopItem_Downloading();
 			}
 			else
 			{
 				DirectoryInfo directoryInfo = new DirectoryInfo(pchFolder);
 				if (!directoryInfo.Exists)
 				{
-					Log.Error(string.Concat("Created WorkshopItem for ", pfid, " but there is no folder for it."));
+					PublishedFileId_t publishedFileId_t = pfid;
+					Log.Error("Created WorkshopItem for " + publishedFileId_t.ToString() + " but there is no folder for it.");
 					return new WorkshopItem_NotInstalled();
 				}
 				FileInfo[] files = directoryInfo.GetFiles();
@@ -63,7 +64,7 @@ namespace Verse.Steam
 
 		public override string ToString()
 		{
-			return GetType().ToString() + "-" + PublishedFileId;
+			return GetType().ToString() + "-" + PublishedFileId.ToString();
 		}
 	}
 }

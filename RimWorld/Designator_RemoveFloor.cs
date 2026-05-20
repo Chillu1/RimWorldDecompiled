@@ -1,14 +1,13 @@
-using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
 namespace RimWorld
 {
-	public class Designator_RemoveFloor : Designator
+	public class Designator_RemoveFloor : Designator_Cells
 	{
-		public override int DraggableDimensions => 2;
-
 		public override bool DragDrawMeasurements => true;
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Floors;
 
 		public Designator_RemoveFloor()
 		{
@@ -18,7 +17,7 @@ namespace RimWorld
 			useMouseIcon = true;
 			soundDragSustain = SoundDefOf.Designate_DragStandard;
 			soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
-			soundSucceeded = SoundDefOf.Designate_SmoothSurface;
+			soundSucceeded = SoundDefOf.Designate_RemoveFloor;
 			hotKey = KeyBindingDefOf.Misc1;
 		}
 
@@ -63,11 +62,6 @@ namespace RimWorld
 		public override void SelectedUpdate()
 		{
 			GenUI.RenderMouseoverBracket();
-		}
-
-		public override void RenderHighlight(List<IntVec3> dragCells)
-		{
-			DesignatorUtility.RenderHighlightOverSelectableCells(this, dragCells);
 		}
 	}
 }

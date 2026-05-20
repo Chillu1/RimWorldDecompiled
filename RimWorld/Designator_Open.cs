@@ -7,9 +7,9 @@ namespace RimWorld
 {
 	public class Designator_Open : Designator
 	{
-		public override int DraggableDimensions => 2;
-
 		protected override DesignationDef Designation => DesignationDefOf.Open;
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
 
 		public Designator_Open()
 		{
@@ -52,8 +52,7 @@ namespace RimWorld
 
 		public override AcceptanceReport CanDesignateThing(Thing t)
 		{
-			IOpenable openable = t as IOpenable;
-			if (openable == null || !openable.CanOpen || base.Map.designationManager.DesignationOn(t, Designation) != null)
+			if (!(t is IOpenable { CanOpen: not false }) || base.Map.designationManager.DesignationOn(t, Designation) != null)
 			{
 				return false;
 			}

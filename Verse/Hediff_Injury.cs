@@ -1,10 +1,13 @@
 using System.Text;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
 {
 	public class Hediff_Injury : HediffWithComps
 	{
+		public bool destroysBodyParts = true;
+
 		private static readonly Color PermanentInjuryColor = new Color(0.72f, 0.72f, 0.72f);
 
 		public override int UIGroupKey
@@ -27,7 +30,7 @@ namespace Verse
 				HediffComp_GetsPermanent hediffComp_GetsPermanent = this.TryGetComp<HediffComp_GetsPermanent>();
 				if (hediffComp_GetsPermanent != null && hediffComp_GetsPermanent.IsPermanent)
 				{
-					if (base.Part.def.delicate && !hediffComp_GetsPermanent.Props.instantlyPermanentLabel.NullOrEmpty())
+					if (base.Part != null && base.Part.def.delicate && !hediffComp_GetsPermanent.Props.instantlyPermanentLabel.NullOrEmpty())
 					{
 						return hediffComp_GetsPermanent.Props.instantlyPermanentLabel;
 					}
@@ -54,21 +57,27 @@ namespace Verse
 					}
 					stringBuilder.Append(sourceHediffDef.label);
 				}
-				else if (source != null)
+				else if (sourceDef != null)
 				{
 					if (stringBuilder.Length != 0)
 					{
 						stringBuilder.Append(", ");
 					}
-					stringBuilder.Append(source.label);
-					if (sourceBodyPartGroup != null)
+					if (!sourceToolLabel.NullOrEmpty())
 					{
-						stringBuilder.Append(" ");
-						stringBuilder.Append(sourceBodyPartGroup.LabelShort);
+						stringBuilder.Append("SourceToolLabel".Translate(sourceLabel, sourceToolLabel));
+					}
+					else if (sourceBodyPartGroup != null)
+					{
+						stringBuilder.Append("SourceToolLabel".Translate(sourceLabel, sourceBodyPartGroup.LabelShort));
+					}
+					else
+					{
+						stringBuilder.Append(sourceLabel);
 					}
 				}
 				HediffComp_GetsPermanent hediffComp_GetsPermanent = this.TryGetComp<HediffComp_GetsPermanent>();
-				if (hediffComp_GetsPermanent != null && hediffComp_GetsPermanent.IsPermanent && hediffComp_GetsPermanent.PainCategory != 0)
+				if (hediffComp_GetsPermanent != null && hediffComp_GetsPermanent.IsPermanent && hediffComp_GetsPermanent.PainCategory != PainCategory.Painless)
 				{
 					if (stringBuilder.Length != 0)
 					{
@@ -120,16 +129,13 @@ namespace Verse
 		{
 			get
 			{
-				if (pawn.Dead || pawn.health.hediffSet.PartOrAnyAncestorHasDirectlyAddedParts(base.Part) || causesNoPain)
+				if (pawn.Dead || (base.Part != null && pawn.health.hediffSet.PartOrAnyAncestorHasDirectlyAddedParts(base.Part)) || causesNoPain)
 				{
 					return 0f;
 				}
 				HediffComp_GetsPermanent hediffComp_GetsPermanent = this.TryGetComp<HediffComp_GetsPermanent>();
-				if (hediffComp_GetsPermanent != null && hediffComp_GetsPermanent.IsPermanent)
-				{
-					return Severity * def.injuryProps.averagePainPerSeverityPermanent * hediffComp_GetsPermanent.PainFactor;
-				}
-				return Severity * def.injuryProps.painPerSeverity;
+				float num = ((hediffComp_GetsPermanent == null || !hediffComp_GetsPermanent.IsPermanent) ? (Severity * def.injuryProps.painPerSeverity) : (Severity * def.injuryProps.averagePainPerSeverityPermanent * hediffComp_GetsPermanent.PainFactor));
+				return num / pawn.HealthScale;
 			}
 		}
 
@@ -145,15 +151,23 @@ namespace Verse
 				{
 					return 0f;
 				}
-				if (base.Part.def.IsSolid(base.Part, pawn.health.hediffSet.hediffs) || this.IsTended() || this.IsPermanent())
+				if (!pawn.health.CanBleed)
 				{
 					return 0f;
 				}
-				if (pawn.health.hediffSet.PartOrAnyAncestorHasDirectlyAddedParts(base.Part))
+				if ((base.Part != null && base.Part.def.IsSolid(base.Part, pawn.health.hediffSet.hediffs)) || this.IsTended() || this.IsPermanent())
 				{
 					return 0f;
 				}
-				float num = Severity * def.injuryProps.bleedRate;
+				if (base.Part != null)
+				{
+					Hediff directlyAddedPartFor = pawn.health.hediffSet.GetDirectlyAddedPartFor(base.Part);
+					if (directlyAddedPartFor != null && !directlyAddedPartFor.def.organicAddedBodypart)
+					{
+						return 0f;
+					}
+				}
+				float num = Severity * def.injuryProps.bleedRate * pawn.RaceProps.bleedRateFactor;
 				if (base.Part != null)
 				{
 					num *= base.Part.def.bleedRate;
@@ -173,10 +187,10 @@ namespace Verse
 
 		private bool BleedingStoppedDueToAge => ageTicks >= AgeTicksToStopBleeding;
 
-		public override void Tick()
+		public override void TickInterval(int delta)
 		{
 			bool bleedingStoppedDueToAge = BleedingStoppedDueToAge;
-			base.Tick();
+			base.TickInterval(delta);
 			bool bleedingStoppedDueToAge2 = BleedingStoppedDueToAge;
 			if (bleedingStoppedDueToAge != bleedingStoppedDueToAge2)
 			{
@@ -199,8 +213,7 @@ namespace Verse
 
 		public override bool TryMergeWith(Hediff other)
 		{
-			Hediff_Injury hediff_Injury = other as Hediff_Injury;
-			if (hediff_Injury == null || hediff_Injury.def != def || hediff_Injury.Part != base.Part || hediff_Injury.IsTended() || hediff_Injury.IsPermanent() || this.IsTended() || this.IsPermanent() || !def.injuryProps.canMerge)
+			if (!(other is Hediff_Injury hediff_Injury) || hediff_Injury.def != def || hediff_Injury.Part != base.Part || hediff_Injury.IsTended() || hediff_Injury.IsPermanent() || this.IsTended() || this.IsPermanent() || !def.injuryProps.canMerge)
 			{
 				return false;
 			}
@@ -210,15 +223,24 @@ namespace Verse
 		public override void PostAdd(DamageInfo? dinfo)
 		{
 			base.PostAdd(dinfo);
-			if (base.Part != null && base.Part.coverageAbs <= 0f)
+			if (base.Part != null && base.Part.coverageAbs <= 0f && (!dinfo.HasValue || dinfo.Value.Def != DamageDefOf.SurgicalCut))
 			{
-				Log.Error(string.Concat("Added injury to ", base.Part.def, " but it should be impossible to hit it. pawn=", pawn.ToStringSafe(), " dinfo=", dinfo.ToStringSafe()));
+				Log.Error("Added injury to " + base.Part.def?.ToString() + " but it should be impossible to hit it. pawn=" + pawn.ToStringSafe() + " dinfo=" + dinfo.ToStringSafe());
 			}
+		}
+
+		public override void PostRemoved()
+		{
+			base.PostRemoved();
+			pawn.Drawer.renderer.WoundOverlays.ClearCache();
+			PortraitsCache.SetDirty(pawn);
+			GlobalTextureAtlasManager.TryMarkPawnFrameSetDirty(pawn);
 		}
 
 		public override void ExposeData()
 		{
 			base.ExposeData();
+			Scribe_Values.Look(ref destroysBodyParts, "destroysBodyParts", defaultValue: true);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit && base.Part == null)
 			{
 				Log.Error("Hediff_Injury has null part after loading.");

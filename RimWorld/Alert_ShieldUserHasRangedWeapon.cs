@@ -14,14 +14,29 @@ namespace RimWorld
 				shieldUsersWithRangedWeaponResult.Clear();
 				foreach (Pawn item in PawnsFinder.AllMaps_FreeColonistsSpawned)
 				{
-					if (item.equipment.Primary == null || !item.equipment.Primary.def.IsRangedWeapon)
+					ThingWithComps primary = item.equipment.Primary;
+					if (primary == null || !primary.def.IsRangedWeapon)
+					{
+						continue;
+					}
+					bool flag = false;
+					List<VerbProperties> verbs = primary.def.Verbs;
+					for (int i = 0; i < verbs.Count; i++)
+					{
+						if (typeof(Verb_LaunchProjectile).IsAssignableFrom(verbs[i].verbClass))
+						{
+							flag = true;
+							break;
+						}
+					}
+					if (!flag)
 					{
 						continue;
 					}
 					List<Apparel> wornApparel = item.apparel.WornApparel;
-					for (int i = 0; i < wornApparel.Count; i++)
+					for (int j = 0; j < wornApparel.Count; j++)
 					{
-						if (wornApparel[i] is ShieldBelt)
+						if (wornApparel[j].def.IsShieldThatBlocksRanged)
 						{
 							shieldUsersWithRangedWeaponResult.Add(item);
 							break;

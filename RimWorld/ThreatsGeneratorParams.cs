@@ -40,24 +40,26 @@ namespace RimWorld
 
 		public override string ToString()
 		{
-			string str = "(";
-			str = str + "onDays=" + onDays.ToString("0.##");
-			str = str + " offDays=" + offDays.ToString("0.##");
-			str = str + " minSpacingDays=" + minSpacingDays.ToString("0.##");
-			str = str + " numIncidentsRange=" + numIncidentsRange;
+			string text = "(";
+			text = text + "onDays=" + onDays.ToString("0.##");
+			text = text + " offDays=" + offDays.ToString("0.##");
+			text = text + " minSpacingDays=" + minSpacingDays.ToString("0.##");
+			string text2 = text;
+			FloatRange floatRange = numIncidentsRange;
+			text = text2 + " numIncidentsRange=" + floatRange.ToString();
 			if (threatPoints.HasValue)
 			{
-				str = str + " threatPoints=" + threatPoints.Value;
+				text = text + " threatPoints=" + threatPoints.Value;
 			}
 			if (minThreatPoints.HasValue)
 			{
-				str = str + " minThreatPoints=" + minThreatPoints.Value;
+				text = text + " minThreatPoints=" + minThreatPoints.Value;
 			}
 			if (faction != null)
 			{
-				str = str + " faction=" + faction;
+				text = text + " faction=" + faction;
 			}
-			return str + ")";
+			return text + ")";
 		}
 	}
 }

@@ -4,6 +4,8 @@ namespace RimWorld
 {
 	public class HediffCompProperties_DissolveGearOnDeath : HediffCompProperties
 	{
+		public FleckDef fleck;
+
 		public ThingDef mote;
 
 		public int moteCount = 3;

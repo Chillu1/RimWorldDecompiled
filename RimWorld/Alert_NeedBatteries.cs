@@ -11,6 +11,13 @@ namespace RimWorld
 			defaultExplanation = "NeedBatteriesDesc".Translate();
 		}
 
+		public override TaggedString GetExplanation()
+		{
+			string text = defaultExplanation + "\n\n";
+			text = ((!ResearchProjectDefOf.Batteries.IsFinished) ? ((string)(text + "NeedBatteriesNotResearchedDesc".Translate())) : ((string)(text + "NeedBatteriesResearchedDesc".Translate())));
+			return text;
+		}
+
 		public override AlertReport GetReport()
 		{
 			List<Map> maps = Find.Maps;

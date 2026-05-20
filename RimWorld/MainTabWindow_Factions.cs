@@ -4,7 +4,7 @@ namespace RimWorld
 {
 	public class MainTabWindow_Factions : MainTabWindow
 	{
-		private Vector2 scrollPosition = Vector2.zero;
+		private Vector2 scrollPosition;
 
 		private float scrollViewHeight;
 
@@ -12,6 +12,7 @@ namespace RimWorld
 
 		public override void PreOpen()
 		{
+			base.PreOpen();
 			scrollToFaction = null;
 		}
 
@@ -22,8 +23,7 @@ namespace RimWorld
 
 		public override void DoWindowContents(Rect fillRect)
 		{
-			base.DoWindowContents(fillRect);
-			FactionUIUtility.DoWindowContents_NewTemp(fillRect, ref scrollPosition, ref scrollViewHeight, scrollToFaction);
+			FactionUIUtility.DoWindowContents(fillRect, ref scrollPosition, ref scrollViewHeight, scrollToFaction);
 			if (scrollToFaction != null)
 			{
 				scrollToFaction = null;

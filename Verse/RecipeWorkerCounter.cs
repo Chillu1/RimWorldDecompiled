@@ -20,12 +20,13 @@ namespace Verse
 		{
 			ThingDefCountClass thingDefCountClass = recipe.products[0];
 			ThingDef thingDef = thingDefCountClass.thingDef;
-			if (thingDefCountClass.thingDef.CountAsResource && !bill.includeEquipped && (bill.includeTainted || !thingDefCountClass.thingDef.IsApparel || !thingDefCountClass.thingDef.apparel.careIfWornByCorpse) && bill.includeFromZone == null && bill.hpRange.min == 0f && bill.hpRange.max == 1f && bill.qualityRange.min == QualityCategory.Awful && bill.qualityRange.max == QualityCategory.Legendary && !bill.limitToAllowedStuff)
+			if (thingDefCountClass.thingDef.CountAsResource && !bill.includeEquipped && (bill.includeTainted || !thingDefCountClass.thingDef.IsApparel || !thingDefCountClass.thingDef.apparel.careIfWornByCorpse) && bill.GetIncludeSlotGroup() == null && bill.hpRange.min == 0f && bill.hpRange.max == 1f && bill.qualityRange.min == QualityCategory.Awful && bill.qualityRange.max == QualityCategory.Legendary && !bill.limitToAllowedStuff)
 			{
 				return bill.Map.resourceCounter.GetCount(thingDefCountClass.thingDef) + GetCarriedCount(bill, thingDef);
 			}
 			int num = 0;
-			if (bill.includeFromZone == null)
+			ISlotGroup includeSlotGroup = bill.GetIncludeSlotGroup();
+			if (includeSlotGroup == null)
 			{
 				num = CountValidThings(bill.Map.listerThings.ThingsOfDef(thingDefCountClass.thingDef), bill, thingDef);
 				if (thingDefCountClass.thingDef.Minifiable)
@@ -41,12 +42,16 @@ namespace Verse
 					}
 				}
 				num += GetCarriedCount(bill, thingDef);
+				foreach (IHaulSource item in bill.Map.haulDestinationManager.AllHaulSourcesListForReading)
+				{
+					num += CountValidThings(item.GetDirectlyHeldThings(), bill, thingDef);
+				}
 			}
 			else
 			{
-				foreach (Thing allContainedThing in bill.includeFromZone.AllContainedThings)
+				foreach (Thing heldThing in includeSlotGroup.HeldThings)
 				{
-					Thing innerIfMinified = allContainedThing.GetInnerIfMinified();
+					Thing innerIfMinified = heldThing.GetInnerIfMinified();
 					if (CountValidThing(innerIfMinified, bill, thingDef))
 					{
 						num += innerIfMinified.stackCount;
@@ -55,9 +60,9 @@ namespace Verse
 			}
 			if (bill.includeEquipped)
 			{
-				foreach (Pawn item in bill.Map.mapPawns.FreeColonistsSpawned)
+				foreach (Pawn item2 in bill.Map.mapPawns.FreeColonistsSpawned)
 				{
-					List<ThingWithComps> allEquipmentListForReading = item.equipment.AllEquipmentListForReading;
+					List<ThingWithComps> allEquipmentListForReading = item2.equipment.AllEquipmentListForReading;
 					for (int j = 0; j < allEquipmentListForReading.Count; j++)
 					{
 						if (CountValidThing(allEquipmentListForReading[j], bill, thingDef))
@@ -65,7 +70,7 @@ namespace Verse
 							num += allEquipmentListForReading[j].stackCount;
 						}
 					}
-					List<Apparel> wornApparel = item.apparel.WornApparel;
+					List<Apparel> wornApparel = item2.apparel.WornApparel;
 					for (int k = 0; k < wornApparel.Count; k++)
 					{
 						if (CountValidThing(wornApparel[k], bill, thingDef))
@@ -73,7 +78,7 @@ namespace Verse
 							num += wornApparel[k].stackCount;
 						}
 					}
-					ThingOwner directlyHeldThings = item.inventory.GetDirectlyHeldThings();
+					ThingOwner directlyHeldThings = item2.inventory.GetDirectlyHeldThings();
 					for (int l = 0; l < directlyHeldThings.Count; l++)
 					{
 						if (CountValidThing(directlyHeldThings[l], bill, thingDef))
@@ -82,7 +87,19 @@ namespace Verse
 						}
 					}
 				}
-				return num;
+			}
+			return num;
+		}
+
+		private int CountValidThings(ThingOwner thingOwner, Bill_Production bill, ThingDef def)
+		{
+			int num = 0;
+			for (int i = 0; i < thingOwner.Count; i++)
+			{
+				if (CountValidThing(thingOwner[i], bill, def))
+				{
+					num += thingOwner[i].stackCount;
+				}
 			}
 			return num;
 		}
@@ -124,6 +141,10 @@ namespace Verse
 			{
 				return false;
 			}
+			if (thing.SpawnedOrAnyParentSpawned && thing.PositionHeld.Fogged(thing.MapHeld))
+			{
+				return false;
+			}
 			return true;
 		}
 
@@ -132,26 +153,26 @@ namespace Verse
 			return null;
 		}
 
-		public virtual bool CanPossiblyStoreInStockpile(Bill_Production bill, Zone_Stockpile stockpile)
+		public virtual bool CanPossiblyStore(Bill_Production bill, ISlotGroup slotGroup)
 		{
 			if (!CanCountProducts(bill))
 			{
 				return true;
 			}
-			return stockpile.GetStoreSettings().AllowedToAccept(recipe.products[0].thingDef);
+			return slotGroup.Settings.AllowedToAccept(recipe.products[0].thingDef);
 		}
 
 		private int GetCarriedCount(Bill_Production bill, ThingDef prodDef)
 		{
 			int num = 0;
-			foreach (Pawn item in bill.Map.mapPawns.FreeColonistsSpawned)
+			foreach (Pawn item in bill.Map.mapPawns.SpawnedPawnsInFaction(Faction.OfPlayer))
 			{
-				Thing carriedThing = item.carryTracker.CarriedThing;
-				if (carriedThing != null)
+				Thing thing = item.carryTracker?.CarriedThing;
+				if (thing != null)
 				{
-					int stackCount = carriedThing.stackCount;
-					carriedThing = carriedThing.GetInnerIfMinified();
-					if (CountValidThing(carriedThing, bill, prodDef))
+					int stackCount = thing.stackCount;
+					thing = thing.GetInnerIfMinified();
+					if (CountValidThing(thing, bill, prodDef))
 					{
 						num += stackCount;
 					}

@@ -72,9 +72,9 @@ namespace RimWorld
 				reachableCells.Add(x);
 			});
 			int num = GenRadial.NumCellsInRadius(snowRadius);
-			for (int i = 0; i < num; i++)
+			for (int num2 = 0; num2 < num; num2++)
 			{
-				IntVec3 intVec = parent.Position + GenRadial.RadialPattern[i];
+				IntVec3 intVec = parent.Position + GenRadial.RadialPattern[num2];
 				if (intVec.InBounds(parent.Map) && reachableCells.Contains(intVec))
 				{
 					float value = snowNoise.GetValue(intVec);
@@ -87,8 +87,8 @@ namespace RimWorld
 					if (!(parent.Map.snowGrid.GetDepth(intVec) > value))
 					{
 						float lengthHorizontal = (intVec - parent.Position).LengthHorizontal;
-						float num2 = 1f - lengthHorizontal / snowRadius;
-						parent.Map.snowGrid.AddDepth(intVec, num2 * Props.addAmount * value);
+						float num3 = 1f - lengthHorizontal / snowRadius;
+						parent.Map.snowGrid.AddDepth(intVec, num3 * Props.addAmount * value);
 					}
 				}
 			}

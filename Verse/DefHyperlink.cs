@@ -39,7 +39,7 @@ namespace Verse
 			}
 			else
 			{
-				DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(this, "def", xmlRoot.FirstChild.Value, null, typeInAnyAssembly);
+				DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(this, "def", xmlRoot.FirstChild.Value, null, null, typeInAnyAssembly);
 			}
 		}
 

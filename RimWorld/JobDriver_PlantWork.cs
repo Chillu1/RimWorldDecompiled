@@ -19,6 +19,13 @@ namespace RimWorld
 
 		protected virtual DesignationDef RequiredDesignation => null;
 
+		protected virtual PlantDestructionMode PlantDestructionMode => PlantDestructionMode.Smash;
+
+		public static float WorkDonePerTick(Pawn actor, Plant plant)
+		{
+			return actor.GetStatValue(StatDefOf.PlantWorkSpeed) * Mathf.Lerp(3.3f, 1f, plant.Growth);
+		}
+
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
 		{
 			LocalTargetInfo target = job.GetTarget(TargetIndex.A);
@@ -44,29 +51,33 @@ namespace RimWorld
 				toil.FailOnThingMissingDesignation(TargetIndex.A, RequiredDesignation);
 			}
 			yield return toil;
-			Toil cut = new Toil();
-			cut.tickAction = delegate
+			Toil cut = ToilMaker.MakeToil("MakeNewToils");
+			cut.tickIntervalAction = delegate(int delta)
 			{
 				Pawn actor = cut.actor;
 				if (actor.skills != null)
 				{
-					actor.skills.Learn(SkillDefOf.Plants, xpPerTick);
+					actor.skills.Learn(SkillDefOf.Plants, xpPerTick * (float)delta);
 				}
-				float statValue = actor.GetStatValue(StatDefOf.PlantWorkSpeed);
 				Plant plant = Plant;
-				statValue *= Mathf.Lerp(3.3f, 1f, plant.Growth);
-				workDone += statValue;
-				if (workDone >= plant.def.plant.harvestWork)
+				workDone += WorkDonePerTick(actor, plant) * (float)delta;
+				if (!(workDone < plant.def.plant.harvestWork))
 				{
 					if (plant.def.plant.harvestedThingDef != null)
 					{
-						if (actor.RaceProps.Humanlike && plant.def.plant.harvestFailable && !plant.Blighted && Rand.Value > actor.GetStatValue(StatDefOf.PlantHarvestYield))
+						StatDef stat = ((plant.def.plant.harvestedThingDef.IsDrug || plant.def.plant.drugForHarvestPurposes) ? StatDefOf.DrugHarvestYield : StatDefOf.PlantHarvestYield);
+						float statValue = actor.GetStatValue(stat);
+						if (actor.RaceProps.Humanlike && plant.def.plant.harvestFailable && !plant.Blighted && Rand.Value > statValue)
 						{
 							MoteMaker.ThrowText((pawn.DrawPos + plant.DrawPos) / 2f, base.Map, "TextMote_HarvestFailed".Translate(), 3.65f);
 						}
 						else
 						{
 							int num = plant.YieldNow();
+							if (statValue > 1f)
+							{
+								num = GenMath.RoundRandom((float)num * statValue);
+							}
 							if (num > 0)
 							{
 								Thing thing = ThingMaker.MakeThing(plant.def.plant.harvestedThingDef);
@@ -79,10 +90,22 @@ namespace RimWorld
 								GenPlace.TryPlaceThing(thing, actor.Position, base.Map, ThingPlaceMode.Near);
 								actor.records.Increment(RecordDefOf.PlantsHarvested);
 							}
+							if (plant.HarvestableNow)
+							{
+								foreach (ThingComp allComp in plant.AllComps)
+								{
+									foreach (ThingDefCountClass item in allComp.GetAdditionalHarvestYield())
+									{
+										Thing thing2 = ThingMaker.MakeThing(item.thingDef);
+										thing2.stackCount = item.count;
+										GenPlace.TryPlaceThing(thing2, actor.Position, base.Map, ThingPlaceMode.Near);
+									}
+								}
+							}
 						}
 					}
 					plant.def.plant.soundHarvestFinish.PlayOneShot(actor);
-					plant.PlantCollected();
+					plant.PlantCollected(pawn, PlantDestructionMode);
 					workDone = 0f;
 					ReadyForNextToil();
 				}
@@ -94,7 +117,7 @@ namespace RimWorld
 			}
 			cut.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
 			cut.defaultCompleteMode = ToilCompleteMode.Never;
-			cut.WithEffect(EffecterDefOf.Harvest, TargetIndex.A);
+			cut.WithEffect((Plant?.def.plant.IsTree ?? false) ? EffecterDefOf.Harvest_Tree : EffecterDefOf.Harvest_Plant, TargetIndex.A);
 			cut.WithProgressBar(TargetIndex.A, () => workDone / Plant.def.plant.harvestWork, interpolateBetweenActorAndTarget: true);
 			cut.PlaySustainerOrSound(() => Plant.def.plant.soundHarvesting);
 			cut.activeSkill = () => SkillDefOf.Plants;

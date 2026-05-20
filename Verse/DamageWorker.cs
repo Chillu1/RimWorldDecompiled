@@ -77,12 +77,13 @@ namespace Verse
 				{
 					return;
 				}
-				Pawn hitPawn = hitThing as Pawn;
+				Thing thing = hitThing;
+				Pawn hitPawn = thing as Pawn;
 				if (hitPawn != null)
 				{
 					List<BodyPartRecord> list = null;
 					List<bool> recipientPartsDestroyed = null;
-					if (!parts.NullOrEmpty() && hitPawn != null)
+					if (!parts.NullOrEmpty())
 					{
 						list = parts.Distinct().ToList();
 						recipientPartsDestroyed = list.Select((BodyPartRecord part) => hitPawn.health.hediffSet.GetPartHealth(part) <= 0f).ToList();
@@ -91,10 +92,10 @@ namespace Verse
 				}
 				if (hediffs != null)
 				{
-					for (int i = 0; i < hediffs.Count; i++)
+					for (int num = 0; num < hediffs.Count; num++)
 					{
-						hediffs[i].combatLogEntry = new WeakReference<LogEntry>(log);
-						hediffs[i].combatLogText = log.ToGameStringFromPOV(null);
+						hediffs[num].combatLogEntry = new WeakReference<LogEntry>(log);
+						hediffs[num].combatLogText = log.ToGameStringFromPOV(null);
 					}
 				}
 			}
@@ -103,6 +104,8 @@ namespace Verse
 		public DamageDef def;
 
 		private const float ExplosionCamShakeMultiplier = 4f;
+
+		private const float DamageToBuildingsFromFlammabilityMinFactor = 0.05f;
 
 		private static List<Thing> thingsToAffect = new List<Thing>();
 
@@ -123,10 +126,27 @@ namespace Verse
 				if (victim.def.category == ThingCategory.Building)
 				{
 					num *= dinfo.Def.buildingDamageFactor;
+					num = ((victim.def.passability != Traversability.Impassable) ? (num * dinfo.Def.buildingDamageFactorPassable) : (num * dinfo.Def.buildingDamageFactorImpassable));
+					if (dinfo.Def.scaleDamageToBuildingsBasedOnFlammability)
+					{
+						num *= Mathf.Max(0.05f, victim.GetStatValue(StatDefOf.Flammability));
+					}
+					if (dinfo.Instigator is Pawn { IsShambler: not false })
+					{
+						num *= 1.5f;
+					}
+					if (ModsConfig.BiotechActive && dinfo.Instigator != null && (dinfo.WeaponBodyPartGroup != null || (dinfo.Weapon != null && dinfo.Weapon.IsMeleeWeapon)) && victim.def.IsDoor)
+					{
+						num *= dinfo.Instigator.GetStatValue(StatDefOf.MeleeDoorDamageFactor);
+					}
 				}
 				if (victim.def.category == ThingCategory.Plant)
 				{
 					num *= dinfo.Def.plantDamageFactor;
+				}
+				else if (victim.def.IsCorpse)
+				{
+					num *= dinfo.Def.corpseDamageFactor;
 				}
 				damageResult.totalDamageDealt = Mathf.Min(victim.HitPoints, GenMath.RoundRandom(num));
 				victim.HitPoints -= Mathf.RoundToInt(damageResult.totalDamageDealt);
@@ -145,46 +165,85 @@ namespace Verse
 			{
 				GenTemperature.PushHeat(explosion.Position, explosion.Map, def.explosionHeatEnergyPerCell * (float)cellsToAffect.Count);
 			}
-			MoteMaker.MakeStaticMote(explosion.Position, explosion.Map, ThingDefOf.Mote_ExplosionFlash, explosion.radius * 6f);
-			if (explosion.Map == Find.CurrentMap)
+			if (explosion.doVisualEffects)
 			{
-				float magnitude = (explosion.Position.ToVector3Shifted() - Find.Camera.transform.position).magnitude;
-				Find.CameraDriver.shaker.DoShake(4f * explosion.radius / magnitude);
+				FleckMaker.Static(explosion.Position, explosion.Map, FleckDefOf.ExplosionFlash, explosion.radius * 6f);
+				if (explosion.Map == Find.CurrentMap)
+				{
+					float magnitude = (explosion.Position.ToVector3Shifted() - Find.Camera.transform.position).magnitude;
+					Find.CameraDriver.shaker.DoShake(4f * explosion.radius * explosion.screenShakeFactor / magnitude);
+				}
+				ExplosionVisualEffectCenter(explosion);
 			}
-			ExplosionVisualEffectCenter(explosion);
 		}
 
 		protected virtual void ExplosionVisualEffectCenter(Explosion explosion)
 		{
 			for (int i = 0; i < 4; i++)
 			{
-				MoteMaker.ThrowSmoke(explosion.Position.ToVector3Shifted() + Gen.RandomHorizontalVector(explosion.radius * 0.7f), explosion.Map, explosion.radius * 0.6f);
+				FleckMaker.ThrowSmoke(explosion.Position.ToVector3Shifted() + Gen.RandomHorizontalVector(explosion.radius * 0.7f), explosion.Map, explosion.radius * 0.6f);
 			}
-			if (def.explosionInteriorMote != null)
+			if (def.explosionCenterFleck != null)
 			{
-				int num = Mathf.RoundToInt((float)Math.PI * explosion.radius * explosion.radius / 6f);
-				for (int j = 0; j < num; j++)
+				FleckMaker.Static(explosion.Position.ToVector3Shifted(), explosion.Map, def.explosionCenterFleck);
+			}
+			else if (def.explosionCenterMote != null)
+			{
+				MoteMaker.MakeStaticMote(explosion.Position.ToVector3Shifted(), explosion.Map, def.explosionCenterMote);
+			}
+			if (def.explosionCenterEffecter != null)
+			{
+				def.explosionCenterEffecter.Spawn(explosion.Position, explosion.Map, Vector3.zero);
+			}
+			if (def.explosionInteriorMote == null && def.explosionInteriorFleck == null && def.explosionInteriorEffecter == null)
+			{
+				return;
+			}
+			int num = Mathf.RoundToInt(MathF.PI * explosion.radius * explosion.radius / 6f * def.explosionInteriorCellCountMultiplier);
+			for (int j = 0; j < num; j++)
+			{
+				Vector3 vector = Gen.RandomHorizontalVector(explosion.radius * def.explosionInteriorCellDistanceMultiplier);
+				if (def.explosionInteriorEffecter != null)
 				{
-					MoteMaker.ThrowExplosionInteriorMote(explosion.Position.ToVector3Shifted() + Gen.RandomHorizontalVector(explosion.radius * 0.7f), explosion.Map, def.explosionInteriorMote);
+					Vector3 vect = explosion.Position.ToVector3Shifted() + vector;
+					def.explosionInteriorEffecter.Spawn(explosion.Position, vect.ToIntVec3(), explosion.Map);
+				}
+				else if (def.explosionInteriorFleck != null)
+				{
+					FleckMaker.ThrowExplosionInterior(explosion.Position.ToVector3Shifted() + vector, explosion.Map, def.explosionInteriorFleck);
+				}
+				else
+				{
+					MoteMaker.ThrowExplosionInteriorMote(explosion.Position.ToVector3Shifted() + vector, explosion.Map, def.explosionInteriorMote);
 				}
 			}
 		}
 
 		public virtual void ExplosionAffectCell(Explosion explosion, IntVec3 c, List<Thing> damagedThings, List<Thing> ignoredThings, bool canThrowMotes)
 		{
-			if (def.explosionCellMote != null && canThrowMotes)
+			if (explosion.doVisualEffects && (def.explosionCellMote != null || def.explosionCellFleck != null) && canThrowMotes)
 			{
-				Mote mote = c.GetFirstThing(explosion.Map, def.explosionCellMote) as Mote;
-				if (mote != null)
+				float t = Mathf.Clamp01((explosion.Position - c).LengthHorizontal / explosion.radius);
+				Color color = Color.Lerp(def.explosionColorCenter, def.explosionColorEdge, t);
+				if (def.explosionCellMote != null)
 				{
-					mote.spawnTick = Find.TickManager.TicksGame;
+					if (c.GetFirstThing(explosion.Map, def.explosionCellMote) is Mote mote)
+					{
+						mote.spawnTick = Find.TickManager.TicksGame;
+					}
+					else
+					{
+						MoteMaker.ThrowExplosionCell(c, explosion.Map, def.explosionCellMote, color);
+					}
 				}
 				else
 				{
-					float t = Mathf.Clamp01((explosion.Position - c).LengthHorizontal / explosion.radius);
-					Color color = Color.Lerp(def.explosionColorCenter, def.explosionColorEdge, t);
-					MoteMaker.ThrowExplosionCell(c, explosion.Map, def.explosionCellMote, color);
+					FleckMaker.ThrowExplosionCell(c, explosion.Map, def.explosionCellFleck, color);
 				}
+			}
+			if (def.explosionCellEffecter != null && (def.explosionCellEffecterMaxRadius < float.Epsilon || c.InHorDistOf(explosion.Position, def.explosionCellEffecterMaxRadius)) && Rand.Chance(def.explosionCellEffecterChance))
+			{
+				def.explosionCellEffecter.Spawn(explosion.Position, c, explosion.Map);
 			}
 			thingsToAffect.Clear();
 			float num = float.MinValue;
@@ -270,7 +329,7 @@ namespace Verse
 			damageResult.AssociateWithLog(battleLogEntry_ExplosionImpact);
 			if (pawn != null && damageResult.wounded && pawn.stances != null)
 			{
-				pawn.stances.StaggerFor(95);
+				pawn.stances.stagger.StaggerFor(95);
 			}
 		}
 
@@ -288,20 +347,38 @@ namespace Verse
 
 		public IEnumerable<IntVec3> ExplosionCellsToHit(Explosion explosion)
 		{
-			return ExplosionCellsToHit(explosion.Position, explosion.Map, explosion.radius, explosion.needLOSToCell1, explosion.needLOSToCell2);
+			return ExplosionCellsToHit(explosion.Position, explosion.Map, explosion.radius, explosion.needLOSToCell1, explosion.needLOSToCell2, explosion.affectedAngle);
 		}
 
-		public virtual IEnumerable<IntVec3> ExplosionCellsToHit(IntVec3 center, Map map, float radius, IntVec3? needLOSToCell1 = null, IntVec3? needLOSToCell2 = null)
+		public virtual IEnumerable<IntVec3> ExplosionCellsToHit(IntVec3 center, Map map, float radius, IntVec3? needLOSToCell1 = null, IntVec3? needLOSToCell2 = null, FloatRange? affectedAngle = null)
 		{
 			openCells.Clear();
 			adjWallCells.Clear();
-			int num = GenRadial.NumCellsInRadius(radius);
-			for (int i = 0; i < num; i++)
+			float num = affectedAngle?.min ?? 0f;
+			float num2 = affectedAngle?.max ?? 0f;
+			int num3 = GenRadial.NumCellsInRadius(radius);
+			for (int i = 0; i < num3; i++)
 			{
 				IntVec3 intVec = center + GenRadial.RadialPattern[i];
 				if (!intVec.InBounds(map) || !GenSight.LineOfSight(center, intVec, map, skipFirstCell: true))
 				{
 					continue;
+				}
+				if (affectedAngle.HasValue)
+				{
+					float lengthHorizontal = (intVec - center).LengthHorizontal;
+					float num4 = lengthHorizontal / radius;
+					if (!(lengthHorizontal > 0.5f))
+					{
+						continue;
+					}
+					float num5 = Mathf.Atan2(-(intVec.z - center.z), intVec.x - center.x) * 57.29578f;
+					float num6 = num;
+					float num7 = num2;
+					if (num5 - num6 < -0.5f * num4 || num5 - num7 > 0.5f * num4)
+					{
+						continue;
+					}
 				}
 				if (needLOSToCell1.HasValue || needLOSToCell2.HasValue)
 				{
@@ -317,14 +394,15 @@ namespace Verse
 			for (int j = 0; j < openCells.Count; j++)
 			{
 				IntVec3 intVec2 = openCells[j];
-				if (!intVec2.Walkable(map))
+				Building edifice = intVec2.GetEdifice(map);
+				if (!intVec2.Walkable(map) || (edifice != null && edifice.def.Fillage == FillCategory.Full && !(edifice is Building_Door { Open: not false })))
 				{
 					continue;
 				}
 				for (int k = 0; k < 4; k++)
 				{
 					IntVec3 intVec3 = intVec2 + GenAdj.CardinalDirections[k];
-					if (intVec3.InHorDistOf(center, radius) && intVec3.InBounds(map) && !intVec3.Standable(map) && intVec3.GetEdifice(map) != null && !openCells.Contains(intVec3) && adjWallCells.Contains(intVec3))
+					if (intVec3.InHorDistOf(center, radius) && intVec3.InBounds(map) && !intVec3.Standable(map) && intVec3.GetEdifice(map) != null && !openCells.Contains(intVec3) && !adjWallCells.Contains(intVec3))
 					{
 						adjWallCells.Add(intVec3);
 					}

@@ -13,7 +13,7 @@ namespace RimWorld
 		{
 			get
 			{
-				if (base.Spawned && base.Map.gameConditionManager.ElectricityDisabled)
+				if (base.Spawned && base.Map.gameConditionManager.ElectricityDisabled(base.Map))
 				{
 					return false;
 				}
@@ -31,13 +31,17 @@ namespace RimWorld
 			powerComp = GetComp<CompPowerTrader>();
 			LessonAutoActivator.TeachOpportunity(ConceptDefOf.BuildOrbitalTradeBeacon, OpportunityType.GoodToKnow);
 			LessonAutoActivator.TeachOpportunity(ConceptDefOf.OpeningComms, OpportunityType.GoodToKnow);
+			if (CanUseCommsNow)
+			{
+				LongEventHandler.ExecuteWhenFinished(AnnounceTradeShips);
+			}
 		}
 
 		private void UseAct(Pawn myPawn, ICommunicable commTarget)
 		{
 			Job job = JobMaker.MakeJob(JobDefOf.UseCommsConsole, this);
 			job.commTarget = commTarget;
-			myPawn.jobs.TryTakeOrderedJob(job);
+			myPawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
 			PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.OpeningComms, KnowledgeAmount.Total);
 		}
 
@@ -47,7 +51,7 @@ namespace RimWorld
 			{
 				return new FloatMenuOption("CannotUseNoPath".Translate(), null);
 			}
-			if (base.Spawned && base.Map.gameConditionManager.ElectricityDisabled)
+			if (base.Spawned && base.Map.gameConditionManager.ElectricityDisabled(base.Map))
 			{
 				return new FloatMenuOption("CannotUseSolarFlare".Translate(), null);
 			}
@@ -59,9 +63,13 @@ namespace RimWorld
 			{
 				return new FloatMenuOption("CannotUseReason".Translate("IncapableOfCapacity".Translate(PawnCapacityDefOf.Talking.label, myPawn.Named("PAWN"))), null);
 			}
+			if (!GetCommTargets(myPawn).Any())
+			{
+				return new FloatMenuOption("CannotUseReason".Translate("NoCommsTarget".Translate()), null);
+			}
 			if (!CanUseCommsNow)
 			{
-				Log.Error(string.Concat(myPawn, " could not use comm console for unknown reason."));
+				Log.Error(myPawn?.ToString() + " could not use comm console for unknown reason.");
 				return new FloatMenuOption("Cannot use now", null);
 			}
 			return null;
@@ -69,7 +77,7 @@ namespace RimWorld
 
 		public IEnumerable<ICommunicable> GetCommTargets(Pawn myPawn)
 		{
-			return myPawn.Map.passingShipManager.passingShips.Cast<ICommunicable>().Concat(Find.FactionManager.AllFactionsVisibleInViewOrder.Where((Faction f) => !f.temporary).Cast<ICommunicable>());
+			return myPawn.Map.passingShipManager.passingShips.Cast<ICommunicable>().Concat(Find.FactionManager.AllFactionsVisibleInViewOrder.Where((Faction f) => !f.temporary && !f.IsPlayer).Cast<ICommunicable>());
 		}
 
 		public override IEnumerable<FloatMenuOption> GetFloatMenuOptions(Pawn myPawn)
@@ -88,14 +96,33 @@ namespace RimWorld
 					yield return floatMenuOption;
 				}
 			}
+			foreach (FloatMenuOption floatMenuOption2 in base.GetFloatMenuOptions(myPawn))
+			{
+				yield return floatMenuOption2;
+			}
 		}
 
 		public void GiveUseCommsJob(Pawn negotiator, ICommunicable target)
 		{
 			Job job = JobMaker.MakeJob(JobDefOf.UseCommsConsole, this);
 			job.commTarget = target;
-			negotiator.jobs.TryTakeOrderedJob(job);
+			negotiator.jobs.TryTakeOrderedJob(job, JobTag.Misc);
 			PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.OpeningComms, KnowledgeAmount.Total);
+		}
+
+		private void AnnounceTradeShips()
+		{
+			foreach (TradeShip item in from s in base.Map.passingShipManager.passingShips.OfType<TradeShip>()
+				where !s.WasAnnounced
+				select s)
+			{
+				TaggedString baseLetterText = "TraderArrival".Translate(item.name, item.def.label, (item.Faction == null) ? "TraderArrivalNoFaction".Translate() : "TraderArrivalFromFaction".Translate(item.Faction.Named("FACTION")));
+				IncidentParms incidentParms = new IncidentParms();
+				incidentParms.target = base.Map;
+				incidentParms.traderKind = item.TraderKind;
+				IncidentWorker.SendIncidentLetter(item.def.LabelCap, baseLetterText, LetterDefOf.PositiveEvent, incidentParms, LookTargets.Invalid, null);
+				item.WasAnnounced = true;
+			}
 		}
 	}
 }

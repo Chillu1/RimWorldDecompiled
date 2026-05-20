@@ -6,12 +6,12 @@ namespace RimWorld.Planet
 	{
 		public override int SeedPart => 777998381;
 
-		public override void GenerateFresh(string seed)
+		public override void GenerateFresh(string seed, PlanetLayer layer)
 		{
-			FactionGenerator.GenerateFactionsIntoWorld();
+			FactionGenerator.GenerateFactionsIntoWorldLayer(layer, Current.CreatingWorld.info.factions);
 		}
 
-		public override void GenerateWithoutWorldData(string seed)
+		public override void GenerateWithoutWorldData(string seed, PlanetLayer layer)
 		{
 		}
 	}

@@ -28,5 +28,11 @@ namespace RimWorld
 				yield return "area must be larger than 0";
 			}
 		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_Values.Look(ref area, "area", 0);
+		}
 	}
 }

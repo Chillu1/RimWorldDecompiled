@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using RimWorld;
 using RimWorld.IO;
@@ -13,7 +14,13 @@ namespace Verse
 
 		public const string BackstoriesFileName = "Backstories.xml";
 
-		private static IEnumerable<XElement> BackstoryTranslationElements(IEnumerable<Tuple<VirtualDirectory, ModContentPack, string>> folders, List<string> loadErrors)
+		public const string BackstoriesFolderLegacy = "Backstories DELETE_ME";
+
+		private static Regex regex = new Regex("^[^0-9]*");
+
+		private static List<BackstoryDef> tmpAllBackstories = new List<BackstoryDef>();
+
+		public static IEnumerable<XElement> BackstoryTranslationElements(IEnumerable<Tuple<VirtualDirectory, ModContentPack, string>> folders, List<string> loadErrors = null)
 		{
 			Dictionary<ModContentPack, HashSet<string>> alreadyLoadedFiles = new Dictionary<ModContentPack, HashSet<string>>();
 			foreach (Tuple<VirtualDirectory, ModContentPack, string> folder in folders)
@@ -45,7 +52,7 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					loadErrors?.Add(string.Concat("Exception loading backstory translation data from file ", file, ": ", ex));
+					loadErrors?.Add("Exception loading backstory translation data from file " + file?.ToString() + ": " + ex);
 					yield break;
 				}
 				foreach (XElement item2 in xDocument.Root.Elements())
@@ -55,7 +62,19 @@ namespace Verse
 			}
 		}
 
-		public static void LoadAndInjectBackstoryData(IEnumerable<Tuple<VirtualDirectory, ModContentPack, string>> folderPaths, List<string> loadErrors)
+		public static bool AnyLegacyBackstoryFiles(IEnumerable<Tuple<VirtualDirectory, ModContentPack, string>> folders)
+		{
+			foreach (Tuple<VirtualDirectory, ModContentPack, string> folder in folders)
+			{
+				if (folder.Item1.GetFile("Backstories/Backstories.xml").Exists)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public static void LoadAndInjectBackstoryData(IEnumerable<Tuple<VirtualDirectory, ModContentPack, string>> folderPaths, List<string> loadErrors = null)
 		{
 			foreach (XElement item in BackstoryTranslationElements(folderPaths, loadErrors))
 			{
@@ -68,147 +87,246 @@ namespace Verse
 					string text4 = GetText(item, "titleShort");
 					string text5 = GetText(item, "titleShortFemale");
 					string text6 = GetText(item, "desc");
-					if (!BackstoryDatabase.TryGetWithIdentifier(text, out var bs, closestMatchWarning: false))
+					if (!TryGetWithIdentifier(text, out var backstory, closestMatchWarning: false))
 					{
 						throw new Exception("Backstory not found matching identifier " + text);
 					}
-					if (text2 == bs.title && text3 == bs.titleFemale && text4 == bs.titleShort && text5 == bs.titleShortFemale && text6 == bs.baseDesc)
+					if (text2 == backstory.title && text3 == backstory.titleFemale && text4 == backstory.titleShort && text5 == backstory.titleShortFemale && text6 == backstory.description)
 					{
 						throw new Exception("Backstory translation exactly matches default data: " + text);
 					}
 					if (text2 != null)
 					{
-						bs.SetTitle(text2, bs.titleFemale);
-						bs.titleTranslated = true;
+						backstory.SetTitle(text2, backstory.titleFemale);
 					}
 					if (text3 != null)
 					{
-						bs.SetTitle(bs.title, text3);
-						bs.titleFemaleTranslated = true;
+						backstory.SetTitle(backstory.title, text3);
 					}
 					if (text4 != null)
 					{
-						bs.SetTitleShort(text4, bs.titleShortFemale);
-						bs.titleShortTranslated = true;
+						backstory.SetTitleShort(text4, backstory.titleShortFemale);
 					}
 					if (text5 != null)
 					{
-						bs.SetTitleShort(bs.titleShort, text5);
-						bs.titleShortFemaleTranslated = true;
+						backstory.SetTitleShort(backstory.titleShort, text5);
 					}
 					if (text6 != null)
 					{
-						bs.baseDesc = text6;
-						bs.descTranslated = true;
+						backstory.description = text6;
 					}
 				}
 				catch (Exception ex)
 				{
-					loadErrors.Add("Couldn't load backstory " + text + ": " + ex.Message + "\nFull XML text:\n\n" + item.ToString());
+					loadErrors?.Add("Couldn't load backstory " + text + ": " + ex.Message + "\nFull XML text:\n\n" + item);
 				}
 			}
 		}
 
-		public static List<string> MissingBackstoryTranslations(LoadedLanguage lang)
+		public static List<DefInjectionPackage.DefInjection> GetLegacyBackstoryTranslations(IEnumerable<Tuple<VirtualDirectory, ModContentPack, string>> folderPaths)
 		{
-			List<KeyValuePair<string, Backstory>> list = BackstoryDatabase.allBackstories.ToList();
-			List<string> list2 = new List<string>();
-			string modifiedIdentifier;
-			KeyValuePair<string, Backstory> backstory;
-			foreach (XElement item in BackstoryTranslationElements(lang.AllDirectories, null))
+			List<DefInjectionPackage.DefInjection> list = new List<DefInjectionPackage.DefInjection>();
+			foreach (XElement item in BackstoryTranslationElements(folderPaths))
 			{
 				try
 				{
 					string text = item.Name.ToString();
-					modifiedIdentifier = BackstoryDatabase.GetIdentifierClosestMatch(text, closestMatchWarning: false);
-					bool flag = list.Any((KeyValuePair<string, Backstory> x) => x.Key == modifiedIdentifier);
-					backstory = list.Find((KeyValuePair<string, Backstory> x) => x.Key == modifiedIdentifier);
-					if (flag)
+					if (TryGetWithIdentifier(text, out var backstory))
 					{
-						list.RemoveAt(list.FindIndex((KeyValuePair<string, Backstory> x) => x.Key == backstory.Key));
 						string text2 = GetText(item, "title");
 						string text3 = GetText(item, "titleFemale");
 						string text4 = GetText(item, "titleShort");
 						string text5 = GetText(item, "titleShortFemale");
 						string text6 = GetText(item, "desc");
-						if (text2.NullOrEmpty())
+						if (!text2.NullOrEmpty() && text2 != "TODO")
 						{
-							list2.Add(text + ".title missing");
+							DefInjectionPackage.DefInjection defInjection = new DefInjectionPackage.DefInjection();
+							defInjection.path = text + ".title";
+							defInjection.suggestedPath = defInjection.path;
+							defInjection.replacedString = backstory.untranslatedTitle;
+							defInjection.injection = text2;
+							defInjection.injected = true;
+							list.Add(defInjection);
 						}
-						if (flag && !backstory.Value.titleFemale.NullOrEmpty() && text3.NullOrEmpty())
+						if (!text3.NullOrEmpty() && text3 != "TODO")
 						{
-							list2.Add(text + ".titleFemale missing");
+							DefInjectionPackage.DefInjection defInjection2 = new DefInjectionPackage.DefInjection();
+							defInjection2.path = text + ".titleFemale";
+							defInjection2.suggestedPath = defInjection2.path;
+							defInjection2.replacedString = backstory.untranslatedTitleFemale;
+							defInjection2.injection = text3;
+							defInjection2.injected = true;
+							list.Add(defInjection2);
 						}
-						if (text4.NullOrEmpty())
+						if (!text4.NullOrEmpty() && text4 != "TODO")
 						{
-							list2.Add(text + ".titleShort missing");
+							DefInjectionPackage.DefInjection defInjection3 = new DefInjectionPackage.DefInjection();
+							defInjection3.path = text + ".titleShort";
+							defInjection3.suggestedPath = defInjection3.path;
+							defInjection3.replacedString = backstory.untranslatedTitleShort;
+							defInjection3.injection = text4;
+							defInjection3.injected = true;
+							list.Add(defInjection3);
 						}
-						if (flag && !backstory.Value.titleShortFemale.NullOrEmpty() && text5.NullOrEmpty())
+						if (!text5.NullOrEmpty() && text5 != "TODO")
 						{
-							list2.Add(text + ".titleShortFemale missing");
+							DefInjectionPackage.DefInjection defInjection4 = new DefInjectionPackage.DefInjection();
+							defInjection4.path = text + ".titleShortFemale";
+							defInjection4.suggestedPath = defInjection4.path;
+							defInjection4.replacedString = backstory.untranslatedTitleShortFemale;
+							defInjection4.injection = text5;
+							defInjection4.injected = true;
+							list.Add(defInjection4);
 						}
-						if (text6.NullOrEmpty())
+						if (!text6.NullOrEmpty() && text6 != "TODO")
 						{
-							list2.Add(text + ".desc missing");
+							DefInjectionPackage.DefInjection defInjection5 = new DefInjectionPackage.DefInjection();
+							defInjection5.path = text + ".description";
+							defInjection5.suggestedPath = defInjection5.path;
+							defInjection5.replacedString = backstory.untranslatedDesc;
+							defInjection5.injection = text6;
+							defInjection5.injected = true;
+							list.Add(defInjection5);
 						}
-					}
-					else
-					{
-						list2.Add("Translation doesn't correspond to any backstory: " + text);
 					}
 				}
 				catch (Exception ex)
 				{
-					list2.Add(string.Concat("Exception reading ", item.Name, ": ", ex.Message));
+					Log.Error("Error Getting legacy backstory translations: " + ex);
 				}
 			}
-			foreach (KeyValuePair<string, Backstory> item2 in list)
+			return list;
+		}
+
+		public static string StripNumericSuffix(string key)
+		{
+			return regex.Match(key).Captures[0].Value;
+		}
+
+		private static bool TryGetWithIdentifier(string identifier, out BackstoryDef backstory, bool closestMatchWarning = true)
+		{
+			backstory = DefDatabase<BackstoryDef>.AllDefs.FirstOrDefault((BackstoryDef b) => b.defName == identifier);
+			if (backstory == null)
 			{
-				list2.Add("Missing backstory: " + item2.Key);
+				string strippedDefName = StripNumericSuffix(identifier);
+				backstory = tmpAllBackstories.FirstOrDefault((BackstoryDef b) => StripNumericSuffix(b.defName) == strippedDefName);
+				if (backstory != null && closestMatchWarning)
+				{
+					Log.Warning("Couldn't find exact match for backstory " + identifier + ", using closest match " + backstory.identifier);
+				}
 			}
-			return list2;
+			return backstory != null;
+		}
+
+		public static List<string> MissingBackstoryTranslations(LoadedLanguage lang)
+		{
+			List<string> list = new List<string>();
+			tmpAllBackstories.Clear();
+			tmpAllBackstories.AddRange(DefDatabase<BackstoryDef>.AllDefs);
+			foreach (XElement item in BackstoryTranslationElements(lang.AllDirectories))
+			{
+				try
+				{
+					string text = item.Name.ToString();
+					TryGetWithIdentifier(text, out var backstory);
+					if (backstory == null)
+					{
+						list.Add("Translation doesn't correspond to any backstory: " + text);
+						continue;
+					}
+					tmpAllBackstories.Remove(backstory);
+					string text2 = GetText(item, "title");
+					string text3 = GetText(item, "titleFemale");
+					string text4 = GetText(item, "titleShort");
+					string text5 = GetText(item, "titleShortFemale");
+					string text6 = GetText(item, "desc");
+					if (text2.NullOrEmpty())
+					{
+						list.Add(text + ".title missing");
+					}
+					if (!backstory.titleFemale.NullOrEmpty() && text3.NullOrEmpty())
+					{
+						list.Add(text + ".titleFemale missing");
+					}
+					if (text4.NullOrEmpty())
+					{
+						list.Add(text + ".titleShort missing");
+					}
+					if (!backstory.titleShortFemale.NullOrEmpty() && text5.NullOrEmpty())
+					{
+						list.Add(text + ".titleShortFemale missing");
+					}
+					if (text6.NullOrEmpty())
+					{
+						list.Add(text + ".desc missing");
+					}
+				}
+				catch (Exception ex)
+				{
+					list.Add("Exception reading " + item.Name?.ToString() + ": " + ex.Message);
+				}
+			}
+			foreach (BackstoryDef tmpAllBackstory in tmpAllBackstories)
+			{
+				list.Add("Missing backstory: " + tmpAllBackstory.defName);
+			}
+			tmpAllBackstories.Clear();
+			return list;
 		}
 
 		public static List<string> BackstoryTranslationsMatchingEnglish(LoadedLanguage lang)
 		{
 			List<string> list = new List<string>();
-			foreach (XElement item in BackstoryTranslationElements(lang.AllDirectories, null))
+			foreach (XElement item in BackstoryTranslationElements(lang.AllDirectories))
 			{
 				try
 				{
-					string text = item.Name.ToString();
-					if (BackstoryDatabase.allBackstories.TryGetValue(BackstoryDatabase.GetIdentifierClosestMatch(text), out var value))
+					string identifier = item.Name.ToString();
+					if (DefDatabase<BackstoryDef>.AllDefs.Where((BackstoryDef b) => b.defName == identifier).TryRandomElement(out var result))
 					{
-						string text2 = GetText(item, "title");
-						string text3 = GetText(item, "titleFemale");
-						string text4 = GetText(item, "titleShort");
-						string text5 = GetText(item, "titleShortFemale");
-						string text6 = GetText(item, "desc");
-						if (!text2.NullOrEmpty() && text2 == value.untranslatedTitle)
+						string text = GetText(item, "title");
+						string text2 = GetText(item, "titleFemale");
+						string text3 = GetText(item, "titleShort");
+						string text4 = GetText(item, "titleShortFemale");
+						string text5 = GetText(item, "desc");
+						if (!text.NullOrEmpty() && text == result.untranslatedTitle)
 						{
-							list.Add(text + ".title '" + text2.Replace("\n", "\\n") + "'");
+							list.Add(identifier + ".title '" + text.Replace("\n", "\\n") + "'");
 						}
-						if (!text3.NullOrEmpty() && text3 == value.untranslatedTitleFemale)
+						if (!text2.NullOrEmpty() && text2 == result.untranslatedTitleFemale)
 						{
-							list.Add(text + ".titleFemale '" + text3.Replace("\n", "\\n") + "'");
+							list.Add(identifier + ".titleFemale '" + text2.Replace("\n", "\\n") + "'");
 						}
-						if (!text4.NullOrEmpty() && text4 == value.untranslatedTitleShort)
+						if (!text3.NullOrEmpty() && text3 == result.untranslatedTitleShort)
 						{
-							list.Add(text + ".titleShort '" + text4.Replace("\n", "\\n") + "'");
+							list.Add(identifier + ".titleShort '" + text3.Replace("\n", "\\n") + "'");
 						}
-						if (!text5.NullOrEmpty() && text5 == value.untranslatedTitleShortFemale)
+						if (!text4.NullOrEmpty() && text4 == result.untranslatedTitleShortFemale)
 						{
-							list.Add(text + ".titleShortFemale '" + text5.Replace("\n", "\\n") + "'");
+							list.Add(identifier + ".titleShortFemale '" + text4.Replace("\n", "\\n") + "'");
 						}
-						if (!text6.NullOrEmpty() && text6 == value.untranslatedDesc)
+						if (!text5.NullOrEmpty() && text5 == result.untranslatedDesc)
 						{
-							list.Add(text + ".desc '" + text6.Replace("\n", "\\n") + "'");
+							list.Add(identifier + ".desc '" + text5.Replace("\n", "\\n") + "'");
 						}
 					}
 				}
 				catch (Exception ex)
 				{
-					list.Add(string.Concat("Exception reading ", item.Name, ": ", ex.Message));
+					list.Add("Exception reading " + item.Name?.ToString() + ": " + ex.Message);
+				}
+			}
+			return list;
+		}
+
+		public static List<string> ObsoleteBackstoryTranslations(LoadedLanguage lang)
+		{
+			List<string> list = new List<string>();
+			foreach (XElement item in BackstoryTranslationElements(lang.AllDirectories))
+			{
+				if (TryGetWithIdentifier(item.Name.ToString(), out var backstory))
+				{
+					list.Add("Obsolete backstory format: " + backstory.defName);
 				}
 			}
 			return list;

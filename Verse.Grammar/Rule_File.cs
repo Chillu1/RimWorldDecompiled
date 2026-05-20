@@ -47,9 +47,9 @@ namespace Verse.Grammar
 			{
 				LoadStringsFromFile(path);
 			}
-			foreach (string path2 in pathList)
+			foreach (string path in pathList)
 			{
-				LoadStringsFromFile(path2);
+				LoadStringsFromFile(path);
 			}
 		}
 

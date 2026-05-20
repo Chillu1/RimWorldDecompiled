@@ -42,6 +42,57 @@ namespace RimWorld.QuestGen
 			return questPart_SpawnThing;
 		}
 
+		public static QuestPart_SpawnThing SpawnSpaceDrone(this Quest quest, Map map, ThingDef skyfallerDef, IEnumerable<Thing> innerThings, Faction factionForSafeSpot = null, IntVec3? cell = null, string inSignal = null, bool lookForSafeSpot = false, bool tryLandInShipLandingZone = false, Thing tryLandNearThing = null, Pawn mapParentOfPawn = null)
+		{
+			Skyfaller thing = SkyfallerMaker.MakeSkyfaller(skyfallerDef, innerThings);
+			QuestPart_SpawnSpaceDrone questPart_SpawnSpaceDrone = new QuestPart_SpawnSpaceDrone();
+			questPart_SpawnSpaceDrone.thing = thing;
+			questPart_SpawnSpaceDrone.mapParent = map?.Parent;
+			questPart_SpawnSpaceDrone.mapParentOfPawn = mapParentOfPawn;
+			questPart_SpawnSpaceDrone.factionForFindingSpot = factionForSafeSpot;
+			if (cell.HasValue)
+			{
+				questPart_SpawnSpaceDrone.cell = cell.Value;
+			}
+			questPart_SpawnSpaceDrone.inSignal = inSignal ?? QuestGen.slate.Get<string>("inSignal");
+			questPart_SpawnSpaceDrone.lookForSafeSpot = lookForSafeSpot;
+			questPart_SpawnSpaceDrone.tryLandInShipLandingZone = tryLandInShipLandingZone;
+			questPart_SpawnSpaceDrone.tryLandNearThing = tryLandNearThing;
+			quest.AddPart(questPart_SpawnSpaceDrone);
+			return questPart_SpawnSpaceDrone;
+		}
+
+		public static QuestPart_SpawnThing SpawnThing(this Quest quest, Map map, Thing thing, Faction factionForSafeSpot = null, IntVec3? cell = null, string inSignal = null, bool lookForSafeSpot = false, bool tryLandInShipLandingZone = false, Thing tryLandNearThing = null, Pawn mapParentOfPawn = null, bool questLookTarget = true, EffecterDef spawnEffecter = null)
+		{
+			QuestPart_SpawnThing questPart_SpawnThing = new QuestPart_SpawnThing();
+			questPart_SpawnThing.thing = thing;
+			questPart_SpawnThing.mapParent = map?.Parent;
+			questPart_SpawnThing.mapParentOfPawn = mapParentOfPawn;
+			questPart_SpawnThing.questLookTarget = questLookTarget;
+			questPart_SpawnThing.factionForFindingSpot = factionForSafeSpot;
+			if (cell.HasValue)
+			{
+				questPart_SpawnThing.cell = cell.Value;
+			}
+			questPart_SpawnThing.inSignal = inSignal ?? QuestGen.slate.Get<string>("inSignal");
+			questPart_SpawnThing.lookForSafeSpot = lookForSafeSpot;
+			questPart_SpawnThing.tryLandInShipLandingZone = tryLandInShipLandingZone;
+			questPart_SpawnThing.tryLandNearThing = tryLandNearThing;
+			questPart_SpawnThing.spawnEffecter = spawnEffecter;
+			quest.AddPart(questPart_SpawnThing);
+			return questPart_SpawnThing;
+		}
+
+		public static QuestPart_SetFaction SetFaction(this Quest quest, IEnumerable<Thing> things, Faction faction, string inSignal = null)
+		{
+			QuestPart_SetFaction questPart_SetFaction = new QuestPart_SetFaction();
+			questPart_SetFaction.inSignal = inSignal ?? QuestGen.slate.Get<string>("inSignal");
+			questPart_SetFaction.faction = faction;
+			questPart_SetFaction.things.AddRange(things);
+			QuestGen.quest.AddPart(questPart_SetFaction);
+			return questPart_SetFaction;
+		}
+
 		public static QuestPart_JoinPlayer JoinPlayer(this Quest quest, MapParent mapParent, IEnumerable<Pawn> pawns, bool joinPlayer = false, bool makePrisoners = false, string inSignal = null)
 		{
 			QuestPart_JoinPlayer questPart_JoinPlayer = new QuestPart_JoinPlayer();
@@ -50,6 +101,7 @@ namespace RimWorld.QuestGen
 			questPart_JoinPlayer.makePrisoners = makePrisoners;
 			questPart_JoinPlayer.mapParent = mapParent;
 			questPart_JoinPlayer.pawns.AddRange(pawns);
+			questPart_JoinPlayer.signalListenMode = QuestPart.SignalListenMode.Always;
 			quest.AddPart(questPart_JoinPlayer);
 			return questPart_JoinPlayer;
 		}
@@ -65,7 +117,18 @@ namespace RimWorld.QuestGen
 			return questPart_LeavePlayer;
 		}
 
-		public static QuestPart_DropPods DropPods(this Quest quest, MapParent mapParent, IEnumerable<Thing> contents, string customLetterLabel = null, RulePack customLetterLabelRules = null, string customLetterText = null, RulePack customLetterTextRules = null, bool? sendStandardLetter = true, bool useTradeDropSpot = false, bool joinPlayer = false, bool makePrisoners = false, string inSignal = null, IEnumerable<Thing> thingsToExcludeFromHyperlinks = null, QuestPart.SignalListenMode signalListenMode = QuestPart.SignalListenMode.OngoingOnly, IntVec3? dropSpot = null, bool destroyItemsOnCleanup = true)
+		public static QuestPart_SurpriseReinforcement SurpriseReinforcements(this Quest quest, string inSignalEnabled, MapParent mapParent, Faction faction, float reinforcementChance)
+		{
+			QuestPart_SurpriseReinforcement questPart_SurpriseReinforcement = new QuestPart_SurpriseReinforcement();
+			questPart_SurpriseReinforcement.inSignalEnable = inSignalEnabled;
+			questPart_SurpriseReinforcement.mapParent = mapParent;
+			questPart_SurpriseReinforcement.faction = faction;
+			questPart_SurpriseReinforcement.reinforcementChance = reinforcementChance;
+			quest.AddPart(questPart_SurpriseReinforcement);
+			return questPart_SurpriseReinforcement;
+		}
+
+		public static QuestPart_DropPods DropPods(this Quest quest, MapParent mapParent, IEnumerable<Thing> contents, string customLetterLabel = null, RulePack customLetterLabelRules = null, string customLetterText = null, RulePack customLetterTextRules = null, bool? sendStandardLetter = true, bool useTradeDropSpot = false, bool joinPlayer = false, bool makePrisoners = false, string inSignal = null, IEnumerable<Thing> thingsToExcludeFromHyperlinks = null, QuestPart.SignalListenMode signalListenMode = QuestPart.SignalListenMode.OngoingOnly, IntVec3? dropSpot = null, bool destroyItemsOnCleanup = true, bool dropAllInSamePod = false, bool allowFogged = false, bool canRetargetAnyMap = false, Faction faction = null)
 		{
 			QuestPart_DropPods dropPods = new QuestPart_DropPods();
 			dropPods.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal) ?? QuestGen.slate.Get<string>("inSignal");
@@ -91,6 +154,10 @@ namespace RimWorld.QuestGen
 			dropPods.mapParent = mapParent;
 			dropPods.Things = contents;
 			dropPods.destroyItemsOnCleanup = destroyItemsOnCleanup;
+			dropPods.dropAllInSamePod = dropAllInSamePod;
+			dropPods.allowFogged = allowFogged;
+			dropPods.faction = faction;
+			dropPods.canRetargetAnyMap = canRetargetAnyMap;
 			if (dropSpot.HasValue)
 			{
 				dropPods.dropSpot = dropSpot.Value;
@@ -129,11 +196,11 @@ namespace RimWorld.QuestGen
 				questPart_Letter.letter = choiceLetter;
 				QuestGen.AddTextRequest("root", delegate(string x)
 				{
-					choiceLetter.label = x;
+					choiceLetter.Label = x;
 				}, QuestGenUtility.MergeRules(labelRules, label, "root"));
 				QuestGen.AddTextRequest("root", delegate(string x)
 				{
-					choiceLetter.text = x;
+					choiceLetter.Text = x;
 				}, QuestGenUtility.MergeRules(textRules, text, "root"));
 			}
 			else
@@ -152,16 +219,49 @@ namespace RimWorld.QuestGen
 			return questPart_Letter;
 		}
 
-		public static void PawnsArrive(this Quest quest, IEnumerable<Pawn> pawns, string inSignal = null, MapParent mapParent = null, PawnsArrivalModeDef arrivalMode = null, bool joinPlayer = false, IntVec3? walkInSpot = null, string customLetterLabel = null, string customLetterText = null, RulePack customLetterLabelRules = null, RulePack customLetterTextRules = null, bool isSingleReward = false, bool rewardDetailsHidden = false)
+		public static QuestPart_PlayOneShotOnCamera PlayOneShotOnCamera(this Quest quest, SoundDef soundDef, string inSignal = null)
 		{
-			_ = QuestGen.slate;
-			PawnsArrivalModeDef pawnsArrivalModeDef = arrivalMode ?? PawnsArrivalModeDefOf.EdgeWalkIn;
+			Slate slate = QuestGen.slate;
+			QuestPart_PlayOneShotOnCamera questPart_PlayOneShotOnCamera = new QuestPart_PlayOneShotOnCamera();
+			questPart_PlayOneShotOnCamera.soundDef = soundDef;
+			questPart_PlayOneShotOnCamera.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal) ?? slate.Get<string>("inSignal");
+			QuestGen.quest.AddPart(questPart_PlayOneShotOnCamera);
+			return questPart_PlayOneShotOnCamera;
+		}
+
+		public static void AcceptanceRequirementLayer(this Quest quest, MapParent mapParent = null, bool canBeSpace = false, List<PlanetLayerDef> whitelist = null, List<PlanetLayerDef> blacklist = null)
+		{
+			quest.AddPart(new QuestPart_RequirementsToAcceptPlanetLayer
+			{
+				canBeSpace = canBeSpace,
+				layerWhitelist = whitelist,
+				layerBlacklist = blacklist,
+				mapParent = (mapParent ?? QuestGen.slate.Get<Map>("map").Parent)
+			});
+		}
+
+		public static void AcceptanceRequirementNotSpace(this Quest quest, MapParent mapParent = null)
+		{
+			MapParent mapParent2 = mapParent ?? QuestGen.slate.Get<Map>("map")?.Parent;
+			if (mapParent2 != null)
+			{
+				quest.AddPart(new QuestPart_RequirementsToAcceptPlanetLayer
+				{
+					mapParent = mapParent2
+				});
+			}
+		}
+
+		public static void PawnsArrive(this Quest quest, IEnumerable<Pawn> pawns, string inSignal = null, MapParent mapParent = null, PawnsArrivalModeDef arrivalMode = null, bool joinPlayer = false, IntVec3? walkInSpot = null, string customLetterLabel = null, string customLetterText = null, RulePack customLetterLabelRules = null, RulePack customLetterTextRules = null, bool isSingleReward = false, bool rewardDetailsHidden = false, bool sendStandardLetter = true)
+		{
+			PawnsArrivalModeDef pawnsArrivalModeDef = ResolveArrivalMode(mapParent, arrivalMode);
 			QuestPart_PawnsArrive pawnsArrive = new QuestPart_PawnsArrive();
 			pawnsArrive.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal) ?? QuestGen.slate.Get<string>("inSignal");
 			pawnsArrive.pawns.AddRange(pawns);
 			pawnsArrive.arrivalMode = pawnsArrivalModeDef;
 			pawnsArrive.joinPlayer = joinPlayer;
 			pawnsArrive.mapParent = mapParent ?? QuestGen.slate.Get<Map>("map").Parent;
+			pawnsArrive.sendStandardLetter = sendStandardLetter;
 			if (pawnsArrivalModeDef.walkIn)
 			{
 				pawnsArrive.spawnNear = walkInSpot ?? QuestGen.slate.Get<IntVec3?>("walkInSpot") ?? IntVec3.Invalid;
@@ -201,10 +301,27 @@ namespace RimWorld.QuestGen
 			QuestGen.quest.AddPart(questPart_Choice);
 		}
 
+		private static PawnsArrivalModeDef ResolveArrivalMode(MapParent parent, PawnsArrivalModeDef requestedMode)
+		{
+			PawnsArrivalModeDef pawnsArrivalModeDef = requestedMode ?? PawnsArrivalModeDefOf.EdgeWalkIn;
+			if (parent == null || !parent.Tile.Valid || pawnsArrivalModeDef.Worker.CanUseOnTile(parent.Tile))
+			{
+				return pawnsArrivalModeDef;
+			}
+			foreach (PawnsArrivalModeDef item in DefDatabase<PawnsArrivalModeDef>.AllDefsListForReading)
+			{
+				if (item != pawnsArrivalModeDef && item.Worker.CanUseOnTile(parent.Tile))
+				{
+					pawnsArrivalModeDef = item;
+					break;
+				}
+			}
+			return pawnsArrivalModeDef;
+		}
+
 		public static QuestPart_AddQuestRefugeeDelayedReward AddQuestRefugeeDelayedReward(this Quest quest, Pawn acceptee, Faction faction, IEnumerable<Pawn> pawns, FloatRange marketValueRange, string inSignalRemovePawn = null)
 		{
 			QuestPart_AddQuestRefugeeDelayedReward questPart_AddQuestRefugeeDelayedReward = new QuestPart_AddQuestRefugeeDelayedReward();
-			questPart_AddQuestRefugeeDelayedReward.questDef = QuestScriptDefOf.RefugeeDelayedReward;
 			questPart_AddQuestRefugeeDelayedReward.acceptee = quest.AccepterPawn;
 			questPart_AddQuestRefugeeDelayedReward.inSignal = QuestGen.slate.Get<string>("inSignal");
 			questPart_AddQuestRefugeeDelayedReward.inSignalRemovePawn = inSignalRemovePawn;
@@ -215,18 +332,25 @@ namespace RimWorld.QuestGen
 			return questPart_AddQuestRefugeeDelayedReward;
 		}
 
-		public static QuestPart_PawnJoinOffer PawnJoinOffer(this Quest quest, Pawn pawn, string letterLabel, string letterTitle, string letterText, Action accepted = null, string inSignal = null, string outSignalPawnAccepted = null)
+		public static QuestPart_PawnJoinOffer PawnJoinOffer(this Quest quest, Pawn pawn, string letterLabel, string letterTitle, string letterText, Action accepted = null, Action rejected = null, string inSignal = null, string outSignalPawnAccepted = null, string outSignalPawnRejected = null, bool charity = false, bool sendLetterOnEnable = false)
 		{
 			QuestPart_PawnJoinOffer questPart_PawnJoinOffer = new QuestPart_PawnJoinOffer();
 			questPart_PawnJoinOffer.pawn = pawn;
 			questPart_PawnJoinOffer.inSignalEnable = inSignal ?? QuestGen.slate.Get<string>("inSignal");
 			questPart_PawnJoinOffer.outSignalPawnAccepted = outSignalPawnAccepted ?? QuestGen.GenerateNewSignal("Accepted");
+			questPart_PawnJoinOffer.outSignalPawnRejected = outSignalPawnRejected ?? QuestGen.GenerateNewSignal("Rejected");
 			questPart_PawnJoinOffer.letterLabel = letterLabel;
 			questPart_PawnJoinOffer.letterText = letterText;
 			questPart_PawnJoinOffer.letterTitle = letterTitle;
+			questPart_PawnJoinOffer.charity = charity;
+			questPart_PawnJoinOffer.sendLetterOnEnable = sendLetterOnEnable;
 			if (accepted != null)
 			{
 				QuestGenUtility.RunInner(accepted, questPart_PawnJoinOffer.outSignalPawnAccepted);
+			}
+			if (rejected != null)
+			{
+				QuestGenUtility.RunInner(rejected, questPart_PawnJoinOffer.outSignalPawnRejected);
 			}
 			quest.AddPart(questPart_PawnJoinOffer);
 			return questPart_PawnJoinOffer;
@@ -267,18 +391,46 @@ namespace RimWorld.QuestGen
 				string text2 = QuestGen.GenerateNewSignal("BetrayalOfferFailure");
 				QuestGenUtility.RunInner(failure, text2);
 				questPart_BetrayalOffer.outSignalFailure = text2;
+				string text3 = QuestGen.GenerateNewSignal("BetrayalOfferFailureRecruited");
+				QuestGenUtility.RunInner(failure, text3);
+				questPart_BetrayalOffer.outSignalFailureRecruited = text3;
 			}
 			if (enabled != null)
 			{
-				string text3 = QuestGen.GenerateNewSignal("BetrayalOfferEnabled");
-				QuestGenUtility.RunInner(enabled, text3);
-				questPart_BetrayalOffer.outSignalEnabled = text3;
+				string text4 = QuestGen.GenerateNewSignal("BetrayalOfferEnabled");
+				QuestGenUtility.RunInner(enabled, text4);
+				questPart_BetrayalOffer.outSignalEnabled = text4;
 			}
 			quest.AddPart(questPart_BetrayalOffer);
 			return questPart_BetrayalOffer;
 		}
 
-		public static void Leave(this Quest quest, IEnumerable<Pawn> pawns, string inSignal = null, bool sendStandardLetter = true, bool leaveOnCleanup = true, string inSignalRemovePawn = null)
+		public static QuestPart_InnerFactionFight InnerFactionFight(this Quest quest, IntVec3 meetingPos, MapParent mapParent, IEnumerable<Pawn> pawns, Faction firstFaction, FactionDef secondFactionDef, Action complete = null, IEnumerable<string> inSignals = null, string inSignalEnable = null, string factionBecameHostileSignal = null, QuestPart.SignalListenMode signalListenMode = QuestPart.SignalListenMode.OngoingOnly)
+		{
+			QuestPart_InnerFactionFight questPart_InnerFactionFight = new QuestPart_InnerFactionFight();
+			questPart_InnerFactionFight.pawns.AddRange(pawns);
+			questPart_InnerFactionFight.firstFaction = firstFaction;
+			questPart_InnerFactionFight.secondFactionDef = secondFactionDef;
+			questPart_InnerFactionFight.inSignalEnable = inSignalEnable ?? QuestGen.slate.Get<string>("inSignal");
+			questPart_InnerFactionFight.signalListenMode = signalListenMode;
+			questPart_InnerFactionFight.meetingPos = meetingPos;
+			questPart_InnerFactionFight.mapParent = mapParent;
+			questPart_InnerFactionFight.factionBecameHostileSignal = factionBecameHostileSignal;
+			if (inSignals != null)
+			{
+				questPart_InnerFactionFight.inSignals.AddRange(inSignals);
+			}
+			if (complete != null)
+			{
+				string text = QuestGen.GenerateNewSignal("ArgumentCompleted");
+				QuestGenUtility.RunInner(complete, text);
+				questPart_InnerFactionFight.outSignalComplete = text;
+			}
+			quest.AddPart(questPart_InnerFactionFight);
+			return questPart_InnerFactionFight;
+		}
+
+		public static void Leave(this Quest quest, IEnumerable<Pawn> pawns, string inSignal = null, bool sendStandardLetter = true, bool leaveOnCleanup = true, string inSignalRemovePawn = null, bool wakeUp = false)
 		{
 			QuestPart_Leave questPart_Leave = new QuestPart_Leave();
 			questPart_Leave.inSignal = inSignal ?? QuestGen.slate.Get<string>("inSignal");
@@ -286,21 +438,30 @@ namespace RimWorld.QuestGen
 			questPart_Leave.sendStandardLetter = sendStandardLetter;
 			questPart_Leave.leaveOnCleanup = leaveOnCleanup;
 			questPart_Leave.inSignalRemovePawn = inSignalRemovePawn;
+			questPart_Leave.wakeUp = wakeUp;
 			quest.AddPart(questPart_Leave);
 		}
 
 		public static QuestPart_Alert Alert(this Quest quest, string label, string explanation, LookTargets lookTargets = null, bool critical = false, bool getLookTargetsFromSignal = false, string inSignalEnable = null, string inSignalDisable = null)
 		{
-			QuestPart_Alert questPart_Alert = new QuestPart_Alert();
-			questPart_Alert.label = label;
-			questPart_Alert.explanation = explanation;
-			questPart_Alert.critical = critical;
-			questPart_Alert.getLookTargetsFromSignal = getLookTargetsFromSignal;
-			questPart_Alert.lookTargets = lookTargets;
-			questPart_Alert.inSignalEnable = inSignalEnable ?? QuestGen.slate.Get<string>("inSignal");
-			questPart_Alert.inSignalDisable = inSignalDisable;
-			quest.AddPart(questPart_Alert);
-			return questPart_Alert;
+			QuestPart_Alert questPart = new QuestPart_Alert();
+			questPart.label = "error";
+			questPart.explanation = "error";
+			questPart.critical = critical;
+			questPart.getLookTargetsFromSignal = getLookTargetsFromSignal;
+			questPart.lookTargets = lookTargets;
+			questPart.inSignalEnable = inSignalEnable ?? QuestGen.slate.Get<string>("inSignal");
+			questPart.inSignalDisable = inSignalDisable;
+			QuestGen.AddTextRequest("root", delegate(string x)
+			{
+				questPart.label = x;
+			}, QuestGenUtility.MergeRules(null, label, "root"));
+			QuestGen.AddTextRequest("root", delegate(string x)
+			{
+				questPart.explanation = x;
+			}, QuestGenUtility.MergeRules(null, explanation, "root"));
+			quest.AddPart(questPart);
+			return questPart;
 		}
 
 		public static QuestPart_Message Message(this Quest quest, string message, MessageTypeDef messageType = null, bool getLookTargetsFromSignal = false, RulePack rules = null, LookTargets lookTargets = null, string inSignal = null)
@@ -318,7 +479,18 @@ namespace RimWorld.QuestGen
 			return questPart;
 		}
 
-		public static QuestPart_FactionGoodwillChange_ShuttleSentThings GoodwillChangeShuttleSentThings(this Quest quest, Faction faction, IEnumerable<Pawn> pawns, int changeNotOnShuttle, string inSignalEnable = null, IEnumerable<string> inSignalsShuttleSent = null, string inSignalShuttleDestroyed = null, string reason = null, bool canSendMessage = true, bool canSendHostilityLetter = false, QuestPart.SignalListenMode signalListenMode = QuestPart.SignalListenMode.OngoingOnly)
+		public static QuestPart_Notify_PlayerRaidedSomeone Notify_PlayerRaidedSomeone(this Quest quest, Map getRaidersFromMap = null, MapParent getRaidersFromMapParent = null, string inSignal = null)
+		{
+			QuestPart_Notify_PlayerRaidedSomeone questPart_Notify_PlayerRaidedSomeone = new QuestPart_Notify_PlayerRaidedSomeone();
+			questPart_Notify_PlayerRaidedSomeone.inSignal = QuestGenUtility.HardcodedSignalWithQuestID(inSignal) ?? QuestGen.slate.Get<string>("inSignal");
+			questPart_Notify_PlayerRaidedSomeone.getRaidersFromMap = getRaidersFromMap;
+			questPart_Notify_PlayerRaidedSomeone.getRaidersFromMapParent = getRaidersFromMapParent;
+			questPart_Notify_PlayerRaidedSomeone.signalListenMode = QuestPart.SignalListenMode.Always;
+			quest.AddPart(questPart_Notify_PlayerRaidedSomeone);
+			return questPart_Notify_PlayerRaidedSomeone;
+		}
+
+		public static QuestPart_FactionGoodwillChange_ShuttleSentThings GoodwillChangeShuttleSentThings(this Quest quest, Faction faction, IEnumerable<Pawn> pawns, int changeNotOnShuttle, string inSignalEnable = null, IEnumerable<string> inSignalsShuttleSent = null, string inSignalShuttleDestroyed = null, HistoryEventDef reason = null, bool canSendMessage = true, bool canSendHostilityLetter = false, QuestPart.SignalListenMode signalListenMode = QuestPart.SignalListenMode.OngoingOnly)
 		{
 			QuestPart_FactionGoodwillChange_ShuttleSentThings questPart_FactionGoodwillChange_ShuttleSentThings = new QuestPart_FactionGoodwillChange_ShuttleSentThings();
 			questPart_FactionGoodwillChange_ShuttleSentThings.inSignalEnable = inSignalEnable ?? QuestGen.slate.Get<string>("inSignal");
@@ -327,7 +499,7 @@ namespace RimWorld.QuestGen
 			questPart_FactionGoodwillChange_ShuttleSentThings.changeNotOnShuttle = changeNotOnShuttle;
 			questPart_FactionGoodwillChange_ShuttleSentThings.things.AddRange(pawns);
 			questPart_FactionGoodwillChange_ShuttleSentThings.faction = faction;
-			questPart_FactionGoodwillChange_ShuttleSentThings.reason = reason;
+			questPart_FactionGoodwillChange_ShuttleSentThings.historyEvent = reason;
 			questPart_FactionGoodwillChange_ShuttleSentThings.canSendMessage = canSendMessage;
 			questPart_FactionGoodwillChange_ShuttleSentThings.canSendHostilityLetter = canSendHostilityLetter;
 			questPart_FactionGoodwillChange_ShuttleSentThings.signalListenMode = signalListenMode;
@@ -352,6 +524,138 @@ namespace RimWorld.QuestGen
 			questPart_DestroyThingsOrPassToWorld.questLookTargets = true;
 			questPart_DestroyThingsOrPassToWorld.signalListenMode = signalListenMode;
 			return questPart_DestroyThingsOrPassToWorld;
+		}
+
+		public static QuestPart_DescriptionPart DescriptionPart(this Quest quest, string descriptionPart, string inSignalEnable = null, string inSignalDisable = null, QuestPart.SignalListenMode signalListenMode = QuestPart.SignalListenMode.OngoingOnly, RulePack rulePack = null)
+		{
+			QuestPart_DescriptionPart questPart = new QuestPart_DescriptionPart();
+			questPart.inSignalEnable = inSignalEnable ?? QuestGen.slate.Get<string>("inSignal");
+			questPart.inSignalDisable = inSignalDisable;
+			questPart.descriptionPart = descriptionPart;
+			questPart.signalListenMode = signalListenMode;
+			quest.AddPart(questPart);
+			QuestGen.AddTextRequest("root", delegate(string x)
+			{
+				questPart.descriptionPart = x;
+			}, QuestGenUtility.MergeRules(rulePack, descriptionPart, "root"));
+			return questPart;
+		}
+
+		public static QuestPart_Dialog Dialog(this Quest quest, string text, string title = null, string inSignal = null, RulePack titleRules = null, RulePack textRules = null, QuestPart.SignalListenMode signalListMode = QuestPart.SignalListenMode.OngoingOnly)
+		{
+			QuestPart_Dialog questPart = new QuestPart_Dialog();
+			questPart.title = title;
+			questPart.text = text;
+			questPart.inSignal = inSignal ?? QuestGen.slate.Get<string>("inSignal");
+			questPart.signalListenMode = signalListMode;
+			quest.AddPart(questPart);
+			if (!title.NullOrEmpty())
+			{
+				QuestGen.AddTextRequest("root", delegate(string x)
+				{
+					questPart.title = x;
+				}, QuestGenUtility.MergeRules(titleRules, title, "root"));
+			}
+			QuestGen.AddTextRequest("root", delegate(string x)
+			{
+				questPart.text = x;
+			}, QuestGenUtility.MergeRules(titleRules, text, "root"));
+			return questPart;
+		}
+
+		public static QuestPart_Dialog DialogWithCloseBehavior(this Quest quest, string text, string title = null, string inSignal = null, RulePack titleRules = null, RulePack textRules = null, QuestPart.SignalListenMode signalListMode = QuestPart.SignalListenMode.OngoingOnly, QuestPartDialogCloseAction.CloseActionKey closeAction = QuestPartDialogCloseAction.CloseActionKey.None)
+		{
+			QuestPart_Dialog questPart_Dialog = quest.Dialog(text, title, inSignal, titleRules, textRules, signalListMode);
+			questPart_Dialog.closeAction = closeAction;
+			return questPart_Dialog;
+		}
+
+		public static QuestPart_SetQuestNotYetAccepted SetQuestNotYetAccepted(this Quest quest, string inSignal = null, bool revertOngoingQuestAfterLoad = false)
+		{
+			QuestPart_SetQuestNotYetAccepted questPart_SetQuestNotYetAccepted = new QuestPart_SetQuestNotYetAccepted();
+			questPart_SetQuestNotYetAccepted.inSignal = inSignal;
+			questPart_SetQuestNotYetAccepted.revertOngoingQuestAfterLoad = revertOngoingQuestAfterLoad;
+			quest.AddPart(questPart_SetQuestNotYetAccepted);
+			return questPart_SetQuestNotYetAccepted;
+		}
+
+		public static QuestPart_StartWick StartWick(this Quest quest, Thing thing, string inSignal = null)
+		{
+			QuestPart_StartWick questPart_StartWick = new QuestPart_StartWick();
+			questPart_StartWick.explosiveThing = thing;
+			questPart_StartWick.inSignal = inSignal ?? QuestGen.slate.Get<string>("inSignal");
+			quest.AddPart(questPart_StartWick);
+			return questPart_StartWick;
+		}
+
+		public static QuestPart_GiveDiedOrDownedThoughts GiveDiedOrDownedThoughts(this Quest quest, Pawn aboutPawn, PawnDiedOrDownedThoughtsKind thoughtsKind, string inSignal = null)
+		{
+			QuestPart_GiveDiedOrDownedThoughts questPart_GiveDiedOrDownedThoughts = new QuestPart_GiveDiedOrDownedThoughts();
+			questPart_GiveDiedOrDownedThoughts.aboutPawn = aboutPawn;
+			questPart_GiveDiedOrDownedThoughts.thoughtsKind = thoughtsKind;
+			questPart_GiveDiedOrDownedThoughts.inSignal = inSignal ?? QuestGen.slate.Get<string>("inSignal");
+			quest.AddPart(questPart_GiveDiedOrDownedThoughts);
+			return questPart_GiveDiedOrDownedThoughts;
+		}
+
+		public static QuestPart_GiveHediff GiveHediff(this Quest quest, Pawn aboutPawn, HediffDef hediff, string inSignal = null)
+		{
+			QuestPart_GiveHediff questPart_GiveHediff = new QuestPart_GiveHediff
+			{
+				aboutPawn = aboutPawn,
+				hediff = hediff,
+				inSignal = (inSignal ?? QuestGen.slate.Get<string>("inSignal"))
+			};
+			quest.AddPart(questPart_GiveHediff);
+			return questPart_GiveHediff;
+		}
+
+		public static QuestPart_LinkUnnaturalCorpse LinkUnnaturalCorpse(this Quest quest, Pawn aboutPawn, UnnaturalCorpse corpse, string inSignal = null)
+		{
+			QuestPart_LinkUnnaturalCorpse questPart_LinkUnnaturalCorpse = new QuestPart_LinkUnnaturalCorpse
+			{
+				aboutPawn = aboutPawn,
+				corpse = corpse,
+				inSignal = (inSignal ?? QuestGen.slate.Get<string>("inSignal"))
+			};
+			quest.AddPart(questPart_LinkUnnaturalCorpse);
+			return questPart_LinkUnnaturalCorpse;
+		}
+
+		public static QuestPart_AssignMechToMechanitor AssignMechToMechanitor(this Quest quest, Pawn mechanitor, Pawn mech, string inSignal = null)
+		{
+			QuestPart_AssignMechToMechanitor questPart_AssignMechToMechanitor = new QuestPart_AssignMechToMechanitor();
+			questPart_AssignMechToMechanitor.mechanitor = mechanitor;
+			questPart_AssignMechToMechanitor.mech = mech;
+			questPart_AssignMechToMechanitor.inSignal = inSignal ?? QuestGen.slate.Get<string>("inSignal");
+			quest.AddPart(questPart_AssignMechToMechanitor);
+			return questPart_AssignMechToMechanitor;
+		}
+
+		public static QuestPart_GameCondition GameCondition(this Quest quest, GameConditionDef gameConditionDef, int duration, MapParent mapParent, bool permanent = false, bool forceDisplayAsDuration = false, string inSignal = null, QuestPart.SignalListenMode signalListenMode = QuestPart.SignalListenMode.OngoingOnly, bool sendStandardLetter = true, bool targetWorld = false)
+		{
+			GameCondition gameCondition = GameConditionMaker.MakeCondition(gameConditionDef, duration);
+			gameCondition.forceDisplayAsDuration = forceDisplayAsDuration;
+			gameCondition.Permanent = permanent;
+			QuestPart_GameCondition questPart_GameCondition = new QuestPart_GameCondition
+			{
+				gameCondition = gameCondition,
+				inSignal = (inSignal ?? QuestGen.slate.Get<string>("inSignal")),
+				signalListenMode = signalListenMode,
+				mapParent = mapParent,
+				sendStandardLetter = sendStandardLetter,
+				targetWorld = targetWorld
+			};
+			quest.AddPart(questPart_GameCondition);
+			return questPart_GameCondition;
+		}
+
+		public static QuestPart_LookTargets LookTargets(this Quest quest, IEnumerable<GlobalTargetInfo> targets)
+		{
+			QuestPart_LookTargets questPart_LookTargets = new QuestPart_LookTargets();
+			questPart_LookTargets.targets.AddRange(targets);
+			quest.AddPart(questPart_LookTargets);
+			return questPart_LookTargets;
 		}
 	}
 }

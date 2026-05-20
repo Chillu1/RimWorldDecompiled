@@ -26,14 +26,15 @@ namespace RimWorld
 			foreach (IntVec3 item2 in AffectedCells(target, map))
 			{
 				GenSpawn.Spawn(ThingDefOf.RaisedRocks, item2, map);
-				MoteMaker.ThrowDustPuffThick(item2.ToVector3Shifted(), map, Rand.Range(1.5f, 3f), DustColor);
+				FleckMaker.ThrowDustPuffThick(item2.ToVector3Shifted(), map, Rand.Range(1.5f, 3f), DustColor);
+				CompAbilityEffect_Teleport.SendSkipUsedSignal(item2, parent.pawn);
 			}
 			foreach (Thing item3 in list)
 			{
 				IntVec3 intVec = IntVec3.Invalid;
-				for (int i = 0; i < 9; i++)
+				for (int num = 0; num < 9; num++)
 				{
-					IntVec3 intVec2 = item3.Position + GenRadial.RadialPattern[i];
+					IntVec3 intVec2 = item3.Position + GenRadial.RadialPattern[num];
 					if (intVec2.InBounds(map) && intVec2.Walkable(map) && map.thingGrid.ThingsListAtFast(intVec2).Count <= 0)
 					{
 						intVec = intVec2;
@@ -79,7 +80,7 @@ namespace RimWorld
 			{
 				if (throwMessages)
 				{
-					Messages.Message("AbilityOccupiedCells".Translate(parent.def.LabelCap), target.ToTargetInfo(parent.pawn.Map), MessageTypeDefOf.RejectInput, historical: false);
+					Messages.Message("CannotUseAbility".Translate(parent.def.label) + ": " + "AbilityOccupiedCells".Translate(), target.ToTargetInfo(parent.pawn.Map), MessageTypeDefOf.RejectInput, historical: false);
 				}
 				return false;
 			}
@@ -87,7 +88,15 @@ namespace RimWorld
 			{
 				if (throwMessages)
 				{
-					Messages.Message("AbilityUnwalkable".Translate(parent.def.LabelCap), target.ToTargetInfo(parent.pawn.Map), MessageTypeDefOf.RejectInput, historical: false);
+					Messages.Message("CannotUseAbility".Translate(parent.def.label) + ": " + "AbilityUnwalkable".Translate(), target.ToTargetInfo(parent.pawn.Map), MessageTypeDefOf.RejectInput, historical: false);
+				}
+				return false;
+			}
+			if (AffectedCells(target, parent.pawn.Map).Any((IntVec3 c) => c.GetThingList(parent.pawn.Map).Any((Thing t) => !t.def.destroyable)))
+			{
+				if (throwMessages)
+				{
+					Messages.Message("CannotUseAbility".Translate(parent.def.label) + ": " + "AbilityNotEnoughFreeSpace".Translate(), target.ToTargetInfo(parent.pawn.Map), MessageTypeDefOf.RejectInput, historical: false);
 				}
 				return false;
 			}

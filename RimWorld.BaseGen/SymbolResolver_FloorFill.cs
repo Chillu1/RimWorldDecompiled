@@ -10,11 +10,11 @@ namespace RimWorld.BaseGen
 			Map map = BaseGen.globalSettings.map;
 			TerrainGrid terrainGrid = map.terrainGrid;
 			TerrainDef terrainDef = rp.floorDef ?? BaseGenUtility.RandomBasicFloorDef(rp.faction);
-			bool flag = rp.floorOnlyIfTerrainSupports ?? false;
-			bool flag2 = rp.allowBridgeOnAnyImpassableTerrain ?? false;
+			bool valueOrDefault = rp.floorOnlyIfTerrainSupports == true;
+			bool valueOrDefault2 = rp.allowBridgeOnAnyImpassableTerrain == true;
 			foreach (IntVec3 item in rp.rect)
 			{
-				if ((!rp.chanceToSkipFloor.HasValue || !Rand.Chance(rp.chanceToSkipFloor.Value)) && (!flag || GenConstruct.CanBuildOnTerrain(terrainDef, item, map, Rot4.North) || (flag2 && item.GetTerrain(map).passability == Traversability.Impassable)))
+				if ((!rp.chanceToSkipFloor.HasValue || !Rand.Chance(rp.chanceToSkipFloor.Value)) && (!valueOrDefault || GenConstruct.CanBuildOnTerrain(terrainDef, item, map, Rot4.North) || (valueOrDefault2 && item.GetTerrain(map).passability == Traversability.Impassable)))
 				{
 					terrainGrid.SetTerrain(item, terrainDef);
 					if (rp.filthDef != null)

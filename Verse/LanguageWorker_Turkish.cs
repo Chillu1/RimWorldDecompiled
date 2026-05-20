@@ -8,7 +8,7 @@ namespace Verse
 			{
 				return str;
 			}
-			return str + " bir";
+			return "bir " + str;
 		}
 
 		public override string WithDefiniteArticle(string str, Gender gender, bool plural = false, bool name = false)

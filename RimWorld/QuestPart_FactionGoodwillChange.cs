@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using RimWorld.Planet;
+using UnityEngine;
 using Verse;
 
 namespace RimWorld
@@ -7,6 +8,8 @@ namespace RimWorld
 	[StaticConstructorOnStartup]
 	public class QuestPart_FactionGoodwillChange : QuestPart
 	{
+		public HistoryEventDef historyEvent;
+
 		public string inSignal;
 
 		public int change;
@@ -17,11 +20,11 @@ namespace RimWorld
 
 		public bool canSendHostilityLetter = true;
 
-		public string reason;
-
 		public bool getLookTargetFromSignal = true;
 
 		public GlobalTargetInfo lookTarget;
+
+		public bool ensureMakesHostile;
 
 		public override IEnumerable<GlobalTargetInfo> QuestLookTargets
 		{
@@ -53,37 +56,60 @@ namespace RimWorld
 		public override void Notify_QuestSignalReceived(Signal signal)
 		{
 			base.Notify_QuestSignalReceived(signal);
-			if (signal.tag == inSignal && faction != null && faction != Faction.OfPlayer)
+			if (!(signal.tag == inSignal) || faction == null || faction == Faction.OfPlayer)
 			{
-				LookTargets lookTargets;
-				GlobalTargetInfo value = (lookTarget.IsValid ? lookTarget : ((!getLookTargetFromSignal) ? GlobalTargetInfo.Invalid : ((!SignalArgsUtility.TryGetLookTargets(signal.args, "SUBJECT", out lookTargets)) ? GlobalTargetInfo.Invalid : lookTargets.TryGetPrimaryTarget())));
-				FactionRelationKind playerRelationKind = faction.PlayerRelationKind;
-				int arg = 0;
-				if (!signal.args.TryGetArg("GOODWILL", out arg))
+				return;
+			}
+			if (lookTarget.IsValid)
+			{
+				_ = lookTarget;
+			}
+			else if (getLookTargetFromSignal)
+			{
+				if (SignalArgsUtility.TryGetLookTargets(signal.args, "SUBJECT", out var lookTargets))
 				{
-					arg = change;
+					lookTargets.TryGetPrimaryTarget();
 				}
-				faction.TryAffectGoodwillWith(Faction.OfPlayer, arg, canSendMessage, canSendHostilityLetter, signal.args.GetFormattedText(reason), value);
-				TaggedString text = "";
-				faction.TryAppendRelationKindChangedInfo(ref text, playerRelationKind, faction.PlayerRelationKind);
-				if (!text.NullOrEmpty())
+				else
 				{
-					text = "\n\n" + text;
+					_ = GlobalTargetInfo.Invalid;
 				}
+			}
+			else
+			{
+				_ = GlobalTargetInfo.Invalid;
+			}
+			FactionRelationKind playerRelationKind = faction.PlayerRelationKind;
+			int arg = 0;
+			if (!signal.args.TryGetArg("GOODWILL", out arg))
+			{
+				arg = change;
+			}
+			if (ensureMakesHostile)
+			{
+				arg = Mathf.Min(arg, Faction.OfPlayer.GoodwillToMakeHostile(faction));
+			}
+			Faction.OfPlayer.TryAffectGoodwillWith(faction, arg, canSendMessage, canSendHostilityLetter, (arg >= 0) ? (historyEvent ?? HistoryEventDefOf.QuestGoodwillReward) : historyEvent);
+			TaggedString text = "";
+			faction.TryAppendRelationKindChangedInfo(ref text, playerRelationKind, faction.PlayerRelationKind);
+			if (!text.NullOrEmpty())
+			{
+				text = "\n\n" + text;
 			}
 		}
 
 		public override void ExposeData()
 		{
 			base.ExposeData();
+			Scribe_Defs.Look(ref historyEvent, "historyEvent");
 			Scribe_Values.Look(ref inSignal, "inSignal");
 			Scribe_Values.Look(ref change, "change", 0);
 			Scribe_References.Look(ref faction, "faction");
 			Scribe_Values.Look(ref canSendMessage, "canSendMessage", defaultValue: true);
 			Scribe_Values.Look(ref canSendHostilityLetter, "canSendHostilityLetter", defaultValue: true);
-			Scribe_Values.Look(ref reason, "reason");
 			Scribe_Values.Look(ref getLookTargetFromSignal, "getLookTargetFromSignal", defaultValue: true);
 			Scribe_TargetInfo.Look(ref lookTarget, "lookTarget");
+			Scribe_Values.Look(ref ensureMakesHostile, "ensureMakesHostile", defaultValue: false);
 		}
 
 		public override void AssignDebugData()

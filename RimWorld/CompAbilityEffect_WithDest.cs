@@ -36,6 +36,8 @@ namespace RimWorld
 
 		public ITargetingSource DestinationSelector => null;
 
+		public bool HidePawnTooltips => true;
+
 		public LocalTargetInfo GetDestination(LocalTargetInfo target)
 		{
 			Map map = parent.pawn.Map;
@@ -53,7 +55,7 @@ namespace RimWorld
 					if (!(intVec.DistanceTo(IntVec3.Zero) < Props.randomRange.min))
 					{
 						IntVec3 intVec2 = target.Cell + intVec;
-						if (intVec2.Standable(map) && (!Props.requiresLineOfSight || GenSight.LineOfSight(target.Cell, intVec2, map)))
+						if (intVec2.Standable(map) && (!Props.requiresLineOfSight || GenSight.LineOfSight(target.Cell, intVec2, map)) && !intVec2.Fogged(map))
 						{
 							cells.Add(intVec2);
 						}
@@ -75,11 +77,17 @@ namespace RimWorld
 
 		public bool CanPlaceSelectedTargetAt(LocalTargetInfo target)
 		{
-			if (selectedTarget.Pawn != null)
+			Pawn pawn = selectedTarget.Pawn;
+			if (pawn != null)
 			{
-				if (!target.Cell.Impassable(parent.pawn.Map))
+				Building_Door door = target.Cell.GetDoor(pawn.MapHeld);
+				if (door != null && !door.CanPhysicallyPass(pawn))
 				{
-					return target.Cell.Walkable(parent.pawn.Map);
+					return false;
+				}
+				if (pawn.Spawned && !target.Cell.Impassable(parent.pawn.Map))
+				{
+					return target.Cell.WalkableBy(parent.pawn.Map, pawn);
 				}
 				return false;
 			}
@@ -89,8 +97,7 @@ namespace RimWorld
 		public static bool CanTeleportThingTo(LocalTargetInfo target, Map map)
 		{
 			Building edifice = target.Cell.GetEdifice(map);
-			Building_Door building_Door;
-			if (edifice != null && edifice.def.surfaceType != SurfaceType.Item && edifice.def.surfaceType != SurfaceType.Eat && ((building_Door = edifice as Building_Door) == null || !building_Door.Open))
+			if (edifice != null && edifice.def.surfaceType != SurfaceType.Item && edifice.def.surfaceType != SurfaceType.Eat && !(edifice is Building_Door { Open: not false }))
 			{
 				return false;
 			}
@@ -122,7 +129,7 @@ namespace RimWorld
 			return true;
 		}
 
-		public virtual bool ValidateTarget(LocalTargetInfo target)
+		public virtual bool ValidateTarget(LocalTargetInfo target, bool showMessages = true)
 		{
 			return CanHitTarget(target);
 		}
@@ -150,7 +157,7 @@ namespace RimWorld
 		{
 			Texture2D icon = ((!target.IsValid) ? TexCommand.CannotShoot : parent.def.uiIcon);
 			GenUI.DrawMouseAttachment(icon);
-			string text = ExtraLabel(target);
+			string text = ExtraLabelMouseAttachment(target);
 			if (!text.NullOrEmpty())
 			{
 				Widgets.MouseAttachedLabel(text);
@@ -171,6 +178,15 @@ namespace RimWorld
 		public virtual void SelectDestination()
 		{
 			Find.Targeter.BeginTargeting(this);
+		}
+
+		public bool SelectedTargetInvalidated()
+		{
+			if (selectedTarget.HasThing)
+			{
+				return !selectedTarget.Thing.Spawned;
+			}
+			return false;
 		}
 	}
 }

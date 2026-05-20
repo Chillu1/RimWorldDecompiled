@@ -109,11 +109,11 @@ namespace RimWorld.QuestGen
 			}
 			if (incidentDef != null)
 			{
-				if (!Find.Storyteller.difficultyValues.AllowedBy(incidentDef.disabledWhen))
+				if (!Find.Storyteller.difficulty.AllowedBy(incidentDef.disabledWhen))
 				{
 					return false;
 				}
-				if (GenDate.DaysPassed < incidentDef.earliestDay)
+				if (GenDate.DaysPassedSinceSettle < incidentDef.earliestDay)
 				{
 					return false;
 				}

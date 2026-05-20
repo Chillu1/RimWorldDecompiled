@@ -20,16 +20,16 @@ namespace Verse
 
 		public override string ToString()
 		{
-			string str = "[";
-			if (keyBindingA != 0)
+			string text = "[";
+			if (keyBindingA != KeyCode.None)
 			{
-				str += keyBindingA;
+				text += keyBindingA;
 			}
-			if (keyBindingB != 0)
+			if (keyBindingB != KeyCode.None)
 			{
-				str = str + ", " + keyBindingB;
+				text = text + ", " + keyBindingB;
 			}
-			return str + "]";
+			return text + "]";
 		}
 	}
 }

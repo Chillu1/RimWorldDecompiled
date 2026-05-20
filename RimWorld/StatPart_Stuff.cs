@@ -15,9 +15,9 @@ namespace RimWorld
 			StringBuilder stringBuilder = new StringBuilder();
 			if (req.BuildableDef.MadeFromStuff)
 			{
-				string t = ((req.StuffDef != null) ? req.StuffDef.label : "None".TranslateSimple());
-				string t2 = ((req.StuffDef != null) ? req.StuffDef.GetStatValueAbstract(stuffPowerStat).ToStringByStyle(parentStat.ToStringStyleUnfinalized) : "0");
-				stringBuilder.AppendLine("StatsReport_Material".Translate() + " (" + t + "): " + t2);
+				string text = ((req.StuffDef != null) ? req.StuffDef.label : "None".TranslateSimple());
+				string text2 = ((req.StuffDef != null) ? req.StuffDef.GetStatValueAbstract(stuffPowerStat).ToStringByStyle(parentStat.ToStringStyleUnfinalized) : "0");
+				stringBuilder.AppendLine("StatsReport_Material".Translate() + " (" + text + "): " + text2);
 				stringBuilder.AppendLine();
 				stringBuilder.AppendLine("StatsReport_StuffEffectMultiplier".Translate() + ": " + GetMultiplier(req).ToStringPercent("F0"));
 				stringBuilder.AppendLine();

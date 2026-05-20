@@ -1,3 +1,4 @@
+using Verse;
 using Verse.AI;
 
 namespace RimWorld
@@ -8,11 +9,16 @@ namespace RimWorld
 
 		protected override bool TryCastShot()
 		{
+			if (Faction.OfMechanoids == null)
+			{
+				Messages.Message("MessageNoFactionForVerbMechCluster".Translate(), caster, MessageTypeDefOf.RejectInput, null, historical: false);
+				return false;
+			}
 			if (currentTarget.HasThing && currentTarget.Thing.Map != caster.Map)
 			{
 				return false;
 			}
-			MechClusterUtility.SpawnCluster(currentTarget.Cell, caster.Map, MechClusterGenerator.GenerateClusterSketch_NewTemp(2500f, caster.Map, startDormant: true, forceNoConditionCauser: true));
+			MechClusterUtility.SpawnCluster(currentTarget.Cell, caster.Map, MechClusterGenerator.GenerateClusterSketch(2500f, caster.Map, startDormant: true, forceNoConditionCauser: true));
 			base.ReloadableCompSource?.UsedOnce();
 			return true;
 		}

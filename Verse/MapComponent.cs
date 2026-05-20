@@ -2,7 +2,7 @@ namespace Verse
 {
 	public abstract class MapComponent : IExposable
 	{
-		public Map map;
+		public readonly Map map;
 
 		public MapComponent(Map map)
 		{
@@ -18,6 +18,10 @@ namespace Verse
 		}
 
 		public virtual void MapComponentOnGUI()
+		{
+		}
+
+		public virtual void MapComponentDraw()
 		{
 		}
 

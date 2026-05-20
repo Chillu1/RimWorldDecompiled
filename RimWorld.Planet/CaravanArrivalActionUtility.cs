@@ -6,7 +6,7 @@ namespace RimWorld.Planet
 {
 	public static class CaravanArrivalActionUtility
 	{
-		public static IEnumerable<FloatMenuOption> GetFloatMenuOptions<T>(Func<FloatMenuAcceptanceReport> acceptanceReportGetter, Func<T> arrivalActionGetter, string label, Caravan caravan, int pathDestination, WorldObject revalidateWorldClickTarget, Action<Action> confirmActionProxy = null) where T : CaravanArrivalAction
+		public static IEnumerable<FloatMenuOption> GetFloatMenuOptions<T>(Func<FloatMenuAcceptanceReport> acceptanceReportGetter, Func<T> arrivalActionGetter, string label, Caravan caravan, PlanetTile pathDestination, WorldObject revalidateWorldClickTarget, Action<Action> confirmActionProxy = null) where T : CaravanArrivalAction
 		{
 			FloatMenuAcceptanceReport floatMenuAcceptanceReport = acceptanceReportGetter();
 			if (!floatMenuAcceptanceReport.Accepted && floatMenuAcceptanceReport.FailReason.NullOrEmpty() && floatMenuAcceptanceReport.FailMessage.NullOrEmpty())
@@ -20,14 +20,14 @@ namespace RimWorld.Planet
 			}
 			Action action = delegate
 			{
-				FloatMenuAcceptanceReport floatMenuAcceptanceReport3 = acceptanceReportGetter();
-				if (floatMenuAcceptanceReport3.Accepted)
+				FloatMenuAcceptanceReport floatMenuAcceptanceReport2 = acceptanceReportGetter();
+				if (floatMenuAcceptanceReport2.Accepted)
 				{
 					caravan.pather.StartPath(pathDestination, arrivalActionGetter(), repathImmediately: true);
 				}
-				else if (!floatMenuAcceptanceReport3.FailMessage.NullOrEmpty())
+				else if (!floatMenuAcceptanceReport2.FailMessage.NullOrEmpty())
 				{
-					Messages.Message(floatMenuAcceptanceReport3.FailMessage, new GlobalTargetInfo(pathDestination), MessageTypeDefOf.RejectInput, historical: false);
+					Messages.Message(floatMenuAcceptanceReport2.FailMessage, new GlobalTargetInfo(pathDestination), MessageTypeDefOf.RejectInput, historical: false);
 				}
 			};
 			yield return new FloatMenuOption(label, (confirmActionProxy == null) ? action : ((Action)delegate

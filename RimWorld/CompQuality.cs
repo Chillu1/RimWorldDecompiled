@@ -1,3 +1,4 @@
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -8,10 +9,16 @@ namespace RimWorld
 
 		public QualityCategory Quality => qualityInt;
 
-		public void SetQuality(QualityCategory q, ArtGenerationContext source)
+		public void SetQuality(QualityCategory q, ArtGenerationContext? source)
 		{
 			qualityInt = q;
-			parent.TryGetComp<CompArt>()?.InitializeArt(source);
+			CompArt compArt = parent.TryGetComp<CompArt>();
+			if (compArt != null && source.HasValue)
+			{
+				compArt.InitializeArt(source.Value);
+			}
+			parent.PostQualitySet();
+			parent.TryGetComp<CompFacilityQualityBased>()?.PostQualitySet();
 		}
 
 		public override void PostExposeData()
@@ -20,7 +27,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref qualityInt, "quality", QualityCategory.Awful);
 		}
 
-		public override void PostPostGeneratedForTrader(TraderKindDef trader, int forTile, Faction forFaction)
+		public override void PostPostGeneratedForTrader(TraderKindDef trader, PlanetTile forTile, Faction forFaction)
 		{
 			SetQuality(QualityUtility.GenerateQualityTraderItem(), ArtGenerationContext.Outsider);
 		}

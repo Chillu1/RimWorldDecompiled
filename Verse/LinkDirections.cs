@@ -5,10 +5,10 @@ namespace Verse
 	[Flags]
 	public enum LinkDirections : byte
 	{
-		None = 0x0,
-		Up = 0x1,
-		Right = 0x2,
-		Down = 0x4,
-		Left = 0x8
+		None = 0,
+		Up = 1,
+		Right = 2,
+		Down = 4,
+		Left = 8
 	}
 }

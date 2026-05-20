@@ -10,13 +10,15 @@ namespace RimWorld
 
 		public override void DrawGhost(ThingDef def, IntVec3 center, Rot4 rot, Color ghostCol, Thing thing = null)
 		{
-			(thing as MonumentMarker)?.DrawGhost_NewTmp(center, placingMode: true, rot);
+			if (thing is MonumentMarker monumentMarker)
+			{
+				monumentMarker.DrawGhost(center, placingMode: true, rot);
+			}
 		}
 
 		public override AcceptanceReport AllowsPlacing(BuildableDef checkingDef, IntVec3 loc, Rot4 rot, Map map, Thing thingToIgnore = null, Thing thing = null)
 		{
-			MonumentMarker monumentMarker = thing as MonumentMarker;
-			if (monumentMarker != null)
+			if (thing is MonumentMarker monumentMarker)
 			{
 				CellRect rect = monumentMarker.sketch.OccupiedRect.MovedBy(loc);
 				Blueprint_Install thingToIgnore2 = monumentMarker.FindMyBlueprint(rect, map);
@@ -44,12 +46,11 @@ namespace RimWorld
 				foreach (SketchBuildable buildable in monumentMarker.sketch.Buildables)
 				{
 					Thing spawnedBlueprintOrFrame = buildable.GetSpawnedBlueprintOrFrame(loc + buildable.pos, map);
-					SketchThing sketchThing;
 					if (spawnedBlueprintOrFrame != null)
 					{
 						tmpMonumentThings.Add(spawnedBlueprintOrFrame);
 					}
-					else if ((sketchThing = buildable as SketchThing) != null)
+					else if (buildable is SketchThing sketchThing)
 					{
 						Thing sameSpawned = sketchThing.GetSameSpawned(loc + sketchThing.pos, map);
 						if (sameSpawned != null)
@@ -69,15 +70,14 @@ namespace RimWorld
 						if (item2.InBounds(map))
 						{
 							Building firstBuilding = item2.GetFirstBuilding(map);
-							if (firstBuilding != null && !tmpMonumentThings.Contains(firstBuilding))
+							if ((firstBuilding == null || firstBuilding.def.building?.isPowerConduit != true) && firstBuilding != null && !tmpMonumentThings.Contains(firstBuilding))
 							{
 								tmpMonumentThings.Clear();
 								return "CannotPlaceMonumentOver".Translate(firstBuilding.LabelCap);
 							}
 						}
 					}
-					SketchBuildable sketchBuildable;
-					if ((sketchBuildable = entity2 as SketchBuildable) != null)
+					if (entity2 is SketchBuildable sketchBuildable)
 					{
 						Thing thing2 = sketchBuildable.FirstPermanentBlockerAt(loc + entity2.pos, map);
 						if (thing2 != null && !tmpMonumentThings.Contains(thing2))
@@ -92,7 +92,11 @@ namespace RimWorld
 					Building firstAdjacentBuilding = MonumentMarkerUtility.GetFirstAdjacentBuilding(entity3, loc, tmpMonumentThings, map);
 					if (firstAdjacentBuilding != null)
 					{
-						return "MonumentAdjacentToBuilding".Translate(firstAdjacentBuilding.LabelCap);
+						BuildingProperties building = firstAdjacentBuilding.def.building;
+						if (building != null && !building.isPowerConduit)
+						{
+							return "MonumentAdjacentToBuilding".Translate(firstAdjacentBuilding.LabelCap);
+						}
 					}
 					if (entity3.IsSpawningBlockedPermanently(loc + entity3.pos, map, thingToIgnore2))
 					{

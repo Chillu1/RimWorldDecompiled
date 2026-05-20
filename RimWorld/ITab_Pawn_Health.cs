@@ -5,19 +5,21 @@ namespace RimWorld
 {
 	public class ITab_Pawn_Health : ITab
 	{
-		private const int HideBloodLossTicksThreshold = 60000;
-
 		public const float Width = 630f;
 
 		private Pawn PawnForHealth
 		{
 			get
 			{
-				if (base.SelPawn != null)
+				if (SelPawn != null)
 				{
-					return base.SelPawn;
+					return SelPawn;
 				}
-				return (base.SelThing as Corpse)?.InnerPawn;
+				if (base.SelThing is Corpse corpse)
+				{
+					return corpse.InnerPawn;
+				}
+				return null;
 			}
 		}
 
@@ -34,11 +36,11 @@ namespace RimWorld
 			if (pawnForHealth == null)
 			{
 				Log.Error("Health tab found no selected pawn to display.");
-				return;
 			}
-			Corpse corpse = base.SelThing as Corpse;
-			bool showBloodLoss = corpse == null || corpse.Age < 60000;
-			HealthCardUtility.DrawPawnHealthCard(new Rect(0f, 20f, size.x, size.y - 20f), pawnForHealth, ShouldAllowOperations(), showBloodLoss, base.SelThing);
+			else
+			{
+				HealthCardUtility.DrawPawnHealthCard(new Rect(Vector2.zero, size), pawnForHealth, ShouldAllowOperations(), HealthCardUtility.ShowBloodLoss(base.SelThing), base.SelThing);
+			}
 		}
 
 		private bool ShouldAllowOperations()
@@ -49,6 +51,10 @@ namespace RimWorld
 				return false;
 			}
 			if (!base.SelThing.def.AllRecipes.Any((RecipeDef x) => x.AvailableNow && x.AvailableOnNow(pawn)))
+			{
+				return false;
+			}
+			if (pawn.IsMutant && !pawn.mutant.Def.entitledToMedicalCare)
 			{
 				return false;
 			}

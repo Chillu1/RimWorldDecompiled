@@ -5,6 +5,9 @@ namespace Verse
 {
 	public class RecipeMakerProperties
 	{
+		[MustTranslate]
+		public string label;
+
 		public int productCount = 1;
 
 		public int targetCountAdjustment = 1;
@@ -39,9 +42,17 @@ namespace Verse
 
 		public ResearchProjectDef researchPrerequisite;
 
+		public List<MemeDef> memePrerequisitesAny;
+
 		public List<ResearchProjectDef> researchPrerequisites;
 
 		[NoTranslate]
 		public List<string> factionPrerequisiteTags;
+
+		public bool mechanitorOnlyRecipe;
+
+		public bool fromIdeoBuildingPreceptOnly;
+
+		public int displayPriority = 99999;
 	}
 }

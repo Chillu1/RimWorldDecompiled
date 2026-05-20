@@ -6,25 +6,29 @@ namespace RimWorld
 	{
 		public Pawn pawn;
 
-		private Outfit curOutfit;
+		private ApparelPolicy curApparelPolicy;
 
 		public OutfitForcedHandler forcedHandler = new OutfitForcedHandler();
 
-		public Outfit CurrentOutfit
+		public ApparelPolicy CurrentApparelPolicy
 		{
 			get
 			{
-				if (curOutfit == null)
+				if (pawn.IsMutant && (pawn.mutant.Def.disableApparel || pawn.mutant.Def.disablePolicies))
 				{
-					curOutfit = Current.Game.outfitDatabase.DefaultOutfit();
+					return null;
 				}
-				return curOutfit;
+				if (curApparelPolicy == null)
+				{
+					curApparelPolicy = Current.Game.outfitDatabase.DefaultOutfit();
+				}
+				return curApparelPolicy;
 			}
 			set
 			{
-				if (curOutfit != value)
+				if (curApparelPolicy != value)
 				{
-					curOutfit = value;
+					curApparelPolicy = value;
 					if (pawn.mindState != null)
 					{
 						pawn.mindState.Notify_OutfitChanged();
@@ -44,7 +48,7 @@ namespace RimWorld
 
 		public void ExposeData()
 		{
-			Scribe_References.Look(ref curOutfit, "curOutfit");
+			Scribe_References.Look(ref curApparelPolicy, "curOutfit");
 			Scribe_Deep.Look(ref forcedHandler, "overrideHandler");
 		}
 	}

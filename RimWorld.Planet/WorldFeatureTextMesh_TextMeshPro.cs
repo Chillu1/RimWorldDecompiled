@@ -1,4 +1,5 @@
 using System;
+using LudeonTK;
 using TMPro;
 using UnityEngine;
 using Verse;
@@ -99,11 +100,11 @@ namespace RimWorld.Planet
 			Material[] sharedMaterials = textMesh.GetComponent<MeshRenderer>().sharedMaterials;
 			for (int i = 0; i < sharedMaterials.Length; i++)
 			{
-				sharedMaterials[i].renderQueue = WorldMaterials.FeatureNameRenderQueue;
+				sharedMaterials[i].renderQueue = 3610;
 			}
 		}
 
-		public override void WrapAroundPlanetSurface()
+		public override void WrapAroundPlanetSurface(PlanetLayer layer)
 		{
 			textMesh.ForceMeshUpdate();
 			TMP_TextInfo textInfo = textMesh.textInfo;
@@ -113,7 +114,7 @@ namespace RimWorld.Planet
 				return;
 			}
 			float num = textMesh.bounds.extents.x * 2f;
-			float num2 = Find.WorldGrid.DistOnSurfaceToAngle(num);
+			float num2 = layer.DistOnSurfaceToAngle(num);
 			Matrix4x4 localToWorldMatrix = textMesh.transform.localToWorldMatrix;
 			Matrix4x4 worldToLocalMatrix = textMesh.transform.worldToLocalMatrix;
 			for (int i = 0; i < characterCount; i++)
@@ -123,33 +124,33 @@ namespace RimWorld.Planet
 				{
 					int materialReferenceIndex = textMesh.textInfo.characterInfo[i].materialReferenceIndex;
 					int vertexIndex = tMP_CharacterInfo.vertexIndex;
-					Vector3 b = textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex] + textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 1] + textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 2] + textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 3];
-					b /= 4f;
-					float num3 = b.x / (num / 2f);
+					Vector3 vector = textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex] + textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 1] + textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 2] + textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 3];
+					vector /= 4f;
+					float num3 = vector.x / (num / 2f);
 					bool flag = num3 >= 0f;
 					num3 = Mathf.Abs(num3);
 					float num4 = num2 / 2f * num3;
 					float num5 = (180f - num4) / 2f;
-					float num6 = 200f * Mathf.Tan(num4 / 2f * ((float)Math.PI / 180f));
-					Vector3 vector = new Vector3(Mathf.Sin(num5 * ((float)Math.PI / 180f)) * num6 * (flag ? 1f : (-1f)), b.y, Mathf.Cos(num5 * ((float)Math.PI / 180f)) * num6);
-					Vector3 b2 = vector - b;
-					Vector3 a = textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex] + b2;
-					Vector3 a2 = textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 1] + b2;
-					Vector3 a3 = textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 2] + b2;
-					Vector3 a4 = textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 3] + b2;
-					Quaternion rotation = Quaternion.Euler(0f, num4 * (flag ? (-1f) : 1f), 0f);
-					a = rotation * (a - vector) + vector;
-					a2 = rotation * (a2 - vector) + vector;
-					a3 = rotation * (a3 - vector) + vector;
-					a4 = rotation * (a4 - vector) + vector;
-					a = worldToLocalMatrix.MultiplyPoint(localToWorldMatrix.MultiplyPoint(a).normalized * (100f + WorldAltitudeOffsets.WorldText));
-					a2 = worldToLocalMatrix.MultiplyPoint(localToWorldMatrix.MultiplyPoint(a2).normalized * (100f + WorldAltitudeOffsets.WorldText));
-					a3 = worldToLocalMatrix.MultiplyPoint(localToWorldMatrix.MultiplyPoint(a3).normalized * (100f + WorldAltitudeOffsets.WorldText));
-					a4 = worldToLocalMatrix.MultiplyPoint(localToWorldMatrix.MultiplyPoint(a4).normalized * (100f + WorldAltitudeOffsets.WorldText));
-					textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex] = a;
-					textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 1] = a2;
-					textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 2] = a3;
-					textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 3] = a4;
+					float num6 = 200f * Mathf.Tan(num4 / 2f * (MathF.PI / 180f));
+					Vector3 vector2 = new Vector3(Mathf.Sin(num5 * (MathF.PI / 180f)) * num6 * (flag ? 1f : (-1f)), vector.y, Mathf.Cos(num5 * (MathF.PI / 180f)) * num6);
+					Vector3 vector3 = vector2 - vector;
+					Vector3 vector4 = textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex] + vector3;
+					Vector3 vector5 = textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 1] + vector3;
+					Vector3 vector6 = textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 2] + vector3;
+					Vector3 vector7 = textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 3] + vector3;
+					Quaternion quaternion = Quaternion.Euler(0f, num4 * (flag ? (-1f) : 1f), 0f);
+					vector4 = quaternion * (vector4 - vector2) + vector2;
+					vector5 = quaternion * (vector5 - vector2) + vector2;
+					vector6 = quaternion * (vector6 - vector2) + vector2;
+					vector7 = quaternion * (vector7 - vector2) + vector2;
+					vector4 = worldToLocalMatrix.MultiplyPoint(localToWorldMatrix.MultiplyPoint(vector4).normalized * (layer.Radius + 0.4f));
+					vector5 = worldToLocalMatrix.MultiplyPoint(localToWorldMatrix.MultiplyPoint(vector5).normalized * (layer.Radius + 0.4f));
+					vector6 = worldToLocalMatrix.MultiplyPoint(localToWorldMatrix.MultiplyPoint(vector6).normalized * (layer.Radius + 0.4f));
+					vector7 = worldToLocalMatrix.MultiplyPoint(localToWorldMatrix.MultiplyPoint(vector7).normalized * (layer.Radius + 0.4f));
+					textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex] = vector4;
+					textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 1] = vector5;
+					textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 2] = vector6;
+					textMesh.textInfo.meshInfo[materialReferenceIndex].vertices[vertexIndex + 3] = vector7;
 				}
 			}
 			textMesh.UpdateVertexData(TMP_VertexDataUpdateFlags.All);

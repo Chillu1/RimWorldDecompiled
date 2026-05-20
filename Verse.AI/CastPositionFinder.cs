@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using LudeonTK;
 using RimWorld;
+using Unity.Collections;
 using UnityEngine;
 
 namespace Verse.AI
@@ -26,7 +28,7 @@ namespace Verse.AI
 
 		private static int inRadiusMark;
 
-		private static ByteGrid avoidGrid;
+		private static NativeArray<byte>.ReadOnly avoidGrid;
 
 		private static float maxRangeFromCasterSquared;
 
@@ -34,9 +36,11 @@ namespace Verse.AI
 
 		private static float maxRangeFromLocusSquared;
 
-		private static IntVec3 bestSpot = IntVec3.Invalid;
+		private static IntVec3 bestSpot;
 
-		private static float bestSpotPref = 0.001f;
+		private static float bestSpotPref;
+
+		private static NativeArray<byte> emptyByteArray;
 
 		private const float BaseAIPreference = 0.3f;
 
@@ -48,17 +52,29 @@ namespace Verse.AI
 
 		private const float CoverPreferenceFactor = 0.55f;
 
+		static CastPositionFinder()
+		{
+			bestSpot = IntVec3.Invalid;
+			bestSpotPref = 0.001f;
+			emptyByteArray = NativeArrayUtility.EmptyArray<byte>();
+			UnityData.DisposeStatic += delegate
+			{
+				emptyByteArray.Dispose();
+			};
+		}
+
 		public static bool TryFindCastPosition(CastPositionRequest newReq, out IntVec3 dest)
 		{
 			req = newReq;
 			casterLoc = req.caster.Position;
 			targetLoc = req.target.Position;
 			verb = req.verb;
-			avoidGrid = newReq.caster.GetAvoidGrid(onlyIfLordAllows: false);
+			avoidGrid = (newReq.caster.TryGetAvoidGrid(out var grid, onlyIfLordAllows: false) ? grid.Grid : emptyByteArray.AsReadOnly());
 			if (verb == null)
 			{
-				Log.Error(string.Concat(req.caster, " tried to find casting position without a verb."));
+				Log.Error(req.caster?.ToString() + " tried to find casting position without a verb.");
 				dest = IntVec3.Invalid;
+				req = default(CastPositionRequest);
 				return false;
 			}
 			if (req.maxRegions > 0)
@@ -68,6 +84,8 @@ namespace Verse.AI
 				{
 					Log.Error("TryFindCastPosition requiring region traversal but root region is null.");
 					dest = IntVec3.Invalid;
+					req = default(CastPositionRequest);
+					verb = null;
 					return false;
 				}
 				inRadiusMark = Rand.Int;
@@ -77,8 +95,11 @@ namespace Verse.AI
 					Region locusReg = req.locus.GetRegion(req.caster.Map);
 					if (locusReg == null)
 					{
-						Log.Error(string.Concat("locus ", req.locus, " has no region"));
+						IntVec3 locus = req.locus;
+						Log.Error("locus " + locus.ToString() + " has no region");
 						dest = IntVec3.Invalid;
+						req = default(CastPositionRequest);
+						verb = null;
 						return false;
 					}
 					if (locusReg.mark != inRadiusMark)
@@ -116,11 +137,24 @@ namespace Verse.AI
 			maxRangeFromLocusSquared = req.maxRangeFromLocus * req.maxRangeFromLocus;
 			rangeFromTarget = (req.caster.Position - req.target.Position).LengthHorizontal;
 			rangeFromTargetSquared = (req.caster.Position - req.target.Position).LengthHorizontalSquared;
-			optimalRangeSquared = verb.verbProps.range * 0.8f * (verb.verbProps.range * 0.8f);
+			optimalRangeSquared = verb.EffectiveRange * 0.8f * (verb.verbProps.range * 0.8f);
+			if (req.preferredCastPosition.HasValue && req.preferredCastPosition.Value.IsValid)
+			{
+				EvaluateCell(req.preferredCastPosition.Value);
+				if (bestSpot.IsValid && bestSpotPref > 0.001f)
+				{
+					dest = req.preferredCastPosition.Value;
+					req = default(CastPositionRequest);
+					verb = null;
+					return true;
+				}
+			}
 			EvaluateCell(req.caster.Position);
 			if ((double)bestSpotPref >= 1.0)
 			{
 				dest = req.caster.Position;
+				req = default(CastPositionRequest);
+				verb = null;
 				return true;
 			}
 			float slope = -1f / CellLine.Between(req.target.Position, req.caster.Position).Slope;
@@ -136,6 +170,8 @@ namespace Verse.AI
 			if (bestSpot.IsValid && bestSpotPref > 0.33f)
 			{
 				dest = bestSpot;
+				req = default(CastPositionRequest);
+				verb = null;
 				return true;
 			}
 			foreach (IntVec3 item2 in cellRect)
@@ -148,14 +184,22 @@ namespace Verse.AI
 			if (bestSpot.IsValid)
 			{
 				dest = bestSpot;
+				req = default(CastPositionRequest);
+				verb = null;
 				return true;
 			}
 			dest = casterLoc;
+			req = default(CastPositionRequest);
+			verb = null;
 			return false;
 		}
 
 		private static void EvaluateCell(IntVec3 c)
 		{
+			if (req.validator != null && !req.validator(c))
+			{
+				return;
+			}
 			if (maxRangeFromTargetSquared > 0.01f && maxRangeFromTargetSquared < 250000f && (float)(c - req.target.Position).LengthHorizontalSquared > maxRangeFromTargetSquared)
 			{
 				if (DebugViewSettings.drawCastPositionSearch)
@@ -184,7 +228,7 @@ namespace Verse.AI
 					return;
 				}
 			}
-			if (!c.Walkable(req.caster.Map))
+			if (!c.WalkableBy(req.caster.Map, req.caster) || (req.caster.Position != c && !c.InAllowedArea(req.caster)))
 			{
 				return;
 			}
@@ -205,9 +249,9 @@ namespace Verse.AI
 				return;
 			}
 			float num = CastPositionPreference(c);
-			if (avoidGrid != null)
+			if (avoidGrid.Length > 0)
 			{
-				byte b = avoidGrid[c];
+				byte b = avoidGrid[req.caster.Map.cellIndices.CellToIndex(c)];
 				num *= Mathf.Max(0.1f, (37.5f - (float)(int)b) / 37.5f);
 			}
 			if (DebugViewSettings.drawCastPositionSearch)
@@ -253,8 +297,7 @@ namespace Verse.AI
 			for (int i = 0; i < list.Count; i++)
 			{
 				Thing thing = list[i];
-				Fire fire = thing as Fire;
-				if (fire != null && fire.parent == null)
+				if (thing is Fire { parent: null })
 				{
 					return -1f;
 				}
@@ -299,7 +342,7 @@ namespace Verse.AI
 			}
 			if (!flag)
 			{
-				num *= 0.2f;
+				num *= 0.4f;
 			}
 			return num;
 		}

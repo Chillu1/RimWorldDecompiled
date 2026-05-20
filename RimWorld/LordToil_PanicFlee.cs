@@ -16,7 +16,7 @@ namespace RimWorld
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
 				Pawn pawn = lord.ownedPawns[i];
-				if (!HasFleeingDuty(pawn) || pawn.mindState.duty.def == DutyDefOf.ExitMapRandom)
+				if (!pawn.InAggroMentalState && (!HasFleeingDuty(pawn) || pawn.mindState.duty.def == DutyDefOf.ExitMapRandom))
 				{
 					pawn.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.PanicFlee);
 				}

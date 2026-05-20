@@ -5,13 +5,28 @@ namespace RimWorld
 	{
 		public static PawnsArrivalModeDef EdgeWalkIn;
 
+		public static PawnsArrivalModeDef EdgeWalkInGroups;
+
+		public static PawnsArrivalModeDef EdgeWalkInDistributed;
+
 		public static PawnsArrivalModeDef CenterDrop;
 
 		public static PawnsArrivalModeDef EdgeDrop;
 
+		public static PawnsArrivalModeDef SpecificDropDebug;
+
+		public static PawnsArrivalModeDef EmergeFromWater;
+
 		public static PawnsArrivalModeDef RandomDrop;
 
-		public static PawnsArrivalModeDef Shuttle;
+		[MayRequireAnomaly]
+		public static PawnsArrivalModeDef EdgeWalkInHateChanters;
+
+		[MayRequireAnomaly]
+		public static PawnsArrivalModeDef EdgeWalkInDistributedGroups;
+
+		[MayRequireAnomaly]
+		public static PawnsArrivalModeDef EdgeWalkInDarkness;
 
 		static PawnsArrivalModeDefOf()
 		{

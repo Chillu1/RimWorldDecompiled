@@ -7,9 +7,9 @@ namespace RimWorld
 {
 	public class Designator_Strip : Designator
 	{
-		public override int DraggableDimensions => 2;
-
 		protected override DesignationDef Designation => DesignationDefOf.Strip;
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
 
 		public Designator_Strip()
 		{

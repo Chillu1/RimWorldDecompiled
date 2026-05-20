@@ -33,6 +33,11 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<bool> useColonistsFromCaravanArg;
 
+		[NoTranslate]
+		public SlateRef<string> acceptedVisitorsSignal;
+
+		public SlateRef<List<Pawn>> visitors;
+
 		public SlateRef<bool> filterDeadPawnsFromLookTargets;
 
 		private const string RootSymbol = "root";
@@ -54,11 +59,11 @@ namespace RimWorld.QuestGen
 				questPart_Letter.letter = choiceLetter;
 				QuestGen.AddTextRequest("root", delegate(string x)
 				{
-					choiceLetter.label = x;
+					choiceLetter.Label = x;
 				}, QuestGenUtility.MergeRules(labelRules.GetValue(slate), label.GetValue(slate), "root"));
 				QuestGen.AddTextRequest("root", delegate(string x)
 				{
-					choiceLetter.text = x;
+					choiceLetter.Text = x;
 				}, QuestGenUtility.MergeRules(textRules.GetValue(slate), text.GetValue(slate), "root"));
 			}
 			else
@@ -70,7 +75,9 @@ namespace RimWorld.QuestGen
 			questPart_Letter.chosenPawnSignal = QuestGenUtility.HardcodedSignalWithQuestID(chosenPawnSignal.GetValue(slate));
 			questPart_Letter.useColonistsOnMap = useColonistsOnMap.GetValue(slate);
 			questPart_Letter.useColonistsFromCaravanArg = useColonistsFromCaravanArg.GetValue(slate);
-			questPart_Letter.signalListenMode = signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly;
+			questPart_Letter.acceptedVisitorsSignal = QuestGenUtility.HardcodedSignalWithQuestID(acceptedVisitorsSignal.GetValue(slate));
+			questPart_Letter.visitors = visitors.GetValue(slate);
+			questPart_Letter.signalListenMode = signalListenMode.GetValue(slate).GetValueOrDefault();
 			questPart_Letter.filterDeadPawnsFromLookTargets = filterDeadPawnsFromLookTargets.GetValue(slate);
 			QuestGen.quest.AddPart(questPart_Letter);
 		}

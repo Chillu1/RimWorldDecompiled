@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Verse;
 
 namespace RimWorld
@@ -16,10 +17,6 @@ namespace RimWorld
 		{
 			if (onlyIfOriginAllows)
 			{
-				if (!GenConstruct.CanBuildOnTerrain(place, origin, map, Rot4.North) && origin.GetTerrain(map) != place)
-				{
-					return;
-				}
 				bool flag = false;
 				for (int i = 0; i < 4; i++)
 				{
@@ -40,36 +37,43 @@ namespace RimWorld
 				return;
 			}
 			base.Place(map, position, rockDef, origin, distance);
-			if (place is TerrainDef)
+			TerrainDef terrainDef = place as TerrainDef;
+			if (terrainDef != null)
 			{
 				if (proximitySpacing != 0)
 				{
 					Log.ErrorOnce("Proximity spacing used for road terrain placement; not yet supported", 60936625);
 				}
-				TerrainDef terrainDef = map.terrainGrid.TerrainAt(position);
-				TerrainDef terrainDef2 = (TerrainDef)place;
-				if (terrainDef2 == TerrainDefOf.FlagstoneSandstone)
+				TerrainDef terrainDef2 = map.terrainGrid.TerrainAt(position);
+				if (terrainDef == TerrainDefOf.FlagstoneSandstone)
 				{
-					terrainDef2 = rockDef;
+					terrainDef = rockDef;
 				}
-				if (terrainDef2 == TerrainDefOf.Bridge)
+				if (terrainDef.bridge)
 				{
-					if (terrainDef == TerrainDefOf.WaterDeep)
+					if (terrainDef2 == TerrainDefOf.WaterDeep)
 					{
 						map.terrainGrid.SetTerrain(position, TerrainDefOf.WaterShallow);
 					}
-					if (terrainDef == TerrainDefOf.WaterOceanDeep)
+					if (terrainDef2 == TerrainDefOf.WaterOceanDeep)
 					{
 						map.terrainGrid.SetTerrain(position, TerrainDefOf.WaterOceanShallow);
 					}
 				}
-				if (GenConstruct.CanBuildOnTerrain(terrainDef2, position, map, Rot4.North) && (!GenConstruct.CanBuildOnTerrain(TerrainDefOf.Bridge, position, map, Rot4.North) || terrainDef2 == TerrainDefOf.Bridge) && terrainDef != TerrainDefOf.Bridge)
+				if (GenConstruct.CanBuildOnTerrain(terrainDef, position, map, Rot4.North) && (!GenConstruct.CanBuildOnTerrain(TerrainDefOf.Bridge, position, map, Rot4.North) || terrainDef.bridge) && !terrainDef2.bridge)
 				{
-					if (terrainDef.HasTag("Road") && !terrainDef.Removable)
+					if (terrainDef2.HasTag("Road") && !terrainDef2.Removable)
 					{
 						map.terrainGrid.SetTerrain(position, TerrainDefOf.Gravel);
 					}
-					map.terrainGrid.SetTerrain(position, terrainDef2);
+					if (terrainDef.isFoundation)
+					{
+						map.terrainGrid.SetFoundation(position, terrainDef);
+					}
+					else
+					{
+						map.terrainGrid.SetTerrain(position, terrainDef);
+					}
 				}
 				if (position.OnEdge(map) && !map.roadInfo.roadEdgeTiles.Contains(position))
 				{
@@ -78,15 +82,21 @@ namespace RimWorld
 			}
 			else if (place is ThingDef)
 			{
-				if (GenConstruct.CanBuildOnTerrain(place, position, map, Rot4.North) && (proximitySpacing <= 0 || GenClosest.ClosestThing_Global(position, map.listerThings.ThingsOfDef((ThingDef)place), proximitySpacing) == null))
+				if (!GenConstruct.CanBuildOnTerrain(place, position, map, Rot4.North) || (proximitySpacing > 0 && GenClosest.ClosestThing_Global(position, map.listerThings.ThingsOfDef((ThingDef)place), proximitySpacing) != null))
 				{
-					while (position.GetThingList(map).Count > 0)
-					{
-						position.GetThingList(map)[0].Destroy();
-					}
-					RoadDefGenStep_DryWithFallback.PlaceWorker(map, position, TerrainDefOf.Gravel);
-					GenSpawn.Spawn(ThingMaker.MakeThing((ThingDef)place), position, map);
+					return;
 				}
+				List<Thing> thingList = position.GetThingList(map);
+				for (int num = thingList.Count - 1; num >= 0; num--)
+				{
+					if (!thingList[num].def.destroyable)
+					{
+						return;
+					}
+					thingList[num].Destroy();
+				}
+				RoadDefGenStep_DryWithFallback.PlaceWorker(map, position, TerrainDefOf.Gravel);
+				GenSpawn.Spawn(ThingMaker.MakeThing((ThingDef)place), position, map);
 			}
 			else
 			{

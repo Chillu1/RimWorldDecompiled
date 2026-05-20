@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using RimWorld;
 
 namespace Verse
@@ -7,7 +8,7 @@ namespace Verse
 	{
 		public VerbTracker verbTracker;
 
-		private Pawn Holder => PrimaryVerb.CasterPawn;
+		protected Pawn Holder => (parent?.ParentHolder as Pawn_EquipmentTracker)?.pawn;
 
 		public List<Verb> AllVerbs => verbTracker.AllVerbs;
 
@@ -50,17 +51,21 @@ namespace Verse
 
 		public override void CompTick()
 		{
-			base.CompTick();
 			verbTracker.VerbsTick();
 		}
 
-		public void Notify_EquipmentLost()
+		public override void Notify_Unequipped(Pawn p)
 		{
 			List<Verb> allVerbs = AllVerbs;
 			for (int i = 0; i < allVerbs.Count; i++)
 			{
 				allVerbs[i].Notify_EquipmentLost();
 			}
+		}
+
+		public virtual IEnumerable<Gizmo> CompGetEquippedGizmosExtra()
+		{
+			return Enumerable.Empty<Gizmo>();
 		}
 
 		string IVerbOwner.UniqueVerbOwnerID()
@@ -70,10 +75,9 @@ namespace Verse
 
 		bool IVerbOwner.VerbsStillUsableBy(Pawn p)
 		{
-			Apparel apparel = parent as Apparel;
-			if (apparel != null)
+			if (parent is Apparel item)
 			{
-				return p.apparel.WornApparel.Contains(apparel);
+				return p.apparel.WornApparel.Contains(item);
 			}
 			return p.equipment.AllEquipmentListForReading.Contains(parent);
 		}

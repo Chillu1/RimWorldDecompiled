@@ -29,6 +29,10 @@ namespace Verse
 
 		private static List<int> workingListZ = new List<int>();
 
+		private static List<int> cardinalIndices = new List<int> { 0, 1, 2, 3 };
+
+		private static List<int> adjacentIndices = new List<int> { 0, 1, 2, 3, 4, 5, 6, 7 };
+
 		private static List<IntVec3> mapEdgeCells;
 
 		private static IntVec3 mapEdgeCellsSize;
@@ -48,6 +52,36 @@ namespace Verse
 		public static IntVec3 RandomCell(Map map)
 		{
 			return new IntVec3(Rand.Range(0, map.Size.x), 0, Rand.Range(0, map.Size.z));
+		}
+
+		public static bool TryFindRandomCell(Map map, Predicate<IntVec3> validator, out IntVec3 result)
+		{
+			for (int i = 0; i < 1000; i++)
+			{
+				result = RandomCell(map);
+				if (validator == null || validator(result))
+				{
+					return true;
+				}
+			}
+			workingCells.Clear();
+			for (int j = 0; j < map.Size.x; j++)
+			{
+				for (int k = 0; k < map.Size.z; k++)
+				{
+					if (validator(new IntVec3(j, 0, k)))
+					{
+						workingCells.Add(new IntVec3(j, 0, k));
+					}
+				}
+			}
+			if (workingCells.Empty())
+			{
+				result = RandomCell(map);
+				return false;
+			}
+			result = workingCells.RandomElement();
+			return true;
 		}
 
 		public static IntVec3 RandomEdgeCell(Map map)
@@ -174,13 +208,28 @@ namespace Verse
 			}, maxRegions, traversableRegionTypes);
 		}
 
-		public static bool TryFindRandomReachableCellNear(IntVec3 root, Map map, float radius, TraverseParms traverseParms, Predicate<IntVec3> cellValidator, Predicate<Region> regionValidator, out IntVec3 result, int maxRegions = 999999)
+		public static bool TryFindRandomReachableNearbyCell(IntVec3 root, Map map, float radius, TraverseParms traverseParms, Predicate<IntVec3> cellValidator, Predicate<Region> regionValidator, out IntVec3 result, int maxRegions = 999999)
 		{
 			if (map == null)
 			{
 				Log.ErrorOnce("Tried to find reachable cell in a null map", 61037855);
 				result = IntVec3.Invalid;
 				return false;
+			}
+			if (!root.Standable(map))
+			{
+				Thing thing = root.GetThingList(map).FirstOrDefault((Thing x) => x.def.passability != Traversability.Standable);
+				if (thing != null)
+				{
+					foreach (IntVec3 item in GenAdj.CellsAdjacent8Way(thing))
+					{
+						if (item.Standable(map))
+						{
+							root = item;
+							break;
+						}
+					}
+				}
 			}
 			Region region = root.GetRegion(map);
 			if (region == null)
@@ -210,6 +259,45 @@ namespace Verse
 			return false;
 		}
 
+		public static bool TryFindRandomReachableCellNearPosition(IntVec3 root, IntVec3 targetPos, Map map, float radius, TraverseParms traverseParms, Predicate<IntVec3> cellValidator, Predicate<Region> regionValidator, out IntVec3 result, int maxRegions = 999999)
+		{
+			if (map == null)
+			{
+				Log.ErrorOnce("Tried to find reachable cell in a null map", 61037855);
+				result = IntVec3.Invalid;
+				return false;
+			}
+			Region region = root.GetRegion(map);
+			if (region == null)
+			{
+				result = IntVec3.Invalid;
+				return false;
+			}
+			workingRegions.Clear();
+			float radSquared = radius * radius;
+			RegionTraverser.BreadthFirstTraverse(region, (Region from, Region r) => r.Allows(traverseParms, isDestination: true) && (regionValidator == null || regionValidator(r)), delegate(Region r)
+			{
+				if (radius > 1000f || r.extentsClose.ClosestDistSquaredTo(targetPos) <= radSquared)
+				{
+					workingRegions.Add(r);
+				}
+				return false;
+			}, maxRegions);
+			while (workingRegions.Count > 0)
+			{
+				Region region2 = workingRegions.RandomElementByWeight((Region r) => r.CellCount);
+				if (region2.TryFindRandomCellInRegion((IntVec3 c) => (float)(c - targetPos).LengthHorizontalSquared <= radSquared && (cellValidator == null || cellValidator(c)), out result))
+				{
+					workingRegions.Clear();
+					return true;
+				}
+				workingRegions.Remove(region2);
+			}
+			result = IntVec3.Invalid;
+			workingRegions.Clear();
+			return false;
+		}
+
 		public static IntVec3 RandomClosewalkCellNear(IntVec3 root, Map map, int radius, Predicate<IntVec3> extraValidator = null)
 		{
 			if (TryRandomClosewalkCellNear(root, map, radius, out var result, extraValidator))
@@ -221,14 +309,16 @@ namespace Verse
 
 		public static bool TryRandomClosewalkCellNear(IntVec3 root, Map map, int radius, out IntVec3 result, Predicate<IntVec3> extraValidator = null)
 		{
-			return TryFindRandomReachableCellNear(root, map, radius, TraverseParms.For(TraverseMode.NoPassClosedDoors), (IntVec3 c) => c.Standable(map) && (extraValidator == null || extraValidator(c)), null, out result);
+			return TryFindRandomReachableNearbyCell(root, map, radius, TraverseParms.For(TraverseMode.NoPassClosedDoors).WithFenceblocked(forceFenceblocked: true), (IntVec3 c) => c.Standable(map) && (extraValidator == null || extraValidator(c)), null, out result);
 		}
 
-		public static IntVec3 RandomClosewalkCellNearNotForbidden(IntVec3 root, Map map, int radius, Pawn pawn)
+		public static IntVec3 RandomClosewalkCellNearNotForbidden(Pawn pawn, int radius, Predicate<IntVec3> validator = null)
 		{
-			if (!TryFindRandomReachableCellNear(root, map, radius, TraverseParms.For(TraverseMode.NoPassClosedDoors), (IntVec3 c) => !c.IsForbidden(pawn) && c.Standable(map), null, out var result))
+			IntVec3 position = pawn.Position;
+			Map map = pawn.Map;
+			if (!TryFindRandomReachableNearbyCell(position, map, radius, TraverseParms.For(TraverseMode.NoPassClosedDoors).WithFenceblockedOf(pawn), (IntVec3 c) => !c.IsForbidden(pawn) && c.Standable(map) && (validator == null || validator(c)), null, out var result))
 			{
-				return RandomClosewalkCellNear(root, map, radius);
+				return RandomClosewalkCellNear(position, map, radius, validator);
 			}
 			return result;
 		}
@@ -351,22 +441,35 @@ namespace Verse
 			return false;
 		}
 
+		public static bool TryFindRandomAdjacentCell(IntVec3 root, Map map, Predicate<IntVec3> validator, out IntVec3 result, bool diagonal = true)
+		{
+			IntVec3[] array = (diagonal ? GenAdj.AdjacentCells : GenAdj.CardinalDirections);
+			List<int> obj = (diagonal ? adjacentIndices : cardinalIndices);
+			obj.Shuffle();
+			foreach (int item in obj)
+			{
+				result = root + array[item];
+				if (validator(result))
+				{
+					return true;
+				}
+			}
+			result = IntVec3.Invalid;
+			return false;
+		}
+
 		public static bool TryFindRandomPawnExitCell(Pawn searcher, out IntVec3 result)
 		{
-			return TryFindRandomEdgeCellWith((IntVec3 c) => !searcher.Map.roofGrid.Roofed(c) && c.Walkable(searcher.Map) && searcher.CanReach(c, PathEndMode.OnCell, Danger.Some), searcher.Map, 0f, out result);
+			return TryFindRandomEdgeCellWith((IntVec3 c) => (searcher.Map.TileInfo.AllowRoofedEdgeWalkIn || !searcher.Map.roofGrid.Roofed(c)) && c.WalkableBy(searcher.Map, searcher) && searcher.CanReach(c, PathEndMode.OnCell, Danger.Some), searcher.Map, 0f, out result);
 		}
 
 		public static bool TryFindRandomEdgeCellWith(Predicate<IntVec3> validator, Map map, float roadChance, out IntVec3 result)
 		{
-			if (Rand.Chance(roadChance))
+			if (Rand.Chance(roadChance) && map.roadInfo.roadEdgeTiles.Where((IntVec3 c) => validator(c)).TryRandomElement(out result))
 			{
-				bool flag = map.roadInfo.roadEdgeTiles.Where((IntVec3 c) => validator(c)).TryRandomElement(out result);
-				if (flag)
-				{
-					return flag;
-				}
+				return true;
 			}
-			for (int i = 0; i < 100; i++)
+			for (int num = 0; num < 100; num++)
 			{
 				result = RandomEdgeCell(map);
 				if (validator(result))
@@ -384,19 +487,19 @@ namespace Verse
 				}
 			}
 			mapEdgeCells.Shuffle();
-			for (int j = 0; j < mapEdgeCells.Count; j++)
+			for (int num2 = 0; num2 < mapEdgeCells.Count; num2++)
 			{
 				try
 				{
-					if (validator(mapEdgeCells[j]))
+					if (validator(mapEdgeCells[num2]))
 					{
-						result = mapEdgeCells[j];
+						result = mapEdgeCells[num2];
 						return true;
 					}
 				}
-				catch (Exception ex)
+				catch (Exception arg)
 				{
-					Log.Error(string.Concat("TryFindRandomEdgeCellWith exception validating ", mapEdgeCells[j], ": ", ex.ToString()));
+					Log.Error($"TryFindRandomEdgeCellWith exception validating {mapEdgeCells[num2]}: {arg}");
 				}
 			}
 			result = IntVec3.Invalid;
@@ -413,7 +516,7 @@ namespace Verse
 					return flag;
 				}
 			}
-			for (int i = 0; i < 100; i++)
+			for (int num = 0; num < 100; num++)
 			{
 				result = RandomEdgeCell(dir, map);
 				if (validator(result))
@@ -433,20 +536,20 @@ namespace Verse
 			}
 			List<IntVec3> list = mapSingleEdgeCells[asInt];
 			list.Shuffle();
-			int j = 0;
-			for (int count = list.Count; j < count; j++)
+			int num2 = 0;
+			for (int count = list.Count; num2 < count; num2++)
 			{
 				try
 				{
-					if (validator(list[j]))
+					if (validator(list[num2]))
 					{
-						result = list[j];
+						result = list[num2];
 						return true;
 					}
 				}
 				catch (Exception ex)
 				{
-					Log.Error(string.Concat("TryFindRandomEdgeCellWith exception validating ", list[j], ": ", ex.ToString()));
+					Log.Error("TryFindRandomEdgeCellWith exception validating " + list[num2].ToString() + ": " + ex.ToString());
 				}
 			}
 			result = IntVec3.Invalid;
@@ -483,7 +586,7 @@ namespace Verse
 					float num4 = 1f;
 					if (from.x != to.x && from.z != to.z)
 					{
-						num4 = 1.41421354f;
+						num4 = 1.4142135f;
 					}
 					if (!to.Standable(forPawn.Map))
 					{
@@ -493,8 +596,7 @@ namespace Verse
 					{
 						num4 = ((to.GetThingList(forPawn.Map).Find((Thing x) => x is Pawn && x.HostileTo(forPawn)) == null) ? (num4 + 15f) : (num4 + 40f));
 					}
-					Building_Door building_Door = to.GetEdifice(forPawn.Map) as Building_Door;
-					if (building_Door != null && !building_Door.FreePassage)
+					if (to.GetEdifice(forPawn.Map) is Building_Door { FreePassage: false } building_Door)
 					{
 						num4 = ((!building_Door.PawnCanOpen(forPawn)) ? (num4 + 50f) : (num4 + 6f));
 					}
@@ -507,7 +609,7 @@ namespace Verse
 				float num2 = 0f;
 				foreach (KeyValuePair<IntVec3, float> tmpDistance in tmpDistances)
 				{
-					if ((!cell.IsValid || !(tmpDistance.Value >= num2)) && tmpDistance.Key.Walkable(forPawn.Map) && !PawnUtility.AnyPawnBlockingPathAt(tmpDistance.Key, forPawn))
+					if ((!cell.IsValid || !(tmpDistance.Value >= num2)) && tmpDistance.Key.WalkableBy(forPawn.Map, forPawn) && !PawnUtility.AnyPawnBlockingPathAt(tmpDistance.Key, forPawn))
 					{
 						Building_Door door = tmpDistance.Key.GetDoor(forPawn.Map);
 						if (door == null || door.FreePassage)
@@ -533,7 +635,7 @@ namespace Verse
 							Log.Error("Too many iterations.");
 							break;
 						}
-						if (intVec.Walkable(forPawn.Map))
+						if (intVec.WalkableBy(forPawn.Map, forPawn))
 						{
 							Building_Door door2 = intVec.GetDoor(forPawn.Map);
 							if (door2 == null || door2.FreePassage)
@@ -588,20 +690,14 @@ namespace Verse
 
 		public static IntVec3 RandomSpawnCellForPawnNear(IntVec3 root, Map map, int firstTryWithRadius = 4)
 		{
-			if (TryFindRandomSpawnCellForPawnNear_NewTmp(root, map, out var result, firstTryWithRadius))
+			if (TryFindRandomSpawnCellForPawnNear(root, map, out var result, firstTryWithRadius))
 			{
 				return result;
 			}
 			return root;
 		}
 
-		[Obsolete("Only need this overload to not break mod compatibility.")]
-		public static bool TryFindRandomSpawnCellForPawnNear(IntVec3 root, Map map, out IntVec3 result, int firstTryWithRadius = 4)
-		{
-			return TryFindRandomSpawnCellForPawnNear_NewTmp(root, map, out result, firstTryWithRadius);
-		}
-
-		public static bool TryFindRandomSpawnCellForPawnNear_NewTmp(IntVec3 root, Map map, out IntVec3 result, int firstTryWithRadius = 4, Predicate<IntVec3> extraValidator = null)
+		public static bool TryFindRandomSpawnCellForPawnNear(IntVec3 root, Map map, out IntVec3 result, int firstTryWithRadius = 4, Predicate<IntVec3> extraValidator = null)
 		{
 			if (root.Standable(map) && root.GetFirstPawn(map) == null)
 			{
@@ -612,7 +708,7 @@ namespace Verse
 			int num = firstTryWithRadius;
 			for (int i = 0; i < 3; i++)
 			{
-				if (TryFindRandomReachableCellNear(root, map, num, TraverseParms.For(TraverseMode.NoPassClosedDoors), (IntVec3 c) => c.Standable(map) && (rootFogged || !c.Fogged(map)) && c.GetFirstPawn(map) == null && (extraValidator == null || extraValidator(c)), null, out result))
+				if (TryFindRandomReachableNearbyCell(root, map, num, TraverseParms.For(TraverseMode.NoPassClosedDoors), (IntVec3 c) => c.Standable(map) && (rootFogged || !c.Fogged(map)) && c.GetFirstPawn(map) == null && (extraValidator == null || extraValidator(c)), null, out result))
 				{
 					return true;
 				}
@@ -687,7 +783,7 @@ namespace Verse
 				float num3 = 0f;
 				for (int k = 0; k < tmpUniqueWipedThings.Count; k++)
 				{
-					if (tmpUniqueWipedThings[k].def.category == ThingCategory.Building && !tmpUniqueWipedThings[k].def.costList.NullOrEmpty() && tmpUniqueWipedThings[k].def.costStuffCount == 0)
+					if (tmpUniqueWipedThings[k].def.category == ThingCategory.Building && !tmpUniqueWipedThings[k].def.CostList.NullOrEmpty() && tmpUniqueWipedThings[k].def.CostStuffCount == 0)
 					{
 						List<ThingDefCountClass> list = tmpUniqueWipedThings[k].CostListAdjusted();
 						for (int l = 0; l < list.Count; l++)
@@ -731,15 +827,25 @@ namespace Verse
 			for (int i = 0; i < 4; i++)
 			{
 				IntVec3 intVec = x + GenAdj.CardinalDirections[i];
-				if (intVec.InBounds(pawn.Map) && intVec.Walkable(pawn.Map))
+				if (intVec.InBounds(pawn.Map) && intVec.WalkableBy(pawn.Map, pawn) && (!(intVec.GetEdifice(pawn.Map) is Building_Door building_Door) || building_Door.CanPhysicallyPass(pawn)))
 				{
-					Building_Door building_Door = intVec.GetEdifice(pawn.Map) as Building_Door;
-					if (building_Door == null || building_Door.CanPhysicallyPass(pawn))
-					{
-						yield return intVec;
-					}
+					yield return intVec;
 				}
 			}
+		}
+
+		public static IntVec3 StandableCellNear(IntVec3 root, Map map, float radius, Predicate<IntVec3> validator = null)
+		{
+			int num = GenRadial.NumCellsInRadius(radius);
+			for (int i = 0; i < num; i++)
+			{
+				IntVec3 intVec = GenRadial.RadialPattern[i] + root;
+				if ((validator == null || validator(intVec)) && intVec.Standable(map))
+				{
+					return intVec;
+				}
+			}
+			return IntVec3.Invalid;
 		}
 	}
 }

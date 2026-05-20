@@ -1,3 +1,4 @@
+using LudeonTK;
 using UnityEngine;
 using Verse;
 
@@ -47,6 +48,14 @@ namespace RimWorld
 		[TweakValue("Graphics", 0f, 1f)]
 		private static float FallRangeEnd = 0.1f;
 
+		private static readonly int FallSrc = Shader.PropertyToID("_FallSrc");
+
+		private static readonly int FallDst = Shader.PropertyToID("_FallDst");
+
+		private static readonly int FallRange = Shader.PropertyToID("_FallRange");
+
+		private static readonly int Controls = Shader.PropertyToID("_FallGlobalControls");
+
 		public static float GetFallColorFactor(float latitude, int dayOfYear)
 		{
 			float a = GenCelestial.AverageGlow(latitude, dayOfYear);
@@ -57,20 +66,21 @@ namespace RimWorld
 
 		public static void SetFallShaderGlobals(Map map)
 		{
-			if (!FallIntensityOverride)
-			{
-				Shader.SetGlobalFloat(value: GetFallColorFactor(Find.WorldGrid.LongLatOf(map.Tile).y, GenLocalDate.DayOfYear(map)), nameID: ShaderPropertyIDs.FallIntensity);
-			}
-			else
+			if (FallIntensityOverride)
 			{
 				Shader.SetGlobalFloat(ShaderPropertyIDs.FallIntensity, FallIntensity);
 			}
-			Shader.SetGlobalInt("_FallGlobalControls", FallGlobalControls ? 1 : 0);
+			else
+			{
+				Vector2 vector = Find.WorldGrid.LongLatOf(map.Tile);
+				Shader.SetGlobalFloat(ShaderPropertyIDs.FallIntensity, GetFallColorFactor(vector.y, GenLocalDate.DayOfYear(map)));
+			}
+			Shader.SetGlobalInt(Controls, FallGlobalControls ? 1 : 0);
 			if (FallGlobalControls)
 			{
-				Shader.SetGlobalVector("_FallSrc", new Vector3(FallSrcR, FallSrcG, FallSrcB));
-				Shader.SetGlobalVector("_FallDst", new Vector3(FallDstR, FallDstG, FallDstB));
-				Shader.SetGlobalVector("_FallRange", new Vector3(FallRangeBegin, FallRangeEnd));
+				Shader.SetGlobalVector(FallSrc, new Vector3(FallSrcR, FallSrcG, FallSrcB));
+				Shader.SetGlobalVector(FallDst, new Vector3(FallDstR, FallDstG, FallDstB));
+				Shader.SetGlobalVector(FallRange, new Vector3(FallRangeBegin, FallRangeEnd));
 			}
 		}
 	}

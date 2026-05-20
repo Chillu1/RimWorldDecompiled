@@ -5,6 +5,10 @@ namespace RimWorld
 {
 	public class JobGiver_GiveSpeech : ThinkNode_JobGiver
 	{
+		public SoundDef soundDefMale;
+
+		public SoundDef soundDefFemale;
+
 		protected override Job TryGiveJob(Pawn pawn)
 		{
 			PawnDuty duty = pawn.mindState.duty;
@@ -12,8 +16,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			Building_Throne building_Throne = duty.focusSecond.Thing as Building_Throne;
-			if (building_Throne == null || building_Throne.AssignedPawn != pawn)
+			if (!(duty.focusSecond.Thing is Building_Throne building_Throne) || building_Throne.AssignedPawn != pawn)
 			{
 				return null;
 			}
@@ -21,7 +24,18 @@ namespace RimWorld
 			{
 				return null;
 			}
-			return JobMaker.MakeJob(JobDefOf.GiveSpeech, duty.focusSecond);
+			Job job = JobMaker.MakeJob(JobDefOf.GiveSpeech, duty.focusSecond);
+			job.speechSoundMale = soundDefMale ?? SoundDefOf.Speech_Leader_Male;
+			job.speechSoundFemale = soundDefFemale ?? SoundDefOf.Speech_Leader_Female;
+			return job;
+		}
+
+		public override ThinkNode DeepCopy(bool resolve = true)
+		{
+			JobGiver_GiveSpeech obj = (JobGiver_GiveSpeech)base.DeepCopy(resolve);
+			obj.soundDefMale = soundDefMale;
+			obj.soundDefFemale = soundDefFemale;
+			return obj;
 		}
 	}
 }

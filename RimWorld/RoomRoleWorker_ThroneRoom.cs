@@ -28,5 +28,18 @@ namespace RimWorld
 			}
 			return (flag && Validate(room) == null) ? 10000 : 0;
 		}
+
+		public override float GetScoreDeltaIfBuildingPlaced(Room room, ThingDef buildingDef)
+		{
+			if (room.Role == RoomRoleDefOf.ThroneRoom)
+			{
+				return 0f;
+			}
+			if (buildingDef != ThingDefOf.Throne)
+			{
+				return 0f;
+			}
+			return (Validate(room) == null) ? 10000 : 0;
+		}
 	}
 }

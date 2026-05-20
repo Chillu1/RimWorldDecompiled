@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Verse
@@ -70,10 +71,7 @@ namespace Verse
 				AddCell(root);
 				return;
 			}
-			map.floodFiller.FloodFill(root, (IntVec3 x) => newReg.extentsLimit.Contains(x) && x.GetExpectedRegionType(map) == newReg.type, delegate(IntVec3 x)
-			{
-				AddCell(x);
-			});
+			map.floodFiller.FloodFill(root, (Predicate<IntVec3>)((IntVec3 x) => newReg.extentsLimit.Contains(x) && x.GetExpectedRegionType(map) == newReg.type), (Action<IntVec3>)AddCell, int.MaxValue, rememberParents: false, (IEnumerable<IntVec3>)null);
 		}
 
 		private void AddCell(IntVec3 c)

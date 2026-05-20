@@ -29,8 +29,7 @@ namespace RimWorld
 
 		public void Activate(InstructionDef id)
 		{
-			Lesson_Instruction lesson_Instruction = activeLesson as Lesson_Instruction;
-			if (lesson_Instruction == null || id != lesson_Instruction.def)
+			if (!(activeLesson is Lesson_Instruction lesson_Instruction) || id != lesson_Instruction.def)
 			{
 				Lesson_Instruction lesson_Instruction2 = (Lesson_Instruction)Activator.CreateInstance(id.instructionClass);
 				lesson_Instruction2.def = id;
@@ -41,8 +40,7 @@ namespace RimWorld
 
 		public void Activate(Lesson lesson)
 		{
-			Lesson_Note lesson_Note = lesson as Lesson_Note;
-			if (lesson_Note != null && activeLesson != null)
+			if (lesson is Lesson_Note lesson_Note && activeLesson != null)
 			{
 				lesson_Note.doFadeIn = false;
 			}

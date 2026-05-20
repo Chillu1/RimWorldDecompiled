@@ -5,10 +5,10 @@ namespace RimWorld.Planet
 {
 	public static class GenWorldClosest
 	{
-		public static bool TryFindClosestTile(int rootTile, Predicate<int> predicate, out int foundTile, int maxTilesToScan = int.MaxValue, bool canSearchThroughImpassable = true)
+		public static bool TryFindClosestTile(PlanetTile rootTile, Predicate<PlanetTile> predicate, out PlanetTile foundTile, int maxTilesToScan = int.MaxValue, bool canSearchThroughImpassable = true)
 		{
-			int foundTileLocal = -1;
-			Find.WorldFloodFiller.FloodFill(rootTile, (int x) => canSearchThroughImpassable || !Find.World.Impassable(x), delegate(int t)
+			PlanetTile foundTileLocal = PlanetTile.Invalid;
+			rootTile.Layer.Filler.FloodFill(rootTile, (PlanetTile x) => canSearchThroughImpassable || !Find.World.Impassable(x), delegate(PlanetTile t)
 			{
 				bool num = predicate(t);
 				if (num)
@@ -18,12 +18,12 @@ namespace RimWorld.Planet
 				return num;
 			}, maxTilesToScan);
 			foundTile = foundTileLocal;
-			return foundTileLocal >= 0;
+			return foundTileLocal.Valid;
 		}
 
-		public static bool TryFindClosestPassableTile(int rootTile, out int foundTile)
+		public static bool TryFindClosestPassableTile(PlanetTile rootTile, out PlanetTile foundTile)
 		{
-			return TryFindClosestTile(rootTile, (int x) => !Find.World.Impassable(x), out foundTile);
+			return TryFindClosestTile(rootTile, (PlanetTile x) => !Find.World.Impassable(x), out foundTile);
 		}
 	}
 }

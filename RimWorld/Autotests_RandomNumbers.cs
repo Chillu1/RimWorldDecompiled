@@ -93,28 +93,28 @@ namespace RimWorld
 		private static void CheckIntsDistribution()
 		{
 			List<int> list = new List<int>();
-			for (int j = 0; j < 1000000; j++)
+			for (int i = 0; i < 1000000; i++)
 			{
 				int num = Rand.RangeInclusive(-2, 1);
 				list.Add(num + 2);
 			}
 			Log.Message("Ints distribution (should be even):");
-			int i;
-			for (i = 0; i < 4; i++)
+			int j;
+			for (j = 0; j < 4; j++)
 			{
-				Log.Message(i + ": " + (float)list.Count((int x) => x == i) / (float)list.Count() * 100f + "%");
+				Log.Message(j + ": " + (float)list.Count((int x) => x == j) / (float)list.Count() * 100f + "%");
 			}
 		}
 
 		private static void CheckSeed()
 		{
 			int seed = (Rand.Seed = 10);
-			int @int = Rand.Int;
-			int int2 = Rand.Int;
+			int num2 = Rand.Int;
+			int num3 = Rand.Int;
 			Rand.Seed = seed;
-			int int3 = Rand.Int;
-			int int4 = Rand.Int;
-			if (@int != int3 || int2 != int4)
+			int num4 = Rand.Int;
+			int num5 = Rand.Int;
+			if (num2 != num4 || num3 != num5)
 			{
 				Log.Error("Same seed, different values.");
 			}
@@ -129,20 +129,20 @@ namespace RimWorld
 		private static void TestPushSeed(int seed1, int seed2)
 		{
 			Rand.Seed = seed1;
-			int @int = Rand.Int;
-			int int2 = Rand.Int;
+			int num = Rand.Int;
+			int num2 = Rand.Int;
 			Rand.PushState();
 			Rand.Seed = seed2;
-			int int3 = Rand.Int;
+			int num3 = Rand.Int;
 			Rand.PopState();
 			Rand.Seed = seed1;
-			int int4 = Rand.Int;
+			int num4 = Rand.Int;
 			Rand.PushState();
 			Rand.Seed = seed2;
-			int int5 = Rand.Int;
+			int num5 = Rand.Int;
 			Rand.PopState();
-			int int6 = Rand.Int;
-			if (@int != int4 || int2 != int6 || int3 != int5)
+			int num6 = Rand.Int;
+			if (num != num4 || num2 != num6 || num3 != num5)
 			{
 				Log.Error("PushSeed broken.");
 			}

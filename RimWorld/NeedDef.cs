@@ -12,15 +12,33 @@ namespace RimWorld
 
 		public bool colonistAndPrisonersOnly;
 
+		public bool playerMechsOnly;
+
 		public bool colonistsOnly;
+
+		public bool slavesOnly;
 
 		public bool onlyIfCausedByHediff;
 
+		public bool onlyIfCausedByGene;
+
+		public bool onlyIfCausedByTrait;
+
+		public bool onlyIfCausedByIdeo;
+
 		public bool neverOnPrisoner;
+
+		public bool neverOnSlave;
 
 		public List<RoyalTitleDef> titleRequiredAny;
 
 		public List<HediffDef> hediffRequiredAny;
+
+		public List<PreceptDef> nullifyingPrecepts;
+
+		public List<CompProperties> requiredComps;
+
+		public DevelopmentalStage developmentalStageFilter = DevelopmentalStage.Child | DevelopmentalStage.Adult;
 
 		public bool showOnNeedList = true;
 
@@ -36,6 +54,8 @@ namespace RimWorld
 		public bool showForCaravanMembers;
 
 		public bool scaleBar;
+
+		public bool showUnitTicks;
 
 		public float fallPerDay = 0.5f;
 

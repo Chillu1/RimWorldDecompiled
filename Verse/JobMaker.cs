@@ -74,5 +74,11 @@ namespace Verse
 				SimplePool<Job>.Return(job);
 			}
 		}
+
+		public static Job WithCount(this Job job, int count)
+		{
+			job.count = count;
+			return job;
+		}
 	}
 }

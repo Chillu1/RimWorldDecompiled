@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace Verse
 {
-	public abstract class AttachableThing : Thing
+	public abstract class AttachableThing : ThingWithComps, IThingGlower
 	{
 		public Thing parent;
 
@@ -12,15 +12,17 @@ namespace Verse
 			{
 				if (parent != null)
 				{
-					return parent.DrawPos + Vector3.up * (3f / 70f) * 0.9f;
+					return parent.DrawPos + Vector3.up * 0.03292683f;
 				}
 				return base.DrawPos;
 			}
 		}
 
-		public abstract string InspectStringAddon
+		public abstract string InspectStringAddon { get; }
+
+		public virtual bool ShouldBeLitNow()
 		{
-			get;
+			return parent != null;
 		}
 
 		public override void ExposeData()
@@ -33,17 +35,16 @@ namespace Verse
 			}
 		}
 
-		public virtual void AttachTo(Thing parent)
+		public virtual void AttachTo(Thing newParent)
 		{
-			this.parent = parent;
-			CompAttachBase compAttachBase = parent.TryGetComp<CompAttachBase>();
-			if (compAttachBase == null)
+			parent = newParent;
+			if (!newParent.TryGetComp(out CompAttachBase comp))
 			{
-				Log.Error(string.Concat("Cannot attach ", this, " to ", parent, ": parent has no CompAttachBase."));
+				Log.Error("Cannot attach " + this?.ToString() + " to " + newParent?.ToString() + ": parent has no CompAttachBase.");
 			}
 			else
 			{
-				compAttachBase.AddAttachment(this);
+				comp.AddAttachment(this);
 			}
 		}
 

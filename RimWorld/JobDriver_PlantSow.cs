@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Verse;
 using Verse.AI;
@@ -23,35 +24,48 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.Touch).FailOn(() => PlantUtility.AdjacentSowBlocker(job.plantDefToSow, base.TargetA.Cell, base.Map) != null).FailOn(() => !job.plantDefToSow.CanEverPlantAt_NewTemp(base.TargetLocA, base.Map));
-			Toil sowToil = new Toil();
+			yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.Touch).FailOn(() => PlantUtility.AdjacentSowBlocker(job.plantDefToSow, base.TargetA.Cell, base.Map) != null).FailOn(() => !job.plantDefToSow.CanNowPlantAt(base.TargetLocA, base.Map))
+				.FailOn((Func<bool>)delegate
+				{
+					List<Thing> thingList = base.TargetA.Cell.GetThingList(base.Map);
+					for (int i = 0; i < thingList.Count; i++)
+					{
+						if (thingList[i].def == job.plantDefToSow)
+						{
+							return true;
+						}
+					}
+					return false;
+				});
+			Toil sowToil = ToilMaker.MakeToil("MakeNewToils");
 			sowToil.initAction = delegate
 			{
 				base.TargetThingA = GenSpawn.Spawn(job.plantDefToSow, base.TargetLocA, base.Map);
 				pawn.Reserve(base.TargetThingA, sowToil.actor.CurJob);
-				Plant obj = (Plant)base.TargetThingA;
-				obj.Growth = 0f;
-				obj.sown = true;
+				Plant plant = Plant;
+				plant.Growth = 0f;
+				plant.sown = true;
 			};
-			sowToil.tickAction = delegate
+			sowToil.tickIntervalAction = delegate(int delta)
 			{
 				Pawn actor = sowToil.actor;
-				if (actor.skills != null)
+				actor.skills?.Learn(SkillDefOf.Plants, 0.085f * (float)delta);
+				Plant plant = Plant;
+				if (plant.LifeStage != PlantLifeStage.Sowing)
 				{
-					actor.skills.Learn(SkillDefOf.Plants, 0.085f);
+					Log.Error($"{this} getting sowing work while not in Sowing life stage.");
 				}
-				float statValue = actor.GetStatValue(StatDefOf.PlantWorkSpeed);
-				Plant plant2 = Plant;
-				if (plant2.LifeStage != 0)
+				sowWorkDone += actor.GetStatValue(StatDefOf.PlantWorkSpeed) * (float)delta;
+				if (!(sowWorkDone < plant.def.plant.sowWork))
 				{
-					Log.Error(string.Concat(this, " getting sowing work while not in Sowing life stage."));
-				}
-				sowWorkDone += statValue;
-				if (sowWorkDone >= plant2.def.plant.sowWork)
-				{
-					plant2.Growth = 0.05f;
-					base.Map.mapDrawer.MapMeshDirty(plant2.Position, MapMeshFlag.Things);
+					plant.Growth = 0.0001f;
+					base.Map.mapDrawer.MapMeshDirty(plant.Position, MapMeshFlagDefOf.Things);
 					actor.records.Increment(RecordDefOf.PlantsSown);
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.SowedPlant, actor.Named(HistoryEventArgsNames.Doer)));
+					if (plant.def.plant.humanFoodPlant)
+					{
+						Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.SowedHumanFoodPlant, actor.Named(HistoryEventArgsNames.Doer)));
+					}
 					ReadyForNextToil();
 				}
 			};

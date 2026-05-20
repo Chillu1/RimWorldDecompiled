@@ -35,9 +35,15 @@ namespace RimWorld
 			}
 		}
 
-		public override bool PlayerHasResearched()
+		public override bool PlayerCanBuildNow()
 		{
 			return thingDef.IsResearchFinished;
+		}
+
+		public override void ExposeData()
+		{
+			base.ExposeData();
+			Scribe_Defs.Look(ref thingDef, "thingDef");
 		}
 	}
 }

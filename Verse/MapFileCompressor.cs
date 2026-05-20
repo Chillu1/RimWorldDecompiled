@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using RimWorld;
 
 namespace Verse
 {
@@ -19,7 +18,7 @@ namespace Verse
 
 		public void ExposeData()
 		{
-			DataExposeUtility.ByteArray(ref compressedData, "compressedThingMap");
+			DataExposeUtility.LookByteArray(ref compressedData, "compressedThingMap");
 		}
 
 		public void BuildCompressedString()
@@ -38,7 +37,8 @@ namespace Verse
 				{
 					if (num != 0)
 					{
-						Log.Error(string.Concat("Found two compressible things in ", curSq, ". The last was ", item));
+						IntVec3 intVec = curSq;
+						Log.Error("Found two compressible things in " + intVec.ToString() + ". The last was " + item);
 					}
 					num = item.def.shortHash;
 				}
@@ -51,17 +51,17 @@ namespace Verse
 			Dictionary<ushort, ThingDef> thingDefsByShortHash = new Dictionary<ushort, ThingDef>();
 			foreach (ThingDef allDef in DefDatabase<ThingDef>.AllDefs)
 			{
-				if (thingDefsByShortHash.ContainsKey(allDef.shortHash))
+				if (thingDefsByShortHash.TryGetValue(allDef.shortHash, out var value))
 				{
-					Log.Error(string.Concat("Hash collision between ", allDef, " and  ", thingDefsByShortHash[allDef.shortHash], ": both have short hash ", allDef.shortHash));
+					Log.Error($"Hash collision between {allDef} and  {value}: both have short hash {allDef.shortHash}");
 				}
 				else
 				{
 					thingDefsByShortHash.Add(allDef.shortHash, allDef);
 				}
 			}
-			int major = VersionControl.MajorFromVersionString(ScribeMetaHeaderUtility.loadedGameVersion);
-			int minor = VersionControl.MinorFromVersionString(ScribeMetaHeaderUtility.loadedGameVersion);
+			int major = ScribeMetaHeaderUtility.loadedGameVersionMajor;
+			int minor = ScribeMetaHeaderUtility.loadedGameVersionMinor;
 			List<Thing> loadables = new List<Thing>();
 			MapSerializeUtility.LoadUshort(compressedData, map, delegate(IntVec3 c, ushort val)
 			{
@@ -93,13 +93,20 @@ namespace Verse
 					{
 						try
 						{
-							Thing thing = ThingMaker.MakeThing(thingDef);
-							thing.SetPositionDirect(c);
-							loadables.Add(thing);
+							if (!thingDef.saveCompressible)
+							{
+								Log.Warning("Tried loading non-compressible thing as compressed thing: " + thingDef.defName);
+							}
+							else
+							{
+								Thing thing = ThingMaker.MakeThing(thingDef);
+								thing.SetPositionDirect(c);
+								loadables.Add(thing);
+							}
 						}
-						catch (Exception arg)
+						catch (Exception ex2)
 						{
-							Log.Error("Could not instantiate compressed thing: " + arg);
+							Log.Error("Could not instantiate compressed thing: " + ex2);
 						}
 					}
 				}

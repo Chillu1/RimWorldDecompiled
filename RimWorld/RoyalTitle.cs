@@ -1,4 +1,3 @@
-using System;
 using UnityEngine;
 using Verse;
 
@@ -24,11 +23,13 @@ namespace RimWorld
 
 		public string Label => def.GetLabelFor(pawn);
 
-		public float RoomRequirementGracePeriodDaysLeft => Mathf.Max((180000 - (GenTicks.TicksGame - receivedTick)).TicksToDays(), 0f);
+		private int RoomRequirementsGracePeriodTicksLeft => Mathf.Max(180000 - (GenTicks.TicksGame - receivedTick), MoveColonyUtility.TitleAndRoleRequirementGracePeriodTicksLeft, 0);
+
+		public float RoomRequirementGracePeriodDaysLeft => RoomRequirementsGracePeriodTicksLeft.TicksToDays();
 
 		public bool RoomRequirementGracePeriodActive(Pawn pawn)
 		{
-			if (GenTicks.TicksGame - receivedTick < 180000)
+			if (RoomRequirementsGracePeriodTicksLeft > 0)
 			{
 				return !pawn.IsQuestLodger();
 			}
@@ -47,18 +48,12 @@ namespace RimWorld
 			pawn = other.pawn;
 		}
 
-		public void RoyalTitleTick_NewTemp()
+		public void RoyalTitleTick(int delta)
 		{
-			if (pawn.IsHashIntervalTick(833) && conceited && pawn.Spawned && pawn.IsFreeColonist && (!pawn.IsQuestLodger() || pawn.LodgerAllowedDecrees()) && def.decreeMtbDays > 0f && pawn.Awake() && Rand.MTBEventOccurs(def.decreeMtbDays, 60000f, 833f) && (float)(Find.TickManager.TicksGame - pawn.royalty.lastDecreeTicks) >= def.decreeMinIntervalDays * 60000f)
+			if (pawn.IsHashIntervalTick(833, delta) && conceited && pawn.Spawned && pawn.IsFreeColonist && (!pawn.IsQuestLodger() || pawn.LodgerAllowedDecrees()) && def.decreeMtbDays > 0f && pawn.Awake() && Rand.MTBEventOccurs(def.decreeMtbDays, 60000f, 833f) && (float)(Find.TickManager.TicksGame - pawn.royalty.lastDecreeTicks) >= def.decreeMinIntervalDays * 60000f)
 			{
 				pawn.royalty.IssueDecree(causedByMentalBreak: false);
 			}
-		}
-
-		[Obsolete("Will be removed in the future")]
-		public void RoyalTitleTick(Pawn pawn)
-		{
-			RoyalTitleTick_NewTemp();
 		}
 
 		public void ExposeData()

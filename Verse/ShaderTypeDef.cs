@@ -7,6 +7,9 @@ namespace Verse
 		[NoTranslate]
 		public string shaderPath;
 
+		[NoTranslate]
+		public string uiShaderPath;
+
 		[Unsaved(false)]
 		private Shader shaderInt;
 
@@ -14,9 +17,9 @@ namespace Verse
 		{
 			get
 			{
-				if (shaderInt == null)
+				if ((object)shaderInt == null)
 				{
-					shaderInt = ShaderDatabase.LoadShader(shaderPath);
+					shaderInt = ShaderDatabase.LoadShader(this);
 				}
 				return shaderInt;
 			}

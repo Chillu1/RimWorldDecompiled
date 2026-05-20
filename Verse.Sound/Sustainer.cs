@@ -39,7 +39,7 @@ namespace Verse.Sound
 				{
 					if (Prefs.DevMode)
 					{
-						Log.Error(string.Concat("Sustainer ", def, " info is ", info, " but its worldRootObject is null"));
+						Log.Error($"Sustainer {def} info is {info} but its worldRootObject is null");
 					}
 					return 0f;
 				}
@@ -59,9 +59,9 @@ namespace Verse.Sound
 				}
 				if (def.HasSubSoundsInWorld)
 				{
-					if (info.IsOnCamera)
+					if (!info.forcedPlayOnCamera && info.IsOnCamera)
 					{
-						Log.Error("Playing sound " + def.ToString() + " on camera, but it has sub-sounds in the world.");
+						Log.Error($"Playing sound {def} on camera, but it has sub-sounds in the world.");
 					}
 					worldRootObject = new GameObject("SustainerRootObject_" + def.defName);
 					UpdateRootObjectPosition();
@@ -80,11 +80,19 @@ namespace Verse.Sound
 					subSustainers.Add(new SubSustainer(this, def.subSounds[i]));
 				}
 			}
-			LongEventHandler.ExecuteWhenFinished(delegate
+			if (Current.ProgramState != ProgramState.Playing)
+			{
+				LongEventHandler.ExecuteWhenFinished(delegate
+				{
+					lastMaintainTick = Find.TickManager.TicksGame;
+					lastMaintainFrame = Time.frameCount;
+				});
+			}
+			else
 			{
 				lastMaintainTick = Find.TickManager.TicksGame;
 				lastMaintainFrame = Time.frameCount;
-			});
+			}
 		}
 
 		public void SustainerUpdate()
@@ -94,6 +102,14 @@ namespace Verse.Sound
 				if (info.Maintenance == MaintenanceType.PerTick)
 				{
 					if (Find.TickManager.TicksGame > lastMaintainTick + 1)
+					{
+						End();
+						return;
+					}
+				}
+				else if (info.Maintenance == MaintenanceType.PerTickRare)
+				{
+					if (Find.TickManager.TicksGame > lastMaintainTick + 250)
 					{
 						End();
 						return;
@@ -125,9 +141,23 @@ namespace Verse.Sound
 
 		private void UpdateRootObjectPosition()
 		{
+			Vector3 zero = Vector3.zero;
+			if (info.forcedPlayOnCamera)
+			{
+				zero = Find.Camera.gameObject.transform.position;
+			}
+			else
+			{
+				zero = info.Maker.Cell.ToVector3ShiftedWithAltitude(0f);
+				Thing thing = info.Maker.Thing;
+				if (thing != null)
+				{
+					zero = thing.DrawPos.Yto0();
+				}
+			}
 			if (worldRootObject != null)
 			{
-				worldRootObject.transform.position = info.Maker.Cell.ToVector3ShiftedWithAltitude(0f);
+				worldRootObject.transform.position = zero;
 			}
 		}
 
@@ -135,9 +165,9 @@ namespace Verse.Sound
 		{
 			if (Ended)
 			{
-				Log.Error("Tried to maintain ended sustainer: " + def);
+				Log.Error($"Tried to maintain ended sustainer: {def}");
 			}
-			else if (info.Maintenance == MaintenanceType.PerTick)
+			else if (info.Maintenance == MaintenanceType.PerTick || info.Maintenance == MaintenanceType.PerTickRare)
 			{
 				lastMaintainTick = Find.TickManager.TicksGame;
 			}
@@ -150,6 +180,10 @@ namespace Verse.Sound
 		public void End()
 		{
 			endRealTime = Time.realtimeSinceStartup;
+			if (def.sustainFadeoutStartSound != null && def.sustainFadeoutTime >= 0.001f)
+			{
+				PlaySoundOnMapOrCamera(def.sustainFadeoutStartSound);
+			}
 			if (def.sustainFadeoutTime < 0.001f)
 			{
 				Cleanup();
@@ -168,19 +202,7 @@ namespace Verse.Sound
 			}
 			if (def.sustainStopSound != null)
 			{
-				if (worldRootObject != null)
-				{
-					Map map = info.Maker.Map;
-					if (map != null)
-					{
-						SoundInfo soundInfo = SoundInfo.InMap(new TargetInfo(worldRootObject.transform.position.ToIntVec3(), map));
-						def.sustainStopSound.PlayOneShot(soundInfo);
-					}
-				}
-				else
-				{
-					def.sustainStopSound.PlayOneShot(SoundInfo.OnCamera());
-				}
+				PlaySoundOnMapOrCamera(def.sustainStopSound);
 			}
 			if (worldRootObject != null)
 			{
@@ -189,14 +211,31 @@ namespace Verse.Sound
 			DebugSoundEventsLog.Notify_SustainerEnded(this, info);
 		}
 
+		private void PlaySoundOnMapOrCamera(SoundDef soundDef)
+		{
+			if (worldRootObject != null)
+			{
+				Map map = info.Maker.Map;
+				if (map != null)
+				{
+					SoundInfo soundInfo = SoundInfo.InMap(new TargetInfo(worldRootObject.transform.position.ToIntVec3(), map));
+					soundDef.PlayOneShot(soundInfo);
+				}
+			}
+			else
+			{
+				soundDef.PlayOneShot(SoundInfo.OnCamera());
+			}
+		}
+
 		public string DebugString()
 		{
 			string defName = def.defName;
-			defName = defName + "\n  inScopePercent=" + scopeFader.inScopePercent;
-			defName = defName + "\n  CameraDistanceSquared=" + CameraDistanceSquared;
+			defName += $"\n  inScopePercent={scopeFader.inScopePercent}";
+			defName += $"\n  CameraDistanceSquared={CameraDistanceSquared}";
 			foreach (SubSustainer subSustainer in subSustainers)
 			{
-				defName = defName + "\n  sub: " + subSustainer;
+				defName += $"\n  sub: {subSustainer}";
 			}
 			return defName;
 		}

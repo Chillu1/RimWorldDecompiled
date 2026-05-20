@@ -4,13 +4,15 @@ using Verse;
 
 namespace RimWorld
 {
-	public class Designator_Mine : Designator
+	public class Designator_Mine : Designator_Cells
 	{
-		public override int DraggableDimensions => 2;
+		private static readonly List<string> tmpIdeoMemberNames = new List<string>();
 
 		public override bool DragDrawMeasurements => true;
 
 		protected override DesignationDef Designation => DesignationDefOf.Mine;
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Mine;
 
 		public Designator_Mine()
 		{
@@ -21,6 +23,7 @@ namespace RimWorld
 			soundDragSustain = SoundDefOf.Designate_DragStandard;
 			soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
 			soundSucceeded = SoundDefOf.Designate_Mine;
+			removeAllOtherDesignationDefs = new DesignationDef[1] { DesignationDefOf.MineVein };
 			hotKey = KeyBindingDefOf.Misc10;
 			tutorTag = "Mine";
 		}
@@ -62,6 +65,10 @@ namespace RimWorld
 			{
 				return AcceptanceReport.WasRejected;
 			}
+			if (base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.MineVein) != null)
+			{
+				return AcceptanceReport.WasRejected;
+			}
 			return true;
 		}
 
@@ -69,6 +76,7 @@ namespace RimWorld
 		{
 			base.Map.designationManager.AddDesignation(new Designation(loc, Designation));
 			base.Map.designationManager.TryRemoveDesignation(loc, DesignationDefOf.SmoothWall);
+			PossiblyWarnPlayerOnDesignatingMining();
 			if (DebugSettings.godMode)
 			{
 				loc.GetFirstMineable(base.Map)?.DestroyMined(null);
@@ -91,9 +99,25 @@ namespace RimWorld
 			GenUI.RenderMouseoverBracket();
 		}
 
-		public override void RenderHighlight(List<IntVec3> dragCells)
+		protected static void PossiblyWarnPlayerOnDesignatingMining()
 		{
-			DesignatorUtility.RenderHighlightOverSelectableCells(this, dragCells);
+			if (!ModsConfig.IdeologyActive)
+			{
+				return;
+			}
+			tmpIdeoMemberNames.Clear();
+			foreach (Ideo allIdeo in Faction.OfPlayer.ideos.AllIdeos)
+			{
+				if (allIdeo.WarnPlayerOnDesignateMine)
+				{
+					tmpIdeoMemberNames.Add(Find.ActiveLanguageWorker.Pluralize(allIdeo.memberName));
+				}
+			}
+			if (tmpIdeoMemberNames.Any())
+			{
+				Messages.Message("MessageWarningPlayerDesignatedMining".Translate(tmpIdeoMemberNames.ToCommaList(useAnd: true)), MessageTypeDefOf.CautionInput, historical: false);
+			}
+			tmpIdeoMemberNames.Clear();
 		}
 	}
 }

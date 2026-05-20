@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using RimWorld;
 
 namespace Verse.AI
 {
@@ -29,6 +31,10 @@ namespace Verse.AI
 		public void ExposeData()
 		{
 			Scribe_Collections.Look(ref jobs, "jobs", LookMode.Deep);
+			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			{
+				jobs.RemoveAll((QueuedJob j) => j.job?.def == null);
+			}
 		}
 
 		public void EnqueueFirst(Job j, JobTag? tag = null)
@@ -41,11 +47,22 @@ namespace Verse.AI
 			jobs.Add(new QueuedJob(j, tag));
 		}
 
+		public void Clear(Pawn pawn, bool canReturnToPool)
+		{
+			for (int i = 0; i < jobs.Count; i++)
+			{
+				QueuedJob queuedJob = jobs[i];
+				jobs[i] = null;
+				queuedJob.Cleanup(pawn, canReturnToPool);
+			}
+			jobs.Clear();
+		}
+
 		public bool Contains(Job j)
 		{
 			for (int i = 0; i < jobs.Count; i++)
 			{
-				if (jobs[i].job == j)
+				if (jobs[i]?.job == j)
 				{
 					return true;
 				}
@@ -106,8 +123,53 @@ namespace Verse.AI
 		public JobQueue Capture()
 		{
 			JobQueue jobQueue = new JobQueue();
-			jobQueue.jobs.AddRange(jobs);
+			foreach (QueuedJob job in jobs)
+			{
+				jobQueue.jobs.Add(new QueuedJob(job));
+			}
 			return jobQueue;
+		}
+
+		public void RemoveAll(Pawn pawn, Predicate<Job> filter)
+		{
+			for (int i = 0; i < jobs.Count; i++)
+			{
+				QueuedJob queuedJob = jobs[i];
+				if (filter(queuedJob.job))
+				{
+					jobs[i] = null;
+					queuedJob.Cleanup(pawn, canReturnToPool: true);
+				}
+			}
+			jobs.RemoveAll((QueuedJob job) => job == null);
+		}
+
+		public void RemoveAllWorkType(Pawn pawn, WorkTypeDef wType, bool hardDisable)
+		{
+			for (int i = 0; i < jobs.Count; i++)
+			{
+				QueuedJob queuedJob = jobs[i];
+				if (queuedJob.job.workGiverDef != null && queuedJob.job.workGiverDef.workType == wType && (hardDisable || !queuedJob.job.playerForced))
+				{
+					jobs[i] = null;
+					queuedJob.Cleanup(pawn, canReturnToPool: true);
+				}
+			}
+			jobs.RemoveAll((QueuedJob job) => job == null);
+		}
+
+		public void RemoveAllJoyKind(Pawn pawn, JoyKindDef joyKind)
+		{
+			for (int i = 0; i < jobs.Count; i++)
+			{
+				QueuedJob queuedJob = jobs[i];
+				if (queuedJob.job.def.joyKind == joyKind)
+				{
+					jobs[i] = null;
+					queuedJob.Cleanup(pawn, canReturnToPool: true);
+				}
+			}
+			jobs.RemoveAll((QueuedJob job) => job == null);
 		}
 	}
 }

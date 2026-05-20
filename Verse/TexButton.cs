@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Verse
 {
 	[StaticConstructorOnStartup]
-	internal class TexButton
+	public class TexButton
 	{
 		public static readonly Texture2D CloseXBig = ContentFinder<Texture2D>.Get("UI/Widgets/CloseX");
 
@@ -11,7 +11,7 @@ namespace Verse
 
 		public static readonly Texture2D NextBig = ContentFinder<Texture2D>.Get("UI/Widgets/NextArrow");
 
-		public static readonly Texture2D DeleteX = ContentFinder<Texture2D>.Get("UI/Buttons/Delete");
+		public static readonly Texture2D Delete = ContentFinder<Texture2D>.Get("UI/Buttons/Dismiss");
 
 		public static readonly Texture2D ReorderUp = ContentFinder<Texture2D>.Get("UI/Buttons/ReorderUp");
 
@@ -22,6 +22,8 @@ namespace Verse
 		public static readonly Texture2D Minus = ContentFinder<Texture2D>.Get("UI/Buttons/Minus");
 
 		public static readonly Texture2D Suspend = ContentFinder<Texture2D>.Get("UI/Buttons/Suspend");
+
+		public static readonly Texture2D PlaceholderImage = ContentFinder<Texture2D>.Get("PlaceholderImage");
 
 		public static readonly Texture2D SelectOverlappingNext = ContentFinder<Texture2D>.Get("UI/Buttons/SelectNextOverlapping");
 
@@ -35,6 +37,8 @@ namespace Verse
 
 		public static readonly Texture2D RenounceTitle = ContentFinder<Texture2D>.Get("UI/Buttons/Renounce");
 
+		public static readonly Texture2D ExecuteColonist = ContentFinder<Texture2D>.Get("UI/Buttons/Execute");
+
 		public static readonly Texture2D Copy = ContentFinder<Texture2D>.Get("UI/Buttons/Copy");
 
 		public static readonly Texture2D Paste = ContentFinder<Texture2D>.Get("UI/Buttons/Paste");
@@ -45,6 +49,14 @@ namespace Verse
 
 		public static readonly Texture2D DragHash = ContentFinder<Texture2D>.Get("UI/Buttons/DragHash");
 
+		public static readonly Texture2D Infinity = ContentFinder<Texture2D>.Get("UI/Buttons/Infinity");
+
+		public static readonly Texture2D Search = ContentFinder<Texture2D>.Get("UI/Widgets/Search");
+
+		public static readonly Texture2D SearchButton = ContentFinder<Texture2D>.Get("UI/Widgets/SearchToggle");
+
+		public static readonly Texture2D CodexButton = ContentFinder<Texture2D>.Get("UI/Buttons/OpenCodex");
+
 		public static readonly Texture2D ToggleLog = ContentFinder<Texture2D>.Get("UI/Buttons/DevRoot/ToggleLog");
 
 		public static readonly Texture2D OpenDebugActionsMenu = ContentFinder<Texture2D>.Get("UI/Buttons/DevRoot/OpenDebugActionsMenu");
@@ -53,11 +65,15 @@ namespace Verse
 
 		public static readonly Texture2D OpenInspectSettings = ContentFinder<Texture2D>.Get("UI/Buttons/DevRoot/OpenInspectSettings");
 
-		public static readonly Texture2D ToggleGodMode = ContentFinder<Texture2D>.Get("UI/Buttons/DevRoot/ToggleGodMode");
+		public static readonly Texture2D GodModeDisabled = ContentFinder<Texture2D>.Get("UI/Buttons/DevRoot/GodModeDisabled");
 
-		public static readonly Texture2D TogglePauseOnError = ContentFinder<Texture2D>.Get("UI/Buttons/DevRoot/TogglePauseOnError");
+		public static readonly Texture2D GodModeEnabled = ContentFinder<Texture2D>.Get("UI/Buttons/DevRoot/GodModeEnabled");
 
 		public static readonly Texture2D ToggleTweak = ContentFinder<Texture2D>.Get("UI/Buttons/DevRoot/ToggleTweak");
+
+		public static readonly Texture2D ToggleDevPalette = ContentFinder<Texture2D>.Get("UI/Buttons/DevRoot/ToggleDevPalette");
+
+		public static readonly Texture2D HotReloadDefs = ContentFinder<Texture2D>.Get("UI/Buttons/DevRoot/HotReloadDefs");
 
 		public static readonly Texture2D Add = ContentFinder<Texture2D>.Get("UI/Buttons/Dev/Add");
 
@@ -83,8 +99,6 @@ namespace Verse
 
 		public static readonly Texture2D RangeMatch = ContentFinder<Texture2D>.Get("UI/Buttons/Dev/RangeMatch");
 
-		public static readonly Texture2D InspectModeToggle = ContentFinder<Texture2D>.Get("UI/Buttons/Dev/InspectModeToggle");
-
 		public static readonly Texture2D CenterOnPointsTex = ContentFinder<Texture2D>.Get("UI/Buttons/Dev/CenterOnPoints");
 
 		public static readonly Texture2D CurveResetTex = ContentFinder<Texture2D>.Get("UI/Buttons/Dev/CurveReset");
@@ -105,7 +119,13 @@ namespace Verse
 
 		public static readonly Texture2D IconForums = ContentFinder<Texture2D>.Get("UI/HeroArt/WebIcons/Forums");
 
+		public static readonly Texture2D IconReddit = ContentFinder<Texture2D>.Get("UI/HeroArt/WebIcons/Reddit");
+
+		public static readonly Texture2D IconWiki = ContentFinder<Texture2D>.Get("UI/HeroArt/WebIcons/Wiki");
+
 		public static readonly Texture2D IconTwitter = ContentFinder<Texture2D>.Get("UI/HeroArt/WebIcons/Twitter");
+
+		public static readonly Texture2D IconX = ContentFinder<Texture2D>.Get("UI/HeroArt/WebIcons/X");
 
 		public static readonly Texture2D IconBook = ContentFinder<Texture2D>.Get("UI/HeroArt/WebIcons/Book");
 
@@ -116,6 +136,8 @@ namespace Verse
 		public static readonly Texture2D ShowZones = ContentFinder<Texture2D>.Get("UI/Buttons/ShowZones");
 
 		public static readonly Texture2D ShowFertilityOverlay = ContentFinder<Texture2D>.Get("UI/Buttons/ShowFertilityOverlay");
+
+		public static readonly Texture2D ShowPollutionOverlay = ContentFinder<Texture2D>.Get("UI/Buttons/ShowPollutionOverlay");
 
 		public static readonly Texture2D ShowTerrainAffordanceOverlay = ContentFinder<Texture2D>.Get("UI/Buttons/ShowTerrainAffordanceOverlay");
 
@@ -140,6 +162,16 @@ namespace Verse
 		public static readonly Texture2D ShowExpandingIcons = ContentFinder<Texture2D>.Get("UI/Buttons/ShowExpandingIcons");
 
 		public static readonly Texture2D ShowWorldFeatures = ContentFinder<Texture2D>.Get("UI/Buttons/ShowWorldFeatures");
+
+		public static readonly Texture2D ShowTemperatureOverlay = ContentFinder<Texture2D>.Get("UI/Buttons/ToggleHeatOverlay");
+
+		public static readonly Texture2D ShowVacuumOverlay = ContentFinder<Texture2D>.Get("UI/Buttons/ToggleVacuumOverlay");
+
+		public static readonly Texture2D ShowLandmarkIcons = ContentFinder<Texture2D>.Get("UI/Buttons/DisplayLandmarks");
+
+		public static readonly Texture2D ShowOtherFactionBases = ContentFinder<Texture2D>.Get("UI/Buttons/DisplayOtherFactionBases");
+
+		public static readonly Texture2D ShowImportantLocations = ContentFinder<Texture2D>.Get("UI/Buttons/DisplayImportantLocations");
 
 		public static readonly Texture2D[] SpeedButtonTextures = new Texture2D[5]
 		{

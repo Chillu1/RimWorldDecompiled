@@ -1,4 +1,5 @@
 using RimWorld;
+using UnityEngine;
 
 namespace Verse
 {
@@ -11,6 +12,8 @@ namespace Verse
 		public int ticksToIncapIcon;
 
 		private bool usingCustomRotation;
+
+		private int wiggleOffset;
 
 		private const float DownedAngleWidth = 45f;
 
@@ -40,31 +43,44 @@ namespace Verse
 		public PawnDownedWiggler(Pawn pawn)
 		{
 			this.pawn = pawn;
+			wiggleOffset = Mathf.Abs(pawn.HashOffset()) % 600;
 		}
 
-		public void WigglerTick()
+		public void ProcessPostTickVisuals(int ticksPassed)
 		{
 			if (!pawn.Downed || !pawn.Spawned || pawn.InBed())
 			{
 				return;
 			}
-			ticksToIncapIcon--;
+			ticksToIncapIcon -= ticksPassed;
 			if (ticksToIncapIcon <= 0)
 			{
-				MoteMaker.ThrowMetaIcon(pawn.Position, pawn.Map, ThingDefOf.Mote_IncapIcon);
-				ticksToIncapIcon = 200;
+				ticksToIncapIcon = 200 + ticksToIncapIcon;
+				if (HealthAIUtility.WantsToBeRescued(pawn))
+				{
+					FleckMaker.ThrowMetaIcon(pawn.Position, pawn.Map, FleckDefOf.IncapIcon);
+				}
 			}
-			if (pawn.Awake())
+			if (pawn.Awake() && (!ModsConfig.BiotechActive || pawn.CurJob?.def != JobDefOf.Breastfeed))
 			{
-				int num = Find.TickManager.TicksGame % 300 * 2;
-				if (num < 90)
+				if (ticksPassed > 600)
 				{
-					downedAngle += 0.35f;
+					Log.Warning("Too many ticks passed during a single frame for sensical wiggling");
 				}
-				else if (num < 390 && num >= 300)
-				{
-					downedAngle -= 0.35f;
-				}
+				int num = (Find.TickManager.TicksGame + wiggleOffset) % 600;
+				ProcessWigglePeriod(num, ticksPassed, positiveAngleWiggle: true);
+				ProcessWigglePeriod((num + 300) % 600, ticksPassed, positiveAngleWiggle: false);
+			}
+		}
+
+		private void ProcessWigglePeriod(int wigglePeriodTick, int ticksPassed, bool positiveAngleWiggle)
+		{
+			int a = 0;
+			int b = wigglePeriodTick - ticksPassed;
+			int num = Mathf.Min(90, wigglePeriodTick) - Mathf.Max(a, b);
+			if (num > 0)
+			{
+				downedAngle += 0.35f * (float)num * (float)(positiveAngleWiggle ? 1 : (-1));
 			}
 		}
 

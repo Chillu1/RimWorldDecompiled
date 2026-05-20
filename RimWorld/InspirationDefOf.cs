@@ -9,8 +9,6 @@ namespace RimWorld
 
 		public static InspirationDef Inspired_Taming;
 
-		public static InspirationDef Inspired_Surgery;
-
 		public static InspirationDef Inspired_Creativity;
 
 		static InspirationDefOf()

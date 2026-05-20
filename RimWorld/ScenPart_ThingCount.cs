@@ -13,6 +13,8 @@ namespace RimWorld
 
 		protected int count = 1;
 
+		protected QualityCategory? quality;
+
 		private string countBuf;
 
 		public override void ExposeData()
@@ -21,6 +23,7 @@ namespace RimWorld
 			Scribe_Defs.Look(ref thingDef, "thingDef");
 			Scribe_Defs.Look(ref stuff, "stuff");
 			Scribe_Values.Look(ref count, "count", 1);
+			Scribe_Values.Look(ref quality, "quality");
 		}
 
 		public override void Randomize()
@@ -41,10 +44,11 @@ namespace RimWorld
 
 		public override void DoEditInterface(Listing_ScenEdit listing)
 		{
-			Rect scenPartRect = listing.GetScenPartRect(this, ScenPart.RowHeight * 3f);
-			Rect rect = new Rect(scenPartRect.x, scenPartRect.y, scenPartRect.width, scenPartRect.height / 3f);
-			Rect rect2 = new Rect(scenPartRect.x, scenPartRect.y + scenPartRect.height / 3f, scenPartRect.width, scenPartRect.height / 3f);
-			Rect rect3 = new Rect(scenPartRect.x, scenPartRect.y + scenPartRect.height * 2f / 3f, scenPartRect.width, scenPartRect.height / 3f);
+			Rect scenPartRect = listing.GetScenPartRect(this, ScenPart.RowHeight * 4f);
+			Rect rect = new Rect(scenPartRect.x, scenPartRect.y, scenPartRect.width, scenPartRect.height / 4f);
+			Rect rect2 = new Rect(scenPartRect.x, scenPartRect.y + scenPartRect.height / 4f, scenPartRect.width, scenPartRect.height / 4f);
+			Rect rect3 = new Rect(scenPartRect.x, scenPartRect.y + scenPartRect.height * 2f / 4f, scenPartRect.width, scenPartRect.height / 4f);
+			Rect rect4 = new Rect(scenPartRect.x, scenPartRect.y + scenPartRect.height * 3f / 4f, scenPartRect.width, scenPartRect.height / 4f);
 			if (Widgets.ButtonText(rect, thingDef.LabelCap))
 			{
 				List<FloatMenuOption> list = new List<FloatMenuOption>();
@@ -57,6 +61,7 @@ namespace RimWorld
 					{
 						thingDef = localTd;
 						stuff = GenStuff.DefaultStuffFor(localTd);
+						quality = null;
 					}));
 				}
 				Find.WindowStack.Add(new FloatMenu(list));
@@ -76,13 +81,35 @@ namespace RimWorld
 				}
 				Find.WindowStack.Add(new FloatMenu(list2));
 			}
-			Widgets.TextFieldNumeric(rect3, ref count, ref countBuf, 1f);
+			if (thingDef.HasComp(typeof(CompQuality)))
+			{
+				string str = (quality.HasValue ? quality.Value.GetLabel() : "Default".Translate().ToString());
+				if (Widgets.ButtonText(rect3, str.CapitalizeFirst()))
+				{
+					List<FloatMenuOption> list3 = new List<FloatMenuOption>
+					{
+						new FloatMenuOption("Default".Translate().CapitalizeFirst(), delegate
+						{
+							quality = null;
+						})
+					};
+					foreach (QualityCategory allQualityCategory in QualityUtility.AllQualityCategories)
+					{
+						QualityCategory localQ = allQualityCategory;
+						list3.Add(new FloatMenuOption(allQualityCategory.GetLabel().CapitalizeFirst(), delegate
+						{
+							quality = localQ;
+						}));
+					}
+					Find.WindowStack.Add(new FloatMenu(list3));
+				}
+			}
+			Widgets.TextFieldNumeric(rect4, ref count, ref countBuf, 1f);
 		}
 
 		public override bool TryMerge(ScenPart other)
 		{
-			ScenPart_ThingCount scenPart_ThingCount = other as ScenPart_ThingCount;
-			if (scenPart_ThingCount != null && GetType() == scenPart_ThingCount.GetType() && thingDef == scenPart_ThingCount.thingDef && stuff == scenPart_ThingCount.stuff && count >= 0 && scenPart_ThingCount.count >= 0)
+			if (other is ScenPart_ThingCount scenPart_ThingCount && GetType() == scenPart_ThingCount.GetType() && thingDef == scenPart_ThingCount.thingDef && stuff == scenPart_ThingCount.stuff && quality == scenPart_ThingCount.quality && count >= 0 && scenPart_ThingCount.count >= 0)
 			{
 				count += scenPart_ThingCount.count;
 				return true;
@@ -92,7 +119,7 @@ namespace RimWorld
 
 		protected virtual IEnumerable<ThingDef> PossibleThingDefs()
 		{
-			return DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => (d.category == ThingCategory.Item && d.scatterableOnMapGen && !d.destroyOnDrop) || (d.category == ThingCategory.Building && d.Minifiable) || (d.category == ThingCategory.Building && d.scatterableOnMapGen));
+			return DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => (d.category == ThingCategory.Item && d.scatterableOnMapGen && !d.destroyOnDrop) || (d.category == ThingCategory.Building && d.Minifiable));
 		}
 
 		public override bool HasNullDefs()
@@ -106,6 +133,21 @@ namespace RimWorld
 				return false;
 			}
 			return true;
+		}
+
+		public override int GetHashCode()
+		{
+			int num = base.GetHashCode();
+			if (thingDef != null)
+			{
+				num ^= thingDef.GetHashCode();
+			}
+			if (stuff != null)
+			{
+				num ^= stuff.GetHashCode();
+			}
+			num ^= count;
+			return num ^ quality.GetHashCode();
 		}
 	}
 }

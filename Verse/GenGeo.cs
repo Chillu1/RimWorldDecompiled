@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Verse
@@ -73,6 +74,72 @@ namespace Verse
 			return true;
 		}
 
+		public static bool IsQuadSelfIntersecting(Vector3 p1, Vector3 p2, Vector3 p3, Vector3 p4)
+		{
+			if (!LinesIntersect(p1, p2, p3, p4) && !LinesIntersect(p1, p2, p4, p3) && !LinesIntersect(p2, p3, p1, p4))
+			{
+				return LinesIntersect(p3, p4, p1, p2);
+			}
+			return true;
+		}
+
+		public static bool IsQuadSelfIntersecting(IntVec3 p1, IntVec3 p2, IntVec3 p3, IntVec3 p4)
+		{
+			return IsQuadSelfIntersecting(p1.ToVector3(), p2.ToVector3(), p3.ToVector3(), p4.ToVector3());
+		}
+
+		public static bool LineRectIntersection(Vector2 pointOnLine, float slope, Vector2 rectA, Vector2 rectB, ref List<Vector2> intersections)
+		{
+			if (intersections == null)
+			{
+				intersections = new List<Vector2>();
+			}
+			else
+			{
+				intersections.Clear();
+			}
+			float xMin = Mathf.Min(rectA.x, rectB.x);
+			float xMax = Mathf.Max(rectA.x, rectB.x);
+			float yMin = Mathf.Min(rectA.y, rectB.y);
+			float yMax = Mathf.Max(rectA.y, rectB.y);
+			float y = slope * (xMin - pointOnLine.x) + pointOnLine.y;
+			Vector2 vector = new Vector2(xMin, y);
+			if (IsPointInRect(vector))
+			{
+				intersections.Add(vector);
+			}
+			float y2 = slope * (xMax - pointOnLine.x) + pointOnLine.y;
+			Vector2 vector2 = new Vector2(xMax, y2);
+			if (IsPointInRect(vector2))
+			{
+				intersections.Add(vector2);
+			}
+			if (slope != 0f)
+			{
+				float x = (yMin - pointOnLine.y) / slope + pointOnLine.x;
+				Vector2 vector3 = new Vector2(x, yMin);
+				if (IsPointInRect(vector3))
+				{
+					intersections.Add(vector3);
+				}
+				float x2 = (yMax - pointOnLine.y) / slope + pointOnLine.x;
+				Vector2 vector4 = new Vector2(x2, yMax);
+				if (IsPointInRect(vector4))
+				{
+					intersections.Add(vector4);
+				}
+			}
+			return intersections.Count > 0;
+			bool IsPointInRect(Vector2 point)
+			{
+				if (point.x >= xMin && point.x <= xMax && point.y >= yMin)
+				{
+					return point.y <= yMax;
+				}
+				return false;
+			}
+		}
+
 		public static bool IntersectLineCircle(Vector2 center, float radius, Vector2 lineA, Vector2 lineB)
 		{
 			Vector2 lhs = center - lineA;
@@ -108,7 +175,7 @@ namespace Verse
 			return new Vector3(vector.x, 0f, vector.y);
 		}
 
-		public static Vector2 RegularPolygonVertexPosition(int polygonVertices, int vertexIndex)
+		public static Vector2 RegularPolygonVertexPosition(int polygonVertices, int vertexIndex, float angleOffset = 0f)
 		{
 			if (vertexIndex < 0 || vertexIndex >= polygonVertices)
 			{
@@ -119,13 +186,14 @@ namespace Verse
 			{
 				return Vector2.zero;
 			}
-			return CalculatePolygonVertexPosition(polygonVertices, vertexIndex);
+			return CalculatePolygonVertexPosition(polygonVertices, vertexIndex, angleOffset);
 		}
 
-		private static Vector2 CalculatePolygonVertexPosition(int polygonVertices, int vertexIndex)
+		private static Vector2 CalculatePolygonVertexPosition(int polygonVertices, int vertexIndex, float angleOffset = 0f)
 		{
-			float num = (float)Math.PI * 2f / (float)polygonVertices * (float)vertexIndex;
-			num += (float)Math.PI;
+			float num = MathF.PI * 2f / (float)polygonVertices * (float)vertexIndex;
+			num += MathF.PI;
+			num += MathF.PI / 180f * angleOffset;
 			return new Vector3(Mathf.Cos(num), Mathf.Sin(num));
 		}
 
@@ -158,6 +226,48 @@ namespace Verse
 				return new Vector2(num5, ((1f - num5) * (p0.y - p.y) + num5 * (p1.y - p.y)) / num9);
 			}
 			return new Vector2(num5, ((1f - num5) * (p0.x - p.x) + num5 * (p1.x - p.x)) / num8);
+		}
+
+		public static int GetAdjacencyScore(this CellRect rect, CellRect other)
+		{
+			if (rect.Overlaps(other))
+			{
+				return 0;
+			}
+			if (rect.maxZ == other.minZ - 1 && rect.minX < other.maxX && rect.maxX > other.minX)
+			{
+				int num = Mathf.Max(rect.minX, other.minX);
+				return Mathf.Min(rect.maxX, other.maxX) - num;
+			}
+			if (rect.minZ == other.maxZ + 1 && rect.minX < other.maxX && rect.maxX > other.minX)
+			{
+				int num2 = Mathf.Max(rect.minX, other.minX);
+				return Mathf.Min(rect.maxX, other.maxX) - num2;
+			}
+			if (rect.minX == other.maxX + 1 && rect.minZ < other.maxZ && rect.maxZ > other.minZ)
+			{
+				int num3 = Mathf.Max(rect.minZ, other.minZ);
+				return Mathf.Min(rect.maxZ, other.maxZ) - num3;
+			}
+			if (rect.maxX == other.minX - 1 && rect.minZ < other.maxZ && rect.maxZ > other.minZ)
+			{
+				int num4 = Mathf.Max(rect.minZ, other.minZ);
+				return Mathf.Min(rect.maxZ, other.maxZ) - num4;
+			}
+			return 0;
+		}
+
+		public static CellRect ExpandToFit(this CellRect rect, IntVec3 position)
+		{
+			if (rect.Contains(position))
+			{
+				return rect;
+			}
+			rect.minX = Mathf.Min(rect.minX, position.x);
+			rect.minZ = Mathf.Min(rect.minZ, position.z);
+			rect.maxX = Mathf.Max(rect.maxX, position.x);
+			rect.maxZ = Mathf.Max(rect.maxZ, position.z);
+			return rect;
 		}
 	}
 }

@@ -4,12 +4,12 @@ namespace RimWorld.Planet
 {
 	public class FeatureWorker_Bay : FeatureWorker_Protrusion
 	{
-		protected override bool IsRoot(int tile)
+		protected override bool IsRoot(PlanetTile tile)
 		{
-			BiomeDef biome = Find.WorldGrid[tile].biome;
-			if (biome != BiomeDefOf.Ocean)
+			BiomeDef primaryBiome = Find.WorldGrid[tile].PrimaryBiome;
+			if (primaryBiome != BiomeDefOf.Ocean)
 			{
-				return biome == BiomeDefOf.Lake;
+				return primaryBiome == BiomeDefOf.Lake;
 			}
 			return true;
 		}

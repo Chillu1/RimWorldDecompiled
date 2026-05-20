@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
 using Verse;
+using Verse.Steam;
 
 namespace RimWorld
 {
@@ -8,19 +9,21 @@ namespace RimWorld
 	{
 		private List<Pawn> needingColonistsResult = new List<Pawn>();
 
+		private StringBuilder sb = new StringBuilder();
+
 		private List<Pawn> NeedingColonists
 		{
 			get
 			{
 				needingColonistsResult.Clear();
-				foreach (Pawn allMaps_FreeColonist in PawnsFinder.AllMaps_FreeColonists)
+				foreach (Pawn item in PawnsFinder.AllMaps_FreeColonistsSpawned)
 				{
-					if ((allMaps_FreeColonist.Spawned || allMaps_FreeColonist.BrieflyDespawned()) && allMaps_FreeColonist.health.HasHediffsNeedingTendByPlayer(forAlert: true))
+					if ((item.Spawned || item.BrieflyDespawned()) && item.health.HasHediffsNeedingTendByPlayer(forAlert: true))
 					{
-						Building_Bed building_Bed = allMaps_FreeColonist.CurrentBed();
-						if ((building_Bed == null || !building_Bed.Medical) && !Alert_ColonistNeedsRescuing.NeedsRescue(allMaps_FreeColonist))
+						Building_Bed building_Bed = item.CurrentBed();
+						if ((building_Bed == null || !building_Bed.Medical) && !Alert_ColonistNeedsRescuing.NeedsRescue(item) && !ChildcareUtility.BabyBeingPlayedWith(item))
 						{
-							needingColonistsResult.Add(allMaps_FreeColonist);
+							needingColonistsResult.Add(item);
 						}
 					}
 				}
@@ -36,12 +39,16 @@ namespace RimWorld
 
 		public override TaggedString GetExplanation()
 		{
-			StringBuilder stringBuilder = new StringBuilder();
-			foreach (Pawn needingColonist in NeedingColonists)
+			sb.Length = 0;
+			foreach (Pawn item in needingColonistsResult)
 			{
-				stringBuilder.AppendLine("  - " + needingColonist.NameShortColored.Resolve());
+				sb.AppendLine("  - " + item.NameShortColored.Resolve());
 			}
-			return "ColonistNeedsTreatmentDesc".Translate(stringBuilder.ToString());
+			if (SteamDeck.IsSteamDeckInNonKeyboardMode)
+			{
+				return "ColonistNeedsTreatmentDescController".Translate(sb.ToString().TrimEndNewlines());
+			}
+			return "ColonistNeedsTreatmentDesc".Translate(sb.ToString().TrimEndNewlines());
 		}
 
 		public override AlertReport GetReport()

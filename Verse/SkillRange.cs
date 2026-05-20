@@ -6,7 +6,7 @@ namespace Verse
 	{
 		private SkillDef skill;
 
-		private IntRange range = IntRange.one;
+		private IntRange range = IntRange.One;
 
 		public SkillDef Skill => skill;
 

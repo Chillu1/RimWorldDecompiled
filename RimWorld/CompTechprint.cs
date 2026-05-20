@@ -10,9 +10,8 @@ namespace RimWorld
 
 		public override IEnumerable<FloatMenuOption> CompFloatMenuOptions(Pawn selPawn)
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (!ModLister.CheckRoyalty("Techprint"))
 			{
-				Log.ErrorOnce("Techprints are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it.", 657212);
 				yield break;
 			}
 			JobFailReason.Clear();
@@ -24,31 +23,15 @@ namespace RimWorld
 			{
 				JobFailReason.Is("CannotReach".Translate());
 			}
-			else if (!selPawn.CanReserve(parent))
-			{
-				Pawn pawn = selPawn.Map.reservationManager.FirstRespectedReserver(parent, selPawn);
-				if (pawn == null)
-				{
-					pawn = selPawn.Map.physicalInteractionReservationManager.FirstReserverOf(selPawn);
-				}
-				if (pawn != null)
-				{
-					JobFailReason.Is("ReservedBy".Translate(pawn.LabelShort, pawn));
-				}
-				else
-				{
-					JobFailReason.Is("Reserved".Translate());
-				}
-			}
 			HaulAIUtility.PawnCanAutomaticallyHaul(selPawn, parent, forced: true);
-			Thing thing2 = GenClosest.ClosestThingReachable(selPawn.Position, selPawn.Map, ThingRequest.ForGroup(ThingRequestGroup.ResearchBench), PathEndMode.InteractionCell, TraverseParms.For(selPawn, Danger.Some), 9999f, (Thing thing) => thing is Building_ResearchBench && selPawn.CanReserve(thing));
+			Thing thing = GenClosest.ClosestThingReachable(selPawn.Position, selPawn.Map, ThingRequest.ForGroup(ThingRequestGroup.ResearchBench), PathEndMode.InteractionCell, TraverseParms.For(selPawn, Danger.Some), 9999f, (Thing thing2) => thing2 is Building_ResearchBench && !thing2.IsForbidden(selPawn) && selPawn.CanReserve(thing2));
 			Job job = null;
-			if (thing2 != null)
+			if (thing != null)
 			{
 				job = JobMaker.MakeJob(JobDefOf.ApplyTechprint);
-				job.targetA = thing2;
+				job.targetA = thing;
 				job.targetB = parent;
-				job.targetC = thing2.Position;
+				job.targetC = thing.Position;
 			}
 			if (JobFailReason.HaveReason)
 			{
@@ -56,7 +39,7 @@ namespace RimWorld
 				JobFailReason.Clear();
 				yield break;
 			}
-			yield return new FloatMenuOption("ApplyTechprint".Translate(parent.Label).CapitalizeFirst(), delegate
+			yield return FloatMenuUtility.DecoratePrioritizedTask(new FloatMenuOption("ApplyTechprint".Translate(parent.Label).CapitalizeFirst(), delegate
 			{
 				if (job == null)
 				{
@@ -64,9 +47,9 @@ namespace RimWorld
 				}
 				else
 				{
-					selPawn.jobs.TryTakeOrderedJob(job);
+					selPawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
 				}
-			});
+			}), selPawn, parent);
 		}
 	}
 }

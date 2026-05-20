@@ -7,7 +7,7 @@ namespace RimWorld.SketchGen
 	{
 		private static bool working;
 
-		public static Sketch Generate(SketchResolverDef root, ResolveParams parms)
+		public static Sketch Generate(SketchResolverDef root, SketchResolveParams parms)
 		{
 			if (working)
 			{
@@ -20,9 +20,9 @@ namespace RimWorld.SketchGen
 				root.Resolve(parms);
 				return parms.sketch;
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Error in SketchGen: " + arg);
+				Log.Error("Error in SketchGen: " + ex);
 				return parms.sketch;
 			}
 			finally

@@ -143,7 +143,7 @@ namespace Ionic.Zlib
 			{
 				_streamMode = StreamMode.Writer;
 			}
-			else if (_streamMode != 0)
+			else if (_streamMode != StreamMode.Writer)
 			{
 				throw new ZlibException("Cannot Write after Reading.");
 			}
@@ -361,7 +361,8 @@ namespace Ionic.Zlib
 					throw new ZlibException("Bad GZIP header.");
 				}
 				int num3 = BitConverter.ToInt32(array, 4);
-				_GzipMtime = GZipStream._unixEpoch.AddSeconds(num3);
+				DateTime unixEpoch = GZipStream._unixEpoch;
+				_GzipMtime = unixEpoch.AddSeconds(num3);
 				num += num2;
 				if ((array[3] & 4) == 4)
 				{

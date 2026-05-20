@@ -32,7 +32,7 @@ namespace RimWorld
 			incidentParms.points = PawnKindDefOf.Drifter.combatPower;
 			incidentParms.raidArrivalMode = PawnsArrivalModeDefOf.EdgeWalkIn;
 			incidentParms.raidStrategy = RaidStrategyDefOf.ImmediateAttack;
-			incidentParms.raidForceOneIncap = true;
+			incidentParms.raidForceOneDowned = true;
 			incidentParms.raidNeverFleeIndividual = true;
 			IncidentDefOf.RaidEnemy.Worker.TryExecute(incidentParms);
 		}

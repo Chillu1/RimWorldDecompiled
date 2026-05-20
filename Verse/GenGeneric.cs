@@ -7,7 +7,7 @@ namespace Verse
 	{
 		public const BindingFlags BindingFlagsAll = BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-		private static MethodInfo MethodOnGenericType(Type genericBase, Type genericParam, string methodName)
+		public static MethodInfo MethodOnGenericType(Type genericBase, Type genericParam, string methodName)
 		{
 			return genericBase.MakeGenericType(genericParam).GetMethod(methodName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 		}

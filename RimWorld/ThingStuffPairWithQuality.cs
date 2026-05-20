@@ -20,12 +20,12 @@ namespace RimWorld
 			this.quality = quality;
 			if (quality != QualityCategory.Normal && !thing.HasComp(typeof(CompQuality)))
 			{
-				Log.Warning(string.Concat("Created ThingStuffPairWithQuality with quality", quality, " but ", thing, " doesn't have CompQuality."));
+				Log.Warning("Created ThingStuffPairWithQuality with quality" + quality.ToString() + " but " + thing?.ToString() + " doesn't have CompQuality.");
 				quality = QualityCategory.Normal;
 			}
 			if (stuff != null && !thing.MadeFromStuff)
 			{
-				Log.Warning(string.Concat("Created ThingStuffPairWithQuality with stuff ", stuff, " but ", thing, " is not made from stuff."));
+				Log.Warning("Created ThingStuffPairWithQuality with stuff " + stuff?.ToString() + " but " + thing?.ToString() + " is not made from stuff.");
 				stuff = null;
 			}
 		}
@@ -73,9 +73,13 @@ namespace RimWorld
 			return new ThingStuffPairWithQuality(p.thing, p.stuff, QualityCategory.Normal);
 		}
 
-		public Thing MakeThing()
+		public Thing MakeThing(bool forceQuality = false)
 		{
 			Thing result = ThingMaker.MakeThing(thing, stuff);
+			if (!forceQuality && result.HasComp<CompUniqueWeapon>())
+			{
+				return result;
+			}
 			result.TryGetComp<CompQuality>()?.SetQuality(Quality, ArtGenerationContext.Outsider);
 			return result;
 		}

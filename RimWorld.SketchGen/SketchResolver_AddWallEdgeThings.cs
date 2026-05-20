@@ -10,7 +10,7 @@ namespace RimWorld.SketchGen
 
 		private const float Chance = 0.2f;
 
-		protected override void ResolveInt(ResolveParams parms)
+		protected override void ResolveInt(SketchResolveParams parms)
 		{
 			CellRect outerRect = parms.rect ?? parms.sketch.OccupiedRect;
 			bool allowWood = parms.allowWood ?? true;
@@ -19,14 +19,14 @@ namespace RimWorld.SketchGen
 			Rot4 rot2 = ((parms.wallEdgeThing.size.z > parms.wallEdgeThing.size.x) ? Rot4.East : Rot4.North);
 			CellRect cellRect = GenAdj.OccupiedRect(default(IntVec3), rot, parms.wallEdgeThing.size);
 			CellRect cellRect2 = GenAdj.OccupiedRect(default(IntVec3), rot2, parms.wallEdgeThing.size);
-			bool requireFloor = parms.requireFloor ?? false;
+			bool requireFloor = parms.requireFloor == true;
 			processed.Clear();
 			try
 			{
 				foreach (IntVec3 item in outerRect.Cells.InRandomOrder())
 				{
 					CellRect cellRect3 = SketchGenUtility.FindBiggestRectAt(item, outerRect, parms.sketch, processed, (IntVec3 x) => !parms.sketch.ThingsAt(x).Any() && (!requireFloor || (parms.sketch.TerrainAt(x) != null && parms.sketch.TerrainAt(x).layerable)));
-					if (cellRect3.Width < cellRect.Width || cellRect3.Height < cellRect.Height || cellRect3.Width < cellRect2.Width || cellRect3.Height < cellRect2.Height || !Rand.Chance(0.2f))
+					if (cellRect3.Width < cellRect.Width || cellRect3.Height < cellRect.Height || cellRect3.Width < cellRect2.Width || cellRect3.Height < cellRect2.Height || !Rand.Chance(parms.chance ?? 0.2f))
 					{
 						continue;
 					}
@@ -42,12 +42,12 @@ namespace RimWorld.SketchGen
 						}
 						else if (CanPlaceAt(rect2, Rot4.East, parms.sketch))
 						{
-							parms.sketch.AddThing(parms.wallEdgeThing, new IntVec3(rect2.minX - cellRect.minX, 0, rect2.minZ - cellRect.minZ), rot, stuff, 1, null, null, wipeIfCollides: false);
+							parms.sketch.AddThing(parms.wallEdgeThing, new IntVec3(rect2.minX - cellRect.minX, 0, rect2.minZ - cellRect.minZ), rot.Opposite, stuff, 1, null, null, wipeIfCollides: false);
 						}
 					}
 					else if (Rand.Bool && CanPlaceAt(rect3, Rot4.North, parms.sketch))
 					{
-						parms.sketch.AddThing(parms.wallEdgeThing, new IntVec3(rect3.minX - cellRect2.minX, 0, rect3.minZ - cellRect2.minZ), rot2, stuff, 1, null, null, wipeIfCollides: false);
+						parms.sketch.AddThing(parms.wallEdgeThing, new IntVec3(rect3.minX - cellRect2.minX, 0, rect3.minZ - cellRect2.minZ), rot2.Opposite, stuff, 1, null, null, wipeIfCollides: false);
 					}
 					else if (CanPlaceAt(rect4, Rot4.South, parms.sketch))
 					{
@@ -61,7 +61,7 @@ namespace RimWorld.SketchGen
 			}
 		}
 
-		protected override bool CanResolveInt(ResolveParams parms)
+		protected override bool CanResolveInt(SketchResolveParams parms)
 		{
 			return true;
 		}

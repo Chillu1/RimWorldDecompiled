@@ -13,7 +13,7 @@ namespace RimWorld
 
 		protected override Thing BestIngestTarget(Pawn pawn)
 		{
-			if (FoodUtility.TryFindBestFoodSourceFor(pawn, pawn, desperate: true, out var foodSource, out var _, canRefillDispenser: false, canUseInventory: true, allowForbidden: true, allowCorpse: true, allowSociallyImproper: true))
+			if (FoodUtility.TryFindBestFoodSourceFor(pawn, pawn, desperate: true, out var foodSource, out var _, canRefillDispenser: false, canUseInventory: true, canUsePackAnimalInventory: false, allowForbidden: true, allowCorpse: true, allowSociallyImproper: true, allowHarvest: false, forceScanWholeMap: false, ignoreReservations: false, calculateWantedStackCount: false, allowVenerated: false, FoodPreferability.RawTasty))
 			{
 				return foodSource;
 			}

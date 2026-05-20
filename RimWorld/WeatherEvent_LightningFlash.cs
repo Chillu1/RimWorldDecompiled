@@ -6,19 +6,19 @@ namespace RimWorld
 {
 	public class WeatherEvent_LightningFlash : WeatherEvent
 	{
-		private int duration;
+		protected int duration;
 
-		private Vector2 shadowVector;
+		protected Vector2 shadowVector;
 
-		private int age;
+		protected int age;
 
-		private const int FlashFadeInTicks = 3;
+		protected const int FlashFadeInTicks = 3;
 
 		private const int MinFlashDuration = 15;
 
 		private const int MaxFlashDuration = 60;
 
-		private const float FlashShadowDistance = 5f;
+		protected const float FlashShadowDistance = 5f;
 
 		private static readonly SkyColorSet LightningFlashColors = new SkyColorSet(new Color(0.9f, 0.95f, 1f), new Color(40f / 51f, 0.8235294f, 72f / 85f), new Color(0.9f, 0.95f, 1f), 1.15f);
 
@@ -30,7 +30,7 @@ namespace RimWorld
 
 		public override float SkyTargetLerpFactor => LightningBrightness;
 
-		protected float LightningBrightness
+		protected virtual float LightningBrightness
 		{
 			get
 			{

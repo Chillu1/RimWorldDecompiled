@@ -11,10 +11,7 @@ namespace RimWorld
 
 		public override bool AllowSatisfyLongNeeds => false;
 
-		protected abstract DutyDef DutyDef
-		{
-			get;
-		}
+		protected abstract DutyDef DutyDef { get; }
 
 		protected abstract bool TryFindGoodOpportunisticTaskTarget(Pawn pawn, out Thing target, List<Thing> alreadyTakenTargets);
 

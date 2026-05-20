@@ -9,8 +9,7 @@ namespace RimWorld
 	{
 		public override bool ShouldShowFor(StatRequest req)
 		{
-			ThingDef thingDef = req.Def as ThingDef;
-			if (thingDef == null)
+			if (!(req.Def is ThingDef thingDef))
 			{
 				return false;
 			}
@@ -61,10 +60,10 @@ namespace RimWorld
 			}
 			float num3 = (from x in VerbUtility.GetAllVerbProperties(verbs, tools)
 				where x.verbProps.IsMeleeAttack
-				select x).AverageWeighted((VerbUtility.VerbPropertiesWithSource x) => x.verbProps.AdjustedMeleeSelectionWeight_NewTmp(x.tool, null, thingDef, req.StuffDef, null, comesFromPawnNativeVerbs: false), (VerbUtility.VerbPropertiesWithSource x) => x.verbProps.AdjustedMeleeDamageAmount_NewTmp(x.tool, null, thingDef, req.StuffDef, null));
+				select x).AverageWeighted((VerbUtility.VerbPropertiesWithSource x) => x.verbProps.AdjustedMeleeSelectionWeight(x.tool, null, thingDef, req.StuffDef, null, comesFromPawnNativeVerbs: false), (VerbUtility.VerbPropertiesWithSource x) => x.verbProps.AdjustedMeleeDamageAmount(x.tool, null, thingDef, req.StuffDef, null));
 			float num4 = (from x in VerbUtility.GetAllVerbProperties(verbs, tools)
 				where x.verbProps.IsMeleeAttack
-				select x).AverageWeighted((VerbUtility.VerbPropertiesWithSource x) => x.verbProps.AdjustedMeleeSelectionWeight_NewTmp(x.tool, null, thingDef, req.StuffDef, null, comesFromPawnNativeVerbs: false), (VerbUtility.VerbPropertiesWithSource x) => x.verbProps.AdjustedCooldown_NewTmp(x.tool, null, thingDef, req.StuffDef));
+				select x).AverageWeighted((VerbUtility.VerbPropertiesWithSource x) => x.verbProps.AdjustedMeleeSelectionWeight(x.tool, null, thingDef, req.StuffDef, null, comesFromPawnNativeVerbs: false), (VerbUtility.VerbPropertiesWithSource x) => x.verbProps.AdjustedCooldown(x.tool, null, thingDef, req.StuffDef));
 			if (num4 == 0f)
 			{
 				return 0f;
@@ -74,8 +73,7 @@ namespace RimWorld
 
 		public override string GetExplanationUnfinalized(StatRequest req, ToStringNumberSense numberSense)
 		{
-			ThingDef thingDef = req.Def as ThingDef;
-			if (thingDef == null)
+			if (!(req.Def is ThingDef thingDef))
 			{
 				return null;
 			}
@@ -87,8 +85,18 @@ namespace RimWorld
 			StringBuilder stringBuilder = new StringBuilder();
 			foreach (VerbUtility.VerbPropertiesWithSource item in enumerable)
 			{
-				float num = item.verbProps.AdjustedMeleeDamageAmount(item.tool, currentWeaponUser, req.Thing, null);
-				float num2 = item.verbProps.AdjustedCooldown(item.tool, currentWeaponUser, req.Thing);
+				float num = 0f;
+				float num2 = 0f;
+				if (req.HasThing)
+				{
+					num = item.verbProps.AdjustedMeleeDamageAmount(item.tool, currentWeaponUser, req.Thing, null);
+					num2 = item.verbProps.AdjustedCooldown(item.tool, currentWeaponUser, req.Thing);
+				}
+				else
+				{
+					num = item.verbProps.AdjustedMeleeDamageAmount(item.tool, null, thingDef, req.StuffDef, null);
+					num2 = item.verbProps.AdjustedCooldown(item.tool, null, thingDef, req.StuffDef);
+				}
 				if (item.tool != null)
 				{
 					stringBuilder.AppendLine($"  {item.tool.LabelCap} ({item.ToolCapacity.label})");
@@ -109,12 +117,15 @@ namespace RimWorld
 			{
 				return null;
 			}
-			Pawn_EquipmentTracker pawn_EquipmentTracker = weapon.ParentHolder as Pawn_EquipmentTracker;
-			if (pawn_EquipmentTracker != null)
+			if (weapon.ParentHolder is Pawn_EquipmentTracker pawn_EquipmentTracker)
 			{
 				return pawn_EquipmentTracker.pawn;
 			}
-			return (weapon.ParentHolder as Pawn_ApparelTracker)?.pawn;
+			if (weapon.ParentHolder is Pawn_ApparelTracker pawn_ApparelTracker)
+			{
+				return pawn_ApparelTracker.pawn;
+			}
+			return null;
 		}
 
 		private void GetVerbsAndTools(ThingDef def, out List<VerbProperties> verbs, out List<Tool> tools)

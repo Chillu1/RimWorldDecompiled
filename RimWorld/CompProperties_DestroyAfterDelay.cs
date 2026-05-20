@@ -8,6 +8,8 @@ namespace RimWorld
 
 		public DestroyMode destroyMode;
 
+		public bool displayCountdownOnLabel;
+
 		[MustTranslate]
 		public string countdownLabel;
 

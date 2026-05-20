@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using RimWorld;
 
 namespace Verse
@@ -7,14 +8,19 @@ namespace Verse
 	{
 		public RecipeDef recipe;
 
-		public virtual bool AvailableOnNow(Thing thing)
+		public virtual bool AvailableOnNow(Thing thing, BodyPartRecord part = null)
 		{
 			return true;
 		}
 
+		public virtual AcceptanceReport AvailableReport(Thing thing, BodyPartRecord part = null)
+		{
+			return AvailableOnNow(thing, part);
+		}
+
 		public virtual IEnumerable<BodyPartRecord> GetPartsToApplyOn(Pawn pawn, RecipeDef recipe)
 		{
-			yield break;
+			return Enumerable.Empty<BodyPartRecord>();
 		}
 
 		public virtual void ApplyOnPawn(Pawn pawn, BodyPartRecord part, Pawn billDoer, List<Thing> ingredients, Bill bill)
@@ -48,13 +54,28 @@ namespace Verse
 		{
 		}
 
-		protected void ReportViolation(Pawn pawn, Pawn billDoer, Faction factionToInform, int goodwillImpact, string reason)
+		public virtual float GetIngredientCount(IngredientCount ing, Bill bill)
 		{
-			if (factionToInform != null && billDoer != null && billDoer.Faction != null)
+			return ing.GetBaseCount();
+		}
+
+		public virtual TaggedString GetConfirmation(Pawn pawn)
+		{
+			return null;
+		}
+
+		protected void ReportViolation(Pawn pawn, Pawn billDoer, Faction factionToInform, int goodwillImpact, HistoryEventDef overrideEventDef = null)
+		{
+			if (factionToInform != null && billDoer != null && billDoer.Faction == Faction.OfPlayer)
 			{
-				factionToInform.TryAffectGoodwillWith(billDoer.Faction, goodwillImpact, canSendMessage: true, reason: reason, lookTarget: pawn, canSendHostilityLetter: !factionToInform.temporary);
+				Faction.OfPlayer.TryAffectGoodwillWith(factionToInform, goodwillImpact, canSendMessage: true, !factionToInform.temporary, overrideEventDef ?? HistoryEventDefOf.PerformedHarmfulSurgery);
 				QuestUtility.SendQuestTargetSignals(pawn.questTags, "SurgeryViolation", pawn.Named("SUBJECT"));
 			}
+		}
+
+		public virtual string LabelFromUniqueIngredients(Bill bill)
+		{
+			return null;
 		}
 	}
 }

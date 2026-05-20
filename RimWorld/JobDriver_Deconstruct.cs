@@ -13,6 +13,8 @@ namespace RimWorld
 
 		protected override DesignationDef Designation => DesignationDefOf.Deconstruct;
 
+		protected override EffecterDef WorkEffecter => null;
+
 		protected override float TotalNeededWork => Mathf.Clamp(base.Building.GetStatValue(StatDefOf.WorkToBuild), 20f, 3000f);
 
 		protected override IEnumerable<Toil> MakeNewToils()
@@ -30,11 +32,11 @@ namespace RimWorld
 			pawn.records.Increment(RecordDefOf.ThingsDeconstructed);
 		}
 
-		protected override void TickAction()
+		protected override void TickActionInterval(int delta)
 		{
-			if (base.Building.def.CostListAdjusted(base.Building.Stuff).Count > 0)
+			if (pawn.skills != null && base.Building.def.CostListAdjusted(base.Building.Stuff).Count > 0)
 			{
-				pawn.skills.Learn(SkillDefOf.Construction, 0.25f);
+				pawn.skills.Learn(SkillDefOf.Construction, 0.25f * (float)delta);
 			}
 		}
 	}

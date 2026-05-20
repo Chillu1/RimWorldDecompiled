@@ -31,7 +31,7 @@ namespace RimWorld
 			return null;
 		}
 
-		public override Job TryGiveJobInGatheringArea(Pawn pawn, IntVec3 gatheringSpot)
+		public override Job TryGiveJobInGatheringArea(Pawn pawn, IntVec3 gatheringSpot, float maxRadius = -1f)
 		{
 			if (!CanDoDuringGathering)
 			{
@@ -74,11 +74,19 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (t.Fogged())
+			{
+				return false;
+			}
 			if (!t.IsSociallyProper(pawn))
 			{
 				return false;
 			}
 			if (!t.IsPoliticallyProper(pawn))
+			{
+				return false;
+			}
+			if (t.VacuumConcernTo(pawn))
 			{
 				return false;
 			}
@@ -98,8 +106,8 @@ namespace RimWorld
 
 		protected virtual Job TryGivePlayJobWhileInBed(Pawn pawn, Thing bestGame)
 		{
-			Building_Bed t = pawn.CurrentBed();
-			return JobMaker.MakeJob(def.jobDef, bestGame, pawn.Position, t);
+			Building_Bed building_Bed = pawn.CurrentBed();
+			return JobMaker.MakeJob(def.jobDef, bestGame, pawn.Position, building_Bed);
 		}
 	}
 }

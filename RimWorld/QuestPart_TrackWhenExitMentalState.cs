@@ -37,6 +37,10 @@ namespace RimWorld
 		public override void Notify_QuestSignalReceived(Signal signal)
 		{
 			base.Notify_QuestSignalReceived(signal);
+			if (mapParent == null || !mapParent.HasMap || !quest.IsParentSuitableForQuest(mapParent))
+			{
+				mapParent = quest.TryFindNewSuitableMapParentForRetarget();
+			}
 			if (!signalSent && inSignals.Contains(signal.tag))
 			{
 				Pawn pawn = TrackedPawns.Find((Pawn p) => p == signal.args.GetArg<Pawn>("SUBJECT"));

@@ -41,9 +41,9 @@ namespace RimWorld
 				Log.Error("IncidentWorker_CaravanMeeting could not generate any pawns.");
 				return false;
 			}
-			Caravan metCaravan = CaravanMaker.MakeCaravan(list, faction, -1, addToWorldPawnsIfNotAlready: false);
+			Caravan metCaravan = CaravanMaker.MakeCaravan(list, faction, PlanetTile.Invalid, addToWorldPawnsIfNotAlready: false);
 			CameraJumper.TryJumpAndSelect(caravan);
-			DiaNode diaNode = new DiaNode((string)"CaravanMeeting".Translate(caravan.Name, faction.Name, PawnUtility.PawnKindsToLineList(metCaravan.PawnsListForReading.Select((Pawn x) => x.kindDef), "  - ")).CapitalizeFirst());
+			DiaNode diaNode = new DiaNode("CaravanMeeting".Translate(caravan.Name, faction.NameColored, PawnUtility.PawnKindsToLineList(metCaravan.PawnsListForReading.Select((Pawn x) => x.kindDef), "  - ")).Resolve().CapitalizeFirst());
 			Pawn bestPlayerNegotiator = BestCaravanPawnUtility.FindBestNegotiator(caravan, faction, metCaravan.TraderKind);
 			if (metCaravan.CanTradeNow)
 			{
@@ -72,19 +72,17 @@ namespace RimWorld
 			{
 				LongEventHandler.QueueLongEvent(delegate
 				{
-					Pawn t2 = caravan.PawnsListForReading[0];
-					faction.TrySetRelationKind(Faction.OfPlayer, FactionRelationKind.Hostile, canSendLetter: true, "GoodwillChangedReason_AttackedCaravan".Translate(), t2);
+					Pawn pawn = caravan.PawnsListForReading[0];
+					Faction.OfPlayer.TryAffectGoodwillWith(faction, Faction.OfPlayer.GoodwillToMakeHostile(faction), canSendMessage: true, canSendHostilityLetter: true, HistoryEventDefOf.AttackedCaravan, pawn);
 					Map map = CaravanIncidentUtility.GetOrGenerateMapForIncident(caravan, new IntVec3(100, 1, 100), WorldObjectDefOf.AttackedNonPlayerCaravan);
 					map.Parent.SetFaction(faction);
-					IntVec3 playerSpot = default(IntVec3);
-					IntVec3 enemySpot = default(IntVec3);
-					MultipleCaravansCellFinder.FindStartingCellsFor2Groups(map, out playerSpot, out enemySpot);
+					MultipleCaravansCellFinder.FindStartingCellsFor2Groups(map, out var playerSpot, out var enemySpot);
 					CaravanEnterMapUtility.Enter(caravan, map, (Pawn p) => CellFinder.RandomClosewalkCellNear(playerSpot, map, 12), CaravanDropInventoryMode.DoNotDrop, draftColonists: true);
 					List<Pawn> list2 = metCaravan.PawnsListForReading.ToList();
 					CaravanEnterMapUtility.Enter(metCaravan, map, (Pawn p) => CellFinder.RandomClosewalkCellNear(enemySpot, map, 12));
 					LordMaker.MakeNewLord(faction, new LordJob_DefendAttackedTraderCaravan(list2[0].Position), map, list2);
 					Find.TickManager.Notify_GeneratedPotentiallyHostileMap();
-					CameraJumper.TryJumpAndSelect(t2);
+					CameraJumper.TryJumpAndSelect(pawn);
 					PawnRelationUtility.Notify_PawnsSeenByPlayer_Letter_Send(list2, "LetterRelatedPawnsGroupGeneric".Translate(Faction.OfPlayer.def.pawnsPlural), LetterDefOf.NeutralEvent, informEvenIfSeenBefore: true);
 				}, "GeneratingMapForNewEncounter", doAsynchronously: false, null);
 			};

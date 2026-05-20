@@ -4,6 +4,8 @@ namespace Verse
 {
 	public static class ColorLibrary
 	{
+		public static readonly Color White = new Color(1f, 1f, 1f);
+
 		public static readonly Color Red = GenColor.FromHex("e50000");
 
 		public static readonly Color Brown = GenColor.FromHex("653700");
@@ -31,6 +33,10 @@ namespace Verse
 		public static readonly Color Yellow = GenColor.FromHex("ffff14");
 
 		public static readonly Color Leather = GenColor.FromBytes(132, 99, 60);
+
+		public static readonly Color SpaceMechFog = GenColor.FromBytes(52, 55, 45);
+
+		public static readonly Color SpaceHumanFog = GenColor.FromBytes(43, 46, 47);
 
 		public static readonly Color LightPurple = GenColor.FromHex("bf77f6");
 
@@ -159,5 +165,9 @@ namespace Verse
 		public static readonly Color Turquoise = GenColor.FromHex("06c2ac");
 
 		public static readonly Color DarkGreen = GenColor.FromHex("033500");
+
+		public static readonly Color RedReadable = new Color(1f, 0.2f, 0.2f);
+
+		public static readonly Color LogError = new Color(1f, 0.4f, 0.4f);
 	}
 }

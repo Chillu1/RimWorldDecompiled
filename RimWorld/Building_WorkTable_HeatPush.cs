@@ -9,7 +9,7 @@ namespace RimWorld
 		public override void UsedThisTick()
 		{
 			base.UsedThisTick();
-			if (Find.TickManager.TicksGame % 30 == 4)
+			if (this.IsHashIntervalTick(30))
 			{
 				GenTemperature.PushHeat(this, def.building.heatPerTickWhileWorking * 30f);
 			}

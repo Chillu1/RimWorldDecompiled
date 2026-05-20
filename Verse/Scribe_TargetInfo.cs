@@ -11,7 +11,7 @@ namespace Verse
 
 		public static void Look(ref LocalTargetInfo value, bool saveDestroyedThings, string label)
 		{
-			Look(ref value, saveDestroyedThings, label, LocalTargetInfo.Invalid);
+			Look(ref value, saveDestroyedThings, label, LocalTargetInfo.Invalid, preserveDefaultValues: true);
 		}
 
 		public static void Look(ref LocalTargetInfo value, string label, LocalTargetInfo defaultValue)
@@ -19,11 +19,11 @@ namespace Verse
 			Look(ref value, saveDestroyedThings: false, label, defaultValue);
 		}
 
-		public static void Look(ref LocalTargetInfo value, bool saveDestroyedThings, string label, LocalTargetInfo defaultValue)
+		public static void Look(ref LocalTargetInfo value, bool saveDestroyedThings, string label, LocalTargetInfo defaultValue, bool preserveDefaultValues = false)
 		{
 			if (Scribe.mode == LoadSaveMode.Saving)
 			{
-				if (!value.Equals(defaultValue) && (value.Thing == null || !Scribe_References.CheckSaveReferenceToDestroyedThing(value.Thing, label, saveDestroyedThings)))
+				if ((!value.Equals(defaultValue) || preserveDefaultValues) && (value.Thing == null || !Scribe_References.CheckSaveReferenceToDestroyedThing(value.Thing, label, saveDestroyedThings)))
 				{
 					Scribe.saver.WriteElement(label, value.ToString());
 				}
@@ -45,7 +45,7 @@ namespace Verse
 
 		public static void Look(ref TargetInfo value, bool saveDestroyedThings, string label)
 		{
-			Look(ref value, saveDestroyedThings, label, TargetInfo.Invalid);
+			Look(ref value, saveDestroyedThings, label, TargetInfo.Invalid, preserveDefaultValues: true);
 		}
 
 		public static void Look(ref TargetInfo value, string label, TargetInfo defaultValue)
@@ -53,11 +53,11 @@ namespace Verse
 			Look(ref value, saveDestroyedThings: false, label, defaultValue);
 		}
 
-		public static void Look(ref TargetInfo value, bool saveDestroyedThings, string label, TargetInfo defaultValue)
+		public static void Look(ref TargetInfo value, bool saveDestroyedThings, string label, TargetInfo defaultValue, bool preserveDefaultValues = false)
 		{
 			if (Scribe.mode == LoadSaveMode.Saving)
 			{
-				if (!value.Equals(defaultValue) && (value.Thing == null || !Scribe_References.CheckSaveReferenceToDestroyedThing(value.Thing, label, saveDestroyedThings)))
+				if ((!value.Equals(defaultValue) || preserveDefaultValues) && (value.Thing == null || !Scribe_References.CheckSaveReferenceToDestroyedThing(value.Thing, label, saveDestroyedThings)))
 				{
 					if (!value.HasThing && value.Cell.IsValid && (value.Map == null || !Find.Maps.Contains(value.Map)))
 					{
@@ -86,7 +86,7 @@ namespace Verse
 
 		public static void Look(ref GlobalTargetInfo value, bool saveDestroyedThings, string label)
 		{
-			Look(ref value, saveDestroyedThings, label, GlobalTargetInfo.Invalid);
+			Look(ref value, saveDestroyedThings, label, GlobalTargetInfo.Invalid, preserveDefaultValues: true);
 		}
 
 		public static void Look(ref GlobalTargetInfo value, string label, GlobalTargetInfo defaultValue)
@@ -94,11 +94,11 @@ namespace Verse
 			Look(ref value, saveDestroyedThings: false, label, defaultValue);
 		}
 
-		public static void Look(ref GlobalTargetInfo value, bool saveDestroyedThings, string label, GlobalTargetInfo defaultValue)
+		public static void Look(ref GlobalTargetInfo value, bool saveDestroyedThings, string label, GlobalTargetInfo defaultValue, bool preserveDefaultValues = false)
 		{
 			if (Scribe.mode == LoadSaveMode.Saving)
 			{
-				if (!value.Equals(defaultValue) && (value.Thing == null || !Scribe_References.CheckSaveReferenceToDestroyedThing(value.Thing, label, saveDestroyedThings)) && (value.WorldObject == null || !Scribe_References.CheckSaveReferenceToDestroyedWorldObject(value.WorldObject, label, saveDestroyedThings)))
+				if ((!value.Equals(defaultValue) || preserveDefaultValues) && (value.Thing == null || !Scribe_References.CheckSaveReferenceToDestroyedThing(value.Thing, label, saveDestroyedThings)) && (value.WorldObject == null || !Scribe_References.CheckSaveReferenceToDestroyedWorldObject(value.WorldObject, label, saveDestroyedThings)))
 				{
 					if (!value.HasThing && !value.HasWorldObject && value.Cell.IsValid && (value.Map == null || !Find.Maps.Contains(value.Map)))
 					{

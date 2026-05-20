@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -5,6 +6,8 @@ namespace RimWorld
 {
 	public class CompEggLayer : ThingComp
 	{
+		private const int EggTickInterval = 2500;
+
 		private float eggProgress;
 
 		private int fertilizationCount;
@@ -24,6 +27,14 @@ namespace RimWorld
 				{
 					return false;
 				}
+				if (pawn.Sterile())
+				{
+					return false;
+				}
+				if (ModsConfig.AnomalyActive && pawn.IsShambler)
+				{
+					return false;
+				}
 				return true;
 			}
 		}
@@ -32,11 +43,11 @@ namespace RimWorld
 		{
 			get
 			{
-				if (!Active)
+				if (Active)
 				{
-					return false;
+					return eggProgress >= 1f;
 				}
-				return eggProgress >= 1f;
+				return false;
 			}
 		}
 
@@ -66,11 +77,10 @@ namespace RimWorld
 
 		public override void CompTick()
 		{
-			if (Active)
+			if (parent.IsHashIntervalTick(2500) && Active)
 			{
-				float num = 1f / (Props.eggLayIntervalDays * 60000f);
-				Pawn pawn = parent as Pawn;
-				if (pawn != null)
+				float num = 2500f / (Props.eggLayIntervalDays * 60000f);
+				if (parent is Pawn pawn)
 				{
 					num *= PawnUtility.BodyResourceGrowthSpeed(pawn);
 				}
@@ -92,6 +102,15 @@ namespace RimWorld
 			fertilizedBy = male;
 		}
 
+		public ThingDef NextEggType()
+		{
+			if (fertilizationCount > 0)
+			{
+				return Props.eggFertilizedDef;
+			}
+			return Props.eggUnfertilizedDef;
+		}
+
 		public virtual Thing ProduceEgg()
 		{
 			if (!Active)
@@ -104,7 +123,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			Thing thing;
+			Thing thing = null;
 			if (fertilizationCount > 0)
 			{
 				thing = ThingMaker.MakeThing(Props.eggFertilizedDef);
@@ -119,10 +138,9 @@ namespace RimWorld
 			if (compHatcher != null)
 			{
 				compHatcher.hatcheeFaction = parent.Faction;
-				Pawn pawn = parent as Pawn;
-				if (pawn != null)
+				if (parent is Pawn hatcheeParent)
 				{
-					compHatcher.hatcheeParent = pawn;
+					compHatcher.hatcheeParent = hatcheeParent;
 				}
 				if (fertilizedBy != null)
 				{
@@ -148,6 +166,21 @@ namespace RimWorld
 				text += "\n" + "ProgressStoppedUntilFertilized".Translate();
 			}
 			return text;
+		}
+
+		public override IEnumerable<Gizmo> CompGetGizmosExtra()
+		{
+			if (DebugSettings.ShowDevGizmos)
+			{
+				yield return new Command_Action
+				{
+					defaultLabel = "DEV: LayEgg",
+					action = delegate
+					{
+						eggProgress = 1f;
+					}
+				};
+			}
 		}
 	}
 }

@@ -13,7 +13,7 @@ namespace RimWorld
 		{
 			foreach (IntVec3 item in CompPowerPlantWater.GroundCells(loc, rot))
 			{
-				if (!map.terrainGrid.TerrainAt(item).affordances.Contains(TerrainAffordanceDefOf.Heavy))
+				if (!item.GetAffordances(map).Contains(TerrainAffordanceDefOf.Heavy))
 				{
 					return new AcceptanceReport("TerrainCannotSupport_TerrainAffordance".Translate(checkingDef, TerrainAffordanceDefOf.Heavy));
 				}
@@ -29,7 +29,7 @@ namespace RimWorld
 		{
 			foreach (IntVec3 item in CompPowerPlantWater.WaterCells(loc, rot))
 			{
-				if (!map.terrainGrid.TerrainAt(item).affordances.Contains(TerrainAffordanceDefOf.MovingFluid))
+				if (!item.InBounds(map) || !item.GetAffordances(map).Contains(TerrainAffordanceDefOf.MovingFluid))
 				{
 					return false;
 				}

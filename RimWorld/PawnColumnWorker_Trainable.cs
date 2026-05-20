@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
+using Verse.Steam;
 
 namespace RimWorld
 {
@@ -120,7 +121,12 @@ namespace RimWorld
 
 		protected override string GetHeaderTip(PawnTable table)
 		{
-			return base.GetHeaderTip(table) + "\n" + "CheckboxShiftClickTip".Translate();
+			string text = base.GetHeaderTip(table);
+			if (!SteamDeck.IsSteamDeckInNonKeyboardMode)
+			{
+				text += "\n" + "CheckboxShiftClickTip".Translate();
+			}
+			return text;
 		}
 	}
 }

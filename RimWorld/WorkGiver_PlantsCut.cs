@@ -15,14 +15,13 @@ namespace RimWorld
 
 		public override IEnumerable<Thing> PotentialWorkThingsGlobal(Pawn pawn)
 		{
-			List<Designation> desList = pawn.Map.designationManager.allDesignations;
-			for (int i = 0; i < desList.Count; i++)
+			foreach (Designation item in pawn.Map.designationManager.designationsByDef[DesignationDefOf.CutPlant])
 			{
-				Designation designation = desList[i];
-				if (designation.def == DesignationDefOf.CutPlant || designation.def == DesignationDefOf.HarvestPlant)
-				{
-					yield return designation.target.Thing;
-				}
+				yield return item.target.Thing;
+			}
+			foreach (Designation item2 in pawn.Map.designationManager.designationsByDef[DesignationDefOf.HarvestPlant])
+			{
+				yield return item2.target.Thing;
 			}
 		}
 
@@ -45,11 +44,15 @@ namespace RimWorld
 			{
 				return null;
 			}
-			if (t.IsForbidden(pawn))
+			if (t.IsBurning())
 			{
 				return null;
 			}
-			if (t.IsBurning())
+			if (!PlantUtility.PawnWillingToCutPlant_Job(t, pawn))
+			{
+				return null;
+			}
+			if (!forced && t.TryGetComp(out CompPlantPreventCutting comp) && comp.PreventCutting)
 			{
 				return null;
 			}
@@ -69,6 +72,19 @@ namespace RimWorld
 				}
 			}
 			return null;
+		}
+
+		public override string PostProcessedGerund(Job job)
+		{
+			if (job.def == JobDefOf.HarvestDesignated)
+			{
+				return "HarvestGerund".Translate();
+			}
+			if (job.def == JobDefOf.CutPlantDesignated)
+			{
+				return "CutGerund".Translate();
+			}
+			return def.gerund;
 		}
 	}
 }

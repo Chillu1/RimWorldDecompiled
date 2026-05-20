@@ -7,7 +7,7 @@ namespace RimWorld
 	{
 		public override string Summary(Scenario scen)
 		{
-			return "ScenPart_PawnsAreNaked".Translate(context.ToStringHuman()).CapitalizeFirst();
+			return "ScenPart_PawnsAreNaked".Translate(context.ToStringHuman(), chance.ToStringPercent()).CapitalizeFirst();
 		}
 
 		protected override void ModifyPawnPostGenerate(Pawn pawn, bool redressed)

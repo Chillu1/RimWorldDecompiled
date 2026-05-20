@@ -27,6 +27,12 @@ namespace RimWorld
 
 		public bool familyByBloodRelation;
 
+		public bool removeOnDeath;
+
+		public bool removeOnLeftBehind;
+
+		public float inbredChanceOnChild;
+
 		public ThoughtDef diedThought;
 
 		public ThoughtDef diedThoughtFemale;
@@ -96,6 +102,15 @@ namespace RimWorld
 				return killedThoughtFemale;
 			}
 			return killedThought;
+		}
+
+		public ThoughtDef GetGenderSpecificThought(Pawn pawn, PawnDiedOrDownedThoughtsKind thoughtsKind)
+		{
+			if (thoughtsKind == PawnDiedOrDownedThoughtsKind.Lost)
+			{
+				return GetGenderSpecificLostThought(pawn);
+			}
+			return GetGenderSpecificDiedThought(pawn);
 		}
 
 		public override IEnumerable<string> ConfigErrors()

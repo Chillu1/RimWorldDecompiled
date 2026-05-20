@@ -39,9 +39,13 @@ namespace RimWorld
 
 		public bool canUseAvoidGrid = true;
 
+		public bool canPsychicRitualSiege;
+
 		public float earliestRaidDays;
 
 		public FloatRange allowedArrivalTemperatureRange = new FloatRange(-1000f, 1000f);
+
+		public SimpleCurve minSettlementTemperatureChanceCurve;
 
 		public PawnKindDef basicMemberKind;
 
@@ -60,8 +64,10 @@ namespace RimWorld
 		[MustTranslate]
 		public string pawnsPlural = "members";
 
+		[MustTranslate]
 		public string leaderTitle = "leader";
 
+		[MustTranslate]
 		public string leaderTitleFemale;
 
 		[MustTranslate]
@@ -80,23 +86,66 @@ namespace RimWorld
 
 		public List<string> royalTitleTags;
 
+		[NoTranslate]
 		public string categoryTag;
 
 		public bool hostileToFactionlessHumanlikes;
 
+		public ThingDef dropPodActive;
+
+		public ThingDef dropPodIncoming;
+
+		public bool raidsForbidden;
+
+		public bool animalsFleeDanger = true;
+
+		private PawnGroupKindDef defaultSettlementGroupKindDef;
+
+		public bool canRequestTraders = true;
+
+		public bool canRequestMilitaryAid = true;
+
+		public bool canRequestOrbitalTrader;
+
+		public bool canGenerateQuestSites = true;
+
+		public bool hideGiftingInHostilityText;
+
+		public List<PawnsArrivalModeDef> arrivalModeWhitelist = new List<PawnsArrivalModeDef>();
+
+		public List<PawnsArrivalModeDef> arrivalModeBlacklist = new List<PawnsArrivalModeDef>();
+
+		public List<PlanetLayerDef> layerWhitelist = new List<PlanetLayerDef>();
+
+		public List<PlanetLayerDef> layerBlacklist = new List<PlanetLayerDef>();
+
+		public List<PlanetLayerDef> arrivalLayerWhitelist = new List<PlanetLayerDef>();
+
+		public List<PlanetLayerDef> arrivalLayerBlacklist = new List<PlanetLayerDef>();
+
+		public List<PlanetLayerDef> neutralArrivalLayerWhitelist = new List<PlanetLayerDef>();
+
+		public List<PlanetLayerDef> neutralArrivalLayerBlacklist = new List<PlanetLayerDef>();
+
+		public List<PlanetLayerDef> raidArrivalLayerWhitelist = new List<PlanetLayerDef>();
+
+		public List<PlanetLayerDef> raidArrivalLayerBlacklist = new List<PlanetLayerDef>();
+
 		public int requiredCountAtGameStart;
-
-		public int maxCountAtGameStart = 9999;
-
-		public bool canMakeRandomly;
 
 		public float settlementGenerationWeight;
 
 		public bool generateNewLeaderFromMapMembersOnly;
 
-		public RulePackDef pawnNameMaker;
+		public int maxConfigurableAtWorldCreation = -1;
 
-		public RulePackDef pawnNameMakerFemale;
+		public int startingCountAtWorldCreation = 1;
+
+		public int configurationListOrderPriority;
+
+		public FactionDef replacesFaction;
+
+		public bool displayInFactionSelection = true;
 
 		public TechLevel techLevel;
 
@@ -106,32 +155,33 @@ namespace RimWorld
 		[NoTranslate]
 		private List<string> backstoryCategories;
 
-		[NoTranslate]
-		public List<string> hairTags = new List<string>();
-
 		public ThingFilter apparelStuffFilter;
+
+		public ThingSetMakerDef settlementLootMaker;
 
 		public ThingSetMakerDef raidLootMaker;
 
-		public SimpleCurve raidLootValueFromPointsCurve = DefaultRaidLootValueFromPointsCurve_NewTemp;
+		public SimpleCurve raidLootValueFromPointsCurve;
 
 		public List<TraderKindDef> caravanTraderKinds = new List<TraderKindDef>();
+
+		public List<TraderKindDef> orbitalTraderKinds = new List<TraderKindDef>();
 
 		public List<TraderKindDef> visitorTraderKinds = new List<TraderKindDef>();
 
 		public List<TraderKindDef> baseTraderKinds = new List<TraderKindDef>();
 
-		public float geneticVariance = 1f;
+		public XenotypeSet xenotypeSet;
 
-		public IntRange startingGoodwill = IntRange.zero;
+		public FloatRange melaninRange = FloatRange.ZeroToOne;
+
+		public List<RaidStrategyDef> disallowedRaidStrategies;
+
+		public List<RaidAgeRestrictionDef> disallowedRaidAgeRestrictions;
 
 		public bool mustStartOneEnemy;
 
-		public IntRange naturalColonyGoodwill = IntRange.zero;
-
-		public float goodwillDailyGain;
-
-		public float goodwillDailyFall;
+		public bool naturalEnemy;
 
 		public bool permanentEnemy;
 
@@ -153,10 +203,62 @@ namespace RimWorld
 
 		public List<RoyalImplantRule> royalImplantRules;
 
-		[Obsolete("Will be removed in the future")]
-		public RoyalTitleDef minTitleForBladelinkWeapons;
-
 		public string renounceTitleMessage;
+
+		public List<CultureDef> allowedCultures;
+
+		public List<MemeDef> requiredMemes;
+
+		public List<MemeDef> allowedMemes;
+
+		public List<MemeDef> disallowedMemes;
+
+		public List<PreceptDef> disallowedPrecepts;
+
+		public List<MemeWeight> structureMemeWeights;
+
+		public bool classicIdeo;
+
+		public bool fixedIdeo;
+
+		public string ideoName;
+
+		public bool hiddenIdeo;
+
+		[MustTranslate]
+		public string ideoDescription;
+
+		public List<StyleCategoryDef> styles;
+
+		public List<DeityPreset> deityPresets;
+
+		public List<MemeDef> forcedMemes;
+
+		public bool requiredPreceptsOnly;
+
+		[Obsolete("Will be removed in future version.")]
+		public int maxCountAtGameStart;
+
+		[Obsolete("Will be removed in future version.")]
+		public bool canMakeRandomly;
+
+		[MayTranslate]
+		public string dialogFactionGreetingHostile;
+
+		[MayTranslate]
+		public string dialogFactionGreetingHostileAppreciative;
+
+		[MayTranslate]
+		public string dialogFactionGreetingWary;
+
+		[MayTranslate]
+		public string dialogFactionGreetingWarm;
+
+		[MayTranslate]
+		public string dialogMilitaryAidSent;
+
+		[MustTranslate]
+		public string messageDefendersAttacking;
 
 		[Unsaved(false)]
 		private Texture2D factionIcon;
@@ -168,6 +270,9 @@ namespace RimWorld
 		private Texture2D royalFavorIcon;
 
 		[Unsaved(false)]
+		private string cachedDescription;
+
+		[Unsaved(false)]
 		private List<RoyalTitleDef> royalTitlesAwardableInSeniorityOrderForReading;
 
 		[Unsaved(false)]
@@ -175,16 +280,6 @@ namespace RimWorld
 
 		[Unsaved(false)]
 		private RoyalTitleInheritanceWorker royalTitleInheritanceWorker;
-
-		[Obsolete]
-		private static readonly SimpleCurve DefaultRaidLootValueFromPointsCurve_NewTemp = new SimpleCurve
-		{
-			new CurvePoint(35f, 15f),
-			new CurvePoint(100f, 120f),
-			new CurvePoint(1000f, 500f),
-			new CurvePoint(2000f, 800f),
-			new CurvePoint(4000f, 1000f)
-		};
 
 		public List<RoyalTitleDef> RoyalTitlesAwardableInSeniorityOrderForReading
 		{
@@ -298,7 +393,91 @@ namespace RimWorld
 
 		public bool HasRoyalTitles => RoyalTitlesAwardableInSeniorityOrderForReading.Count > 0;
 
-		public float MinPointsToGeneratePawnGroup(PawnGroupKindDef groupKind)
+		public Color DefaultColor
+		{
+			get
+			{
+				if (colorSpectrum.NullOrEmpty())
+				{
+					return Color.white;
+				}
+				return colorSpectrum[0];
+			}
+		}
+
+		public float BaselinerChance
+		{
+			get
+			{
+				if (xenotypeSet != null)
+				{
+					return xenotypeSet.BaselinerChance;
+				}
+				return 1f;
+			}
+		}
+
+		public string Description
+		{
+			get
+			{
+				if (cachedDescription == null)
+				{
+					if (description.NullOrEmpty())
+					{
+						description = string.Empty;
+					}
+					else
+					{
+						cachedDescription = description;
+					}
+					if (ModsConfig.BiotechActive && humanlikeFaction)
+					{
+						List<XenotypeChance> list = new List<XenotypeChance>();
+						cachedDescription = cachedDescription + "\n\n" + ("MemberXenotypeChances".Translate() + ":").AsTipTitle() + "\n";
+						if (BaselinerChance > 0f)
+						{
+							list.Add(new XenotypeChance(XenotypeDefOf.Baseliner, BaselinerChance));
+						}
+						if (xenotypeSet != null)
+						{
+							for (int i = 0; i < xenotypeSet.Count; i++)
+							{
+								if (xenotypeSet[i].xenotype != XenotypeDefOf.Baseliner)
+								{
+									list.Add(xenotypeSet[i]);
+								}
+							}
+						}
+						if (list.Any())
+						{
+							list.SortBy((XenotypeChance x) => 0f - x.chance);
+							cachedDescription += list.Select((XenotypeChance x) => $"{x.xenotype.LabelCap}: {Mathf.Min(x.chance, 1f).ToStringPercent()}").ToLineList("  - ");
+						}
+					}
+				}
+				return cachedDescription;
+			}
+		}
+
+		public bool PermanentlyHostileTo(FactionDef otherFactionDef)
+		{
+			if (permanentEnemy)
+			{
+				return true;
+			}
+			if (permanentEnemyToEveryoneExcept != null && !permanentEnemyToEveryoneExcept.Contains(otherFactionDef))
+			{
+				return true;
+			}
+			if (permanentEnemyToEveryoneExceptPlayer && !otherFactionDef.isPlayer)
+			{
+				return true;
+			}
+			return false;
+		}
+
+		public float MinPointsToGeneratePawnGroup(PawnGroupKindDef groupKind, PawnGroupMakerParms parms = null)
 		{
 			if (pawnGroupMakers == null)
 			{
@@ -309,7 +488,7 @@ namespace RimWorld
 			{
 				return 0f;
 			}
-			return source.Min((PawnGroupMaker pgm) => pgm.MinPointsToGenerateAnything);
+			return source.Min((PawnGroupMaker pgm) => pgm.MinPointsToGenerateAnything(this, parms));
 		}
 
 		public bool CanUseStuffForApparel(ThingDef stuffDef)
@@ -364,73 +543,43 @@ namespace RimWorld
 			{
 				yield return "has pawnGroupMakers but missing maxPawnCostPerTotalPointsCurve";
 			}
-			if (!isPlayer && factionNameMaker == null && fixedName == null)
-			{
-				yield return "FactionTypeDef " + defName + " lacks a factionNameMaker and a fixedName.";
-			}
 			if (techLevel == TechLevel.Undefined)
 			{
 				yield return defName + " has no tech level.";
 			}
-			if (humanlikeFaction)
+			if (humanlikeFaction && backstoryFilters.NullOrEmpty())
 			{
-				if (backstoryFilters.NullOrEmpty())
+				yield return defName + " is humanlikeFaction but has no backstory categories.";
+			}
+			if (permanentEnemy && mustStartOneEnemy)
+			{
+				yield return "permanentEnemy has mustStartOneEnemy = true, which is redundant";
+			}
+			if (disallowedMemes != null && allowedMemes != null)
+			{
+				yield return "both disallowedMemes (black list) and allowedMemes (white list) are defined";
+			}
+			if (requiredMemes != null)
+			{
+				MemeDef memeDef = requiredMemes.FirstOrDefault((MemeDef x) => !IdeoUtility.IsMemeAllowedFor(x, this));
+				if (memeDef != null)
 				{
-					yield return defName + " is humanlikeFaction but has no backstory categories.";
-				}
-				if (hairTags.Count == 0)
-				{
-					yield return defName + " is humanlikeFaction but has no hairTags.";
+					yield return "has a required meme which is not allowed: " + memeDef.defName;
 				}
 			}
-			if (isPlayer)
+			if (raidLootValueFromPointsCurve == null)
 			{
-				if (settlementNameMaker == null)
-				{
-					yield return "isPlayer is true but settlementNameMaker is null";
-				}
-				if (factionNameMaker == null)
-				{
-					yield return "isPlayer is true but factionNameMaker is null";
-				}
-				if (playerInitialSettlementNameMaker == null)
-				{
-					yield return "isPlayer is true but playerInitialSettlementNameMaker is null";
-				}
+				yield return "raidLootValueFromPointsCurve must be defined";
 			}
-			if (permanentEnemy)
+			if (dropPodActive == null != (dropPodIncoming == null))
 			{
-				if (mustStartOneEnemy)
-				{
-					yield return "permanentEnemy has mustStartOneEnemy = true, which is redundant";
-				}
-				if (goodwillDailyFall != 0f || goodwillDailyGain != 0f)
-				{
-					yield return "permanentEnemy has a goodwillDailyFall or goodwillDailyGain";
-				}
-				if (startingGoodwill != IntRange.zero)
-				{
-					yield return "permanentEnemy has a startingGoodwill defined";
-				}
-				if (naturalColonyGoodwill != IntRange.zero)
-				{
-					yield return "permanentEnemy has a naturalColonyGoodwill defined";
-				}
+				yield return "Both drop pod and drop pod incoming must be defined or both must be undefined";
 			}
 		}
 
 		public static FactionDef Named(string defName)
 		{
 			return DefDatabase<FactionDef>.GetNamed(defName);
-		}
-
-		public RulePackDef GetNameMaker(Gender gender)
-		{
-			if (gender == Gender.Female && pawnNameMakerFemale != null)
-			{
-				return pawnNameMakerFemale;
-			}
-			return pawnNameMaker;
 		}
 	}
 }

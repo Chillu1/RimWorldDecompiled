@@ -17,14 +17,23 @@ namespace RimWorld
 			return description.Formatted(p.Named("PAWN"));
 		}
 
+		private ThoughtState? FailState(Pawn p)
+		{
+			if (!ThoughtUtility.CanGetThought(p, def))
+			{
+				return ThoughtState.Inactive;
+			}
+			return null;
+		}
+
 		public ThoughtState CurrentState(Pawn p)
 		{
-			return PostProcessedState(CurrentStateInternal(p));
+			return PostProcessedState(FailState(p) ?? CurrentStateInternal(p));
 		}
 
 		public ThoughtState CurrentSocialState(Pawn p, Pawn otherPawn)
 		{
-			return PostProcessedState(CurrentSocialStateInternal(p, otherPawn));
+			return PostProcessedState(FailState(p) ?? CurrentSocialStateInternal(p, otherPawn));
 		}
 
 		private ThoughtState PostProcessedState(ThoughtState state)

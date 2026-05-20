@@ -26,10 +26,10 @@ namespace RimWorld.BaseGen
 			}
 			parms.makingFaction = rp.faction;
 			List<Thing> list = obj.root.Generate(parms);
-			for (int i = 0; i < list.Count; i++)
+			for (int num2 = 0; num2 < list.Count; num2++)
 			{
 				ResolveParams resolveParams = rp;
-				resolveParams.singleThingToSpawn = list[i];
+				resolveParams.singleThingToSpawn = list[num2];
 				BaseGen.symbolStack.Push("thing", resolveParams);
 			}
 		}

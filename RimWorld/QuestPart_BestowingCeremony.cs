@@ -16,6 +16,15 @@ namespace RimWorld
 
 		public string questTag;
 
+		public override bool QuestPartReserves(Pawn p)
+		{
+			if (p != bestower)
+			{
+				return p == target;
+			}
+			return true;
+		}
+
 		public static bool TryGetCeremonySpot(Pawn pawn, Faction bestowingFaction, out LocalTargetInfo spot, out IntVec3 absoluteSpot)
 		{
 			Building_Throne throne;
@@ -63,7 +72,7 @@ namespace RimWorld
 						return true;
 					}
 				}
-				if (pawn.Map != null && pawn.Map.IsPlayerHome && (RCellFinder.TryFindGatheringSpot_NewTemp(pawn, GatheringDefOf.Party, ignoreRequiredColonistCount: true, out var result) || RCellFinder.TryFindRandomSpotJustOutsideColony(pawn.Position, pawn.Map, out result)))
+				if (pawn.Map != null && pawn.Map.IsPlayerHome && (RCellFinder.TryFindGatheringSpot(pawn, GatheringDefOf.Party, ignoreRequiredColonistCount: true, out var result) || RCellFinder.TryFindRandomSpotJustOutsideColony(pawn.Position, pawn.Map, out result)))
 				{
 					spot = (absoluteSpot = result);
 					return true;
@@ -83,6 +92,19 @@ namespace RimWorld
 					return false;
 				}
 				if (s.GetRoom(throne.Map) != throneRoom)
+				{
+					return false;
+				}
+				bool flag2 = false;
+				for (int k = 0; k < 4; k++)
+				{
+					if ((s + GenAdj.CardinalDirections[k]).Standable(pawn.Map))
+					{
+						flag2 = true;
+						break;
+					}
+				}
+				if (!flag2)
 				{
 					return false;
 				}

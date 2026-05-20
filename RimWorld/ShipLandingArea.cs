@@ -13,6 +13,8 @@ namespace RimWorld
 
 		private bool blockedByRoof;
 
+		private bool blockedByTerrainAffordance;
+
 		public List<CompShipLandingBeacon> beacons = new List<CompShipLandingBeacon>();
 
 		public IntVec3 CenterCell => rect.CenterCell;
@@ -23,15 +25,17 @@ namespace RimWorld
 		{
 			get
 			{
-				if (firstBlockingThing == null)
+				if (firstBlockingThing == null && !blockedByRoof)
 				{
-					return !blockedByRoof;
+					return !blockedByTerrainAffordance;
 				}
 				return false;
 			}
 		}
 
 		public bool BlockedByRoof => blockedByRoof;
+
+		public bool BlockedByTerrainAffordance => blockedByTerrainAffordance;
 
 		public Thing FirstBlockingThing => firstBlockingThing;
 
@@ -69,11 +73,17 @@ namespace RimWorld
 				List<Thing> thingList = item.GetThingList(map);
 				for (int i = 0; i < thingList.Count; i++)
 				{
-					if (!(thingList[i] is Pawn) && (thingList[i].def.Fillage != 0 || thingList[i].def.IsEdifice() || thingList[i] is Skyfaller))
+					if (!(thingList[i] is Pawn) && (thingList[i].def.Fillage != FillCategory.None || thingList[i].def.IsEdifice() || thingList[i] is Skyfaller))
 					{
 						firstBlockingThing = thingList[i];
 						return;
 					}
+				}
+				TerrainAffordanceDef landingAreaTerrainSupport = beacons[0].Props.landingAreaTerrainSupport;
+				if (landingAreaTerrainSupport != null && !item.SupportsStructureType(map, landingAreaTerrainSupport))
+				{
+					blockedByTerrainAffordance = true;
+					return;
 				}
 			}
 			firstBlockingThing = null;

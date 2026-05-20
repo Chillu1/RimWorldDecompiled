@@ -9,6 +9,7 @@ namespace Verse
 		public SubEffecter_SprayerContinuous(SubEffecterDef def, Effecter parent)
 			: base(def, parent)
 		{
+			ticksUntilMote = def.initialDelayTicks;
 		}
 
 		public override void SubEffectTick(TargetInfo A, TargetInfo B)

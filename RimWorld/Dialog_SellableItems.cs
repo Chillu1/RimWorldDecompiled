@@ -54,13 +54,12 @@ namespace RimWorld
 			Widgets.Label(rect, "SellableItemsTitle".Translate().CapitalizeFirst());
 			Text.Font = GameFont.Small;
 			Text.Anchor = TextAnchor.MiddleCenter;
-			ITraderRestockingInfoProvider traderRestockingInfoProvider = trader as ITraderRestockingInfoProvider;
-			if (traderRestockingInfoProvider != null)
+			if (trader is ITraderRestockingInfoProvider { NextRestockTick: var nextRestockTick } traderRestockingInfoProvider)
 			{
-				int nextRestockTick = traderRestockingInfoProvider.NextRestockTick;
 				if (nextRestockTick != -1)
 				{
-					Widgets.Label(label: "NextTraderRestock".Translate((nextRestockTick - Find.TickManager.TicksGame).TicksToDays().ToString("0.0")), rect: new Rect(0f, num, inRect.width, 20f));
+					float num2 = (nextRestockTick - Find.TickManager.TicksGame).TicksToDays();
+					Widgets.Label(new Rect(0f, num, inRect.width, 20f), "NextTraderRestock".Translate(num2.ToString("0.0")));
 					num += 20f;
 				}
 				else if (!traderRestockingInfoProvider.EverVisited)
@@ -77,9 +76,9 @@ namespace RimWorld
 			Text.Anchor = TextAnchor.UpperLeft;
 			inRect.yMin += 64f + num;
 			Widgets.DrawMenuSection(inRect);
-			TabDrawer.DrawTabs(inRect, tabs, 2);
+			TabDrawer.DrawTabs(inRect, tabs);
 			inRect = inRect.ContractedBy(17f);
-			GUI.BeginGroup(inRect);
+			Widgets.BeginGroup(inRect);
 			Rect rect2 = inRect.AtZero();
 			DoBottomButtons(rect2);
 			Rect outRect = rect2;
@@ -91,11 +90,11 @@ namespace RimWorld
 				num = 0f;
 				Rect viewRect = new Rect(0f, 0f, outRect.width - 16f, height);
 				Widgets.BeginScrollView(outRect, ref scrollPosition, viewRect);
-				float num2 = scrollPosition.y - 24f;
-				float num3 = scrollPosition.y + outRect.height;
+				float num3 = scrollPosition.y - 24f;
+				float num4 = scrollPosition.y + outRect.height;
 				for (int i = 0; i < sellableItemsInCategory.Count; i++)
 				{
-					if (num > num2 && num < num3)
+					if (num > num3 && num < num4)
 					{
 						Widgets.DefLabelWithIcon(new Rect(0f, num, viewRect.width, 24f), sellableItemsInCategory[i]);
 					}
@@ -107,7 +106,7 @@ namespace RimWorld
 			{
 				Widgets.NoneLabel(0f, outRect.width);
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		private void DoBottomButtons(Rect rect)
@@ -141,7 +140,7 @@ namespace RimWorld
 			for (int i = 0; i < allDefsListForReading.Count; i++)
 			{
 				ThingCategoryDef category = allDefsListForReading[i];
-				if (category.parent == ThingCategoryDefOf.Root && AnyTraderWillEverTrade(category))
+				if (category.parent == ThingCategoryDefOf.Root && category != ThingCategoryDefOf.Animals && GetSellableItemsInCategory(category, pawns: false).Count != 0)
 				{
 					if (currentCategory == null)
 					{
@@ -170,7 +169,7 @@ namespace RimWorld
 					cachedSellablePawns = new List<ThingDef>();
 					for (int i = 0; i < sellableItems.Count; i++)
 					{
-						if (sellableItems[i].category == ThingCategory.Pawn)
+						if (sellableItems[i].category == ThingCategory.Pawn && (!ModsConfig.AnomalyActive || sellableItems[i] != ThingDefOf.CreepJoiner))
 						{
 							cachedSellablePawns.Add(sellableItems[i]);
 						}
@@ -192,27 +191,6 @@ namespace RimWorld
 			}
 			cachedSellableItemsByCategory.Add(category, value);
 			return value;
-		}
-
-		private bool AnyTraderWillEverTrade(ThingCategoryDef thingCategory)
-		{
-			List<ThingDef> allDefsListForReading = DefDatabase<ThingDef>.AllDefsListForReading;
-			for (int i = 0; i < allDefsListForReading.Count; i++)
-			{
-				if (!allDefsListForReading[i].IsWithinCategory(thingCategory))
-				{
-					continue;
-				}
-				List<TraderKindDef> allDefsListForReading2 = DefDatabase<TraderKindDef>.AllDefsListForReading;
-				for (int j = 0; j < allDefsListForReading2.Count; j++)
-				{
-					if (allDefsListForReading2[j].WillTrade(allDefsListForReading[i]))
-					{
-						return true;
-					}
-				}
-			}
-			return false;
 		}
 	}
 }

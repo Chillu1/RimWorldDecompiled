@@ -20,6 +20,10 @@ namespace Verse
 			{
 				return false;
 			}
+			if (pawn.IsSubhuman)
+			{
+				return false;
+			}
 			float num = hediff.Severity / hediff.Part.def.GetMaxHealth(pawn);
 			if (Rand.Value < num * chancePerDamagePct && TryApply(pawn))
 			{

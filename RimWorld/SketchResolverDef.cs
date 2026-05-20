@@ -9,12 +9,12 @@ namespace RimWorld
 
 		public bool isRoot;
 
-		public void Resolve(ResolveParams parms)
+		public void Resolve(SketchResolveParams parms)
 		{
 			resolver.Resolve(parms);
 		}
 
-		public bool CanResolve(ResolveParams parms)
+		public bool CanResolve(SketchResolveParams parms)
 		{
 			return resolver.CanResolve(parms);
 		}

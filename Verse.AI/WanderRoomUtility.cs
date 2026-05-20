@@ -5,7 +5,7 @@ namespace Verse.AI
 		public static bool IsValidWanderDest(Pawn pawn, IntVec3 loc, IntVec3 root)
 		{
 			Room room = root.GetRoom(pawn.Map);
-			if (room == null || room.RegionType == RegionType.Portal)
+			if (room == null || room.IsDoorway)
 			{
 				return true;
 			}

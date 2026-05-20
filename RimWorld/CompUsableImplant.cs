@@ -7,22 +7,18 @@ namespace RimWorld
 		protected override string FloatMenuOptionLabel(Pawn pawn)
 		{
 			CompUseEffect_InstallImplant compUseEffect_InstallImplant = parent.TryGetComp<CompUseEffect_InstallImplant>();
-			if (compUseEffect_InstallImplant != null)
+			if (compUseEffect_InstallImplant != null && compUseEffect_InstallImplant.GetExistingImplant(pawn) is Hediff_Level hediff_Level && compUseEffect_InstallImplant.Props.canUpgrade && (float)hediff_Level.level < hediff_Level.def.maxSeverity)
 			{
-				Hediff_ImplantWithLevel hediff_ImplantWithLevel = compUseEffect_InstallImplant.GetExistingImplant(pawn) as Hediff_ImplantWithLevel;
-				if (hediff_ImplantWithLevel != null && compUseEffect_InstallImplant.Props.canUpgrade && (float)hediff_ImplantWithLevel.level < hediff_ImplantWithLevel.def.maxSeverity)
-				{
-					return "UpgradeImplant".Translate(hediff_ImplantWithLevel.def.label, hediff_ImplantWithLevel.level + 1);
-				}
+				return "UpgradeImplant".Translate(hediff_Level.def.label, hediff_Level.level + 1);
 			}
 			return base.FloatMenuOptionLabel(pawn);
 		}
 
-		public override void TryStartUseJob(Pawn pawn, LocalTargetInfo extraTarget)
+		public override void TryStartUseJob(Pawn pawn, LocalTargetInfo extraTarget, bool forced = false)
 		{
 			CompUseEffect_InstallImplant useEffectImplant = parent.TryGetComp<CompUseEffect_InstallImplant>();
-			Hediff_ImplantWithLevel hediff_ImplantWithLevel = useEffectImplant.GetExistingImplant(pawn) as Hediff_ImplantWithLevel;
-			TaggedString text = CompRoyalImplant.CheckForViolations(pawn, useEffectImplant.Props.hediffDef, (hediff_ImplantWithLevel != null && useEffectImplant.Props.canUpgrade) ? 1 : 0);
+			Hediff_Level hediff_Level = useEffectImplant.GetExistingImplant(pawn) as Hediff_Level;
+			TaggedString text = CompRoyalImplant.CheckForViolations(pawn, useEffectImplant.Props.hediffDef, (hediff_Level != null && useEffectImplant.Props.canUpgrade) ? 1 : 0);
 			if (!text.NullOrEmpty())
 			{
 				Find.WindowStack.Add(new Dialog_MessageBox(text, "Yes".Translate(), delegate

@@ -22,7 +22,7 @@ namespace RimWorld
 
 		public override void Generate(Map map, GenStepParams parms)
 		{
-			if (!Find.Storyteller.difficultyValues.allowCaveHives)
+			if (!Find.Storyteller.difficulty.allowCaveHives || Faction.OfInsects == null)
 			{
 				return;
 			}
@@ -48,15 +48,15 @@ namespace RimWorld
 			int num3 = GenMath.RoundRandom((float)num2 / 1000f);
 			GenMorphology.Erode(rockCells, 10, map);
 			possibleSpawnCells.Clear();
-			for (int i = 0; i < rockCells.Count; i++)
+			for (int num4 = 0; num4 < rockCells.Count; num4++)
 			{
-				if (caves[rockCells[i]] > 0f && !hashSet.Contains(rockCells[i]))
+				if (caves[rockCells[num4]] > 0f && !hashSet.Contains(rockCells[num4]))
 				{
-					possibleSpawnCells.Add(rockCells[i]);
+					possibleSpawnCells.Add(rockCells[num4]);
 				}
 			}
 			spawnedHives.Clear();
-			for (int j = 0; j < num3; j++)
+			for (int num5 = 0; num5 < num3; num5++)
 			{
 				TrySpawnHive(map);
 			}
@@ -68,16 +68,8 @@ namespace RimWorld
 			if (TryFindHiveSpawnCell(map, out var spawnCell))
 			{
 				possibleSpawnCells.Remove(spawnCell);
-				Hive hive = (Hive)GenSpawn.Spawn(ThingMaker.MakeThing(ThingDefOf.Hive), spawnCell, map);
-				hive.SetFaction(Faction.OfInsects);
-				hive.PawnSpawner.aggressive = false;
-				(from x in hive.GetComps<CompSpawner>()
-					where x.PropsSpawner.thingToSpawn == ThingDefOf.GlowPod
-					select x).First().TryDoSpawn();
-				hive.PawnSpawner.SpawnPawnsUntilPoints(Rand.Range(200f, 500f));
-				hive.PawnSpawner.canSpawnPawns = false;
-				hive.GetComp<CompSpawnerHives>().canSpawnHives = false;
-				spawnedHives.Add(hive);
+				Hive item = HiveUtility.SpawnHive(spawnCell, map, WipeMode.VanishOrMoveAside, spawnInsectsImmediately: true, canSpawnHives: false, canSpawnInsects: false, dormant: false, aggressive: false);
+				spawnedHives.Add(item);
 			}
 		}
 
@@ -92,12 +84,12 @@ namespace RimWorld
 					break;
 				}
 				float num2 = -1f;
-				for (int j = 0; j < spawnedHives.Count; j++)
+				for (int num3 = 0; num3 < spawnedHives.Count; num3++)
 				{
-					float num3 = result.DistanceToSquared(spawnedHives[j].Position);
-					if (num2 < 0f || num3 < num2)
+					float num4 = result.DistanceToSquared(spawnedHives[num3].Position);
+					if (num2 < 0f || num4 < num2)
 					{
-						num2 = num3;
+						num2 = num4;
 					}
 				}
 				if (!intVec.IsValid || num2 > num)

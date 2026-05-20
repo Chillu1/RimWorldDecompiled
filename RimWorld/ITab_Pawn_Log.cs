@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
+using LudeonTK;
 using UnityEngine;
 using Verse;
 
@@ -35,6 +35,8 @@ namespace RimWorld
 		[TweakValue("Interface", 0f, 100f)]
 		private static float ButtonOffset = 60f;
 
+		private const int MaxLogLines = 300;
+
 		public bool showAll;
 
 		public bool showCombat = true;
@@ -59,12 +61,11 @@ namespace RimWorld
 		{
 			get
 			{
-				if (base.SelPawn != null)
+				if (SelPawn != null)
 				{
-					return base.SelPawn;
+					return SelPawn;
 				}
-				Corpse corpse = base.SelThing as Corpse;
-				if (corpse != null)
+				if (base.SelThing is Corpse corpse)
 				{
 					return corpse.InnerPawn;
 				}
@@ -82,6 +83,8 @@ namespace RimWorld
 		{
 			Pawn selPawnForCombatInfo = SelPawnForCombatInfo;
 			Rect rect = new Rect(0f, 0f, size.x, size.y);
+			GameFont font = Text.Font;
+			Text.Font = GameFont.Small;
 			Rect rect2 = new Rect(ShowAllX, ToolbarHeight, ShowAllWidth, 24f);
 			bool flag = showAll;
 			Widgets.CheckboxLabeled(rect2, "ShowAll".Translate(), ref showAll);
@@ -103,9 +106,10 @@ namespace RimWorld
 			{
 				cachedLogDisplay = null;
 			}
+			Text.Font = font;
 			if (cachedLogDisplay == null || cachedLogDisplayLastTick != selPawnForCombatInfo.records.LastBattleTick || cachedLogPlayLastTick != Find.PlayLog.LastTick || cachedLogForPawn != selPawnForCombatInfo)
 			{
-				cachedLogDisplay = ITab_Pawn_Log_Utility.GenerateLogLinesFor(selPawnForCombatInfo, showAll, showCombat, showSocial).ToList();
+				cachedLogDisplay = ITab_Pawn_Log_Utility.GenerateLogLinesFor(selPawnForCombatInfo, showAll, showCombat, showSocial, 300);
 				cachedLogDisplayLastTick = selPawnForCombatInfo.records.LastBattleTick;
 				cachedLogPlayLastTick = Find.PlayLog.LastTick;
 				cachedLogForPawn = selPawnForCombatInfo;
@@ -136,14 +140,25 @@ namespace RimWorld
 			logSeek = null;
 			if (num > 0f)
 			{
-				Rect viewRect = new Rect(0f, 0f, rect.width - 16f, num);
+				Rect rect6 = new Rect(0f, 0f, rect.width - 16f, num);
 				data.StartNewDraw();
-				Widgets.BeginScrollView(rect, ref scrollPosition, viewRect);
+				Rect rect7 = rect6;
+				rect7.yMin += scrollPosition.y;
+				rect7.height = rect.height;
+				Widgets.BeginScrollView(rect, ref scrollPosition, rect6);
 				float num2 = 0f;
 				foreach (ITab_Pawn_Log_Utility.LogLineDisplayable item3 in cachedLogDisplay)
 				{
-					item3.Draw(num2, width, data);
-					num2 += item3.GetHeight(width);
+					float height = item3.GetHeight(width);
+					if (rect7.Overlaps(new Rect(0f, num2, width, height)))
+					{
+						item3.Draw(num2, width, data);
+					}
+					else
+					{
+						data.alternatingBackground = !data.alternatingBackground;
+					}
+					num2 += height;
 				}
 				Widgets.EndScrollView();
 			}

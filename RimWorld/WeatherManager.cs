@@ -9,19 +9,25 @@ namespace RimWorld
 	{
 		public Map map;
 
-		public WeatherEventHandler eventHandler = new WeatherEventHandler();
+		public readonly WeatherEventHandler eventHandler = new WeatherEventHandler();
 
 		public WeatherDef curWeather = WeatherDefOf.Clear;
 
 		public WeatherDef lastWeather = WeatherDefOf.Clear;
 
+		public float prevSkyTargetLerp = -1f;
+
+		public float currSkyTargetLerp = -1f;
+
 		public int curWeatherAge;
 
-		private List<Sustainer> ambienceSustainers = new List<Sustainer>();
-
-		public TemperatureMemory growthSeasonMemory;
+		private readonly Dictionary<SoundDef, Sustainer> ambienceSustainers = new Dictionary<SoundDef, Sustainer>();
 
 		public const float TransitionTicks = 4000f;
+
+		private bool tickedLastWeather;
+
+		private static readonly HashSet<SoundDef> TmpToRemove = new HashSet<SoundDef>();
 
 		public float TransitionLerpFactor
 		{
@@ -40,6 +46,18 @@ namespace RimWorld
 
 		public float SnowRate => Mathf.Lerp(lastWeather.snowRate, curWeather.snowRate, TransitionLerpFactor);
 
+		public float SandRate
+		{
+			get
+			{
+				if (!ModsConfig.OdysseyActive)
+				{
+					return 0f;
+				}
+				return Mathf.Lerp(lastWeather.sandRate, curWeather.sandRate, TransitionLerpFactor);
+			}
+		}
+
 		public float CurWindSpeedFactor => Mathf.Lerp(lastWeather.windSpeedFactor, curWeather.windSpeedFactor, TransitionLerpFactor);
 
 		public float CurWindSpeedOffset => Mathf.Lerp(lastWeather.windSpeedOffset, curWeather.windSpeedOffset, TransitionLerpFactor);
@@ -47,6 +65,8 @@ namespace RimWorld
 		public float CurMoveSpeedMultiplier => Mathf.Lerp(lastWeather.moveSpeedMultiplier, curWeather.moveSpeedMultiplier, TransitionLerpFactor);
 
 		public float CurWeatherAccuracyMultiplier => Mathf.Lerp(lastWeather.accuracyMultiplier, curWeather.accuracyMultiplier, TransitionLerpFactor);
+
+		public float CurWeatherMaxRangeCap => curWeather.maxRangeCap;
 
 		public WeatherDef CurWeatherPerceived
 		{
@@ -60,8 +80,7 @@ namespace RimWorld
 				{
 					return curWeather;
 				}
-				float num = 0f;
-				num = ((curWeather.perceivePriority > lastWeather.perceivePriority) ? 0.18f : ((!(lastWeather.perceivePriority > curWeather.perceivePriority)) ? 0.5f : 0.82f));
+				float num = ((curWeather.perceivePriority > lastWeather.perceivePriority) ? 0.18f : ((!(lastWeather.perceivePriority > curWeather.perceivePriority)) ? 0.5f : 0.82f));
 				if (!(TransitionLerpFactor < num))
 				{
 					return curWeather;
@@ -93,15 +112,15 @@ namespace RimWorld
 		public WeatherManager(Map map)
 		{
 			this.map = map;
-			growthSeasonMemory = new TemperatureMemory(map);
 		}
 
 		public void ExposeData()
 		{
+			Scribe_Values.Look(ref curWeatherAge, "curWeatherAge", 0, forceSave: true);
+			Scribe_Values.Look(ref prevSkyTargetLerp, "prevSkyTargetLerp", -1f);
+			Scribe_Values.Look(ref currSkyTargetLerp, "currSkyTargetLerp", -1f);
 			Scribe_Defs.Look(ref curWeather, "curWeather");
 			Scribe_Defs.Look(ref lastWeather, "lastWeather");
-			Scribe_Values.Look(ref curWeatherAge, "curWeatherAge", 0, forceSave: true);
-			Scribe_Deep.Look(ref growthSeasonMemory, "growthSeasonMemory", map);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				ambienceSustainers.Clear();
@@ -112,7 +131,13 @@ namespace RimWorld
 		{
 			lastWeather = curWeather;
 			curWeather = newWeather;
+			lastWeather.Worker.OnWeatherEnd(map);
+			ResetSkyTargetLerpCache();
 			curWeatherAge = 0;
+			if (lastWeather != newWeather)
+			{
+				newWeather.Worker.OnWeatherStart(map);
+			}
 		}
 
 		public void DoWeatherGUI(Rect rect)
@@ -135,29 +160,33 @@ namespace RimWorld
 			eventHandler.WeatherEventHandlerTick();
 			curWeatherAge++;
 			curWeather.Worker.WeatherTick(map, TransitionLerpFactor);
-			lastWeather.Worker.WeatherTick(map, 1f - TransitionLerpFactor);
-			growthSeasonMemory.GrowthSeasonMemoryTick();
-			for (int i = 0; i < curWeather.ambientSounds.Count; i++)
+			if (TransitionLerpFactor < 1f || !tickedLastWeather)
 			{
-				bool flag = false;
-				for (int num = ambienceSustainers.Count - 1; num >= 0; num--)
-				{
-					if (ambienceSustainers[num].def == curWeather.ambientSounds[i])
-					{
-						flag = true;
-						break;
-					}
-				}
-				if (!flag && VolumeOfAmbientSound(curWeather.ambientSounds[i]) > 0.0001f)
+				lastWeather.Worker.WeatherTick(map, 1f - TransitionLerpFactor);
+				tickedLastWeather = true;
+			}
+			AmbientSoundsTick();
+		}
+
+		private void AmbientSoundsTick()
+		{
+			foreach (SoundDef ambientSound in curWeather.ambientSounds)
+			{
+				if (!IsAmbienceSoundPlaying(ambientSound) && VolumeOfAmbientSound(ambientSound) > 0.0001f)
 				{
 					SoundInfo info = SoundInfo.OnCamera();
-					Sustainer sustainer = curWeather.ambientSounds[i].TrySpawnSustainer(info);
+					Sustainer sustainer = ambientSound.TrySpawnSustainer(info);
 					if (sustainer != null)
 					{
-						ambienceSustainers.Add(sustainer);
+						ambienceSustainers[sustainer.def] = sustainer;
 					}
 				}
 			}
+		}
+
+		private bool IsAmbienceSoundPlaying(SoundDef sound)
+		{
+			return ambienceSustainers.ContainsKey(sound);
 		}
 
 		public void WeatherManagerUpdate()
@@ -167,28 +196,42 @@ namespace RimWorld
 
 		public void EndAllSustainers()
 		{
-			for (int i = 0; i < ambienceSustainers.Count; i++)
+			foreach (KeyValuePair<SoundDef, Sustainer> ambienceSustainer in ambienceSustainers)
 			{
-				ambienceSustainers[i].End();
+				ambienceSustainer.Deconstruct(out var _, out var value);
+				value.End();
 			}
 			ambienceSustainers.Clear();
 		}
 
+		public void ResetSkyTargetLerpCache()
+		{
+			prevSkyTargetLerp = -1f;
+			currSkyTargetLerp = -1f;
+		}
+
 		private void SetAmbienceSustainersVolume()
 		{
-			for (int num = ambienceSustainers.Count - 1; num >= 0; num--)
+			TmpToRemove.Clear();
+			foreach (KeyValuePair<SoundDef, Sustainer> ambienceSustainer in ambienceSustainers)
 			{
-				float num2 = VolumeOfAmbientSound(ambienceSustainers[num].def);
-				if (num2 > 0.0001f)
+				ambienceSustainer.Deconstruct(out var key, out var value);
+				SoundDef soundDef = key;
+				Sustainer sustainer = value;
+				float num = VolumeOfAmbientSound(soundDef);
+				if (num > 0.0001f)
 				{
-					ambienceSustainers[num].externalParams["LerpFactor"] = num2;
+					sustainer.externalParams["LerpFactor"] = num;
+					continue;
 				}
-				else
-				{
-					ambienceSustainers[num].End();
-					ambienceSustainers.RemoveAt(num);
-				}
+				sustainer.End();
+				TmpToRemove.Add(soundDef);
 			}
+			foreach (SoundDef item in TmpToRemove)
+			{
+				ambienceSustainers.Remove(item);
+			}
+			TmpToRemove.Clear();
 		}
 
 		private float VolumeOfAmbientSound(SoundDef soundDef)
@@ -205,16 +248,16 @@ namespace RimWorld
 				}
 			}
 			float num = 0f;
-			for (int j = 0; j < lastWeather.ambientSounds.Count; j++)
+			foreach (SoundDef ambientSound in lastWeather.ambientSounds)
 			{
-				if (lastWeather.ambientSounds[j] == soundDef)
+				if (ambientSound == soundDef)
 				{
 					num += 1f - TransitionLerpFactor;
 				}
 			}
-			for (int k = 0; k < curWeather.ambientSounds.Count; k++)
+			foreach (SoundDef ambientSound2 in curWeather.ambientSounds)
 			{
-				if (curWeather.ambientSounds[k] == soundDef)
+				if (ambientSound2 == soundDef)
 				{
 					num += TransitionLerpFactor;
 				}

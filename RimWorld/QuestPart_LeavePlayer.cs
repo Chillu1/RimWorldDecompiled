@@ -19,11 +19,11 @@ namespace RimWorld
 			if (signal.tag == inSignal)
 			{
 				pawns.RemoveAll((Pawn x) => x.Destroyed);
-				for (int i = 0; i < pawns.Count; i++)
+				for (int num = 0; num < pawns.Count; num++)
 				{
-					if (pawns[i].Faction == Faction.OfPlayer)
+					if (pawns[num].Faction == Faction.OfPlayer)
 					{
-						pawns[i].SetFaction(replacementFaction);
+						pawns[num].SetFaction(replacementFaction);
 					}
 				}
 			}

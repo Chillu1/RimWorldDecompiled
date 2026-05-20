@@ -10,11 +10,13 @@ namespace RimWorld
 	{
 		public NeedDef def;
 
-		protected Pawn pawn;
+		protected readonly Pawn pawn;
 
 		protected float curLevelInt;
 
 		protected List<float> threshPercents;
+
+		private CompCanBeDormant intDormant;
 
 		public const float MaxDrawHeight = 70f;
 
@@ -74,6 +76,10 @@ namespace RimWorld
 				{
 					return true;
 				}
+				if (NeedFrozenFromDormanancy())
+				{
+					return true;
+				}
 				return !IsPawnInteractableOrVisible;
 			}
 		}
@@ -100,14 +106,24 @@ namespace RimWorld
 
 		public virtual bool ShowOnNeedList => def.showOnNeedList;
 
-		public Need()
+		private bool NeedFrozenFromDormanancy()
 		{
+			if (intDormant == null)
+			{
+				return false;
+			}
+			if (intDormant.Awake)
+			{
+				return false;
+			}
+			return intDormant.Props.freezeNeeds.Contains(def);
 		}
 
 		public Need(Pawn newPawn)
 		{
 			pawn = newPawn;
 			SetInitialLevel();
+			intDormant = pawn.TryGetComp<CompCanBeDormant>();
 		}
 
 		public virtual void ExposeData()
@@ -120,7 +136,26 @@ namespace RimWorld
 
 		public virtual string GetTipString()
 		{
-			return LabelCap + ": " + CurLevelPercentage.ToStringPercent() + "\n" + def.description;
+			string text = (LabelCap + ": " + CurLevelPercentage.ToStringPercent()).Colorize(ColoredText.TipSectionTitleColor) + "\n" + def.description;
+			Gene gene;
+			Hediff hediff;
+			if (pawn.story?.traits != null && pawn.story.traits.TryGetNeedEnablingTrait(def, out var trait))
+			{
+				text += string.Format("\n\n{0}: {1}", "ComesFromTrait".Translate(), trait.LabelCap);
+			}
+			else if (pawn.genes != null && pawn.genes.TryGetNeedEnablingGene(def, out gene))
+			{
+				text += string.Format("\n\n{0}: {1}", "ComesFromGene".Translate(), gene.LabelCap);
+			}
+			else if (pawn.Ideo != null && pawn.Ideo.EnablesNeed(def))
+			{
+				text += string.Format("\n\n{0}: {1}", "ComesFromIdeo".Translate(), pawn.Ideo.name.CapitalizeFirst());
+			}
+			else if (pawn.health != null && pawn.health.hediffSet.TryGetNeedEnablingHediff(def, out hediff))
+			{
+				text += string.Format("\n\n{0}: {1}", "ComesFromHediff".Translate(), hediff.LabelCap);
+			}
+			return text;
 		}
 
 		public virtual void SetInitialLevel()
@@ -128,7 +163,16 @@ namespace RimWorld
 			CurLevelPercentage = 0.5f;
 		}
 
-		public virtual void DrawOnGUI(Rect rect, int maxThresholdMarkers = int.MaxValue, float customMargin = -1f, bool drawArrows = true, bool doTooltip = true)
+		public virtual void OnNeedRemoved()
+		{
+		}
+
+		protected virtual void OffsetDebugPercent(float offsetPercent)
+		{
+			CurLevelPercentage += offsetPercent;
+		}
+
+		public virtual void DrawOnGUI(Rect rect, int maxThresholdMarkers = int.MaxValue, float customMargin = -1f, bool drawArrows = true, bool doTooltip = true, Rect? rectForTooltip = null, bool drawLabel = true)
 		{
 			if (rect.height > 70f)
 			{
@@ -136,13 +180,14 @@ namespace RimWorld
 				rect.height = 70f;
 				rect.y += num;
 			}
-			if (Mouse.IsOver(rect))
+			Rect rect2 = rectForTooltip ?? rect;
+			if (Mouse.IsOver(rect2))
 			{
-				Widgets.DrawHighlight(rect);
+				Widgets.DrawHighlight(rect2);
 			}
-			if (doTooltip && Mouse.IsOver(rect))
+			if (doTooltip && Mouse.IsOver(rect2))
 			{
-				TooltipHandler.TipRegion(rect, new TipSignal(() => GetTipString(), rect.GetHashCode()));
+				TooltipHandler.TipRegion(rect2, new TipSignal(() => GetTipString(), rect2.GetHashCode()));
 			}
 			float num2 = 14f;
 			float num3 = ((customMargin >= 0f) ? customMargin : (num2 + 15f));
@@ -150,42 +195,72 @@ namespace RimWorld
 			{
 				num2 *= Mathf.InverseLerp(0f, 50f, rect.height);
 			}
-			Text.Font = ((rect.height > 55f) ? GameFont.Small : GameFont.Tiny);
-			Text.Anchor = TextAnchor.LowerLeft;
-			Widgets.Label(new Rect(rect.x + num3 + rect.width * 0.1f, rect.y, rect.width - num3 - rect.width * 0.1f, rect.height / 2f), LabelCap);
-			Text.Anchor = TextAnchor.UpperLeft;
-			Rect rect2 = new Rect(rect.x, rect.y + rect.height / 2f, rect.width, rect.height / 2f);
-			rect2 = new Rect(rect2.x + num3, rect2.y, rect2.width - num3 * 2f, rect2.height - num2);
-			Rect rect3 = rect2;
+			if (drawLabel)
+			{
+				Text.Font = ((rect.height > 55f) ? GameFont.Small : GameFont.Tiny);
+				Text.Anchor = TextAnchor.LowerLeft;
+				Widgets.Label(new Rect(rect.x + num3 + rect.width * 0.1f, rect.y, rect.width - num3 - rect.width * 0.1f, rect.height / 2f), LabelCap);
+				Text.Anchor = TextAnchor.UpperLeft;
+			}
+			Rect rect3 = rect;
+			if (drawLabel)
+			{
+				rect3.y += rect.height / 2f;
+				rect3.height -= rect.height / 2f;
+			}
+			rect3 = new Rect(rect3.x + num3, rect3.y, rect3.width - num3 * 2f, rect3.height - num2);
+			if (DebugSettings.ShowDevGizmos)
+			{
+				float lineHeight = Text.LineHeight;
+				Rect rect4 = new Rect(rect3.xMax - lineHeight, rect3.y - lineHeight, lineHeight, lineHeight);
+				if (Widgets.ButtonImage(rect4.ContractedBy(4f), TexButton.Plus))
+				{
+					OffsetDebugPercent(0.1f);
+				}
+				if (Mouse.IsOver(rect4))
+				{
+					TooltipHandler.TipRegion(rect4, "+ 10%");
+				}
+				Rect rect5 = new Rect(rect4.xMin - lineHeight, rect3.y - lineHeight, lineHeight, lineHeight);
+				if (Widgets.ButtonImage(rect5.ContractedBy(4f), TexButton.Minus))
+				{
+					OffsetDebugPercent(-0.1f);
+				}
+				if (Mouse.IsOver(rect5))
+				{
+					TooltipHandler.TipRegion(rect5, "- 10%");
+				}
+			}
+			Rect rect6 = rect3;
 			float num4 = 1f;
 			if (def.scaleBar && MaxLevel < 1f)
 			{
 				num4 = MaxLevel;
 			}
-			rect3.width *= num4;
-			Rect barRect = Widgets.FillableBar(rect3, CurLevelPercentage);
+			rect6.width *= num4;
+			Rect barRect = Widgets.FillableBar(rect6, CurLevelPercentage);
 			if (drawArrows)
 			{
-				Widgets.FillableBarChangeArrows(rect3, GUIChangeArrow);
+				Widgets.FillableBarChangeArrows(rect6, GUIChangeArrow);
 			}
 			if (threshPercents != null)
 			{
-				for (int i = 0; i < Mathf.Min(threshPercents.Count, maxThresholdMarkers); i++)
+				for (int num5 = 0; num5 < Mathf.Min(threshPercents.Count, maxThresholdMarkers); num5++)
 				{
-					DrawBarThreshold(barRect, threshPercents[i] * num4);
+					DrawBarThreshold(barRect, threshPercents[num5] * num4);
 				}
 			}
-			if (def.scaleBar)
+			if (def.showUnitTicks)
 			{
-				for (int j = 1; (float)j < MaxLevel; j++)
+				for (int num6 = 1; (float)num6 < MaxLevel; num6++)
 				{
-					DrawBarDivision(barRect, (float)j / MaxLevel * num4);
+					DrawBarDivision(barRect, (float)num6 / MaxLevel * num4);
 				}
 			}
 			float curInstantLevelPercentage = CurInstantLevelPercentage;
 			if (curInstantLevelPercentage >= 0f)
 			{
-				DrawBarInstantMarkerAt(rect2, curInstantLevelPercentage * num4);
+				DrawBarInstantMarkerAt(rect3, curInstantLevelPercentage * num4);
 			}
 			if (!def.tutorHighlightTag.NullOrEmpty())
 			{
@@ -198,7 +273,7 @@ namespace RimWorld
 		{
 			if (pct > 1f)
 			{
-				Log.ErrorOnce(string.Concat(def, " drawing bar percent > 1 : ", pct), 6932178);
+				Log.ErrorOnce(def?.ToString() + " drawing bar percent > 1 : " + pct, 6932178);
 			}
 			float num = 12f;
 			if (barRect.width < 150f)
@@ -209,7 +284,7 @@ namespace RimWorld
 			GUI.DrawTexture(new Rect(vector.x - num / 2f, vector.y, num, num), BarInstantMarkerTex);
 		}
 
-		private void DrawBarThreshold(Rect barRect, float threshPct)
+		protected void DrawBarThreshold(Rect barRect, float threshPct)
 		{
 			float num = ((!(barRect.width > 60f)) ? 1 : 2);
 			Rect position = new Rect(barRect.x + barRect.width * threshPct - (num - 1f), barRect.y + barRect.height / 2f, num, barRect.height / 2f);

@@ -22,11 +22,17 @@ namespace RimWorld
 
 		public bool consumeFuelOnlyWhenUsed;
 
+		public bool consumeFuelOnlyWhenPowered;
+
 		public bool showFuelGizmo;
 
 		public bool initialAllowAutoRefuel = true;
 
 		public bool showAllowAutoRefuelToggle;
+
+		public bool allowRefuelIfNotEmpty = true;
+
+		public bool fuelIsMortarBarrel;
 
 		public bool targetFuelLevelConfigurable;
 
@@ -44,13 +50,25 @@ namespace RimWorld
 
 		public bool factorByDifficulty;
 
+		[MustTranslate]
 		public string fuelLabel;
 
+		[MustTranslate]
 		public string fuelGizmoLabel;
 
+		[MustTranslate]
 		public string outOfFuelMessage;
 
+		[NoTranslate]
 		public string fuelIconPath;
+
+		public bool externalTicking;
+
+		public bool hideGizmosIfNotPlayerFaction;
+
+		public bool functionsInVacuum = true;
+
+		public bool canEjectFuel;
 
 		private Texture2D fuelIcon;
 
@@ -102,9 +120,9 @@ namespace RimWorld
 		{
 			get
 			{
-				if (factorByDifficulty)
+				if (factorByDifficulty && Find.Storyteller?.difficulty != null)
 				{
-					return fuelMultiplier / Find.Storyteller.difficultyValues.maintenanceCostFactor;
+					return fuelMultiplier / Find.Storyteller.difficulty.maintenanceCostFactor;
 				}
 				return fuelMultiplier;
 			}
@@ -145,7 +163,6 @@ namespace RimWorld
 			}
 			if (((ThingDef)req.Def).building.IsTurret)
 			{
-				yield return new StatDrawEntry(StatCategoryDefOf.Building, "RearmCost".Translate(), GenLabel.ThingLabel(fuelFilter.AnyAllowedDef, null, (int)(fuelCapacity / FuelMultiplierCurrentDifficulty)).CapitalizeFirst(), "RearmCostExplanation".Translate(), 3171);
 				yield return new StatDrawEntry(StatCategoryDefOf.Building, "ShotsBeforeRearm".Translate(), ((int)fuelCapacity).ToString(), "ShotsBeforeRearmExplanation".Translate(), 3171);
 			}
 		}

@@ -30,7 +30,7 @@ namespace RimWorld
 				if (hive != null && pawn.CanReserve(hive))
 				{
 					CompMaintainable compMaintainable = hive.TryGetComp<CompMaintainable>();
-					if (compMaintainable.CurStage != 0 && (!onlyIfDamagingState || compMaintainable.CurStage == MaintainableStage.Damaging))
+					if (compMaintainable.CurStage != MaintainableStage.Healthy && (!onlyIfDamagingState || compMaintainable.CurStage == MaintainableStage.Damaging))
 					{
 						return JobMaker.MakeJob(JobDefOf.Maintain, hive);
 					}

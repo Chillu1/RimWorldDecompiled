@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -20,16 +19,17 @@ namespace RimWorld
 
 		public static bool CanVisit(Pawn pawn, Pawn sick, JoyCategory maxPatientJoy)
 		{
-			if (sick.IsColonist && !sick.Dead && pawn != sick && sick.InBed() && sick.Awake() && !sick.IsForbidden(pawn) && sick.needs.joy != null && (int)sick.needs.joy.CurCategory <= (int)maxPatientJoy && InteractionUtility.CanReceiveInteraction(sick) && !sick.needs.food.Starving && sick.needs.rest.CurLevel > 0.33f && pawn.CanReserveAndReach(sick, PathEndMode.InteractionCell, Danger.None))
+			if (sick.IsColonist && !sick.IsSlave && !pawn.IsSlave && pawn.RaceProps.Humanlike && !sick.Dead && pawn != sick && sick.InBed() && sick.Awake() && !sick.Fogged() && !sick.IsForbidden(pawn) && sick.needs?.joy != null && (int)sick.needs.joy.CurCategory <= (int)maxPatientJoy && SocialInteractionUtility.CanReceiveInteraction(sick) && (sick.needs?.food == null || !sick.needs.food.Starving) && (sick.needs?.rest == null || sick.needs.rest.CurLevel > 0.33f) && pawn.CanReserveAndReach(sick, PathEndMode.InteractionCell, Danger.None) && !AboutToRecover(sick))
 			{
-				return !AboutToRecover(sick);
+				return !sick.VacuumConcernTo(pawn);
 			}
 			return false;
 		}
 
 		public static Thing FindChair(Pawn forPawn, Pawn nearPawn)
 		{
-			Predicate<Thing> validator = delegate(Thing x)
+			return GenClosest.ClosestThingReachable(nearPawn.Position, nearPawn.Map, ThingRequest.ForGroup(ThingRequestGroup.BuildingArtificial), PathEndMode.OnCell, TraverseParms.For(forPawn), 2.2f, Validator, null, 0, 5);
+			bool Validator(Thing x)
 			{
 				if (!x.def.building.isSittable)
 				{
@@ -47,9 +47,12 @@ namespace RimWorld
 				{
 					return false;
 				}
-				return (!x.def.rotatable || !(GenGeo.AngleDifferenceBetween(x.Rotation.AsAngle, (nearPawn.Position - x.Position).AngleFlat) > 95f)) ? true : false;
-			};
-			return GenClosest.ClosestThingReachable(nearPawn.Position, nearPawn.Map, ThingRequest.ForGroup(ThingRequestGroup.BuildingArtificial), PathEndMode.OnCell, TraverseParms.For(forPawn), 2.2f, validator, null, 0, 5);
+				if (x.def.rotatable && GenGeo.AngleDifferenceBetween(x.Rotation.AsAngle, (nearPawn.Position - x.Position).AngleFlat) > 95f)
+				{
+					return false;
+				}
+				return true;
+			}
 		}
 
 		private static bool AboutToRecover(Pawn pawn)
@@ -58,7 +61,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!HealthAIUtility.ShouldSeekMedicalRestUrgent(pawn) && !HealthAIUtility.ShouldSeekMedicalRest(pawn))
+			if (!HealthAIUtility.ShouldSeekMedicalRest(pawn))
 			{
 				return true;
 			}
@@ -70,8 +73,7 @@ namespace RimWorld
 			List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
 			for (int i = 0; i < hediffs.Count; i++)
 			{
-				Hediff_Injury hediff_Injury = hediffs[i] as Hediff_Injury;
-				if (hediff_Injury != null && (hediff_Injury.CanHealFromTending() || hediff_Injury.CanHealNaturally() || hediff_Injury.Bleeding))
+				if (hediffs[i] is Hediff_Injury hediff_Injury && (hediff_Injury.CanHealFromTending() || hediff_Injury.CanHealNaturally() || hediff_Injury.Bleeding))
 				{
 					num += hediff_Injury.Severity;
 				}

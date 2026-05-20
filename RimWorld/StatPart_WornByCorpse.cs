@@ -8,25 +8,17 @@ namespace RimWorld
 
 		public override void TransformValue(StatRequest req, ref float val)
 		{
-			if (req.HasThing)
+			if (req.HasThing && req.Thing is Apparel { WornByCorpse: not false })
 			{
-				Apparel apparel = req.Thing as Apparel;
-				if (apparel != null && apparel.WornByCorpse)
-				{
-					val *= 0.1f;
-				}
+				val *= 0.1f;
 			}
 		}
 
 		public override string ExplanationPart(StatRequest req)
 		{
-			if (req.HasThing)
+			if (req.HasThing && req.Thing is Apparel { WornByCorpse: not false })
 			{
-				Apparel apparel = req.Thing as Apparel;
-				if (apparel != null && apparel.WornByCorpse)
-				{
-					return "StatsReport_WornByCorpse".Translate() + ": x" + 0.1f.ToStringPercent();
-				}
+				return "StatsReport_WornByCorpse".Translate() + ": x" + 0.1f.ToStringPercent();
 			}
 			return null;
 		}

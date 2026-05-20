@@ -9,7 +9,23 @@ namespace RimWorld
 	{
 		private static readonly IntRange SettlementSizeRange = new IntRange(34, 38);
 
-		private static List<IntVec3> tmpCandidates = new List<IntVec3>();
+		public const string RectVarName = "SettlementRect";
+
+		public bool generatePawns = true;
+
+		public MapGenUtility.PostProcessSettlementParams postProcessSettlementParams;
+
+		public int requiredGravcoreRooms;
+
+		public ThingSetMakerDef lootThingSetMaker;
+
+		public float? lootMarketValue;
+
+		public Faction overrideFaction;
+
+		private static readonly List<IntVec3> tmpCandidates = new List<IntVec3>();
+
+		private bool WillPostProcess => postProcessSettlementParams != null;
 
 		public override int SeedPart => 1806208471;
 
@@ -32,7 +48,9 @@ namespace RimWorld
 				return false;
 			}
 			int min = SettlementSizeRange.min;
-			if (!new CellRect(c.x - min / 2, c.z - min / 2, min, min).FullyContainedWithin(new CellRect(0, 0, map.Size.x, map.Size.z)))
+			CellRect cellRect = new CellRect(c.x - min / 2, c.z - min / 2, min, min);
+			CellRect within = map.BoundsRect(12);
+			if (!cellRect.FullyContainedWithin(within))
 			{
 				return false;
 			}
@@ -43,25 +61,50 @@ namespace RimWorld
 		{
 			int randomInRange = SettlementSizeRange.RandomInRange;
 			int randomInRange2 = SettlementSizeRange.RandomInRange;
-			CellRect rect = new CellRect(c.x - randomInRange / 2, c.z - randomInRange2 / 2, randomInRange, randomInRange2);
-			Faction faction = ((map.ParentFaction != null && map.ParentFaction != Faction.OfPlayer) ? map.ParentFaction : Find.FactionManager.RandomEnemyFaction());
-			rect.ClipInsideMap(map);
-			ResolveParams resolveParams = default(ResolveParams);
-			resolveParams.rect = rect;
-			resolveParams.faction = faction;
+			CellRect cellRect = new CellRect(c.x - randomInRange / 2, c.z - randomInRange2 / 2, randomInRange, randomInRange2);
+			Faction faction = ((overrideFaction != null) ? overrideFaction : ((map.ParentFaction != null && map.ParentFaction != Faction.OfPlayer) ? map.ParentFaction : Find.FactionManager.RandomEnemyFaction()));
+			cellRect.ClipInsideMap(map);
+			ResolveParams resolveParams = new ResolveParams
+			{
+				sitePart = parms.sitePart,
+				rect = cellRect,
+				faction = faction,
+				settlementDontGeneratePawns = !generatePawns,
+				thingSetMakerDef = lootThingSetMaker,
+				lootMarketValue = lootMarketValue
+			};
+			if (postProcessSettlementParams != null)
+			{
+				postProcessSettlementParams.faction = faction;
+			}
+			MapGenerator.SetVar("SettlementRect", cellRect);
 			RimWorld.BaseGen.BaseGen.globalSettings.map = map;
-			RimWorld.BaseGen.BaseGen.globalSettings.minBuildings = 1;
+			RimWorld.BaseGen.BaseGen.globalSettings.minBuildings = 1 + requiredGravcoreRooms;
 			RimWorld.BaseGen.BaseGen.globalSettings.minBarracks = 1;
+			RimWorld.BaseGen.BaseGen.globalSettings.requiredGravcoreRooms = requiredGravcoreRooms;
 			RimWorld.BaseGen.BaseGen.symbolStack.Push("settlement", resolveParams);
-			if (faction != null && faction == Faction.Empire)
+			if (faction != null && faction == Faction.OfEmpire)
 			{
 				RimWorld.BaseGen.BaseGen.globalSettings.minThroneRooms = 1;
 				RimWorld.BaseGen.BaseGen.globalSettings.minLandingPads = 1;
 			}
+			List<Building> previous = null;
+			if (WillPostProcess)
+			{
+				previous = new List<Building>(map.listerThings.GetThingsOfType<Building>());
+			}
 			RimWorld.BaseGen.BaseGen.Generate();
-			if (faction != null && faction == Faction.Empire && RimWorld.BaseGen.BaseGen.globalSettings.landingPadsGenerated == 0)
+			if (faction != null && faction == Faction.OfEmpire && RimWorld.BaseGen.BaseGen.globalSettings.landingPadsGenerated == 0)
 			{
 				GenerateLandingPadNearby(resolveParams.rect, map, faction, out var _);
+			}
+			if (WillPostProcess)
+			{
+				List<Building> placed = (from b in map.listerThings.GetThingsOfType<Building>()
+					where !previous.Contains(b)
+					select b).ToList();
+				previous.Clear();
+				MapGenUtility.PostProcessSettlement(map, placed, postProcessSettlementParams);
 			}
 		}
 

@@ -5,20 +5,11 @@ namespace RimWorld.IO
 {
 	public abstract class VirtualDirectory
 	{
-		public abstract string Name
-		{
-			get;
-		}
+		public abstract string Name { get; }
 
-		public abstract string FullPath
-		{
-			get;
-		}
+		public abstract string FullPath { get; }
 
-		public abstract bool Exists
-		{
-			get;
-		}
+		public abstract bool Exists { get; }
 
 		public abstract VirtualDirectory GetDirectory(string directoryName);
 

@@ -16,7 +16,7 @@ namespace RimWorld
 			}
 		}
 
-		public override void Notify_PawnDied()
+		public override void Notify_PawnDied(DamageInfo? dinfo, Hediff culprit = null)
 		{
 			if (Props.destroyBody)
 			{

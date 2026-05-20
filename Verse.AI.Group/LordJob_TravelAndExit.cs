@@ -21,10 +21,7 @@ namespace Verse.AI.Group
 			stateGraph.AddToil(lordToil_ExitMap);
 			stateGraph.AddTransition(new Transition(firstSource, lordToil_ExitMap)
 			{
-				triggers = 
-				{
-					(Trigger)new Trigger_Memo("TravelArrived")
-				}
+				triggers = { (Trigger)new Trigger_Memo("TravelArrived") }
 			});
 			return stateGraph;
 		}

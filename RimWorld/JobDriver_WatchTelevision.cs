@@ -5,7 +5,7 @@ namespace RimWorld
 {
 	public class JobDriver_WatchTelevision : JobDriver_WatchBuilding
 	{
-		protected override void WatchTickAction()
+		protected override void WatchTickAction(int delta)
 		{
 			if (!((Building)base.TargetA.Thing).TryGetComp<CompPowerTrader>().PowerOn)
 			{
@@ -13,7 +13,7 @@ namespace RimWorld
 			}
 			else
 			{
-				base.WatchTickAction();
+				base.WatchTickAction(delta);
 			}
 		}
 	}

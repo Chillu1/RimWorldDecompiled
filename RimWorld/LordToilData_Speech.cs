@@ -1,9 +1,8 @@
 using Verse;
-using Verse.AI.Group;
 
 namespace RimWorld
 {
-	public class LordToilData_Speech : LordToilData
+	public class LordToilData_Speech : LordToilData_Gathering
 	{
 		public CellRect spectateRect;
 

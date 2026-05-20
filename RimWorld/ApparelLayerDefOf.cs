@@ -15,6 +15,8 @@ namespace RimWorld
 
 		public static ApparelLayerDef Overhead;
 
+		public static ApparelLayerDef EyeCover;
+
 		static ApparelLayerDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(ApparelLayerDefOf));

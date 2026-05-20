@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using RimWorld;
 
 namespace Verse.AI
 {
@@ -16,7 +14,7 @@ namespace Verse.AI
 
 		protected override IntVec3 GetWanderRoot(Pawn pawn)
 		{
-			Predicate<Thing> validator = delegate(Thing t)
+			return WanderUtility.GetHerdWanderRoot(isHerdValidator: delegate(Thing t)
 			{
 				if (((Pawn)t).RaceProps != pawn.RaceProps || t == pawn)
 				{
@@ -26,19 +24,7 @@ namespace Verse.AI
 				{
 					return false;
 				}
-				if (t.Position.IsForbidden(pawn))
-				{
-					return false;
-				}
-				if (!pawn.CanReach(t, PathEndMode.OnCell, Danger.Deadly))
-				{
-					return false;
-				}
-				if (Rand.Value < 0.5f)
-				{
-					return false;
-				}
-				List<Pawn> allPawnsSpawned = pawn.Map.mapPawns.AllPawnsSpawned;
+				IReadOnlyList<Pawn> allPawnsSpawned = pawn.Map.mapPawns.AllPawnsSpawned;
 				for (int i = 0; i < allPawnsSpawned.Count; i++)
 				{
 					Pawn pawn2 = allPawnsSpawned[i];
@@ -48,8 +34,7 @@ namespace Verse.AI
 					}
 				}
 				return true;
-			};
-			return GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForGroup(ThingRequestGroup.Pawn), PathEndMode.OnCell, TraverseParms.For(pawn), 35f, validator, null, 13)?.Position ?? pawn.Position;
+			}, pawn: pawn);
 		}
 	}
 }

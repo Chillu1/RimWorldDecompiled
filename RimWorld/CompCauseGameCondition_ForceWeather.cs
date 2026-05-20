@@ -23,7 +23,7 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (!Prefs.DevMode)
+			if (!Prefs.DevMode || !DebugSettings.godMode)
 			{
 				yield break;
 			}
@@ -61,9 +61,9 @@ namespace RimWorld
 			return text + "Weather".Translate() + ": " + weather.LabelCap;
 		}
 
-		public override void RandomizeSettings_NewTemp_NewTemp(Site site)
+		public override void RandomizeSettings(Site site)
 		{
-			weather = DefDatabase<WeatherDef>.AllDefsListForReading.Where((WeatherDef x) => x.isBad).RandomElement();
+			weather = DefDatabase<WeatherDef>.AllDefsListForReading.Where((WeatherDef x) => x.isBad && x.canOccurAsRandomForcedEvent).RandomElement();
 		}
 	}
 }

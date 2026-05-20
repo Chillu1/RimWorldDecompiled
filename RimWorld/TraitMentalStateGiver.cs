@@ -8,14 +8,22 @@ namespace RimWorld
 
 		public virtual bool CheckGive(Pawn pawn, int checkInterval)
 		{
-			if (traitDegreeData.randomMentalState == null)
+			if (traitDegreeData.forcedMentalState != null)
 			{
-				return false;
+				float forcedMentalStateMtbDays = traitDegreeData.forcedMentalStateMtbDays;
+				if (forcedMentalStateMtbDays > 0f && Rand.MTBEventOccurs(forcedMentalStateMtbDays, 60000f, checkInterval) && traitDegreeData.forcedMentalState.Worker.StateCanOccur(pawn))
+				{
+					return pawn.mindState.mentalStateHandler.TryStartMentalState(traitDegreeData.forcedMentalState, "MentalStateReason_Trait".Translate(traitDegreeData.label));
+				}
 			}
-			float curMood = pawn.mindState.mentalBreaker.CurMood;
-			if (Rand.MTBEventOccurs(traitDegreeData.randomMentalStateMtbDaysMoodCurve.Evaluate(curMood), 60000f, checkInterval) && traitDegreeData.randomMentalState.Worker.StateCanOccur(pawn))
+			if (traitDegreeData.randomMentalState != null)
 			{
-				return pawn.mindState.mentalStateHandler.TryStartMentalState(traitDegreeData.randomMentalState, "MentalStateReason_Trait".Translate(traitDegreeData.GetLabelFor(pawn)));
+				float curMood = pawn.mindState.mentalBreaker.CurMood;
+				float num = traitDegreeData.randomMentalStateMtbDaysMoodCurve.Evaluate(curMood);
+				if (num > 0f && Rand.MTBEventOccurs(num, 60000f, checkInterval) && traitDegreeData.randomMentalState.Worker.StateCanOccur(pawn))
+				{
+					return pawn.mindState.mentalStateHandler.TryStartMentalState(traitDegreeData.randomMentalState, "MentalStateReason_Trait".Translate(traitDegreeData.GetLabelFor(pawn)));
+				}
 			}
 			return false;
 		}

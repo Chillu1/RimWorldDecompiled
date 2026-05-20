@@ -20,7 +20,9 @@ namespace Verse
 
 		public Area_NoRoof NoRoof => Get<Area_NoRoof>();
 
-		public Area_SnowClear SnowClear => Get<Area_SnowClear>();
+		public Area_SnowOrSandClear SnowOrSandClear => Get<Area_SnowOrSandClear>();
+
+		public Area_PollutionClear PollutionClear => Get<Area_PollutionClear>();
 
 		public AreaManager(Map map)
 		{
@@ -32,8 +34,15 @@ namespace Verse
 			areas.Add(new Area_Home(this));
 			areas.Add(new Area_BuildRoof(this));
 			areas.Add(new Area_NoRoof(this));
-			areas.Add(new Area_SnowClear(this));
-			TryMakeNewAllowed(out var _);
+			areas.Add(new Area_SnowOrSandClear(this));
+			if (ModsConfig.BiotechActive)
+			{
+				areas.Add(new Area_PollutionClear(this));
+			}
+			if (!map.wasSpawnedViaGravShipLanding)
+			{
+				TryMakeNewAllowed(out var _);
+			}
 		}
 
 		public void ExposeData()
@@ -42,6 +51,12 @@ namespace Verse
 			if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
 				UpdateAllAreasLinks();
+			}
+			if (Scribe.mode == LoadSaveMode.PostLoadInit && ModsConfig.BiotechActive && PollutionClear == null)
+			{
+				Area_PollutionClear area_PollutionClear = new Area_PollutionClear(this);
+				area_PollutionClear.areaManager = this;
+				areas.Add(area_PollutionClear);
 			}
 		}
 
@@ -84,10 +99,9 @@ namespace Verse
 		{
 			for (int i = 0; i < areas.Count; i++)
 			{
-				T val = areas[i] as T;
-				if (val != null)
+				if (areas[i] is T result)
 				{
-					return val;
+					return result;
 				}
 			}
 			return null;

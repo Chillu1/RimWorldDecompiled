@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse;
 
@@ -45,12 +46,12 @@ namespace RimWorld
 		{
 			get
 			{
-				if (Current.ProgramState != 0)
+				if (Current.ProgramState != ProgramState.Entry)
 				{
 					return GenTicks.TicksAbs;
 				}
-				int startingTile = Find.GameInitData.startingTile;
-				float longitude = ((startingTile >= 0) ? Find.WorldGrid.LongLatOf(startingTile).x : 0f);
+				PlanetTile startingTile = Find.GameInitData.startingTile;
+				float longitude = (startingTile.Valid ? Find.WorldGrid.LongLatOf(startingTile).x : 0f);
 				return Mathf.RoundToInt(2500f * (12f - GenDate.TimeZoneFloatAt(longitude)));
 			}
 		}
@@ -62,7 +63,12 @@ namespace RimWorld
 
 		public static float CelestialSunGlow(Map map, int ticksAbs)
 		{
-			Vector2 vector = Find.WorldGrid.LongLatOf(map.Tile);
+			return CelestialSunGlow(map.Tile, ticksAbs);
+		}
+
+		public static float CelestialSunGlow(PlanetTile tile, int ticksAbs)
+		{
+			Vector2 vector = Find.WorldGrid.LongLatOf(tile);
 			return CelestialSunGlowPercent(vector.y, GenDate.DayOfYear(ticksAbs, vector.x), GenDate.DayPercent(ticksAbs, vector.x));
 		}
 
@@ -113,10 +119,11 @@ namespace RimWorld
 			}
 			float num4 = Mathf.LerpUnclamped(0f - num3, num3, t);
 			float y = num2 - 2.5f * (num4 * num4 / 100f);
-			LightInfo result = default(LightInfo);
-			result.vector = new Vector2(num4, y);
-			result.intensity = intensity;
-			return result;
+			return new LightInfo
+			{
+				vector = new Vector2(num4, y),
+				intensity = intensity
+			};
 		}
 
 		public static Vector3 CurSunPositionInWorldSpace()
@@ -135,22 +142,21 @@ namespace RimWorld
 			Vector3 target = SurfaceNormal(latitude);
 			Vector3 current = SunPositionUnmodified(dayOfYear, dayPercent, new Vector3(1f, 0f, 0f), latitude);
 			float num = SunPeekAroundDegreesFactorCurve.Evaluate(latitude);
-			current = Vector3.RotateTowards(current, target, (float)Math.PI * 19f / 180f * num, 9999999f);
+			current = Vector3.RotateTowards(current, target, MathF.PI * 19f / 180f * num, 9999999f);
 			float num2 = Mathf.InverseLerp(60f, 0f, Mathf.Abs(latitude));
 			if (num2 > 0f)
 			{
-				current = Vector3.RotateTowards(current, target, (float)Math.PI * 2f * (17f * num2 / 360f), 9999999f);
+				current = Vector3.RotateTowards(current, target, MathF.PI * 2f * (17f * num2 / 360f), 9999999f);
 			}
 			return current.normalized;
 		}
 
 		private static Vector3 SunPositionUnmodified(float dayOfYear, float dayPercent, Vector3 initialSunPos, float latitude = 0f)
 		{
-			Vector3 point = initialSunPos * 100f;
-			float num = 0f - Mathf.Cos(dayOfYear / 60f * (float)Math.PI * 2f);
-			point.y += num * 100f * SunOffsetFractionFromLatitudeCurve.Evaluate(latitude);
-			point = Quaternion.AngleAxis((dayPercent - 0.5f) * 360f, Vector3.up) * point;
-			return point.normalized;
+			Vector3 vector = initialSunPos * 100f;
+			float num = 0f - Mathf.Cos(dayOfYear / 60f * MathF.PI * 2f);
+			vector.y += num * 100f * SunOffsetFractionFromLatitudeCurve.Evaluate(latitude);
+			return (Quaternion.AngleAxis((dayPercent - 0.5f) * 360f, Vector3.up) * vector).normalized;
 		}
 
 		private static float CelestialSunGlowPercent(float latitude, int dayOfYear, float dayPercent)
@@ -173,8 +179,8 @@ namespace RimWorld
 
 		private static Vector3 SurfaceNormal(float latitude)
 		{
-			Vector3 point = new Vector3(1f, 0f, 0f);
-			return Quaternion.AngleAxis(latitude, new Vector3(0f, 0f, 1f)) * point;
+			Vector3 vector = new Vector3(1f, 0f, 0f);
+			return Quaternion.AngleAxis(latitude, new Vector3(0f, 0f, 1f)) * vector;
 		}
 
 		public static void LogSunGlowForYear()

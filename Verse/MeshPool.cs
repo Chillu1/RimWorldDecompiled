@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text;
+using LudeonTK;
 using UnityEngine;
 
 namespace Verse
@@ -7,21 +8,30 @@ namespace Verse
 	[StaticConstructorOnStartup]
 	public static class MeshPool
 	{
-		private const int MaxGridMeshSize = 15;
+		public struct MeshMetaData
+		{
+			public Vector2 size;
 
-		private const float HumanlikeBodyWidth = 1.5f;
+			public bool flipped;
 
-		private const float HumanlikeHeadAverageWidth = 1.5f;
+			public MeshMetaData(Vector2 size, bool flipped)
+			{
+				this.size = size;
+				this.flipped = flipped;
+			}
+		}
 
-		private const float HumanlikeHeadNarrowWidth = 1.3f;
+		public const float HumanlikeBodyWidth = 1.5f;
 
-		public static readonly GraphicMeshSet humanlikeBodySet;
+		public const float HumanlikeHeadAverageWidth = 1.5f;
 
-		public static readonly GraphicMeshSet humanlikeHeadSet;
+		private static readonly Dictionary<Vector2, Mesh> planes;
 
-		public static readonly GraphicMeshSet humanlikeHairSetAverage;
+		private static readonly Dictionary<Vector2, Mesh> planesFlip;
 
-		public static readonly GraphicMeshSet humanlikeHairSetNarrow;
+		private static readonly Dictionary<Mesh, MeshMetaData> meshMetaData;
+
+		private static readonly Dictionary<Vector2, GraphicMeshSet> humanlikeMeshSet_Custom;
 
 		public static readonly Mesh plane025;
 
@@ -41,22 +51,18 @@ namespace Verse
 
 		public static readonly Mesh plane20;
 
-		public static readonly Mesh wholeMapPlane;
-
-		private static Dictionary<Vector2, Mesh> planes;
-
-		private static Dictionary<Vector2, Mesh> planesFlip;
-
 		public static readonly Mesh circle;
 
 		public static readonly Mesh[] pies;
 
+		public static readonly Mesh wholeMapPlane;
+
 		static MeshPool()
 		{
-			humanlikeBodySet = new GraphicMeshSet(1.5f);
-			humanlikeHeadSet = new GraphicMeshSet(1.5f);
-			humanlikeHairSetAverage = new GraphicMeshSet(1.5f);
-			humanlikeHairSetNarrow = new GraphicMeshSet(1.3f, 1.5f);
+			planes = new Dictionary<Vector2, Mesh>(FastVector2Comparer.Instance);
+			planesFlip = new Dictionary<Vector2, Mesh>(FastVector2Comparer.Instance);
+			meshMetaData = new Dictionary<Mesh, MeshMetaData>();
+			humanlikeMeshSet_Custom = new Dictionary<Vector2, GraphicMeshSet>();
 			plane025 = MeshMakerPlanes.NewPlaneMesh(0.25f);
 			plane03 = MeshMakerPlanes.NewPlaneMesh(0.3f);
 			plane05 = MeshMakerPlanes.NewPlaneMesh(0.5f);
@@ -66,14 +72,9 @@ namespace Verse
 			plane10Flip = MeshMakerPlanes.NewPlaneMesh(1f, flipped: true);
 			plane14 = MeshMakerPlanes.NewPlaneMesh(1.4f);
 			plane20 = MeshMakerPlanes.NewPlaneMesh(2f);
-			planes = new Dictionary<Vector2, Mesh>(FastVector2Comparer.Instance);
-			planesFlip = new Dictionary<Vector2, Mesh>(FastVector2Comparer.Instance);
 			circle = MeshMakerCircles.MakeCircleMesh(1f);
 			pies = new Mesh[361];
-			for (int i = 0; i < 361; i++)
-			{
-				pies[i] = MeshMakerCircles.MakePieMesh(i);
-			}
+			MeshMakerCircles.MakePieMeshes(pies);
 			wholeMapPlane = MeshMakerPlanes.NewWholeMapPlane();
 		}
 
@@ -97,9 +98,23 @@ namespace Verse
 			return value;
 		}
 
-		private static Vector2 RoundedToHundredths(this Vector2 v)
+		public static Mesh GridPlaneFlip(Mesh mesh)
 		{
-			return new Vector2((float)(int)(v.x * 100f) / 100f, (float)(int)(v.y * 100f) / 100f);
+			MeshMetaData metaData = GetMetaData(mesh);
+			if (!metaData.flipped)
+			{
+				return GridPlaneFlip(metaData.size);
+			}
+			return GridPlane(metaData.size);
+		}
+
+		public static Mesh GridPlane(Vector2 size, bool flip)
+		{
+			if (!flip)
+			{
+				return GridPlane(size);
+			}
+			return GridPlaneFlip(size);
 		}
 
 		[DebugOutput("System", false)]
@@ -110,6 +125,38 @@ namespace Verse
 			stringBuilder.AppendLine("Planes: " + planes.Count);
 			stringBuilder.AppendLine("PlanesFlip: " + planesFlip.Count);
 			Log.Message(stringBuilder.ToString());
+		}
+
+		public static GraphicMeshSet GetMeshSetForWidth(float width)
+		{
+			return GetMeshSetForSize(width, width);
+		}
+
+		public static GraphicMeshSet GetMeshSetForSize(Vector2 size)
+		{
+			if (!humanlikeMeshSet_Custom.ContainsKey(size))
+			{
+				humanlikeMeshSet_Custom[size] = new GraphicMeshSet(size.x, size.y);
+			}
+			return humanlikeMeshSet_Custom[size];
+		}
+
+		public static GraphicMeshSet GetMeshSetForSize(float width, float height)
+		{
+			return GetMeshSetForSize(new Vector2(width, height));
+		}
+
+		public static MeshMetaData GetMetaData(Mesh mesh)
+		{
+			return meshMetaData[mesh];
+		}
+
+		public static void EnsureMetaDataCached(Mesh mesh, Vector2 size, bool flipped)
+		{
+			if (!meshMetaData.ContainsKey(mesh))
+			{
+				meshMetaData[mesh] = new MeshMetaData(size, flipped);
+			}
 		}
 	}
 }

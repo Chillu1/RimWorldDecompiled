@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using Verse;
 
 namespace RimWorld
@@ -23,6 +22,12 @@ namespace RimWorld
 		public List<WorkTypeDef> disabledWorkTypes = new List<WorkTypeDef>();
 
 		public WorkTags disabledWorkTags;
+
+		public AnimalType? disableHostilityFromAnimalType;
+
+		public FactionDef disableHostilityFromFaction;
+
+		public bool canBeSuppressed = true;
 
 		private float commonality = 1f;
 
@@ -54,21 +59,37 @@ namespace RimWorld
 			{
 				yield return item;
 			}
-			if (commonality < 0.001f && commonalityFemale < 0.001f)
-			{
-				yield return "TraitDef " + defName + " has 0 commonality.";
-			}
 			if (!degreeDatas.Any())
 			{
 				yield return defName + " has no degree datas.";
 			}
 			for (int i = 0; i < degreeDatas.Count; i++)
 			{
-				TraitDegreeData dd3 = degreeDatas[i];
-				if (degreeDatas.Where((TraitDegreeData dd2) => dd2.degree == dd3.degree).Count() > 1)
+				TraitDegreeData dd = degreeDatas[i];
+				if (degreeDatas.Count((TraitDegreeData traitDegreeData) => traitDegreeData.degree == dd.degree) > 1)
 				{
-					yield return ">1 datas for degree " + dd3.degree;
+					yield return ">1 datas for degree " + dd.degree;
 				}
+				if (dd.ingestibleModifiers.NullOrEmpty())
+				{
+					continue;
+				}
+				foreach (IngestibleModifiers ingestibleModifier in dd.ingestibleModifiers)
+				{
+					if (ingestibleModifier?.ingestible == null)
+					{
+						yield return "ingestible override has a null target ingestible";
+					}
+				}
+			}
+		}
+
+		public override void ResolveReferences()
+		{
+			base.ResolveReferences();
+			foreach (TraitDegreeData degreeData in degreeDatas)
+			{
+				degreeData.ResolveReferences();
 			}
 		}
 
@@ -94,6 +115,15 @@ namespace RimWorld
 				}
 			}
 			return false;
+		}
+
+		public bool CanSuppress(Trait other)
+		{
+			if (!ConflictsWith(other))
+			{
+				return other.def == this;
+			}
+			return true;
 		}
 
 		public bool ConflictsWithPassion(SkillDef passion)

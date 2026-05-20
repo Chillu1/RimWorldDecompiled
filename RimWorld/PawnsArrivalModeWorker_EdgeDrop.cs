@@ -11,10 +11,17 @@ namespace RimWorld
 			PawnsArrivalModeWorkerUtility.DropInDropPodsNearSpawnCenter(parms, pawns);
 		}
 
-		public override void TravelingTransportPodsArrived(List<ActiveDropPodInfo> dropPods, Map map)
+		public override void TravellingTransportersArrived(List<ActiveTransporterInfo> transporters, Map map)
 		{
-			IntVec3 near = DropCellFinder.FindRaidDropCenterDistant_NewTemp(map);
-			TransportPodsArrivalActionUtility.DropTravelingTransportPods(dropPods, near, map);
+			IntVec3 near = DropCellFinder.FindRaidDropCenterDistant(map, allowRoofed: false, !transporters.IsShuttle());
+			if (transporters.IsShuttle())
+			{
+				TransportersArrivalActionUtility.DropShuttle(transporters[0], map, near);
+			}
+			else
+			{
+				TransportersArrivalActionUtility.DropTravellingDropPods(transporters, near, map);
+			}
 		}
 
 		public override bool TryResolveRaidSpawnCenter(IncidentParms parms)
@@ -22,7 +29,7 @@ namespace RimWorld
 			Map map = (Map)parms.target;
 			if (!parms.spawnCenter.IsValid)
 			{
-				parms.spawnCenter = DropCellFinder.FindRaidDropCenterDistant_NewTemp(map);
+				parms.spawnCenter = DropCellFinder.FindRaidDropCenterDistant(map);
 			}
 			parms.spawnRotation = Rot4.Random;
 			return true;

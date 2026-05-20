@@ -34,9 +34,9 @@ namespace RimWorld
 
 		public static bool IsCorpseOfColonist(Corpse corpse)
 		{
-			if (corpse.InnerPawn.Faction == Faction.OfPlayer && corpse.InnerPawn.def.race.Humanlike && !corpse.InnerPawn.IsQuestLodger())
+			if (corpse.InnerPawn.Faction == Faction.OfPlayer && corpse.InnerPawn.def.race.Humanlike && !corpse.InnerPawn.IsQuestLodger() && !corpse.InnerPawn.IsSlave && !corpse.InnerPawn.IsSubhuman && !corpse.InnerPawn.IsShambler)
 			{
-				return !corpse.IsInAnyStorage();
+				return corpse.Spawned;
 			}
 			return false;
 		}

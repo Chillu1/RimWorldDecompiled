@@ -21,6 +21,10 @@ namespace RimWorld
 
 		protected override Job TryGiveJob(Pawn pawn)
 		{
+			if (!pawn.RaceProps.Humanlike)
+			{
+				return null;
+			}
 			if (pawn.IsTeetotaler())
 			{
 				return null;

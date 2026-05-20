@@ -9,15 +9,22 @@ namespace Verse
 		[Unsaved(false)]
 		public ThingDef parent;
 
+		[MustTranslate]
 		public string stuffAdjective;
 
 		public float commonality = 1f;
 
 		public List<StuffCategoryDef> categories = new List<StuffCategoryDef>();
 
+		public bool allowedInStuffGeneration = true;
+
 		public List<StatModifier> statOffsets;
 
 		public List<StatModifier> statFactors;
+
+		public List<StatModifierQuality> statOffsetsQuality;
+
+		public List<StatModifierQuality> statFactorsQuality;
 
 		public Color color = new Color(0.8f, 0.8f, 0.8f);
 
@@ -27,7 +34,13 @@ namespace Verse
 
 		public bool allowColorGenerators;
 
-		public SoundDef soundImpactStuff;
+		public bool canSuggestUseDefaultStuff;
+
+		public bool isAirtight;
+
+		public SoundDef soundImpactBullet;
+
+		public SoundDef soundImpactMelee;
 
 		public SoundDef soundMeleeHitSharp;
 

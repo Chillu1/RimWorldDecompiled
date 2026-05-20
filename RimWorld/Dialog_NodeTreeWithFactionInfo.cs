@@ -22,7 +22,7 @@ namespace RimWorld
 		public override void DoWindowContents(Rect inRect)
 		{
 			base.DoWindowContents(inRect);
-			if (faction != null)
+			if (faction != null && !faction.Hidden)
 			{
 				float curY = inRect.height - 79f;
 				FactionUIUtility.DrawRelatedFactionInfo(inRect, faction, ref curY);

@@ -14,7 +14,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if ((me.GetMother() != null && me.GetMother() == other.GetMother()) || (me.GetFather() != null && me.GetFather() == other.GetFather()))
+			if (me.HasSameMother(other) || me.HasSameFather(other))
 			{
 				return true;
 			}

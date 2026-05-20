@@ -7,6 +7,27 @@ namespace RimWorld
 	{
 		public new CompProperties_ScannerMineralsDeep Props => props as CompProperties_ScannerMineralsDeep;
 
+		public override AcceptanceReport CanUseNow
+		{
+			get
+			{
+				if (!parent.Map.Biome.hasBedrock)
+				{
+					return "CannotUseScannerNoBedrock".Translate();
+				}
+				return base.CanUseNow;
+			}
+		}
+
+		public override void PostSpawnSetup(bool respawningAfterLoad)
+		{
+			base.PostSpawnSetup(respawningAfterLoad);
+			if (!respawningAfterLoad && !parent.Map.Biome.hasBedrock)
+			{
+				Messages.Message("MessageGroundPenetratingScannerNoBedrock".Translate(parent.Named("THING")), parent, MessageTypeDefOf.NegativeEvent, historical: false);
+			}
+		}
+
 		public override void PostDrawExtraSelectionOverlays()
 		{
 			if (ShouldShowDeepResourceOverlay())
@@ -46,13 +67,13 @@ namespace RimWorld
 
 		private bool CanScatterAt(IntVec3 pos, Map map)
 		{
-			int num = CellIndicesUtility.CellToIndex(pos, map.Size.x);
-			TerrainDef terrainDef = map.terrainGrid.TerrainAt(num);
-			if ((terrainDef != null && terrainDef.IsWater && terrainDef.passability == Traversability.Impassable) || !terrainDef.affordances.Contains(ThingDefOf.DeepDrill.terrainAffordanceNeeded))
+			int index = CellIndicesUtility.CellToIndex(pos, map.Size.x);
+			TerrainDef terrainDef = map.terrainGrid.BaseTerrainAt(pos);
+			if ((terrainDef != null && terrainDef.IsWater && terrainDef.passability == Traversability.Impassable) || !pos.GetAffordances(map).Contains(ThingDefOf.DeepDrill.terrainAffordanceNeeded))
 			{
 				return false;
 			}
-			return !map.deepResourceGrid.GetCellBool(num);
+			return !map.deepResourceGrid.GetCellBool(index);
 		}
 
 		protected ThingDef ChooseLumpThingDef()

@@ -13,7 +13,11 @@ namespace RimWorld
 
 		public float joyToleranceDropPerDay;
 
+		public float ritualQualityOffset;
+
 		public int joyKindsNeeded;
+
+		public bool forRoles;
 
 		public bool WealthTriggered => maxMapWealth >= 0f;
 

@@ -37,11 +37,11 @@ namespace RimWorld
 					return JobMaker.MakeJob(JobDefOf.Ignite, thing);
 				}
 			}
-			IntVec3 c = RCellFinder.RandomWanderDestFor(pawn, pawn.Position, 10f, null, Danger.Deadly);
-			if (c.IsValid)
+			IntVec3 intVec = RCellFinder.RandomWanderDestFor(pawn, pawn.Position, 10f, null, Danger.Deadly);
+			if (intVec.IsValid)
 			{
 				pawn.mindState.nextMoveOrderIsWait = true;
-				return JobMaker.MakeJob(JobDefOf.GotoWander, c);
+				return JobMaker.MakeJob(JobDefOf.GotoWander, intVec);
 			}
 			return null;
 		}
@@ -54,9 +54,9 @@ namespace RimWorld
 			}
 			potentialTargets.Clear();
 			List<Thing> allThings = result.ListerThings.AllThings;
-			for (int i = 0; i < allThings.Count; i++)
+			for (int num = 0; num < allThings.Count; num++)
 			{
-				Thing thing = allThings[i];
+				Thing thing = allThings[num];
 				if ((thing.def.category == ThingCategory.Building || thing.def.category == ThingCategory.Item || thing.def.category == ThingCategory.Plant) && thing.FlammableNow && !thing.IsBurning() && !thing.OccupiedRect().Contains(pawn.Position))
 				{
 					potentialTargets.Add(thing);

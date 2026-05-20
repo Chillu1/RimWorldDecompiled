@@ -40,15 +40,28 @@ namespace RimWorld
 					break;
 				}
 			}
-			Func<int, string> textGetter = ((!refuelable.parent.def.building.hasFuelingPort) ? ((Func<int, string>)((int x) => "SetTargetFuelLevel".Translate(x))) : ((Func<int, string>)((int x) => "SetPodLauncherTargetFuelLevel".Translate(x, CompLaunchable.MaxLaunchDistanceAtFuelLevel(x)))));
-			Dialog_Slider window = new Dialog_Slider(textGetter, 0, num, delegate(int value)
+			Func<int, string> textGetter = ((!refuelable.parent.def.building.hasFuelingPort) ? ((Func<int, string>)((int x) => "SetTargetFuelLevel".Translate(x))) : ((Func<int, string>)delegate(int x)
+			{
+				CompLaunchable compLaunchable = FuelingPortUtility.LaunchableAt(FuelingPortUtility.GetFuelingPortCell(refuelable.parent.Position, refuelable.parent.Rotation), refuelable.parent.Map);
+				if (compLaunchable == null)
+				{
+					return "SetTargetFuelLevel".Translate(x);
+				}
+				int num2 = compLaunchable.MaxLaunchDistanceAtFuelLevel(x);
+				return "SetPodLauncherTargetFuelLevel".Translate(x, num2);
+			}));
+			Dialog_Slider dialog_Slider = new Dialog_Slider(textGetter, 0, num, delegate(int value)
 			{
 				for (int k = 0; k < refuelables.Count; k++)
 				{
 					refuelables[k].TargetFuelLevel = value;
 				}
 			}, startingValue);
-			Find.WindowStack.Add(window);
+			if (refuelable.parent.def.building.hasFuelingPort)
+			{
+				dialog_Slider.extraBottomSpace = Text.LineHeight + 4f;
+			}
+			Find.WindowStack.Add(dialog_Slider);
 		}
 
 		public override bool InheritInteractionsFrom(Gizmo other)

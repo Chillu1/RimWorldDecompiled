@@ -3,13 +3,31 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Xml.Linq;
+using LudeonTK;
 using RimWorld;
+using UnityEngine;
 
 namespace Verse
 {
 	public static class Prefs
 	{
 		private static PrefsData data;
+
+		public static float VolumeMaster
+		{
+			get
+			{
+				return data.volumeMaster;
+			}
+			set
+			{
+				if (data.volumeMaster != value)
+				{
+					data.volumeMaster = value;
+					Apply();
+				}
+			}
+		}
 
 		public static float VolumeGame
 		{
@@ -59,18 +77,17 @@ namespace Verse
 			}
 		}
 
-		[Obsolete]
-		public static bool ExtremeDifficultyUnlocked
+		public static float VolumeUI
 		{
 			get
 			{
-				return data.extremeDifficultyUnlocked;
+				return data.volumeUI;
 			}
 			set
 			{
-				if (data.extremeDifficultyUnlocked != value)
+				if (data.volumeUI != value)
 				{
-					data.extremeDifficultyUnlocked = value;
+					data.volumeUI = value;
 					Apply();
 				}
 			}
@@ -92,6 +109,22 @@ namespace Verse
 			}
 		}
 
+		public static bool SteamDeckKeyboardMode
+		{
+			get
+			{
+				return data.steamDeckKeyboardMode;
+			}
+			set
+			{
+				if (data.steamDeckKeyboardMode != value)
+				{
+					data.steamDeckKeyboardMode = value;
+					Apply();
+				}
+			}
+		}
+
 		public static bool EdgeScreenScroll
 		{
 			get
@@ -103,6 +136,70 @@ namespace Verse
 				if (data.edgeScreenScroll != value)
 				{
 					data.edgeScreenScroll = value;
+					Apply();
+				}
+			}
+		}
+
+		public static bool RememberDrawStlyes
+		{
+			get
+			{
+				return data.rememberDrawStyles;
+			}
+			set
+			{
+				if (data.rememberDrawStyles != value)
+				{
+					data.rememberDrawStyles = value;
+					Apply();
+				}
+			}
+		}
+
+		public static bool ZoomSwitchWorldLayer
+		{
+			get
+			{
+				return data.zoomSwitchWorldLayer;
+			}
+			set
+			{
+				if (data.zoomSwitchWorldLayer != value)
+				{
+					data.zoomSwitchWorldLayer = value;
+					Apply();
+				}
+			}
+		}
+
+		public static bool ZoomToMouse
+		{
+			get
+			{
+				return data.zoomToMouse;
+			}
+			set
+			{
+				if (data.zoomToMouse != value)
+				{
+					data.zoomToMouse = value;
+					Apply();
+				}
+			}
+		}
+
+		public static float ScreenShakeIntensity
+		{
+			get
+			{
+				return data.screenShakeIntensity;
+			}
+			set
+			{
+				if (data.screenShakeIntensity != value)
+				{
+					data.screenShakeIntensity = value;
 					Apply();
 				}
 			}
@@ -172,6 +269,38 @@ namespace Verse
 			}
 		}
 
+		public static DotHighlightDisplayMode DotHighlightDisplayMode
+		{
+			get
+			{
+				return data.dotHighlightDisplayMode;
+			}
+			set
+			{
+				if (data.dotHighlightDisplayMode != value)
+				{
+					data.dotHighlightDisplayMode = value;
+					Apply();
+				}
+			}
+		}
+
+		public static HighlightStyleMode HighlightStyleMode
+		{
+			get
+			{
+				return data.highlightStyleMode;
+			}
+			set
+			{
+				if (data.highlightStyleMode != value)
+				{
+					data.highlightStyleMode = value;
+					Apply();
+				}
+			}
+		}
+
 		public static AnimalNameDisplayMode AnimalNameMode
 		{
 			get
@@ -183,6 +312,54 @@ namespace Verse
 				if (data.animalNameMode != value)
 				{
 					data.animalNameMode = value;
+					Apply();
+				}
+			}
+		}
+
+		public static MechNameDisplayMode MechNameMode
+		{
+			get
+			{
+				return data.mechNameMode;
+			}
+			set
+			{
+				if (data.mechNameMode != value)
+				{
+					data.mechNameMode = value;
+					Apply();
+				}
+			}
+		}
+
+		public static ShowWeaponsUnderPortraitMode ShowWeaponsUnderPortraitMode
+		{
+			get
+			{
+				return data.showWeaponsUnderPortraitMode;
+			}
+			set
+			{
+				if (data.showWeaponsUnderPortraitMode != value)
+				{
+					data.showWeaponsUnderPortraitMode = value;
+					Apply();
+				}
+			}
+		}
+
+		public static bool VisibleMood
+		{
+			get
+			{
+				return data.visibleMood;
+			}
+			set
+			{
+				if (data.visibleMood != value)
+				{
+					data.visibleMood = value;
 					Apply();
 				}
 			}
@@ -208,6 +385,7 @@ namespace Verse
 						data.logVerbose = false;
 						data.resetModsConfigOnCrash = true;
 						DebugSettings.godMode = false;
+						Find.WindowStack.TryRemove(typeof(Dialog_DevPalette));
 					}
 					Apply();
 				}
@@ -229,26 +407,6 @@ namespace Verse
 				if (data.resetModsConfigOnCrash != value)
 				{
 					data.resetModsConfigOnCrash = value;
-					Apply();
-				}
-			}
-		}
-
-		public static bool SimulateNotOwningRoyalty
-		{
-			get
-			{
-				if (data == null)
-				{
-					return true;
-				}
-				return data.simulateNotOwningRoyalty;
-			}
-			set
-			{
-				if (data.simulateNotOwningRoyalty != value)
-				{
-					data.simulateNotOwningRoyalty = value;
 					Apply();
 				}
 			}
@@ -302,19 +460,35 @@ namespace Verse
 			}
 		}
 
-		public static bool PauseOnError
+		public static bool DisableQuickStartCryptoSickness
 		{
 			get
 			{
-				if (data == null)
-				{
-					return false;
-				}
-				return data.pauseOnError;
+				return data.disableQuickStartCryptoSickness;
 			}
 			set
 			{
-				data.pauseOnError = value;
+				if (data.disableQuickStartCryptoSickness != value)
+				{
+					data.disableQuickStartCryptoSickness = value;
+					Apply();
+				}
+			}
+		}
+
+		public static bool StartDevPaletteOn
+		{
+			get
+			{
+				return data.quickStartDevPaletteOn;
+			}
+			set
+			{
+				if (data.quickStartDevPaletteOn != value)
+				{
+					data.quickStartDevPaletteOn = value;
+					Apply();
+				}
 			}
 		}
 
@@ -354,6 +528,30 @@ namespace Verse
 			}
 		}
 
+		public static bool TwelveHourClockMode
+		{
+			get
+			{
+				return data.twelveHourClock;
+			}
+			set
+			{
+				data.twelveHourClock = value;
+			}
+		}
+
+		public static bool DisableTinyText
+		{
+			get
+			{
+				return data.disableTinyText;
+			}
+			set
+			{
+				data.disableTinyText = value;
+			}
+		}
+
 		public static bool TestMapSizes
 		{
 			get
@@ -387,6 +585,18 @@ namespace Verse
 			set
 			{
 				data.plantWindSway = value;
+			}
+		}
+
+		public static bool TextureCompression
+		{
+			get
+			{
+				return data.textureCompression;
+			}
+			set
+			{
+				data.textureCompression = value;
 			}
 		}
 
@@ -482,6 +692,156 @@ namespace Verse
 			}
 		}
 
+		public static ExpansionDef BackgroundImageExpansion
+		{
+			get
+			{
+				if (data.backgroundExpansionId != null)
+				{
+					ExpansionDef expansionWithIdentifier = ModLister.GetExpansionWithIdentifier(data.backgroundExpansionId);
+					if (expansionWithIdentifier != null && expansionWithIdentifier.Status != ExpansionStatus.NotInstalled)
+					{
+						return expansionWithIdentifier;
+					}
+				}
+				ExpansionDef lastInstalledExpansion = ModsConfig.LastInstalledExpansion;
+				if (lastInstalledExpansion != null)
+				{
+					return lastInstalledExpansion;
+				}
+				return ExpansionDefOf.Core;
+			}
+			set
+			{
+				data.backgroundExpansionId = value?.linkedMod;
+				((UI_BackgroundMain)UIMenuBackgroundManager.background).overrideBGImage = value?.BackgroundImage;
+			}
+		}
+
+		public static bool RandomBackgroundImage
+		{
+			get
+			{
+				return data.randomBackground;
+			}
+			set
+			{
+				data.randomBackground = value;
+			}
+		}
+
+		public static List<string> DebugActionsPalette
+		{
+			get
+			{
+				return data.debugActionPalette;
+			}
+			set
+			{
+				if (data.debugActionPalette != value)
+				{
+					data.debugActionPalette = value;
+					Save();
+				}
+			}
+		}
+
+		public static Vector2 DevPalettePosition
+		{
+			get
+			{
+				return data.devPalettePosition;
+			}
+			set
+			{
+				if (data.devPalettePosition != value)
+				{
+					data.devPalettePosition = value;
+					Save();
+				}
+			}
+		}
+
+		public static bool SmoothCameraJumps
+		{
+			get
+			{
+				return data.smoothCameraJumps;
+			}
+			set
+			{
+				if (data.smoothCameraJumps != value)
+				{
+					data.smoothCameraJumps = value;
+					Apply();
+				}
+			}
+		}
+
+		public static bool GravshipCutscenes
+		{
+			get
+			{
+				return data.gravshipCutscenes;
+			}
+			set
+			{
+				if (data.gravshipCutscenes != value)
+				{
+					data.gravshipCutscenes = value;
+					Apply();
+				}
+			}
+		}
+
+		public static bool OpenLogOnWarnings
+		{
+			get
+			{
+				return data?.openLogOnWarnings ?? false;
+			}
+			set
+			{
+				if (data.openLogOnWarnings != value)
+				{
+					data.openLogOnWarnings = value;
+					Apply();
+				}
+			}
+		}
+
+		public static bool CloseLogWindowOnEscape
+		{
+			get
+			{
+				return data.closeLogWindowOnEscape;
+			}
+			set
+			{
+				if (data.closeLogWindowOnEscape != value)
+				{
+					data.closeLogWindowOnEscape = value;
+					Apply();
+				}
+			}
+		}
+
+		public static int AutosavesCount
+		{
+			get
+			{
+				return data.autosavesCount;
+			}
+			set
+			{
+				if (data.autosavesCount != value)
+				{
+					data.autosavesCount = value;
+					Apply();
+				}
+			}
+		}
+
 		public static void Init()
 		{
 			bool num = !new FileInfo(GenFilePaths.PrefsFilePath).Exists;
@@ -519,6 +879,11 @@ namespace Verse
 		public static void Apply()
 		{
 			data.Apply();
+		}
+
+		public static void Notify_NewExpansion()
+		{
+			data.backgroundExpansionId = null;
 		}
 
 		public static NameTriple RandomPreferredName()

@@ -6,8 +6,7 @@ namespace Verse
 	{
 		public static T TryGetComp<T>(this Hediff hd) where T : HediffComp
 		{
-			HediffWithComps hediffWithComps = hd as HediffWithComps;
-			if (hediffWithComps == null)
+			if (!(hd is HediffWithComps hediffWithComps))
 			{
 				return null;
 			}
@@ -15,44 +14,46 @@ namespace Verse
 			{
 				for (int i = 0; i < hediffWithComps.comps.Count; i++)
 				{
-					T val = hediffWithComps.comps[i] as T;
-					if (val != null)
+					if (hediffWithComps.comps[i] is T result)
 					{
-						return val;
+						return result;
 					}
 				}
 			}
 			return null;
 		}
 
+		public static bool TryGetComp<T>(this Hediff hd, out T comp) where T : HediffComp
+		{
+			comp = hd.TryGetComp<T>();
+			return comp != null;
+		}
+
 		public static bool IsTended(this Hediff hd)
 		{
-			HediffWithComps hediffWithComps = hd as HediffWithComps;
-			if (hediffWithComps == null)
+			if (!(hd is HediffWithComps hd2))
 			{
 				return false;
 			}
-			return hediffWithComps.TryGetComp<HediffComp_TendDuration>()?.IsTended ?? false;
+			return hd2.TryGetComp<HediffComp_TendDuration>()?.IsTended ?? false;
 		}
 
 		public static bool IsPermanent(this Hediff hd)
 		{
-			HediffWithComps hediffWithComps = hd as HediffWithComps;
-			if (hediffWithComps == null)
+			if (!(hd is HediffWithComps hd2))
 			{
 				return false;
 			}
-			return hediffWithComps.TryGetComp<HediffComp_GetsPermanent>()?.IsPermanent ?? false;
+			return hd2.TryGetComp<HediffComp_GetsPermanent>()?.IsPermanent ?? false;
 		}
 
 		public static bool FullyImmune(this Hediff hd)
 		{
-			HediffWithComps hediffWithComps = hd as HediffWithComps;
-			if (hediffWithComps == null)
+			if (!(hd is HediffWithComps hd2))
 			{
 				return false;
 			}
-			return hediffWithComps.TryGetComp<HediffComp_Immunizable>()?.FullyImmune ?? false;
+			return hd2.TryGetComp<HediffComp_Immunizable>()?.FullyImmune ?? false;
 		}
 
 		public static bool CanHealFromTending(this Hediff_Injury hd)

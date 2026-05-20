@@ -16,13 +16,9 @@ namespace RimWorld
 			float num = 0f;
 			for (int i = 0; i < thingCounts.Count; i++)
 			{
-				if (thingCounts[i].Count > 0)
+				if (thingCounts[i].Count > 0 && thingCounts[i].Thing is Pawn p)
 				{
-					Pawn pawn = thingCounts[i].Thing as Pawn;
-					if (pawn != null)
-					{
-						num += MassUtility.Capacity(pawn, explanation) * (float)thingCounts[i].Count;
-					}
+					num += MassUtility.Capacity(p, explanation) * (float)thingCounts[i].Count;
 				}
 			}
 			return Mathf.Max(num, 0f);
@@ -39,23 +35,50 @@ namespace RimWorld
 					continue;
 				}
 				Thing thing = thingCounts[i].Thing;
-				Pawn pawn = thing as Pawn;
-				if (pawn != null)
+				if (thing is Pawn pawn)
 				{
 					num = ((!includePawnsMass) ? (num + MassUtility.GearAndInventoryMass(pawn) * (float)count) : (num + pawn.GetStatValue(StatDefOf.Mass) * (float)count));
 					if (InventoryCalculatorsUtility.ShouldIgnoreInventoryOf(pawn, ignoreInventory))
 					{
 						num -= MassUtility.InventoryMass(pawn) * (float)count;
 					}
-					continue;
 				}
-				num += thing.GetStatValue(StatDefOf.Mass) * (float)count;
-				if (ignoreSpawnedCorpsesGearAndInventory)
+				else
 				{
-					Corpse corpse = thing as Corpse;
-					if (corpse != null && corpse.Spawned)
+					num += thing.GetStatValue(StatDefOf.Mass) * (float)count;
+					if (ignoreSpawnedCorpsesGearAndInventory && thing is Corpse { Spawned: not false } corpse)
 					{
 						num -= MassUtility.GearAndInventoryMass(corpse.InnerPawn) * (float)count;
+					}
+				}
+			}
+			return Mathf.Max(num, 0f);
+		}
+
+		public static float MassUsage(ThingOwner container, IgnorePawnsInventoryMode ignoreInventory, bool includePawnsMass = false, bool ignoreSpawnedCorpsesGearAndInventory = false)
+		{
+			float num = 0f;
+			foreach (Thing item in (IEnumerable<Thing>)container)
+			{
+				int stackCount = item.stackCount;
+				if (stackCount <= 0)
+				{
+					continue;
+				}
+				if (item is Pawn pawn)
+				{
+					num = ((!includePawnsMass) ? (num + MassUtility.GearAndInventoryMass(pawn) * (float)stackCount) : (num + pawn.GetStatValue(StatDefOf.Mass) * (float)stackCount));
+					if (InventoryCalculatorsUtility.ShouldIgnoreInventoryOf(pawn, ignoreInventory))
+					{
+						num -= MassUtility.InventoryMass(pawn) * (float)stackCount;
+					}
+				}
+				else
+				{
+					num += item.GetStatValue(StatDefOf.Mass) * (float)stackCount;
+					if (ignoreSpawnedCorpsesGearAndInventory && item is Corpse { Spawned: not false } corpse)
+					{
+						num -= MassUtility.GearAndInventoryMass(corpse.InnerPawn) * (float)stackCount;
 					}
 				}
 			}

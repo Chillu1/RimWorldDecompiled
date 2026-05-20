@@ -29,11 +29,14 @@ namespace RimWorld.Planet
 			else
 			{
 				float x = slate.Get("points", 0f);
-				ThingSetMakerParams parms = default(ThingSetMakerParams);
-				parms.totalMarketValueRange = new FloatRange(0.7f, 1.3f) * QuestTuning.PointsToRewardMarketValueCurve.Evaluate(x);
+				ThingSetMakerParams parms = new ThingSetMakerParams
+				{
+					totalMarketValueRange = new FloatRange(0.7f, 1.3f) * QuestTuning.PointsToRewardMarketValueCurve.Evaluate(x)
+				};
 				list = ThingSetMakerDefOf.Reward_ItemsStandard.root.Generate(parms);
 			}
 			part.things = new ThingOwner<Thing>(part, oneStackOnly: false);
+			part.things.dontTickContents = true;
 			part.things.TryAddRangeOrTransfer(list, canMergeWithExistingStacks: false);
 			slate.Set("generatedItemStashThings", list);
 			outExtraDescriptionRules.Add(new Rule_String("itemStashContents", GenLabel.ThingsLabel(list)));

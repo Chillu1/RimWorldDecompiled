@@ -4,30 +4,15 @@ namespace Verse
 {
 	public interface IVerbOwner
 	{
-		VerbTracker VerbTracker
-		{
-			get;
-		}
+		VerbTracker VerbTracker { get; }
 
-		List<VerbProperties> VerbProperties
-		{
-			get;
-		}
+		List<VerbProperties> VerbProperties { get; }
 
-		List<Tool> Tools
-		{
-			get;
-		}
+		List<Tool> Tools { get; }
 
-		ImplementOwnerTypeDef ImplementOwnerTypeDef
-		{
-			get;
-		}
+		ImplementOwnerTypeDef ImplementOwnerTypeDef { get; }
 
-		Thing ConstantCaster
-		{
-			get;
-		}
+		Thing ConstantCaster { get; }
 
 		string UniqueVerbOwnerID();
 

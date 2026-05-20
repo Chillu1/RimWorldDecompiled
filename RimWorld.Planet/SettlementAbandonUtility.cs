@@ -22,7 +22,7 @@ namespace RimWorld.Planet
 			{
 				TryAbandonViaInterface(settlement);
 			};
-			command_Action.order = 30f;
+			command_Action.Order = 3000f;
 			if (AllColonistsThere(settlement))
 			{
 				command_Action.Disable("CommandAbandonHomeFailAllColonistsThere".Translate());
@@ -40,6 +40,21 @@ namespace RimWorld.Planet
 		}
 
 		public static void TryAbandonViaInterface(MapParent settlement)
+		{
+			if (settlement is ArchotechSettlement { AnyArchotechBuildingRequiresStudy: not false })
+			{
+				Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("AbandonArchotechStructuresWarningDialog".Translate(), delegate
+				{
+					TryAbandonWithColonyCheck(settlement);
+				}));
+			}
+			else
+			{
+				TryAbandonWithColonyCheck(settlement);
+			}
+		}
+
+		private static void TryAbandonWithColonyCheck(MapParent settlement)
 		{
 			Map map = settlement.Map;
 			if (map == null)
@@ -61,7 +76,7 @@ namespace RimWorld.Planet
 					}
 					stringBuilder2.Append("    " + item.LabelCap);
 				}
-				stringBuilder.Append("ConfirmAbandonHomeWithColonyPawns".Translate(stringBuilder2));
+				stringBuilder.Append(ModsConfig.BiotechActive ? "ConfirmAbandonHomeWithColonyPawnsIncMechs".Translate(stringBuilder2) : "ConfirmAbandonHomeWithColonyPawns".Translate(stringBuilder2));
 			}
 			PawnDiedOrDownedThoughtsUtility.BuildMoodThoughtsListString(map.mapPawns.AllPawns, PawnDiedOrDownedThoughtsKind.Banished, stringBuilder, null, "\n\n" + "ConfirmAbandonHomeNegativeThoughts_Everyone".Translate(), "ConfirmAbandonHomeNegativeThoughts");
 			if (stringBuilder.Length == 0)
@@ -80,21 +95,8 @@ namespace RimWorld.Planet
 
 		private static void Abandon(MapParent settlement)
 		{
-			settlement.Destroy();
-			Settlement settlement2 = settlement as Settlement;
-			if (settlement2 != null)
-			{
-				AddAbandonedSettlement(settlement2);
-			}
+			settlement.Abandon(wasGravshipLaunch: false);
 			Find.GameEnder.CheckOrUpdateGameOver();
-		}
-
-		private static void AddAbandonedSettlement(Settlement factionBase)
-		{
-			WorldObject worldObject = WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.AbandonedSettlement);
-			worldObject.Tile = factionBase.Tile;
-			worldObject.SetFaction(factionBase.Faction);
-			Find.WorldObjects.Add(worldObject);
 		}
 	}
 }

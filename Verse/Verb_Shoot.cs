@@ -4,13 +4,12 @@ namespace Verse
 {
 	public class Verb_Shoot : Verb_LaunchProjectile
 	{
-		protected override int ShotsPerBurst => verbProps.burstShotCount;
+		protected override int ShotsPerBurst => base.BurstShotCount;
 
 		public override void WarmupComplete()
 		{
 			base.WarmupComplete();
-			Pawn pawn = currentTarget.Thing as Pawn;
-			if (pawn != null && !pawn.Downed && CasterIsPawn && CasterPawn.skills != null)
+			if (currentTarget.Thing is Pawn { Downed: false, IsColonyMech: false } pawn && CasterIsPawn && CasterPawn.skills != null)
 			{
 				float num = (pawn.HostileTo(caster) ? 170f : 20f);
 				float num2 = verbProps.AdjustedFullCycleTime(this, CasterPawn);

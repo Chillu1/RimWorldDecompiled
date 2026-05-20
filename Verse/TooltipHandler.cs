@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Verse.Steam;
 
 namespace Verse
 {
@@ -16,7 +17,7 @@ namespace Verse
 
 		private static List<ActiveTip> drawingTips = new List<ActiveTip>();
 
-		private static Comparison<ActiveTip> compareTooltipsByPriorityCached = CompareTooltipsByPriority;
+		private static Func<ActiveTip, ActiveTip, int> compareTooltipsByPriorityCached = CompareTooltipsByPriority;
 
 		public static void ClearTooltipsFrom(Rect rect)
 		{
@@ -77,7 +78,7 @@ namespace Verse
 
 		public static void TipRegion(Rect rect, TipSignal tip)
 		{
-			if (Event.current.type == EventType.Repaint && (tip.textGetter != null || !tip.text.NullOrEmpty()) && (Mouse.IsOver(rect) || DebugViewSettings.drawTooltipEdges))
+			if (Event.current.type == EventType.Repaint && (Mouse.IsOver(rect) || DebugViewSettings.drawTooltipEdges) && (tip.textGetter != null || !tip.text.NullOrEmpty()) && !SteamDeck.KeyboardShowing)
 			{
 				if (DebugViewSettings.drawTooltipEdges)
 				{
@@ -97,11 +98,14 @@ namespace Verse
 
 		public static void DoTooltipGUI()
 		{
-			DrawActiveTips();
-			if (Event.current.type == EventType.Repaint)
+			if (!CellInspectorDrawer.active)
 			{
-				CleanActiveTooltips();
-				frame++;
+				DrawActiveTips();
+				if (Event.current.type == EventType.Repaint)
+				{
+					CleanActiveTooltips();
+					frame++;
+				}
 			}
 		}
 
@@ -121,7 +125,7 @@ namespace Verse
 			}
 			if (drawingTips.Any())
 			{
-				drawingTips.Sort(compareTooltipsByPriorityCached);
+				drawingTips.SortStable(compareTooltipsByPriorityCached);
 				Vector2 pos = CalculateInitialTipPosition(drawingTips);
 				for (int i = 0; i < drawingTips.Count; i++)
 				{
@@ -167,19 +171,9 @@ namespace Verse
 
 		private static int CompareTooltipsByPriority(ActiveTip A, ActiveTip B)
 		{
-			if (A.signal.priority == B.signal.priority)
-			{
-				return 0;
-			}
-			if (A.signal.priority == TooltipPriority.Pawn)
-			{
-				return -1;
-			}
-			if (B.signal.priority == TooltipPriority.Pawn)
-			{
-				return 1;
-			}
-			return 0;
+			int num = 0 - A.signal.priority;
+			int value = 0 - B.signal.priority;
+			return num.CompareTo(value);
 		}
 	}
 }

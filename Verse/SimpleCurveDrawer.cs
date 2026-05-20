@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace Verse
@@ -148,10 +147,10 @@ namespace Verse
 			{
 				return;
 			}
-			Rect position = rect;
-			position.yMin -= 1f;
-			position.yMax += 1f;
-			GUI.BeginGroup(position);
+			Rect rect2 = rect;
+			rect2.yMin -= 1f;
+			rect2.yMax += 1f;
+			Widgets.BeginGroup(rect2);
 			if (Event.current.type == EventType.Repaint)
 			{
 				if (useAALines)
@@ -161,10 +160,10 @@ namespace Verse
 					Vector2 curvePoint = default(Vector2);
 					int num = curve.curve.Points.Count((CurvePoint x) => x.x >= viewRect.xMin && x.x <= viewRect.xMax);
 					int num2 = RemovePointsOptimizationFreq(num);
-					for (int i = 0; i < curve.curve.PointsCount; i++)
+					for (int num3 = 0; num3 < curve.curve.PointsCount; num3++)
 					{
-						CurvePoint curvePoint2 = curve.curve[i];
-						if (!pointsRemoveOptimization || i % num2 != 0 || i == 0 || i == num - 1)
+						CurvePoint curvePoint2 = curve.curve[num3];
+						if (!pointsRemoveOptimization || num3 % num2 != 0 || num3 == 0 || num3 == num - 1)
 						{
 							curvePoint.x = curvePoint2.x;
 							curvePoint.y = curvePoint2.y;
@@ -188,13 +187,13 @@ namespace Verse
 				else
 				{
 					GUI.color = curve.color;
-					float num3 = viewRect.x;
-					float num4 = rect.width / 1f;
-					float num5 = viewRect.width / num4;
-					while (num3 < viewRect.xMax)
+					float num4 = viewRect.x;
+					float num5 = rect.width / 1f;
+					float num6 = viewRect.width / num5;
+					while (num4 < viewRect.xMax)
 					{
-						num3 += num5;
-						Vector2 vector2 = CurveToScreenCoordsInsideScreenRect(rect, viewRect, new Vector2(num3, curve.curve.Evaluate(num3)));
+						num4 += num6;
+						Vector2 vector2 = CurveToScreenCoordsInsideScreenRect(rect, viewRect, new Vector2(num4, curve.curve.Evaluate(num4)));
 						GUI.DrawTexture(new Rect(vector2.x, vector2.y, 1f, 1f), BaseContent.WhiteTex);
 					}
 				}
@@ -202,9 +201,10 @@ namespace Verse
 			}
 			if (drawPoints)
 			{
-				for (int j = 0; j < curve.curve.PointsCount; j++)
+				for (int num7 = 0; num7 < curve.curve.PointsCount; num7++)
 				{
-					DrawPoint(CurveToScreenCoordsInsideScreenRect(curvePoint: curve.curve[j].Loc, rect: rect, viewRect: viewRect));
+					CurvePoint curvePoint3 = curve.curve[num7];
+					DrawPoint(CurveToScreenCoordsInsideScreenRect(rect, viewRect, curvePoint3.Loc));
 				}
 			}
 			foreach (float debugInputValue in curve.curve.View.DebugInputValues)
@@ -217,7 +217,7 @@ namespace Verse
 				DrawPoint(screenPoint);
 				GUI.color = Color.white;
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		public static void DrawCurveMeasures(Rect rect, Rect viewRect, Rect graphRect, int xLabelsCount, int yLabelsCount, bool xIntegersOnly, bool yIntegersOnly)
@@ -225,17 +225,17 @@ namespace Verse
 			Text.Font = GameFont.Small;
 			Color color = new Color(0.45f, 0.45f, 0.45f);
 			Color color2 = new Color(0.7f, 0.7f, 0.7f);
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			CalculateMeasureStartAndInc(out var start, out var inc, out var count, viewRect.xMin, viewRect.xMax, xLabelsCount, xIntegersOnly);
 			Text.Anchor = TextAnchor.UpperCenter;
-			string b = string.Empty;
+			string text = string.Empty;
 			for (int i = 0; i < count; i++)
 			{
 				float x = start + inc * (float)i;
-				string text = x.ToString("F0");
-				if (!(text == b))
+				string text2 = x.ToString("F0");
+				if (!(text2 == text))
 				{
-					b = text;
+					text = text2;
 					float num = CurveToScreenCoordsInsideScreenRect(graphRect, viewRect, new Vector2(x, 0f)).x + 60f;
 					float num2 = rect.height - 30f;
 					GUI.color = color;
@@ -243,31 +243,31 @@ namespace Verse
 					GUI.color = color2;
 					Rect rect2 = new Rect(num - 31f, num2 + 2f, 60f, 30f);
 					Text.Font = GameFont.Tiny;
-					Widgets.Label(rect2, text);
+					Widgets.Label(rect2, text2);
 					Text.Font = GameFont.Small;
 				}
 			}
 			CalculateMeasureStartAndInc(out var start2, out var inc2, out var count2, viewRect.yMin, viewRect.yMax, yLabelsCount, yIntegersOnly);
-			string b2 = string.Empty;
+			string text3 = string.Empty;
 			Text.Anchor = TextAnchor.UpperRight;
 			for (int j = 0; j < count2; j++)
 			{
 				float y = start2 + inc2 * (float)j;
-				string text2 = y.ToString("F0");
-				if (!(text2 == b2))
+				string text4 = y.ToString("F0");
+				if (!(text4 == text3))
 				{
-					b2 = text2;
+					text3 = text4;
 					float num3 = CurveToScreenCoordsInsideScreenRect(graphRect, viewRect, new Vector2(0f, y)).y + (graphRect.y - rect.y);
 					GUI.color = color;
 					Widgets.DrawLineHorizontal(55f, num3, 5f + graphRect.width);
 					GUI.color = color2;
 					Rect rect3 = new Rect(0f, num3 - 10f, 55f, 20f);
 					Text.Font = GameFont.Tiny;
-					Widgets.Label(rect3, text2);
+					Widgets.Label(rect3, text4);
 					Text.Font = GameFont.Small;
 				}
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			GUI.color = new Color(1f, 1f, 1f);
 			Text.Anchor = TextAnchor.UpperLeft;
 		}
@@ -295,7 +295,7 @@ namespace Verse
 			Text.Anchor = TextAnchor.UpperLeft;
 			Text.Font = GameFont.Small;
 			Text.WordWrap = false;
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			float num = 0f;
 			float num2 = 0f;
 			int num3 = (int)(rect.width / 140f);
@@ -322,7 +322,7 @@ namespace Verse
 					num += 140f;
 				}
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			GUI.color = Color.white;
 			Text.WordWrap = true;
 		}
@@ -333,7 +333,7 @@ namespace Verse
 			{
 				return;
 			}
-			GUI.BeginGroup(screenRect);
+			Widgets.BeginGroup(screenRect);
 			Vector2 mousePosition = Event.current.mousePosition;
 			Vector2 vector = default(Vector2);
 			Vector2 vector2 = default(Vector2);
@@ -381,7 +381,7 @@ namespace Verse
 				Widgets.Label(rect, simpleCurveDrawInfo.label + "\n" + labelX + " " + vector.x.ToString("0.##") + "\n" + text);
 				Text.Anchor = TextAnchor.UpperLeft;
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		public static void DrawCurveMarks(Rect rect, Rect viewRect, List<CurveMark> marks)
@@ -447,7 +447,7 @@ namespace Verse
 
 		public static void DrawGraphBackgroundLines(Rect rect, Rect viewRect)
 		{
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			float num = 0.01f;
 			while (viewRect.width / (num * 10f) > 4f)
 			{
@@ -486,7 +486,7 @@ namespace Verse
 			DrawInfiniteHorizontalLine(rect, viewRect, 0f);
 			DrawInfiniteVerticalLine(rect, viewRect, 0f);
 			GUI.color = Color.white;
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		private static int RemovePointsOptimizationFreq(int count)

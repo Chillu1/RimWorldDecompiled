@@ -9,9 +9,17 @@ namespace RimWorld
 
 		public Thing shuttle;
 
+		public string questTag;
+
+		public string leavingDangerMessage;
+
 		protected override Lord MakeLord()
 		{
-			return LordMaker.MakeNewLord(faction, new LordJob_EscortPawn(escortee, shuttle), base.Map);
+			LordJob_EscortPawn lordJob_EscortPawn = new LordJob_EscortPawn(escortee, shuttle);
+			lordJob_EscortPawn.leavingDangerMessage = leavingDangerMessage;
+			Lord lord = LordMaker.MakeNewLord(faction, lordJob_EscortPawn, base.Map);
+			QuestUtility.AddQuestTag(ref lord.questTags, questTag);
+			return lord;
 		}
 
 		public override void ExposeData()
@@ -19,6 +27,8 @@ namespace RimWorld
 			base.ExposeData();
 			Scribe_References.Look(ref escortee, "escortee");
 			Scribe_References.Look(ref shuttle, "shuttle");
+			Scribe_Values.Look(ref questTag, "questTag");
+			Scribe_Values.Look(ref leavingDangerMessage, "leavingDangerMessage");
 		}
 	}
 }

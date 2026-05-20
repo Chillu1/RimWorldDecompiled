@@ -11,5 +11,11 @@ namespace RimWorld.IO
 			using Stream input = file.CreateReadStream();
 			return XDocument.Load(XmlReader.Create(input), LoadOptions.SetLineInfo);
 		}
+
+		public static XDocument LoadAsXDocument(string fileContents)
+		{
+			using StringReader textReader = new StringReader(fileContents);
+			return XDocument.Load(textReader, LoadOptions.SetLineInfo);
+		}
 	}
 }

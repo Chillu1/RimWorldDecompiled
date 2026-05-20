@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using UnityEngine;
 using Verse;
 
@@ -93,7 +94,7 @@ namespace RimWorld
 			public override float GetHeight_Worker(float width)
 			{
 				float width2 = width - 29f;
-				return Mathf.Max(26f, log.GetTextHeight(pawn, width2));
+				return Mathf.Max(26f, log.GetTextHeight(pawn, width2) + 4f);
 			}
 
 			public override void Draw(float position, float width, LogDrawData data)
@@ -116,7 +117,9 @@ namespace RimWorld
 				Texture2D texture2D = log.IconFromPOV(pawn);
 				if (texture2D != null)
 				{
+					GUI.color = log.IconColorFromPOV(pawn) ?? Color.white;
 					GUI.DrawTexture(new Rect(0f, position + (height - 26f) / 2f, 26f, 26f), texture2D);
+					GUI.color = Color.white;
 				}
 				if (Mouse.IsOver(rect))
 				{
@@ -180,59 +183,79 @@ namespace RimWorld
 		[TweakValue("Interface", 0f, 30f)]
 		private static float BattleBottomPadding = 20f;
 
-		public static IEnumerable<LogLineDisplayable> GenerateLogLinesFor(Pawn pawn, bool showAll, bool showCombat, bool showSocial)
+		private static List<LogLineDisplayable> tmpLogLines = new List<LogLineDisplayable>();
+
+		public static List<LogLineDisplayable> GenerateLogLinesFor(Pawn pawn, bool showAll, bool showCombat, bool showSocial, int maxLines)
 		{
-			LogEntry[] nonCombatLines = (showSocial ? Find.PlayLog.AllEntries.Where((LogEntry e) => e.Concerns(pawn)).ToArray() : new LogEntry[0]);
-			int nonCombatIndex = 0;
-			Battle currentBattle = null;
+			tmpLogLines.Clear();
+			LogEntry[] array = (showSocial ? Find.PlayLog.AllEntries.Where((LogEntry e) => e.Concerns(pawn)).ToArray() : new LogEntry[0]);
+			int num = 0;
+			int num2 = 0;
+			Battle battle = null;
 			if (showCombat)
 			{
-				bool atTop = true;
-				foreach (Battle battle in Find.BattleLog.Battles)
+				bool flag = true;
+				foreach (Battle battle2 in Find.BattleLog.Battles)
 				{
-					if (!battle.Concerns(pawn))
+					if (!battle2.Concerns(pawn))
 					{
 						continue;
 					}
-					foreach (LogEntry entry in battle.Entries)
+					foreach (LogEntry entry in battle2.Entries)
 					{
 						if (!entry.Concerns(pawn) || (!showAll && !entry.ShowInCompactView()))
 						{
 							continue;
 						}
-						while (nonCombatIndex < nonCombatLines.Length && nonCombatLines[nonCombatIndex].Age < entry.Age)
+						while (num < array.Length && array[num].Age < entry.Age)
 						{
-							if (currentBattle != null && currentBattle != battle)
+							if (battle != null && battle != battle2)
 							{
-								yield return new LogLineDisplayableGap(BattleBottomPadding);
-								currentBattle = null;
+								tmpLogLines.Add(new LogLineDisplayableGap(BattleBottomPadding));
+								battle = null;
 							}
-							yield return new LogLineDisplayableLog(nonCombatLines[nonCombatIndex++], pawn);
-							atTop = false;
+							tmpLogLines.Add(new LogLineDisplayableLog(array[num++], pawn));
+							num2++;
+							if (num2 >= maxLines)
+							{
+								return tmpLogLines;
+							}
+							flag = false;
 						}
-						if (currentBattle != battle)
+						if (battle != battle2)
 						{
-							if (!atTop)
+							if (!flag)
 							{
-								yield return new LogLineDisplayableGap(BattleBottomPadding);
+								tmpLogLines.Add(new LogLineDisplayableGap(BattleBottomPadding));
 							}
-							yield return new LogLineDisplayableHeader(battle.GetName());
-							currentBattle = battle;
-							atTop = false;
+							tmpLogLines.Add(new LogLineDisplayableHeader(battle2.GetName()));
+							battle = battle2;
+							flag = false;
 						}
-						yield return new LogLineDisplayableLog(entry, pawn);
+						tmpLogLines.Add(new LogLineDisplayableLog(entry, pawn));
+						num2++;
+						if (num2 >= maxLines)
+						{
+							return tmpLogLines;
+						}
 					}
 				}
 			}
-			while (nonCombatIndex < nonCombatLines.Length)
+			while (num < array.Length)
 			{
-				if (currentBattle != null)
+				if (battle != null)
 				{
-					yield return new LogLineDisplayableGap(BattleBottomPadding);
-					currentBattle = null;
+					tmpLogLines.Add(new LogLineDisplayableGap(BattleBottomPadding));
+					battle = null;
 				}
-				yield return new LogLineDisplayableLog(nonCombatLines[nonCombatIndex++], pawn);
+				tmpLogLines.Add(new LogLineDisplayableLog(array[num++], pawn));
+				num2++;
+				if (num2 >= maxLines)
+				{
+					return tmpLogLines;
+				}
 			}
+			return tmpLogLines;
 		}
 	}
 }

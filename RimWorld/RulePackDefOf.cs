@@ -21,6 +21,27 @@ namespace RimWorld
 
 		public static RulePackDef Sentence_RecruitAttemptRejected;
 
+		[MayRequireIdeology]
+		public static RulePackDef Sentence_ConvertIdeoAttemptSuccess;
+
+		[MayRequireIdeology]
+		public static RulePackDef Sentence_ConvertIdeoAttemptFail;
+
+		[MayRequireIdeology]
+		public static RulePackDef Sentence_ConvertIdeoAttemptFailSocialFight;
+
+		[MayRequireIdeology]
+		public static RulePackDef Sentence_ConvertIdeoAttemptFailResentment;
+
+		[MayRequireBiotech]
+		public static RulePackDef NamerGenepack;
+
+		[MayRequireBiotech]
+		public static RulePackDef NamerXenotype;
+
+		[MayRequireBiotech]
+		public static RulePackDef GrowthMomentFlavor;
+
 		public static RulePackDef ArtDescriptionRoot_HasTale;
 
 		public static RulePackDef ArtDescriptionRoot_Taleless;
@@ -61,8 +82,6 @@ namespace RimWorld
 
 		public static RulePackDef SeedGenerator;
 
-		public static RulePackDef GameplayTips;
-
 		public static RulePackDef Combat_RangedFire;
 
 		public static RulePackDef Combat_RangedDamage;
@@ -89,6 +108,9 @@ namespace RimWorld
 
 		public static RulePackDef DamageEvent_TrapSpike;
 
+		[MayRequireAnomaly]
+		public static RulePackDef DamageEvent_UnnaturalDarkness;
+
 		public static RulePackDef Event_Stun;
 
 		public static RulePackDef Event_AbilityUsed;
@@ -106,6 +128,54 @@ namespace RimWorld
 		public static RulePackDef Battle_Brawl;
 
 		public static RulePackDef DynamicWrapper;
+
+		[MayRequireAnomaly]
+		public static RulePackDef LabyrinthRamblings;
+
+		[MayRequireAnomaly]
+		public static RulePackDef NamerBiosignature;
+
+		[MayRequireAnomaly]
+		public static RulePackDef NamerArtCubeSculpture;
+
+		[MayRequireAnomaly]
+		public static RulePackDef ArtDescription_CubeSculpture;
+
+		[MayRequireAnomaly]
+		public static RulePackDef NamerArtVoidSculpture;
+
+		[MayRequireAnomaly]
+		public static RulePackDef ArtDescription_VoidSculpture;
+
+		[MayRequireAnomaly]
+		public static RulePackDef RevenantNoises;
+
+		[MayRequireAnomaly]
+		public static RulePackDef NamerPersonCreepjoiner;
+
+		[MayRequireAnomaly]
+		public static RulePackDef Event_UnnaturalCorpseAttack;
+
+		[MayRequireAnomaly]
+		public static RulePackDef Event_DevourerConsumeLeap;
+
+		[MayRequireAnomaly]
+		public static RulePackDef Event_DevourerDigestionAborted;
+
+		[MayRequireAnomaly]
+		public static RulePackDef Event_DevourerDigestionCompleted;
+
+		[MayRequireAnomaly]
+		public static RulePackDef Event_MetalhorrorEmerged;
+
+		[MayRequireAnomaly]
+		public static RulePackDef Event_Hypnotized;
+
+		[MayRequireOdyssey]
+		public static RulePackDef NamerGravship;
+
+		[MayRequireOdyssey]
+		public static RulePackDef NamerUniqueWeapon;
 
 		static RulePackDefOf()
 		{

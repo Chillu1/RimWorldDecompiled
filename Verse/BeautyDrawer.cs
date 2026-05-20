@@ -6,7 +6,7 @@ namespace Verse
 {
 	public static class BeautyDrawer
 	{
-		private static List<Thing> beautyCountedThings = new List<Thing>();
+		private static HashSet<Thing> beautyCountedThings = new HashSet<Thing>();
 
 		private static Color ColorUgly = Color.red;
 
@@ -22,10 +22,6 @@ namespace Verse
 
 		private static bool ShouldShow()
 		{
-			if (!Find.PlaySettings.showBeauty)
-			{
-				return false;
-			}
 			if (Mouse.IsInputBlockedNow)
 			{
 				return false;
@@ -34,15 +30,19 @@ namespace Verse
 			{
 				return false;
 			}
+			if (CellInspectorDrawer.active)
+			{
+				return true;
+			}
+			if (!Find.PlaySettings.showBeauty)
+			{
+				return false;
+			}
 			return true;
 		}
 
 		private static void DrawBeautyAroundMouse()
 		{
-			if (!Find.PlaySettings.showBeauty)
-			{
-				return;
-			}
 			BeautyUtility.FillBeautyRelevantCells(UI.MouseCell(), Find.CurrentMap);
 			for (int i = 0; i < BeautyUtility.beautyRelevantCells.Count; i++)
 			{

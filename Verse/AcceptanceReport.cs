@@ -36,6 +36,11 @@ namespace Verse
 			reasonTextInt = reasonText;
 		}
 
+		public static implicit operator bool(AcceptanceReport report)
+		{
+			return report.Accepted;
+		}
+
 		public static implicit operator AcceptanceReport(bool value)
 		{
 			if (value)

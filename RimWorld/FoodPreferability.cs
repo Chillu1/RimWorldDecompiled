@@ -8,6 +8,7 @@ namespace RimWorld
 		DesperateOnlyForHumanlikes,
 		RawBad,
 		RawTasty,
+		MealTerrible,
 		MealAwful,
 		MealSimple,
 		MealFine,

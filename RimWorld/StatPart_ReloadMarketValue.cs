@@ -1,4 +1,5 @@
 using System.Text;
+using RimWorld.Utility;
 using Verse;
 
 namespace RimWorld
@@ -20,20 +21,21 @@ namespace RimWorld
 
 		private static void TransformAndExplain(StatRequest req, ref float val, StringBuilder explanation)
 		{
-			CompReloadable compReloadable = req.Thing?.TryGetComp<CompReloadable>();
-			if (compReloadable != null && compReloadable.RemainingCharges != compReloadable.MaxCharges)
+			IReloadableComp reloadableComp = req.Thing?.TryGetComp<CompApparelReloadable>();
+			IReloadableComp reloadableComp2 = reloadableComp ?? req.Thing?.TryGetComp<CompEquippableAbilityReloadable>();
+			if (reloadableComp2 != null && reloadableComp2.RemainingCharges != reloadableComp2.MaxCharges)
 			{
-				if (compReloadable.AmmoDef != null)
+				if (reloadableComp2.AmmoDef != null)
 				{
-					int num = compReloadable.MaxAmmoNeeded(allowForcedReload: true);
-					float num2 = (0f - compReloadable.AmmoDef.BaseMarketValue) * (float)num;
+					int num = reloadableComp2.MaxAmmoNeeded(allowForcedReload: true);
+					float num2 = (0f - reloadableComp2.AmmoDef.BaseMarketValue) * (float)num;
 					val += num2;
-					explanation?.AppendLine("StatsReport_ReloadMarketValue".Translate(NamedArgumentUtility.Named(compReloadable.AmmoDef, "AMMO"), num.Named("COUNT")) + ": " + num2.ToStringMoneyOffset());
+					explanation?.AppendLine("StatsReport_ReloadMarketValue".Translate(NamedArgumentUtility.Named(reloadableComp2.AmmoDef, "AMMO"), num.Named("COUNT")) + ": " + num2.ToStringMoneyOffset());
 				}
-				else if (compReloadable.Props.destroyOnEmpty)
+				else if (reloadableComp2 is CompApparelVerbOwner_Charged compApparelVerbOwner_Charged && compApparelVerbOwner_Charged.Props.destroyOnEmpty)
 				{
-					float num3 = (float)compReloadable.RemainingCharges / (float)compReloadable.MaxCharges;
-					explanation?.AppendLine("StatsReport_ReloadRemainingChargesMultipler".Translate(compReloadable.Props.ChargeNounArgument, compReloadable.LabelRemaining) + ": x" + num3.ToStringPercent());
+					float num3 = (float)reloadableComp2.RemainingCharges / (float)reloadableComp2.MaxCharges;
+					explanation?.AppendLine("StatsReport_ReloadRemainingChargesMultipler".Translate(compApparelVerbOwner_Charged.Props.ChargeNounArgument, reloadableComp2.LabelRemaining) + ": x" + num3.ToStringPercent());
 					val *= num3;
 				}
 				if (val < 0f)

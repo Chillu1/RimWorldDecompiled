@@ -5,17 +5,17 @@ namespace RimWorld.Planet
 {
 	public static class SettlementNameGenerator
 	{
-		private static List<string> usedNames = new List<string>();
+		private static readonly List<string> usedNames = new List<string>();
 
-		public static string GenerateSettlementName(Settlement factionBase, RulePackDef rulePack = null)
+		public static string GenerateSettlementName(WorldObject worldObject, RulePackDef rulePack = null)
 		{
 			if (rulePack == null)
 			{
-				if (factionBase.Faction == null || factionBase.Faction.def.settlementNameMaker == null)
+				if (worldObject.Faction?.def.settlementNameMaker == null)
 				{
-					return factionBase.def.label;
+					return worldObject.def.label;
 				}
-				rulePack = factionBase.Faction.def.settlementNameMaker;
+				rulePack = worldObject.Faction.def.settlementNameMaker;
 			}
 			usedNames.Clear();
 			List<Settlement> settlements = Find.WorldObjects.Settlements;

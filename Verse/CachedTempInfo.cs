@@ -2,11 +2,13 @@ namespace Verse
 {
 	public struct CachedTempInfo
 	{
-		public int roomGroupID;
+		public int roomID;
 
 		public int numCells;
 
 		public float temperature;
+
+		public float vacuum;
 
 		public static CachedTempInfo NewCachedTempInfo()
 		{
@@ -17,16 +19,18 @@ namespace Verse
 
 		public void Reset()
 		{
-			roomGroupID = -1;
+			roomID = -1;
 			numCells = 0;
 			temperature = 0f;
+			vacuum = 0f;
 		}
 
-		public CachedTempInfo(int roomGroupID, int numCells, float temperature)
+		public CachedTempInfo(int roomID, int numCells, float temperature, float vacuum)
 		{
-			this.roomGroupID = roomGroupID;
+			this.roomID = roomID;
 			this.numCells = numCells;
 			this.temperature = temperature;
+			this.vacuum = vacuum;
 		}
 	}
 }

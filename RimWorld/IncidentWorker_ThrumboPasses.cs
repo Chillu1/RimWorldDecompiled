@@ -12,6 +12,10 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (ModsConfig.BiotechActive && map.gameConditionManager.ConditionIsActive(GameConditionDefOf.NoxiousHaze))
+			{
+				return false;
+			}
 			if (!map.mapTemperature.SeasonAndOutdoorTemperatureAcceptableFor(ThingDefOf.Thrumbo))
 			{
 				return false;

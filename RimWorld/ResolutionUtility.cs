@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using UnityEngine;
 using Verse;
 
@@ -5,6 +7,8 @@ namespace RimWorld
 {
 	public static class ResolutionUtility
 	{
+		private static bool? borderlessFullscreenCached;
+
 		public const int MinResolutionWidth = 1024;
 
 		public const int MinResolutionHeight = 768;
@@ -31,6 +35,18 @@ namespace RimWorld
 					}
 				}
 				return result;
+			}
+		}
+
+		public static bool BorderlessFullscreen
+		{
+			get
+			{
+				if (!borderlessFullscreenCached.HasValue)
+				{
+					borderlessFullscreenCached = Environment.GetCommandLineArgs().Contains("-popupwindow");
+				}
+				return borderlessFullscreenCached.Value;
 			}
 		}
 
@@ -95,16 +111,16 @@ namespace RimWorld
 		public static void SetNativeResolutionRaw()
 		{
 			Resolution nativeResolution = NativeResolution;
-			SetResolutionRaw(nativeResolution.width, nativeResolution.height, fullScreen: true);
+			SetResolutionRaw(nativeResolution.width, nativeResolution.height, !BorderlessFullscreen);
 		}
 
 		public static float GetRecommendedUIScale(int screenWidth, int screenHeight)
 		{
 			if (screenWidth == 0 || screenHeight == 0)
 			{
-				Resolution nativeResolution = NativeResolution;
-				screenWidth = nativeResolution.width;
-				screenHeight = nativeResolution.height;
+				Resolution currentResolution = Screen.currentResolution;
+				screenWidth = currentResolution.width;
+				screenHeight = currentResolution.height;
 			}
 			if (screenWidth <= 1024 || screenHeight <= 768)
 			{
@@ -124,9 +140,13 @@ namespace RimWorld
 
 		public static void Update()
 		{
-			if (RealTime.frameCount % 30 == 0 && !LongEventHandler.AnyEventNowOrWaiting && !Screen.fullScreen)
+			if (RealTime.frameCount % 30 != 0 || LongEventHandler.AnyEventNowOrWaiting)
 			{
-				bool flag = false;
+				return;
+			}
+			bool flag = false;
+			if (!Screen.fullScreen)
+			{
 				if (Screen.width != Prefs.ScreenWidth)
 				{
 					Prefs.ScreenWidth = Screen.width;
@@ -137,10 +157,18 @@ namespace RimWorld
 					Prefs.ScreenHeight = Screen.height;
 					flag = true;
 				}
-				if (flag)
-				{
-					Prefs.Save();
-				}
+			}
+			if (UI.screenWidth < 1024 && UI.screenHeight < 768 && !Prefs.DevMode)
+			{
+				int screenWidth = UI.screenWidth;
+				int screenHeight = UI.screenHeight;
+				Prefs.UIScale = GetRecommendedUIScale(0, 0);
+				Log.ErrorOnce($"Resolution too small ({screenWidth}x{screenHeight}), resetting UI scale to {Prefs.UIScale}.", 72627836);
+				flag = true;
+			}
+			if (flag)
+			{
+				Prefs.Save();
 			}
 		}
 	}

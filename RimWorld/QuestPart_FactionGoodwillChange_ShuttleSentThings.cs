@@ -22,6 +22,8 @@ namespace RimWorld
 
 		public List<Thing> things = new List<Thing>();
 
+		public HistoryEventDef historyEvent;
+
 		public override IEnumerable<Faction> InvolvedFactions
 		{
 			get
@@ -87,7 +89,7 @@ namespace RimWorld
 		{
 			if (goodwillChange != 0)
 			{
-				faction.TryAffectGoodwillWith(Faction.OfPlayer, goodwillChange, canSendMessage, canSendHostilityLetter, reason);
+				Faction.OfPlayer.TryAffectGoodwillWith(faction, goodwillChange, canSendMessage, canSendHostilityLetter, historyEvent);
 			}
 		}
 
@@ -102,6 +104,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref reason, "reason");
 			Scribe_Collections.Look(ref things, "things", LookMode.Reference);
 			Scribe_Values.Look(ref inSignalShuttleDestroyed, "inSignalShuttleDestroyed");
+			Scribe_Defs.Look(ref historyEvent, "historyEvent");
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				things.RemoveAll((Thing x) => x == null);

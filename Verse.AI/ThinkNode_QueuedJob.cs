@@ -19,14 +19,14 @@ namespace Verse.AI
 				while (jobQueue.Count > 0 && !jobQueue.Peek().job.CanBeginNow(pawn, inBedOnly))
 				{
 					QueuedJob queuedJob = jobQueue.Dequeue();
-					pawn.ClearReservationsForJob(queuedJob.job);
 					if (pawn.jobs.debugLog)
 					{
 						pawn.jobs.DebugLogEvent("   Throwing away queued job that I cannot begin now: " + queuedJob.job);
 					}
+					queuedJob.Cleanup(pawn, canReturnToPool: false);
 				}
 			}
-			if (jobQueue.Count > 0 && jobQueue.Peek().job.CanBeginNow(pawn, inBedOnly))
+			if (!jobParams.ignoreQueue && jobQueue.Count > 0 && jobQueue.Peek().job.CanBeginNow(pawn, inBedOnly))
 			{
 				QueuedJob queuedJob2 = jobQueue.Dequeue();
 				if (pawn.jobs.debugLog)

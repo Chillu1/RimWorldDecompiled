@@ -28,6 +28,10 @@ namespace RimWorld
 
 		public bool canDoWhileInBed;
 
+		public bool requiresEnjoyOutdoors;
+
+		public bool countsForRecRoom = true;
+
 		private JoyGiver workerInt;
 
 		public JoyGiver Worker
@@ -51,7 +55,7 @@ namespace RimWorld
 			}
 			if (jobDef != null && jobDef.joyKind != joyKind)
 			{
-				yield return string.Concat("jobDef ", jobDef, " has joyKind ", jobDef.joyKind, " which does not match our joyKind ", joyKind);
+				yield return "jobDef " + jobDef?.ToString() + " has joyKind " + jobDef.joyKind?.ToString() + " which does not match our joyKind " + joyKind;
 			}
 		}
 	}

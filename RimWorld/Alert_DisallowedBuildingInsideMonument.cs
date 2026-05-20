@@ -59,20 +59,17 @@ namespace RimWorld
 		public Alert_DisallowedBuildingInsideMonument()
 		{
 			defaultLabel = "DisallowedBuildingInsideMonument".Translate();
+			requireRoyalty = true;
 		}
 
 		public override AlertReport GetReport()
 		{
-			if (!ModsConfig.RoyaltyActive)
-			{
-				return false;
-			}
 			return AlertReport.CulpritsAre(DisallowedBuildings);
 		}
 
 		public override TaggedString GetExplanation()
 		{
-			return "DisallowedBuildingInsideMonumentDesc".Translate(MinTicksLeft.ToStringTicksToPeriod());
+			return "DisallowedBuildingInsideMonumentDesc".Translate(MinTicksLeft.ToStringTicksToPeriodVerbose());
 		}
 	}
 }

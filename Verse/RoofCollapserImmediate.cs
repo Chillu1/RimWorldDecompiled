@@ -52,14 +52,14 @@ namespace Verse
 			IntVec3 cell = IntVec3.Invalid;
 			for (int i = 0; i < cells.Count; i++)
 			{
-				if (cells[i].Roofed(map))
+				if (cells[i].InBounds(map) && cells[i].Roofed(map))
 				{
 					DropRoofInCellPhaseOne(cells[i], map, outCrushedThings);
 				}
 			}
 			for (int j = 0; j < cells.Count; j++)
 			{
-				if (cells[j].Roofed(map))
+				if (cells[j].InBounds(map) && cells[j].Roofed(map))
 				{
 					DropRoofInCellPhaseTwo(cells[j], map);
 					cell = cells[j];
@@ -86,6 +86,18 @@ namespace Verse
 					for (int num = thingList.Count - 1; num >= 0; num--)
 					{
 						Thing thing = thingList[num];
+						if (thing is ThingWithComps thingWithComps)
+						{
+							bool flag = thingWithComps is IRoofCollapseAlert roofCollapseAlert && roofCollapseAlert.Notify_OnBeforeRoofCollapse() == RoofCollapseResponse.RemoveThing;
+							foreach (IRoofCollapseAlert comp in thingWithComps.GetComps<IRoofCollapseAlert>())
+							{
+								flag = flag || comp.Notify_OnBeforeRoofCollapse() == RoofCollapseResponse.RemoveThing;
+							}
+							if (flag)
+							{
+								return;
+							}
+						}
 						TryAddToCrushedThingsList(thing, outCrushedThings);
 						Pawn pawn = thing as Pawn;
 						DamageInfo dinfo;
@@ -148,7 +160,7 @@ namespace Verse
 			}
 			for (int j = 0; j < 1; j++)
 			{
-				MoteMaker.ThrowDustPuff(c.ToVector3Shifted() + Gen.RandomHorizontalVector(0.6f), map, 2f);
+				FleckMaker.ThrowDustPuff(c.ToVector3Shifted() + Gen.RandomHorizontalVector(0.6f), map, 2f);
 			}
 		}
 

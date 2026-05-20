@@ -55,6 +55,20 @@ namespace RimWorld
 			}
 		}
 
+		public override void Notify_PawnDiscarded(Pawn pawn)
+		{
+			foreach (Choice choice in choices)
+			{
+				for (int num = choice.rewards.Count - 1; num >= 0; num--)
+				{
+					if (choice.rewards[num] is Reward_Pawn reward_Pawn && reward_Pawn.pawn == pawn)
+					{
+						choice.rewards.RemoveAt(num);
+					}
+				}
+			}
+		}
+
 		public void Choose(Choice choice)
 		{
 			for (int num = choices.Count - 1; num >= 0; num--)
@@ -88,21 +102,25 @@ namespace RimWorld
 		public override void PostQuestAdded()
 		{
 			base.PostQuestAdded();
+			bool flag = false;
 			for (int i = 0; i < choices.Count; i++)
 			{
 				for (int j = 0; j < choices[i].rewards.Count; j++)
 				{
-					Reward_Items reward_Items;
-					if ((reward_Items = choices[i].rewards[j] as Reward_Items) == null)
+					if (!(choices[i].rewards[j] is Reward_Items reward_Items))
 					{
 						continue;
 					}
 					for (int k = 0; k < reward_Items.items.Count; k++)
 					{
-						if (reward_Items.items[k].def == ThingDefOf.PsychicAmplifier)
+						if (!flag && reward_Items.items[k].def == ThingDefOf.PsychicAmplifier)
 						{
 							Find.History.Notify_PsylinkAvailable();
-							return;
+							flag = true;
+						}
+						else if (ModsConfig.BiotechActive && !Find.History.mechlinkEverAvailable && reward_Items.items[k].def == ThingDefOf.Mechlink)
+						{
+							MechanitorUtility.Notify_MechlinkQuestRewardAvailable(quest);
 						}
 					}
 				}

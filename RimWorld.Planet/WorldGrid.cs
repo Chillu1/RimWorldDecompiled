@@ -1,283 +1,393 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
+using Unity.Collections;
 using UnityEngine;
 using Verse;
 
 namespace RimWorld.Planet
 {
-	public class WorldGrid : IExposable
+	public class WorldGrid : IExposable, IDisposable
 	{
-		public List<Tile> tiles = new List<Tile>();
+		private Dictionary<int, PlanetLayer> planetLayers = new Dictionary<int, PlanetLayer>();
 
-		public List<Vector3> verts;
+		private Vector3 surfaceViewCenter;
 
-		public List<int> tileIDToVerts_offsets;
+		private float surfaceViewAngle;
 
-		public List<int> tileIDToNeighbors_offsets;
+		private int nextLayerId;
 
-		public List<int> tileIDToNeighbors_values;
+		private SurfaceLayer surface;
 
-		public float averageTileSize;
+		private PlanetLayer orbit;
 
-		public Vector3 viewCenter;
+		private readonly List<WorldDrawLayerBase> globalLayers = new List<WorldDrawLayerBase>();
 
-		public float viewAngle;
+		private readonly List<PlanetTile> tmpNeighbors = new List<PlanetTile>();
 
-		private byte[] tileBiome;
-
-		private byte[] tileElevation;
-
-		private byte[] tileHilliness;
-
-		private byte[] tileTemperature;
-
-		private byte[] tileRainfall;
-
-		private byte[] tileSwampiness;
-
-		public byte[] tileFeature;
-
-		private byte[] tileRoadOrigins;
-
-		private byte[] tileRoadAdjacency;
-
-		private byte[] tileRoadDef;
-
-		private byte[] tileRiverOrigins;
-
-		private byte[] tileRiverAdjacency;
-
-		private byte[] tileRiverDef;
-
-		private static List<int> tmpNeighbors = new List<int>();
-
-		private const int SubdivisionsCount = 10;
+		public const int SubdivisionsCount = 10;
 
 		public const float PlanetRadius = 100f;
 
-		public const int ElevationOffset = 8192;
-
-		public const int TemperatureOffset = 300;
-
-		public const float TemperatureMultiplier = 10f;
-
 		private int cachedTraversalDistance = -1;
 
-		private int cachedTraversalDistanceForStart = -1;
+		private PlanetTile cachedTraversalDistanceForStart = PlanetTile.Invalid;
 
-		private int cachedTraversalDistanceForEnd = -1;
+		private PlanetTile cachedTraversalDistanceForEnd = PlanetTile.Invalid;
 
-		public int TilesCount => tileIDToNeighbors_offsets.Count;
+		private PlanetLayer cachedLayer;
 
-		public Vector3 NorthPolePos => new Vector3(0f, 100f, 0f);
+		private static readonly List<int> tmpLayerIds = new List<int>();
 
-		public Tile this[int tileID]
+		public SurfaceLayer Surface => surface;
+
+		public PlanetLayer Orbit => orbit;
+
+		public IReadOnlyList<WorldDrawLayerBase> GlobalLayers => globalLayers;
+
+		public float SurfaceViewAngle => surfaceViewAngle;
+
+		public Vector3 SurfaceViewCenter => surfaceViewCenter;
+
+		public int TilesCount => surface.TilesCount;
+
+		public IEnumerable<SurfaceTile> Tiles => surface.Tiles.Cast<SurfaceTile>();
+
+		public IReadOnlyDictionary<int, PlanetLayer> PlanetLayers => planetLayers;
+
+		public NativeArray<Vector3> UnsafeVerts => surface.UnsafeVerts;
+
+		public NativeArray<int> UnsafeTileIDToVerts_offsets => surface.UnsafeTileIDToVerts_offsets;
+
+		public NativeArray<int> UnsafeTileIDToNeighbors_offsets => surface.UnsafeTileIDToNeighbors_offsets;
+
+		public NativeArray<PlanetTile> UnsafeTileIDToNeighbors_values => surface.UnsafeTileIDToNeighbors_values;
+
+		public Vector3 NorthPolePos => surface.NorthPolePos;
+
+		public SurfaceTile this[int tileID] => surface[tileID];
+
+		public Tile this[PlanetTile tile] => tile.Layer.Tiles[tile.tileId];
+
+		public bool HasWorldData => surface.HasWorldData;
+
+		public float AverageTileSize => surface.AverageTileSize;
+
+		public event Action<PlanetLayer> OnPlanetLayerAdded;
+
+		public event Action<PlanetLayer> OnPlanetLayerRemoved;
+
+		public void GenerateFreshWorld()
 		{
-			get
+			CalculateViewCenterAndAngle();
+			CreateRequiredLayers();
+		}
+
+		private void InitializeGlobalLayers()
+		{
+			globalLayers.Clear();
+			foreach (GlobalWorldDrawLayerDef allDef in DefDatabase<GlobalWorldDrawLayerDef>.AllDefs)
 			{
-				if ((uint)tileID >= TilesCount)
-				{
-					return null;
-				}
-				return tiles[tileID];
+				globalLayers.Add((WorldDrawLayerBase)Activator.CreateInstance(allDef.worldDrawLayer));
 			}
 		}
 
-		public bool HasWorldData => tileBiome != null;
-
-		public WorldGrid()
+		private void CreateRequiredLayers()
 		{
-			CalculateViewCenterAndAngle();
-			PlanetShapeGenerator.Generate(10, out verts, out tileIDToVerts_offsets, out tileIDToNeighbors_offsets, out tileIDToNeighbors_values, 100f, viewCenter, viewAngle);
-			CalculateAverageTileSize();
+			InitializeGlobalLayers();
+			Dictionary<PlanetLayer, List<LayerConnection>> dictionary = new Dictionary<PlanetLayer, List<LayerConnection>>();
+			foreach (ScenPart allPart in Find.Scenario.AllParts)
+			{
+				if (!(allPart is ScenPart_PlanetLayer scenPart_PlanetLayer))
+				{
+					continue;
+				}
+				bool flag = false;
+				foreach (PlanetLayer value in planetLayers.Values)
+				{
+					if (!(value.ScenarioTag != scenPart_PlanetLayer.tag))
+					{
+						dictionary[value] = scenPart_PlanetLayer.connections;
+						flag = true;
+						break;
+					}
+				}
+				if (!flag)
+				{
+					PlanetLayer planetLayer;
+					if (scenPart_PlanetLayer == Find.Scenario.surfaceLayer)
+					{
+						PlanetLayerDef layer = scenPart_PlanetLayer.layer;
+						PlanetLayerSettings settings = scenPart_PlanetLayer.Settings;
+						Vector3? overrideViewCenter = surfaceViewCenter;
+						float? overrideViewAngle = surfaceViewAngle;
+						planetLayer = (surface = (SurfaceLayer)RegisterPlanetLayer(layer, settings, null, null, overrideViewCenter, overrideViewAngle));
+						surface.MarkRootSurface();
+					}
+					else
+					{
+						planetLayer = RegisterPlanetLayer(scenPart_PlanetLayer.layer, scenPart_PlanetLayer.Settings);
+					}
+					if (ModsConfig.OdysseyActive && scenPart_PlanetLayer.layer == PlanetLayerDefOf.Orbit)
+					{
+						orbit = planetLayer;
+					}
+					planetLayer.ScenarioTag = scenPart_PlanetLayer.tag;
+					dictionary[planetLayer] = scenPart_PlanetLayer.connections;
+				}
+			}
+			foreach (var (planetLayer3, list2) in dictionary)
+			{
+				foreach (LayerConnection item in list2)
+				{
+					if (TryGetLayerByTag(item.tag, out var layer2) && !planetLayer3.HasConnectionFromTo(layer2))
+					{
+						planetLayer3.AddConnection(layer2, item.fuelCost);
+						if (item.zoomMode == LayerConnection.ZoomMode.ZoomIn)
+						{
+							planetLayer3.zoomInToLayer = layer2;
+						}
+						else if (item.zoomMode == LayerConnection.ZoomMode.ZoomOut)
+						{
+							planetLayer3.zoomOutToLayer = layer2;
+						}
+					}
+				}
+			}
 		}
 
-		public bool InBounds(int tileID)
+		public bool TryGetLayerByTag(string tag, out PlanetLayer layer)
 		{
-			return (uint)tileID < TilesCount;
+			for (int i = 0; i < planetLayers.Count; i++)
+			{
+				if (planetLayers[i].ScenarioTag == tag)
+				{
+					layer = planetLayers[i];
+					return true;
+				}
+			}
+			layer = null;
+			return false;
 		}
 
-		public Vector2 LongLatOf(int tileID)
+		public Vector2 LongLatOf(PlanetTile tile)
 		{
-			Vector3 tileCenter = GetTileCenter(tileID);
-			float x = Mathf.Atan2(tileCenter.x, 0f - tileCenter.z) * 57.29578f;
-			float y = Mathf.Asin(tileCenter.y / 100f) * 57.29578f;
-			return new Vector2(x, y);
+			if (!tile.Valid)
+			{
+				if (Find.AnyPlayerHomeMap == null)
+				{
+					return Vector2.zero;
+				}
+				tile = Find.AnyPlayerHomeMap.Tile;
+			}
+			return tile.Layer.LongLatOf(tile);
+		}
+
+		public PlanetLayer RegisterPlanetLayer(PlanetLayerDef layer, PlanetLayerSettings settings, float? overrideRadius = null, Vector3? overrideOrigin = null, Vector3? overrideViewCenter = null, float? overrideViewAngle = null)
+		{
+			float radius = overrideRadius ?? settings.radius;
+			Vector3 value = overrideOrigin ?? settings.origin;
+			Vector3 value2 = overrideViewCenter ?? surfaceViewCenter;
+			float viewAngle = overrideViewAngle ?? (settings.useSurfaceViewAngle ? surfaceViewAngle : settings.viewAngle);
+			return RegisterPlanetLayer(layer, value, radius, viewAngle, settings.extraCameraAltitude, settings.subdivisions, settings.backgroundWorldCameraOffset, settings.backgroundWorldCameraParallaxDistancePer100Cells, value2);
+		}
+
+		public PlanetLayer RegisterPlanetLayer(PlanetLayerDef def, Vector3? origin = null, float radius = 100f, float viewAngle = 180f, float extraCameraAltitude = 0f, int subdivisions = 10, float backgroundWorldCameraOffset = 0f, float backgroundWorldCameraParallaxDistancePer100Cells = 0f, Vector3? overrideViewCenter = null)
+		{
+			int num = nextLayerId++;
+			Vector3 vector = origin ?? Vector3.zero;
+			Vector3 vector2 = overrideViewCenter ?? surfaceViewCenter;
+			PlanetLayer planetLayer = (planetLayers[num] = (PlanetLayer)Activator.CreateInstance(def.layerType, num, def, radius, vector, vector2, viewAngle, subdivisions, extraCameraAltitude, backgroundWorldCameraOffset, backgroundWorldCameraParallaxDistancePer100Cells));
+			PlanetLayer planetLayer3 = planetLayer;
+			planetLayer3.InitializeLayer();
+			this.OnPlanetLayerAdded?.Invoke(planetLayer3);
+			return planetLayer3;
+		}
+
+		public void RemovePlanetLayer(PlanetLayer layer)
+		{
+			if (!planetLayers.Remove(layer.LayerID))
+			{
+				return;
+			}
+			this.OnPlanetLayerRemoved?.Invoke(layer);
+			foreach (var (_, planetLayer2) in PlanetLayers)
+			{
+				if (planetLayer2 != layer)
+				{
+					planetLayer2.RemoveConnection(layer);
+				}
+			}
+			foreach (WorldObject item in Find.WorldObjects.AllWorldObjectsOnLayer(layer))
+			{
+				item.Destroy();
+			}
+			layer.Dispose();
+		}
+
+		public bool TryGetFirstLayerOfDef(PlanetLayerDef def, out PlanetLayer layer)
+		{
+			layer = FirstLayerOfDef(def);
+			return layer != null;
+		}
+
+		public bool TryGetFirstAdjacentLayerOfDef(PlanetTile origin, PlanetLayerDef def, out PlanetLayer layer)
+		{
+			if (origin.LayerDef == def)
+			{
+				layer = origin.Layer;
+				return true;
+			}
+			for (int i = 0; i < planetLayers.Count; i++)
+			{
+				if (planetLayers[i].Def == def && planetLayers[i].DirectConnectionTo(origin.Layer))
+				{
+					layer = planetLayers[i];
+					return true;
+				}
+			}
+			layer = null;
+			return false;
+		}
+
+		public PlanetLayer FirstLayerOfDef(PlanetLayerDef def)
+		{
+			if (def == null)
+			{
+				return surface;
+			}
+			for (int i = 0; i < planetLayers.Count; i++)
+			{
+				if (planetLayers[i].Def == def)
+				{
+					return planetLayers[i];
+				}
+			}
+			return null;
+		}
+
+		public Vector3 GetTileCenter(PlanetTile tile)
+		{
+			return tile.Layer.GetTileCenter(tile);
+		}
+
+		public bool InBounds(PlanetTile tile)
+		{
+			return tile.Layer.InBounds(tile);
 		}
 
 		public float GetHeadingFromTo(Vector3 from, Vector3 to)
 		{
-			if (from == to)
-			{
-				return 0f;
-			}
-			Vector3 northPolePos = NorthPolePos;
-			WorldRendererUtility.GetTangentialVectorFacing(from, northPolePos, out var forward, out var right);
-			WorldRendererUtility.GetTangentialVectorFacing(from, to, out var forward2, out var _);
-			float num = Vector3.Angle(forward, forward2);
-			if (Vector3.Dot(forward2, right) < 0f)
-			{
-				num = 360f - num;
-			}
-			return num;
+			return GetHeadingFromTo(surface, from, to);
 		}
 
-		public float GetHeadingFromTo(int fromTileID, int toTileID)
+		public float GetHeadingFromTo(PlanetLayer layer, Vector3 from, Vector3 to)
 		{
-			if (fromTileID == toTileID)
-			{
-				return 0f;
-			}
-			Vector3 tileCenter = GetTileCenter(fromTileID);
-			Vector3 tileCenter2 = GetTileCenter(toTileID);
-			return GetHeadingFromTo(tileCenter, tileCenter2);
+			return layer.GetHeadingFromTo(from, to);
 		}
 
-		public Direction8Way GetDirection8WayFromTo(int fromTileID, int toTileID)
+		public float GetHeadingFromTo(PlanetTile fromTile, PlanetTile toTile)
 		{
-			float headingFromTo = GetHeadingFromTo(fromTileID, toTileID);
-			if (headingFromTo >= 337.5f || headingFromTo < 22.5f)
-			{
-				return Direction8Way.North;
-			}
-			if (headingFromTo < 67.5f)
-			{
-				return Direction8Way.NorthEast;
-			}
-			if (headingFromTo < 112.5f)
-			{
-				return Direction8Way.East;
-			}
-			if (headingFromTo < 157.5f)
-			{
-				return Direction8Way.SouthEast;
-			}
-			if (headingFromTo < 202.5f)
-			{
-				return Direction8Way.South;
-			}
-			if (headingFromTo < 247.5f)
-			{
-				return Direction8Way.SouthWest;
-			}
-			if (headingFromTo < 292.5f)
-			{
-				return Direction8Way.West;
-			}
-			return Direction8Way.NorthWest;
+			return fromTile.Layer.GetHeadingFromTo(fromTile, toTile);
 		}
 
-		public Rot4 GetRotFromTo(int fromTileID, int toTileID)
+		public Direction8Way GetDirection8WayFromTo(PlanetTile fromTile, PlanetTile toTile)
 		{
-			float headingFromTo = GetHeadingFromTo(fromTileID, toTileID);
-			if (headingFromTo >= 315f || headingFromTo < 45f)
-			{
-				return Rot4.North;
-			}
-			if (headingFromTo < 135f)
-			{
-				return Rot4.East;
-			}
-			if (headingFromTo < 225f)
-			{
-				return Rot4.South;
-			}
-			return Rot4.West;
+			return fromTile.Layer.GetDirection8WayFromTo(fromTile, toTile);
 		}
 
-		public void GetTileVertices(int tileID, List<Vector3> outVerts)
+		public Rot4 GetRotFromTo(PlanetTile fromTile, PlanetTile toTile)
 		{
-			PackedListOfLists.GetList(tileIDToVerts_offsets, verts, tileID, outVerts);
+			return fromTile.Layer.GetRotFromTo(fromTile, toTile);
 		}
 
-		public void GetTileVerticesIndices(int tileID, List<int> outVertsIndices)
+		public void GetTileVertices(PlanetTile tile, List<Vector3> outVerts)
 		{
-			PackedListOfLists.GetListValuesIndices(tileIDToVerts_offsets, verts, tileID, outVertsIndices);
+			tile.Layer.GetTileVertices(tile, outVerts);
 		}
 
-		public void GetTileNeighbors(int tileID, List<int> outNeighbors)
+		public void GetTileVerticesIndices(PlanetTile tile, List<int> outVertsIndices)
 		{
-			PackedListOfLists.GetList(tileIDToNeighbors_offsets, tileIDToNeighbors_values, tileID, outNeighbors);
+			tile.Layer.GetTileVerticesIndices(tile, outVertsIndices);
 		}
 
-		public int GetTileNeighborCount(int tileID)
+		public void GetTileNeighbors(PlanetTile tile, List<PlanetTile> outNeighbors)
 		{
-			return PackedListOfLists.GetListCount(tileIDToNeighbors_offsets, tileIDToNeighbors_values, tileID);
+			tile.Layer.GetTileNeighbors(tile, outNeighbors);
 		}
 
-		public int GetMaxTileNeighborCountEver(int tileID)
+		public int GetTileNeighborCount(PlanetTile tile)
 		{
-			return PackedListOfLists.GetListCount(tileIDToVerts_offsets, verts, tileID);
+			return tile.Layer.GetTileNeighborCount(tile);
 		}
 
-		public bool IsNeighbor(int tile1, int tile2)
+		public int GetMaxTileNeighborCountEver(PlanetTile tile)
 		{
-			GetTileNeighbors(tile1, tmpNeighbors);
-			return tmpNeighbors.Contains(tile2);
+			return tile.Layer.GetMaxTileNeighborCountEver(tile);
 		}
 
-		public bool IsNeighborOrSame(int tile1, int tile2)
+		public bool IsNeighbor(PlanetTile tileA, PlanetTile tileB)
 		{
-			if (tile1 != tile2)
-			{
-				return IsNeighbor(tile1, tile2);
-			}
-			return true;
+			return tileA.Layer.IsNeighbor(tileA, tileB);
 		}
 
-		public int GetNeighborId(int tile1, int tile2)
+		public bool IsNeighborOrSame(PlanetTile tileA, PlanetTile tileB)
 		{
-			GetTileNeighbors(tile1, tmpNeighbors);
-			return tmpNeighbors.IndexOf(tile2);
+			return tileA.Layer.IsNeighborOrSame(tileA, tileB);
 		}
 
-		public int GetTileNeighbor(int tileID, int adjacentId)
+		public int GetNeighborId(PlanetTile tileA, PlanetTile tileB)
 		{
-			GetTileNeighbors(tileID, tmpNeighbors);
-			return tmpNeighbors[adjacentId];
+			return tileA.Layer.GetNeighborId(tileA, tileB);
 		}
 
-		public Vector3 GetTileCenter(int tileID)
+		public PlanetTile GetTileNeighbor(PlanetTile tile, int adjacentId)
 		{
-			int num = ((tileID + 1 < tileIDToVerts_offsets.Count) ? tileIDToVerts_offsets[tileID + 1] : verts.Count);
-			Vector3 zero = Vector3.zero;
-			int num2 = 0;
-			for (int i = tileIDToVerts_offsets[tileID]; i < num; i++)
-			{
-				zero += verts[i];
-				num2++;
-			}
-			return zero / num2;
+			return tile.Layer.GetTileNeighbor(tile, adjacentId);
 		}
 
 		public float TileRadiusToAngle(float radius)
 		{
-			return DistOnSurfaceToAngle(radius * averageTileSize);
+			return TileRadiusToAngle(surface, radius);
+		}
+
+		public float TileRadiusToAngle(PlanetLayer layer, float radius)
+		{
+			return layer.TileRadiusToAngle(radius);
 		}
 
 		public float DistOnSurfaceToAngle(float dist)
 		{
-			return dist / ((float)Math.PI * 200f) * 360f;
+			return DistOnSurfaceToAngle(surface, dist);
 		}
 
-		public float DistanceFromEquatorNormalized(int tile)
+		public float DistOnSurfaceToAngle(PlanetLayer layer, float dist)
 		{
-			return Mathf.Abs(Find.WorldGrid.GetTileCenter(tile).y / 100f);
+			return layer.DistOnSurfaceToAngle(dist);
+		}
+
+		public float DistanceFromEquatorNormalized(PlanetTile tile)
+		{
+			return tile.Layer.DistanceFromEquatorNormalized(tile);
 		}
 
 		public float ApproxDistanceInTiles(float sphericalDistance)
 		{
-			return sphericalDistance * 100f / averageTileSize;
+			return ApproxDistanceInTiles(surface, sphericalDistance);
 		}
 
-		public float ApproxDistanceInTiles(int firstTile, int secondTile)
+		public float ApproxDistanceInTiles(PlanetLayer layer, float sphericalDistance)
 		{
-			Vector3 tileCenter = GetTileCenter(firstTile);
-			return ApproxDistanceInTiles(GenMath.SphericalDistance(normalizedB: GetTileCenter(secondTile).normalized, normalizedA: tileCenter.normalized));
+			return layer.ApproxDistanceInTiles(sphericalDistance);
 		}
 
-		public void OverlayRoad(int fromTile, int toTile, RoadDef roadDef)
+		public float ApproxDistanceInTiles(PlanetTile tileA, PlanetTile tileB)
+		{
+			return tileA.Layer.ApproxDistanceInTiles(tileA, tileB);
+		}
+
+		public void OverlayRoad(PlanetTile fromTile, PlanetTile toTile, RoadDef roadDef)
 		{
 			if (roadDef == null)
 			{
@@ -289,50 +399,53 @@ namespace RimWorld.Planet
 			{
 				return;
 			}
-			Tile tile = this[fromTile];
-			Tile tile2 = this[toTile];
+			Tile obj = this[fromTile];
+			Tile obj2 = this[toTile];
+			if (obj.Isnt<SurfaceTile>(out var casted) || obj2.Isnt<SurfaceTile>(out var casted2))
+			{
+				return;
+			}
 			if (roadDef2 != null)
 			{
 				if (roadDef2.priority >= roadDef.priority)
 				{
 					return;
 				}
-				tile.potentialRoads.RemoveAll((Tile.RoadLink rl) => rl.neighbor == toTile);
-				tile2.potentialRoads.RemoveAll((Tile.RoadLink rl) => rl.neighbor == fromTile);
+				casted.potentialRoads.RemoveAll((SurfaceTile.RoadLink rl) => rl.neighbor == toTile);
+				casted2.potentialRoads.RemoveAll((SurfaceTile.RoadLink rl) => rl.neighbor == fromTile);
 			}
-			if (tile.potentialRoads == null)
+			if (casted.potentialRoads == null)
 			{
-				tile.potentialRoads = new List<Tile.RoadLink>();
+				casted.potentialRoads = new List<SurfaceTile.RoadLink>();
 			}
-			if (tile2.potentialRoads == null)
+			if (casted2.potentialRoads == null)
 			{
-				tile2.potentialRoads = new List<Tile.RoadLink>();
+				casted2.potentialRoads = new List<SurfaceTile.RoadLink>();
 			}
-			List<Tile.RoadLink> potentialRoads = tile.potentialRoads;
-			Tile.RoadLink item = new Tile.RoadLink
+			casted.potentialRoads.Add(new SurfaceTile.RoadLink
 			{
 				neighbor = toTile,
 				road = roadDef
-			};
-			potentialRoads.Add(item);
-			List<Tile.RoadLink> potentialRoads2 = tile2.potentialRoads;
-			item = new Tile.RoadLink
+			});
+			casted2.potentialRoads.Add(new SurfaceTile.RoadLink
 			{
 				neighbor = fromTile,
 				road = roadDef
-			};
-			potentialRoads2.Add(item);
+			});
 		}
 
-		public RoadDef GetRoadDef(int fromTile, int toTile, bool visibleOnly = true)
+		public RoadDef GetRoadDef(PlanetTile fromTile, PlanetTile toTile, bool visibleOnly = true)
 		{
 			if (!IsNeighbor(fromTile, toTile))
 			{
 				Log.ErrorOnce("Tried to find road information between non-neighboring tiles", 12390444);
 				return null;
 			}
-			Tile tile = tiles[fromTile];
-			List<Tile.RoadLink> list = (visibleOnly ? tile.Roads : tile.potentialRoads);
+			if (this[fromTile].Isnt<SurfaceTile>(out var casted))
+			{
+				return null;
+			}
+			List<SurfaceTile.RoadLink> list = (visibleOnly ? casted.Roads : casted.potentialRoads);
 			if (list == null)
 			{
 				return null;
@@ -347,7 +460,7 @@ namespace RimWorld.Planet
 			return null;
 		}
 
-		public void OverlayRiver(int fromTile, int toTile, RiverDef riverDef)
+		public void OverlayRiver(PlanetTile fromTile, PlanetTile toTile, RiverDef riverDef)
 		{
 			if (riverDef == null)
 			{
@@ -359,50 +472,53 @@ namespace RimWorld.Planet
 			{
 				return;
 			}
-			Tile tile = this[fromTile];
-			Tile tile2 = this[toTile];
+			Tile obj = this[fromTile];
+			Tile obj2 = this[toTile];
+			if (obj.Isnt<SurfaceTile>(out var casted) || obj2.Isnt<SurfaceTile>(out var casted2))
+			{
+				return;
+			}
 			if (riverDef2 != null)
 			{
 				if (riverDef2.degradeThreshold >= riverDef.degradeThreshold)
 				{
 					return;
 				}
-				tile.potentialRivers.RemoveAll((Tile.RiverLink rl) => rl.neighbor == toTile);
-				tile2.potentialRivers.RemoveAll((Tile.RiverLink rl) => rl.neighbor == fromTile);
+				casted.potentialRivers.RemoveAll((SurfaceTile.RiverLink rl) => rl.neighbor == toTile);
+				casted2.potentialRivers.RemoveAll((SurfaceTile.RiverLink rl) => rl.neighbor == fromTile);
 			}
-			if (tile.potentialRivers == null)
+			SurfaceTile surfaceTile = casted;
+			if (surfaceTile.potentialRivers == null)
 			{
-				tile.potentialRivers = new List<Tile.RiverLink>();
+				surfaceTile.potentialRivers = new List<SurfaceTile.RiverLink>();
 			}
-			if (tile2.potentialRivers == null)
+			surfaceTile = casted2;
+			if (surfaceTile.potentialRivers == null)
 			{
-				tile2.potentialRivers = new List<Tile.RiverLink>();
+				surfaceTile.potentialRivers = new List<SurfaceTile.RiverLink>();
 			}
-			List<Tile.RiverLink> potentialRivers = tile.potentialRivers;
-			Tile.RiverLink item = new Tile.RiverLink
+			casted.potentialRivers.Add(new SurfaceTile.RiverLink
 			{
 				neighbor = toTile,
 				river = riverDef
-			};
-			potentialRivers.Add(item);
-			List<Tile.RiverLink> potentialRivers2 = tile2.potentialRivers;
-			item = new Tile.RiverLink
+			});
+			casted2.potentialRivers.Add(new SurfaceTile.RiverLink
 			{
 				neighbor = fromTile,
 				river = riverDef
-			};
-			potentialRivers2.Add(item);
+			});
+			casted2.riverDist = Mathf.Max(casted2.riverDist, casted.riverDist + 1);
 		}
 
-		public RiverDef GetRiverDef(int fromTile, int toTile, bool visibleOnly = true)
+		public RiverDef GetRiverDef(PlanetTile fromTile, PlanetTile toTile, bool visibleOnly = true)
 		{
 			if (!IsNeighbor(fromTile, toTile))
 			{
 				Log.ErrorOnce("Tried to find river information between non-neighboring tiles", 12390444);
 				return null;
 			}
-			Tile tile = tiles[fromTile];
-			List<Tile.RiverLink> list = (visibleOnly ? tile.Rivers : tile.potentialRivers);
+			SurfaceTile surfaceTile = (SurfaceTile)this[fromTile];
+			List<SurfaceTile.RiverLink> list = (visibleOnly ? surfaceTile.Rivers : surfaceTile.potentialRivers);
 			if (list == null)
 			{
 				return null;
@@ -417,20 +533,20 @@ namespace RimWorld.Planet
 			return null;
 		}
 
-		public float GetRoadMovementDifficultyMultiplier(int fromTile, int toTile, StringBuilder explanation = null)
+		public float GetRoadMovementDifficultyMultiplier(PlanetTile fromTile, PlanetTile toTile, StringBuilder explanation = null)
 		{
-			List<Tile.RoadLink> roads = tiles[fromTile].Roads;
+			List<SurfaceTile.RoadLink> roads = ((SurfaceTile)this[fromTile]).Roads;
 			if (roads == null)
 			{
 				return 1f;
 			}
-			if (toTile == -1)
+			if (!toTile.Valid)
 			{
 				toTile = FindMostReasonableAdjacentTileForDisplayedPathCost(fromTile);
 			}
 			for (int i = 0; i < roads.Count; i++)
 			{
-				if (roads[i].neighbor != toTile)
+				if (!(roads[i].neighbor == toTile))
 				{
 					continue;
 				}
@@ -441,19 +557,19 @@ namespace RimWorld.Planet
 					{
 						explanation.AppendLine();
 					}
-					explanation.Append(roads[i].road.LabelCap + ": " + movementCostMultiplier.ToStringPercent());
+					explanation.Append($"{roads[i].road.LabelCap}: {movementCostMultiplier.ToStringPercent()}");
 				}
 				return movementCostMultiplier;
 			}
 			return 1f;
 		}
 
-		public int FindMostReasonableAdjacentTileForDisplayedPathCost(int fromTile)
+		public PlanetTile FindMostReasonableAdjacentTileForDisplayedPathCost(PlanetTile fromTile)
 		{
-			Tile tile = tiles[fromTile];
+			SurfaceTile obj = (SurfaceTile)this[fromTile];
 			float num = 1f;
-			int num2 = -1;
-			List<Tile.RoadLink> roads = tile.Roads;
+			PlanetTile planetTile = PlanetTile.Invalid;
+			List<SurfaceTile.RoadLink> roads = obj.Roads;
 			if (roads != null)
 			{
 				for (int i = 0; i < roads.Count; i++)
@@ -462,13 +578,13 @@ namespace RimWorld.Planet
 					if (movementCostMultiplier < num && !Find.World.Impassable(roads[i].neighbor))
 					{
 						num = movementCostMultiplier;
-						num2 = roads[i].neighbor;
+						planetTile = roads[i].neighbor;
 					}
 				}
 			}
-			if (num2 != -1)
+			if (planetTile != PlanetTile.Invalid)
 			{
-				return num2;
+				return planetTile;
 			}
 			tmpNeighbors.Clear();
 			GetTileNeighbors(fromTile, tmpNeighbors);
@@ -482,19 +598,29 @@ namespace RimWorld.Planet
 			return fromTile;
 		}
 
-		public int TraversalDistanceBetween(int start, int end, bool passImpassable = true, int maxDist = int.MaxValue)
+		public int TraversalDistanceBetween(PlanetTile start, PlanetTile end, bool passImpassable = true, int maxDist = int.MaxValue, bool canTraverseLayers = false)
 		{
 			if (start == end)
 			{
 				return 0;
 			}
-			if (start < 0 || end < 0)
+			if (!start.Valid || !end.Valid)
 			{
 				return int.MaxValue;
 			}
-			if (cachedTraversalDistanceForStart == start && cachedTraversalDistanceForEnd == end && passImpassable && maxDist == int.MaxValue)
+			PlanetTile planetTile = start;
+			if (cachedTraversalDistanceForStart == start && cachedTraversalDistanceForEnd == end && cachedLayer == end.Layer && passImpassable && maxDist == int.MaxValue)
 			{
 				return cachedTraversalDistance;
+			}
+			if (start.Layer != end.Layer)
+			{
+				if (!canTraverseLayers)
+				{
+					return int.MaxValue;
+				}
+				cachedLayer = end.Layer;
+				start = end.Layer.GetClosestTile_NewTemp(start);
 			}
 			if (!passImpassable && !Find.WorldReachability.CanReach(start, end))
 			{
@@ -502,7 +628,7 @@ namespace RimWorld.Planet
 			}
 			int finalDist = int.MaxValue;
 			int maxTilesToProcess = ((maxDist == int.MaxValue) ? int.MaxValue : TilesNumWithinTraversalDistance(maxDist + 1));
-			Find.WorldFloodFiller.FloodFill(start, (int x) => passImpassable || !Find.World.Impassable(x), delegate(int tile, int dist)
+			start.Layer.Filler.FloodFill(start, (PlanetTile x) => passImpassable || !Find.World.Impassable(x), delegate(PlanetTile tile, int dist)
 			{
 				if (tile == end)
 				{
@@ -514,7 +640,7 @@ namespace RimWorld.Planet
 			if (passImpassable && maxDist == int.MaxValue)
 			{
 				cachedTraversalDistance = finalDist;
-				cachedTraversalDistanceForStart = start;
+				cachedTraversalDistanceForStart = planetTile;
 				cachedTraversalDistanceForEnd = end;
 			}
 			return finalDist;
@@ -529,7 +655,7 @@ namespace RimWorld.Planet
 			return 3 * traversalDist * (traversalDist + 1) + 1;
 		}
 
-		public bool IsOnEdge(int tileID)
+		public bool IsOnEdge(PlanetTile tileID)
 		{
 			if (InBounds(tileID))
 			{
@@ -538,249 +664,153 @@ namespace RimWorld.Planet
 			return false;
 		}
 
-		private void CalculateAverageTileSize()
-		{
-			int tilesCount = TilesCount;
-			double num = 0.0;
-			int num2 = 0;
-			for (int i = 0; i < tilesCount; i++)
-			{
-				Vector3 tileCenter = GetTileCenter(i);
-				int num3 = ((i + 1 < tileIDToNeighbors_offsets.Count) ? tileIDToNeighbors_offsets[i + 1] : tileIDToNeighbors_values.Count);
-				for (int j = tileIDToNeighbors_offsets[i]; j < num3; j++)
-				{
-					int tileID = tileIDToNeighbors_values[j];
-					Vector3 tileCenter2 = GetTileCenter(tileID);
-					num += (double)Vector3.Distance(tileCenter, tileCenter2);
-					num2++;
-				}
-			}
-			averageTileSize = (float)(num / (double)num2);
-		}
-
 		private void CalculateViewCenterAndAngle()
 		{
-			viewAngle = Find.World.PlanetCoverage * 180f;
-			viewCenter = Vector3.back;
+			surfaceViewAngle = Find.World.PlanetCoverage * 180f;
+			surfaceViewCenter = Vector3.back;
 			float angle = 45f;
-			if (viewAngle > 45f)
+			if (surfaceViewAngle > 45f)
 			{
-				angle = Mathf.Max(90f - viewAngle, 0f);
+				angle = Mathf.Max(90f - surfaceViewAngle, 0f);
 			}
-			viewCenter = Quaternion.AngleAxis(angle, Vector3.right) * viewCenter;
+			surfaceViewCenter = Quaternion.AngleAxis(angle, Vector3.right) * surfaceViewCenter;
 		}
 
 		public void ExposeData()
 		{
-			if (Scribe.mode == LoadSaveMode.Saving)
-			{
-				TilesToRawData();
-			}
-			DataExposeUtility.ByteArray(ref tileBiome, "tileBiome");
-			DataExposeUtility.ByteArray(ref tileElevation, "tileElevation");
-			DataExposeUtility.ByteArray(ref tileHilliness, "tileHilliness");
-			DataExposeUtility.ByteArray(ref tileTemperature, "tileTemperature");
-			DataExposeUtility.ByteArray(ref tileRainfall, "tileRainfall");
-			DataExposeUtility.ByteArray(ref tileSwampiness, "tileSwampiness");
-			DataExposeUtility.ByteArray(ref tileFeature, "tileFeature");
-			DataExposeUtility.ByteArray(ref tileRoadOrigins, "tileRoadOrigins");
-			DataExposeUtility.ByteArray(ref tileRoadAdjacency, "tileRoadAdjacency");
-			DataExposeUtility.ByteArray(ref tileRoadDef, "tileRoadDef");
-			DataExposeUtility.ByteArray(ref tileRiverOrigins, "tileRiverOrigins");
-			DataExposeUtility.ByteArray(ref tileRiverAdjacency, "tileRiverAdjacency");
-			DataExposeUtility.ByteArray(ref tileRiverDef, "tileRiverDef");
+			Scribe_Values.Look(ref nextLayerId, "nextLayerId", 0);
+			Scribe_Collections.Look(ref planetLayers, "layers", LookMode.Value, LookMode.Deep);
 			if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
-				RawDataToTiles();
+				EnsureNextLayerIDValid();
+				CalculateViewCenterAndAngle();
+				if (planetLayers.NullOrEmpty())
+				{
+					planetLayers = new Dictionary<int, PlanetLayer>();
+					CreateRequiredLayers();
+					surface.ExposeBody();
+					StandardizeTileData();
+				}
+				else
+				{
+					int key;
+					PlanetLayer value;
+					foreach (KeyValuePair<int, PlanetLayer> planetLayer3 in planetLayers)
+					{
+						planetLayer3.Deconstruct(out key, out value);
+						int item = key;
+						PlanetLayer planetLayer = value;
+						if (planetLayer.Def == null)
+						{
+							tmpLayerIds.Add(item);
+							continue;
+						}
+						if (planetLayer.IsRootSurface)
+						{
+							surface = (SurfaceLayer)planetLayer;
+						}
+						if (ModsConfig.OdysseyActive && planetLayer.Def == PlanetLayerDefOf.Orbit)
+						{
+							orbit = planetLayer;
+						}
+					}
+					if (surface == null)
+					{
+						foreach (KeyValuePair<int, PlanetLayer> planetLayer4 in planetLayers)
+						{
+							planetLayer4.Deconstruct(out key, out value);
+							PlanetLayer planetLayer2 = value;
+							if (planetLayer2.Def == PlanetLayerDefOf.Surface)
+							{
+								surface = (SurfaceLayer)planetLayer2;
+								surface.MarkRootSurface();
+								break;
+							}
+						}
+					}
+					foreach (int tmpLayerId in tmpLayerIds)
+					{
+						planetLayers.Remove(tmpLayerId);
+					}
+					tmpLayerIds.Clear();
+				}
+			}
+			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			{
+				CreateRequiredLayers();
+				StandardizeTileData();
+			}
+		}
+
+		private void EnsureNextLayerIDValid()
+		{
+			if (planetLayers.NullOrEmpty())
+			{
+				return;
+			}
+			foreach (var (num2, _) in planetLayers)
+			{
+				if (num2 >= nextLayerId)
+				{
+					nextLayerId = num2 + 1;
+				}
 			}
 		}
 
 		public void StandardizeTileData()
 		{
-			TilesToRawData();
-			RawDataToTiles();
+			foreach (var (_, planetLayer2) in planetLayers)
+			{
+				if (planetLayer2.Tiles.Empty())
+				{
+					planetLayer2.Standardize();
+				}
+			}
 		}
 
-		private void TilesToRawData()
+		public IEnumerable<Gizmo> GetGizmos()
 		{
-			tileBiome = DataSerializeUtility.SerializeUshort(TilesCount, (int i) => tiles[i].biome.shortHash);
-			tileElevation = DataSerializeUtility.SerializeUshort(TilesCount, (int i) => (ushort)Mathf.Clamp(Mathf.RoundToInt((tiles[i].WaterCovered ? tiles[i].elevation : Mathf.Max(tiles[i].elevation, 1f)) + 8192f), 0, 65535));
-			tileHilliness = DataSerializeUtility.SerializeByte(TilesCount, (int i) => (byte)tiles[i].hilliness);
-			tileTemperature = DataSerializeUtility.SerializeUshort(TilesCount, (int i) => (ushort)Mathf.Clamp(Mathf.RoundToInt((tiles[i].temperature + 300f) * 10f), 0, 65535));
-			tileRainfall = DataSerializeUtility.SerializeUshort(TilesCount, (int i) => (ushort)Mathf.Clamp(Mathf.RoundToInt(tiles[i].rainfall), 0, 65535));
-			tileSwampiness = DataSerializeUtility.SerializeByte(TilesCount, (int i) => (byte)Mathf.Clamp(Mathf.RoundToInt(tiles[i].swampiness * 255f), 0, 255));
-			tileFeature = DataSerializeUtility.SerializeUshort(TilesCount, (int i) => (tiles[i].feature != null) ? ((ushort)tiles[i].feature.uniqueID) : ushort.MaxValue);
-			List<int> list = new List<int>();
-			List<byte> list2 = new List<byte>();
-			List<ushort> list3 = new List<ushort>();
-			for (int j = 0; j < TilesCount; j++)
+			if (Current.ProgramState == ProgramState.Entry)
 			{
-				List<Tile.RoadLink> potentialRoads = tiles[j].potentialRoads;
-				if (potentialRoads == null)
+				yield break;
+			}
+			foreach (KeyValuePair<int, PlanetLayer> planetLayer2 in planetLayers)
+			{
+				var (_, layer) = (KeyValuePair<int, PlanetLayer>)(ref planetLayer2);
+				if (!layer.IsSelected && (!layer.Def.viewGizmoOnlyVisibleWithDirectConnection || (Find.WorldSelector.SelectedLayer != null && Find.WorldSelector.SelectedLayer.HasConnectionFromTo(layer))))
 				{
-					continue;
-				}
-				for (int k = 0; k < potentialRoads.Count; k++)
-				{
-					Tile.RoadLink roadLink = potentialRoads[k];
-					if (roadLink.neighbor >= j)
+					AcceptanceReport acceptanceReport = layer.CanSelectLayer();
+					Command_Action command_Action = new Command_Action
 					{
-						byte b = (byte)GetNeighborId(j, roadLink.neighbor);
-						if (b < 0)
+						defaultLabel = "WorldSelectLayer".Translate(layer.Def.Named("LAYER")),
+						hotKey = KeyBindingDefOf.Misc1,
+						defaultDesc = layer.Def.viewGizmoTooltip,
+						icon = layer.Def.ViewGizmoTexture,
+						action = delegate
 						{
-							Log.ErrorOnce("Couldn't find valid neighbor for road piece", 81637014);
-							continue;
+							PlanetLayer.Selected = layer;
 						}
-						list.Add(j);
-						list2.Add(b);
-						list3.Add(roadLink.road.shortHash);
+					};
+					if (!acceptanceReport.Accepted)
+					{
+						command_Action.Disable(acceptanceReport.Reason);
 					}
+					yield return command_Action;
 				}
 			}
-			tileRoadOrigins = DataSerializeUtility.SerializeInt(list.ToArray());
-			tileRoadAdjacency = DataSerializeUtility.SerializeByte(list2.ToArray());
-			tileRoadDef = DataSerializeUtility.SerializeUshort(list3.ToArray());
-			List<int> list4 = new List<int>();
-			List<byte> list5 = new List<byte>();
-			List<ushort> list6 = new List<ushort>();
-			for (int l = 0; l < TilesCount; l++)
+			if (!Find.WindowStack.IsOpen<WorldInspectPane>() && WorldGizmoUtility.TryGetCaravanGizmo(out var gizmo))
 			{
-				List<Tile.RiverLink> potentialRivers = tiles[l].potentialRivers;
-				if (potentialRivers == null)
-				{
-					continue;
-				}
-				for (int m = 0; m < potentialRivers.Count; m++)
-				{
-					Tile.RiverLink riverLink = potentialRivers[m];
-					if (riverLink.neighbor >= l)
-					{
-						byte b2 = (byte)GetNeighborId(l, riverLink.neighbor);
-						if (b2 < 0)
-						{
-							Log.ErrorOnce("Couldn't find valid neighbor for river piece", 81637014);
-							continue;
-						}
-						list4.Add(l);
-						list5.Add(b2);
-						list6.Add(riverLink.river.shortHash);
-					}
-				}
+				yield return gizmo;
 			}
-			tileRiverOrigins = DataSerializeUtility.SerializeInt(list4.ToArray());
-			tileRiverAdjacency = DataSerializeUtility.SerializeByte(list5.ToArray());
-			tileRiverDef = DataSerializeUtility.SerializeUshort(list6.ToArray());
+			yield return WorldGizmoUtility.GetJumpToGizmo();
 		}
 
-		private void RawDataToTiles()
+		public void Dispose()
 		{
-			if (tiles.Count != TilesCount)
+			foreach (KeyValuePair<int, PlanetLayer> planetLayer in planetLayers)
 			{
-				tiles.Clear();
-				for (int j = 0; j < TilesCount; j++)
-				{
-					tiles.Add(new Tile());
-				}
-			}
-			else
-			{
-				for (int k = 0; k < TilesCount; k++)
-				{
-					tiles[k].potentialRoads = null;
-					tiles[k].potentialRivers = null;
-				}
-			}
-			DataSerializeUtility.LoadUshort(tileBiome, TilesCount, delegate(int i, ushort data)
-			{
-				tiles[i].biome = DefDatabase<BiomeDef>.GetByShortHash(data) ?? BiomeDefOf.TemperateForest;
-			});
-			DataSerializeUtility.LoadUshort(tileElevation, TilesCount, delegate(int i, ushort data)
-			{
-				tiles[i].elevation = data - 8192;
-			});
-			DataSerializeUtility.LoadByte(tileHilliness, TilesCount, delegate(int i, byte data)
-			{
-				tiles[i].hilliness = (Hilliness)data;
-			});
-			DataSerializeUtility.LoadUshort(tileTemperature, TilesCount, delegate(int i, ushort data)
-			{
-				tiles[i].temperature = (float)(int)data / 10f - 300f;
-			});
-			DataSerializeUtility.LoadUshort(tileRainfall, TilesCount, delegate(int i, ushort data)
-			{
-				tiles[i].rainfall = (int)data;
-			});
-			DataSerializeUtility.LoadByte(tileSwampiness, TilesCount, delegate(int i, byte data)
-			{
-				tiles[i].swampiness = (float)(int)data / 255f;
-			});
-			int[] array = DataSerializeUtility.DeserializeInt(tileRoadOrigins);
-			byte[] array2 = DataSerializeUtility.DeserializeByte(tileRoadAdjacency);
-			ushort[] array3 = DataSerializeUtility.DeserializeUshort(tileRoadDef);
-			for (int l = 0; l < array.Length; l++)
-			{
-				int num = array[l];
-				int tileNeighbor = GetTileNeighbor(num, array2[l]);
-				RoadDef byShortHash = DefDatabase<RoadDef>.GetByShortHash(array3[l]);
-				if (byShortHash != null)
-				{
-					if (tiles[num].potentialRoads == null)
-					{
-						tiles[num].potentialRoads = new List<Tile.RoadLink>();
-					}
-					if (tiles[tileNeighbor].potentialRoads == null)
-					{
-						tiles[tileNeighbor].potentialRoads = new List<Tile.RoadLink>();
-					}
-					List<Tile.RoadLink> potentialRoads = tiles[num].potentialRoads;
-					Tile.RoadLink item = new Tile.RoadLink
-					{
-						neighbor = tileNeighbor,
-						road = byShortHash
-					};
-					potentialRoads.Add(item);
-					List<Tile.RoadLink> potentialRoads2 = tiles[tileNeighbor].potentialRoads;
-					item = new Tile.RoadLink
-					{
-						neighbor = num,
-						road = byShortHash
-					};
-					potentialRoads2.Add(item);
-				}
-			}
-			int[] array4 = DataSerializeUtility.DeserializeInt(tileRiverOrigins);
-			byte[] array5 = DataSerializeUtility.DeserializeByte(tileRiverAdjacency);
-			ushort[] array6 = DataSerializeUtility.DeserializeUshort(tileRiverDef);
-			for (int m = 0; m < array4.Length; m++)
-			{
-				int num2 = array4[m];
-				int tileNeighbor2 = GetTileNeighbor(num2, array5[m]);
-				RiverDef byShortHash2 = DefDatabase<RiverDef>.GetByShortHash(array6[m]);
-				if (byShortHash2 != null)
-				{
-					if (tiles[num2].potentialRivers == null)
-					{
-						tiles[num2].potentialRivers = new List<Tile.RiverLink>();
-					}
-					if (tiles[tileNeighbor2].potentialRivers == null)
-					{
-						tiles[tileNeighbor2].potentialRivers = new List<Tile.RiverLink>();
-					}
-					List<Tile.RiverLink> potentialRivers = tiles[num2].potentialRivers;
-					Tile.RiverLink item2 = new Tile.RiverLink
-					{
-						neighbor = tileNeighbor2,
-						river = byShortHash2
-					};
-					potentialRivers.Add(item2);
-					List<Tile.RiverLink> potentialRivers2 = tiles[tileNeighbor2].potentialRivers;
-					item2 = new Tile.RiverLink
-					{
-						neighbor = num2,
-						river = byShortHash2
-					};
-					potentialRivers2.Add(item2);
-				}
+				planetLayer.Deconstruct(out var _, out var value);
+				value.Dispose();
 			}
 		}
 	}

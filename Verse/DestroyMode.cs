@@ -5,6 +5,7 @@ namespace Verse
 		Vanish,
 		WillReplace,
 		KillFinalize,
+		KillFinalizeLeavingsOnly,
 		Deconstruct,
 		FailConstruction,
 		Cancel,

@@ -13,6 +13,8 @@ namespace Verse
 
 		public bool designateCancelable = true;
 
+		public bool shouldBatchDraw = true;
+
 		[Unsaved(false)]
 		public Material iconMat;
 

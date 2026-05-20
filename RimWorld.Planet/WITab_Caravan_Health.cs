@@ -18,7 +18,7 @@ namespace RimWorld.Planet
 
 		private static List<PawnCapacityDef> capacitiesToDisplay = new List<PawnCapacityDef>();
 
-		private const float RowHeight = 50f;
+		private const float RowHeight = 40f;
 
 		private const float PawnLabelHeight = 18f;
 
@@ -121,7 +121,7 @@ namespace RimWorld.Planet
 			{
 				if (!localSpecificHealthTabForPawn.DestroyedOrNull())
 				{
-					HealthCardUtility.DrawPawnHealthCard(new Rect(0f, 20f, rect.width, rect.height - 20f), localSpecificHealthTabForPawn, allowOperations: false, showBloodLoss: true, localSpecificHealthTabForPawn);
+					HealthCardUtility.DrawPawnHealthCard(new Rect(Vector2.zero, rect.size), localSpecificHealthTabForPawn, allowOperations: false, showBloodLoss: true, localSpecificHealthTabForPawn);
 					if (Widgets.CloseButtonFor(rect.AtZero()))
 					{
 						specificHealthTabForPawn = null;
@@ -184,7 +184,7 @@ namespace RimWorld.Planet
 				{
 					if (!flag2)
 					{
-						Widgets.ListSeparator(ref curY, scrollViewRect.width, "CaravanPrisonersAndAnimals".Translate());
+						Widgets.ListSeparator(ref curY, scrollViewRect.width, ModsConfig.BiotechActive ? "CaravanPrisonersAnimalsAndMechs".Translate() : "CaravanPrisonersAndAnimals".Translate());
 						flag2 = true;
 					}
 					DoRow(ref curY, scrollViewRect, scrollOutRect, pawn2);
@@ -209,18 +209,18 @@ namespace RimWorld.Planet
 
 		private void DoRow(ref float curY, Rect viewRect, Rect scrollOutRect, Pawn p)
 		{
-			float num = scrollPosition.y - 50f;
+			float num = scrollPosition.y - 40f;
 			float num2 = scrollPosition.y + scrollOutRect.height;
 			if (curY > num && curY < num2)
 			{
-				DoRow(new Rect(0f, curY, viewRect.width, 50f), p);
+				DoRow(new Rect(0f, curY, viewRect.width, 40f), p);
 			}
-			curY += 50f;
+			curY += 40f;
 		}
 
 		private void DoRow(Rect rect, Pawn p)
 		{
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			Rect rect2 = rect.AtZero();
 			CaravanThingsTabUtility.DoAbandonButton(rect2, p, base.SelCaravan);
 			rect2.width -= 24f;
@@ -234,22 +234,22 @@ namespace RimWorld.Planet
 			}
 			Rect rect3 = new Rect(4f, (rect.height - 27f) / 2f, 27f, 27f);
 			Widgets.ThingIcon(rect3, p);
-			Rect bgRect = new Rect(rect3.xMax + 4f, 16f, 100f, 18f);
+			Rect bgRect = new Rect(rect3.xMax + 4f, 11f, 100f, 18f);
 			GenMapUI.DrawPawnLabel(p, bgRect, 1f, 100f, null, GameFont.Small, alwaysDrawBg: false, alignCenter: false);
 			float num = bgRect.xMax;
 			if (!compactMode)
 			{
 				if (p.RaceProps.IsFlesh)
 				{
-					Rect rect4 = new Rect(num, 0f, 100f, 50f);
+					Rect rect4 = new Rect(num, 0f, 100f, 40f);
 					DoPain(rect4, p);
 				}
 				num += 100f;
 				List<PawnCapacityDef> list = CapacitiesToDisplay;
 				for (int i = 0; i < list.Count; i++)
 				{
-					Rect rect5 = new Rect(num, 0f, 100f, 50f);
-					if ((p.RaceProps.Humanlike && !list[i].showOnHumanlikes) || (p.RaceProps.Animal && !list[i].showOnAnimals) || (p.RaceProps.IsMechanoid && !list[i].showOnMechanoids) || !PawnCapacityUtility.BodyCanEverDoCapacity(p.RaceProps.body, list[i]))
+					Rect rect5 = new Rect(num, 0f, 100f, 40f);
+					if ((p.RaceProps.Humanlike && !list[i].showOnHumanlikes) || (p.RaceProps.Animal && !list[i].showOnAnimals) || (p.RaceProps.IsAnomalyEntity && !list[i].showOnAnomalyEntities) || (p.RaceProps.IsMechanoid && !list[i].showOnMechanoids) || (p.RaceProps.IsDrone && !list[i].showOnDrones) || !PawnCapacityUtility.BodyCanEverDoCapacity(p.RaceProps.body, list[i]))
 					{
 						num += 100f;
 						continue;
@@ -260,18 +260,18 @@ namespace RimWorld.Planet
 			}
 			if (!compactMode)
 			{
-				Vector2 vector = new Vector2(num + 8f, 13f);
+				Vector2 vector = new Vector2(num + 8f, 8f);
 				Widgets.Checkbox(vector, ref p.health.beCarriedByCaravanIfSick, 24f, disabled: false, paintable: true);
 				TooltipHandler.TipRegionByKey(new Rect(vector, new Vector2(24f, 24f)), "BeCarriedIfSickTip");
 				num += 40f;
 			}
-			if (p.Downed)
+			if (p.Downed && !p.ageTracker.CurLifeStage.alwaysDowned)
 			{
 				GUI.color = new Color(1f, 0f, 0f, 0.5f);
 				Widgets.DrawLineHorizontal(0f, rect.height / 2f, rect.width);
 				GUI.color = Color.white;
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		private void DoPain(Rect rect, Pawn pawn)

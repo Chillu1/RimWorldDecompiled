@@ -10,11 +10,11 @@ namespace RimWorld.Planet
 
 		private static List<WorldObject> clickedDynamicallyDrawnObjects = new List<WorldObject>();
 
-		public static float CaravanDirectClickRadius => 0.35f * Find.WorldGrid.averageTileSize;
+		public static float CaravanDirectClickRadius => 0.35f * Find.WorldGrid.AverageTileSize;
 
-		private static float CaravanWideClickRadius => 0.75f * Find.WorldGrid.averageTileSize;
+		private static float CaravanWideClickRadius => 0.75f * Find.WorldGrid.AverageTileSize;
 
-		private static float DynamicallyDrawnObjectDirectClickRadius => 0.35f * Find.WorldGrid.averageTileSize;
+		private static float DynamicallyDrawnObjectDirectClickRadius => 0.35f * Find.WorldGrid.AverageTileSize;
 
 		public static List<WorldObject> WorldObjectsUnderMouse(Vector2 mousePos)
 		{
@@ -32,58 +32,58 @@ namespace RimWorld.Planet
 				}
 			}
 			clickedCaravans.SortBy((Caravan x) => x.DistanceToMouse(mousePos));
-			for (int j = 0; j < clickedCaravans.Count; j++)
+			for (int num = 0; num < clickedCaravans.Count; num++)
 			{
-				if (!list.Contains(clickedCaravans[j]))
+				if (!list.Contains(clickedCaravans[num]))
 				{
-					list.Add(clickedCaravans[j]);
+					list.Add(clickedCaravans[num]);
 				}
 			}
 			float dynamicallyDrawnObjectDirectClickRadius = DynamicallyDrawnObjectDirectClickRadius;
 			clickedDynamicallyDrawnObjects.Clear();
 			List<WorldObject> allWorldObjects = Find.WorldObjects.AllWorldObjects;
-			for (int k = 0; k < allWorldObjects.Count; k++)
+			for (int num2 = 0; num2 < allWorldObjects.Count; num2++)
 			{
-				WorldObject worldObject = allWorldObjects[k];
+				WorldObject worldObject = allWorldObjects[num2];
 				if (worldObject.def.useDynamicDrawer && worldObject.DistanceToMouse(mousePos) < dynamicallyDrawnObjectDirectClickRadius)
 				{
 					clickedDynamicallyDrawnObjects.Add(worldObject);
 				}
 			}
 			clickedDynamicallyDrawnObjects.SortBy((WorldObject x) => x.DistanceToMouse(mousePos));
-			for (int l = 0; l < clickedDynamicallyDrawnObjects.Count; l++)
+			for (int num3 = 0; num3 < clickedDynamicallyDrawnObjects.Count; num3++)
 			{
-				if (!list.Contains(clickedDynamicallyDrawnObjects[l]))
+				if (!list.Contains(clickedDynamicallyDrawnObjects[num3]))
 				{
-					list.Add(clickedDynamicallyDrawnObjects[l]);
+					list.Add(clickedDynamicallyDrawnObjects[num3]);
 				}
 			}
-			int num = GenWorld.TileAt(mousePos);
+			PlanetTile planetTile = GenWorld.TileAt(mousePos);
 			List<WorldObject> allWorldObjects2 = Find.WorldObjects.AllWorldObjects;
-			for (int m = 0; m < allWorldObjects2.Count; m++)
+			for (int num4 = 0; num4 < allWorldObjects2.Count; num4++)
 			{
-				if (allWorldObjects2[m].Tile == num && !list.Contains(allWorldObjects2[m]))
+				if (allWorldObjects2[num4].Tile == planetTile && !list.Contains(allWorldObjects2[num4]))
 				{
-					list.Add(allWorldObjects2[m]);
+					list.Add(allWorldObjects2[num4]);
 				}
 			}
 			float caravanWideClickRadius = CaravanWideClickRadius;
 			clickedCaravans.Clear();
 			List<Caravan> caravans2 = Find.WorldObjects.Caravans;
-			for (int n = 0; n < caravans2.Count; n++)
+			for (int num5 = 0; num5 < caravans2.Count; num5++)
 			{
-				Caravan caravan2 = caravans2[n];
+				Caravan caravan2 = caravans2[num5];
 				if (caravan2.DistanceToMouse(mousePos) < caravanWideClickRadius)
 				{
 					clickedCaravans.Add(caravan2);
 				}
 			}
 			clickedCaravans.SortBy((Caravan x) => x.DistanceToMouse(mousePos));
-			for (int num2 = 0; num2 < clickedCaravans.Count; num2++)
+			for (int num6 = 0; num6 < clickedCaravans.Count; num6++)
 			{
-				if (!list.Contains(clickedCaravans[num2]))
+				if (!list.Contains(clickedCaravans[num6]))
 				{
-					list.Add(clickedCaravans[num2]);
+					list.Add(clickedCaravans[num6]);
 				}
 			}
 			clickedCaravans.Clear();
@@ -98,13 +98,14 @@ namespace RimWorld.Planet
 
 		public static float CurUITileSize()
 		{
-			Vector3 localPosition = Find.WorldCamera.transform.localPosition;
-			Quaternion rotation = Find.WorldCamera.transform.rotation;
-			Find.WorldCamera.transform.localPosition = new Vector3(0f, 0f, localPosition.magnitude);
-			Find.WorldCamera.transform.rotation = Quaternion.identity;
-			float x = (WorldToUIPosition(new Vector3((0f - Find.WorldGrid.averageTileSize) / 2f, 0f, 100f)) - WorldToUIPosition(new Vector3(Find.WorldGrid.averageTileSize / 2f, 0f, 100f))).x;
-			Find.WorldCamera.transform.localPosition = localPosition;
-			Find.WorldCamera.transform.rotation = rotation;
+			Transform transform = Find.WorldCamera.transform;
+			Vector3 localPosition = transform.localPosition;
+			Quaternion rotation = transform.rotation;
+			transform.localPosition = new Vector3(0f, 0f, localPosition.magnitude);
+			transform.rotation = Quaternion.identity;
+			float x = (WorldToUIPosition(new Vector3((0f - Find.WorldGrid.AverageTileSize) / 2f, 0f, 100f)) - WorldToUIPosition(new Vector3(Find.WorldGrid.AverageTileSize / 2f, 0f, 100f))).x;
+			transform.localPosition = localPosition;
+			transform.rotation = rotation;
 			return x;
 		}
 	}

@@ -1,14 +1,64 @@
 using System.Collections.Generic;
-using UnityEngine;
 using Verse;
 
 namespace RimWorld
 {
 	public static class ParentRelationUtility
 	{
+		private static List<string> workingParentagePieces = new List<string>();
+
+		public static TaggedString GetParentage(this Pawn pawn)
+		{
+			workingParentagePieces.Clear();
+			Pawn mother = pawn.GetMother();
+			if (mother != null)
+			{
+				workingParentagePieces.Add(FactionDesc(mother));
+			}
+			Pawn father = pawn.GetFather();
+			if (father != null)
+			{
+				workingParentagePieces.Add(FactionDesc(father));
+			}
+			string text = workingParentagePieces.ToCommaList(useAnd: true, emptyIfNone: true);
+			if (string.IsNullOrEmpty(text))
+			{
+				text = "ParentsUnknown".Translate();
+			}
+			return "BornOfParents".Translate(text);
+			static string FactionDesc(Pawn parent)
+			{
+				return parent.FactionDesc(parent.NameFullColored, extraFactionsInfo: false, parent.NameFullColored, parent.gender.GetLabel(parent.RaceProps.Animal)).Resolve();
+			}
+		}
+
 		public static Pawn GetFather(this Pawn pawn)
 		{
+			return pawn.GetParent(Gender.Male);
+		}
+
+		public static Pawn GetMother(this Pawn pawn)
+		{
+			return pawn.GetParent(Gender.Female);
+		}
+
+		public static bool HasSameFather(this Pawn pawn, Pawn other)
+		{
+			return HasSameParent(pawn, other, Gender.Male);
+		}
+
+		public static bool HasSameMother(this Pawn pawn, Pawn other)
+		{
+			return HasSameParent(pawn, other, Gender.Female);
+		}
+
+		private static Pawn GetParent(this Pawn pawn, Gender parentGender)
+		{
 			if (!pawn.RaceProps.IsFlesh)
+			{
+				return null;
+			}
+			if (pawn.relations == null)
 			{
 				return null;
 			}
@@ -16,7 +66,7 @@ namespace RimWorld
 			for (int i = 0; i < directRelations.Count; i++)
 			{
 				DirectPawnRelation directPawnRelation = directRelations[i];
-				if (directPawnRelation.def == PawnRelationDefOf.Parent && directPawnRelation.otherPawn.gender != Gender.Female)
+				if (directPawnRelation.def == PawnRelationDefOf.Parent && directPawnRelation.otherPawn.gender == parentGender)
 				{
 					return directPawnRelation.otherPawn;
 				}
@@ -24,9 +74,64 @@ namespace RimWorld
 			return null;
 		}
 
-		public static Pawn GetMother(this Pawn pawn)
+		private static bool HasSameParent(Pawn pawn, Pawn other, Gender parentGender)
 		{
 			if (!pawn.RaceProps.IsFlesh)
+			{
+				return false;
+			}
+			if (pawn.relations == null)
+			{
+				return false;
+			}
+			Pawn parent = pawn.GetParent(parentGender);
+			Pawn parent2 = other.GetParent(parentGender);
+			if (parent != null && parent2 != null && parent == parent2)
+			{
+				return true;
+			}
+			VirtualPawnRelation virtualParent = GetVirtualParent(pawn, parentGender);
+			VirtualPawnRelation virtualParent2 = GetVirtualParent(other, parentGender);
+			if (virtualParent != null && virtualParent2 != null && virtualParent.record.ID == virtualParent2.record.ID)
+			{
+				return true;
+			}
+			return false;
+		}
+
+		private static VirtualPawnRelation GetVirtualParent(Pawn pawn, Gender gender)
+		{
+			if (!pawn.RaceProps.IsFlesh)
+			{
+				return null;
+			}
+			if (pawn.relations == null)
+			{
+				return null;
+			}
+			List<VirtualPawnRelation> virtualRelations = pawn.relations.VirtualRelations;
+			for (int i = 0; i < virtualRelations.Count; i++)
+			{
+				VirtualPawnRelation virtualPawnRelation = virtualRelations[i];
+				if (virtualPawnRelation.def == PawnRelationDefOf.Parent && virtualPawnRelation.record.Gender == gender)
+				{
+					return virtualPawnRelation;
+				}
+			}
+			return null;
+		}
+
+		public static Pawn GetBirthParent(this Pawn pawn)
+		{
+			if (!ModsConfig.BiotechActive)
+			{
+				return null;
+			}
+			if (!pawn.RaceProps.IsFlesh)
+			{
+				return null;
+			}
+			if (pawn.relations == null)
 			{
 				return null;
 			}
@@ -34,7 +139,7 @@ namespace RimWorld
 			for (int i = 0; i < directRelations.Count; i++)
 			{
 				DirectPawnRelation directPawnRelation = directRelations[i];
-				if (directPawnRelation.def == PawnRelationDefOf.Parent && directPawnRelation.otherPawn.gender == Gender.Female)
+				if (directPawnRelation.def == PawnRelationDefOf.ParentBirth)
 				{
 					return directPawnRelation.otherPawn;
 				}
@@ -46,7 +151,7 @@ namespace RimWorld
 		{
 			if (newFather != null && newFather.gender == Gender.Female)
 			{
-				Log.Warning(string.Concat("Tried to set ", newFather, " with gender ", newFather.gender, " as ", pawn, "'s father."));
+				Log.Warning("Tried to set " + newFather?.ToString() + " with gender " + newFather.gender.ToString() + " as " + pawn?.ToString() + "'s father.");
 				return;
 			}
 			Pawn father = pawn.GetFather();
@@ -67,7 +172,7 @@ namespace RimWorld
 		{
 			if (newMother != null && newMother.gender != Gender.Female)
 			{
-				Log.Warning(string.Concat("Tried to set ", newMother, " with gender ", newMother.gender, " as ", pawn, "'s mother."));
+				Log.Warning("Tried to set " + newMother?.ToString() + " with gender " + newMother.gender.ToString() + " as " + pawn?.ToString() + "'s mother.");
 				return;
 			}
 			Pawn mother = pawn.GetMother();
@@ -82,31 +187,6 @@ namespace RimWorld
 					pawn.relations.AddDirectRelation(PawnRelationDefOf.Parent, newMother);
 				}
 			}
-		}
-
-		public static float GetRandomSecondParentSkinColor(float otherParentSkin, float childSkin, float? secondChildSkin = null)
-		{
-			float num = 0f;
-			num = ((!secondChildSkin.HasValue) ? childSkin : ((childSkin + secondChildSkin.Value) / 2f));
-			float reflectedSkin = ChildRelationUtility.GetReflectedSkin(otherParentSkin, num);
-			float num2 = childSkin;
-			float num3 = childSkin;
-			if (secondChildSkin.HasValue)
-			{
-				num2 = Mathf.Min(num2, secondChildSkin.Value);
-				num3 = Mathf.Max(num3, secondChildSkin.Value);
-			}
-			float clampMin = 0f;
-			float clampMax = 1f;
-			if (reflectedSkin >= num3)
-			{
-				clampMin = num3;
-			}
-			else
-			{
-				clampMax = num2;
-			}
-			return PawnSkinColors.GetRandomMelaninSimilarTo(reflectedSkin, clampMin, clampMax);
 		}
 	}
 }

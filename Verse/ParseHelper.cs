@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using RimWorld;
+using RimWorld.Planet;
 using RimWorld.QuestGen;
 using Steamworks;
 using UnityEngine;
@@ -36,6 +37,11 @@ namespace Verse
 			return str.Replace("\\n", "\n");
 		}
 
+		public static uint ParseUInt(string str)
+		{
+			return uint.Parse(str, NumberStyles.Any, CultureInfo.InvariantCulture);
+		}
+
 		public static int ParseIntPermissive(string str)
 		{
 			if (!int.TryParse(str, NumberStyles.Any, CultureInfo.InvariantCulture, out var result))
@@ -52,9 +58,9 @@ namespace Verse
 			Str = Str.TrimEnd(')');
 			string[] array = Str.Split(',');
 			CultureInfo invariantCulture = CultureInfo.InvariantCulture;
-			float x = Convert.ToSingle(array[0], invariantCulture);
-			float y = Convert.ToSingle(array[1], invariantCulture);
-			float z = Convert.ToSingle(array[2], invariantCulture);
+			float x = float.Parse(array[0], invariantCulture);
+			float y = float.Parse(array[1], invariantCulture);
+			float z = float.Parse(array[2], invariantCulture);
 			return new Vector3(x, y, z);
 		}
 
@@ -115,6 +121,39 @@ namespace Verse
 			return new Vector4(x, y, z, w);
 		}
 
+		public static Quaternion FromStringQuaternion(string Str)
+		{
+			Str = Str.TrimStart('(');
+			Str = Str.TrimEnd(')');
+			string[] array = Str.Split(',');
+			CultureInfo invariantCulture = CultureInfo.InvariantCulture;
+			float x = 0f;
+			float y = 0f;
+			float z = 0f;
+			float w = 0f;
+			if (array.Length >= 1)
+			{
+				x = Convert.ToSingle(array[0], invariantCulture);
+			}
+			if (array.Length >= 2)
+			{
+				y = Convert.ToSingle(array[1], invariantCulture);
+			}
+			if (array.Length >= 3)
+			{
+				z = Convert.ToSingle(array[2], invariantCulture);
+			}
+			if (array.Length >= 4)
+			{
+				w = Convert.ToSingle(array[3], invariantCulture);
+			}
+			if (array.Length >= 5)
+			{
+				Log.ErrorOnce($"Too many elements in quaternion {Str}", 16139142);
+			}
+			return new Quaternion(x, y, z, w);
+		}
+
 		public static Rect FromStringRect(string str)
 		{
 			str = str.TrimStart('(');
@@ -138,6 +177,11 @@ namespace Verse
 			return bool.Parse(str);
 		}
 
+		public static ulong ParseULong(string str)
+		{
+			return ulong.Parse(str, NumberStyles.Any, CultureInfo.InvariantCulture);
+		}
+
 		public static long ParseLong(string str)
 		{
 			return long.Parse(str, CultureInfo.InvariantCulture);
@@ -153,24 +197,43 @@ namespace Verse
 			return sbyte.Parse(str, CultureInfo.InvariantCulture);
 		}
 
+		public static byte ParseByte(string str)
+		{
+			return byte.Parse(str, CultureInfo.InvariantCulture);
+		}
+
+		public static ushort ParseUShort(string str)
+		{
+			return ushort.Parse(str, CultureInfo.InvariantCulture);
+		}
+
+		public static short ParseShort(string str)
+		{
+			return short.Parse(str, CultureInfo.InvariantCulture);
+		}
+
 		public static Type ParseType(string str)
 		{
 			if (str == "null" || str == "Null")
 			{
 				return null;
 			}
-			Type typeInAnyAssembly = GenTypes.GetTypeInAnyAssembly(str);
-			if (typeInAnyAssembly == null)
+			Type type = GenTypes.GetTypeInAnyAssembly(str);
+			if (type == null)
 			{
-				Log.Error("Could not find a type named " + str);
+				type = BackCompatibility.GetBackCompatibleTypeDirect(typeof(Type), str);
+				if (type == null)
+				{
+					Log.Error("Could not find a type named " + str);
+				}
 			}
-			return typeInAnyAssembly;
+			return type;
 		}
 
 		public static Action ParseAction(string str)
 		{
 			string[] array = str.Split('.');
-			string methodName = array[array.Length - 1];
+			string methodName = array[^1];
 			string typeName = ((array.Length != 3) ? array[0] : (array[0] + "." + array[1]));
 			MethodInfo method = GenTypes.GetTypeInAnyAssembly(typeName).GetMethods().First((MethodInfo m) => m.Name == methodName);
 			return (Action)Delegate.CreateDelegate(typeof(Action), method);
@@ -184,23 +247,39 @@ namespace Verse
 			float num = ParseFloat(array[0]);
 			float num2 = ParseFloat(array[1]);
 			float num3 = ParseFloat(array[2]);
-			bool num4 = num > 1f || num3 > 1f || num2 > 1f;
-			float num5 = ((!num4) ? 1 : 255);
+			int num4;
+			int num5;
+			if (!(num > 1f) && !(num3 > 1f))
+			{
+				num4 = ((num2 > 1f) ? 1 : 0);
+				if (num4 == 0)
+				{
+					num5 = 1;
+					goto IL_0065;
+				}
+			}
+			else
+			{
+				num4 = 1;
+			}
+			num5 = 255;
+			goto IL_0065;
+			IL_0065:
+			float num6 = num5;
 			if (array.Length == 4)
 			{
-				num5 = FromString<float>(array[3]);
+				num6 = FromString<float>(array[3]);
 			}
-			Color result = default(Color);
-			if (!num4)
+			if (num4 == 0)
 			{
+				Color result = default(Color);
 				result.r = num;
 				result.g = num2;
 				result.b = num3;
-				result.a = num5;
+				result.a = num6;
 				return result;
 			}
-			result = GenColor.FromBytes(Mathf.RoundToInt(num), Mathf.RoundToInt(num2), Mathf.RoundToInt(num3), Mathf.RoundToInt(num5));
-			return result;
+			return GenColor.FromBytes(Mathf.RoundToInt(num), Mathf.RoundToInt(num2), Mathf.RoundToInt(num3), Mathf.RoundToInt(num6));
 		}
 
 		public static PublishedFileId_t ParsePublishedFileId(string str)
@@ -235,9 +314,7 @@ namespace Verse
 
 		public static NameTriple ParseNameTriple(string str)
 		{
-			NameTriple nameTriple = NameTriple.FromString(str);
-			nameTriple.ResolveMissingPieces();
-			return nameTriple;
+			return NameTriple.FromString(str);
 		}
 
 		public static FloatRange ParseFloatRange(string str)
@@ -280,32 +357,33 @@ namespace Verse
 			return str;
 		}
 
+		public static PlanetTile ParsePlanetTile(string str)
+		{
+			return PlanetTile.FromString(str);
+		}
+
 		static ParseHelper()
 		{
 			parsers = new Dictionary<Type, Func<string, object>>();
-			colorTrimStartParameters = new char[5]
-			{
-				'(',
-				'R',
-				'G',
-				'B',
-				'A'
-			};
-			colorTrimEndParameters = new char[1]
-			{
-				')'
-			};
+			colorTrimStartParameters = new char[5] { '(', 'R', 'G', 'B', 'A' };
+			colorTrimEndParameters = new char[1] { ')' };
 			Parsers<string>.Register(ParseString);
+			Parsers<bool>.Register(ParseBool);
+			Parsers<sbyte>.Register(ParseSByte);
+			Parsers<byte>.Register(ParseByte);
+			Parsers<uint>.Register(ParseUInt);
 			Parsers<int>.Register(ParseIntPermissive);
+			Parsers<ushort>.Register(ParseUShort);
+			Parsers<short>.Register(ParseShort);
+			Parsers<ulong>.Register(ParseULong);
+			Parsers<long>.Register(ParseLong);
+			Parsers<float>.Register(ParseFloat);
+			Parsers<double>.Register(ParseDouble);
 			Parsers<Vector3>.Register(FromStringVector3);
 			Parsers<Vector2>.Register(FromStringVector2);
 			Parsers<Vector4>.Register(FromStringVector4Adaptive);
+			Parsers<Quaternion>.Register(FromStringQuaternion);
 			Parsers<Rect>.Register(FromStringRect);
-			Parsers<float>.Register(ParseFloat);
-			Parsers<bool>.Register(ParseBool);
-			Parsers<long>.Register(ParseLong);
-			Parsers<double>.Register(ParseDouble);
-			Parsers<sbyte>.Register(ParseSByte);
 			Parsers<Type>.Register(ParseType);
 			Parsers<Action>.Register(ParseAction);
 			Parsers<Color>.Register(ParseColor);
@@ -321,6 +399,7 @@ namespace Verse
 			Parsers<QualityRange>.Register(ParseQualityRange);
 			Parsers<ColorInt>.Register(ParseColorInt);
 			Parsers<TaggedString>.Register(ParseTaggedString);
+			Parsers<PlanetTile>.Register(ParsePlanetTile);
 		}
 
 		public static T FromString<T>(string str)
@@ -351,33 +430,41 @@ namespace Verse
 					}
 					catch (ArgumentException innerException)
 					{
-						throw new ArgumentException(string.Concat(string.Concat("'", str, "' is not a valid value for ", itemType, ". Valid values are: \n"), GenText.StringFromEnumerable(Enum.GetValues(itemType))), innerException);
+						throw new ArgumentException(string.Concat("'" + str + "' is not a valid value for " + itemType?.ToString() + ". Valid values are: \n", GenText.StringFromEnumerable(Enum.GetValues(itemType))), innerException);
 					}
 				}
 				if (parsers.TryGetValue(itemType, out var value))
 				{
 					return value(str);
 				}
-				if (typeof(ISlateRef).IsAssignableFrom(itemType))
+				if (GenTypes.IsSlateRef(itemType))
 				{
 					ISlateRef obj2 = (ISlateRef)Activator.CreateInstance(itemType);
 					obj2.SlateRef = str;
 					return obj2;
 				}
+				if (itemType.IsSubclassOf(typeof(Delegate)))
+				{
+					int num = str.LastIndexOf('.');
+					string typeName = ((num >= 0) ? str.Substring(0, num) : "");
+					string method = str.Substring(num + 1, str.Length - (num + 1));
+					Type typeInAnyAssembly = GenTypes.GetTypeInAnyAssembly(typeName);
+					return Delegate.CreateDelegate(itemType, typeInAnyAssembly, method);
+				}
 				throw new ArgumentException("Trying to parse to unknown data type " + itemType.Name + ". Content is '" + str + "'.");
 			}
 			catch (Exception innerException2)
 			{
-				throw new ArgumentException(string.Concat("Exception parsing ", itemType, " from \"", str, "\""), innerException2);
+				throw new ArgumentException("Exception parsing " + itemType?.ToString() + " from \"" + str + "\"", innerException2);
 			}
 		}
 
 		public static bool HandlesType(Type type)
 		{
 			type = Nullable.GetUnderlyingType(type) ?? type;
-			if (!type.IsPrimitive && !type.IsEnum && !parsers.ContainsKey(type))
+			if (!type.IsPrimitive && !type.IsEnum && !parsers.ContainsKey(type) && !type.IsSubclassOf(typeof(Delegate)))
 			{
-				return typeof(ISlateRef).IsAssignableFrom(type);
+				return GenTypes.IsSlateRef(type);
 			}
 			return true;
 		}

@@ -6,10 +6,23 @@ namespace RimWorld
 {
 	public class IncidentWorker_MechCluster : IncidentWorker
 	{
+		protected override bool CanFireNowSub(IncidentParms parms)
+		{
+			if (!ModsConfig.RoyaltyActive)
+			{
+				return false;
+			}
+			if (!base.CanFireNowSub(parms))
+			{
+				return false;
+			}
+			return Faction.OfMechanoids != null;
+		}
+
 		protected override bool TryExecuteWorker(IncidentParms parms)
 		{
 			Map map = (Map)parms.target;
-			MechClusterSketch sketch = MechClusterGenerator.GenerateClusterSketch_NewTemp(parms.points, map);
+			MechClusterSketch sketch = MechClusterGenerator.GenerateClusterSketch(parms.points, map);
 			IntVec3 center = MechClusterUtility.FindClusterPosition(map, sketch, 100, 0.5f);
 			if (!center.IsValid)
 			{

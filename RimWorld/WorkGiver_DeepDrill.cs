@@ -39,12 +39,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			Building building = t as Building;
-			if (building == null)
-			{
-				return false;
-			}
-			if (building.IsForbidden(pawn))
+			if (!(t is Building building))
 			{
 				return false;
 			}

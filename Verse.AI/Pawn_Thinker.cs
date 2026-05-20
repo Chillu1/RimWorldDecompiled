@@ -1,16 +1,16 @@
 namespace Verse.AI
 {
-	public class Pawn_Thinker
+	public class Pawn_Thinker : IExposable
 	{
 		public Pawn pawn;
 
-		public ThinkTreeDef MainThinkTree => pawn.RaceProps.thinkTreeMain;
+		public ThinkTreeDef MainThinkTree => pawn.mutant?.GetThinkTrees().main ?? pawn.ageTracker.CurLifeStage?.thinkTreeMainOverride ?? pawn.RaceProps.thinkTreeMain;
 
-		public ThinkNode MainThinkNodeRoot => pawn.RaceProps.thinkTreeMain.thinkRoot;
+		public ThinkNode MainThinkNodeRoot => MainThinkTree.thinkRoot;
 
-		public ThinkTreeDef ConstantThinkTree => pawn.RaceProps.thinkTreeConstant;
+		public ThinkTreeDef ConstantThinkTree => pawn.mutant?.GetThinkTrees().constant ?? pawn.ageTracker.CurLifeStage?.thinkTreeConstantOverride ?? pawn.RaceProps.thinkTreeConstant;
 
-		public ThinkNode ConstantThinkNodeRoot => pawn.RaceProps.thinkTreeConstant.thinkRoot;
+		public ThinkNode ConstantThinkNodeRoot => ConstantThinkTree.thinkRoot;
 
 		public Pawn_Thinker(Pawn pawn)
 		{
@@ -19,15 +19,7 @@ namespace Verse.AI
 
 		public T TryGetMainTreeThinkNode<T>() where T : ThinkNode
 		{
-			foreach (ThinkNode item in MainThinkNodeRoot.ChildrenRecursive)
-			{
-				T val = item as T;
-				if (val != null)
-				{
-					return val;
-				}
-			}
-			return null;
+			return MainThinkNodeRoot.FirstNodeOfType<T>();
 		}
 
 		public T GetMainTreeThinkNode<T>() where T : ThinkNode
@@ -35,9 +27,13 @@ namespace Verse.AI
 			T val = TryGetMainTreeThinkNode<T>();
 			if (val == null)
 			{
-				Log.Warning(string.Concat(pawn, " looked for ThinkNode of type ", typeof(T), " and didn't find it."));
+				Log.Warning(pawn?.ToString() + " looked for ThinkNode of type " + typeof(T)?.ToString() + " and didn't find it.");
 			}
 			return val;
+		}
+
+		public void ExposeData()
+		{
 		}
 	}
 }

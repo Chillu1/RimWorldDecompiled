@@ -7,27 +7,25 @@ namespace RimWorld
 		public override void DoEffect(Pawn usedBy)
 		{
 			base.DoEffect(usedBy);
-			ResearchProjectDef currentProj = Find.ResearchManager.currentProj;
-			if (currentProj != null)
+			ResearchProjectDef project = Find.ResearchManager.GetProject();
+			if (project != null)
 			{
-				FinishInstantly(currentProj, usedBy);
+				FinishInstantly(project, usedBy);
 			}
 		}
 
-		public override bool CanBeUsedBy(Pawn p, out string failReason)
+		public override AcceptanceReport CanBeUsedBy(Pawn p)
 		{
-			if (Find.ResearchManager.currentProj == null)
+			if (Find.ResearchManager.GetProject() == null)
 			{
-				failReason = "NoActiveResearchProjectToFinish".Translate();
-				return false;
+				return "NoActiveResearchProjectToFinish".Translate();
 			}
-			failReason = null;
 			return true;
 		}
 
 		private void FinishInstantly(ResearchProjectDef proj, Pawn usedBy)
 		{
-			Find.ResearchManager.FinishProject(proj);
+			Find.ResearchManager.FinishProject(proj, doCompletionDialog: true);
 			Messages.Message("MessageResearchProjectFinishedByItem".Translate(proj.LabelCap), usedBy, MessageTypeDefOf.PositiveEvent);
 		}
 	}

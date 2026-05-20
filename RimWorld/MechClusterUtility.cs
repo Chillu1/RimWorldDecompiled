@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -55,7 +54,7 @@ namespace RimWorld
 				{
 					continue;
 				}
-				IntVec3 intVec2 = RCellFinder.FindSiegePositionFrom_NewTemp(intVec, map);
+				IntVec3 intVec2 = RCellFinder.FindSiegePositionFrom(intVec, map, allowRoofed: false, errorOnFail: false);
 				if (intVec2.IsValid)
 				{
 					float clusterPositionScore2 = GetClusterPositionScore(intVec2, map, sketch);
@@ -138,6 +137,10 @@ namespace RimWorld
 				{
 					fogged++;
 				}
+				if (x.GetRoof(map) == RoofDefOf.RoofRockThick)
+				{
+					return false;
+				}
 				if (x.Roofed(map))
 				{
 					roofed++;
@@ -179,33 +182,14 @@ namespace RimWorld
 			}
 		}
 
-		[Obsolete]
-		public static bool CanSpawnClusterAt(MechClusterSketch sketch, IntVec3 center, Map map, bool desperate = false)
-		{
-			return false;
-		}
-
-		[Obsolete]
-		public static IntVec3 FindDropPodLocation(Map map, Predicate<IntVec3> validator, int maxTries = 100, float spawnCloseToColonyChance = 0f)
-		{
-			return IntVec3.Invalid;
-		}
-
-		[Obsolete]
-		private static bool TryFindRaidDropCenterClose(out IntVec3 result, Map map, Predicate<IntVec3> validator, int maxTries = 100)
-		{
-			result = IntVec3.Invalid;
-			return false;
-		}
-
-		[Obsolete]
-		public static IntVec3 TryFindMechClusterPosInRect(CellRect rect, Map map, MechClusterSketch sketch)
-		{
-			return IntVec3.Invalid;
-		}
-
 		public static List<Thing> SpawnCluster(IntVec3 center, Map map, MechClusterSketch sketch, bool dropInPods = true, bool canAssaultColony = false, string questTag = null)
 		{
+			List<Thing> spawnedThings = new List<Thing>();
+			if (Faction.OfMechanoids == null)
+			{
+				Log.Warning("Could not spawn mech cluster, no world mech faction found.");
+				return spawnedThings;
+			}
 			foreach (IntVec3 item in sketch.buildingsSketch.OccupiedRect)
 			{
 				IntVec3 c = item + center;
@@ -225,14 +209,12 @@ namespace RimWorld
 				}
 				thing?.Destroy();
 			}
-			List<Thing> spawnedThings = new List<Thing>();
 			Sketch.SpawnMode spawnMode = ((!dropInPods) ? Sketch.SpawnMode.Normal : Sketch.SpawnMode.TransportPod);
-			sketch.buildingsSketch.Spawn(map, center, Faction.OfMechanoids, Sketch.SpawnPosType.Unchanged, spawnMode, wipeIfCollides: false, clearEdificeWhereFloor: false, spawnedThings, sketch.startDormant, buildRoofsInstantly: false, CanSpawnThing, delegate(IntVec3 spot, SketchEntity entity)
+			sketch.buildingsSketch.Spawn(map, center, Faction.OfMechanoids, Sketch.SpawnPosType.Unchanged, spawnMode, wipeIfCollides: false, forceTerrainAffordance: false, clearEdificeWhereFloor: false, spawnedThings, sketch.startDormant, buildRoofsInstantly: false, CanSpawnThing, delegate(IntVec3 spot, SketchEntity entity)
 			{
-				SketchThing sketchThing;
-				if ((sketchThing = entity as SketchThing) != null && sketchThing.def != ThingDefOf.Wall && sketchThing.def != ThingDefOf.Barricade)
+				if (entity is SketchThing sketchThing && sketchThing.def != ThingDefOf.Wall && sketchThing.def != ThingDefOf.Barricade)
 				{
-					entity.SpawnNear_NewTmp(spot, map, 12f, Faction.OfMechanoids, spawnMode, wipeIfCollides: false, spawnedThings, sketch.startDormant, CanSpawnThing);
+					entity.SpawnNear(spot, map, 12f, Faction.OfMechanoids, spawnMode, wipeIfCollides: false, forceTerrainAffordance: false, spawnedThings, sketch.startDormant, CanSpawnThing);
 				}
 			});
 			float defendRadius = Mathf.Sqrt(sketch.buildingsSketch.OccupiedSize.x * sketch.buildingsSketch.OccupiedSize.x + sketch.buildingsSketch.OccupiedSize.z * sketch.buildingsSketch.OccupiedSize.z) / 2f + 6f;
@@ -243,9 +225,9 @@ namespace RimWorld
 			bool flag = Rand.Chance(0.6f);
 			float randomInRange = InitiationDelay.RandomInRange;
 			int num = (int)(MechAssemblerInitialDelayDays.RandomInRange * 60000f);
-			for (int i = 0; i < spawnedThings.Count; i++)
+			for (int num2 = 0; num2 < spawnedThings.Count; num2++)
 			{
-				Thing thing2 = spawnedThings[i];
+				Thing thing2 = spawnedThings[num2];
 				thing2.TryGetComp<CompSpawnerPawn>()?.CalculateNextPawnSpawnTick(num);
 				if (thing2.TryGetComp<CompProjectileInterceptor>() != null)
 				{
@@ -259,8 +241,7 @@ namespace RimWorld
 						compInitiatable.initiationDelayTicksOverride = (int)(60000f * randomInRange);
 					}
 				}
-				Building b;
-				if ((b = thing2 as Building) != null && IsBuildingThreat(b))
+				if (thing2 is Building b && IsBuildingThreat(b))
 				{
 					lord.AddBuilding(b);
 				}
@@ -292,13 +273,13 @@ namespace RimWorld
 					spawnedThings.Add(pawn);
 					if (dropInPods)
 					{
-						ActiveDropPodInfo activeDropPodInfo = new ActiveDropPodInfo();
-						activeDropPodInfo.innerContainer.TryAdd(pawn, 1);
-						activeDropPodInfo.openDelay = 60;
-						activeDropPodInfo.leaveSlag = false;
-						activeDropPodInfo.despawnPodBeforeSpawningThing = true;
-						activeDropPodInfo.spawnWipeMode = WipeMode.Vanish;
-						DropPodUtility.MakeDropPodAt(result, map, activeDropPodInfo);
+						ActiveTransporterInfo activeTransporterInfo = new ActiveTransporterInfo();
+						activeTransporterInfo.innerContainer.TryAdd(pawn, 1);
+						activeTransporterInfo.openDelay = 60;
+						activeTransporterInfo.leaveSlag = false;
+						activeTransporterInfo.despawnPodBeforeSpawningThing = true;
+						activeTransporterInfo.spawnWipeMode = WipeMode.Vanish;
+						DropPodUtility.MakeDropPodAt(result, map, activeTransporterInfo, Faction.OfMechanoids);
 					}
 					else
 					{
@@ -310,7 +291,7 @@ namespace RimWorld
 			{
 				if (!sketch.startDormant)
 				{
-					item3.TryGetComp<CompWakeUpDormant>()?.Activate(sendSignal: true, silent: true);
+					item3.TryGetComp<CompWakeUpDormant>()?.Activate(null, sendSignal: true, silent: true);
 				}
 			}
 			return spawnedThings;
@@ -358,6 +339,18 @@ namespace RimWorld
 			{
 				Thing thing = things[i];
 				if (thing is Building && !thing.Destroyed && IsBuildingThreat(thing))
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public static bool PartOfActiveMechCluster(Thing t)
+		{
+			foreach (Lord lord in t.MapHeld.lordManager.lords)
+			{
+				if (lord.LordJob is LordJob_MechanoidDefendBase lordJob_MechanoidDefendBase && lordJob_MechanoidDefendBase.things.Contains(t))
 				{
 					return true;
 				}

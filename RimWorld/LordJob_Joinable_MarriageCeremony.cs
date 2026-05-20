@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Verse;
 using Verse.AI.Group;
@@ -12,6 +11,10 @@ namespace RimWorld
 		public Pawn secondPawn;
 
 		private IntVec3 spot;
+
+		private int firstPawnSpouseCount;
+
+		private int secondPawnSpouseCount;
 
 		private Trigger_TicksPassed afterPartyTimeoutTrigger;
 
@@ -38,6 +41,8 @@ namespace RimWorld
 			this.firstPawn = firstPawn;
 			this.secondPawn = secondPawn;
 			this.spot = spot;
+			firstPawnSpouseCount = firstPawn.GetSpouseCount(includeDead: false);
+			secondPawnSpouseCount = firstPawn.GetSpouseCount(includeDead: false);
 		}
 
 		public override StateGraph CreateGraph()
@@ -58,13 +63,10 @@ namespace RimWorld
 			Transition transition2 = new Transition(lordToil_MarriageCeremony, lordToil_Party2);
 			transition2.AddTrigger(new Trigger_TickCondition(() => firstPawn.relations.DirectRelationExists(PawnRelationDefOf.Spouse, secondPawn)));
 			transition2.AddPreAction(new TransitionAction_Message("MessageNewlyMarried".Translate(firstPawn.LabelShort, secondPawn.LabelShort, firstPawn.Named("PAWN1"), secondPawn.Named("PAWN2")), MessageTypeDefOf.PositiveEvent, new TargetInfo(spot, base.Map)));
-			transition2.AddPreAction(new TransitionAction_Custom((Action)delegate
-			{
-				AddAttendedWeddingThoughts();
-			}));
+			transition2.AddPreAction(new TransitionAction_Custom(WeddingSucceeded));
 			stateGraph.AddTransition(transition2);
 			Transition transition3 = new Transition(lordToil_Party2, lordToil_End);
-			transition3.AddTrigger(new Trigger_TickCondition(() => ShouldAfterPartyBeCalledOff()));
+			transition3.AddTrigger(new Trigger_TickCondition(ShouldAfterPartyBeCalledOff));
 			transition3.AddTrigger(new Trigger_PawnKilled());
 			stateGraph.AddTransition(transition3);
 			afterPartyTimeoutTrigger = new Trigger_TicksPassed(7500);
@@ -79,7 +81,7 @@ namespace RimWorld
 			stateGraph.AddTransition(transition5);
 			Transition transition6 = new Transition(lordToil_MarriageCeremony, lordToil_End);
 			transition6.AddSource(lordToil_Party);
-			transition6.AddTrigger(new Trigger_TickCondition(() => ShouldCeremonyBeCalledOff()));
+			transition6.AddTrigger(new Trigger_TickCondition(ShouldCeremonyBeCalledOff));
 			transition6.AddTrigger(new Trigger_PawnKilled());
 			transition6.AddPreAction(new TransitionAction_Message("MessageMarriageCeremonyCalledOff".Translate(firstPawn.LabelShort, secondPawn.LabelShort, firstPawn.Named("PAWN1"), secondPawn.Named("PAWN2")), MessageTypeDefOf.NegativeEvent, new TargetInfo(spot, base.Map)));
 			stateGraph.AddTransition(transition6);
@@ -167,8 +169,7 @@ namespace RimWorld
 					{
 						return 0f;
 					}
-					LordToil_MarriageCeremony lordToil_MarriageCeremony = lord.CurLordToil as LordToil_MarriageCeremony;
-					if (lordToil_MarriageCeremony != null && !SpectatorCellFinder.TryFindSpectatorCellFor(p, lordToil_MarriageCeremony.Data.spectateRect, base.Map, out var _, lordToil_MarriageCeremony.Data.spectateRectAllowedSides))
+					if (lord.CurLordToil is LordToil_MarriageCeremony lordToil_MarriageCeremony && !SpectatorCellFinder.TryFindSpectatorCellFor(p, lordToil_MarriageCeremony.Data.spectateRect, base.Map, out var _, lordToil_MarriageCeremony.Data.spectateRectAllowedSides))
 					{
 						return 0f;
 					}
@@ -182,6 +183,8 @@ namespace RimWorld
 		{
 			Scribe_References.Look(ref firstPawn, "firstPawn");
 			Scribe_References.Look(ref secondPawn, "secondPawn");
+			Scribe_Values.Look(ref firstPawnSpouseCount, "firstPawnSpouseCount", 0);
+			Scribe_Values.Look(ref secondPawnSpouseCount, "secondPawnSpouseCount", 0);
 			Scribe_Values.Look(ref spot, "spot");
 		}
 
@@ -218,6 +221,12 @@ namespace RimWorld
 			{
 				return false;
 			}
+			HistoryEvent ev = new HistoryEvent(SpouseRelationUtility.GetHistoryEventForSpouseCount(firstPawnSpouseCount + 1), p.Named(HistoryEventArgsNames.Doer));
+			HistoryEvent ev2 = new HistoryEvent(SpouseRelationUtility.GetHistoryEventForSpouseCount(secondPawnSpouseCount + 1), p.Named(HistoryEventArgsNames.Doer));
+			if (!ev.DoerWillingToDo() || !ev2.DoerWillingToDo())
+			{
+				return false;
+			}
 			if (p.Faction != firstPawn.Faction)
 			{
 				return p.Faction == secondPawn.Faction;
@@ -225,7 +234,7 @@ namespace RimWorld
 			return true;
 		}
 
-		private void AddAttendedWeddingThoughts()
+		private void WeddingSucceeded()
 		{
 			List<Pawn> ownedPawns = lord.ownedPawns;
 			for (int i = 0; i < ownedPawns.Count; i++)

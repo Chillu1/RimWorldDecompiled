@@ -95,6 +95,10 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (!CanStackTogether(a, b))
+			{
+				return false;
+			}
 			if (!CanStack(a) || !CanStack(b))
 			{
 				return false;
@@ -102,25 +106,6 @@ namespace RimWorld
 			if (a.def != b.def || a.Stuff != b.Stuff)
 			{
 				return false;
-			}
-			if (mode == TransferAsOneMode.PodsOrCaravanPacking)
-			{
-				float num = -1f;
-				CompRottable compRottable = a.TryGetComp<CompRottable>();
-				if (compRottable != null)
-				{
-					num = compRottable.RotProgressPct;
-				}
-				float num2 = -1f;
-				CompRottable compRottable2 = b.TryGetComp<CompRottable>();
-				if (compRottable2 != null)
-				{
-					num2 = compRottable2.RotProgressPct;
-				}
-				if (Mathf.Abs(num - num2) > 0.1f)
-				{
-					return false;
-				}
 			}
 			if (a is Corpse && b is Corpse)
 			{
@@ -168,11 +153,43 @@ namespace RimWorld
 				{
 					return false;
 				}
+				if (pawn.RaceProps.Animal)
+				{
+					if (pawn.health.hediffSet.AnyHediffMakesSickThought != pawn2.health.hediffSet.AnyHediffMakesSickThought)
+					{
+						return false;
+					}
+					if (pawn.health.hediffSet.AnyHediffMakesSickThought)
+					{
+						List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
+						for (int i = 0; i < hediffs.Count; i++)
+						{
+							if (hediffs[i].def.makesSickThought && !pawn2.health.hediffSet.HasHediff(hediffs[i].def))
+							{
+								return false;
+							}
+						}
+						List<Hediff> hediffs2 = pawn2.health.hediffSet.hediffs;
+						for (int j = 0; j < hediffs2.Count; j++)
+						{
+							if (hediffs2[j].def.makesSickThought && !pawn.health.hediffSet.HasHediff(hediffs2[j].def))
+							{
+								return false;
+							}
+						}
+					}
+				}
 				return true;
 			}
 			Apparel apparel = a as Apparel;
 			Apparel apparel2 = b as Apparel;
 			if (apparel != null && apparel2 != null && apparel.WornByCorpse != apparel2.WornByCorpse)
+			{
+				return false;
+			}
+			CompIngredients compIngredients = a.TryGetComp<CompIngredients>();
+			CompIngredients compIngredients2 = b.TryGetComp<CompIngredients>();
+			if (compIngredients != null && compIngredients.Props?.splitTransferableFoodKind == true && compIngredients2 != null && compIngredients2.Props?.splitTransferableFoodKind == true && FoodUtility.GetFoodKind(a) != FoodUtility.GetFoodKind(b))
 			{
 				return false;
 			}
@@ -188,11 +205,11 @@ namespace RimWorld
 			{
 				return a.CanStackWith(b);
 			}
-			if (a.def.category == ThingCategory.Building)
+			if (a.def.category == ThingCategory.Building || a.def.category == ThingCategory.Plant)
 			{
 				return true;
 			}
-			Log.Error(string.Concat("Unknown TransferAsOne pair: ", a, ", ", b));
+			Log.Error("Unknown TransferAsOne pair: " + a?.ToString() + ", " + b);
 			return false;
 		}
 
@@ -213,7 +230,11 @@ namespace RimWorld
 				{
 					return false;
 				}
-				if (pawn.relations.GetFirstDirectRelationPawn(PawnRelationDefOf.Bond) != null)
+				if (pawn.GetOverseer() != null)
+				{
+					return false;
+				}
+				if (pawn.relations?.GetFirstDirectRelationPawn(PawnRelationDefOf.Bond) != null)
 				{
 					return false;
 				}
@@ -221,6 +242,27 @@ namespace RimWorld
 				{
 					return false;
 				}
+			}
+			return true;
+		}
+
+		public static bool CanStackTogether(Thing thing, Thing otherThing)
+		{
+			if (thing is Genepack genepack && otherThing is Genepack genepack2)
+			{
+				if (genepack.GeneSet.GenesListForReading.SetsEqual(genepack2.GeneSet.GenesListForReading))
+				{
+					return genepack.GeneSet.Label == genepack2.GeneSet.Label;
+				}
+				return false;
+			}
+			if (thing is Xenogerm xenogerm && otherThing is Xenogerm xenogerm2)
+			{
+				if (xenogerm.GeneSet.GenesListForReading.SetsEqual(xenogerm2.GeneSet.GenesListForReading))
+				{
+					return xenogerm.GeneSet.Label == xenogerm2.GeneSet.Label;
+				}
+				return false;
 			}
 			return true;
 		}
@@ -234,7 +276,7 @@ namespace RimWorld
 			for (int i = 0; i < transferables.Count; i++)
 			{
 				T val = transferables[i];
-				if (val.HasAnyThing && TransferAsOne(thing, val.AnyThing, mode))
+				if (val != null && val.HasAnyThing && TransferAsOne(thing, val.AnyThing, mode))
 				{
 					return val;
 				}
@@ -251,7 +293,7 @@ namespace RimWorld
 			for (int i = 0; i < tradeables.Count; i++)
 			{
 				Tradeable tradeable = tradeables[i];
-				if (tradeable.HasAnyThing)
+				if (tradeable != null && tradeable.HasAnyThing)
 				{
 					TransferAsOneMode mode = ((!tradeable.TraderWillTrade) ? TransferAsOneMode.InactiveTradeable : TransferAsOneMode.Normal);
 					if (TransferAsOne(thing, tradeable.AnyThing, mode))
@@ -272,7 +314,7 @@ namespace RimWorld
 			for (int i = 0; i < transferables.Count; i++)
 			{
 				TransferableOneWay transferableOneWay = transferables[i];
-				if (transferableOneWay.HasAnyThing && transferableOneWay.things.Contains(thing))
+				if (transferableOneWay != null && transferableOneWay.HasAnyThing && transferableOneWay.things.Contains(thing))
 				{
 					return transferableOneWay;
 				}
@@ -280,7 +322,7 @@ namespace RimWorld
 			for (int j = 0; j < transferables.Count; j++)
 			{
 				TransferableOneWay transferableOneWay2 = transferables[j];
-				if (transferableOneWay2.HasAnyThing && TransferAsOne(thing, transferableOneWay2.AnyThing, mode))
+				if (transferableOneWay2 != null && transferableOneWay2.HasAnyThing && TransferAsOne(thing, transferableOneWay2.AnyThing, mode))
 				{
 					return transferableOneWay2;
 				}
@@ -290,7 +332,7 @@ namespace RimWorld
 				for (int k = 0; k < transferables.Count; k++)
 				{
 					TransferableOneWay transferableOneWay3 = transferables[k];
-					if (transferableOneWay3.HasAnyThing && transferableOneWay3.ThingDef == thing.def)
+					if (transferableOneWay3 != null && transferableOneWay3.HasAnyThing && transferableOneWay3.AnyThing.GetInnerIfMinified().def == thing.GetInnerIfMinified().def)
 					{
 						return transferableOneWay3;
 					}

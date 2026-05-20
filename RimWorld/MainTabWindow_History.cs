@@ -30,6 +30,8 @@ namespace RimWorld
 
 		private int displayedMessageIndex;
 
+		private static QuickSearchWidget quickSearchWidget = new QuickSearchWidget();
+
 		private static HistoryTab curTab = HistoryTab.Graph;
 
 		private static bool showLetters = true;
@@ -44,9 +46,11 @@ namespace RimWorld
 
 		private const float IconColumnSize = 30f;
 
-		private const float DateSize = 80f;
+		private const float DateSize = 90f;
 
 		private const float SpaceBetweenColumns = 5f;
+
+		private static readonly Vector2 SearchBarOffset = new Vector2(720f, 8f);
 
 		private static readonly Texture2D PinTex = ContentFinder<Texture2D>.Get("UI/Icons/Pin");
 
@@ -82,15 +86,15 @@ namespace RimWorld
 				graphSection = new FloatRange(0f, (float)Find.TickManager.TicksGame / 60000f);
 			}
 			List<Map> maps = Find.Maps;
-			for (int i = 0; i < maps.Count; i++)
+			for (int num = 0; num < maps.Count; num++)
 			{
-				maps[i].wealthWatcher.ForceRecount();
+				maps[num].wealthWatcher.ForceRecount();
 			}
+			quickSearchWidget.Reset();
 		}
 
 		public override void DoWindowContents(Rect rect)
 		{
-			base.DoWindowContents(rect);
 			Rect rect2 = rect;
 			rect2.yMin += 45f;
 			TabDrawer.DrawTabs(rect2, tabs);
@@ -111,12 +115,12 @@ namespace RimWorld
 		private void DoStatisticsPage(Rect rect)
 		{
 			rect.yMin += 17f;
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			StringBuilder stringBuilder = new StringBuilder();
 			TimeSpan timeSpan = new TimeSpan(0, 0, (int)Find.GameInfo.RealPlayTimeInteracting);
-			stringBuilder.AppendLine((string)((string)((string)((string)("Playtime".Translate() + ": ") + timeSpan.Days + "LetterDay".Translate() + " ") + timeSpan.Hours + "LetterHour".Translate() + " ") + timeSpan.Minutes + "LetterMinute".Translate() + " ") + timeSpan.Seconds + "LetterSecond".Translate());
+			stringBuilder.AppendLine(string.Concat(string.Concat(string.Concat(string.Concat("Playtime".Translate() + ": ", timeSpan.Days.ToString()) + "LetterDay".Translate() + " ", timeSpan.Hours.ToString()) + "LetterHour".Translate() + " ", timeSpan.Minutes.ToString()) + "LetterMinute".Translate() + " ", timeSpan.Seconds.ToString()) + "LetterSecond".Translate());
 			stringBuilder.AppendLine("Storyteller".Translate() + ": " + Find.Storyteller.def.LabelCap);
-			stringBuilder.AppendLine("Difficulty".Translate() + ": " + Find.Storyteller.difficulty.LabelCap);
+			stringBuilder.AppendLine("Difficulty".Translate() + ": " + Find.Storyteller.difficultyDef.LabelCap);
 			if (Find.CurrentMap != null)
 			{
 				stringBuilder.AppendLine();
@@ -126,24 +130,25 @@ namespace RimWorld
 				stringBuilder.AppendLine("ThisMapColonyWealthColonistsAndTameAnimals".Translate() + ": " + Find.CurrentMap.wealthWatcher.WealthPawns.ToString("F0"));
 			}
 			stringBuilder.AppendLine();
-			stringBuilder.AppendLine((string)("NumThreatBigs".Translate() + ": ") + Find.StoryWatcher.statsRecord.numThreatBigs);
-			stringBuilder.AppendLine((string)("NumEnemyRaids".Translate() + ": ") + Find.StoryWatcher.statsRecord.numRaidsEnemy);
+			stringBuilder.AppendLine(string.Concat("NumThreatBigs".Translate() + ": ", Find.StoryWatcher.statsRecord.numThreatBigs.ToString()));
+			stringBuilder.AppendLine(string.Concat("NumEnemyRaids".Translate() + ": ", Find.StoryWatcher.statsRecord.numRaidsEnemy.ToString()));
 			stringBuilder.AppendLine();
 			if (Find.CurrentMap != null)
 			{
-				stringBuilder.AppendLine((string)("ThisMapDamageTaken".Translate() + ": ") + Find.CurrentMap.damageWatcher.DamageTakenEver);
+				stringBuilder.AppendLine(string.Concat("ThisMapDamageTaken".Translate() + ": ", Find.CurrentMap.damageWatcher.DamageTakenEver.ToString()));
 			}
-			stringBuilder.AppendLine((string)("ColonistsKilled".Translate() + ": ") + Find.StoryWatcher.statsRecord.colonistsKilled);
+			stringBuilder.AppendLine(string.Concat("ColonistsKilled".Translate() + ": ", Find.StoryWatcher.statsRecord.colonistsKilled.ToString()));
 			stringBuilder.AppendLine();
-			stringBuilder.AppendLine((string)("ColonistsLaunched".Translate() + ": ") + Find.StoryWatcher.statsRecord.colonistsLaunched);
+			stringBuilder.AppendLine(string.Concat("ColonistsLaunched".Translate() + ": ", Find.StoryWatcher.statsRecord.colonistsLaunched.ToString()));
 			Text.Font = GameFont.Small;
 			Text.Anchor = TextAnchor.UpperLeft;
 			Widgets.Label(new Rect(0f, 0f, 400f, 400f), stringBuilder.ToString());
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		private void DoMessagesPage(Rect rect)
 		{
+			Rect rect2 = rect;
 			rect.yMin += 10f;
 			Widgets.CheckboxLabeled(new Rect(rect.x, rect.y, 200f, 30f), "ShowLetters".Translate(), ref showLetters, disabled: false, null, null, placeCheckboxNearText: true);
 			Widgets.CheckboxLabeled(new Rect(rect.x + 200f, rect.y, 200f, 30f), "ShowMessages".Translate(), ref showMessages, disabled: false, null, null, placeCheckboxNearText: true);
@@ -152,8 +157,9 @@ namespace RimWorld
 			Rect outRect = rect;
 			Rect viewRect = new Rect(0f, 0f, outRect.width / 2f - 16f, messagesLastHeight);
 			List<IArchivable> archivablesListForReading = Find.Archive.ArchivablesListForReading;
-			Rect rect2 = new Rect(rect.x + rect.width / 2f + 10f, rect.y, rect.width / 2f - 10f - 16f, rect.height);
+			Rect rect3 = new Rect(rect.x + rect.width / 2f + 10f, rect.y, rect.width / 2f - 10f - 16f, rect.height);
 			displayedMessageIndex = -1;
+			quickSearchWidget.noResultsMatched = !archivablesListForReading.Any();
 			Widgets.BeginScrollView(outRect, ref messagesScrollPos, viewRect);
 			float num = 0f;
 			for (int num2 = archivablesListForReading.Count - 1; num2 >= 0; num2--)
@@ -178,27 +184,38 @@ namespace RimWorld
 			{
 				if (displayedMessageIndex >= 0)
 				{
-					TaggedString label = archivablesListForReading[displayedMessageIndex].ArchivedTooltip.TruncateHeight(rect2.width - 10f, rect2.height - 10f, truncationCache);
-					Widgets.Label(rect2.ContractedBy(5f), label);
+					TaggedString label = archivablesListForReading[displayedMessageIndex].ArchivedTooltip.TruncateHeight(rect3.width - 10f, rect3.height - 10f, truncationCache);
+					Widgets.Label(rect3.ContractedBy(5f), label);
 				}
 			}
 			else
 			{
 				Widgets.NoneLabel(rect.yMin + 3f, rect.width, "(" + "NoMessages".Translate() + ")");
 			}
+			Rect rect4 = new Rect(rect2.x + SearchBarOffset.x, rect2.y + SearchBarOffset.y - Window.QuickSearchSize.y - 10f, Window.QuickSearchSize.x, Window.QuickSearchSize.y);
+			quickSearchWidget.OnGUI(rect4, Notify_CommonSearchChanged);
 		}
 
 		private void DoArchivableRow(Rect rect, IArchivable archivable, int index)
 		{
-			if (index % 2 == 1)
-			{
-				Widgets.DrawLightHighlight(rect);
-			}
-			Widgets.DrawHighlightIfMouseover(rect);
 			Text.Font = GameFont.Small;
 			Text.Anchor = TextAnchor.MiddleLeft;
 			Text.WordWrap = false;
 			Rect rect2 = rect;
+			bool flag = quickSearchWidget.filter.Active && quickSearchWidget.filter.Matches(archivable.ArchivedLabel);
+			if (flag)
+			{
+				Widgets.DrawTextHighlight(rect, 0f);
+				if (quickSearchWidget.filter.Active && quickSearchWidget.CurrentlyFocused())
+				{
+					displayedMessageIndex = index;
+				}
+			}
+			else if (index % 2 == 1)
+			{
+				Widgets.DrawLightHighlight(rect);
+			}
+			Widgets.DrawHighlightIfMouseover(rect);
 			Rect rect3 = rect2;
 			rect3.width = 30f;
 			rect2.xMin += 35f;
@@ -227,16 +244,21 @@ namespace RimWorld
 				GUI.color = Color.white;
 			}
 			Rect rect5 = rect2;
-			rect5.width = 80f;
-			rect2.xMin += 85f;
+			rect5.width = 90f;
+			rect2.xMin += 95f;
 			Vector2 location = ((Find.CurrentMap != null) ? Find.WorldGrid.LongLatOf(Find.CurrentMap.Tile) : default(Vector2));
 			GUI.color = new Color(0.75f, 0.75f, 0.75f);
 			Widgets.Label(label: GenDate.DateShortStringAt(GenDate.TickGameToAbs(archivable.CreatedTicksGame), location).Truncate(rect5.width), rect: rect5);
 			GUI.color = Color.white;
 			Rect rect6 = rect2;
+			if (!flag)
+			{
+				GUI.color = Color.gray;
+			}
 			Widgets.Label(rect6, archivable.ArchivedLabel.Truncate(rect6.width));
 			GenUI.ResetLabelAlign();
 			Text.WordWrap = true;
+			GUI.color = Color.white;
 			TooltipHandler.TipRegionByKey(rect3, "PinArchivableTip", 200);
 			if (Mouse.IsOver(rect4))
 			{
@@ -277,7 +299,7 @@ namespace RimWorld
 		private void DoGraphPage(Rect rect)
 		{
 			rect.yMin += 17f;
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			Rect graphRect = new Rect(0f, 0f, rect.width, 450f);
 			Rect legendRect = new Rect(0f, graphRect.yMax, rect.width / 2f, 40f);
 			Rect rect2 = new Rect(0f, legendRect.yMax, rect.width, 40f);
@@ -288,7 +310,7 @@ namespace RimWorld
 				for (int i = 0; i < allTalesListForReading.Count; i++)
 				{
 					Tale tale = allTalesListForReading[i];
-					if (tale.def.type == TaleType.PermanentHistorical)
+					if (tale.def.type == TaleType.PermanentHistorical && !tale.hidden)
 					{
 						float x = (float)GenDate.TickAbsToGame(tale.date) / 60000f;
 						marks.Add(new CurveMark(x, tale.ShortSummary, tale.def.historyGraphColor));
@@ -337,7 +359,12 @@ namespace RimWorld
 				Find.WindowStack.Add(window);
 				PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.HistoryTab, KnowledgeAmount.Total);
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
+		}
+
+		public override void Notify_ClickOutsideWindow()
+		{
+			quickSearchWidget.Unfocus();
 		}
 	}
 }

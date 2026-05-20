@@ -26,19 +26,19 @@ namespace RimWorld
 				return false;
 			}
 			IncidentWorker_AnimalInsanityMass.DriveInsane(animal);
-			string str = "AnimalInsanitySingle".Translate(animal.Label, animal.Named("ANIMAL"));
-			SendStandardLetter("LetterLabelAnimalInsanitySingle".Translate(animal.Label, animal.Named("ANIMAL")), str, LetterDefOf.ThreatSmall, parms, animal);
+			string text = "AnimalInsanitySingle".Translate(animal.Label, animal.Named("ANIMAL")).CapitalizeFirst();
+			SendStandardLetter("LetterLabelAnimalInsanitySingle".Translate(animal.Label, animal.Named("ANIMAL")).CapitalizeFirst(), text, LetterDefOf.ThreatSmall, parms, animal);
 			return true;
 		}
 
 		private bool TryFindRandomAnimal(Map map, out Pawn animal)
 		{
 			int maxPoints = 150;
-			if (GenDate.DaysPassed < 7)
+			if (GenDate.DaysPassedSinceSettle < 7)
 			{
 				maxPoints = 40;
 			}
-			return map.mapPawns.AllPawnsSpawned.Where((Pawn p) => p.RaceProps.Animal && p.kindDef.combatPower <= (float)maxPoints && IncidentWorker_AnimalInsanityMass.AnimalUsable(p)).TryRandomElement(out animal);
+			return map.mapPawns.AllPawnsSpawned.Where((Pawn p) => p.IsAnimal && p.kindDef.combatPower <= (float)maxPoints && IncidentWorker_AnimalInsanityMass.AnimalUsable(p)).TryRandomElement(out animal);
 		}
 	}
 }

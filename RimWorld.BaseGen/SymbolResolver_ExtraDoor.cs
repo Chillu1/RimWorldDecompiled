@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -10,15 +11,15 @@ namespace RimWorld.BaseGen
 			Map map = BaseGen.globalSettings.map;
 			IntVec3 intVec = IntVec3.Invalid;
 			int num = -1;
-			for (int i = 0; i < 4; i++)
+			foreach (Rot4 item in RotationsToUse())
 			{
-				if (WallHasDoor(rp.rect, new Rot4(i)))
+				if (WallHasDoor(rp.rect, item))
 				{
 					continue;
 				}
-				for (int j = 0; j < 2; j++)
+				for (int i = 0; i < 2; i++)
 				{
-					if (!TryFindRandomDoorSpawnCell(rp.rect, new Rot4(i), out var found))
+					if (!TryFindRandomDoorSpawnCell(rp.rect, item, out var found))
 					{
 						continue;
 					}
@@ -40,6 +41,20 @@ namespace RimWorld.BaseGen
 				Thing thing = ThingMaker.MakeThing(ThingDefOf.Door, stuff);
 				thing.SetFaction(rp.faction);
 				GenSpawn.Spawn(thing, intVec, BaseGen.globalSettings.map);
+			}
+			IEnumerable<Rot4> RotationsToUse()
+			{
+				if (rp.extraDoorEdge.HasValue)
+				{
+					yield return rp.extraDoorEdge.Value;
+				}
+				else
+				{
+					yield return new Rot4(0);
+					yield return new Rot4(1);
+					yield return new Rot4(2);
+					yield return new Rot4(3);
+				}
 			}
 		}
 
@@ -68,9 +83,9 @@ namespace RimWorld.BaseGen
 				}
 				if (!Rand.TryRangeInclusiveWhere(rect.minX + 1, rect.maxX - 1, delegate(int x)
 				{
-					IntVec3 cell7 = new IntVec3(x, 0, rect.maxZ + 1);
-					IntVec3 cell8 = new IntVec3(x, 0, rect.maxZ - 1);
-					return CanPassThrough(cell7, map) && CanPassThrough(cell8, map);
+					IntVec3 cell = new IntVec3(x, 0, rect.maxZ + 1);
+					IntVec3 cell2 = new IntVec3(x, 0, rect.maxZ - 1);
+					return CanPassThrough(cell, map) && CanPassThrough(cell2, map);
 				}, out var value))
 				{
 					found = IntVec3.Invalid;
@@ -88,9 +103,9 @@ namespace RimWorld.BaseGen
 				}
 				if (!Rand.TryRangeInclusiveWhere(rect.minX + 1, rect.maxX - 1, delegate(int x)
 				{
-					IntVec3 cell5 = new IntVec3(x, 0, rect.minZ - 1);
-					IntVec3 cell6 = new IntVec3(x, 0, rect.minZ + 1);
-					return CanPassThrough(cell5, map) && CanPassThrough(cell6, map);
+					IntVec3 cell = new IntVec3(x, 0, rect.minZ - 1);
+					IntVec3 cell2 = new IntVec3(x, 0, rect.minZ + 1);
+					return CanPassThrough(cell, map) && CanPassThrough(cell2, map);
 				}, out var value2))
 				{
 					found = IntVec3.Invalid;
@@ -108,9 +123,9 @@ namespace RimWorld.BaseGen
 				}
 				if (!Rand.TryRangeInclusiveWhere(rect.minZ + 1, rect.maxZ - 1, delegate(int z)
 				{
-					IntVec3 cell3 = new IntVec3(rect.minX - 1, 0, z);
-					IntVec3 cell4 = new IntVec3(rect.minX + 1, 0, z);
-					return CanPassThrough(cell3, map) && CanPassThrough(cell4, map);
+					IntVec3 cell = new IntVec3(rect.minX - 1, 0, z);
+					IntVec3 cell2 = new IntVec3(rect.minX + 1, 0, z);
+					return CanPassThrough(cell, map) && CanPassThrough(cell2, map);
 				}, out var value3))
 				{
 					found = IntVec3.Invalid;

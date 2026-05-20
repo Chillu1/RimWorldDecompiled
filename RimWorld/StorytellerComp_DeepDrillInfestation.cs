@@ -13,12 +13,12 @@ namespace RimWorld
 		{
 			get
 			{
-				Difficulty difficultyValues = Find.Storyteller.difficultyValues;
-				if (difficultyValues.deepDrillInfestationChanceFactor <= 0f)
+				Difficulty difficulty = Find.Storyteller.difficulty;
+				if (difficulty.deepDrillInfestationChanceFactor <= 0f)
 				{
 					return -1f;
 				}
-				return Props.baseMtbDaysPerDrill / difficultyValues.deepDrillInfestationChanceFactor;
+				return Props.baseMtbDaysPerDrill / difficulty.deepDrillInfestationChanceFactor;
 			}
 		}
 

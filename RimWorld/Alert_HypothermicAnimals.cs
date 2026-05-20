@@ -13,10 +13,10 @@ namespace RimWorld
 			get
 			{
 				hypothermicAnimalsResult.Clear();
-				List<Pawn> allMaps_Spawned = PawnsFinder.AllMaps_Spawned;
+				IReadOnlyList<Pawn> allMaps_Spawned = PawnsFinder.AllMaps_Spawned;
 				for (int i = 0; i < allMaps_Spawned.Count; i++)
 				{
-					if (allMaps_Spawned[i].RaceProps.Animal && allMaps_Spawned[i].Faction == null && allMaps_Spawned[i].health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Hypothermia) != null)
+					if (allMaps_Spawned[i].IsAnimal && allMaps_Spawned[i].Faction == null && allMaps_Spawned[i].health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Hypothermia) != null)
 					{
 						hypothermicAnimalsResult.Add(allMaps_Spawned[i]);
 					}
@@ -36,7 +36,7 @@ namespace RimWorld
 			stringBuilder.AppendLine("Debug alert:\n\nThese wild animals are hypothermic. This may indicate a bug (but it may not, if the animals are trapped or in some other wierd but legitimate situation):");
 			foreach (Pawn hypothermicAnimal in HypothermicAnimals)
 			{
-				stringBuilder.AppendLine(string.Concat("    ", hypothermicAnimal, " at ", hypothermicAnimal.Position));
+				stringBuilder.AppendLine("    " + hypothermicAnimal?.ToString() + " at " + hypothermicAnimal.Position.ToString());
 			}
 			return stringBuilder.ToString();
 		}

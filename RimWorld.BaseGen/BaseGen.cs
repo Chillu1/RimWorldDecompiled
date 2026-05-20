@@ -18,7 +18,7 @@ namespace RimWorld.BaseGen
 
 		private const int MaxResolvedSymbols = 100000;
 
-		private static List<SymbolResolver> tmpResolvers = new List<SymbolResolver>();
+		private static readonly List<SymbolResolver> tmpResolvers = new List<SymbolResolver>();
 
 		public static string CurrentSymbolPath => currentSymbolPath;
 
@@ -76,19 +76,27 @@ namespace RimWorld.BaseGen
 						globalSettings.mainRect = toResolve.resolveParams.rect;
 						num--;
 					}
-					try
+					using (Rand.Block(globalSettings.map.NextGenSeed))
 					{
-						Resolve(toResolve);
-					}
-					catch (Exception ex)
-					{
-						Log.Error(string.Concat("Error while resolving symbol \"", toResolve.symbol, "\" with params=", toResolve.resolveParams, "\n\nException: ", ex));
+						try
+						{
+							Resolve(toResolve);
+						}
+						catch (Exception ex)
+						{
+							string[] obj = new string[6] { "Error while resolving symbol \"", toResolve.symbol, "\" with params=", null, null, null };
+							ResolveParams resolveParams = toResolve.resolveParams;
+							obj[3] = resolveParams.ToString();
+							obj[4] = "\n\nException: ";
+							obj[5] = ex?.ToString();
+							Log.Error(string.Concat(obj));
+						}
 					}
 				}
 			}
-			catch (Exception arg)
+			catch (Exception ex2)
 			{
-				Log.Error("Error in BaseGen: " + arg);
+				Log.Error("Error in BaseGen: " + ex2);
 			}
 			finally
 			{
@@ -121,12 +129,13 @@ namespace RimWorld.BaseGen
 			}
 			if (!tmpResolvers.Any())
 			{
-				Log.Warning("Could not find any RuleDef for symbol \"" + symbol + "\" with any resolver that could resolve " + resolveParams);
+				ResolveParams resolveParams2 = resolveParams;
+				Log.Warning("Could not find any RuleDef for symbol \"" + symbol + "\" with any resolver that could resolve " + resolveParams2.ToString());
+				return;
 			}
-			else
-			{
-				tmpResolvers.RandomElementByWeight((SymbolResolver x) => x.selectionWeight).Resolve(resolveParams);
-			}
+			SymbolResolver symbolResolver2 = tmpResolvers.RandomElementByWeight((SymbolResolver x) => x.selectionWeight);
+			resolveParams.rect = resolveParams.rect.ClipInsideMap(globalSettings.map);
+			symbolResolver2.Resolve(resolveParams);
 		}
 	}
 }

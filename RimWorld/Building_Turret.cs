@@ -1,3 +1,4 @@
+using UnityEngine;
 using Verse;
 using Verse.AI;
 
@@ -5,24 +6,39 @@ namespace RimWorld
 {
 	public abstract class Building_Turret : Building, IAttackTarget, ILoadReferenceable, IAttackTargetSearcher
 	{
-		protected StunHandler stunner;
-
 		protected LocalTargetInfo forcedTarget = LocalTargetInfo.Invalid;
 
 		private LocalTargetInfo lastAttackedTarget;
 
 		private int lastAttackTargetTick;
 
+		private StunHandler stunner;
+
+		private bool triedGettingStunner;
+
 		private const float SightRadiusTurret = 13.4f;
 
-		public abstract LocalTargetInfo CurrentTarget
-		{
-			get;
-		}
+		public abstract LocalTargetInfo CurrentTarget { get; }
 
-		public abstract Verb AttackVerb
+		public abstract Verb AttackVerb { get; }
+
+		public virtual Material TurretTopMaterial => def.building.turretTopMat;
+
+		protected bool IsStunned
 		{
-			get;
+			get
+			{
+				if (!triedGettingStunner)
+				{
+					stunner = GetComp<CompStunnable>()?.StunHandler;
+					triedGettingStunner = true;
+				}
+				if (stunner != null)
+				{
+					return stunner.Stunned;
+				}
+				return false;
+			}
 		}
 
 		Thing IAttackTarget.Thing => this;
@@ -39,19 +55,17 @@ namespace RimWorld
 
 		public float TargetPriorityFactor => 1f;
 
-		public Building_Turret()
-		{
-			stunner = new StunHandler(this);
-		}
+		public LocalTargetInfo ForcedTarget => forcedTarget;
 
-		public override void Tick()
+		public virtual bool IsEverThreat => true;
+
+		protected override void Tick()
 		{
 			base.Tick();
 			if (forcedTarget.HasThing && (!forcedTarget.Thing.Spawned || !base.Spawned || forcedTarget.Thing.Map != base.Map))
 			{
 				forcedTarget = LocalTargetInfo.Invalid;
 			}
-			stunner.StunHandlerTick();
 		}
 
 		public override void ExposeData()
@@ -59,7 +73,6 @@ namespace RimWorld
 			base.ExposeData();
 			Scribe_TargetInfo.Look(ref forcedTarget, "forcedTarget");
 			Scribe_TargetInfo.Look(ref lastAttackedTarget, "lastAttackedTarget");
-			Scribe_Deep.Look(ref stunner, "stunner", this);
 			Scribe_Values.Look(ref lastAttackTargetTick, "lastAttackTargetTick", 0);
 		}
 
@@ -68,7 +81,6 @@ namespace RimWorld
 			base.PreApplyDamage(ref dinfo, out absorbed);
 			if (!absorbed)
 			{
-				stunner.Notify_DamageApplied(dinfo, affectedByEMP: true);
 				absorbed = false;
 			}
 		}
@@ -77,6 +89,10 @@ namespace RimWorld
 
 		public bool ThreatDisabled(IAttackTargetSearcher disabledFor)
 		{
+			if (!IsEverThreat)
+			{
+				return true;
+			}
 			CompPowerTrader comp = GetComp<CompPowerTrader>();
 			if (comp != null && !comp.PowerOn)
 			{
@@ -94,6 +110,16 @@ namespace RimWorld
 			}
 			CompInitiatable comp4 = GetComp<CompInitiatable>();
 			if (comp4 != null && !comp4.Initiated)
+			{
+				return true;
+			}
+			CompMechPowerCell comp5 = GetComp<CompMechPowerCell>();
+			if (comp5 != null && comp5.depleted)
+			{
+				return true;
+			}
+			CompHackable comp6 = GetComp<CompHackable>();
+			if (comp6 != null && comp6.IsHacked)
 			{
 				return true;
 			}

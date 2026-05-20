@@ -8,6 +8,10 @@ namespace RimWorld
 
 		public override float RandomSelectionWeight(Pawn initiator, Pawn recipient)
 		{
+			if (initiator.IsSlave && !recipient.IsSlave)
+			{
+				return 0f;
+			}
 			return 0.02f * NegativeInteractionUtility.NegativeInteractionChanceFactor(initiator, recipient);
 		}
 	}

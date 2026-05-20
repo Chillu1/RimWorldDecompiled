@@ -4,23 +4,23 @@ namespace RimWorld.Planet
 {
 	public class FeatureWorker_Archipelago : FeatureWorker_Cluster
 	{
-		protected override bool IsRoot(int tile)
+		protected override bool IsRoot(PlanetTile tile)
 		{
-			BiomeDef biome = Find.WorldGrid[tile].biome;
-			if (biome != BiomeDefOf.Ocean)
+			BiomeDef primaryBiome = Find.WorldGrid[tile].PrimaryBiome;
+			if (primaryBiome != BiomeDefOf.Ocean)
 			{
-				return biome != BiomeDefOf.Lake;
+				return primaryBiome != BiomeDefOf.Lake;
 			}
 			return false;
 		}
 
-		protected override bool CanTraverse(int tile, out bool ifRootThenRootGroupSizeMustMatch)
+		protected override bool CanTraverse(PlanetTile tile, out bool ifRootThenRootGroupSizeMustMatch)
 		{
 			ifRootThenRootGroupSizeMustMatch = true;
 			return true;
 		}
 
-		protected override bool IsMember(int tile, out bool ifRootThenRootGroupSizeMustMatch)
+		protected override bool IsMember(PlanetTile tile, out bool ifRootThenRootGroupSizeMustMatch)
 		{
 			ifRootThenRootGroupSizeMustMatch = true;
 			bool ifRootThenRootGroupSizeMustMatch2;

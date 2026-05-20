@@ -5,15 +5,25 @@ namespace RimWorld
 {
 	public class QuestManager : IExposable
 	{
-		private List<Quest> quests = new List<Quest>();
+		private List<Quest> historicalQuests = new List<Quest>();
+
+		private List<Quest> activeQuests = new List<Quest>();
+
+		private List<Quest> allQuests = new List<Quest>();
 
 		public List<Quest> questsInDisplayOrder = new List<Quest>();
 
 		private List<QuestPart_SituationalThought> cachedSituationalThoughtQuestParts = new List<QuestPart_SituationalThought>();
 
-		public List<Quest> QuestsListForReading => quests;
+		private List<QuestPart_ExtraFaction> cachedExtraFactionQuestParts = new List<QuestPart_ExtraFaction>();
+
+		public List<Quest> QuestsListForReading => allQuests;
+
+		public List<Quest> ActiveQuestsListForReading => activeQuests;
 
 		public List<QuestPart_SituationalThought> SituationalThoughtQuestParts => cachedSituationalThoughtQuestParts;
+
+		public List<QuestPart_ExtraFaction> ExtraFactionQuestParts => cachedExtraFactionQuestParts;
 
 		public void Add(Quest quest)
 		{
@@ -27,7 +37,8 @@ namespace RimWorld
 				Log.Error("Tried to add the same quest twice: " + quest.ToStringSafe());
 				return;
 			}
-			quests.Add(quest);
+			activeQuests.Add(quest);
+			allQuests.Add(quest);
 			AddToCache(quest);
 			Find.SignalManager.RegisterReceiver(quest);
 			List<QuestPart> partsListForReading = quest.PartsListForReading;
@@ -35,6 +46,7 @@ namespace RimWorld
 			{
 				partsListForReading[i].PostQuestAdded();
 			}
+			quest.PostAdded();
 			if (quest.initiallyAccepted)
 			{
 				quest.Initiate();
@@ -48,29 +60,42 @@ namespace RimWorld
 				Log.Error("Tried to remove non-existent quest: " + quest.ToStringSafe());
 				return;
 			}
-			quests.Remove(quest);
+			allQuests.Remove(quest);
+			activeQuests.Remove(quest);
+			historicalQuests.Remove(quest);
 			RemoveFromCache(quest);
 			Find.SignalManager.DeregisterReceiver(quest);
 		}
 
 		public bool Contains(Quest quest)
 		{
-			return quests.Contains(quest);
+			return allQuests.Contains(quest);
 		}
 
 		public void QuestManagerTick()
 		{
-			for (int i = 0; i < quests.Count; i++)
+			for (int i = 0; i < historicalQuests.Count; i++)
 			{
-				quests[i].QuestTick();
+				historicalQuests[i].QuestTick();
 			}
+			for (int j = 0; j < activeQuests.Count; j++)
+			{
+				activeQuests[j].QuestTick();
+				if (activeQuests[j].Historical)
+				{
+					historicalQuests.Add(activeQuests[j]);
+					activeQuests[j] = null;
+				}
+			}
+			activeQuests.RemoveAll((Quest quest) => quest == null);
 		}
 
 		public bool IsReservedByAnyQuest(Pawn p)
 		{
-			for (int i = 0; i < quests.Count; i++)
+			int count = activeQuests.Count;
+			for (int i = 0; i < count; i++)
 			{
-				if (quests[i].QuestReserves(p))
+				if (activeQuests[i] != null && activeQuests[i].QuestReserves(p))
 				{
 					return true;
 				}
@@ -80,9 +105,21 @@ namespace RimWorld
 
 		public bool IsReservedByAnyQuest(Faction f)
 		{
-			for (int i = 0; i < quests.Count; i++)
+			for (int i = 0; i < activeQuests.Count; i++)
 			{
-				if (quests[i].QuestReserves(f))
+				if (activeQuests[i] != null && activeQuests[i].QuestReserves(f))
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public bool IsReservedByAnyQuest(TransportShip ship)
+		{
+			for (int i = 0; i < activeQuests.Count; i++)
+			{
+				if (activeQuests[i] != null && activeQuests[i].QuestReserves(ship))
 				{
 					return true;
 				}
@@ -94,12 +131,15 @@ namespace RimWorld
 		{
 			questsInDisplayOrder.Add(quest);
 			questsInDisplayOrder.SortBy((Quest x) => x.TicksSinceAppeared);
-			for (int i = 0; i < quest.PartsListForReading.Count; i++)
+			for (int num = 0; num < quest.PartsListForReading.Count; num++)
 			{
-				QuestPart_SituationalThought questPart_SituationalThought = quest.PartsListForReading[i] as QuestPart_SituationalThought;
-				if (questPart_SituationalThought != null)
+				if (quest.PartsListForReading[num] is QuestPart_SituationalThought item)
 				{
-					cachedSituationalThoughtQuestParts.Add(questPart_SituationalThought);
+					cachedSituationalThoughtQuestParts.Add(item);
+				}
+				if (quest.PartsListForReading[num] is QuestPart_ExtraFaction item2)
+				{
+					cachedExtraFactionQuestParts.Add(item2);
 				}
 			}
 		}
@@ -109,44 +149,66 @@ namespace RimWorld
 			questsInDisplayOrder.Remove(quest);
 			for (int i = 0; i < quest.PartsListForReading.Count; i++)
 			{
-				QuestPart_SituationalThought questPart_SituationalThought = quest.PartsListForReading[i] as QuestPart_SituationalThought;
-				if (questPart_SituationalThought != null)
+				if (quest.PartsListForReading[i] is QuestPart_SituationalThought item)
 				{
-					cachedSituationalThoughtQuestParts.Remove(questPart_SituationalThought);
+					cachedSituationalThoughtQuestParts.Remove(item);
+				}
+				if (quest.PartsListForReading[i] is QuestPart_ExtraFaction item2)
+				{
+					cachedExtraFactionQuestParts.Remove(item2);
 				}
 			}
 		}
 
 		public void Notify_PawnDiscarded(Pawn pawn)
 		{
-			for (int i = 0; i < quests.Count; i++)
+			for (int i = 0; i < allQuests.Count; i++)
 			{
-				quests[i].Notify_PawnDiscarded(pawn);
+				allQuests[i].Notify_PawnDiscarded(pawn);
 			}
 		}
 
 		public void ExposeData()
 		{
-			Scribe_Collections.Look(ref quests, "quests", LookMode.Deep);
+			Scribe_Collections.Look(ref allQuests, "quests", LookMode.Deep);
 			if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
-				int num = quests.RemoveAll((Quest x) => x == null);
+				int num = allQuests.RemoveAll((Quest x) => x == null);
 				if (num != 0)
 				{
 					Log.Error(num + " quest(s) were null after loading.");
 				}
+				int num2 = allQuests.RemoveAll((Quest q) => q.root == null);
+				if (num2 != 0)
+				{
+					Log.Error(num2 + " quest(s) had null roots after loading.");
+				}
+				cachedExtraFactionQuestParts.Clear();
 				cachedSituationalThoughtQuestParts.Clear();
 				questsInDisplayOrder.Clear();
-				for (int i = 0; i < quests.Count; i++)
+				for (int num3 = 0; num3 < allQuests.Count; num3++)
 				{
-					AddToCache(quests[i]);
+					AddToCache(allQuests[num3]);
 				}
 			}
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
-				for (int j = 0; j < quests.Count; j++)
+				for (int num4 = 0; num4 < allQuests.Count; num4++)
 				{
-					Find.SignalManager.RegisterReceiver(quests[j]);
+					Find.SignalManager.RegisterReceiver(allQuests[num4]);
+				}
+				activeQuests.Clear();
+				historicalQuests.Clear();
+				for (int num5 = 0; num5 < allQuests.Count; num5++)
+				{
+					if (allQuests[num5].Historical)
+					{
+						historicalQuests.Add(allQuests[num5]);
+					}
+					else
+					{
+						activeQuests.Add(allQuests[num5]);
+					}
 				}
 			}
 			BackCompatibility.PostExposeData(this);
@@ -154,42 +216,53 @@ namespace RimWorld
 
 		public void Notify_ThingsProduced(Pawn worker, List<Thing> things)
 		{
-			for (int i = 0; i < quests.Count; i++)
+			for (int i = 0; i < activeQuests.Count; i++)
 			{
-				if (quests[i].State == QuestState.Ongoing)
+				if (activeQuests[i].State == QuestState.Ongoing)
 				{
-					quests[i].Notify_ThingsProduced(worker, things);
+					activeQuests[i].Notify_ThingsProduced(worker, things);
 				}
 			}
 		}
 
 		public void Notify_PlantHarvested(Pawn worker, Thing harvested)
 		{
-			for (int i = 0; i < quests.Count; i++)
+			for (int i = 0; i < activeQuests.Count; i++)
 			{
-				if (quests[i].State == QuestState.Ongoing)
+				if (activeQuests[i].State == QuestState.Ongoing)
 				{
-					quests[i].Notify_PlantHarvested(worker, harvested);
+					activeQuests[i].Notify_PlantHarvested(worker, harvested);
 				}
 			}
 		}
 
 		public void Notify_PawnKilled(Pawn pawn, DamageInfo? dinfo)
 		{
-			for (int i = 0; i < quests.Count; i++)
+			for (int i = 0; i < activeQuests.Count; i++)
 			{
-				if (quests[i].State == QuestState.Ongoing)
+				if (activeQuests[i].State == QuestState.Ongoing)
 				{
-					quests[i].Notify_PawnKilled(pawn, dinfo);
+					activeQuests[i].Notify_PawnKilled(pawn, dinfo);
+				}
+			}
+		}
+
+		public void Notify_PawnBorn(Thing baby, Thing birther, Pawn mother, Pawn father)
+		{
+			for (int i = 0; i < activeQuests.Count; i++)
+			{
+				if (activeQuests[i].State == QuestState.Ongoing)
+				{
+					activeQuests[i].Notify_PawnBorn(baby, birther, mother, father);
 				}
 			}
 		}
 
 		public void Notify_FactionRemoved(Faction faction)
 		{
-			for (int i = 0; i < quests.Count; i++)
+			for (int i = 0; i < allQuests.Count; i++)
 			{
-				quests[i].Notify_FactionRemoved(faction);
+				allQuests[i].Notify_FactionRemoved(faction);
 			}
 		}
 	}

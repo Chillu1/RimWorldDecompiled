@@ -5,9 +5,13 @@ namespace Verse
 {
 	public sealed class BlueprintGrid
 	{
-		private Map map;
+		private readonly Map map;
 
-		private List<Blueprint>[] innerArray;
+		private readonly List<Blueprint>[] innerArray;
+
+		public List<Blueprint> this[int index] => innerArray[index];
+
+		public List<Blueprint> this[IntVec3 c] => innerArray[map.cellIndices.CellToIndex(c)];
 
 		public List<Blueprint>[] InnerArray => innerArray;
 
@@ -26,9 +30,11 @@ namespace Verse
 				for (int j = cellRect.minX; j <= cellRect.maxX; j++)
 				{
 					int num = cellIndices.CellToIndex(j, i);
-					if (innerArray[num] == null)
+					List<Blueprint>[] array = innerArray;
+					int num2 = num;
+					if (array[num2] == null)
 					{
-						innerArray[num] = new List<Blueprint>();
+						array[num2] = new List<Blueprint>();
 					}
 					innerArray[num].Add(ed);
 				}

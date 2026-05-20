@@ -7,10 +7,7 @@ namespace Verse
 	{
 		protected Map map;
 
-		public abstract bool Expired
-		{
-			get;
-		}
+		public abstract bool Expired { get; }
 
 		public bool CurrentlyAffectsSky => SkyTargetLerpFactor > 0f;
 

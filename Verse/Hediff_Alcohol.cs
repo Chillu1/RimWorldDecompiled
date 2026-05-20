@@ -6,10 +6,10 @@ namespace Verse
 	{
 		private const int HangoverCheckInterval = 300;
 
-		public override void Tick()
+		public override void TickInterval(int delta)
 		{
-			base.Tick();
-			if (CurStageIndex >= 3 && pawn.IsHashIntervalTick(300) && HangoverSusceptible(pawn))
+			base.TickInterval(delta);
+			if (CurStageIndex >= 3 && pawn.IsHashIntervalTick(300, delta) && HangoverSusceptible(pawn))
 			{
 				Hediff firstHediffOfDef = pawn.health.hediffSet.GetFirstHediffOfDef(HediffDefOf.Hangover);
 				if (firstHediffOfDef != null)

@@ -16,10 +16,11 @@ namespace RimWorld
 
 		private void AddNuzzledThought(Pawn initiator, Pawn recipient)
 		{
-			Thought_Memory newThought = (Thought_Memory)ThoughtMaker.MakeThought(ThoughtDefOf.Nuzzled);
+			Thought_Memory thought_Memory = (Thought_Memory)ThoughtMaker.MakeThought(ThoughtDefOf.Nuzzled);
+			thought_Memory.SetForcedStage(NuzzleUtility.GetNuzzleStageIndex(initiator));
 			if (recipient.needs.mood != null)
 			{
-				recipient.needs.mood.thoughts.memories.TryGainMemory(newThought);
+				recipient.needs.mood.thoughts.memories.TryGainMemory(thought_Memory);
 			}
 		}
 	}

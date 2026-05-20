@@ -14,7 +14,9 @@ namespace Verse.AI
 
 		private static string BurningLowerTrans;
 
-		private static string NoEmptyPlaceLowerTrans;
+		public static string NoEmptyPlaceLowerTrans;
+
+		public static string ContainerFullLowerTrans;
 
 		private static List<IntVec3> candidates = new List<IntVec3>();
 
@@ -25,6 +27,16 @@ namespace Verse.AI
 			ReservedForPrisonersTrans = "ReservedForPrisoners".Translate();
 			BurningLowerTrans = "BurningLower".Translate();
 			NoEmptyPlaceLowerTrans = "NoEmptyPlaceLower".Translate();
+			ContainerFullLowerTrans = "ContainerFull".Translate();
+		}
+
+		public static bool IsInHaulableInventory(Thing thing)
+		{
+			if (thing.Spawned)
+			{
+				return false;
+			}
+			return thing.ParentHolder is IHaulSource;
 		}
 
 		public static bool PawnCanAutomaticallyHaul(Pawn p, Thing t, bool forced)
@@ -33,11 +45,15 @@ namespace Verse.AI
 			{
 				return false;
 			}
+			if (t.Position.Fogged(t.Map))
+			{
+				return false;
+			}
 			if (t.IsForbidden(p))
 			{
 				if (!t.Position.InAllowedArea(p))
 				{
-					JobFailReason.Is(ForbiddenOutsideAllowedAreaLowerTrans);
+					JobFailReason.Is(ForbiddenOutsideAllowedAreaLowerTrans + "(" + p.playerSettings.EffectiveAreaRestrictionInPawnCurrentMap.Label + ")");
 				}
 				else
 				{
@@ -58,13 +74,7 @@ namespace Verse.AI
 
 		public static bool PawnCanAutomaticallyHaulFast(Pawn p, Thing t, bool forced)
 		{
-			UnfinishedThing unfinishedThing = t as UnfinishedThing;
-			Building building;
-			if (unfinishedThing != null && unfinishedThing.BoundBill != null && ((building = unfinishedThing.BoundBill.billStack.billGiver as Building) == null || (building.Spawned && building.OccupiedRect().ExpandedBy(1).Contains(unfinishedThing.Position))))
-			{
-				return false;
-			}
-			if (!p.CanReach(t, PathEndMode.ClosestTouch, p.NormalMaxDanger()))
+			if (t.Fogged())
 			{
 				return false;
 			}
@@ -75,6 +85,17 @@ namespace Verse.AI
 			if (!p.health.capacities.CapableOf(PawnCapacityDefOf.Manipulation))
 			{
 				return false;
+			}
+			if (t is UnfinishedThing { BoundBill: not null } unfinishedThing && unfinishedThing.BoundBill.billStack.FirstShouldDoNow == unfinishedThing.BoundBill && (!(unfinishedThing.BoundBill.billStack.billGiver is Building building) || (building.Spawned && building.OccupiedRect().ExpandedBy(1).Contains(unfinishedThing.Position))))
+			{
+				return false;
+			}
+			using (ProfilerBlock.Scope("CanReach"))
+			{
+				if (!p.CanReach(t, PathEndMode.ClosestTouch, p.NormalMaxDanger()))
+				{
+					return false;
+				}
 			}
 			if (t.def.IsNutritionGivingIngestible && t.def.ingestible.HumanEdible && !t.IsSociallyProper(p, forPrisoner: false, animalsCare: true))
 			{
@@ -89,9 +110,9 @@ namespace Verse.AI
 			return true;
 		}
 
-		public static Job HaulToStorageJob(Pawn p, Thing t)
+		public static Job HaulToStorageJob(Pawn p, Thing t, bool forced)
 		{
-			StoragePriority currentPriority = StoreUtility.CurrentStoragePriorityOf(t);
+			StoragePriority currentPriority = StoreUtility.CurrentStoragePriorityOf(t, forced);
 			if (!StoreUtility.TryFindBestBetterStorageFor(t, p, p.Map, currentPriority, p.Faction, out var foundCell, out var haulDestination))
 			{
 				JobFailReason.Is(NoEmptyPlaceLowerTrans);
@@ -101,8 +122,7 @@ namespace Verse.AI
 			{
 				return HaulToCellStorageJob(p, t, foundCell, fitInStoreCell: false);
 			}
-			Thing thing = haulDestination as Thing;
-			if (thing != null && thing.TryGetInnerInteractableThingOwner() != null)
+			if (haulDestination is Thing thing && thing.TryGetInnerInteractableThingOwner() != null)
 			{
 				return HaulToContainerJob(p, t, thing);
 			}
@@ -113,43 +133,39 @@ namespace Verse.AI
 		public static Job HaulToCellStorageJob(Pawn p, Thing t, IntVec3 storeCell, bool fitInStoreCell)
 		{
 			Job job = JobMaker.MakeJob(JobDefOf.HaulToCell, t, storeCell);
-			SlotGroup slotGroup = p.Map.haulDestinationManager.SlotGroupAt(storeCell);
-			if (slotGroup != null)
+			ISlotGroup slotGroup = p.Map.haulDestinationManager.SlotGroupAt(storeCell);
+			ISlotGroup storageGroup = slotGroup.StorageGroup;
+			ISlotGroup obj = storageGroup ?? slotGroup;
+			if (p.Map.thingGrid.ThingAt(storeCell, t.def) != null)
 			{
-				Thing thing = p.Map.thingGrid.ThingAt(storeCell, t.def);
-				if (thing != null)
+				if (fitInStoreCell)
 				{
-					job.count = t.def.stackLimit;
-					if (fitInStoreCell)
-					{
-						job.count -= thing.stackCount;
-					}
+					job.count = storeCell.GetItemStackSpaceLeftFor(p.Map, t.def);
 				}
 				else
 				{
-					job.count = 99999;
+					job.count = t.def.stackLimit;
 				}
-				int num = 0;
-				float statValue = p.GetStatValue(StatDefOf.CarryingCapacity);
-				List<IntVec3> cellsList = slotGroup.CellsList;
-				for (int i = 0; i < cellsList.Count; i++)
-				{
-					if (StoreUtility.IsGoodStoreCell(cellsList[i], p.Map, t, p, p.Faction))
-					{
-						Thing thing2 = p.Map.thingGrid.ThingAt(cellsList[i], t.def);
-						num = ((thing2 == null || thing2 == t) ? (num + t.def.stackLimit) : (num + Mathf.Max(t.def.stackLimit - thing2.stackCount, 0)));
-						if (num >= job.count || (float)num >= statValue)
-						{
-							break;
-						}
-					}
-				}
-				job.count = Mathf.Min(job.count, num);
 			}
 			else
 			{
 				job.count = 99999;
 			}
+			int num = 0;
+			float statValue = p.GetStatValue(StatDefOf.CarryingCapacity);
+			List<IntVec3> cellsList = obj.CellsList;
+			for (int i = 0; i < cellsList.Count; i++)
+			{
+				if (StoreUtility.IsGoodStoreCell(cellsList[i], p.Map, t, p, p.Faction))
+				{
+					num += cellsList[i].GetItemStackSpaceLeftFor(p.Map, t.def);
+					if (num >= job.count || (float)num >= statValue)
+					{
+						break;
+					}
+				}
+			}
+			job.count = Mathf.Min(job.count, num);
 			job.haulOpportunisticDuplicates = true;
 			job.haulMode = HaulMode.ToCellStorage;
 			return job;
@@ -220,9 +236,9 @@ namespace Verse.AI
 				candidates.Clear();
 				candidates.AddRange(r.Cells);
 				candidates.Sort((IntVec3 a, IntVec3 b) => a.DistanceToSquared(center).CompareTo(b.DistanceToSquared(center)));
-				for (int i = 0; i < candidates.Count; i++)
+				for (int num = 0; num < candidates.Count; num++)
 				{
-					IntVec3 intVec = candidates[i];
+					IntVec3 intVec = candidates[num];
 					if (HaulablePlaceValidator(haulable, worker, intVec))
 					{
 						foundCell = intVec;
@@ -242,6 +258,10 @@ namespace Verse.AI
 
 		private static bool HaulablePlaceValidator(Thing haulable, Pawn worker, IntVec3 c)
 		{
+			if (c.IsForbidden(worker))
+			{
+				return false;
+			}
 			if (!worker.CanReserveAndReach(c, PathEndMode.OnCell, worker.NormalMaxDanger()))
 			{
 				return false;
@@ -266,12 +286,12 @@ namespace Verse.AI
 			{
 				return false;
 			}
-			if (haulable.def.passability != 0)
+			if (haulable.def.passability != Traversability.Standable)
 			{
 				for (int i = 0; i < 8; i++)
 				{
 					IntVec3 c2 = c + GenAdj.AdjacentCells[i];
-					if (worker.Map.designationManager.DesignationAt(c2, DesignationDefOf.Mine) != null)
+					if (worker.Map.designationManager.DesignationAt(c2, DesignationDefOf.Mine) != null || worker.Map.designationManager.DesignationAt(c2, DesignationDefOf.MineVein) != null)
 					{
 						return false;
 					}
@@ -282,7 +302,70 @@ namespace Verse.AI
 			{
 				return false;
 			}
+			if (haulable is UnfinishedThing { BoundWorkTable: not null } unfinishedThing)
+			{
+				if (unfinishedThing.BoundWorkTable.InteractionCell == c)
+				{
+					return false;
+				}
+				List<Thing> thingList = c.GetThingList(haulable.Map);
+				for (int j = 0; j < thingList.Count; j++)
+				{
+					if (unfinishedThing.BoundWorkTable == thingList[j])
+					{
+						return false;
+					}
+				}
+			}
 			return true;
+		}
+
+		public static void UpdateJobWithPlacedThings(Job curJob, Thing th, int added)
+		{
+			if (curJob.placedThings == null)
+			{
+				curJob.placedThings = new List<ThingCountClass>();
+			}
+			ThingCountClass thingCountClass = curJob.placedThings.Find((ThingCountClass x) => x.thing == th);
+			if (thingCountClass != null)
+			{
+				thingCountClass.Count += added;
+			}
+			else
+			{
+				curJob.placedThings.Add(new ThingCountClass(th, added));
+			}
+		}
+
+		public static List<Thing> FindFixedIngredientCount(Pawn pawn, ThingDef def, int maxCount)
+		{
+			Region region = pawn.Position.GetRegion(pawn.Map);
+			List<Thing> chosenThings = new List<Thing>();
+			int countFound = 0;
+			ThingRequest thingRequest = ThingRequest.ForDef(def);
+			ThingListProcessor(pawn.Position.GetThingList(region.Map), region);
+			if (countFound < maxCount)
+			{
+				RegionTraverser.BreadthFirstTraverse(region, (Region from, Region r) => r.Allows(TraverseParms.For(pawn), isDestination: false), (Region r) => ThingListProcessor(r.ListerThings.ThingsMatching(ThingRequest.ForGroup(ThingRequestGroup.HaulableEver)), r), 99999);
+			}
+			return chosenThings;
+			bool ThingListProcessor(List<Thing> things, Region region2)
+			{
+				for (int i = 0; i < things.Count; i++)
+				{
+					Thing thing = things[i];
+					if (thingRequest.Accepts(thing) && !chosenThings.Contains(thing) && !thing.IsForbidden(pawn) && pawn.CanReserve(thing) && ReachabilityWithinRegion.ThingFromRegionListerReachable(thing, region2, PathEndMode.ClosestTouch, pawn))
+					{
+						chosenThings.Add(thing);
+						countFound += thing.stackCount;
+						if (countFound >= maxCount)
+						{
+							return true;
+						}
+					}
+				}
+				return false;
+			}
 		}
 	}
 }

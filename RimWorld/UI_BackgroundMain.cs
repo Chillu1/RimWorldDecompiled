@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -6,19 +7,24 @@ namespace RimWorld
 	[StaticConstructorOnStartup]
 	public class UI_BackgroundMain : UIMenuBackground
 	{
-		private Color curColor = new Color(1f, 1f, 1f, 0f);
-
-		private Texture2D overlayImage;
-
 		public Texture2D overrideBGImage;
 
-		private bool fadeIn;
-
-		private const float DeltaAlpha = 0.04f;
+		private Dictionary<ExpansionDef, float> expansionImageFades;
 
 		private static readonly Vector2 BGPlanetSize = new Vector2(2048f, 1280f);
 
 		private static readonly Texture2D BGPlanet = ContentFinder<Texture2D>.Get("UI/HeroArt/BGPlanet");
+
+		private float DeltaAlpha => Time.deltaTime * 2f;
+
+		public void SetupExpansionFadeData()
+		{
+			expansionImageFades = new Dictionary<ExpansionDef, float>();
+			foreach (ExpansionDef allExpansion in ModLister.AllExpansions)
+			{
+				expansionImageFades.Add(allExpansion, 0f);
+			}
+		}
 
 		public override void BackgroundOnGUI()
 		{
@@ -42,39 +48,38 @@ namespace RimWorld
 				rect = new Rect(0f, (float)(UI.screenHeight / 2) - num2 / 2f, width, num2);
 			}
 			GUI.DrawTexture(rect, overrideBGImage ?? BGPlanet, ScaleMode.ScaleToFit);
-			DoOverlay(rect);
+			if (Event.current.type == EventType.Repaint)
+			{
+				DoOverlay(rect);
+			}
 		}
 
 		private void DoOverlay(Rect bgRect)
 		{
-			if (overlayImage != null)
+			if (expansionImageFades == null)
 			{
-				if (fadeIn && curColor.a < 1f)
+				return;
+			}
+			foreach (ExpansionDef allExpansion in ModLister.AllExpansions)
+			{
+				if (!allExpansion.isCore && !allExpansion.BackgroundImage.NullOrBad() && !(expansionImageFades[allExpansion] <= 0f))
 				{
-					curColor.a += 0.04f;
+					if (allExpansion.BackgroundImage != overrideBGImage)
+					{
+						GUI.color = new Color(1f, 1f, 1f, expansionImageFades[allExpansion]);
+						GUI.DrawTexture(bgRect, allExpansion.BackgroundImage, ScaleMode.ScaleAndCrop);
+						GUI.color = Color.white;
+					}
+					expansionImageFades[allExpansion] = Mathf.Clamp01(expansionImageFades[allExpansion] - DeltaAlpha / 2f);
 				}
-				else if (curColor.a > 0f)
-				{
-					curColor.a -= 0.04f;
-				}
-				curColor.a = Mathf.Clamp01(curColor.a);
-				GUI.color = curColor;
-				GUI.DrawTexture(bgRect, overlayImage, ScaleMode.ScaleAndCrop);
-				GUI.color = Color.white;
 			}
 		}
 
-		public void FadeOut()
+		public void Notify_Hovered(ExpansionDef expansionDef)
 		{
-			fadeIn = false;
-		}
-
-		public void SetOverlayImage(Texture2D texture)
-		{
-			if (texture != null)
+			if (Event.current.type == EventType.Repaint)
 			{
-				overlayImage = texture;
-				fadeIn = true;
+				expansionImageFades[expansionDef] = Mathf.Clamp01(expansionImageFades[expansionDef] + DeltaAlpha);
 			}
 		}
 	}

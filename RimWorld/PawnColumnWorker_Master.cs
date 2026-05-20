@@ -6,8 +6,6 @@ namespace RimWorld
 {
 	public class PawnColumnWorker_Master : PawnColumnWorker
 	{
-		protected override GameFont DefaultHeaderFont => GameFont.Tiny;
-
 		public override int GetMinWidth(PawnTable table)
 		{
 			return Mathf.Max(base.GetMinWidth(table), 100);

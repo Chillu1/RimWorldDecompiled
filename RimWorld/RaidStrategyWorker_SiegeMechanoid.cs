@@ -13,6 +13,10 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (Faction.OfMechanoids == null)
+			{
+				return false;
+			}
 			if (parms.faction == Faction.OfMechanoids)
 			{
 				return ModsConfig.RoyaltyActive;
@@ -22,7 +26,7 @@ namespace RimWorld
 
 		public override void TryGenerateThreats(IncidentParms parms)
 		{
-			parms.mechClusterSketch = MechClusterGenerator.GenerateClusterSketch_NewTemp(parms.points, parms.target as Map);
+			parms.mechClusterSketch = MechClusterGenerator.GenerateClusterSketch(parms.points, parms.target as Map);
 		}
 
 		public override List<Pawn> SpawnThreats(IncidentParms parms)

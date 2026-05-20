@@ -27,6 +27,7 @@ namespace RimWorld
 		public static bool TryFindBestWatchCell(Thing toWatch, Pawn pawn, bool desireSit, out IntVec3 result, out Building chair)
 		{
 			List<int> list = CalculateAllowedDirections(toWatch.def, toWatch.Rotation);
+			list.Shuffle();
 			IntVec3 intVec = IntVec3.Invalid;
 			for (int i = 0; i < list.Count; i++)
 			{
@@ -42,7 +43,7 @@ namespace RimWorld
 					}
 					bool flag = false;
 					Building building = null;
-					if (EverPossibleToWatchFrom(intVec2, toWatch.Position, toWatch.Map, bedAllowed: false, toWatch.def) && !intVec2.IsForbidden(pawn) && pawn.CanReserve(intVec2) && pawn.Map.pawnDestinationReservationManager.CanReserve(intVec2, pawn))
+					if (EverPossibleToWatchFrom(intVec2, toWatch.Position, toWatch.Map, bedAllowed: false, toWatch.def) && !intVec2.IsForbidden(pawn) && pawn.CanReserveSittableOrSpot(intVec2) && pawn.Map.pawnDestinationReservationManager.CanReserve(intVec2, pawn))
 					{
 						if (desireSit)
 						{
@@ -120,13 +121,13 @@ namespace RimWorld
 
 		private static CellRect GetWatchCellRect(ThingDef def, IntVec3 center, Rot4 rot, int watchRot)
 		{
-			Rot4 a = new Rot4(watchRot);
+			Rot4 rot2 = new Rot4(watchRot);
 			if (def.building == null)
 			{
 				def = def.entityDefToBuild as ThingDef;
 			}
 			CellRect result;
-			if (a.IsHorizontal)
+			if (rot2.IsHorizontal)
 			{
 				int num = center.x + GenAdj.CardinalDirections[watchRot].x * def.building.watchBuildingStandDistanceRange.min;
 				int num2 = center.x + GenAdj.CardinalDirections[watchRot].x * def.building.watchBuildingStandDistanceRange.max;
@@ -134,7 +135,7 @@ namespace RimWorld
 				int num4 = center.z - def.building.watchBuildingStandRectWidth / 2;
 				if (def.building.watchBuildingStandRectWidth % 2 == 0)
 				{
-					if (a == Rot4.West)
+					if (rot2 == Rot4.West)
 					{
 						num4++;
 					}
@@ -153,7 +154,7 @@ namespace RimWorld
 				int num8 = center.x - def.building.watchBuildingStandRectWidth / 2;
 				if (def.building.watchBuildingStandRectWidth % 2 == 0)
 				{
-					if (a == Rot4.North)
+					if (rot2 == Rot4.North)
 					{
 						num8++;
 					}
@@ -169,6 +170,10 @@ namespace RimWorld
 
 		private static bool EverPossibleToWatchFrom(IntVec3 watchCell, IntVec3 buildingCenter, Map map, bool bedAllowed, ThingDef def)
 		{
+			if (!watchCell.InBounds(map))
+			{
+				return false;
+			}
 			Room room = ((def.building != null && def.building.watchBuildingInSameRoom) ? buildingCenter.GetRoom(map) : null);
 			if ((room == null || room.ContainsCell(watchCell)) && (watchCell.Standable(map) || (bedAllowed && watchCell.GetEdifice(map) is Building_Bed)))
 			{

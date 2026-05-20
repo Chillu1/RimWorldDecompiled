@@ -20,5 +20,14 @@ namespace RimWorld
 			obj.Init();
 			return obj;
 		}
+
+		public static Thought_Memory MakeThought(ThoughtDef def, Precept sourcePrecept)
+		{
+			Thought_Memory obj = (Thought_Memory)Activator.CreateInstance(def.ThoughtClass);
+			obj.def = def;
+			obj.sourcePrecept = sourcePrecept;
+			obj.Init();
+			return obj;
+		}
 	}
 }

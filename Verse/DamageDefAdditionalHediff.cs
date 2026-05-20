@@ -12,6 +12,8 @@ namespace Verse
 
 		public StatDef victimSeverityScaling;
 
+		public bool inverseStatScaling;
+
 		public bool victimSeverityScalingByInvBodySize;
 	}
 }

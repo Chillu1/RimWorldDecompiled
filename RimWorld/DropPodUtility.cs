@@ -7,17 +7,16 @@ namespace RimWorld
 {
 	public static class DropPodUtility
 	{
-		private static List<List<Thing>> tempList = new List<List<Thing>>();
+		private static readonly List<List<Thing>> tempList = new List<List<Thing>>();
 
-		public static void MakeDropPodAt(IntVec3 c, Map map, ActiveDropPodInfo info)
+		public static void MakeDropPodAt(IntVec3 c, Map map, ActiveTransporterInfo info, Faction faction = null)
 		{
-			ActiveDropPod activeDropPod = (ActiveDropPod)ThingMaker.MakeThing(ThingDefOf.ActiveDropPod);
-			activeDropPod.Contents = info;
-			SkyfallerMaker.SpawnSkyfaller(ThingDefOf.DropPodIncoming, activeDropPod, c, map);
-			foreach (Thing item in (IEnumerable<Thing>)activeDropPod.Contents.innerContainer)
+			ActiveTransporter activeTransporter = (ActiveTransporter)ThingMaker.MakeThing(info?.sentTransporterDef?.dropPodActive ?? faction?.def.dropPodActive ?? ThingDefOf.ActiveDropPod);
+			activeTransporter.Contents = info;
+			SkyfallerMaker.SpawnSkyfaller(info?.sentTransporterDef?.dropPodFaller ?? faction?.def.dropPodIncoming ?? ThingDefOf.DropPodIncoming, activeTransporter, c, map);
+			foreach (Thing item in (IEnumerable<Thing>)activeTransporter.Contents.innerContainer)
 			{
-				Pawn pawn;
-				if ((pawn = item as Pawn) != null && pawn.IsWorldPawn())
+				if (item is Pawn pawn && pawn.IsWorldPawn())
 				{
 					Find.WorldPawns.RemovePawn(pawn);
 					pawn.psychicEntropy?.SetInitialPsyfocusLevel();
@@ -25,7 +24,7 @@ namespace RimWorld
 			}
 		}
 
-		public static void DropThingsNear(IntVec3 dropCenter, Map map, IEnumerable<Thing> things, int openDelay = 110, bool canInstaDropDuringInit = false, bool leaveSlag = false, bool canRoofPunch = true, bool forbid = true)
+		public static void DropThingsNear(IntVec3 dropCenter, Map map, IEnumerable<Thing> things, int openDelay = 110, bool canInstaDropDuringInit = false, bool leaveSlag = false, bool canRoofPunch = true, bool forbid = true, bool allowFogged = true, Faction faction = null)
 		{
 			tempList.Clear();
 			foreach (Thing thing in things)
@@ -34,24 +33,39 @@ namespace RimWorld
 				list.Add(thing);
 				tempList.Add(list);
 			}
-			DropThingGroupsNear(dropCenter, map, tempList, openDelay, canInstaDropDuringInit, leaveSlag, canRoofPunch, forbid);
+			DropThingGroupsNear(dropCenter, map, tempList, openDelay, canInstaDropDuringInit, leaveSlag, canRoofPunch, forbid, allowFogged, canTransfer: false, faction);
 			tempList.Clear();
 		}
 
-		public static void DropThingGroupsNear_NewTmp(IntVec3 dropCenter, Map map, List<List<Thing>> thingsGroups, int openDelay = 110, bool instaDrop = false, bool leaveSlag = false, bool canRoofPunch = true, bool forbid = true, bool allowFogged = true)
+		public static void DropThingGroupsNear(IntVec3 dropCenter, Map map, List<List<Thing>> thingsGroups, int openDelay = 110, bool instaDrop = false, bool leaveSlag = false, bool canRoofPunch = true, bool forbid = true, bool allowFogged = true, bool canTransfer = false, Faction faction = null)
 		{
 			foreach (List<Thing> thingsGroup in thingsGroups)
 			{
 				if (!DropCellFinder.TryFindDropSpotNear(dropCenter, map, out var result, allowFogged, canRoofPunch) && (canRoofPunch || !DropCellFinder.TryFindDropSpotNear(dropCenter, map, out result, allowFogged, canRoofPunch: true)))
 				{
-					Log.Warning(string.Concat("DropThingsNear failed to find a place to drop ", thingsGroup.FirstOrDefault(), " near ", dropCenter, ". Dropping on random square instead."));
-					result = CellFinderLoose.RandomCellWith((IntVec3 c) => c.Walkable(map), map);
+					if (!dropCenter.IsValid)
+					{
+						continue;
+					}
+					string[] obj = new string[5]
+					{
+						"DropThingsNear failed to find a place to drop ",
+						thingsGroup.FirstOrDefault()?.ToString(),
+						" near ",
+						null,
+						null
+					};
+					IntVec3 intVec = dropCenter;
+					obj[3] = intVec.ToString();
+					obj[4] = ". Dropping on random square instead.";
+					Log.Warning(string.Concat(obj));
+					result = CellFinderLoose.RandomCellWith((IntVec3 c) => c.Walkable(map) && !(c.GetRoof(map)?.isThickRoof ?? false), map);
 				}
 				if (forbid)
 				{
-					for (int i = 0; i < thingsGroup.Count; i++)
+					for (int num = 0; num < thingsGroup.Count; num++)
 					{
-						thingsGroup[i].SetForbidden(value: true, warnOnFail: false);
+						thingsGroup[num].SetForbidden(value: true, warnOnFail: false);
 					}
 				}
 				if (instaDrop)
@@ -62,20 +76,42 @@ namespace RimWorld
 					}
 					continue;
 				}
-				ActiveDropPodInfo activeDropPodInfo = new ActiveDropPodInfo();
+				ActiveTransporterInfo activeTransporterInfo = new ActiveTransporterInfo();
 				foreach (Thing item2 in thingsGroup)
 				{
-					activeDropPodInfo.innerContainer.TryAdd(item2);
+					activeTransporterInfo.innerContainer.TryAdd(item2);
 				}
-				activeDropPodInfo.openDelay = openDelay;
-				activeDropPodInfo.leaveSlag = leaveSlag;
-				MakeDropPodAt(result, map, activeDropPodInfo);
+				activeTransporterInfo.openDelay = openDelay;
+				activeTransporterInfo.leaveSlag = leaveSlag;
+				MakeDropPodAt(result, map, activeTransporterInfo, faction);
 			}
 		}
 
-		public static void DropThingGroupsNear(IntVec3 dropCenter, Map map, List<List<Thing>> thingsGroups, int openDelay = 110, bool instaDrop = false, bool leaveSlag = false, bool canRoofPunch = true, bool forbid = true)
+		public static bool IsShuttle(this List<ActiveTransporterInfo> transporters)
 		{
-			DropThingGroupsNear_NewTmp(dropCenter, map, thingsGroups, openDelay, instaDrop, leaveSlag, canRoofPunch, forbid);
+			if (transporters.Count != 1)
+			{
+				return false;
+			}
+			return transporters[0].GetShuttle() != null;
+		}
+
+		public static bool IsShuttle(this List<CompTransporter> transporters)
+		{
+			if (transporters.Count != 1)
+			{
+				return false;
+			}
+			return transporters[0].Shuttle != null;
+		}
+
+		public static CompShuttle AsShuttle(this List<CompTransporter> transporters)
+		{
+			if (transporters.Count != 1)
+			{
+				return null;
+			}
+			return transporters[0].Shuttle;
 		}
 	}
 }

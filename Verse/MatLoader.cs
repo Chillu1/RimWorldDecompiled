@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -52,6 +53,13 @@ namespace Verse
 
 		private static Dictionary<Request, Material> dict = new Dictionary<Request, Material>();
 
+		private static Dictionary<Material, string> loadedDirect = new Dictionary<Material, string>();
+
+		public static void ClearCache()
+		{
+			dict.Clear();
+		}
+
 		public static Material LoadMat(string matPath, int renderQueue = -1)
 		{
 			Material material = (Material)Resources.Load("Materials/" + matPath, typeof(Material));
@@ -59,10 +67,11 @@ namespace Verse
 			{
 				Log.Warning("Could not load material " + matPath);
 			}
-			Request request = default(Request);
-			request.path = matPath;
-			request.renderQueue = renderQueue;
-			Request key = request;
+			Request key = new Request
+			{
+				path = matPath,
+				renderQueue = renderQueue
+			};
 			if (!dict.TryGetValue(key, out var value))
 			{
 				value = MaterialAllocator.Create(material);
@@ -73,6 +82,20 @@ namespace Verse
 				dict.Add(key, value);
 			}
 			return value;
+		}
+
+		public static Material LoadMatDirect(string matPath)
+		{
+			Material material = Resources.Load<Material>("Materials/" + matPath);
+			if (material == null)
+			{
+				throw new Exception("Material not found: " + matPath);
+			}
+			if (loadedDirect.ContainsKey(material))
+			{
+				Debug.LogWarning("Material '" + matPath + "' has been loaded multiple times. Mutations to this material might cause bugs");
+			}
+			return material;
 		}
 	}
 }

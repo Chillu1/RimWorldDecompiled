@@ -9,6 +9,10 @@ namespace RimWorld
 		[MustTranslate]
 		public string message;
 
+		public bool onlyWhenKilled;
+
+		public bool ignoreOnVanish = true;
+
 		public CompProperties_GiveThoughtToAllMapPawnsOnDestroy()
 		{
 			compClass = typeof(CompGiveThoughtToAllMapPawnsOnDestroy);

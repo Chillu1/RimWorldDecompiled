@@ -25,9 +25,9 @@ namespace Verse
 			{
 				yield return "implant is null";
 			}
-			else if (!typeof(Hediff_ImplantWithLevel).IsAssignableFrom(implant.hediffClass))
+			else if (!typeof(Hediff_Level).IsAssignableFrom(implant.hediffClass))
 			{
-				yield return "implant is not Hediff_ImplantWithLevel";
+				yield return "implant is not Hediff_Level";
 			}
 			if (levelOffset == 0)
 			{

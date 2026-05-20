@@ -9,12 +9,12 @@ namespace RimWorld.Planet
 
 		public const float RestStartHour = 22f;
 
-		public static bool RestingNowAt(int tile)
+		public static bool RestingNowAt(PlanetTile tile)
 		{
 			return WouldBeRestingAt(tile, GenTicks.TicksAbs);
 		}
 
-		public static bool WouldBeRestingAt(int tile, long ticksAbs)
+		public static bool WouldBeRestingAt(PlanetTile tile, long ticksAbs)
 		{
 			float num = GenDate.HourFloat(ticksAbs, Find.WorldGrid.LongLatOf(tile).x);
 			if (!(num < 6f))
@@ -24,12 +24,12 @@ namespace RimWorld.Planet
 			return true;
 		}
 
-		public static int LeftRestTicksAt(int tile)
+		public static int LeftRestTicksAt(PlanetTile tile)
 		{
 			return LeftRestTicksAt(tile, GenTicks.TicksAbs);
 		}
 
-		public static int LeftRestTicksAt(int tile, long ticksAbs)
+		public static int LeftRestTicksAt(PlanetTile tile, long ticksAbs)
 		{
 			if (!WouldBeRestingAt(tile, ticksAbs))
 			{
@@ -43,12 +43,12 @@ namespace RimWorld.Planet
 			return Mathf.CeilToInt((24f - num + 6f) * 2500f);
 		}
 
-		public static int LeftNonRestTicksAt(int tile)
+		public static int LeftNonRestTicksAt(PlanetTile tile)
 		{
 			return LeftNonRestTicksAt(tile, GenTicks.TicksAbs);
 		}
 
-		public static int LeftNonRestTicksAt(int tile, long ticksAbs)
+		public static int LeftNonRestTicksAt(PlanetTile tile, long ticksAbs)
 		{
 			if (WouldBeRestingAt(tile, ticksAbs))
 			{

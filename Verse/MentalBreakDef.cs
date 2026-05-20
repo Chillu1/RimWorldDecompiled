@@ -19,6 +19,16 @@ namespace Verse
 
 		public TraitDef requiredTrait;
 
+		public GeneDef requiredGene;
+
+		public bool anomalousBreak;
+
+		public bool questLodgersCanDo = true;
+
+		public PreceptDef requiredPrecept;
+
+		public List<PlanetLayerDef> layerWhitelist = new List<PlanetLayerDef>();
+
 		private MentalBreakWorker workerInt;
 
 		public MentalBreakWorker Worker

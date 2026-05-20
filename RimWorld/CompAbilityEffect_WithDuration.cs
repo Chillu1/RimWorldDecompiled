@@ -8,7 +8,11 @@ namespace RimWorld
 
 		public float GetDurationSeconds(Pawn target)
 		{
-			float num = parent.def.statBases.GetStatValueFromList(StatDefOf.Ability_Duration, 10f);
+			if (Props.durationSecondsOverride != FloatRange.Zero)
+			{
+				return Props.durationSecondsOverride.RandomInRange;
+			}
+			float num = parent.def.GetStatValueAbstract(StatDefOf.Ability_Duration, parent.pawn);
 			if (Props.durationMultiplier != null)
 			{
 				num *= target.GetStatValue(Props.durationMultiplier);

@@ -11,7 +11,13 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<bool> mustBeInfestable;
 
+		public SlateRef<bool> canBeSpace;
+
 		public SlateRef<int> preferMapWithMinFreeColonists;
+
+		public SlateRef<List<PlanetLayerDef>> layerWhitelist;
+
+		public SlateRef<List<PlanetLayerDef>> layerBlacklist;
 
 		protected override bool TestRunInt(Slate slate)
 		{
@@ -38,7 +44,7 @@ namespace RimWorld.QuestGen
 
 		private bool TryFindMap(Slate slate, out Map map)
 		{
-			if (!preferMapWithMinFreeColonists.TryGetValue(slate, out var minCount))
+			if (!preferMapWithMinFreeColonists.TryGetValue(slate, out var minCount) || minCount < 1)
 			{
 				minCount = 1;
 			}
@@ -56,7 +62,25 @@ namespace RimWorld.QuestGen
 			{
 				return false;
 			}
+			if (map.IsPocketMap)
+			{
+				return false;
+			}
+			if (!canBeSpace.GetValue(slate) && map.Tile.Valid && map.Tile.LayerDef.isSpace)
+			{
+				return false;
+			}
 			if (mustBeInfestable.GetValue(slate) && !InfestationCellFinder.TryFindCell(out var _, map))
+			{
+				return false;
+			}
+			List<PlanetLayerDef> value = layerWhitelist.GetValue(slate);
+			List<PlanetLayerDef> value2 = layerBlacklist.GetValue(slate);
+			if (!value.NullOrEmpty() && map.Tile.Valid && !value.Contains(map.Tile.LayerDef))
+			{
+				return false;
+			}
+			if (!value2.NullOrEmpty() && map.Tile.Valid && value2.Contains(map.Tile.LayerDef))
 			{
 				return false;
 			}

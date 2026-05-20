@@ -4,6 +4,6 @@ namespace Verse
 	{
 		bool AnythingToStrip();
 
-		void Strip();
+		void Strip(bool notifyFaction = true);
 	}
 }

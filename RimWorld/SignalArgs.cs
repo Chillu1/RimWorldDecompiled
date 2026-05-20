@@ -233,6 +233,17 @@ namespace RimWorld
 			return false;
 		}
 
+		public bool TryGetArg<T>(int index, out T arg)
+		{
+			if (!TryGetArg(index, out var arg2) || !(arg2.arg is T val))
+			{
+				arg = default(T);
+				return false;
+			}
+			arg = val;
+			return true;
+		}
+
 		public bool TryGetArg<T>(string name, out T arg)
 		{
 			if (!TryGetArg(name, out var arg2) || !(arg2.arg is T))
@@ -330,7 +341,7 @@ namespace RimWorld
 				{
 					array[i] = args[i];
 				}
-				array[array.Length - 1] = arg;
+				array[^1] = arg;
 				args = array;
 				count = args.Length;
 				return;

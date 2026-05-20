@@ -6,6 +6,8 @@ namespace RimWorld
 	{
 		public Vector2 offset;
 
+		public Vector2? scale;
+
 		public WornGraphicBodyTypeData male;
 
 		public WornGraphicBodyTypeData female;
@@ -15,5 +17,7 @@ namespace RimWorld
 		public WornGraphicBodyTypeData hulk;
 
 		public WornGraphicBodyTypeData fat;
+
+		public Vector2 Scale => scale ?? Vector2.one;
 	}
 }

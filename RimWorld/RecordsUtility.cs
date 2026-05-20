@@ -9,7 +9,11 @@ namespace RimWorld
 		{
 			killer.records.Increment(RecordDefOf.Kills);
 			RaceProperties raceProps = killed.RaceProps;
-			if (raceProps.Humanlike)
+			if (ModsConfig.AnomalyActive && (killed.IsSubhuman || raceProps.IsAnomalyEntity))
+			{
+				killer.records.Increment(RecordDefOf.KillsEntities);
+			}
+			else if (raceProps.Humanlike)
 			{
 				killer.records.Increment(RecordDefOf.KillsHumanlikes);
 			}
@@ -27,7 +31,11 @@ namespace RimWorld
 		{
 			instigator.records.Increment(RecordDefOf.PawnsDowned);
 			RaceProperties raceProps = downed.RaceProps;
-			if (raceProps.Humanlike)
+			if (ModsConfig.AnomalyActive && (downed.IsSubhuman || raceProps.IsAnomalyEntity))
+			{
+				instigator.records.Increment(RecordDefOf.PawnsDownedEntities);
+			}
+			else if (raceProps.Humanlike)
 			{
 				instigator.records.Increment(RecordDefOf.PawnsDownedHumanlikes);
 			}
@@ -45,13 +53,16 @@ namespace RimWorld
 		{
 			for (int i = 0; i < products.Count; i++)
 			{
-				if (products[i].def.IsNutritionGivingIngestible && (int)products[i].def.ingestible.preferability >= 6)
+				for (int j = 0; j < products[i].stackCount; j++)
 				{
-					billDoer.records.Increment(RecordDefOf.MealsCooked);
-				}
-				else if (ShouldIncrementThingsCrafted(products[i]))
-				{
-					billDoer.records.Increment(RecordDefOf.ThingsCrafted);
+					if (products[i].def.IsNutritionGivingIngestible && (int)products[i].def.ingestible.preferability >= 7)
+					{
+						billDoer.records.Increment(RecordDefOf.MealsCooked);
+					}
+					else if (ShouldIncrementThingsCrafted(products[i]))
+					{
+						billDoer.records.Increment(RecordDefOf.ThingsCrafted);
+					}
 				}
 			}
 		}

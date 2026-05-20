@@ -46,7 +46,8 @@ namespace RimWorld
 			}
 			if (DebugViewSettings.logTutor)
 			{
-				Log.Message("Notify_Event: " + ep);
+				EventPack eventPack = ep;
+				Log.Message("Notify_Event: " + eventPack.ToString());
 			}
 			if (Current.Game == null)
 			{
@@ -75,7 +76,8 @@ namespace RimWorld
 			}
 			if (DebugViewSettings.logTutor)
 			{
-				Log.Message("AllowAction: " + ep);
+				EventPack eventPack = ep;
+				Log.Message("AllowAction: " + eventPack.ToString());
 			}
 			if (ep.Cells != null && ep.Cells.Count() == 1)
 			{

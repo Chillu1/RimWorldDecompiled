@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
+using Verse.Sound;
+using Verse.Steam;
 
 namespace Verse
 {
@@ -16,7 +18,11 @@ namespace Verse
 
 		private static HashSet<Thing> selectedThings = new HashSet<Thing>();
 
-		public static Designator FindAllowedDesignator<T>() where T : Designator
+		private const float RotButSize = 64f;
+
+		private const float RotButSpacing = 10f;
+
+		public static T FindAllowedDesignator<T>() where T : Designator
 		{
 			List<DesignationCategoryDef> allDefsListForReading = DefDatabase<DesignationCategoryDef>.AllDefsListForReading;
 			GameRules rules = Current.Game.Rules;
@@ -25,13 +31,9 @@ namespace Verse
 				List<Designator> allResolvedDesignators = allDefsListForReading[i].AllResolvedDesignators;
 				for (int j = 0; j < allResolvedDesignators.Count; j++)
 				{
-					if (rules == null || rules.DesignatorAllowed(allResolvedDesignators[j]))
+					if ((rules == null || rules.DesignatorAllowed(allResolvedDesignators[j])) && allResolvedDesignators[j] is T result)
 					{
-						T val = allResolvedDesignators[j] as T;
-						if (val != null)
-						{
-							return val;
-						}
+						return result;
 					}
 				}
 			}
@@ -41,14 +43,14 @@ namespace Verse
 				designator = Activator.CreateInstance(typeof(T)) as Designator;
 				StandaloneDesignators[typeof(T)] = designator;
 			}
-			return designator;
+			return (T)designator;
 		}
 
 		public static void RenderHighlightOverSelectableCells(Designator designator, List<IntVec3> dragCells)
 		{
-			for (int i = 0; i < dragCells.Count; i++)
+			foreach (IntVec3 dragCell in dragCells)
 			{
-				Vector3 position = dragCells[i].ToVector3Shifted();
+				Vector3 position = dragCell.ToVector3Shifted();
 				position.y = AltitudeLayer.MetaOverlays.AltitudeFor();
 				Graphics.DrawMesh(MeshPool.plane10, position, Quaternion.identity, DragHighlightCellMat, 0);
 			}
@@ -57,21 +59,61 @@ namespace Verse
 		public static void RenderHighlightOverSelectableThings(Designator designator, List<IntVec3> dragCells)
 		{
 			selectedThings.Clear();
-			for (int i = 0; i < dragCells.Count; i++)
+			foreach (IntVec3 dragCell in dragCells)
 			{
-				List<Thing> thingList = dragCells[i].GetThingList(designator.Map);
-				for (int j = 0; j < thingList.Count; j++)
+				List<Thing> thingList = dragCell.GetThingList(designator.Map);
+				for (int i = 0; i < thingList.Count; i++)
 				{
-					if (designator.CanDesignateThing(thingList[j]).Accepted && !selectedThings.Contains(thingList[j]))
+					if (designator.CanDesignateThing(thingList[i]).Accepted && !selectedThings.Contains(thingList[i]))
 					{
-						selectedThings.Add(thingList[j]);
-						Vector3 drawPos = thingList[j].DrawPos;
+						selectedThings.Add(thingList[i]);
+						Vector3 drawPos = thingList[i].DrawPos;
 						drawPos.y = AltitudeLayer.MetaOverlays.AltitudeFor();
 						Graphics.DrawMesh(MeshPool.plane10, drawPos, Quaternion.identity, DragHighlightThingMat, 0);
 					}
 				}
 			}
 			selectedThings.Clear();
+		}
+
+		public static void GUIDoRotationControls(float leftX, float bottomY, Rot4 rot, Action<Rot4> rotSetter)
+		{
+			Rect winRect = new Rect(leftX, bottomY - 90f, 200f, 90f);
+			Find.WindowStack.ImmediateWindow(73095, winRect, WindowLayer.GameUI, delegate
+			{
+				RotationDirection rotationDirection = RotationDirection.None;
+				Text.Anchor = TextAnchor.MiddleCenter;
+				Text.Font = GameFont.Medium;
+				Rect rect = new Rect(winRect.width / 2f - 64f - 5f, 15f, 64f, 64f);
+				if (Widgets.ButtonImage(rect, TexUI.RotLeftTex))
+				{
+					SoundDefOf.DragSlider.PlayOneShotOnCamera();
+					rotationDirection = RotationDirection.Counterclockwise;
+					Event.current.Use();
+				}
+				if (!SteamDeck.IsSteamDeck)
+				{
+					Widgets.Label(rect, KeyBindingDefOf.Designator_RotateLeft.MainKeyLabel);
+				}
+				Rect rect2 = new Rect(winRect.width / 2f + 5f, 15f, 64f, 64f);
+				if (Widgets.ButtonImage(rect2, TexUI.RotRightTex))
+				{
+					SoundDefOf.DragSlider.PlayOneShotOnCamera();
+					rotationDirection = RotationDirection.Clockwise;
+					Event.current.Use();
+				}
+				if (!SteamDeck.IsSteamDeck)
+				{
+					Widgets.Label(rect2, KeyBindingDefOf.Designator_RotateRight.MainKeyLabel);
+				}
+				if (rotationDirection != RotationDirection.None)
+				{
+					rot.Rotate(rotationDirection);
+					rotSetter(rot);
+				}
+				Text.Anchor = TextAnchor.UpperLeft;
+				Text.Font = GameFont.Small;
+			});
 		}
 	}
 }

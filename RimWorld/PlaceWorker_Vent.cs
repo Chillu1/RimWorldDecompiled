@@ -12,32 +12,26 @@ namespace RimWorld
 			Map currentMap = Find.CurrentMap;
 			IntVec3 intVec = center + IntVec3.South.RotatedBy(rot);
 			IntVec3 intVec2 = center + IntVec3.North.RotatedBy(rot);
-			GenDraw.DrawFieldEdges(new List<IntVec3>
-			{
-				intVec
-			}, Color.white);
-			GenDraw.DrawFieldEdges(new List<IntVec3>
-			{
-				intVec2
-			}, Color.white);
-			RoomGroup roomGroup = intVec2.GetRoomGroup(currentMap);
-			RoomGroup roomGroup2 = intVec.GetRoomGroup(currentMap);
-			if (roomGroup == null || roomGroup2 == null)
+			GenDraw.DrawFieldEdges(new List<IntVec3> { intVec }, Color.white);
+			GenDraw.DrawFieldEdges(new List<IntVec3> { intVec2 }, Color.white);
+			Room room = intVec2.GetRoom(currentMap);
+			Room room2 = intVec.GetRoom(currentMap);
+			if (room == null || room2 == null)
 			{
 				return;
 			}
-			if (roomGroup == roomGroup2 && !roomGroup.UsesOutdoorTemperature)
+			if (room == room2 && !room.UsesOutdoorTemperature)
 			{
-				GenDraw.DrawFieldEdges(roomGroup.Cells.ToList(), Color.white);
+				GenDraw.DrawFieldEdges(room.Cells.ToList(), Color.white);
 				return;
 			}
-			if (!roomGroup.UsesOutdoorTemperature)
+			if (!room.UsesOutdoorTemperature)
 			{
-				GenDraw.DrawFieldEdges(roomGroup.Cells.ToList(), Color.white);
+				GenDraw.DrawFieldEdges(room.Cells.ToList(), Color.white);
 			}
-			if (!roomGroup2.UsesOutdoorTemperature)
+			if (!room2.UsesOutdoorTemperature)
 			{
-				GenDraw.DrawFieldEdges(roomGroup2.Cells.ToList(), Color.white);
+				GenDraw.DrawFieldEdges(room2.Cells.ToList(), Color.white);
 			}
 		}
 

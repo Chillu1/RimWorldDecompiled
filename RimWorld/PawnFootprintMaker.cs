@@ -24,9 +24,9 @@ namespace RimWorld
 			this.pawn = pawn;
 		}
 
-		public void FootprintMakerTick()
+		public void ProcessPostTickVisuals(int ticksPassed)
 		{
-			if (!pawn.RaceProps.makesFootprints)
+			if (!pawn.RaceProps.makesFootprints || (pawn.IsMutant && !pawn.mutant.Def.makesFootprints))
 			{
 				TerrainDef terrain = pawn.Position.GetTerrain(pawn.Map);
 				if (terrain == null || !terrain.takeSplashes)
@@ -34,7 +34,7 @@ namespace RimWorld
 					return;
 				}
 			}
-			if ((pawn.Drawer.DrawPos - lastFootprintPlacePos).MagnitudeHorizontalSquared() > 0.399424046f)
+			if ((pawn.Drawer.DrawPos - lastFootprintPlacePos).MagnitudeHorizontalSquared() > 0.39942405f)
 			{
 				TryPlaceFootprint();
 			}
@@ -46,9 +46,9 @@ namespace RimWorld
 			Vector3 normalized = (drawPos - lastFootprintPlacePos).normalized;
 			float rot = normalized.AngleFlat();
 			float angle = (lastFootprintRight ? 90 : (-90));
-			Vector3 b = normalized.RotatedBy(angle) * 0.17f * Mathf.Sqrt(pawn.BodySize);
-			Vector3 vector = drawPos + FootprintOffset + b;
-			IntVec3 c = vector.ToIntVec3();
+			Vector3 vector = normalized.RotatedBy(angle) * 0.17f * Mathf.Sqrt(pawn.BodySize);
+			Vector3 vector2 = drawPos + FootprintOffset + vector;
+			IntVec3 c = vector2.ToIntVec3();
 			if (c.InBounds(pawn.Map))
 			{
 				TerrainDef terrain = c.GetTerrain(pawn.Map);
@@ -56,11 +56,11 @@ namespace RimWorld
 				{
 					if (terrain.takeSplashes)
 					{
-						MoteMaker.MakeWaterSplash(vector, pawn.Map, Mathf.Sqrt(pawn.BodySize) * 2f, 1.5f);
+						FleckMaker.WaterSplash(vector2, pawn.Map, Mathf.Sqrt(pawn.BodySize) * 2f, 1.5f);
 					}
 					if (pawn.RaceProps.makesFootprints && terrain.takeFootprints && pawn.Map.snowGrid.GetDepth(pawn.Position) >= 0.4f)
 					{
-						MoteMaker.PlaceFootprint(vector, pawn.Map, rot);
+						FleckMaker.PlaceFootprint(vector2, pawn.Map, rot);
 					}
 				}
 			}

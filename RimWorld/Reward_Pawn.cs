@@ -40,7 +40,8 @@ namespace RimWorld
 
 		public override void InitFromValue(float rewardValue, RewardsGeneratorParams parms, out float valueActuallyUsed)
 		{
-			pawn = PawnGenerator.GeneratePawn(PawnKindDefOf.SpaceRefugee);
+			PawnGenerationRequest request = new PawnGenerationRequest(PawnKindDefOf.SpaceRefugee, null, PawnGenerationContext.NonPlayer, null, forceGenerateNewPawn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: false, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowPregnant: false, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, 0f, null, 1f, null, null, null, null, null, null, null, null, null, null, null, null, forceNoIdeo: false, forceNoBackstory: false, forbidAnyTitle: false, forceDead: false, null, null, null, null, null, 0f, DevelopmentalStage.Adult, null, null, null, forceRecruitable: true);
+			pawn = PawnGenerator.GeneratePawn(request);
 			arrivalMode = ((!Rand.Bool) ? ArrivalMode.DropPod : ArrivalMode.WalkIn);
 			valueActuallyUsed = rewardValue;
 		}
@@ -100,7 +101,7 @@ namespace RimWorld
 
 		public override string ToString()
 		{
-			return string.Concat(GetType().Name, " (", pawn.MarketValue.ToStringMoney(), " pawn=", pawn.ToStringSafe(), ", arrivalMode=", arrivalMode, ")");
+			return GetType().Name + " (" + pawn.MarketValue.ToStringMoney() + " pawn=" + pawn.ToStringSafe() + ", arrivalMode=" + arrivalMode.ToString() + ")";
 		}
 
 		public override void ExposeData()

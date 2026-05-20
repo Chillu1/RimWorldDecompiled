@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using Verse;
 
 namespace RimWorld
@@ -14,6 +13,8 @@ namespace RimWorld
 		public int maxBuildings = int.MaxValue;
 
 		public float offsetPerBuilding;
+
+		public bool drawRingRadius = true;
 
 		[NoTranslate]
 		public string explanationKey;
@@ -104,7 +105,10 @@ namespace RimWorld
 		public override void PostDrawExtraSelectionOverlays(Thing parent, Pawn user = null)
 		{
 			base.PostDrawExtraSelectionOverlays(parent, user);
-			GenDraw.DrawRadiusRing(parent.Position, radius, PlaceWorker_MeditationOffsetBuildingsNear.RingColor);
+			if (drawRingRadius)
+			{
+				GenDraw.DrawRadiusRing(parent.Position, radius, PlaceWorker_MeditationOffsetBuildingsNear.RingColor);
+			}
 			List<Thing> forCell = parent.Map.listerBuldingOfDefInProximity.GetForCell(parent.Position, radius, defs, parent);
 			for (int i = 0; i < forCell.Count && i < maxBuildings; i++)
 			{
@@ -118,13 +122,13 @@ namespace RimWorld
 			{
 				return GetExplanationAbstract(parent.def);
 			}
-			int value = BuildingCount(parent);
-			return explanationKey.Translate(value, maxBuildings, MinOffsetPerBuilding.ToString("0%"), MaxOffsetPerBuilding.ToString("0%")) + ": " + GetOffset(parent).ToStringWithSign("0%");
+			int num = BuildingCount(parent);
+			return explanationKey.Translate(num, maxBuildings, MinOffsetPerBuilding.ToString("0%"), MaxOffsetPerBuilding.ToString("0%"), NamedArgumentUtility.Named(defs[0].building, "BUILDING")) + ": " + GetOffset(parent).ToStringWithSign("0%");
 		}
 
 		public override string GetExplanationAbstract(ThingDef def = null)
 		{
-			return explanationKeyAbstract.Translate(maxBuildings, MinOffsetPerBuilding.ToString("0%"), MaxOffsetPerBuilding.ToString("0%")) + ": +0-" + MaxOffset().ToString("0%");
+			return explanationKeyAbstract.Translate(maxBuildings, MinOffsetPerBuilding.ToString("0%"), MaxOffsetPerBuilding.ToString("0%"), NamedArgumentUtility.Named(defs[0].building, "BUILDING")) + ": +0-" + MaxOffset().ToString("0%");
 		}
 
 		public override float MaxOffset(Thing parent = null)

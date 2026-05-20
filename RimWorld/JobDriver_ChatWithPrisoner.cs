@@ -15,7 +15,7 @@ namespace RimWorld
 
 		protected override string ReportStringProcessed(string str)
 		{
-			if (Talkee.guest.interactionMode == PrisonerInteractionModeDefOf.ReduceResistance)
+			if (Talkee.guest.IsInteractionEnabled(PrisonerInteractionModeDefOf.ReduceResistance))
 			{
 				return "JobReport_ReduceResistance".Translate(Talkee);
 			}
@@ -28,25 +28,30 @@ namespace RimWorld
 			this.FailOnMentalState(TargetIndex.A);
 			this.FailOnNotAwake(TargetIndex.A);
 			this.FailOn(() => !Talkee.IsPrisonerOfColony || !Talkee.guest.PrisonerIsSecure);
-			yield return Toils_Interpersonal.GotoPrisoner(pawn, Talkee, Talkee.guest.interactionMode);
+			yield return Toils_Interpersonal.GotoPrisoner(pawn, Talkee, Talkee.guest.ExclusiveInteractionMode);
 			yield return Toils_Interpersonal.WaitToBeAbleToInteract(pawn);
 			yield return Toils_Interpersonal.GotoInteractablePosition(TargetIndex.A);
 			yield return Toils_Interpersonal.ConvinceRecruitee(pawn, Talkee);
-			yield return Toils_Interpersonal.GotoPrisoner(pawn, Talkee, Talkee.guest.interactionMode);
+			yield return Toils_Interpersonal.GotoPrisoner(pawn, Talkee, Talkee.guest.ExclusiveInteractionMode);
+			yield return Toils_Interpersonal.WaitToBeAbleToInteract(pawn);
 			yield return Toils_Interpersonal.GotoInteractablePosition(TargetIndex.A);
 			yield return Toils_Interpersonal.ConvinceRecruitee(pawn, Talkee);
-			yield return Toils_Interpersonal.GotoPrisoner(pawn, Talkee, Talkee.guest.interactionMode);
+			yield return Toils_Interpersonal.GotoPrisoner(pawn, Talkee, Talkee.guest.ExclusiveInteractionMode);
+			yield return Toils_Interpersonal.WaitToBeAbleToInteract(pawn);
 			yield return Toils_Interpersonal.GotoInteractablePosition(TargetIndex.A);
 			yield return Toils_Interpersonal.ConvinceRecruitee(pawn, Talkee);
-			yield return Toils_Interpersonal.GotoPrisoner(pawn, Talkee, Talkee.guest.interactionMode);
+			yield return Toils_Interpersonal.GotoPrisoner(pawn, Talkee, Talkee.guest.ExclusiveInteractionMode);
+			yield return Toils_Interpersonal.WaitToBeAbleToInteract(pawn);
 			yield return Toils_Interpersonal.GotoInteractablePosition(TargetIndex.A);
 			yield return Toils_Interpersonal.ConvinceRecruitee(pawn, Talkee);
-			yield return Toils_Interpersonal.GotoPrisoner(pawn, Talkee, Talkee.guest.interactionMode);
+			yield return Toils_Interpersonal.GotoPrisoner(pawn, Talkee, Talkee.guest.ExclusiveInteractionMode);
+			yield return Toils_Interpersonal.WaitToBeAbleToInteract(pawn);
 			yield return Toils_Interpersonal.GotoInteractablePosition(TargetIndex.A);
 			yield return Toils_Interpersonal.ConvinceRecruitee(pawn, Talkee);
-			yield return Toils_Interpersonal.GotoPrisoner(pawn, Talkee, Talkee.guest.interactionMode);
+			yield return Toils_Interpersonal.GotoPrisoner(pawn, Talkee, Talkee.guest.ExclusiveInteractionMode);
 			yield return Toils_Interpersonal.GotoInteractablePosition(TargetIndex.A).FailOn(() => !Talkee.guest.ScheduledForInteraction);
 			yield return Toils_Interpersonal.SetLastInteractTime(TargetIndex.A);
+			yield return Toils_Interpersonal.WaitToBeAbleToInteract(pawn);
 			yield return Toils_Interpersonal.TryRecruit(TargetIndex.A);
 		}
 	}

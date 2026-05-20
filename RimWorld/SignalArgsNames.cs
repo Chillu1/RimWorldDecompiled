@@ -4,6 +4,8 @@ namespace RimWorld
 	{
 		public const string Subject = "SUBJECT";
 
+		public const string Position = "POSITION";
+
 		public const string Outcome = "OUTCOME";
 
 		public const string ChosenThing = "CHOSEN";
@@ -20,12 +22,28 @@ namespace RimWorld
 
 		public const string NewFactionLeader = "NEWFACTIONLEADER";
 
+		public const string Instigator = "INSTIGATOR";
+
 		public const string Kidnapper = "KIDNAPPER";
+
+		public const string Studier = "STUDIER";
+
+		public const string Activator = "ACTIVATOR";
 
 		public const string Goodwill = "GOODWILL";
 
 		public const string AverageMood = "AVERAGEMOOD";
 
 		public const string PawnsAliveCount = "PAWNSALIVECOUNT";
+
+		public const string Count = "COUNT";
+
+		public const string KilledLeavingsDropper = "DROPPER";
+
+		public const string Map = "MAP";
+
+		public const string Giver = "GIVER";
+
+		public const string Receiver = "RECEIVER";
 	}
 }

@@ -16,6 +16,7 @@ namespace RimWorld.QuestGen
 			questPart_WorldObjectTimeout.reactivatable = reactivatable;
 			questPart_WorldObjectTimeout.delayTicks = delayTicks;
 			questPart_WorldObjectTimeout.outSignalsCompleted = outSignalsCompleted;
+			questPart_WorldObjectTimeout.destroyOnCleanup = true;
 			if (isQuestTimeout)
 			{
 				questPart_WorldObjectTimeout.isBad = true;
@@ -26,7 +27,7 @@ namespace RimWorld.QuestGen
 			return questPart_WorldObjectTimeout;
 		}
 
-		public static QuestPart_Delay Delay(this Quest quest, int delayTicks, Action inner, string inSignalEnable = null, string inSignalDisable = null, string outSignalComplete = null, bool reactivatable = false, IEnumerable<ISelectable> inspectStringTargets = null, string inspectString = null, bool isQuestTimeout = false, string expiryInfoPart = null, string expiryInfoPartTip = null, string debugLabel = null, bool tickHistorically = false, QuestPart.SignalListenMode signalListenMode = QuestPart.SignalListenMode.OngoingOnly)
+		public static QuestPart_Delay Delay(this Quest quest, int delayTicks, Action inner, string inSignalEnable = null, string inSignalDisable = null, string outSignalComplete = null, bool reactivatable = false, IEnumerable<ISelectable> inspectStringTargets = null, string inspectString = null, bool isQuestTimeout = false, string expiryInfoPart = null, string expiryInfoPartTip = null, string debugLabel = null, bool tickHistorically = false, QuestPart.SignalListenMode signalListenMode = QuestPart.SignalListenMode.OngoingOnly, bool waitUntilPlayerHasHomeMap = false)
 		{
 			QuestPart_Delay questPart_Delay = new QuestPart_Delay();
 			questPart_Delay.delayTicks = delayTicks;
@@ -51,6 +52,7 @@ namespace RimWorld.QuestGen
 				questPart_Delay.expiryInfoPart = expiryInfoPart;
 				questPart_Delay.expiryInfoPartTip = expiryInfoPartTip;
 			}
+			questPart_Delay.waitUntilPlayerHasHomeMap = waitUntilPlayerHasHomeMap;
 			if (inner != null)
 			{
 				QuestGenUtility.RunInner(inner, questPart_Delay);

@@ -37,11 +37,6 @@ namespace RimWorld.Planet
 			ticksLeftToForceExitAndRemoveMap = -1;
 		}
 
-		public void StartForceExitAndRemoveMapCountdown()
-		{
-			StartForceExitAndRemoveMapCountdown(60000);
-		}
-
 		public void StartForceExitAndRemoveMapCountdown(int duration)
 		{
 			ticksLeftToForceExitAndRemoveMap = duration;
@@ -56,7 +51,7 @@ namespace RimWorld.Planet
 			return null;
 		}
 
-		public override void CompTick()
+		public override void CompTickInterval(int delta)
 		{
 			MapParent mapParent = (MapParent)parent;
 			if (!ForceExitAndRemoveMapCountdownActive)
@@ -106,7 +101,7 @@ namespace RimWorld.Planet
 			tmpPawns.AddRange(mapParent.Map.mapPawns.AllPawns.Where((Pawn x) => x.Faction == Faction.OfPlayer || x.HostFaction == Faction.OfPlayer));
 			if (tmpPawns.Any((Pawn x) => CaravanUtility.IsOwner(x, Faction.OfPlayer)))
 			{
-				CaravanExitMapUtility.ExitMapAndCreateCaravan(tmpPawns, Faction.OfPlayer, mapParent.Tile, mapParent.Tile, -1);
+				CaravanExitMapUtility.ExitMapAndCreateCaravan(tmpPawns, Faction.OfPlayer, mapParent.Tile, mapParent.Tile, PlanetTile.Invalid);
 			}
 			tmpPawns.Clear();
 			mapParent.Destroy();

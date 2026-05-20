@@ -12,8 +12,8 @@ namespace RimWorld
 			defaultDesc = "DesignatorExpandAreaAllowedDesc".Translate();
 			icon = ContentFinder<Texture2D>.Get("UI/Designators/AreaAllowedExpand");
 			soundDragSustain = SoundDefOf.Designate_DragAreaAdd;
-			soundDragChanged = null;
-			soundSucceeded = SoundDefOf.Designate_ZoneAdd;
+			soundDragChanged = SoundDefOf.Designate_DragZone_Changed;
+			soundSucceeded = SoundDefOf.Designate_ZoneAdd_AllowedArea;
 			hotKey = KeyBindingDefOf.Misc8;
 			tutorTag = "AreaAllowedExpand";
 		}

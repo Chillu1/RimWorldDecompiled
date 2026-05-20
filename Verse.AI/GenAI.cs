@@ -36,9 +36,47 @@ namespace Verse.AI
 			return true;
 		}
 
+		public static bool CanBeCaptured(this Pawn pawn)
+		{
+			if (!pawn.RaceProps.Humanlike)
+			{
+				return false;
+			}
+			LifeStageDef curLifeStage = pawn.ageTracker.CurLifeStage;
+			if (curLifeStage != null && curLifeStage.claimable)
+			{
+				return false;
+			}
+			if (pawn.IsSubhuman)
+			{
+				return false;
+			}
+			if (pawn.InMentalState && !pawn.Downed)
+			{
+				return false;
+			}
+			if (pawn.Faction == Faction.OfPlayer)
+			{
+				if (pawn.Downed)
+				{
+					if (!pawn.guilt.IsGuilty)
+					{
+						return pawn.IsPrisonerOfColony;
+					}
+					return true;
+				}
+				return false;
+			}
+			return true;
+		}
+
 		public static bool CanBeArrestedBy(this Pawn pawn, Pawn arrester)
 		{
 			if (!pawn.RaceProps.Humanlike)
+			{
+				return false;
+			}
+			if (pawn.IsSubhuman)
 			{
 				return false;
 			}
@@ -46,7 +84,15 @@ namespace Verse.AI
 			{
 				return false;
 			}
-			if (pawn.IsPrisonerOfColony && pawn.Position.IsInPrisonCell(pawn.Map))
+			if (pawn.IsPrisonerOfColony && pawn.Position.IsInPrisonCell(pawn.MapHeld))
+			{
+				return false;
+			}
+			if (ModsConfig.AnomalyActive && Find.Anomaly.IsPawnHypnotized(pawn))
+			{
+				return false;
+			}
+			if (pawn.DevelopmentalStage.Baby())
 			{
 				return false;
 			}
@@ -59,8 +105,7 @@ namespace Verse.AI
 			bool found = false;
 			RegionTraverser.BreadthFirstTraverse(root, (Region r1, Region r2) => r2.Room == root.Room, (Region r) => r.ListerThings.ThingsInGroup(ThingRequestGroup.Pawn).Any(delegate(Thing t)
 			{
-				Pawn pawn2 = t as Pawn;
-				if (pawn2 != null && !pawn2.Downed && (float)(pawn.Position - pawn2.Position).LengthHorizontalSquared < 144f && pawn2.HostileTo(pawn.Faction))
+				if (t is Pawn { Downed: false } pawn2 && (float)(pawn.Position - pawn2.Position).LengthHorizontalSquared < 144f && pawn2.HostileTo(pawn.Faction))
 				{
 					found = true;
 					return true;
@@ -78,7 +123,7 @@ namespace Verse.AI
 			{
 				foreach (Building item in map.listerBuildings.AllBuildingsColonistOfDef(allBedDefBestToWorst[i]))
 				{
-					if (((Building_Bed)item).OwnersForReading.Any() && map.reachability.CanReach(raidSpawnLoc, item, PathEndMode.OnCell, TraverseMode.PassAllDestroyableThings, Danger.Deadly))
+					if (((Building_Bed)item).OwnersForReading.Any() && !item.IsClearableFreeBuilding && map.reachability.CanReach(raidSpawnLoc, item, PathEndMode.OnCell, TraverseMode.PassAllDestroyableThings, Danger.Deadly))
 					{
 						list.Add(item);
 					}
@@ -88,10 +133,10 @@ namespace Verse.AI
 			{
 				return result.Position;
 			}
-			IEnumerable<Building> source = map.listerBuildings.allBuildingsColonist.Where((Building b) => !b.def.building.ai_combatDangerous && !b.def.building.isInert && !b.def.building.ai_neverTrashThis);
+			IEnumerable<Building> source = map.listerBuildings.allBuildingsColonist.Where((Building b) => !b.def.building.ai_combatDangerous && !b.def.building.isInert && !b.def.building.ai_neverTrashThis && !b.IsClearableFreeBuilding);
 			if (source.Any())
 			{
-				for (int j = 0; j < 500; j++)
+				for (int num = 0; num < 500; num++)
 				{
 					IntVec3 intVec = source.RandomElement().RandomAdjacentCell8Way();
 					if (intVec.Walkable(map) && map.reachability.CanReach(raidSpawnLoc, intVec, PathEndMode.OnCell, TraverseMode.PassAllDestroyableThings, Danger.Deadly))
@@ -111,8 +156,15 @@ namespace Verse.AI
 			return map.Center;
 		}
 
-		public static bool EnemyIsNear(Pawn p, float radius)
+		public static bool EnemyIsNear(Pawn p, float radius, bool meleeOnly = false)
 		{
+			Thing threat;
+			return EnemyIsNear(p, radius, out threat, meleeOnly);
+		}
+
+		public static bool EnemyIsNear(Pawn p, float radius, out Thing threat, bool meleeOnly = false, bool requireLos = false)
+		{
+			threat = null;
 			if (!p.Spawned)
 			{
 				return false;
@@ -122,8 +174,21 @@ namespace Verse.AI
 			for (int i = 0; i < potentialTargetsFor.Count; i++)
 			{
 				IAttackTarget attackTarget = potentialTargetsFor[i];
-				if (!attackTarget.ThreatDisabled(p) && (flag || !attackTarget.Thing.Position.Fogged(attackTarget.Thing.Map)) && p.Position.InHorDistOf(((Thing)attackTarget).Position, radius))
+				if (attackTarget.ThreatDisabled(p) || (!flag && attackTarget.Thing.Position.Fogged(attackTarget.Thing.Map)) || (requireLos && !GenSight.LineOfSightToThing(p.Position, attackTarget.Thing, p.MapHeld)))
 				{
+					continue;
+				}
+				if (meleeOnly && attackTarget is Pawn { equipment: not null } pawn)
+				{
+					CompEquippable primaryEq = pawn.equipment.PrimaryEq;
+					if (primaryEq != null && !primaryEq.PrimaryVerb.IsMeleeAttack)
+					{
+						continue;
+					}
+				}
+				if (p.Position.InHorDistOf(((Thing)attackTarget).Position, radius))
+				{
+					threat = (Thing)attackTarget;
 					return true;
 				}
 			}

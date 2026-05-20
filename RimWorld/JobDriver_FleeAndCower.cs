@@ -12,11 +12,11 @@ namespace RimWorld
 
 		public override string GetReport()
 		{
-			if (pawn.CurJob != job || pawn.Position != job.GetTarget(TargetIndex.A).Cell)
+			if (pawn.CurJob == job && pawn.Position == job.GetTarget(TargetIndex.A).Cell)
 			{
-				return base.GetReport();
+				return "ReportCowering".Translate();
 			}
-			return "ReportCowering".Translate();
+			return base.GetReport();
 		}
 
 		protected override IEnumerable<Toil> MakeNewToils()
@@ -25,12 +25,12 @@ namespace RimWorld
 			{
 				yield return item;
 			}
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.defaultCompleteMode = ToilCompleteMode.Delay;
 			toil.defaultDuration = 1200;
-			toil.tickAction = delegate
+			toil.tickIntervalAction = delegate(int delta)
 			{
-				if (pawn.IsHashIntervalTick(35) && SelfDefenseUtility.ShouldStartFleeing(pawn))
+				if (pawn.IsHashIntervalTick(35, delta) && SelfDefenseUtility.ShouldStartFleeing(pawn))
 				{
 					EndJobWith(JobCondition.InterruptForced);
 				}

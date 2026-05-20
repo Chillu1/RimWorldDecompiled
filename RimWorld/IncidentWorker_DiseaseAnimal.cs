@@ -10,8 +10,7 @@ namespace RimWorld
 	{
 		protected override IEnumerable<Pawn> PotentialVictimCandidates(IIncidentTarget target)
 		{
-			Map map = target as Map;
-			if (map != null)
+			if (target is Map map)
 			{
 				return from p in map.mapPawns.PawnsInFaction(Faction.OfPlayer)
 					where p.HostFaction == null && !p.RaceProps.Humanlike

@@ -6,9 +6,9 @@ namespace RimWorld
 {
 	public class Designator_Deconstruct : Designator
 	{
-		public override int DraggableDimensions => 2;
-
 		protected override DesignationDef Designation => DesignationDefOf.Deconstruct;
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Orders;
 
 		public Designator_Deconstruct()
 		{
@@ -20,6 +20,7 @@ namespace RimWorld
 			useMouseIcon = true;
 			soundSucceeded = SoundDefOf.Designate_Deconstruct;
 			hotKey = KeyBindingDefOf.Designator_Deconstruct;
+			showReverseDesignatorDisabledReason = true;
 		}
 
 		public override AcceptanceReport CanDesignateCell(IntVec3 c)
@@ -71,17 +72,18 @@ namespace RimWorld
 			if (DebugSettings.godMode || innerIfMinified.GetStatValue(StatDefOf.WorkToBuild) == 0f || t.def.IsFrame)
 			{
 				t.Destroy(DestroyMode.Deconstruct);
+				return;
 			}
-			else
+			base.Map.designationManager.AddDesignation(new Designation(t, Designation));
+			if (ModsConfig.AnomalyActive && t is Building_HoldingPlatform { Occupied: not false } building_HoldingPlatform)
 			{
-				base.Map.designationManager.AddDesignation(new Designation(t, Designation));
+				Messages.Message("MessageOccupiedHoldingPlatformDeconstructed".Translate(), building_HoldingPlatform, MessageTypeDefOf.CautionInput);
 			}
 		}
 
 		public override AcceptanceReport CanDesignateThing(Thing t)
 		{
-			Building building = t.GetInnerIfMinified() as Building;
-			if (building == null)
+			if (!(t.GetInnerIfMinified() is Building building))
 			{
 				return false;
 			}
@@ -89,13 +91,14 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!building.DeconstructibleBy(Faction.OfPlayer))
+			AcceptanceReport acceptanceReport = building.DeconstructibleBy(Faction.OfPlayer);
+			if (!acceptanceReport.Accepted)
 			{
-				if (building.Faction == Faction.OfMechanoids && building.def.building.IsDeconstructible)
+				if (building.def.IsNonDeconstructibleAttackableBuilding)
 				{
-					return new AcceptanceReport("MessageMustDesignateDeconstructibleMechCluster".Translate());
+					return "RemoveByAttackingTooltip".Translate();
 				}
-				return false;
+				return acceptanceReport.Reason;
 			}
 			if (base.Map.designationManager.DesignationOn(t, Designation) != null)
 			{

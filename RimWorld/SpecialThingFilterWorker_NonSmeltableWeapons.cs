@@ -6,10 +6,6 @@ namespace RimWorld
 	{
 		public override bool Matches(Thing t)
 		{
-			if (!CanEverMatch(t.def))
-			{
-				return false;
-			}
 			return !t.Smeltable;
 		}
 
@@ -37,9 +33,9 @@ namespace RimWorld
 
 		public override bool AlwaysMatches(ThingDef def)
 		{
-			if (CanEverMatch(def) && !def.smeltable)
+			if (CanEverMatch(def))
 			{
-				return !def.MadeFromStuff;
+				return !def.PotentiallySmeltable;
 			}
 			return false;
 		}

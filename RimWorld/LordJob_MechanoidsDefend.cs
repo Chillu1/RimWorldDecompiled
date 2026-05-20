@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Verse;
+using Verse.AI;
 using Verse.AI.Group;
 
 namespace RimWorld
@@ -49,6 +50,9 @@ namespace RimWorld
 			LordToil_DefendPoint lordToil_DefendPoint = (LordToil_DefendPoint)(stateGraph.StartingToil = new LordToil_DefendPoint(defSpot, defendRadius));
 			LordToil_AssaultColony lordToil_AssaultColony = new LordToil_AssaultColony();
 			stateGraph.AddToil(lordToil_AssaultColony);
+			LordToil_ExitMap lordToil_ExitMap = new LordToil_ExitMap(LocomotionUrgency.Jog, canDig: false, interruptCurrentJob: true);
+			lordToil_ExitMap.useAvoidGrid = true;
+			stateGraph.AddToil(lordToil_ExitMap);
 			if (canAssaultColony)
 			{
 				LordToil_AssaultColony lordToil_AssaultColony2 = new LordToil_AssaultColony();
@@ -82,6 +86,10 @@ namespace RimWorld
 				transition6.AddTrigger(new Trigger_AnyThingDamageTaken(things, 1f));
 				stateGraph.AddTransition(transition6);
 			}
+			Transition transition7 = new Transition(lordToil_AssaultColony, lordToil_ExitMap);
+			transition7.AddTrigger(new Trigger_GameEnding());
+			transition7.AddPreAction(new TransitionAction_Message("MechanoidsMovingOn".Translate()));
+			stateGraph.AddTransition(transition7);
 			return stateGraph;
 		}
 

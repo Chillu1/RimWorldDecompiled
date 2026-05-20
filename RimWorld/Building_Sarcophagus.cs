@@ -25,10 +25,10 @@ namespace RimWorld
 			return false;
 		}
 
-		public override void Notify_CorpseBuried(Pawn worker)
+		public override void Notify_HauledTo(Pawn hauler, Thing thing, int count)
 		{
-			base.Notify_CorpseBuried(worker);
-			if (!thisIsFirstBodyEver || !worker.IsColonist || !base.Corpse.InnerPawn.def.race.Humanlike || base.Corpse.everBuriedInSarcophagus)
+			base.Notify_HauledTo(hauler, thing, count);
+			if (!thisIsFirstBodyEver || !hauler.IsColonist || !base.Corpse.InnerPawn.def.race.Humanlike || base.Corpse.everBuriedInSarcophagus)
 			{
 				return;
 			}

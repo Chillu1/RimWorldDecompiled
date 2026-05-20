@@ -38,7 +38,7 @@ namespace RimWorld.QuestGen
 			{
 				return false;
 			}
-			if (!Find.Storyteller.difficultyValues.allowViolentQuests && faction.HostileTo(Faction.OfPlayer))
+			if (!Find.Storyteller.difficulty.allowViolentQuests && faction.HostileTo(Faction.OfPlayer))
 			{
 				return false;
 			}

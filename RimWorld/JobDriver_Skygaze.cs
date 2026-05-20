@@ -14,25 +14,30 @@ namespace RimWorld
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.OnCell);
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
 				pawn.jobs.posture = PawnPosture.LayingOnGroundFaceUp;
 			};
-			toil.tickAction = delegate
+			toil.tickIntervalAction = delegate(int delta)
 			{
 				float extraJoyGainFactor = pawn.Map.gameConditionManager.AggregateSkyGazeJoyGainFactor(pawn.Map);
-				JoyUtility.JoyTickCheckEnd(pawn, JoyTickFullJoyAction.EndJob, extraJoyGainFactor);
+				JoyUtility.JoyTickCheckEnd(pawn, delta, JoyTickFullJoyAction.EndJob, extraJoyGainFactor);
 			};
 			toil.defaultCompleteMode = ToilCompleteMode.Delay;
 			toil.defaultDuration = job.def.joyDuration;
 			toil.FailOn(() => pawn.Position.Roofed(pawn.Map));
+			toil.FailOn(() => pawn.Map.weatherManager.curWeather.preventSkygaze);
 			toil.FailOn(() => !JoyUtility.EnjoyableOutsideNow(pawn));
 			yield return toil;
 		}
 
 		public override string GetReport()
 		{
+			if (base.Map.Tile.Valid && base.Map.Tile.LayerDef.isSpace)
+			{
+				return "Stargazing".Translate();
+			}
 			if (base.Map.gameConditionManager.ConditionIsActive(GameConditionDefOf.Eclipse))
 			{
 				return "WatchingEclipse".Translate();

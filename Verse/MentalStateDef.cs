@@ -16,13 +16,23 @@ namespace Verse
 
 		public bool prisonersCanDo = true;
 
-		public bool unspawnedCanDo;
+		public bool slavesCanDo = true;
+
+		public bool inCaravanCanDo;
 
 		public bool colonistsOnly;
 
+		public bool slavesOnly;
+
 		public List<PawnCapacityDef> requiredCapacities = new List<PawnCapacityDef>();
 
+		public bool downedCanDo;
+
+		public bool unspawnedNotInCaravanCanDo;
+
 		public bool blockNormalThoughts;
+
+		public bool stopsJobs = true;
 
 		public List<InteractionDef> blockInteractionInitiationExcept;
 
@@ -40,6 +50,8 @@ namespace Verse
 
 		public bool ignoreDrugPolicy;
 
+		public IntRange ticksBetweenRamblingRange;
+
 		public float recoveryMtbDays = 1f;
 
 		public int minTicksBeforeRecovery = 500;
@@ -50,9 +62,13 @@ namespace Verse
 
 		public bool recoverFromDowned = true;
 
+		public bool recoverFromCaptured = true;
+
 		public bool recoverFromCollapsingExhausted = true;
 
 		public ThoughtDef moodRecoveryThought;
+
+		public bool allowGuilty = true;
 
 		[MustTranslate]
 		public string beginLetter;
@@ -71,6 +87,8 @@ namespace Verse
 		public string baseInspectLine;
 
 		public bool escapingPrisonersIgnore;
+
+		public bool blocksDefendAndExpandHive;
 
 		private MentalStateWorker workerInt;
 

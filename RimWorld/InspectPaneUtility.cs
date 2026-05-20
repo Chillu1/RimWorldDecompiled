@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
+using Verse.Steam;
 
 namespace RimWorld
 {
@@ -16,7 +17,7 @@ namespace RimWorld
 
 		public const float TabHeight = 30f;
 
-		private static readonly Texture2D InspectTabButtonFillTex = SolidColorMaterials.NewSolidColorTexture(new Color(19f / 255f, 22f / 255f, 9f / 85f, 1f));
+		private static readonly Texture2D InspectTabButtonFillTex = SolidColorMaterials.NewSolidColorTexture(new Color(0.07450981f, 0.08627451f, 9f / 85f, 1f));
 
 		public const float CornerButtonsSize = 24f;
 
@@ -42,8 +43,7 @@ namespace RimWorld
 			int visible = 0;
 			if (pane.CurTabs != null)
 			{
-				IList list = pane.CurTabs as IList;
-				if (list != null)
+				if (pane.CurTabs is IList list)
 				{
 					for (int i = 0; i < list.Count; i++)
 					{
@@ -61,7 +61,7 @@ namespace RimWorld
 			return 72f * (float)Mathf.Max(6, visible);
 			void Process(InspectTabBase tab)
 			{
-				if (tab.IsVisible)
+				if (tab.IsVisible && !tab.Hidden)
 				{
 					visible++;
 				}
@@ -91,27 +91,25 @@ namespace RimWorld
 		public static string AdjustedLabelFor(List<object> selected, Rect rect)
 		{
 			string text = "";
-			Zone zone;
-			if ((zone = selected[0] as Zone) != null)
+			if (selected[0] is IRenameable renameable)
 			{
 				if (selected.Count == 1)
 				{
-					text = zone.label;
+					text = renameable.InspectLabel;
 				}
 				else
 				{
-					string baseLabel = zone.BaseLabel;
+					string baseLabel = renameable.BaseLabel;
 					bool flag = true;
 					for (int i = 1; i < selected.Count; i++)
 					{
-						Zone zone2;
-						if ((zone2 = selected[i] as Zone) != null && zone2.BaseLabel != baseLabel)
+						if (selected[i] is IRenameable renameable2 && renameable2.BaseLabel != baseLabel)
 						{
 							flag = false;
 							break;
 						}
 					}
-					text = ((!flag) ? ((string)"VariousLabel".Translate()) : ((!zone.BaseLabel.NullOrEmpty()) ? zone.BaseLabel : ((string)"Zone".Translate())));
+					text = ((!flag) ? ((string)"VariousLabel".Translate()) : renameable.BaseLabel);
 					text = text + " x" + selected.Count;
 				}
 			}
@@ -120,8 +118,7 @@ namespace RimWorld
 				selectedThings.Clear();
 				for (int j = 0; j < selected.Count; j++)
 				{
-					Thing outerThing;
-					if ((outerThing = selected[j] as Thing) != null)
+					if (selected[j] is Thing outerThing)
 					{
 						selectedThings.Add(outerThing.GetInnerIfMinified());
 					}
@@ -132,17 +129,17 @@ namespace RimWorld
 				}
 				else if (selectedThings.Count > 1)
 				{
-					string label = selectedThings[0].def.label;
+					string text2 = PluralLabelFor(selectedThings[0]);
 					bool flag2 = true;
 					for (int k = 1; k < selectedThings.Count; k++)
 					{
-						if (selectedThings[k].def.label != label)
+						if (PluralLabelFor(selectedThings[k]) != text2)
 						{
 							flag2 = false;
 							break;
 						}
 					}
-					text = ((!flag2) ? ((string)"VariousLabel".Translate()) : ((string)selectedThings[0].def.LabelCap));
+					text = ((!flag2) ? ((string)"VariousLabel".Translate()) : PluralLabelFor(selectedThings[0]).CapitalizeFirst());
 					int num = 0;
 					for (int l = 0; l < selectedThings.Count; l++)
 					{
@@ -156,8 +153,19 @@ namespace RimWorld
 				}
 				selectedThings.Clear();
 			}
-			Text.Font = GameFont.Medium;
-			return text.Truncate(rect.width, truncatedLabelsCached);
+			using (new TextBlock(GameFont.Medium))
+			{
+				return text.Truncate(rect.width, truncatedLabelsCached);
+			}
+		}
+
+		private static string PluralLabelFor(Thing thing)
+		{
+			if (thing is Pawn { IsMutant: not false } pawn)
+			{
+				return pawn.mutant.Def.label;
+			}
+			return thing.def.label;
 		}
 
 		public static void ExtraOnGUI(IInspectPane pane)
@@ -168,10 +176,6 @@ namespace RimWorld
 				{
 					pane.SelectNextInCell();
 				}
-				if (Current.ProgramState == ProgramState.Playing)
-				{
-					pane.DrawInspectGizmos();
-				}
 				DoTabs(pane);
 			}
 		}
@@ -181,8 +185,7 @@ namespace RimWorld
 			bool tabUpdated = false;
 			if (pane.CurTabs != null)
 			{
-				IList list = pane.CurTabs as IList;
-				if (list != null)
+				if (pane.CurTabs is IList list)
 				{
 					for (int i = 0; i < list.Count; i++)
 					{
@@ -223,7 +226,7 @@ namespace RimWorld
 				Rect rect = inRect.ContractedBy(12f);
 				rect.yMin -= 4f;
 				rect.yMax += 6f;
-				GUI.BeginGroup(rect);
+				Widgets.BeginGroup(rect);
 				float lineEndWidth = 0f;
 				if (pane.ShouldShowSelectNextInCellButton)
 				{
@@ -234,15 +237,23 @@ namespace RimWorld
 						pane.SelectNextInCell();
 					}
 					lineEndWidth += 24f;
-					TooltipHandler.TipRegionByKey(rect2, "SelectNextInSquareTip", KeyBindingDefOf.SelectNextInCell.MainKeyLabel);
+					if (SteamDeck.IsSteamDeckInNonKeyboardMode)
+					{
+						TooltipHandler.TipRegionByKey(rect2, "SelectNextInSquareTipController");
+					}
+					else
+					{
+						TooltipHandler.TipRegionByKey(rect2, "SelectNextInSquareTip", KeyBindingDefOf.SelectNextInCell.MainKeyLabel);
+					}
 				}
 				pane.DoInspectPaneButtons(rect, ref lineEndWidth);
 				Rect rect3 = new Rect(0f, 0f, rect.width - lineEndWidth, 50f);
 				string label = pane.GetLabel(rect3);
 				rect3.width += 300f;
-				Text.Font = GameFont.Medium;
-				Text.Anchor = TextAnchor.UpperLeft;
-				Widgets.Label(rect3, label);
+				using (new TextBlock(GameFont.Medium, TextAnchor.UpperLeft))
+				{
+					Widgets.Label(rect3, label);
+				}
 				if (pane.ShouldShowPaneContents)
 				{
 					Rect rect4 = rect.AtZero();
@@ -256,7 +267,7 @@ namespace RimWorld
 			}
 			finally
 			{
-				GUI.EndGroup();
+				Widgets.EndGroup();
 			}
 		}
 
@@ -270,8 +281,7 @@ namespace RimWorld
 				bool drewOpen = false;
 				if (pane.CurTabs != null)
 				{
-					IList list = pane.CurTabs as IList;
-					if (list != null)
+					if (pane.CurTabs is IList list)
 					{
 						for (int i = 0; i < list.Count; i++)
 						{
@@ -294,25 +304,28 @@ namespace RimWorld
 				{
 					if (tab.IsVisible)
 					{
-						Rect rect = new Rect(curTabX, tabsTopY, 72f, 30f);
-						leftEdge = curTabX;
-						Text.Font = GameFont.Small;
-						if (Widgets.ButtonText(rect, tab.labelKey.Translate()))
+						bool flag = tab.GetType() == pane.OpenTabType;
+						if (!tab.Hidden)
 						{
-							InterfaceToggleTab(tab, pane);
+							Rect rect = new Rect(curTabX, tabsTopY, 72f, 30f);
+							leftEdge = curTabX;
+							Text.Font = GameFont.Small;
+							if (Widgets.ButtonText(rect, tab.labelKey.Translate()))
+							{
+								InterfaceToggleTab(tab, pane);
+							}
+							if (!flag && !tab.TutorHighlightTagClosed.NullOrEmpty())
+							{
+								UIHighlighter.HighlightOpportunity(rect, tab.TutorHighlightTagClosed);
+							}
+							curTabX -= 72f;
 						}
-						bool num = tab.GetType() == pane.OpenTabType;
-						if (!num && !tab.TutorHighlightTagClosed.NullOrEmpty())
-						{
-							UIHighlighter.HighlightOpportunity(rect, tab.TutorHighlightTagClosed);
-						}
-						if (num)
+						if (flag)
 						{
 							tab.DoTabGUI();
 							pane.RecentHeight = 700f;
 							drewOpen = true;
 						}
-						curTabX -= 72f;
 					}
 				}
 			}
@@ -348,8 +361,7 @@ namespace RimWorld
 			InspectTabBase tab = null;
 			if (mainTabWindow_Inspect.CurTabs != null)
 			{
-				IList list = mainTabWindow_Inspect.CurTabs as IList;
-				if (list != null)
+				if (mainTabWindow_Inspect.CurTabs is IList list)
 				{
 					for (int i = 0; i < list.Count && !Find((InspectTabBase)list[i]); i++)
 					{

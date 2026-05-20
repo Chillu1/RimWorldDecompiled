@@ -19,10 +19,14 @@ namespace RimWorld
 			{
 				yield return item;
 			}
-			Command_Action command_Action = new Command_Action();
-			command_Action.action = TryLaunch;
-			command_Action.defaultLabel = "CommandShipLaunch".Translate();
-			command_Action.defaultDesc = "CommandShipLaunchDesc".Translate();
+			Command_Action command_Action = new Command_Action
+			{
+				action = TryLaunch,
+				defaultLabel = "CommandShipLaunch".Translate(),
+				defaultDesc = "CommandShipLaunchDesc".Translate(),
+				hotKey = KeyBindingDefOf.Misc1,
+				icon = ContentFinder<Texture2D>.Get("UI/Commands/LaunchShip")
+			};
 			if (!CanLaunchNow)
 			{
 				command_Action.Disable(ShipUtility.LaunchFailReasons(this).First());
@@ -31,8 +35,6 @@ namespace RimWorld
 			{
 				command_Action.Disable();
 			}
-			command_Action.hotKey = KeyBindingDefOf.Misc1;
-			command_Action.icon = ContentFinder<Texture2D>.Get("UI/Commands/LaunchShip");
 			yield return command_Action;
 		}
 

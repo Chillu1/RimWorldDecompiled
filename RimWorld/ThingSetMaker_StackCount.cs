@@ -17,7 +17,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (parms.maxTotalMass.HasValue && parms.maxTotalMass != float.MaxValue && !ThingSetMakerUtility.PossibleToWeighNoMoreThan(AllowedThingDefs(parms), parms.techLevel ?? TechLevel.Undefined, parms.maxTotalMass.Value, (!parms.countRange.HasValue) ? 1 : parms.countRange.Value.max))
+			if (parms.maxTotalMass.HasValue && parms.maxTotalMass != float.MaxValue && !ThingSetMakerUtility.PossibleToWeighNoMoreThan(AllowedThingDefs(parms), parms.techLevel.GetValueOrDefault(), parms.maxTotalMass.Value, parms.countRange?.max ?? 1))
 			{
 				return false;
 			}
@@ -31,14 +31,14 @@ namespace RimWorld
 			{
 				return;
 			}
-			TechLevel stuffTechLevel = parms.techLevel ?? TechLevel.Undefined;
-			IntRange intRange = parms.countRange ?? IntRange.one;
+			TechLevel valueOrDefault = parms.techLevel.GetValueOrDefault();
+			IntRange intRange = parms.countRange ?? IntRange.One;
 			float num = parms.maxTotalMass ?? float.MaxValue;
 			int num2 = Mathf.Max(intRange.RandomInRange, 1);
 			float num3 = 0f;
 			int num4 = num2;
 			ThingStuffPair thingStuffPair;
-			while (num4 > 0 && ThingSetMakerUtility.TryGetRandomThingWhichCanWeighNoMoreThan(enumerable, stuffTechLevel, (num == float.MaxValue) ? float.MaxValue : (num - num3), parms.qualityGenerator, out thingStuffPair))
+			while (num4 > 0 && ThingSetMakerUtility.TryGetRandomThingWhichCanWeighNoMoreThan(enumerable, valueOrDefault, (num == float.MaxValue) ? float.MaxValue : (num - num3), parms.qualityGenerator, out thingStuffPair))
 			{
 				Thing thing = ThingMaker.MakeThing(thingStuffPair.thing, thingStuffPair.stuff);
 				ThingSetMakerUtility.AssignQuality(thing, parms.qualityGenerator);
@@ -63,7 +63,7 @@ namespace RimWorld
 
 		protected override IEnumerable<ThingDef> AllGeneratableThingsDebugSub(ThingSetMakerParams parms)
 		{
-			TechLevel techLevel = parms.techLevel ?? TechLevel.Undefined;
+			TechLevel techLevel = parms.techLevel.GetValueOrDefault();
 			foreach (ThingDef item in AllowedThingDefs(parms))
 			{
 				if (!parms.maxTotalMass.HasValue || parms.maxTotalMass == float.MaxValue || !(ThingSetMakerUtility.GetMinMass(item, techLevel) > parms.maxTotalMass))

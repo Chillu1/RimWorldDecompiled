@@ -8,11 +8,13 @@ namespace RimWorld
 	{
 		private Map map;
 
-		private Dictionary<ThingDef, int> countedAmounts = new Dictionary<ThingDef, int>();
+		private readonly Dictionary<ThingDef, int> countedAmounts = new Dictionary<ThingDef, int>();
 
-		private static List<ThingDef> resources = new List<ThingDef>();
+		private static readonly List<ThingDef> resources = new List<ThingDef>();
 
 		public int Silver => GetCount(ThingDefOf.Silver);
+
+		public Dictionary<ThingDef, int> AllCountedAmounts => countedAmounts;
 
 		public float TotalHumanEdibleNutrition
 		{
@@ -30,7 +32,21 @@ namespace RimWorld
 			}
 		}
 
-		public Dictionary<ThingDef, int> AllCountedAmounts => countedAmounts;
+		public float TotalHumanBabyEdibleNutrition
+		{
+			get
+			{
+				float num = 0f;
+				foreach (var (thingDef2, num3) in countedAmounts)
+				{
+					if (thingDef2.IsNutritionGivingIngestibleForHumanlikeBabies)
+					{
+						num += thingDef2.GetStatValueAbstract(StatDefOf.Nutrition) * (float)num3;
+					}
+				}
+				return num;
+			}
+		}
 
 		public static void ResetDefs()
 		{
@@ -47,7 +63,7 @@ namespace RimWorld
 			ResetResourceCounts();
 		}
 
-		public void ResetResourceCounts()
+		private void ResetResourceCounts()
 		{
 			countedAmounts.Clear();
 			for (int i = 0; i < resources.Count; i++)
@@ -66,7 +82,7 @@ namespace RimWorld
 			{
 				return value;
 			}
-			Log.Error(string.Concat("Looked for nonexistent key ", rDef, " in counted resources."));
+			Log.Error("Looked for nonexistent key " + rDef?.ToString() + " in counted resources.");
 			countedAmounts.Add(rDef, 0);
 			return 0;
 		}
@@ -126,9 +142,25 @@ namespace RimWorld
 			}
 		}
 
+		public void CheckUpdateResource(Thing t)
+		{
+			if (t != null)
+			{
+				Thing innerIfMinified = t.GetInnerIfMinified();
+				if (innerIfMinified.def.CountAsResource && ShouldCount(innerIfMinified))
+				{
+					UpdateResourceCounts();
+				}
+			}
+		}
+
 		private bool ShouldCount(Thing t)
 		{
 			if (t.IsNotFresh())
+			{
+				return false;
+			}
+			if (t.SpawnedOrAnyParentSpawned && t.PositionHeld.Fogged(t.MapHeld))
 			{
 				return false;
 			}

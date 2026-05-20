@@ -11,7 +11,29 @@ namespace RimWorld
 
 		public static MapGeneratorDef Base_Faction;
 
-		public static MapGeneratorDef EscapeShip;
+		[MayRequireAnomaly]
+		public static MapGeneratorDef Undercave;
+
+		[MayRequireAnomaly]
+		public static MapGeneratorDef MetalHell;
+
+		[MayRequireAnomaly]
+		public static MapGeneratorDef Labyrinth;
+
+		[MayRequireOdyssey]
+		public static MapGeneratorDef SpacePocket;
+
+		[MayRequireOdyssey]
+		public static MapGeneratorDef Space;
+
+		[MayRequireOdyssey]
+		public static MapGeneratorDef OrbitalRelay;
+
+		[MayRequireOdyssey]
+		public static MapGeneratorDef Mechhive;
+
+		[MayRequireOdyssey]
+		public static MapGeneratorDef InsectLair;
 
 		static MapGeneratorDefOf()
 		{

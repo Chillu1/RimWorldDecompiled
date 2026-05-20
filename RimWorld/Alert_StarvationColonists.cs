@@ -8,12 +8,14 @@ namespace RimWorld
 	{
 		private List<Pawn> starvingColonistsResult = new List<Pawn>();
 
+		private StringBuilder sb = new StringBuilder();
+
 		private List<Pawn> StarvingColonists
 		{
 			get
 			{
 				starvingColonistsResult.Clear();
-				foreach (Pawn item in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep)
+				foreach (Pawn item in PawnsFinder.AllMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists_NoSuspended)
 				{
 					if (item.needs.food != null && item.needs.food.Starving)
 					{
@@ -32,12 +34,12 @@ namespace RimWorld
 
 		public override TaggedString GetExplanation()
 		{
-			StringBuilder stringBuilder = new StringBuilder();
-			foreach (Pawn starvingColonist in StarvingColonists)
+			sb.Length = 0;
+			foreach (Pawn item in starvingColonistsResult)
 			{
-				stringBuilder.AppendLine("  - " + starvingColonist.NameShortColored.Resolve());
+				sb.AppendLine("  - " + item.NameShortColored.Resolve());
 			}
-			return "StarvationDesc".Translate(stringBuilder.ToString());
+			return "StarvationDesc".Translate(sb.ToString().TrimEndNewlines());
 		}
 
 		public override AlertReport GetReport()

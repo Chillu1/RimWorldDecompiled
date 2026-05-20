@@ -14,13 +14,17 @@ namespace Verse
 
 		private static readonly Color ColorBaseNeutral;
 
-		private static readonly Color ColorBaseHostile;
+		public static readonly Color ColorBaseHostile;
 
 		private static readonly Color ColorBasePrisoner;
+
+		private static readonly Color ColorSlave;
 
 		private static readonly Color ColorColony;
 
 		private static readonly Color ColorWildMan;
+
+		private static readonly Color ColorUncontrolledPlayerMech;
 
 		private const int ColorShiftCount = 10;
 
@@ -34,8 +38,10 @@ namespace Verse
 			ColorBaseNeutral = new Color(0.4f, 0.85f, 0.9f);
 			ColorBaseHostile = new Color(0.9f, 0.2f, 0.2f);
 			ColorBasePrisoner = new Color(1f, 0.85f, 0.5f);
+			ColorSlave = new Color32(222, 192, 22, byte.MaxValue);
 			ColorColony = new Color(0.9f, 0.9f, 0.9f);
 			ColorWildMan = new Color(1f, 0.8f, 1f);
+			ColorUncontrolledPlayerMech = new Color(0.9f, 0.2f, 0.2f);
 			ColorShifts = new List<Color>
 			{
 				new Color(1f, 1f, 1f),
@@ -73,6 +79,14 @@ namespace Verse
 			{
 				return ColorsPrisoner[index];
 			}
+			if (pawn.IsSlave && SlaveRebellionUtility.IsRebelling(pawn))
+			{
+				return ColorBaseHostile;
+			}
+			if (pawn.IsSlave)
+			{
+				return ColorSlave;
+			}
 			if (pawn.IsWildMan())
 			{
 				return ColorWildMan;
@@ -80,6 +94,10 @@ namespace Verse
 			if (pawn.Faction == null)
 			{
 				return ColorsNeutral[index];
+			}
+			if (pawn.IsColonyMechRequiringMechanitor())
+			{
+				return ColorUncontrolledPlayerMech;
 			}
 			if (pawn.Faction == Faction.OfPlayer)
 			{

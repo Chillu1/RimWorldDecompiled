@@ -13,10 +13,6 @@ namespace RimWorld
 
 		public static bool HasJobOnTransporter(Pawn pawn, CompTransporter transporter)
 		{
-			if (transporter.parent.IsForbidden(pawn))
-			{
-				return false;
-			}
 			if (!transporter.AnythingLeftToLoad)
 			{
 				return false;
@@ -50,7 +46,7 @@ namespace RimWorld
 			tmpAlreadyLoading.Clear();
 			if (leftToLoad != null)
 			{
-				List<Pawn> allPawnsSpawned = transporter.Map.mapPawns.AllPawnsSpawned;
+				IReadOnlyList<Pawn> allPawnsSpawned = transporter.Map.mapPawns.AllPawnsSpawned;
 				for (int i = 0; i < allPawnsSpawned.Count; i++)
 				{
 					if (allPawnsSpawned[i] == p || allPawnsSpawned[i].CurJobDef != JobDefOf.HaulToTransporter)
@@ -97,13 +93,12 @@ namespace RimWorld
 				tmpAlreadyLoading.Clear();
 				return default(ThingCount);
 			}
-			Thing thing = GenClosest.ClosestThingReachable(p.Position, p.Map, ThingRequest.ForGroup(ThingRequestGroup.HaulableEver), PathEndMode.Touch, TraverseParms.For(p), 9999f, (Thing x) => neededThings.Contains(x) && p.CanReserve(x));
+			Thing thing = GenClosest.ClosestThingReachable(p.Position, p.Map, ThingRequest.ForGroup(ThingRequestGroup.HaulableEver), PathEndMode.Touch, TraverseParms.For(p), 9999f, (Thing x) => neededThings.Contains(x) && p.CanReserve(x) && !x.IsForbidden(p) && p.carryTracker.AvailableStackSpace(x.def) > 0, null, 0, -1, forceAllowGlobalSearch: false, RegionType.Set_Passable, ignoreEntirelyForbiddenRegions: false, lookInHaulSources: true);
 			if (thing == null)
 			{
 				foreach (Thing neededThing in neededThings)
 				{
-					Pawn pawn = neededThing as Pawn;
-					if (pawn != null && (!pawn.IsColonist || pawn.Downed) && !pawn.inventory.UnloadEverything && p.CanReserveAndReach(pawn, PathEndMode.Touch, Danger.Deadly))
+					if (neededThing is Pawn { Spawned: not false } pawn && ((!pawn.IsFreeColonist && !pawn.IsColonyMech) || pawn.Downed || pawn.needs?.energy?.IsLowEnergySelfShutdown == true) && !pawn.inventory.UnloadEverything && p.CanReserveAndReach(pawn, PathEndMode.Touch, Danger.Deadly))
 					{
 						neededThings.Clear();
 						tmpAlreadyLoading.Clear();
@@ -115,11 +110,11 @@ namespace RimWorld
 			if (thing != null)
 			{
 				TransferableOneWay transferableOneWay3 = null;
-				for (int l = 0; l < leftToLoad.Count; l++)
+				for (int num = 0; num < leftToLoad.Count; num++)
 				{
-					if (leftToLoad[l].things.Contains(thing))
+					if (leftToLoad[num].things.Contains(thing))
 					{
-						transferableOneWay3 = leftToLoad[l];
+						transferableOneWay3 = leftToLoad[num];
 						break;
 					}
 				}

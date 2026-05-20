@@ -5,59 +5,31 @@ namespace RimWorld
 {
 	public interface ITargetingSource
 	{
-		bool CasterIsPawn
-		{
-			get;
-		}
+		bool CasterIsPawn { get; }
 
-		bool IsMeleeAttack
-		{
-			get;
-		}
+		bool IsMeleeAttack { get; }
 
-		bool Targetable
-		{
-			get;
-		}
+		bool Targetable { get; }
 
-		bool MultiSelect
-		{
-			get;
-		}
+		bool MultiSelect { get; }
 
-		Thing Caster
-		{
-			get;
-		}
+		bool HidePawnTooltips { get; }
 
-		Pawn CasterPawn
-		{
-			get;
-		}
+		Thing Caster { get; }
 
-		Verb GetVerb
-		{
-			get;
-		}
+		Pawn CasterPawn { get; }
 
-		Texture2D UIIcon
-		{
-			get;
-		}
+		Verb GetVerb { get; }
 
-		TargetingParameters targetParams
-		{
-			get;
-		}
+		Texture2D UIIcon { get; }
 
-		ITargetingSource DestinationSelector
-		{
-			get;
-		}
+		TargetingParameters targetParams { get; }
+
+		ITargetingSource DestinationSelector { get; }
 
 		bool CanHitTarget(LocalTargetInfo target);
 
-		bool ValidateTarget(LocalTargetInfo target);
+		bool ValidateTarget(LocalTargetInfo target, bool showMessages = true);
 
 		void DrawHighlight(LocalTargetInfo target);
 

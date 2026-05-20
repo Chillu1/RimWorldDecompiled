@@ -7,17 +7,24 @@ namespace RimWorld
 {
 	public class IncidentWorker_RaidFriendly : IncidentWorker_Raid
 	{
-		protected override bool FactionCanBeGroupSource(Faction f, Map map, bool desperate = false)
+		public override bool FactionCanBeGroupSource(Faction f, IncidentParms parms, bool desperate = false)
 		{
-			IEnumerable<Faction> source = (from x in map.attackTargetsCache.TargetsHostileToColony
-				where GenHostility.IsActiveThreatToPlayer(x)
-				select x into p
-				select ((Thing)p).Faction).Distinct();
-			if (base.FactionCanBeGroupSource(f, map, desperate) && !f.Hidden && f.PlayerRelationKind == FactionRelationKind.Ally)
+			List<Faction> list = (from p in ((Map)parms.target).attackTargetsCache.TargetsHostileToColony
+				where GenHostility.IsActiveThreatToPlayer(p)
+				select ((Thing)p).Faction).Distinct().ToList();
+			Faction faction = parms.faction;
+			parms.faction = f;
+			if (!RaidStrategyDefOf.ImmediateAttackFriendly.Worker.CanUseWith(parms, null))
 			{
-				if (source.Any())
+				parms.faction = faction;
+				return false;
+			}
+			parms.faction = faction;
+			if (base.FactionCanBeGroupSource(f, parms, desperate) && !f.Hidden && f.PlayerRelationKind == FactionRelationKind.Ally)
+			{
+				if (list.Any())
 				{
-					return source.Any((Faction hf) => hf.HostileTo(f));
+					return list.Any((Faction hf) => hf.HostileTo(f));
 				}
 				return true;
 			}
@@ -30,21 +37,20 @@ namespace RimWorld
 			{
 				return false;
 			}
-			return ((Map)parms.target).attackTargetsCache.TargetsHostileToColony.Where((IAttackTarget p) => GenHostility.IsActiveThreatToPlayer(p)).Sum((IAttackTarget p) => (p as Pawn)?.kindDef.combatPower ?? 0f) > 120f;
+			return ((Map)parms.target).attackTargetsCache.TargetsHostileToColony.Where((IAttackTarget p) => GenHostility.IsActiveThreatToPlayer(p)).Sum((IAttackTarget p) => (p is Pawn pawn) ? pawn.kindDef.combatPower : 0f) > 120f;
 		}
 
 		protected override bool TryResolveRaidFaction(IncidentParms parms)
 		{
-			Map map = (Map)parms.target;
 			if (parms.faction != null)
 			{
 				return true;
 			}
-			if (!CandidateFactions(map).Any())
+			if (!CandidateFactions(parms).Any())
 			{
 				return false;
 			}
-			parms.faction = CandidateFactions(map).RandomElementByWeight((Faction fac) => (float)fac.PlayerGoodwill + 120.000008f);
+			parms.faction = CandidateFactions(parms).RandomElementByWeight((Faction fac) => (float)fac.PlayerGoodwill + 120.00001f);
 			return true;
 		}
 
@@ -71,16 +77,16 @@ namespace RimWorld
 
 		protected override string GetLetterText(IncidentParms parms, List<Pawn> pawns)
 		{
-			string str = string.Format(parms.raidArrivalMode.textFriendly, parms.faction.def.pawnsPlural, parms.faction.Name.ApplyTag(parms.faction));
-			str += "\n\n";
-			str += parms.raidStrategy.arrivalTextFriendly;
+			string text = string.Format(parms.raidArrivalMode.textFriendly, parms.faction.def.pawnsPlural, parms.faction.Name.ApplyTag(parms.faction));
+			text += "\n\n";
+			text += parms.raidStrategy.arrivalTextFriendly;
 			Pawn pawn = pawns.Find((Pawn x) => x.Faction.leader == x);
 			if (pawn != null)
 			{
-				str += "\n\n";
-				str += "FriendlyRaidLeaderPresent".Translate(pawn.Faction.def.pawnsPlural, pawn.LabelShort, pawn.Named("LEADER"));
+				text += "\n\n";
+				text += "FriendlyRaidLeaderPresent".Translate(pawn.Faction.def.pawnsPlural, pawn.LabelShort, pawn.Named("LEADER"));
 			}
-			return str;
+			return text;
 		}
 
 		protected override LetterDef GetLetterDef()

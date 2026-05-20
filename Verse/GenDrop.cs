@@ -5,23 +5,19 @@ namespace Verse
 {
 	public static class GenDrop
 	{
-		[Obsolete("Only used for mod compatibility")]
-		public static bool TryDropSpawn(Thing thing, IntVec3 dropCell, Map map, ThingPlaceMode mode, out Thing resultingThing, Action<Thing, int> placedAction = null, Predicate<IntVec3> nearPlaceValidator = null)
-		{
-			return TryDropSpawn_NewTmp(thing, dropCell, map, mode, out resultingThing, placedAction, nearPlaceValidator);
-		}
-
-		public static bool TryDropSpawn_NewTmp(Thing thing, IntVec3 dropCell, Map map, ThingPlaceMode mode, out Thing resultingThing, Action<Thing, int> placedAction = null, Predicate<IntVec3> nearPlaceValidator = null, bool playDropSound = true)
+		public static bool TryDropSpawn(Thing thing, IntVec3 dropCell, Map map, ThingPlaceMode mode, out Thing resultingThing, Action<Thing, int> placedAction = null, Predicate<IntVec3> nearPlaceValidator = null, bool playDropSound = true)
 		{
 			if (map == null)
 			{
-				Log.Error(string.Concat("Dropped ", thing, " in a null map."));
+				Log.Error("Dropped " + thing?.ToString() + " in a null map.");
 				resultingThing = null;
 				return false;
 			}
 			if (!dropCell.InBounds(map))
 			{
-				Log.Error(string.Concat("Dropped ", thing, " out of bounds at ", dropCell));
+				string obj = thing?.ToString();
+				IntVec3 intVec = dropCell;
+				Log.Error("Dropped " + obj + " out of bounds at " + intVec.ToString());
 				resultingThing = null;
 				return false;
 			}
@@ -31,11 +27,15 @@ namespace Verse
 				resultingThing = null;
 				return true;
 			}
-			if (playDropSound && thing.def.soundDrop != null)
+			if (GenPlace.TryPlaceThing(thing, dropCell, map, mode, out resultingThing, placedAction, nearPlaceValidator))
 			{
-				thing.def.soundDrop.PlayOneShot(new TargetInfo(dropCell, map));
+				if (playDropSound && thing.def.soundDrop != null)
+				{
+					thing.def.soundDrop.PlayOneShot(new TargetInfo(dropCell, map));
+				}
+				return true;
 			}
-			return GenPlace.TryPlaceThing(thing, dropCell, map, mode, out resultingThing, placedAction, nearPlaceValidator);
+			return false;
 		}
 	}
 }

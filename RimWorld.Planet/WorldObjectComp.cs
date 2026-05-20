@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Verse;
 
 namespace RimWorld.Planet
@@ -11,7 +12,17 @@ namespace RimWorld.Planet
 
 		public IThingHolder ParentHolder => parent.ParentHolder;
 
-		public bool ParentHasMap => (parent as MapParent)?.HasMap ?? false;
+		public bool ParentHasMap
+		{
+			get
+			{
+				if (parent is MapParent mapParent)
+				{
+					return mapParent.HasMap;
+				}
+				return false;
+			}
+		}
 
 		public virtual void Initialize(WorldObjectCompProperties props)
 		{
@@ -22,29 +33,28 @@ namespace RimWorld.Planet
 		{
 		}
 
+		public virtual void CompTickInterval(int delta)
+		{
+		}
+
 		public virtual IEnumerable<Gizmo> GetGizmos()
 		{
-			yield break;
+			return Enumerable.Empty<Gizmo>();
 		}
 
 		public virtual IEnumerable<FloatMenuOption> GetFloatMenuOptions(Caravan caravan)
 		{
-			yield break;
-		}
-
-		public virtual IEnumerable<FloatMenuOption> GetTransportPodsFloatMenuOptions(IEnumerable<IThingHolder> pods, CompLaunchable representative)
-		{
-			yield break;
+			return Enumerable.Empty<FloatMenuOption>();
 		}
 
 		public virtual IEnumerable<Gizmo> GetCaravanGizmos(Caravan caravan)
 		{
-			yield break;
+			return Enumerable.Empty<Gizmo>();
 		}
 
 		public virtual IEnumerable<IncidentTargetTagDef> IncidentTargetTags()
 		{
-			yield break;
+			return Enumerable.Empty<IncidentTargetTagDef>();
 		}
 
 		public virtual void PostDrawExtraSelectionOverlays()
@@ -73,6 +83,10 @@ namespace RimWorld.Planet
 		{
 		}
 
+		public void PostMyMapSettled()
+		{
+		}
+
 		public virtual void PostMapGenerate()
 		{
 		}
@@ -87,7 +101,7 @@ namespace RimWorld.Planet
 
 		public override string ToString()
 		{
-			return string.Concat(GetType().Name, "(parent=", parent, " at=", (parent != null) ? parent.Tile : (-1), ")");
+			return $"{GetType().Name}(parent={parent} at={((parent != null) ? parent.Tile.tileId : (-1))})";
 		}
 	}
 }

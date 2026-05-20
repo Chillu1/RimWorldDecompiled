@@ -12,11 +12,19 @@ namespace RimWorld
 
 		private int countToTransfer;
 
+		public const float NegotiatorLeaderOffset = 0.02f;
+
+		private const float PriceFactor_JoinAsSlaveOrColonyPawn = 0.6f;
+
 		private float pricePlayerBuy = -1f;
 
 		private float pricePlayerSell = -1f;
 
 		private float priceFactorBuy_TraderPriceType;
+
+		private float priceFactorBuy_JoinAs;
+
+		private float priceFactorSell_HumanPawn;
 
 		private float priceFactorSell_TraderPriceType;
 
@@ -24,7 +32,13 @@ namespace RimWorld
 
 		private float priceGain_PlayerNegotiator;
 
+		private float priceGain_Leader;
+
 		private float priceGain_Settlement;
+
+		private float priceGain_DrugBonus;
+
+		private float priceGain_AnimalProduceBonus;
 
 		public override int CountToTransfer
 		{
@@ -85,17 +99,7 @@ namespace RimWorld
 
 		public virtual bool TraderWillTrade => TradeSession.trader.TraderKind.WillTrade(ThingDef);
 
-		public override bool HasAnyThing
-		{
-			get
-			{
-				if (FirstThingColony == null)
-				{
-					return FirstThingTrader != null;
-				}
-				return true;
-			}
-		}
+		public override bool HasAnyThing => AnyThing != null;
 
 		public override Thing AnyThing
 		{
@@ -109,34 +113,14 @@ namespace RimWorld
 				{
 					return FirstThingTrader.GetInnerIfMinified();
 				}
-				Log.Error(string.Concat(GetType(), " lacks AnyThing."));
+				Log.Error(GetType()?.ToString() + " lacks AnyThing.");
 				return null;
 			}
 		}
 
-		public override ThingDef ThingDef
-		{
-			get
-			{
-				if (!HasAnyThing)
-				{
-					return null;
-				}
-				return AnyThing.def;
-			}
-		}
+		public override ThingDef ThingDef => AnyThing?.def;
 
-		public ThingDef StuffDef
-		{
-			get
-			{
-				if (!HasAnyThing)
-				{
-					return null;
-				}
-				return AnyThing.Stuff;
-			}
-		}
+		public ThingDef StuffDef => AnyThing?.Stuff;
 
 		public override string TipDescription
 		{
@@ -278,10 +262,32 @@ namespace RimWorld
 			priceFactorBuy_TraderPriceType = PriceTypeFor(TradeAction.PlayerBuys).PriceMultiplier();
 			priceFactorSell_TraderPriceType = PriceTypeFor(TradeAction.PlayerSells).PriceMultiplier();
 			priceGain_PlayerNegotiator = TradeSession.playerNegotiator.GetStatValue(StatDefOf.TradePriceImprovement);
+			priceGain_Leader = ((TradeSession.playerNegotiator == Faction.OfPlayer.leader) ? 0.02f : 0f);
 			priceGain_Settlement = TradeSession.trader.TradePriceImprovementOffsetForPlayer;
 			priceFactorSell_ItemSellPriceFactor = AnyThing.GetStatValue(StatDefOf.SellPriceFactor);
-			pricePlayerBuy = TradeUtility.GetPricePlayerBuy(AnyThing, priceFactorBuy_TraderPriceType, priceGain_PlayerNegotiator, priceGain_Settlement);
-			pricePlayerSell = TradeUtility.GetPricePlayerSell(AnyThing, priceFactorSell_TraderPriceType, priceGain_PlayerNegotiator, priceGain_Settlement, TradeSession.TradeCurrency);
+			priceFactorBuy_JoinAs = 1f;
+			priceFactorSell_HumanPawn = 1f;
+			if (ThingDef.IsNonMedicalDrug)
+			{
+				priceGain_DrugBonus = TradeSession.playerNegotiator.GetStatValue(StatDefOf.DrugSellPriceImprovement);
+			}
+			if (ModsConfig.IdeologyActive)
+			{
+				if (ThingDef.IsLeather || ThingDef.IsMeat || ThingDef.IsWool)
+				{
+					priceGain_AnimalProduceBonus = TradeSession.playerNegotiator.GetStatValue(StatDefOf.AnimalProductsSellImprovement);
+				}
+				if (AnyThing is Pawn pawn && pawn.RaceProps.Humanlike && pawn.guest != null)
+				{
+					if (pawn.guest.joinStatus == JoinStatus.JoinAsSlave)
+					{
+						priceFactorBuy_JoinAs = 0.6f;
+					}
+					priceFactorSell_HumanPawn = 0.6f;
+				}
+			}
+			pricePlayerBuy = TradeUtility.GetPricePlayerBuy(AnyThing, priceFactorBuy_TraderPriceType, priceFactorBuy_JoinAs, priceGain_PlayerNegotiator, priceGain_Settlement);
+			pricePlayerSell = TradeUtility.GetPricePlayerSell(AnyThing, priceFactorSell_TraderPriceType, priceFactorSell_HumanPawn, priceGain_PlayerNegotiator, priceGain_Settlement, priceGain_DrugBonus, priceGain_AnimalProduceBonus, TradeSession.TradeCurrency);
 			if (pricePlayerSell >= pricePlayerBuy)
 			{
 				pricePlayerSell = pricePlayerBuy;
@@ -296,7 +302,7 @@ namespace RimWorld
 			}
 			InitPriceDataIfNeeded();
 			string text = ((action == TradeAction.PlayerBuys) ? "BuyPriceDesc".Translate() : "SellPriceDesc".Translate());
-			if (TradeSession.TradeCurrency != 0)
+			if (TradeSession.TradeCurrency != TradeCurrency.Silver)
 			{
 				return text;
 			}
@@ -309,12 +315,23 @@ namespace RimWorld
 				{
 					text += "\n  x " + priceFactorBuy_TraderPriceType.ToString("F2") + " (" + "TraderTypePrice".Translate() + ")";
 				}
-				if (Find.Storyteller.difficultyValues.tradePriceFactorLoss != 0f)
+				if (Find.Storyteller.difficulty.tradePriceFactorLoss != 0f)
 				{
-					text += "\n  x " + (1f + Find.Storyteller.difficultyValues.tradePriceFactorLoss).ToString("F2") + " (" + "DifficultyLevel".Translate() + ")";
+					text += "\n  x " + (1f + Find.Storyteller.difficulty.tradePriceFactorLoss).ToString("F2") + " (" + "DifficultyLevel".Translate() + ")";
 				}
 				text += "\n";
-				text += "\n" + "YourNegotiatorBonus".Translate() + ": -" + priceGain_PlayerNegotiator.ToStringPercent();
+				text += "\n" + "YourNegotiatorBonus".Translate() + ": -" + (priceGain_PlayerNegotiator - priceGain_Leader).ToStringPercent();
+				if (ModsConfig.IdeologyActive)
+				{
+					if (priceGain_Leader != 0f)
+					{
+						text += "\n" + "YourLeaderTradeBonus".Translate() + ": -" + priceGain_Leader.ToStringPercent();
+					}
+					if (priceFactorBuy_JoinAs != 1f)
+					{
+						text += "\n" + "Slave".Translate().CapitalizeFirst() + ": x" + priceFactorBuy_JoinAs.ToStringPercent();
+					}
+				}
 				if (priceGain_Settlement != 0f)
 				{
 					text += "\n" + "TradeWithFactionBaseBonus".Translate() + ": -" + priceGain_Settlement.ToStringPercent();
@@ -331,15 +348,31 @@ namespace RimWorld
 				{
 					text += "\n  x " + priceFactorSell_ItemSellPriceFactor.ToString("F2") + " (" + "ItemSellPriceFactor".Translate() + ")";
 				}
-				if (Find.Storyteller.difficultyValues.tradePriceFactorLoss != 0f)
+				if (priceFactorSell_HumanPawn != 1f)
 				{
-					text += "\n  x " + (1f - Find.Storyteller.difficultyValues.tradePriceFactorLoss).ToString("F2") + " (" + "DifficultyLevel".Translate() + ")";
+					text += "\n  x " + priceFactorSell_HumanPawn.ToString("F2") + " (" + "Slave".Translate() + ")";
+				}
+				if (Find.Storyteller.difficulty.tradePriceFactorLoss != 0f)
+				{
+					text += "\n  x " + (1f - Find.Storyteller.difficulty.tradePriceFactorLoss).ToString("F2") + " (" + "DifficultyLevel".Translate() + ")";
 				}
 				text += "\n";
-				text += "\n" + "YourNegotiatorBonus".Translate() + ": " + priceGain_PlayerNegotiator.ToStringPercent();
+				text += "\n" + "YourNegotiatorBonus".Translate() + ": " + (priceGain_PlayerNegotiator - priceGain_Leader).ToStringPercent();
+				if (ModsConfig.IdeologyActive && priceGain_Leader != 0f)
+				{
+					text += "\n" + "YourLeaderTradeBonus".Translate() + ": " + priceGain_Leader.ToStringPercent();
+				}
 				if (priceGain_Settlement != 0f)
 				{
 					text += "\n" + "TradeWithFactionBaseBonus".Translate() + ": " + priceGain_Settlement.ToStringPercent();
+				}
+				if (priceGain_DrugBonus != 0f)
+				{
+					text += "\n" + "TradingDrugsBonus".Translate() + ": " + priceGain_DrugBonus.ToStringPercent();
+				}
+				if (priceGain_AnimalProduceBonus != 0f)
+				{
+					text += "\n" + "TradingAnimalProduceBonus".Translate() + ": " + priceGain_AnimalProduceBonus.ToStringPercent();
 				}
 			}
 			text += "\n\n";
@@ -449,15 +482,11 @@ namespace RimWorld
 		private void CheckTeachOpportunity(Thing boughtThing, int boughtCount)
 		{
 			Building building = boughtThing as Building;
-			if (building == null)
+			if (building == null && boughtThing is MinifiedThing minifiedThing)
 			{
-				MinifiedThing minifiedThing = boughtThing as MinifiedThing;
-				if (minifiedThing != null)
-				{
-					building = minifiedThing.InnerThing as Building;
-				}
+				building = minifiedThing.InnerThing as Building;
 			}
-			if (building != null && building.def.building != null && building.def.building.boughtConceptLearnOpportunity != null)
+			if (building?.def.building?.boughtConceptLearnOpportunity != null)
 			{
 				LessonAutoActivator.TeachOpportunity(building.def.building.boughtConceptLearnOpportunity, OpportunityType.GoodToKnow);
 			}
@@ -465,7 +494,7 @@ namespace RimWorld
 
 		public override string ToString()
 		{
-			return string.Concat(GetType(), "(", ThingDef, ", countToTransfer=", CountToTransfer, ")");
+			return GetType()?.ToString() + "(" + ThingDef?.ToString() + ", countToTransfer=" + CountToTransfer + ")";
 		}
 
 		public override int GetHashCode()

@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using UnityEngine;
 using Verse;
@@ -26,7 +28,13 @@ namespace RimWorld.Planet
 
 		private bool allEnemiesDefeatedSignalSent;
 
+		public bool preventGravshipLanding;
+
+		public bool firedNoActiveThreatsSignal;
+
 		private Material cachedMat;
+
+		private static readonly IntVec3 DefaultMapSize = new IntVec3(200, 1, 200);
 
 		private static List<string> tmpSitePartsLabels = new List<string>();
 
@@ -56,7 +64,7 @@ namespace RimWorld.Planet
 			{
 				if (cachedMat == null)
 				{
-					cachedMat = MaterialPool.MatFrom(color: (!MainSitePartDef.applyFactionColorToSiteTexture || base.Faction == null) ? Color.white : base.Faction.Color, texPath: MainSitePartDef.siteTexture, shader: ShaderDatabase.WorldOverlayTransparentLit, renderQueue: WorldMaterials.WorldObjectRenderQueue);
+					cachedMat = MaterialPool.MatFrom(color: (!MainSitePartDef.applyFactionColorToSiteTexture || base.Faction == null) ? Color.white : base.Faction.Color, texPath: MainSitePartDef.siteTexture, shader: ShaderDatabase.WorldOverlayTransparentLit, renderQueue: 3550);
 				}
 				return cachedMat;
 			}
@@ -94,6 +102,18 @@ namespace RimWorld.Planet
 
 		public SitePartDef MainSitePartDef => MainSitePart.def;
 
+		public override bool GravShipCanLandOn
+		{
+			get
+			{
+				if (MainSitePartDef.gravShipsCanLandOn)
+				{
+					return !base.HasMap;
+				}
+				return false;
+			}
+		}
+
 		public override IEnumerable<GenStepWithParams> ExtraGenStepDefs
 		{
 			get
@@ -104,14 +124,15 @@ namespace RimWorld.Planet
 				}
 				for (int i = 0; i < parts.Count; i++)
 				{
-					GenStepParams partGenStepParams = default(GenStepParams);
-					partGenStepParams.sitePart = parts[i];
+					GenStepParams partGenStepParams = new GenStepParams
+					{
+						sitePart = parts[i]
+					};
 					List<GenStepDef> partGenStepDefs = parts[i].def.ExtraGenSteps;
 					for (int j = 0; j < partGenStepDefs.Count; j++)
 					{
 						yield return new GenStepWithParams(partGenStepDefs[j], partGenStepParams);
 					}
-					partGenStepParams = default(GenStepParams);
 				}
 			}
 		}
@@ -183,14 +204,55 @@ namespace RimWorld.Planet
 					}
 					for (int j = 0; j < quest.PartsListForReading.Count; j++)
 					{
-						QuestPart_WorldObjectTimeout questPart_WorldObjectTimeout = quest.PartsListForReading[j] as QuestPart_WorldObjectTimeout;
-						if (questPart_WorldObjectTimeout != null && questPart_WorldObjectTimeout.State == QuestPartState.Enabled && questPart_WorldObjectTimeout.worldObject == this)
+						if (quest.PartsListForReading[j] is QuestPart_WorldObjectTimeout { State: QuestPartState.Enabled } questPart_WorldObjectTimeout && questPart_WorldObjectTimeout.worldObject == this)
 						{
 							return questPart_WorldObjectTimeout.TicksLeft;
 						}
 					}
 				}
 				return -1;
+			}
+		}
+
+		public IntVec3 PreferredMapSize
+		{
+			get
+			{
+				IntVec3 defaultMapSize = DefaultMapSize;
+				for (int i = 0; i < parts.Count; i++)
+				{
+					SitePart sitePart = parts[i];
+					if (sitePart.def.minMapSize.HasValue)
+					{
+						IntVec3 value = sitePart.def.minMapSize.Value;
+						defaultMapSize.x = Mathf.Max(value.x, defaultMapSize.x);
+						defaultMapSize.y = Mathf.Max(value.y, defaultMapSize.y);
+						defaultMapSize.z = Mathf.Max(value.z, defaultMapSize.z);
+					}
+				}
+				return defaultMapSize;
+			}
+		}
+
+		public override AcceptanceReport CanBeSettled
+		{
+			get
+			{
+				foreach (Quest item in Find.QuestManager.QuestsListForReading)
+				{
+					if (item.State != QuestState.Ongoing)
+					{
+						continue;
+					}
+					foreach (QuestPart item2 in item.PartsListForReading)
+					{
+						if (item2 is QuestPart_SpawnWorldObject questPart_SpawnWorldObject && questPart_SpawnWorldObject.worldObject == this)
+						{
+							return false;
+						}
+					}
+				}
+				return true;
 			}
 		}
 
@@ -218,6 +280,8 @@ namespace RimWorld.Planet
 			Scribe_Values.Look(ref allEnemiesDefeatedSignalSent, "allEnemiesDefeatedSignalSent", defaultValue: false);
 			Scribe_Values.Look(ref factionMustRemainHostile, "factionMustRemainHostile", defaultValue: false);
 			Scribe_Values.Look(ref desiredThreatPoints, "desiredThreatPoints", 0f);
+			Scribe_Values.Look(ref preventGravshipLanding, "preventGravshipLanding", defaultValue: false);
+			Scribe_Values.Look(ref firedNoActiveThreatsSignal, "firedNoActiveThreatsSignal", defaultValue: false);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
 				if (coreBackCompat != null && coreBackCompat.def != null)
@@ -229,9 +293,9 @@ namespace RimWorld.Planet
 				{
 					Log.Error("Some site parts were null after loading.");
 				}
-				for (int i = 0; i < parts.Count; i++)
+				for (int num = 0; num < parts.Count; num++)
 				{
-					parts[i].site = this;
+					parts[num].site = this;
 				}
 				BackCompatibility.PostExposeData(this);
 			}
@@ -239,20 +303,37 @@ namespace RimWorld.Planet
 
 		public void AddPart(SitePart part)
 		{
+			if (!part.def.forceMutators.NullOrEmpty())
+			{
+				foreach (TileMutatorDef forceMutator in part.def.forceMutators)
+				{
+					base.Tile.Tile.AddMutator(forceMutator);
+				}
+			}
 			parts.Add(part);
 			part.def.Worker.Init(this, part);
 		}
 
-		public override void Tick()
+		protected override void Tick()
 		{
 			base.Tick();
 			for (int i = 0; i < parts.Count; i++)
 			{
-				parts[i].SitePartTick();
+				parts[i].def.Worker.SitePartWorkerTick(parts[i]);
 			}
-			for (int j = 0; j < parts.Count; j++)
+			if (base.HasMap && !firedNoActiveThreatsSignal && !GenHostility.AnyHostileActiveThreatToPlayer(base.Map, countDormantPawnsAsHostile: true, !CanReformFoggedEnemies))
 			{
-				parts[j].def.Worker.SitePartWorkerTick(parts[j]);
+				QuestUtility.SendQuestTargetSignals(questTags, "NoActiveThreats");
+				firedNoActiveThreatsSignal = true;
+			}
+		}
+
+		protected override void TickInterval(int delta)
+		{
+			base.TickInterval(delta);
+			for (int i = 0; i < parts.Count; i++)
+			{
+				parts[i].SitePartTickInterval(delta);
 			}
 			if (base.HasMap)
 			{
@@ -275,8 +356,11 @@ namespace RimWorld.Planet
 				num = Mathf.Max(num, parts[j].def.forceExitAndRemoveMapCountdownDurationDays);
 			}
 			num *= MapParentTuning.SiteDetectionCountdownMultiplier.RandomInRange;
-			int ticks = Mathf.RoundToInt(num * 60000f);
-			GetComponent<TimedDetectionRaids>().StartDetectionCountdown(ticks);
+			if (!parts.Any((SitePart p) => p.def.disallowsAutomaticDetectionTimerStart) && !map.wasSpawnedViaGravShipLanding)
+			{
+				int ticks = Mathf.RoundToInt(num * 60000f);
+				GetComponent<TimedDetectionRaids>().StartDetectionCountdown(ticks);
+			}
 			allEnemiesDefeatedSignalSent = false;
 		}
 
@@ -300,13 +384,32 @@ namespace RimWorld.Planet
 
 		public override bool ShouldRemoveMapNow(out bool alsoRemoveWorldObject)
 		{
-			if (!base.Map.mapPawns.AnyPawnBlockingMapRemoval)
-			{
-				alsoRemoveWorldObject = !parts.Any((SitePart x) => x.def.Worker is SitePartWorker_ConditionCauser && x.conditionCauser != null && !x.conditionCauser.Destroyed);
-				return true;
-			}
 			alsoRemoveWorldObject = false;
-			return false;
+			if (base.Map.mapPawns.AnyPawnBlockingMapRemoval)
+			{
+				return false;
+			}
+			foreach (PocketMapParent item in Find.World.pocketMaps.ToList())
+			{
+				if (item.sourceMap == base.Map && item.Map.mapPawns.AnyPawnBlockingMapRemoval)
+				{
+					return false;
+				}
+			}
+			if (base.Map.AnyBuildingBlockingMapRemoval)
+			{
+				return false;
+			}
+			alsoRemoveWorldObject = !parts.Any((SitePart x) => (x.def.Worker is SitePartWorker_ConditionCauser && x.conditionCauser != null && !x.conditionCauser.Destroyed) || (x.def.Worker is SitePartWorker_RaidSource && GenHostility.AnyHostileActiveThreatToPlayer(base.Map, countDormantPawnsAsHostile: true)));
+			if (parts.Any((SitePart x) => x.def.Worker is SitePartWorker_AncientAltar sitePartWorker_AncientAltar && sitePartWorker_AncientAltar.ShouldKeepMapForRelic(x)))
+			{
+				alsoRemoveWorldObject = false;
+			}
+			if (TransporterUtility.IncomingTransporterPreventingMapRemoval(base.Map))
+			{
+				return false;
+			}
+			return true;
 		}
 
 		public override void GetChildHolders(List<IThingHolder> outChildren)
@@ -334,15 +437,35 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public override IEnumerable<FloatMenuOption> GetTransportPodsFloatMenuOptions(IEnumerable<IThingHolder> pods, CompLaunchable representative)
+		public override IEnumerable<FloatMenuOption> GetTransportersFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<PlanetTile, TransportersArrivalAction> launchAction)
 		{
-			foreach (FloatMenuOption transportPodsFloatMenuOption in base.GetTransportPodsFloatMenuOptions(pods, representative))
+			foreach (FloatMenuOption transportersFloatMenuOption in base.GetTransportersFloatMenuOptions(pods, launchAction))
 			{
-				yield return transportPodsFloatMenuOption;
+				yield return transportersFloatMenuOption;
 			}
-			foreach (FloatMenuOption floatMenuOption in TransportPodsArrivalAction_VisitSite.GetFloatMenuOptions(representative, pods, this))
+			foreach (FloatMenuOption floatMenuOption in TransportersArrivalAction_VisitSite.GetFloatMenuOptions(launchAction, pods, this))
 			{
 				yield return floatMenuOption;
+			}
+		}
+
+		public override IEnumerable<FloatMenuOption> GetShuttleFloatMenuOptions(IEnumerable<IThingHolder> pods, Action<PlanetTile, TransportersArrivalAction> launchAction)
+		{
+			foreach (FloatMenuOption shuttleFloatMenuOption in base.GetShuttleFloatMenuOptions(pods, launchAction))
+			{
+				yield return shuttleFloatMenuOption;
+			}
+			if (def.mapGenerator == MapGeneratorDefOf.Space)
+			{
+				foreach (FloatMenuOption floatMenuOption in TransportersArrivalAction_VisitSpace.GetFloatMenuOptions(launchAction, pods, this))
+				{
+					yield return floatMenuOption;
+				}
+				yield break;
+			}
+			foreach (FloatMenuOption floatMenuOption2 in TransportersArrivalAction_VisitSite.GetFloatMenuOptions(launchAction, pods, this))
+			{
+				yield return floatMenuOption2;
 			}
 		}
 
@@ -372,7 +495,7 @@ namespace RimWorld.Planet
 
 		private void CheckAllEnemiesDefeated()
 		{
-			if (!allEnemiesDefeatedSignalSent && base.HasMap && !GenHostility.AnyHostileActiveThreatToPlayer(base.Map, countDormantPawnsAsHostile: true))
+			if (!allEnemiesDefeatedSignalSent && base.HasMap && !GenHostility.AnyHostileActiveThreatToPlayer(base.Map, countDormantPawnsAsHostile: true, canBeFogged: true))
 			{
 				QuestUtility.SendQuestTargetSignals(questTags, "AllEnemiesDefeated", this.Named("SUBJECT"));
 				allEnemiesDefeatedSignalSent = true;
@@ -381,8 +504,7 @@ namespace RimWorld.Planet
 
 		public override bool AllMatchingObjectsOnScreenMatchesWith(WorldObject other)
 		{
-			Site site = other as Site;
-			if (site != null)
+			if (other is Site site)
 			{
 				return site.MainSitePartDef == MainSitePartDef;
 			}
@@ -396,7 +518,7 @@ namespace RimWorld.Planet
 			tmpSitePartsLabels.Clear();
 			for (int i = 0; i < parts.Count; i++)
 			{
-				if (parts[i].hidden)
+				if (parts[i].hidden || !parts[i].def.displayOnInspectPane)
 				{
 					continue;
 				}

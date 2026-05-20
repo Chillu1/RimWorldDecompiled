@@ -43,7 +43,7 @@ namespace RimWorld
 			yield return Toils_General.Wait(200).FailOnDestroyedNullOrForbidden(TargetIndex.B).FailOnDestroyedNullOrForbidden(TargetIndex.A)
 				.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch)
 				.WithProgressBarToilDelay(TargetIndex.A);
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
 				Barrel.AddWort(Wort);

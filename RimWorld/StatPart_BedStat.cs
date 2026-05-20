@@ -9,25 +9,17 @@ namespace RimWorld
 
 		public override void TransformValue(StatRequest req, ref float val)
 		{
-			if (req.HasThing)
+			if (req.HasThing && req.Thing is Pawn pawn)
 			{
-				Pawn pawn = req.Thing as Pawn;
-				if (pawn != null)
-				{
-					val *= BedMultiplier(pawn);
-				}
+				val *= BedMultiplier(pawn);
 			}
 		}
 
 		public override string ExplanationPart(StatRequest req)
 		{
-			if (req.HasThing)
+			if (req.HasThing && req.Thing is Pawn { ageTracker: not null } pawn)
 			{
-				Pawn pawn = req.Thing as Pawn;
-				if (pawn != null && pawn.ageTracker != null)
-				{
-					return "StatsReport_InBed".Translate() + ": x" + BedMultiplier(pawn).ToStringPercent();
-				}
+				return "StatsReport_InBed".Translate() + ": x" + BedMultiplier(pawn).ToStringPercent();
 			}
 			return null;
 		}

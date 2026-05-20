@@ -6,15 +6,36 @@ namespace RimWorld
 {
 	public static class PawnInventoryGenerator
 	{
+		private static List<Hediff_Addiction> tmpAddictionHediffs = new List<Hediff_Addiction>();
+
 		public static void GenerateInventoryFor(Pawn p, PawnGenerationRequest request)
 		{
 			p.inventory.DestroyAll();
 			for (int i = 0; i < p.kindDef.fixedInventory.Count; i++)
 			{
 				ThingDefCountClass thingDefCountClass = p.kindDef.fixedInventory[i];
-				Thing thing = ThingMaker.MakeThing(thingDefCountClass.thingDef);
+				Thing thing = ThingMaker.MakeThing(thingDefCountClass.thingDef, thingDefCountClass.stuff);
 				thing.stackCount = thingDefCountClass.count;
-				p.inventory.innerContainer.TryAdd(thing);
+				if (thing.TryGetComp(out CompQuality comp))
+				{
+					comp.SetQuality(thingDefCountClass.quality, ArtGenerationContext.Outsider);
+				}
+				if (thingDefCountClass.color.HasValue && thing.TryGetComp(out CompColorable comp2))
+				{
+					comp2.SetColor(thingDefCountClass.color.Value);
+				}
+				if (thing.HasComp<CompEquippable>())
+				{
+					p.equipment.AddEquipment((ThingWithComps)thing);
+				}
+				else if (thing is Apparel newApparel)
+				{
+					p.apparel.Wear(newApparel);
+				}
+				else
+				{
+					p.inventory.innerContainer.TryAdd(thing);
+				}
 			}
 			if (p.kindDef.inventoryOptions != null)
 			{
@@ -57,7 +78,8 @@ namespace RimWorld
 			{
 				return;
 			}
-			foreach (Hediff_Addiction addiction in p.health.hediffSet.GetHediffs<Hediff_Addiction>())
+			p.health.hediffSet.GetHediffs(ref tmpAddictionHediffs);
+			foreach (Hediff_Addiction addiction in tmpAddictionHediffs)
 			{
 				if (DefDatabase<ThingDef>.AllDefsListForReading.Where(delegate(ThingDef x)
 				{
@@ -113,7 +135,7 @@ namespace RimWorld
 				CompProperties_Drug compProperties = x.GetCompProperties<CompProperties_Drug>();
 				return (compProperties != null && compProperties.isCombatEnhancingDrug) ? true : false;
 			});
-			for (int j = 0; j < randomInRange; j++)
+			for (int num = 0; num < randomInRange; num++)
 			{
 				if (!source.TryRandomElement(out var result))
 				{

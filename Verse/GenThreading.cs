@@ -30,13 +30,12 @@ namespace Verse
 			}
 		}
 
-		public static List<Slice> SliceWork(int fromInclusive, int toExclusive, int maxBatches)
+		public static void SliceWorkNoAlloc(int fromInclusive, int toExclusive, int maxBatches, List<Slice> batches)
 		{
-			List<Slice> list = new List<Slice>(maxBatches);
 			int num = toExclusive - fromInclusive;
 			if (num <= 0)
 			{
-				return list;
+				return;
 			}
 			int num2 = num % maxBatches;
 			int num3 = Mathf.FloorToInt((float)num / (float)maxBatches);
@@ -51,7 +50,7 @@ namespace Verse
 						num5++;
 						num2--;
 					}
-					list.Add(new Slice(num4, num4 + num5));
+					batches.Add(new Slice(num4, num4 + num5));
 					num4 += num5;
 				}
 			}
@@ -59,9 +58,15 @@ namespace Verse
 			{
 				for (int j = 0; j < num2; j++)
 				{
-					list.Add(new Slice(j, j + 1));
+					batches.Add(new Slice(j, j + 1));
 				}
 			}
+		}
+
+		public static List<Slice> SliceWork(int fromInclusive, int toExclusive, int maxBatches)
+		{
+			List<Slice> list = new List<Slice>(maxBatches);
+			SliceWorkNoAlloc(fromInclusive, toExclusive, maxBatches, list);
 			return list;
 		}
 
@@ -97,9 +102,9 @@ namespace Verse
 						{
 							callback(item2);
 						}
-						catch (Exception arg)
+						catch (Exception ex)
 						{
-							Log.Error("Error in ParallelForEach(): " + arg);
+							Log.Error("Error in ParallelForEach(): " + ex);
 						}
 					}
 					Interlocked.Add(ref tasksDone, localBatch.Count);
@@ -129,9 +134,9 @@ namespace Verse
 						{
 							callback(i);
 						}
-						catch (Exception arg)
+						catch (Exception ex)
 						{
-							Log.Error("Error in ParallelFor(): " + arg);
+							Log.Error("Error in ParallelFor(): " + ex);
 						}
 					}
 					Interlocked.Add(ref tasksDone, localBatch.toExclusive - localBatch.fromInclusive);

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using Verse;
 
@@ -7,7 +6,7 @@ namespace RimWorld
 {
 	public class Designator_Claim : Designator
 	{
-		public override int DraggableDimensions => 2;
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
 
 		public Designator_Claim()
 		{
@@ -19,6 +18,7 @@ namespace RimWorld
 			useMouseIcon = true;
 			soundSucceeded = SoundDefOf.Designate_Claim;
 			hotKey = KeyBindingDefOf.Misc4;
+			showReverseDesignatorDisabledReason = true;
 		}
 
 		public override AcceptanceReport CanDesignateCell(IntVec3 c)
@@ -31,9 +31,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!(from t in c.GetThingList(base.Map)
-				where CanDesignateThing(t).Accepted
-				select t).Any())
+			if (!c.GetThingList(base.Map).Any((Thing t) => CanDesignateThing(t).Accepted))
 			{
 				return "MessageMustDesignateClaimable".Translate();
 			}
@@ -54,8 +52,11 @@ namespace RimWorld
 
 		public override AcceptanceReport CanDesignateThing(Thing t)
 		{
-			Building building = t as Building;
-			return building != null && building.Faction != Faction.OfPlayer && building.ClaimableBy(Faction.OfPlayer);
+			if (t.Faction != Faction.OfPlayer)
+			{
+				return t.ClaimableBy(Faction.OfPlayer);
+			}
+			return false;
 		}
 
 		public override void DesignateThing(Thing t)
@@ -63,7 +64,7 @@ namespace RimWorld
 			t.SetFaction(Faction.OfPlayer);
 			foreach (IntVec3 item in t.OccupiedRect())
 			{
-				MoteMaker.ThrowMetaPuffs(new TargetInfo(item, base.Map));
+				FleckMaker.ThrowMetaPuffs(new TargetInfo(item, base.Map));
 			}
 		}
 	}

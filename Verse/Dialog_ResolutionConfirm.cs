@@ -71,7 +71,7 @@ namespace Verse
 		{
 			if (Prefs.LogVerbose)
 			{
-				Log.Message("Reverting screen settings to " + oldRes.x + "x" + oldRes.z + ", fs=" + oldFullscreen.ToString());
+				Log.Message("Reverting screen settings to " + oldRes.x + "x" + oldRes.z + ", fs=" + oldFullscreen);
 			}
 			ResolutionUtility.SetResolutionRaw(oldRes.x, oldRes.z, oldFullscreen);
 			Prefs.FullScreen = oldFullscreen;

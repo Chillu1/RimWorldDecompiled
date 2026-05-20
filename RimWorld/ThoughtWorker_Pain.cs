@@ -4,7 +4,7 @@ namespace RimWorld
 {
 	public class ThoughtWorker_Pain : ThoughtWorker
 	{
-		protected override ThoughtState CurrentStateInternal(Pawn p)
+		public static ThoughtState CurrentThoughtState(Pawn p)
 		{
 			float painTotal = p.health.hediffSet.PainTotal;
 			if (painTotal < 0.0001f)
@@ -24,6 +24,15 @@ namespace RimWorld
 				return ThoughtState.ActiveAtStage(2);
 			}
 			return ThoughtState.ActiveAtStage(3);
+		}
+
+		protected override ThoughtState CurrentStateInternal(Pawn p)
+		{
+			if (ThoughtUtility.ThoughtNullified(p, def))
+			{
+				return ThoughtState.Inactive;
+			}
+			return CurrentThoughtState(p);
 		}
 	}
 }

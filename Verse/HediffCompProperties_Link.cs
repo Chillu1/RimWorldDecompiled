@@ -6,6 +6,10 @@ namespace Verse
 
 		public float maxDistance = -1f;
 
+		public bool requireLinkOnOtherPawn = true;
+
+		public ThingDef customMote;
+
 		public HediffCompProperties_Link()
 		{
 			compClass = typeof(HediffComp_Link);

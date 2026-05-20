@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
 using Verse;
 
@@ -19,6 +18,8 @@ namespace RimWorld
 			new CurvePoint(1f, 6f)
 		};
 
+		private static List<TrainabilityDef> cachedTrainabilityDefs;
+
 		public static List<TrainableDef> TrainableDefsInListOrder => defsInListOrder;
 
 		public static void Reset()
@@ -29,16 +30,16 @@ namespace RimWorld
 			do
 			{
 				flag = false;
-				for (int i = 0; i < defsInListOrder.Count; i++)
+				for (int num = 0; num < defsInListOrder.Count; num++)
 				{
-					TrainableDef trainableDef = defsInListOrder[i];
+					TrainableDef trainableDef = defsInListOrder[num];
 					if (trainableDef.prerequisites != null)
 					{
-						for (int j = 0; j < trainableDef.prerequisites.Count; j++)
+						for (int num2 = 0; num2 < trainableDef.prerequisites.Count; num2++)
 						{
-							if (trainableDef.indent <= trainableDef.prerequisites[j].indent)
+							if (trainableDef.indent <= trainableDef.prerequisites[num2].indent)
 							{
-								trainableDef.indent = trainableDef.prerequisites[j].indent + 1;
+								trainableDef.indent = trainableDef.prerequisites[num2].indent + 1;
 								flag = true;
 								break;
 							}
@@ -79,7 +80,7 @@ namespace RimWorld
 
 		private static IEnumerable<Widgets.DropdownMenuElement<Pawn>> MasterSelectButton_GenerateMenu(Pawn p)
 		{
-			Widgets.DropdownMenuElement<Pawn> dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
+			yield return new Widgets.DropdownMenuElement<Pawn>
 			{
 				option = new FloatMenuOption("(" + "NoneLower".Translate() + ")", delegate
 				{
@@ -87,7 +88,6 @@ namespace RimWorld
 				}),
 				payload = null
 			};
-			yield return dropdownMenuElement;
 			foreach (Pawn col in PawnsFinder.AllMaps_FreeColonistsSpawned)
 			{
 				string text = RelationsUtility.LabelWithBondInfo(col, p);
@@ -109,12 +109,11 @@ namespace RimWorld
 						text += " (" + "SkillTooLow".Translate(SkillDefOf.Animals.LabelCap, level, num) + ")";
 					}
 				}
-				dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
+				yield return new Widgets.DropdownMenuElement<Pawn>
 				{
 					option = new FloatMenuOption(text, action),
 					payload = col
 				};
-				yield return dropdownMenuElement;
 			}
 		}
 
@@ -122,6 +121,18 @@ namespace RimWorld
 		{
 			if ((checkSpawned && !master.Spawned) || master.IsPrisoner)
 			{
+				return false;
+			}
+			if (ModsConfig.IdeologyActive && animal.RaceProps.animalType == AnimalType.Dryad && animal.connections != null)
+			{
+				foreach (Thing connectedThing in animal.connections.ConnectedThings)
+				{
+					CompTreeConnection compTreeConnection = connectedThing.TryGetComp<CompTreeConnection>();
+					if (compTreeConnection != null && compTreeConnection.ConnectedPawn == master)
+					{
+						return true;
+					}
+				}
 				return false;
 			}
 			if (master.relations.DirectRelationExists(PawnRelationDefOf.Bond, animal))
@@ -157,12 +168,34 @@ namespace RimWorld
 
 		public static int DegradationPeriodTicks(ThingDef def)
 		{
-			return Mathf.RoundToInt(DecayIntervalDaysFromWildnessCurve.Evaluate(def.race.wildness) * 60000f);
+			return Mathf.RoundToInt(DecayIntervalDaysFromWildnessCurve.Evaluate(def.GetStatValueAbstract(StatDefOf.Wildness)) * 60000f);
+		}
+
+		public static int DegradationPeriodTicks(Pawn pawn)
+		{
+			if (pawn == null)
+			{
+				return 0;
+			}
+			return Mathf.RoundToInt(DecayIntervalDaysFromWildnessCurve.Evaluate(pawn.GetStatValue(StatDefOf.Wildness, applyPostProcess: true, 1)) * 60000f);
 		}
 
 		public static bool TamenessCanDecay(ThingDef def)
 		{
-			return def.race.wildness > 0.101f;
+			if (def.race.FenceBlocked)
+			{
+				return false;
+			}
+			return def.GetStatValueAbstract(StatDefOf.Wildness) > 0.101f;
+		}
+
+		public static bool TamenessCanDecay(Pawn pawn)
+		{
+			if (pawn.FenceBlocked)
+			{
+				return false;
+			}
+			return pawn.GetStatValue(StatDefOf.Wildness, applyPostProcess: true, 1) > 0.101f;
 		}
 
 		public static bool TrainedTooRecently(Pawn animal)
@@ -170,20 +203,47 @@ namespace RimWorld
 			return Find.TickManager.TicksGame < animal.mindState.lastAssignedInteractTime + 15000;
 		}
 
-		public static string GetWildnessExplanation(ThingDef def)
+		public static bool IsReleasedToAttack(this Pawn pawn)
 		{
-			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.AppendLine("WildnessExplanation".Translate());
-			stringBuilder.AppendLine();
-			if (def.race != null && !def.race.Humanlike)
+			if (pawn?.playerSettings?.Master?.playerSettings == null || pawn.training == null)
 			{
-				stringBuilder.AppendLine(string.Format("{0}: {1}", "TrainingDecayInterval".Translate(), DegradationPeriodTicks(def).ToStringTicksToDays()));
+				return false;
 			}
-			if (!TamenessCanDecay(def))
+			if (pawn.playerSettings.Master.playerSettings.animalsReleased)
 			{
-				stringBuilder.AppendLine("TamenessWillNotDecay".Translate());
+				return pawn.training.HasLearned(TrainableDefOf.Release);
 			}
-			return stringBuilder.ToString();
+			return false;
+		}
+
+		public static TrainabilityDef GetTrainability(Pawn pawn)
+		{
+			if (pawn == null)
+			{
+				return null;
+			}
+			if (ModsConfig.OdysseyActive && pawn.health.hediffSet.HasHediff(HediffDefOf.SentienceCatalyst))
+			{
+				return GetNextHighestTrainability(pawn.RaceProps.trainability);
+			}
+			return pawn.RaceProps.trainability;
+		}
+
+		private static TrainabilityDef GetNextHighestTrainability(TrainabilityDef racePropsTrainability)
+		{
+			if (cachedTrainabilityDefs == null)
+			{
+				cachedTrainabilityDefs = DefDatabase<TrainabilityDef>.AllDefsListForReading.ToList();
+				cachedTrainabilityDefs.SortBy((TrainabilityDef td) => td.intelligenceOrder);
+			}
+			for (int num = 0; num < cachedTrainabilityDefs.Count; num++)
+			{
+				if (cachedTrainabilityDefs[num] == racePropsTrainability)
+				{
+					return cachedTrainabilityDefs[Mathf.Min(cachedTrainabilityDefs.Count - 1, num + 1)];
+				}
+			}
+			return null;
 		}
 	}
 }

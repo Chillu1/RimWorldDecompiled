@@ -37,12 +37,8 @@ namespace RimWorld
 			}
 		}
 
-		public override void LordToilTick()
+		private void CheckAllPawnsArrived()
 		{
-			if (Find.TickManager.TicksGame % 100 != 0)
-			{
-				return;
-			}
 			bool flag = true;
 			List<Pawn> downedPawns = ((LordJob_FormAndSendCaravan)lord.LordJob).downedPawns;
 			for (int i = 0; i < downedPawns.Count; i++)
@@ -57,6 +53,16 @@ namespace RimWorld
 			{
 				lord.ReceiveMemo("AllDownedPawnsGathered");
 			}
+		}
+
+		public override void Notify_PawnJobDone(Pawn p, JobCondition condition)
+		{
+			CheckAllPawnsArrived();
+		}
+
+		public override void Notify_ReachedDutyLocation(Pawn pawn)
+		{
+			CheckAllPawnsArrived();
 		}
 	}
 }

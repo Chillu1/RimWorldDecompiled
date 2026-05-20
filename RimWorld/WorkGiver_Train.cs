@@ -13,18 +13,16 @@ namespace RimWorld
 
 		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			Pawn pawn2 = t as Pawn;
-			if (pawn2 == null || !pawn2.RaceProps.Animal)
+			if (!(t is Pawn { IsAnimal: not false } pawn2))
+			{
+				return null;
+			}
+			if (pawn2.RaceProps.animalType == AnimalType.Dryad)
 			{
 				return null;
 			}
 			if (pawn2.Faction != pawn.Faction)
 			{
-				return null;
-			}
-			if (TrainableUtility.TrainedTooRecently(pawn2))
-			{
-				JobFailReason.Is(WorkGiver_InteractAnimal.AnimalInteractedTooRecentlyTrans);
 				return null;
 			}
 			if (pawn2.training == null)
@@ -39,7 +37,7 @@ namespace RimWorld
 			{
 				return null;
 			}
-			if (pawn2.RaceProps.EatsFood && !HasFoodToInteractAnimal(pawn, pawn2))
+			if (pawn2.RaceProps.EatsFood && pawn2.needs?.food != null && !HasFoodToInteractAnimal(pawn, pawn2))
 			{
 				Job job = TakeFoodForAnimalInteractJob(pawn, pawn2);
 				if (job == null)
@@ -47,6 +45,11 @@ namespace RimWorld
 					JobFailReason.Is(WorkGiver_InteractAnimal.NoUsableFoodTrans);
 				}
 				return job;
+			}
+			if (TrainableUtility.TrainedTooRecently(pawn2))
+			{
+				JobFailReason.Is(WorkGiver_InteractAnimal.AnimalInteractedTooRecentlyTrans);
+				return null;
 			}
 			return JobMaker.MakeJob(JobDefOf.Train, t);
 		}

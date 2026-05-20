@@ -29,9 +29,30 @@ namespace RimWorld
 			return policies[0];
 		}
 
+		public void SetDefault(DrugPolicy policy)
+		{
+			int index = policies.IndexOf(policy);
+			DrugPolicy value = policies[0];
+			policies[0] = policy;
+			policies[index] = value;
+		}
+
+		public void MakePolicyDefault(DrugPolicyDef policyDef)
+		{
+			if (DefaultDrugPolicy().sourceDef != policyDef)
+			{
+				DrugPolicy drugPolicy = policies.FirstOrDefault((DrugPolicy x) => x.sourceDef == policyDef);
+				if (drugPolicy != null)
+				{
+					policies.Remove(drugPolicy);
+					policies.Insert(0, drugPolicy);
+				}
+			}
+		}
+
 		public AcceptanceReport TryDelete(DrugPolicy policy)
 		{
-			foreach (Pawn item in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive)
+			foreach (Pawn item in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive)
 			{
 				if (item.drugs != null && item.drugs.CurrentPolicy == policy)
 				{
@@ -51,35 +72,43 @@ namespace RimWorld
 
 		public DrugPolicy MakeNewDrugPolicy()
 		{
-			int uniqueId = ((!policies.Any()) ? 1 : (policies.Max((DrugPolicy o) => o.uniqueId) + 1));
-			DrugPolicy drugPolicy = new DrugPolicy(uniqueId, "DrugPolicy".Translate() + " " + uniqueId.ToString());
+			int id = ((!policies.Any()) ? 1 : (policies.Max((DrugPolicy o) => o.id) + 1));
+			DrugPolicy drugPolicy = new DrugPolicy(id, "DrugPolicy".Translate() + " " + id.ToString());
 			policies.Add(drugPolicy);
+			return drugPolicy;
+		}
+
+		public DrugPolicy NewDrugPolicyFromDef(DrugPolicyDef def)
+		{
+			DrugPolicy drugPolicy = MakeNewDrugPolicy();
+			drugPolicy.label = def.LabelCap;
+			drugPolicy.sourceDef = def;
+			if (def.allowPleasureDrugs)
+			{
+				for (int i = 0; i < drugPolicy.Count; i++)
+				{
+					if (drugPolicy[i].drug.IsPleasureDrug)
+					{
+						drugPolicy[i].allowedForJoy = true;
+					}
+				}
+			}
+			if (def.entries != null)
+			{
+				for (int j = 0; j < def.entries.Count; j++)
+				{
+					drugPolicy[def.entries[j].drug].CopyFrom(def.entries[j]);
+				}
+			}
 			return drugPolicy;
 		}
 
 		private void GenerateStartingDrugPolicies()
 		{
-			DrugPolicy drugPolicy = MakeNewDrugPolicy();
-			drugPolicy.label = "SocialDrugs".Translate();
-			drugPolicy[ThingDefOf.Beer].allowedForJoy = true;
-			drugPolicy[ThingDefOf.SmokeleafJoint].allowedForJoy = true;
-			MakeNewDrugPolicy().label = "NoDrugs".Translate();
-			DrugPolicy drugPolicy2 = MakeNewDrugPolicy();
-			drugPolicy2.label = "Unrestricted".Translate();
-			for (int i = 0; i < drugPolicy2.Count; i++)
+			foreach (DrugPolicyDef allDef in DefDatabase<DrugPolicyDef>.AllDefs)
 			{
-				if (drugPolicy2[i].drug.IsPleasureDrug)
-				{
-					drugPolicy2[i].allowedForJoy = true;
-				}
+				NewDrugPolicyFromDef(allDef);
 			}
-			DrugPolicy drugPolicy3 = MakeNewDrugPolicy();
-			drugPolicy3.label = "OneDrinkPerDay".Translate();
-			drugPolicy3[ThingDefOf.Beer].allowedForJoy = true;
-			drugPolicy3[ThingDefOf.Beer].allowScheduled = true;
-			drugPolicy3[ThingDefOf.Beer].takeToInventory = 1;
-			drugPolicy3[ThingDefOf.Beer].daysFrequency = 1f;
-			drugPolicy3[ThingDefOf.SmokeleafJoint].allowedForJoy = true;
 		}
 	}
 }

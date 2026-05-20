@@ -69,6 +69,11 @@ namespace Verse
 
 		public static void StartFade(Color finalColor, float duration)
 		{
+			StartFade(finalColor, duration, 0f);
+		}
+
+		public static void StartFade(Color finalColor, float duration, float delay)
+		{
 			if (duration <= 0f)
 			{
 				SetColor(finalColor);
@@ -76,8 +81,17 @@ namespace Verse
 			}
 			sourceColor = CurrentInstantColor();
 			targetColor = finalColor;
-			sourceTime = CurTime;
-			targetTime = CurTime + duration;
+			sourceTime = CurTime + delay;
+			targetTime = sourceTime + duration;
+		}
+
+		public static bool IsFading()
+		{
+			if (Current.ProgramState != ProgramState.Playing || LongEventHandler.ShouldWaitForEvent)
+			{
+				return false;
+			}
+			return CurTime < targetTime;
 		}
 	}
 }

@@ -14,8 +14,9 @@ namespace RimWorld
 				{
 					return Enumerable.Empty<Pawn>();
 				}
-				return from p in parent.Map.mapPawns.FreeColonists
-					where p.royalty != null && p.royalty.AllTitlesForReading.Any()
+				Faction faction;
+				return from p in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists
+					where p.royalty != null && (p.royalty.AllTitlesForReading.Any() || p.royalty.CanUpdateTitleOfAnyFaction(out faction))
 					orderby CanAssignTo(p).Accepted descending
 					select p;
 			}
@@ -24,6 +25,15 @@ namespace RimWorld
 		protected override string GetAssignmentGizmoDesc()
 		{
 			return "CommandThroneSetOwnerDesc".Translate();
+		}
+
+		protected override bool CanSetUninstallAssignedPawn(Pawn pawn)
+		{
+			if (pawn != null && !AssignedAnything(pawn) && (bool)CanAssignTo(pawn))
+			{
+				return pawn.IsColonist;
+			}
+			return false;
 		}
 
 		public override string CompInspectStringExtra()
@@ -49,9 +59,13 @@ namespace RimWorld
 			pawn.ownership.ClaimThrone((Building_Throne)parent);
 		}
 
-		public override void TryUnassignPawn(Pawn pawn, bool sort = true)
+		public override void TryUnassignPawn(Pawn pawn, bool sort = true, bool uninstall = false)
 		{
 			pawn.ownership.UnclaimThrone();
+			if (uninstall && pawn != null && !uninstalledAssignedPawns.Contains(pawn))
+			{
+				uninstalledAssignedPawns.Add(pawn);
+			}
 		}
 
 		public override void PostExposeData()

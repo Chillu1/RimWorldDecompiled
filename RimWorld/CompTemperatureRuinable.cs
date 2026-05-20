@@ -23,28 +23,23 @@ namespace RimWorld
 			ruinedPercent = 0f;
 		}
 
-		public override void CompTick()
-		{
-			DoTicks(1);
-		}
-
 		public override void CompTickRare()
 		{
-			DoTicks(250);
+			CompTick();
 		}
 
-		private void DoTicks(int ticks)
+		public override void CompTick()
 		{
 			if (!Ruined)
 			{
 				float ambientTemperature = parent.AmbientTemperature;
 				if (ambientTemperature > Props.maxSafeTemperature)
 				{
-					ruinedPercent += (ambientTemperature - Props.maxSafeTemperature) * Props.progressPerDegreePerTick * (float)ticks;
+					ruinedPercent += (ambientTemperature - Props.maxSafeTemperature) * Props.progressPerDegreePerTick;
 				}
 				else if (ambientTemperature < Props.minSafeTemperature)
 				{
-					ruinedPercent -= (ambientTemperature - Props.minSafeTemperature) * Props.progressPerDegreePerTick * (float)ticks;
+					ruinedPercent -= (ambientTemperature - Props.minSafeTemperature) * Props.progressPerDegreePerTick;
 				}
 				if (ruinedPercent >= 1f)
 				{
@@ -85,10 +80,10 @@ namespace RimWorld
 			if (ruinedPercent > 0f)
 			{
 				float ambientTemperature = parent.AmbientTemperature;
-				string str;
+				string text;
 				if (ambientTemperature > Props.maxSafeTemperature)
 				{
-					str = "Overheating".Translate();
+					text = "Overheating".Translate();
 				}
 				else
 				{
@@ -96,9 +91,9 @@ namespace RimWorld
 					{
 						return null;
 					}
-					str = "Freezing".Translate();
+					text = "Freezing".Translate();
 				}
-				return str + ": " + ruinedPercent.ToStringPercent();
+				return text + ": " + ruinedPercent.ToStringPercent();
 			}
 			return null;
 		}

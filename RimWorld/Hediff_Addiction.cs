@@ -17,13 +17,9 @@ namespace RimWorld
 				{
 					return null;
 				}
-				List<Need> allNeeds = pawn.needs.AllNeeds;
-				for (int i = 0; i < allNeeds.Count; i++)
+				if (pawn.needs.TryGetNeed(def.chemicalNeed, out var need))
 				{
-					if (allNeeds[i].def == def.causesNeed)
-					{
-						return (Need_Chemical)allNeeds[i];
-					}
+					return (Need_Chemical)need;
 				}
 				return null;
 			}
@@ -67,12 +63,17 @@ namespace RimWorld
 		{
 			get
 			{
+				string text = base.TipStringExtra;
 				Need_Chemical need = Need;
 				if (need != null)
 				{
-					return "CreatesNeed".Translate() + ": " + need.LabelCap + " (" + need.CurLevelPercentage.ToStringPercent("F0") + ")";
+					if (!text.NullOrEmpty())
+					{
+						text += "\n";
+					}
+					text += "CreatesNeed".Translate() + ": " + need.LabelCap + " (" + need.CurLevelPercentage.ToStringPercent("F0") + ")";
 				}
-				return null;
+				return text;
 			}
 		}
 
@@ -81,7 +82,7 @@ namespace RimWorld
 			get
 			{
 				Need_Chemical need = Need;
-				if (need == null || need.CurCategory != 0)
+				if (need == null || need.CurCategory != DrugDesireCategory.Withdrawal)
 				{
 					return 0;
 				}

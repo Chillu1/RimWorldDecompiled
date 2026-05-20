@@ -12,7 +12,7 @@ namespace RimWorld
 	{
 		private int lastInterceptTicks = -999999;
 
-		private int nextChargeTick = -1;
+		private int startedChargingTick = -1;
 
 		private bool shutDown;
 
@@ -20,7 +20,15 @@ namespace RimWorld
 
 		private Sustainer sustainer;
 
+		public int currentHitPoints = -1;
+
+		public int? maxHitPointsOverride;
+
+		private int activatedTick = -999999;
+
 		private float lastInterceptAngle;
+
+		private bool drawInterceptCone;
 
 		private bool debugInterceptNonHostileProjectiles;
 
@@ -30,9 +38,13 @@ namespace RimWorld
 
 		private static readonly MaterialPropertyBlock MatPropertyBlock = new MaterialPropertyBlock();
 
-		private const float TextureActualRingSizeFactor = 1.16015625f;
+		private const float TextureActualRingSizeFactor = 1.1601562f;
 
 		private static readonly Color InactiveColor = new Color(0.2f, 0.2f, 0.2f);
+
+		private static Material ShieldDotMat => MaterialPool.MatFrom("Things/Mote/ShieldDownDot", ShaderDatabase.MoteGlow);
+
+		protected virtual int NumInactiveDots => 7;
 
 		public CompProperties_ProjectileInterceptor Props => (CompProperties_ProjectileInterceptor)props;
 
@@ -40,11 +52,24 @@ namespace RimWorld
 		{
 			get
 			{
-				if (!OnCooldown && !stunner.Stunned && !shutDown)
+				if (OnCooldown || Charging || stunner.Stunned || shutDown || currentHitPoints == 0 || !parent.Spawned)
 				{
-					return !Charging;
+					return false;
 				}
-				return false;
+				if (Props.activated && Find.TickManager.TicksGame > activatedTick + Props.activeDuration)
+				{
+					return false;
+				}
+				if (parent is Pawn p && (p.IsCharging() || p.IsSelfShutdown()))
+				{
+					return false;
+				}
+				CompCanBeDormant comp = parent.GetComp<CompCanBeDormant>();
+				if (comp != null && !comp.Awake)
+				{
+					return false;
+				}
+				return true;
 			}
 		}
 
@@ -54,9 +79,9 @@ namespace RimWorld
 		{
 			get
 			{
-				if (nextChargeTick >= 0)
+				if (startedChargingTick >= 0)
 				{
-					return Find.TickManager.TicksGame > nextChargeTick;
+					return Find.TickManager.TicksGame > startedChargingTick;
 				}
 				return false;
 			}
@@ -66,11 +91,11 @@ namespace RimWorld
 		{
 			get
 			{
-				if (nextChargeTick < 0)
+				if (startedChargingTick < 0)
 				{
 					return 0;
 				}
-				return nextChargeTick;
+				return startedChargingTick;
 			}
 		}
 
@@ -78,11 +103,11 @@ namespace RimWorld
 		{
 			get
 			{
-				if (nextChargeTick < 0)
+				if (startedChargingTick < 0)
 				{
 					return 0;
 				}
-				return nextChargeTick + Props.chargeDurationTicks - Find.TickManager.TicksGame;
+				return Mathf.Max(startedChargingTick + Props.chargeDurationTicks - Find.TickManager.TicksGame, 0);
 			}
 		}
 
@@ -100,31 +125,56 @@ namespace RimWorld
 
 		public bool ReactivatedThisTick => Find.TickManager.TicksGame - lastInterceptTicks == Props.cooldownTicks;
 
+		public bool ShouldDisplayHitpointsGizmo
+		{
+			get
+			{
+				if (Props.alwaysShowHitpointsGizmo)
+				{
+					return true;
+				}
+				if (parent is Pawn pawn && (pawn.IsColonistPlayerControlled || pawn.RaceProps.IsMechanoid))
+				{
+					return HitPointsMax > 0;
+				}
+				return false;
+			}
+		}
+
+		public int HitPointsMax => maxHitPointsOverride ?? Props.hitPoints;
+
+		private int RemainingTicks => activatedTick + Props.activeDuration - Find.TickManager.TicksGame;
+
+		protected virtual int HitPointsPerInterval => 1;
+
 		public override void PostPostMake()
 		{
 			base.PostPostMake();
 			if (Props.chargeIntervalTicks > 0)
 			{
-				nextChargeTick = Find.TickManager.TicksGame + Rand.Range(0, Props.chargeIntervalTicks);
+				startedChargingTick = Find.TickManager.TicksGame + Rand.Range(0, Props.chargeIntervalTicks);
+			}
+			if (HitPointsMax > 0)
+			{
+				if (Props.startWithMaxHitPoints)
+				{
+					currentHitPoints = HitPointsMax;
+				}
+				else
+				{
+					currentHitPoints = 0;
+				}
 			}
 			stunner = new StunHandler(parent);
 		}
 
-		public override void PostDeSpawn(Map map)
+		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
 		{
-			if (sustainer != null)
-			{
-				sustainer.End();
-			}
+			sustainer?.End();
 		}
 
 		public bool CheckIntercept(Projectile projectile, Vector3 lastExactPos, Vector3 newExactPos)
 		{
-			if (!ModLister.RoyaltyInstalled)
-			{
-				Log.ErrorOnce("Shields are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it.", 657212);
-				return false;
-			}
 			Vector3 vector = parent.Position.ToVector3Shifted();
 			float num = Props.radius + projectile.def.projectile.SpeedTilesPerTick + 0.1f;
 			if ((newExactPos.x - vector.x) * (newExactPos.x - vector.x) + (newExactPos.z - vector.z) * (newExactPos.z - vector.z) > num * num)
@@ -139,9 +189,20 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if ((projectile.Launcher == null || !projectile.Launcher.HostileTo(parent)) && !debugInterceptNonHostileProjectiles && !Props.interceptNonHostileProjectiles)
+			if (projectile.Launcher == null && !debugInterceptNonHostileProjectiles && !Props.interceptNonHostileProjectiles)
 			{
 				return false;
+			}
+			if (parent.Faction != null)
+			{
+				if (projectile.Launcher != null && projectile.Launcher.Spawned && !projectile.Launcher.HostileTo(parent.Faction))
+				{
+					return false;
+				}
+				if (projectile.Launcher != null && !projectile.Launcher.Spawned && !projectile.Launcher.Faction.HostileTo(parent.Faction))
+				{
+					return false;
+				}
 			}
 			if (!Props.interceptOutgoingProjectiles && (new Vector2(vector.x, vector.z) - new Vector2(lastExactPos.x, lastExactPos.z)).sqrMagnitude <= Props.radius * Props.radius)
 			{
@@ -153,18 +214,75 @@ namespace RimWorld
 			}
 			lastInterceptAngle = lastExactPos.AngleToFlat(parent.TrueCenter());
 			lastInterceptTicks = Find.TickManager.TicksGame;
-			if (projectile.def.projectile.damageDef == DamageDefOf.EMP && Props.disarmedByEmpForTicks > 0)
+			drawInterceptCone = true;
+			TriggerEffecter(newExactPos.ToIntVec3());
+			if (projectile.DamageDef == DamageDefOf.EMP && Props.disarmedByEmpForTicks > 0)
 			{
-				BreakShield(new DamageInfo(projectile.def.projectile.damageDef, projectile.def.projectile.damageDef.defaultDamage));
+				BreakShieldEmp(new DamageInfo(projectile.DamageDef, projectile.DamageDef.defaultDamage));
 			}
-			Effecter effecter = new Effecter(Props.interceptEffect ?? EffecterDefOf.Interceptor_BlockedProjectile);
-			effecter.Trigger(new TargetInfo(newExactPos.ToIntVec3(), parent.Map), TargetInfo.Invalid);
-			effecter.Cleanup();
+			if (currentHitPoints > 0)
+			{
+				currentHitPoints -= projectile.DamageAmount;
+				if (currentHitPoints < 0)
+				{
+					currentHitPoints = 0;
+				}
+				if (currentHitPoints == 0)
+				{
+					startedChargingTick = Find.TickManager.TicksGame;
+					BreakShieldHitpoints(new DamageInfo(projectile.DamageDef, projectile.DamageDef.defaultDamage));
+					return true;
+				}
+			}
 			return true;
+		}
+
+		public bool CheckBombardmentIntercept(Bombardment bombardment, Bombardment.BombardmentProjectile projectile)
+		{
+			if (!Active || !Props.interceptAirProjectiles)
+			{
+				return false;
+			}
+			if (!projectile.targetCell.InHorDistOf(parent.Position, Props.radius))
+			{
+				return false;
+			}
+			if ((bombardment.instigator == null || !bombardment.instigator.HostileTo(parent)) && !debugInterceptNonHostileProjectiles && !Props.interceptNonHostileProjectiles)
+			{
+				return false;
+			}
+			lastInterceptTicks = Find.TickManager.TicksGame;
+			drawInterceptCone = false;
+			TriggerEffecter(projectile.targetCell);
+			return true;
+		}
+
+		public bool BombardmentCanStartFireAt(Bombardment bombardment, IntVec3 cell)
+		{
+			if (!Active || !Props.interceptAirProjectiles)
+			{
+				return true;
+			}
+			if ((bombardment.instigator == null || !bombardment.instigator.HostileTo(parent)) && !debugInterceptNonHostileProjectiles && !Props.interceptNonHostileProjectiles)
+			{
+				return true;
+			}
+			return !cell.InHorDistOf(parent.Position, Props.radius);
+		}
+
+		private void TriggerEffecter(IntVec3 pos)
+		{
+			Effecter effecter = new Effecter(Props.interceptEffect ?? EffecterDefOf.Interceptor_BlockedProjectile);
+			effecter.Trigger(new TargetInfo(pos, parent.Map), TargetInfo.Invalid);
+			effecter.Cleanup();
 		}
 
 		public static bool InterceptsProjectile(CompProperties_ProjectileInterceptor props, Projectile projectile)
 		{
+			if (props.interceptGroundProjectiles && props.interceptAirProjectiles)
+			{
+				return true;
+			}
 			if (props.interceptGroundProjectiles)
 			{
 				return !projectile.def.projectile.flyOverhead;
@@ -178,15 +296,32 @@ namespace RimWorld
 
 		public override void CompTick()
 		{
+			if (HitPointsMax > 0 && ChargingTicksLeft == 0)
+			{
+				if (currentHitPoints == 0 && Props.hitPointsRestoreInstantlyAfterCharge)
+				{
+					currentHitPoints = HitPointsMax;
+				}
+				if (parent.IsHashIntervalTick(Props.rechargeHitPointsIntervalTicks))
+				{
+					currentHitPoints = Mathf.Clamp(currentHitPoints + HitPointsPerInterval, 0, HitPointsMax);
+				}
+				if (startedChargingTick > 0)
+				{
+					startedChargingTick = -1;
+				}
+			}
+			if (Props.activated && !Charging && Find.TickManager.TicksGame == activatedTick + Props.activeDuration)
+			{
+				startedChargingTick = Find.TickManager.TicksGame;
+			}
 			if (ReactivatedThisTick && Props.reactivateEffect != null)
 			{
-				Effecter effecter = new Effecter(Props.reactivateEffect);
-				effecter.Trigger(parent, TargetInfo.Invalid);
-				effecter.Cleanup();
+				Props.reactivateEffect.Spawn(parent, parent.MapHeld).Cleanup();
 			}
-			if (Find.TickManager.TicksGame >= nextChargeTick + Props.chargeDurationTicks)
+			if (Props.chargeIntervalTicks > 0 && Find.TickManager.TicksGame >= startedChargingTick + Props.chargeDurationTicks)
 			{
-				nextChargeTick += Props.chargeIntervalTicks;
+				startedChargingTick += Props.chargeIntervalTicks;
 			}
 			stunner.StunHandlerTick();
 			if (Props.activeSound.NullOrUndefined())
@@ -207,6 +342,20 @@ namespace RimWorld
 			}
 		}
 
+		public override void PostDrawExtraSelectionOverlays()
+		{
+			base.PostDrawExtraSelectionOverlays();
+			if (!Active && !WorldComponent_GravshipController.GravshipRenderInProgess)
+			{
+				for (int i = 0; i < NumInactiveDots; i++)
+				{
+					Vector3 vector = new Vector3(0f, 0f, 1f).RotatedBy((float)i / (float)NumInactiveDots * 360f) * (Props.radius * 0.966f);
+					Vector3 vector2 = parent.DrawPos + vector;
+					Graphics.DrawMesh(MeshPool.plane10, new Vector3(vector2.x, AltitudeLayer.MoteOverhead.AltitudeFor(), vector2.z), Quaternion.identity, ShieldDotMat, 0);
+				}
+			}
+		}
+
 		public override void Notify_LordDestroyed()
 		{
 			base.Notify_LordDestroyed();
@@ -216,8 +365,8 @@ namespace RimWorld
 		public override void PostDraw()
 		{
 			base.PostDraw();
-			Vector3 pos = parent.Position.ToVector3Shifted();
-			pos.y = AltitudeLayer.MoteOverhead.AltitudeFor();
+			Vector3 drawPos = parent.DrawPos;
+			drawPos.y = AltitudeLayer.MoteOverhead.AltitudeFor();
 			float currentAlpha = GetCurrentAlpha();
 			if (currentAlpha > 0f)
 			{
@@ -225,7 +374,7 @@ namespace RimWorld
 				value.a *= currentAlpha;
 				MatPropertyBlock.SetColor(ShaderPropertyIDs.Color, value);
 				Matrix4x4 matrix = default(Matrix4x4);
-				matrix.SetTRS(pos, Quaternion.identity, new Vector3(Props.radius * 2f * 1.16015625f, 1f, Props.radius * 2f * 1.16015625f));
+				matrix.SetTRS(drawPos, Quaternion.identity, new Vector3(Props.radius * 2f * 1.1601562f, 1f, Props.radius * 2f * 1.1601562f));
 				Graphics.DrawMesh(MeshPool.plane10, matrix, ForceFieldMat, 0, null, 0, MatPropertyBlock);
 			}
 			float currentConeAlpha_RecentlyIntercepted = GetCurrentConeAlpha_RecentlyIntercepted();
@@ -235,7 +384,7 @@ namespace RimWorld
 				color.a *= currentConeAlpha_RecentlyIntercepted;
 				MatPropertyBlock.SetColor(ShaderPropertyIDs.Color, color);
 				Matrix4x4 matrix2 = default(Matrix4x4);
-				matrix2.SetTRS(pos, Quaternion.Euler(0f, lastInterceptAngle - 90f, 0f), new Vector3(Props.radius * 2f * 1.16015625f, 1f, Props.radius * 2f * 1.16015625f));
+				matrix2.SetTRS(drawPos, Quaternion.Euler(0f, lastInterceptAngle - 90f, 0f), new Vector3(Props.radius * 2f * 1.1601562f, 1f, Props.radius * 2f * 1.1601562f));
 				Graphics.DrawMesh(MeshPool.plane10, matrix2, ForceFieldConeMat, 0, null, 0, MatPropertyBlock);
 			}
 		}
@@ -267,13 +416,9 @@ namespace RimWorld
 		private float GetCurrentAlpha_Selected()
 		{
 			float num = Mathf.Max(2f, Props.idlePulseSpeed);
-			if (!Find.Selector.IsSelected(parent) || stunner.Stunned || shutDown)
+			if ((!Find.Selector.IsSelected(parent) && !Props.drawWithNoSelection) || !Active)
 			{
 				return 0f;
-			}
-			if (!Active)
-			{
-				return 0.41f;
 			}
 			return Mathf.Lerp(0.2f, 0.62f, (Mathf.Sin((float)(Gen.HashCombineInt(parent.thingIDNumber, 35990913) % 100) + Time.realtimeSinceStartup * num) + 1f) / 2f);
 		}
@@ -296,34 +441,57 @@ namespace RimWorld
 
 		private float GetCurrentConeAlpha_RecentlyIntercepted()
 		{
+			if (!drawInterceptCone)
+			{
+				return 0f;
+			}
 			int num = Find.TickManager.TicksGame - lastInterceptTicks;
 			return Mathf.Clamp01(1f - (float)num / 40f) * 0.82f;
 		}
 
+		public void Activate()
+		{
+			activatedTick = Find.TickManager.TicksGame;
+		}
+
+		public void Deactivate()
+		{
+			activatedTick = Find.TickManager.TicksGame - Props.activeDuration;
+			startedChargingTick = Find.TickManager.TicksGame;
+		}
+
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (!Prefs.DevMode)
+			if (ShouldDisplayHitpointsGizmo)
+			{
+				Gizmo_ProjectileInterceptorHitPoints gizmo_ProjectileInterceptorHitPoints = new Gizmo_ProjectileInterceptorHitPoints();
+				gizmo_ProjectileInterceptorHitPoints.interceptor = this;
+				yield return gizmo_ProjectileInterceptorHitPoints;
+			}
+			if (!DebugSettings.ShowDevGizmos)
 			{
 				yield break;
 			}
 			if (OnCooldown)
 			{
-				Command_Action command_Action = new Command_Action();
-				command_Action.defaultLabel = "Dev: Reset cooldown";
-				command_Action.action = delegate
+				yield return new Command_Action
 				{
-					lastInterceptTicks = Find.TickManager.TicksGame - Props.cooldownTicks;
+					defaultLabel = "DEV: Reset cooldown",
+					action = delegate
+					{
+						lastInterceptTicks = Find.TickManager.TicksGame - Props.cooldownTicks;
+					}
 				};
-				yield return command_Action;
 			}
-			Command_Toggle command_Toggle = new Command_Toggle();
-			command_Toggle.defaultLabel = "Dev: Intercept non-hostile";
-			command_Toggle.isActive = () => debugInterceptNonHostileProjectiles;
-			command_Toggle.toggleAction = delegate
+			yield return new Command_Toggle
 			{
-				debugInterceptNonHostileProjectiles = !debugInterceptNonHostileProjectiles;
+				defaultLabel = "DEV: Intercept non-hostile",
+				isActive = () => debugInterceptNonHostileProjectiles,
+				toggleAction = delegate
+				{
+					debugInterceptNonHostileProjectiles = !debugInterceptNonHostileProjectiles;
+				}
 			};
-			yield return command_Toggle;
 		}
 
 		public override string CompInspectStringExtra()
@@ -331,23 +499,25 @@ namespace RimWorld
 			StringBuilder stringBuilder = new StringBuilder();
 			if (Props.interceptGroundProjectiles || Props.interceptAirProjectiles)
 			{
-				string value = ((!Props.interceptGroundProjectiles) ? ((string)"InterceptsProjectiles_AerialProjectiles".Translate()) : ((string)"InterceptsProjectiles_GroundProjectiles".Translate()));
+				string text = ((Props.interceptGroundProjectiles && Props.interceptAirProjectiles) ? ((string)"InterceptsProjectiles_BothProjectiles".Translate()) : ((!Props.interceptGroundProjectiles) ? ((string)"InterceptsProjectiles_AerialProjectiles".Translate()) : ((string)"InterceptsProjectiles_GroundProjectiles".Translate())));
 				if (Props.cooldownTicks > 0)
 				{
-					stringBuilder.Append("InterceptsProjectilesEvery".Translate(value, Props.cooldownTicks.ToStringTicksToPeriod()));
+					stringBuilder.AppendTagged("InterceptsProjectilesEvery".Translate(text, Props.cooldownTicks.ToStringTicksToPeriod()));
 				}
 				else
 				{
-					stringBuilder.Append("InterceptsProjectiles".Translate(value));
+					stringBuilder.Append("InterceptsProjectiles".Translate(text));
 				}
+			}
+			if (Props.activated && Active)
+			{
+				stringBuilder.AppendLineIfNotEmpty();
+				stringBuilder.AppendTagged("ShieldDuration".Translate() + ": " + RemainingTicks.ToStringSecondsFromTicks("F0"));
 			}
 			if (OnCooldown)
 			{
-				if (stringBuilder.Length != 0)
-				{
-					stringBuilder.AppendLine();
-				}
-				stringBuilder.Append("CooldownTime".Translate() + ": " + CooldownTicksLeft.ToStringTicksToPeriod());
+				stringBuilder.AppendLineIfNotEmpty();
+				stringBuilder.AppendTagged("CooldownTime".Translate() + ": " + CooldownTicksLeft.ToStringTicksToPeriod());
 			}
 			if (stunner.Stunned)
 			{
@@ -355,7 +525,7 @@ namespace RimWorld
 				{
 					stringBuilder.AppendLine();
 				}
-				stringBuilder.Append("DisarmedTime".Translate() + ": " + stunner.StunTicksLeft.ToStringTicksToPeriod());
+				stringBuilder.AppendTagged("DisarmedTime".Translate() + ": " + stunner.StunTicksLeft.ToStringTicksToPeriod());
 			}
 			if (shutDown)
 			{
@@ -373,46 +543,52 @@ namespace RimWorld
 				}
 				if (Charging)
 				{
-					stringBuilder.Append("ChargingTime".Translate() + ": " + ChargingTicksLeft.ToStringTicksToPeriod());
+					stringBuilder.AppendTagged("ChargingTime".Translate() + ": " + ChargingTicksLeft.ToStringTicksToPeriod());
 				}
 				else
 				{
-					stringBuilder.Append("ChargingNext".Translate((ChargeCycleStartTick - Find.TickManager.TicksGame).ToStringTicksToPeriod(), Props.chargeDurationTicks.ToStringTicksToPeriod(), Props.chargeIntervalTicks.ToStringTicksToPeriod()));
+					stringBuilder.AppendTagged("ChargingNext".Translate((ChargeCycleStartTick - Find.TickManager.TicksGame).ToStringTicksToPeriod(), Props.chargeDurationTicks.ToStringTicksToPeriod(), Props.chargeIntervalTicks.ToStringTicksToPeriod()));
 				}
 			}
 			return stringBuilder.ToString();
 		}
 
-		public override void PostPreApplyDamage(DamageInfo dinfo, out bool absorbed)
+		public override void PostPreApplyDamage(ref DamageInfo dinfo, out bool absorbed)
 		{
-			base.PostPreApplyDamage(dinfo, out absorbed);
+			base.PostPreApplyDamage(ref dinfo, out absorbed);
 			if (dinfo.Def == DamageDefOf.EMP && Props.disarmedByEmpForTicks > 0)
 			{
-				BreakShield(dinfo);
+				BreakShieldEmp(dinfo);
 			}
 		}
 
-		private void BreakShield(DamageInfo dinfo)
+		private void BreakShieldEmp(DamageInfo dinfo)
 		{
 			float fTheta;
 			Vector3 center;
 			if (Active)
 			{
-				SoundDefOf.EnergyShield_Broken.PlayOneShot(new TargetInfo(parent));
+				EffecterDefOf.Shield_Break.SpawnAttached(parent, parent.MapHeld, Props.radius);
 				int num = Mathf.CeilToInt(Props.radius * 2f);
-				fTheta = (float)Math.PI * 2f / (float)num;
+				fTheta = MathF.PI * 2f / (float)num;
 				center = parent.TrueCenter();
 				for (int i = 0; i < num; i++)
 				{
-					MoteMaker.MakeConnectingLine(PosAtIndex(i), PosAtIndex((i + 1) % num), ThingDefOf.Mote_LineEMP, parent.Map, 1.5f);
+					FleckMaker.ConnectingLine(PosAtIndex(i), PosAtIndex((i + 1) % num), FleckDefOf.LineEMP, parent.Map, 1.5f);
 				}
 			}
 			dinfo.SetAmount((float)Props.disarmedByEmpForTicks / 30f);
-			stunner.Notify_DamageApplied(dinfo, affectedByEMP: true);
+			stunner.Notify_DamageApplied(dinfo);
 			Vector3 PosAtIndex(int index)
 			{
 				return new Vector3(Props.radius * Mathf.Cos(fTheta * (float)index) + center.x, 0f, Props.radius * Mathf.Sin(fTheta * (float)index) + center.z);
 			}
+		}
+
+		private void BreakShieldHitpoints(DamageInfo dinfo)
+		{
+			EffecterDefOf.Shield_Break.SpawnAttached(parent, parent.MapHeld, Props.radius);
+			stunner.Notify_DamageApplied(dinfo);
 		}
 
 		public override void PostExposeData()
@@ -420,13 +596,16 @@ namespace RimWorld
 			base.PostExposeData();
 			Scribe_Values.Look(ref lastInterceptTicks, "lastInterceptTicks", -999999);
 			Scribe_Values.Look(ref shutDown, "shutDown", defaultValue: false);
-			Scribe_Values.Look(ref nextChargeTick, "nextChargeTick", -1);
+			Scribe_Values.Look(ref startedChargingTick, "nextChargeTick", -1);
 			Scribe_Deep.Look(ref stunner, "stunner", parent);
+			Scribe_Values.Look(ref currentHitPoints, "currentHitPoints", -1);
+			Scribe_Values.Look(ref maxHitPointsOverride, "maxHitPointsOverride");
+			Scribe_Values.Look(ref activatedTick, "activatedTick", -999999);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
-				if (Props.chargeIntervalTicks > 0 && nextChargeTick <= 0)
+				if (Props.chargeIntervalTicks > 0 && startedChargingTick <= 0)
 				{
-					nextChargeTick = Find.TickManager.TicksGame + Rand.Range(0, Props.chargeIntervalTicks);
+					startedChargingTick = Find.TickManager.TicksGame + Rand.Range(0, Props.chargeIntervalTicks);
 				}
 				if (stunner == null)
 				{

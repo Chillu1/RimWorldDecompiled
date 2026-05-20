@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using RimWorld;
 using RimWorld.Planet;
+using UnityEngine;
+using Verse.AI;
 using Verse.AI.Group;
 using Verse.Profile;
 using Verse.Sound;
@@ -12,6 +16,10 @@ namespace Verse
 {
 	public static class DebugActionsMisc
 	{
+		private static PlanetLayer TestLayer;
+
+		private static readonly int[] TimeIncreases = new int[5] { 2500, 15000, 30000, 60000, 900000 };
+
 		private static List<Pawn> tmpLentColonists = new List<Pawn>();
 
 		private const string NoErrorString = "OK";
@@ -20,7 +28,50 @@ namespace Verse
 
 		private const int PawnsToGenerate = 100;
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("Other", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnWorld, hideInSubMenu = true, requiresOdyssey = true)]
+		private static void AddTestPlanetLayer()
+		{
+			if (TestLayer != null)
+			{
+				Find.WorldGrid.RemovePlanetLayer(TestLayer);
+			}
+			PlanetLayer orbit = Find.WorldGrid.Orbit;
+			TestLayer = Find.WorldGrid.RegisterPlanetLayer(PlanetLayerDefOf.Orbit, null, 200f);
+			TestLayer.AddConnection(orbit, 0f);
+			orbit.AddConnection(TestLayer, 0f);
+		}
+
+		[DebugAction("Other", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnWorld, hideInSubMenu = true, requiresOdyssey = true)]
+		private static void RemoveTestPlanetLayer()
+		{
+			if (TestLayer != null)
+			{
+				Find.WorldGrid.RemovePlanetLayer(TestLayer);
+			}
+		}
+
+		[DebugAction("Other", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnWorld, hideInSubMenu = true)]
+		private static void LogPlanetLayerConnections()
+		{
+			StringBuilder stringBuilder = new StringBuilder();
+			foreach (KeyValuePair<int, PlanetLayer> planetLayer3 in Find.WorldGrid.PlanetLayers)
+			{
+				planetLayer3.Deconstruct(out var _, out var value);
+				PlanetLayer planetLayer = value;
+				stringBuilder.AppendLine($"{planetLayer.LayerID}: {planetLayer.Def.label}:");
+				foreach (KeyValuePair<PlanetLayer, PlanetLayerConnection> connection in planetLayer.Connections)
+				{
+					connection.Deconstruct(out value, out var value2);
+					PlanetLayer planetLayer2 = value;
+					PlanetLayerConnection planetLayerConnection = value2;
+					stringBuilder.AppendLine($"   -> {planetLayer2.Def.label}, cost: {planetLayerConnection.fuelCost}");
+				}
+				stringBuilder.AppendLine();
+			}
+			Log.Message(stringBuilder.ToString());
+		}
+
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
 		private static void DestroyAllPlants()
 		{
 			foreach (Thing item in Find.CurrentMap.listerThings.AllThings.ToList())
@@ -32,7 +83,7 @@ namespace Verse
 			}
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
 		private static void DestroyAllThings()
 		{
 			foreach (Thing item in Find.CurrentMap.listerThings.AllThings.ToList())
@@ -41,7 +92,7 @@ namespace Verse
 			}
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
 		private static void DestroyClutter()
 		{
 			foreach (Thing item in Find.CurrentMap.listerThings.ThingsInGroup(ThingRequestGroup.Chunk).ToList())
@@ -54,14 +105,110 @@ namespace Verse
 			}
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
+		private static void DestroyAllHats()
+		{
+			foreach (Pawn allMap in PawnsFinder.AllMaps)
+			{
+				if (!allMap.RaceProps.Humanlike)
+				{
+					continue;
+				}
+				for (int num = allMap.apparel.WornApparel.Count - 1; num >= 0; num--)
+				{
+					Apparel apparel = allMap.apparel.WornApparel[num];
+					if (apparel.def.apparel.bodyPartGroups.Contains(BodyPartGroupDefOf.FullHead) || apparel.def.apparel.bodyPartGroups.Contains(BodyPartGroupDefOf.UpperHead))
+					{
+						apparel.Destroy();
+					}
+				}
+			}
+		}
+
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
+		private static void DestroyAllCorpses()
+		{
+			List<Thing> list = Find.CurrentMap.listerThings.ThingsInGroup(ThingRequestGroup.Corpse);
+			for (int num = list.Count - 1; num >= 0; num--)
+			{
+				list[num].Destroy();
+			}
+		}
+
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void FinishAllResearch()
 		{
 			Find.ResearchManager.DebugSetAllProjectsFinished();
+			Find.EntityCodex.debug_UnhideAllResearch = true;
 			Messages.Message("All research finished.", MessageTypeDefOf.TaskCompletion, historical: false);
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", "Add techprint to project", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void AddTechprintsForProject()
+		{
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			foreach (ResearchProjectDef item in DefDatabase<ResearchProjectDef>.AllDefsListForReading.Where((ResearchProjectDef p) => !p.TechprintRequirementMet))
+			{
+				ResearchProjectDef localProject = item;
+				list.Add(new DebugMenuOption(localProject.LabelCap, DebugMenuOptionMode.Action, delegate
+				{
+					Find.ResearchManager.AddTechprints(localProject, localProject.TechprintCount - Find.ResearchManager.GetTechprints(localProject));
+				}));
+			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+		}
+
+		[DebugAction("General", "Apply techprint on project", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void ApplyTechprintsForProject()
+		{
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			foreach (ResearchProjectDef item in DefDatabase<ResearchProjectDef>.AllDefsListForReading.Where((ResearchProjectDef p) => !p.TechprintRequirementMet))
+			{
+				ResearchProjectDef localProject = item;
+				list.Add(new DebugMenuOption(localProject.LabelCap, DebugMenuOptionMode.Action, delegate
+				{
+					List<DebugMenuOption> list2 = new List<DebugMenuOption>
+					{
+						new DebugMenuOption("None", DebugMenuOptionMode.Action, delegate
+						{
+							Find.ResearchManager.ApplyTechprint(localProject, null);
+						})
+					};
+					foreach (Pawn allMapsCaravansAndTravellingTransporters_Alive_Colonist in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_Colonists)
+					{
+						Pawn localColonist = allMapsCaravansAndTravellingTransporters_Alive_Colonist;
+						list2.Add(new DebugMenuOption(localColonist.LabelCap, DebugMenuOptionMode.Action, delegate
+						{
+							Find.ResearchManager.ApplyTechprint(localProject, localColonist);
+						}));
+					}
+					Find.WindowStack.Add(new Dialog_DebugOptionListLister(list2));
+				}));
+			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+		}
+
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static List<DebugActionNode> AddTradeShipOfKind()
+		{
+			List<DebugActionNode> list = new List<DebugActionNode>();
+			foreach (TraderKindDef traderKind in DefDatabase<TraderKindDef>.AllDefs.Where((TraderKindDef t) => t.orbital))
+			{
+				list.Add(new DebugActionNode(traderKind.label, DebugActionType.Action, delegate
+				{
+					Find.CurrentMap.passingShipManager.DebugSendAllShipsAway();
+					IncidentParms parms = new IncidentParms
+					{
+						target = Find.CurrentMap,
+						traderKind = traderKind
+					};
+					IncidentDefOf.OrbitalTraderArrival.Worker.TryExecute(parms);
+				}));
+			}
+			return list;
+		}
+
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void ReplaceAllTradeShips()
 		{
 			Find.CurrentMap.passingShipManager.DebugSendAllShipsAway();
@@ -73,44 +220,105 @@ namespace Verse
 			}
 		}
 
-		[DebugAction("General", "Change weather...", allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void ChangeWeather()
+		[DebugAction("General", "Change weather...", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static List<DebugActionNode> ChangeWeather()
 		{
-			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			List<DebugActionNode> list = new List<DebugActionNode>();
 			foreach (WeatherDef allDef in DefDatabase<WeatherDef>.AllDefs)
 			{
 				WeatherDef localWeather = allDef;
-				list.Add(new DebugMenuOption(localWeather.LabelCap, DebugMenuOptionMode.Action, delegate
+				list.Add(new DebugActionNode(localWeather.LabelCap, DebugActionType.Action, delegate
 				{
 					Find.CurrentMap.weatherManager.TransitionTo(localWeather);
 				}));
 			}
-			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+			return list;
 		}
 
-		[DebugAction("General", "Play song...", allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void PlaySong()
+		[DebugAction("General", "Celestial debugger", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void OpenCelestialDebugger()
 		{
-			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			if (Find.WindowStack.TryGetWindow<Dialog_DevCelestial>(out var window))
+			{
+				window.Close();
+			}
+			Find.WindowStack.Add(new Dialog_DevCelestial());
+		}
+
+		[DebugAction("Sound", "Music debugger", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void OpenMusicDebugger()
+		{
+			if (Find.WindowStack.TryGetWindow<Dialog_DevMusic>(out var window))
+			{
+				window.Close();
+			}
+			Find.WindowStack.Add(new Dialog_DevMusic());
+		}
+
+		[DebugAction("General", "World noise visualizer", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.WorldRenderedNow)]
+		private static void OpenWorldNoiseDebugger()
+		{
+			if (Find.WindowStack.TryGetWindow<Dialog_DevNoiseWorld>(out var window))
+			{
+				window.Close();
+			}
+			Find.WindowStack.Add(new Dialog_DevNoiseWorld());
+		}
+
+		[DebugAction("General", "Map noise visualizer", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.IsCurrentlyOnMap)]
+		private static void OpenMapNoiseDebugger()
+		{
+			if (Find.WindowStack.TryGetWindow<Dialog_DevNoiseMap>(out var window))
+			{
+				window.Close();
+			}
+			Find.WindowStack.Add(new Dialog_DevNoiseMap());
+		}
+
+		[DebugAction("Sound", "Test music fadeout and silence", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void TestFadeoutAndSilence()
+		{
+			Find.MusicManagerPlay.ForceFadeoutAndSilenceFor(120f, 5f, preventDangerTransition: true);
+		}
+
+		[DebugAction("Sound", "Play song...", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static List<DebugActionNode> PlaySong()
+		{
+			List<DebugActionNode> list = new List<DebugActionNode>();
 			foreach (SongDef allDef in DefDatabase<SongDef>.AllDefs)
 			{
 				SongDef localSong = allDef;
-				list.Add(new DebugMenuOption(localSong.defName, DebugMenuOptionMode.Action, delegate
+				list.Add(new DebugActionNode(localSong.defName, DebugActionType.Action, delegate
 				{
-					Find.MusicManagerPlay.ForceStartSong(localSong, ignorePrefsVolume: false);
+					Find.MusicManagerPlay.ForcePlaySong(localSong, ignorePrefsVolume: false);
 				}));
 			}
-			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+			return list;
 		}
 
-		[DebugAction("General", "Play sound...", allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void PlaySound()
+		[DebugAction("Sound", "Trigger transition...", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static List<DebugActionNode> TriggerTransition()
 		{
-			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			List<DebugActionNode> list = new List<DebugActionNode>();
+			foreach (MusicTransitionDef allDef in DefDatabase<MusicTransitionDef>.AllDefs)
+			{
+				MusicTransitionDef local = allDef;
+				list.Add(new DebugActionNode(local.defName, DebugActionType.Action, delegate
+				{
+					Find.MusicManagerPlay.ForceTriggerTransition(local);
+				}));
+			}
+			return list;
+		}
+
+		[DebugAction("Sound", "Play sound...", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static List<DebugActionNode> PlaySound()
+		{
+			List<DebugActionNode> list = new List<DebugActionNode>();
 			foreach (SoundDef item in DefDatabase<SoundDef>.AllDefs.Where((SoundDef s) => !s.sustain))
 			{
 				SoundDef localSd = item;
-				list.Add(new DebugMenuOption(localSd.defName, DebugMenuOptionMode.Action, delegate
+				list.Add(new DebugActionNode(localSd.defName, DebugActionType.Action, delegate
 				{
 					if (localSd.subSounds.Any((SubSoundDef sub) => sub.onCamera))
 					{
@@ -122,10 +330,10 @@ namespace Verse
 					}
 				}));
 			}
-			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+			return list;
 		}
 
-		[DebugAction("General", "End game condition...", allowedGameStates = (AllowedGameStates.PlayingOnMap | AllowedGameStates.HasGameCondition))]
+		[DebugAction("General", "End game condition...", false, false, false, false, false, 0, false, allowedGameStates = (AllowedGameStates.PlayingOnMap | AllowedGameStates.HasGameCondition))]
 		private static void EndGameCondition()
 		{
 			List<DebugMenuOption> list = new List<DebugMenuOption>();
@@ -140,31 +348,57 @@ namespace Verse
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void AddPrisoner()
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, requiresBiotech = true)]
+		private static List<DebugActionNode> SimulateSanguophageMeeting()
 		{
-			AddGuest(prisoner: true);
+			List<DebugActionNode> list = new List<DebugActionNode>();
+			for (int i = 1; i <= 8; i++)
+			{
+				int num = i;
+				list.Add(new DebugActionNode(num + " sanguophages", DebugActionType.ToolMap, delegate
+				{
+					List<FactionRelation> list2 = new List<FactionRelation>();
+					foreach (Faction item in Find.FactionManager.AllFactionsListForReading)
+					{
+						if (!item.def.PermanentlyHostileTo(FactionDefOf.Sanguophages))
+						{
+							list2.Add(new FactionRelation(item, FactionRelationKind.Neutral));
+						}
+					}
+					Faction faction = FactionGenerator.NewGeneratedFactionWithRelations(FactionDefOf.Sanguophages, list2, hidden: true);
+					faction.temporary = true;
+					Find.FactionManager.Add(faction);
+					List<Pawn> list3 = new List<Pawn>();
+					PawnGenerationRequest request = new PawnGenerationRequest(PawnKindDefOf.Sanguophage, faction, PawnGenerationContext.NonPlayer, null, forceGenerateNewPawn: true, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: true);
+					for (int j = 0; j < num; j++)
+					{
+						list3.Add(PawnGenerator.GeneratePawn(request));
+					}
+					IncidentParms parms = new IncidentParms
+					{
+						target = Find.CurrentMap
+					};
+					PawnsArrivalModeDef edgeWalkIn = PawnsArrivalModeDefOf.EdgeWalkIn;
+					edgeWalkIn.Worker.TryResolveRaidSpawnCenter(parms);
+					edgeWalkIn.Worker.Arrive(list3, parms);
+					LordMaker.MakeNewLord(faction, new LordJob_SanguophageMeeting(UI.MouseCell(), new List<Thing>(), 60000, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, string.Empty), Find.CurrentMap, list3);
+				}));
+			}
+			return list;
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void AddGuest()
-		{
-			AddGuest(prisoner: false);
-		}
-
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void ForceEnemyAssault()
 		{
 			foreach (Lord lord in Find.CurrentMap.lordManager.lords)
 			{
-				LordToil_Stage lordToil_Stage = lord.CurLordToil as LordToil_Stage;
-				if (lordToil_Stage == null)
+				if (!(lord.CurLordToil is LordToil_Stage item))
 				{
 					continue;
 				}
 				foreach (Transition transition in lord.Graph.transitions)
 				{
-					if (transition.sources.Contains(lordToil_Stage) && transition.target is LordToil_AssaultColony)
+					if (transition.sources.Contains(item) && (transition.target is LordToil_AssaultColony || transition.target is LordToil_AssaultColonyBreaching || transition.target is LordToil_AssaultColonyPrisoners || transition.target is LordToil_AssaultColonySappers || transition.target is LordToil_AssaultColonyBossgroup || transition.target is LordToil_MoveInBossgroup))
 					{
 						Messages.Message("Debug forcing to assault toil: " + lord.faction, MessageTypeDefOf.TaskCompletion, historical: false);
 						lord.GotoToil(transition.target);
@@ -172,9 +406,24 @@ namespace Verse
 					}
 				}
 			}
+			foreach (Quest item2 in Find.QuestManager.QuestsListForReading)
+			{
+				if (item2.State != QuestState.Ongoing)
+				{
+					continue;
+				}
+				foreach (QuestPart item3 in item2.PartsListForReading)
+				{
+					if (item3 is QuestPart_BossgroupArrives { State: QuestPartState.Enabled } questPart_BossgroupArrives)
+					{
+						questPart_BossgroupArrives.DebugForceComplete();
+						Messages.Message("Debug forcing bossgroup assault.", MessageTypeDefOf.TaskCompletion, historical: false);
+					}
+				}
+			}
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void ForceEnemyFlee()
 		{
 			foreach (Lord lord in Find.CurrentMap.lordManager.lords)
@@ -190,19 +439,19 @@ namespace Verse
 			}
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void AdaptionProgress10Days()
 		{
 			Find.StoryWatcher.watcherAdaptation.Debug_OffsetAdaptDays(10f);
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
 		private static void UnloadUnusedAssets()
 		{
 			MemoryUtility.UnloadUnusedUnityAssets();
 		}
 
-		[DebugAction("General", "Name settlement...", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", "Name settlement...", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
 		private static void NameSettlement()
 		{
 			List<DebugMenuOption> list = new List<DebugMenuOption>();
@@ -225,22 +474,22 @@ namespace Verse
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
 		private static void NextLesson()
 		{
 			LessonAutoActivator.DebugForceInitiateBestLessonNow();
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void RegenAllMapMeshSections()
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, displayPriority = 900)]
+		private static List<DebugActionNode> ChangeCameraConfig()
 		{
-			Find.CurrentMap.mapDrawer.RegenerateEverythingNow();
-		}
-
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void ChangeCameraConfig()
-		{
-			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			List<DebugActionNode> list = new List<DebugActionNode>
+			{
+				new DebugActionNode("Open editor", DebugActionType.Action, delegate
+				{
+					Find.WindowStack.Add(new Dialog_CameraConfig());
+				})
+			};
 			foreach (Type item in typeof(CameraMapConfig).AllSubclasses())
 			{
 				Type localType = item;
@@ -249,21 +498,21 @@ namespace Verse
 				{
 					text = text.Substring("CameraMapConfig_".Length);
 				}
-				list.Add(new DebugMenuOption(text, DebugMenuOptionMode.Action, delegate
+				list.Add(new DebugActionNode(text, DebugActionType.Action, delegate
 				{
 					Find.CameraDriver.config = (CameraMapConfig)Activator.CreateInstance(localType);
 				}));
 			}
-			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+			return list;
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
 		private static void ForceShipCountdown()
 		{
 			ShipCountdown.InitiateCountdown((Building)null);
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
 		private static void ForceStartShip()
 		{
 			Map currentMap = Find.CurrentMap;
@@ -278,15 +527,45 @@ namespace Verse
 			}
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
 		private static void FlashTradeDropSpot()
 		{
 			IntVec3 intVec = DropCellFinder.TradeDropSpot(Find.CurrentMap);
 			Find.CurrentMap.debugDrawer.FlashCell(intVec);
-			Log.Message("trade drop spot: " + intVec);
+			IntVec3 intVec2 = intVec;
+			Log.Message("trade drop spot: " + intVec2.ToString());
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("Pawns", null, false, false, false, false, false, 0, false, actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void MakeFactionLeader(Pawn p)
+		{
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			foreach (Faction faction in Find.FactionManager.AllFactionsVisible)
+			{
+				list.Add(new DebugMenuOption(faction.Name, DebugMenuOptionMode.Action, delegate
+				{
+					if (faction.leader != p)
+					{
+						faction.leader = p;
+						if (ModsConfig.IdeologyActive)
+						{
+							foreach (Precept item in faction.ideos.PrimaryIdeo.PreceptsListForReading)
+							{
+								if (item is Precept_Role precept_Role && precept_Role.def.leaderRole)
+								{
+									precept_Role.Assign(p, addThoughts: false);
+									break;
+								}
+							}
+						}
+						DebugActionsUtility.DustPuffFrom(p);
+					}
+				}));
+			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+		}
+
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void KillFactionLeader()
 		{
 			Pawn leader = Find.FactionManager.AllFactions.Where((Faction x) => x.leader != null).RandomElement().leader;
@@ -304,7 +583,7 @@ namespace Verse
 			}
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void KillKidnappedPawn()
 		{
 			IEnumerable<Pawn> pawnsBySituation = Find.WorldPawns.GetPawnsBySituation(WorldPawnSituation.Kidnapped);
@@ -316,7 +595,23 @@ namespace Verse
 			}
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void KillWorldPawn()
+		{
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			foreach (Pawn item in Find.WorldPawns.AllPawnsAlive)
+			{
+				Pawn pLocal = item;
+				list.Add(new DebugMenuOption(item.LabelShort + "(" + item.kindDef.label + ")", DebugMenuOptionMode.Action, delegate
+				{
+					pLocal.Kill(null, null);
+					Messages.Message("Killed " + pLocal.LabelCap, MessageTypeDefOf.NeutralEvent, historical: false);
+				}));
+			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+		}
+
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void SetFactionRelations()
 		{
 			List<FloatMenuOption> list = new List<FloatMenuOption>();
@@ -326,9 +621,16 @@ namespace Verse
 				foreach (FactionRelationKind value in Enum.GetValues(typeof(FactionRelationKind)))
 				{
 					FactionRelationKind localRk = value;
-					FloatMenuOption item = new FloatMenuOption(string.Concat(localFac, " - ", localRk), delegate
+					FloatMenuOption item = new FloatMenuOption(localFac?.ToString() + " - " + localRk, delegate
 					{
-						localFac.TrySetRelationKind(Faction.OfPlayer, localRk);
+						if (localRk == FactionRelationKind.Hostile)
+						{
+							Faction.OfPlayer.TryAffectGoodwillWith(localFac, -100, canSendMessage: true, canSendHostilityLetter: true, HistoryEventDefOf.DebugGoodwill);
+						}
+						else if (localRk == FactionRelationKind.Ally)
+						{
+							Faction.OfPlayer.TryAffectGoodwillWith(localFac, 100, canSendMessage: true, canSendHostilityLetter: true, HistoryEventDefOf.DebugGoodwill);
+						}
 					});
 					list.Add(item);
 				}
@@ -336,7 +638,7 @@ namespace Verse
 			Find.WindowStack.Add(new FloatMenu(list));
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void VisitorGift()
 		{
 			List<Pawn> list = new List<Pawn>();
@@ -348,55 +650,25 @@ namespace Verse
 					break;
 				}
 			}
-			VisitorGiftForPlayerUtility.GiveGift(list, list[0].Faction);
+			VisitorGiftForPlayerUtility.GiveRandomGift(list, list[0].Faction);
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void RefogMap()
+		[DebugAction("General", "Increment time", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, displayPriority = 500)]
+		private static List<DebugActionNode> IncrementTime()
 		{
-			FloodFillerFog.DebugRefogMap(Find.CurrentMap);
-		}
-
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void UseGenStep()
-		{
-			List<DebugMenuOption> list = new List<DebugMenuOption>();
-			foreach (Type item in typeof(GenStep).AllSubclassesNonAbstract())
+			List<DebugActionNode> list = new List<DebugActionNode>();
+			for (int i = 0; i < TimeIncreases.Length; i++)
 			{
-				Type localGenStep = item;
-				list.Add(new DebugMenuOption(localGenStep.Name, DebugMenuOptionMode.Action, delegate
+				int durationLocal = TimeIncreases[i];
+				list.Add(new DebugActionNode(durationLocal.ToStringTicksToPeriod(), DebugActionType.Action, delegate
 				{
-					((GenStep)Activator.CreateInstance(localGenStep)).Generate(Find.CurrentMap, default(GenStepParams));
+					Find.TickManager.DebugSetTicksGame(Find.TickManager.TicksGame + durationLocal);
 				}));
 			}
-			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+			return list;
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void IncrementTime1Hour()
-		{
-			Find.TickManager.DebugSetTicksGame(Find.TickManager.TicksGame + 2500);
-		}
-
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void IncrementTime6Hours()
-		{
-			Find.TickManager.DebugSetTicksGame(Find.TickManager.TicksGame + 15000);
-		}
-
-		[DebugAction("General", "Increment time 1 day", allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void IncrementTime1Day()
-		{
-			Find.TickManager.DebugSetTicksGame(Find.TickManager.TicksGame + 60000);
-		}
-
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void IncrementTime1Season()
-		{
-			Find.TickManager.DebugSetTicksGame(Find.TickManager.TicksGame + 900000);
-		}
-
-		[DebugAction("General", "Storywatcher tick 1 day", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", "Storywatcher tick 1 day", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
 		private static void StorywatcherTick1Day()
 		{
 			for (int i = 0; i < 60000; i++)
@@ -406,79 +678,7 @@ namespace Verse
 			}
 		}
 
-		[DebugAction("General", "Add techprint to project", allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void AddTechprintsForProject()
-		{
-			List<DebugMenuOption> list = new List<DebugMenuOption>();
-			foreach (ResearchProjectDef item in DefDatabase<ResearchProjectDef>.AllDefsListForReading.Where((ResearchProjectDef p) => !p.TechprintRequirementMet))
-			{
-				ResearchProjectDef localProject = item;
-				list.Add(new DebugMenuOption(localProject.LabelCap, DebugMenuOptionMode.Action, delegate
-				{
-					Find.ResearchManager.AddTechprints(localProject, localProject.TechprintCount - Find.ResearchManager.GetTechprints(localProject));
-				}));
-			}
-			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
-		}
-
-		[DebugAction("General", "Apply techprint on project", allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void ApplyTechprintsForProject()
-		{
-			List<DebugMenuOption> list = new List<DebugMenuOption>();
-			foreach (ResearchProjectDef item in DefDatabase<ResearchProjectDef>.AllDefsListForReading.Where((ResearchProjectDef p) => !p.TechprintRequirementMet))
-			{
-				ResearchProjectDef localProject = item;
-				list.Add(new DebugMenuOption(localProject.LabelCap, DebugMenuOptionMode.Action, delegate
-				{
-					List<DebugMenuOption> list2 = new List<DebugMenuOption>
-					{
-						new DebugMenuOption("None", DebugMenuOptionMode.Action, delegate
-						{
-							Find.ResearchManager.ApplyTechprint(localProject, null);
-						})
-					};
-					Pawn localColonist = default(Pawn);
-					foreach (Pawn allMapsCaravansAndTravelingTransportPods_Alive_Colonist in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_Colonists)
-					{
-						localColonist = allMapsCaravansAndTravelingTransportPods_Alive_Colonist;
-						list2.Add(new DebugMenuOption(localColonist.LabelCap, DebugMenuOptionMode.Action, delegate
-						{
-							Find.ResearchManager.ApplyTechprint(localProject, localColonist);
-						}));
-					}
-					Find.WindowStack.Add(new Dialog_DebugOptionListLister(list2));
-				}));
-			}
-			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
-		}
-
-		private static void AddGuest(bool prisoner)
-		{
-			foreach (Building_Bed item in Find.CurrentMap.listerBuildings.AllBuildingsColonistOfClass<Building_Bed>())
-			{
-				if (item.ForPrisoners != prisoner || (item.OwnersForReading.Any() && (!prisoner || !item.AnyUnownedSleepingSlot)))
-				{
-					continue;
-				}
-				PawnKindDef pawnKindDef = (prisoner ? DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef pk) => pk.defaultFactionType != null && !pk.defaultFactionType.isPlayer && pk.RaceProps.Humanlike).RandomElement() : PawnKindDefOf.SpaceRefugee);
-				Faction faction = FactionUtility.DefaultFactionFrom(pawnKindDef.defaultFactionType);
-				Pawn pawn = PawnGenerator.GeneratePawn(pawnKindDef, faction);
-				GenSpawn.Spawn(pawn, item.Position, Find.CurrentMap);
-				foreach (ThingWithComps item2 in pawn.equipment.AllEquipmentListForReading.ToList())
-				{
-					if (pawn.equipment.TryDropEquipment(item2, out var resultingEq, pawn.Position))
-					{
-						resultingEq.Destroy();
-					}
-				}
-				pawn.inventory.innerContainer.Clear();
-				pawn.ownership.ClaimBedIfNonMedical(item);
-				pawn.guest.SetGuestStatus(Faction.OfPlayer, prisoner);
-				break;
-			}
-		}
-
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
 		private static void KillRandomLentColonist()
 		{
 			if (QuestUtility.TotalBorrowedColonistCount() <= 0)
@@ -496,16 +696,13 @@ namespace Verse
 				List<QuestPart> partsListForReading = questsListForReading[i].PartsListForReading;
 				for (int j = 0; j < partsListForReading.Count; j++)
 				{
-					QuestPart_LendColonistsToFaction questPart_LendColonistsToFaction;
-					if ((questPart_LendColonistsToFaction = partsListForReading[j] as QuestPart_LendColonistsToFaction) == null)
+					if (!(partsListForReading[j] is QuestPart_LendColonistsToFaction { LentColonistsListForReading: var lentColonistsListForReading }))
 					{
 						continue;
 					}
-					List<Thing> lentColonistsListForReading = questPart_LendColonistsToFaction.LentColonistsListForReading;
 					for (int k = 0; k < lentColonistsListForReading.Count; k++)
 					{
-						Pawn pawn;
-						if ((pawn = lentColonistsListForReading[k] as Pawn) != null && !pawn.Dead)
+						if (lentColonistsListForReading[k] is Pawn { Dead: false } pawn)
 						{
 							tmpLentColonists.Add(pawn);
 						}
@@ -517,69 +714,102 @@ namespace Verse
 			pawn2.Kill(null, flag ? pawn2.health.hediffSet.hediffs.RandomElement() : null);
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void DestroyAllHats()
+		[DebugAction("Pawns", null, false, false, false, false, false, 0, false, actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap, displayPriority = -1000)]
+		private static void ClearPrisonerInteractionSchedule(Pawn p)
 		{
-			foreach (Pawn allMap in PawnsFinder.AllMaps)
+			if (p.IsPrisonerOfColony)
 			{
-				if (!allMap.RaceProps.Humanlike)
+				p.mindState.lastAssignedInteractTime = -1;
+				p.mindState.interactionsToday = 0;
+				DebugActionsUtility.DustPuffFrom(p);
+			}
+		}
+
+		[DebugAction("General", null, false, false, false, false, false, 0, false, actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap, displayPriority = -100)]
+		private static void GlowAtPosition()
+		{
+			Map currentMap = Find.CurrentMap;
+			foreach (IntVec3 item in GenRadial.RadialCellsAround(UI.MouseCell(), 10f, useCenter: true))
+			{
+				if (item.InBounds(currentMap))
 				{
-					continue;
-				}
-				for (int num = allMap.apparel.WornApparel.Count - 1; num >= 0; num--)
-				{
-					Apparel apparel = allMap.apparel.WornApparel[num];
-					if (apparel.def.apparel.bodyPartGroups.Contains(BodyPartGroupDefOf.FullHead) || apparel.def.apparel.bodyPartGroups.Contains(BodyPartGroupDefOf.UpperHead))
-					{
-						apparel.Destroy();
-					}
+					float num = Find.CurrentMap.glowGrid.GroundGlowAt(item);
+					currentMap.debugDrawer.FlashCell(item, 0f, num.ToString("F1"), 100);
 				}
 			}
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void PawnKindApparelCheck()
+		[DebugAction("General", "HSV At Position", false, false, false, false, false, 0, false, actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap, displayPriority = -100)]
+		private static void HSVAtPosition()
 		{
-			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			Map currentMap = Find.CurrentMap;
+			foreach (IntVec3 item in GenRadial.RadialCellsAround(UI.MouseCell(), 10f, useCenter: true))
+			{
+				if (item.InBounds(currentMap))
+				{
+					Color.RGBToHSV(Find.CurrentMap.glowGrid.VisualGlowAt(item), out var H, out var S, out var V);
+					currentMap.debugDrawer.FlashCell(item, 0.5f, $"HSV({H:.0#},{S:.0#},{V:.0#})", 100);
+				}
+			}
+		}
+
+		[DebugAction("General", null, false, false, false, false, false, 0, false, actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
+		private static void FlashBlockedLandingCells()
+		{
+			Map currentMap = Find.CurrentMap;
+			foreach (IntVec3 allCell in currentMap.AllCells)
+			{
+				if (!allCell.Fogged(currentMap) && !DropCellFinder.IsGoodDropSpot(allCell, currentMap, allowFogged: false, canRoofPunch: false, allowIndoors: false))
+				{
+					currentMap.debugDrawer.FlashCell(allCell, 0f, "bl");
+				}
+			}
+		}
+
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
+		private static List<DebugActionNode> PawnKindApparelCheck()
+		{
+			List<DebugActionNode> list = new List<DebugActionNode>();
 			foreach (PawnKindDef item in from kd in DefDatabase<PawnKindDef>.AllDefs
 				where kd.race == ThingDefOf.Human
 				orderby kd.defName
 				select kd)
 			{
 				PawnKindDef localKindDef = item;
-				list.Add(new DebugMenuOption(localKindDef.defName, DebugMenuOptionMode.Action, delegate
+				list.Add(new DebugActionNode(localKindDef.defName, DebugActionType.Action, delegate
 				{
-					Faction faction = FactionUtility.DefaultFactionFrom(localKindDef.defaultFactionType);
+					Faction faction = FactionUtility.DefaultFactionFrom(localKindDef.defaultFactionDef);
 					bool flag = false;
-					for (int k = 0; k < 100; k++)
+					for (int i = 0; i < 100; i++)
 					{
-						Pawn pawn2 = PawnGenerator.GeneratePawn(localKindDef, faction);
-						if (pawn2.royalty != null)
+						Pawn pawn = PawnGenerator.GeneratePawn(localKindDef, faction);
+						if (pawn.royalty != null)
 						{
-							RoyalTitle mostSeniorTitle2 = pawn2.royalty.MostSeniorTitle;
-							if (mostSeniorTitle2 != null && !mostSeniorTitle2.def.requiredApparel.NullOrEmpty())
+							RoyalTitle mostSeniorTitle = pawn.royalty.MostSeniorTitle;
+							if (mostSeniorTitle != null && !mostSeniorTitle.def.requiredApparel.NullOrEmpty())
 							{
-								for (int l = 0; l < mostSeniorTitle2.def.requiredApparel.Count; l++)
+								for (int j = 0; j < mostSeniorTitle.def.requiredApparel.Count; j++)
 								{
-									if (!mostSeniorTitle2.def.requiredApparel[l].IsMet(pawn2))
+									ApparelRequirement apparelRequirement = mostSeniorTitle.def.requiredApparel[j];
+									if (apparelRequirement.IsActive(pawn) && !apparelRequirement.IsMet(pawn))
 									{
-										Log.Error(string.Concat(localKindDef, " (", mostSeniorTitle2.def.label, ")  does not have its title requirements met. index=", l, logApparel(pawn2)));
+										Log.Error(localKindDef?.ToString() + " (" + mostSeniorTitle.def.label + ")  does not have its title requirements met. index=" + j + logApparel(pawn));
 										flag = true;
 									}
 								}
 							}
 						}
-						List<Apparel> wornApparel2 = pawn2.apparel.WornApparel;
-						for (int m = 0; m < wornApparel2.Count; m++)
+						List<Apparel> wornApparel = pawn.apparel.WornApparel;
+						for (int k = 0; k < wornApparel.Count; k++)
 						{
-							string text = apparelOkayToWear(pawn2, wornApparel2[m]);
+							string text = apparelOkayToWear(pawn, wornApparel[k]);
 							if (text != "OK")
 							{
-								Log.Error(text + " - " + wornApparel2[m].Label + logApparel(pawn2));
+								Log.Error(text + " - " + wornApparel[k].Label + logApparel(pawn));
 								flag = true;
 							}
 						}
-						Find.WorldPawns.PassToWorld(pawn2, PawnDiscardDecideMode.Discard);
+						Find.WorldPawns.PassToWorld(pawn, PawnDiscardDecideMode.Discard);
 					}
 					if (!flag)
 					{
@@ -587,7 +817,7 @@ namespace Verse
 					}
 				}));
 			}
-			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+			return list;
 			static string apparelOkayToWear(Pawn pawn, Apparel apparel)
 			{
 				ApparelProperties app = apparel.def.apparel;
@@ -595,9 +825,9 @@ namespace Verse
 				{
 					return "OK";
 				}
-				if (!app.CorrectGenderForWearing(pawn.gender))
+				if (!app.PawnCanWear(pawn))
 				{
-					return "Wrong gender.";
+					return "Pawn cannot wear.";
 				}
 				List<SpecificApparelRequirement> specificApparelRequirements = pawn.kindDef.specificApparelRequirements;
 				if (specificApparelRequirements != null)
@@ -639,42 +869,80 @@ namespace Verse
 			{
 				StringBuilder stringBuilder = new StringBuilder();
 				stringBuilder.AppendLine();
-				stringBuilder.AppendLine($"Apparel of {p.LabelShort}:");
+				stringBuilder.AppendLine("Apparel of " + p.LabelShort + ":");
 				List<Apparel> wornApparel = p.apparel.WornApparel;
-				for (int j = 0; j < wornApparel.Count; j++)
+				for (int i = 0; i < wornApparel.Count; i++)
 				{
-					stringBuilder.AppendLine("  - " + wornApparel[j].Label);
+					stringBuilder.AppendLine("  - " + wornApparel[i].Label);
 				}
 				return stringBuilder.ToString();
 			}
 		}
 
-		[DebugAction("General", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void PawnKindAbilityCheck()
+		[DebugAction("General", "Edit effecter...", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static List<DebugActionNode> EditEffecter()
 		{
-			List<DebugMenuOption> list = new List<DebugMenuOption>();
-			StringBuilder sb = new StringBuilder();
+			List<DebugActionNode> list = new List<DebugActionNode>();
+			foreach (EffecterDef allDef in DefDatabase<EffecterDef>.AllDefs)
+			{
+				EffecterDef localDef = allDef;
+				list.Add(new DebugActionNode(localDef.defName, DebugActionType.Action, delegate
+				{
+					if (!Find.WindowStack.TryRemove(typeof(EditWindow_DefEditor)))
+					{
+						Find.WindowStack.Add(new EditWindow_DefEditor(localDef));
+					}
+				}));
+			}
+			return list;
+		}
+
+		[DebugAction("General", "Edit Animation...", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static List<DebugActionNode> EditAnimation()
+		{
+			List<DebugActionNode> list = new List<DebugActionNode>();
+			foreach (AnimationDef allDef in DefDatabase<AnimationDef>.AllDefs)
+			{
+				AnimationDef localDef = allDef;
+				list.Add(new DebugActionNode(localDef.defName, DebugActionType.Action, delegate
+				{
+					if (!Find.WindowStack.TryRemove(typeof(EditWindow_DefEditor)))
+					{
+						Find.WindowStack.Add(new EditWindow_DefEditor(localDef));
+					}
+				}));
+			}
+			return list;
+		}
+
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
+		private static List<DebugActionNode> PawnKindAbilityCheck()
+		{
+			List<DebugActionNode> list = new List<DebugActionNode>();
 			foreach (PawnKindDef item in from kd in DefDatabase<PawnKindDef>.AllDefs
 				where kd.titleRequired != null || !kd.titleSelectOne.NullOrEmpty()
 				orderby kd.defName
 				select kd)
 			{
 				PawnKindDef localKindDef = item;
-				list.Add(new DebugMenuOption(localKindDef.defName, DebugMenuOptionMode.Action, delegate
+				list.Add(new DebugActionNode(localKindDef.defName, DebugActionType.Action, delegate
 				{
-					Faction faction = FactionUtility.DefaultFactionFrom(localKindDef.defaultFactionType);
+					StringBuilder stringBuilder = new StringBuilder();
+					Faction faction = FactionUtility.DefaultFactionFrom(localKindDef.defaultFactionDef);
 					for (int i = 0; i < 100; i++)
 					{
-						RoyalTitleDef fixedTitle = null;
+						RoyalTitleDef royalTitleDef = null;
 						if (localKindDef.titleRequired != null)
 						{
-							fixedTitle = localKindDef.titleRequired;
+							royalTitleDef = localKindDef.titleRequired;
 						}
 						else if (!localKindDef.titleSelectOne.NullOrEmpty() && Rand.Chance(localKindDef.royalTitleChance))
 						{
-							fixedTitle = localKindDef.titleSelectOne.RandomElementByWeight((RoyalTitleDef t) => t.commonality);
+							royalTitleDef = localKindDef.titleSelectOne.RandomElementByWeight((RoyalTitleDef t) => t.commonality);
 						}
-						Pawn pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(localKindDef, faction, PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: false, newborn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: false, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, null, 1f, null, null, null, null, null, null, null, null, null, null, null, fixedTitle));
+						PawnKindDef kind = localKindDef;
+						RoyalTitleDef fixedTitle = royalTitleDef;
+						Pawn pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(kind, faction, PawnGenerationContext.NonPlayer, null, forceGenerateNewPawn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: false, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowPregnant: false, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, 0f, null, 1f, null, null, null, null, null, null, null, null, null, null, fixedTitle));
 						RoyalTitle mostSeniorTitle = pawn.royalty.MostSeniorTitle;
 						if (mostSeniorTitle != null)
 						{
@@ -684,35 +952,279 @@ namespace Verse
 								if (mostSeniorTitle.def.MaxAllowedPsylinkLevel(faction.def) > 0)
 								{
 									string text = mostSeniorTitle.def.LabelCap + " - No psylink.";
-									if (pawn.abilities.abilities.Any((Ability x) => x.def.level > 0))
+									if (pawn.abilities.abilities.Any((Ability x) => x.def.IsPsycast && x.def.level > 0))
 									{
 										text += " Has psycasts without psylink.";
 									}
-									sb.AppendLine(text);
+									stringBuilder.AppendLine(text);
 								}
 							}
 							else if (mainPsylinkSource.level < mostSeniorTitle.def.MaxAllowedPsylinkLevel(faction.def))
 							{
-								sb.AppendLine("Psylink at level " + mainPsylinkSource.level + ", but requires " + mostSeniorTitle.def.MaxAllowedPsylinkLevel(faction.def));
+								stringBuilder.AppendLine("Psylink at level " + mainPsylinkSource.level + ", but requires " + mostSeniorTitle.def.MaxAllowedPsylinkLevel(faction.def));
 							}
 							else if (mainPsylinkSource.level > mostSeniorTitle.def.MaxAllowedPsylinkLevel(faction.def))
 							{
-								sb.AppendLine("Psylink at level " + mainPsylinkSource.level + ". Max is " + mostSeniorTitle.def.MaxAllowedPsylinkLevel(faction.def));
+								stringBuilder.AppendLine("Psylink at level " + mainPsylinkSource.level + ". Max is " + mostSeniorTitle.def.MaxAllowedPsylinkLevel(faction.def));
 							}
 						}
 						Find.WorldPawns.PassToWorld(pawn, PawnDiscardDecideMode.Discard);
 					}
-					if (sb.Length == 0)
+					if (stringBuilder.Length == 0)
 					{
 						Log.Message("No errors for " + localKindDef.defName);
 					}
 					else
 					{
-						Log.Error("Errors:\n" + sb.ToString());
+						Log.Error("Errors:\n" + stringBuilder);
 					}
 				}));
 			}
-			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
+			return list;
+		}
+
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
+		public static void AtlasRebuild()
+		{
+			GlobalTextureAtlasManager.rebakeAtlas = true;
+		}
+
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
+		private static void DumpPawnAtlases()
+		{
+			string text = Application.dataPath + "\\atlasDump_Pawn";
+			if (!Directory.Exists(text))
+			{
+				Directory.CreateDirectory(text);
+			}
+			GlobalTextureAtlasManager.DumpPawnAtlases(text);
+		}
+
+		[DebugAction("General", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, hideInSubMenu = true)]
+		private static void DumpStaticAtlases()
+		{
+			string text = Application.dataPath + "\\atlasDump_Static";
+			if (!Directory.Exists(text))
+			{
+				Directory.CreateDirectory(text);
+			}
+			GlobalTextureAtlasManager.DumpStaticAtlases(text);
+		}
+
+		[DebugAction("Anomaly", null, false, false, false, false, false, 0, false, name = "Set Anomaly level...", allowedGameStates = AllowedGameStates.Playing, requiresAnomaly = true)]
+		private static List<DebugActionNode> SetMonolithLevel()
+		{
+			List<DebugActionNode> list = new List<DebugActionNode>();
+			foreach (MonolithLevelDef def in DefDatabase<MonolithLevelDef>.AllDefs)
+			{
+				list.Add(new DebugActionNode(def.defName, DebugActionType.Action, delegate
+				{
+					Find.Anomaly.SetLevel(def);
+				}));
+			}
+			return list;
+		}
+
+		[DebugAction("General", null, false, false, false, false, false, 0, false, name = "Hot reload Defs", allowedGameStates = AllowedGameStates.Playing, displayPriority = 9999)]
+		private static void HotReloadDefs()
+		{
+			PlayDataLoader.HotReloadDefs();
+		}
+
+		[DebugAction("Pawns", null, false, false, false, false, false, 0, false, actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap, displayPriority = -1000)]
+		private static void SetGraphicsDirty(Pawn p)
+		{
+			p.Drawer.renderer.SetAllGraphicsDirty();
+		}
+
+		[DebugAction("Pawns", null, false, false, false, false, false, 0, false, actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap, displayPriority = -1000)]
+		private static void ToggleMovement(Pawn p)
+		{
+			p.pather.debugDisabled = !p.pather.debugDisabled;
+			MoteMaker.ThrowText(p.Position.ToVector3(), Find.CurrentMap, "Movement " + (p.pather.debugDisabled ? "Disabled" : "Enabled"));
+		}
+
+		[DebugAction("Pawns", null, false, false, false, false, false, 0, false, actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap, displayPriority = -1000)]
+		private static void ToggleMaxMoveSpeed(Pawn p)
+		{
+			p.debugMaxMoveSpeed = !p.debugMaxMoveSpeed;
+			MoteMaker.ThrowText(p.Position.ToVector3(), Find.CurrentMap, "Max MoveSpeed " + (p.debugMaxMoveSpeed ? "Enabled" : "Disabled"));
+		}
+
+		[DebugAction("Pawns", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap, displayPriority = -1000)]
+		private static List<DebugActionNode> LockRotation()
+		{
+			List<DebugActionNode> list = new List<DebugActionNode>();
+			foreach (Rot4 allRotation in Rot4.AllRotations)
+			{
+				Rot4 lRot = allRotation;
+				list.Add(new DebugActionNode(allRotation.ToStringHuman() ?? "", DebugActionType.ToolMapForPawns)
+				{
+					pawnAction = delegate(Pawn pawn)
+					{
+						if (pawn.debugRotLocked)
+						{
+							pawn.debugRotLocked = false;
+						}
+						pawn.Rotation = lRot;
+						pawn.debugRotLocked = true;
+						MoteMaker.ThrowText(pawn.Position.ToVector3(), Find.CurrentMap, "Rot Locked");
+					}
+				});
+			}
+			return list;
+		}
+
+		[DebugAction("Pawns", null, false, false, false, false, false, 0, false, actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap, displayPriority = -1000)]
+		private static void UnlockRotation(Pawn p)
+		{
+			if (p.debugRotLocked)
+			{
+				p.debugRotLocked = false;
+				MoteMaker.ThrowText(p.Position.ToVector3(), Find.CurrentMap, "Rot Unlocked");
+			}
+		}
+
+		[DebugAction("General", "Reveal Hidden Defs", false, false, false, false, false, 0, false)]
+		private static void RevealHiddenDefs()
+		{
+			Find.HiddenItemsManager.ClearHiddenDefs();
+		}
+
+		[DebugAction("Anomaly", null, false, false, false, false, false, 0, false, actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap, name = "End revenant hypnosis", requiresAnomaly = true)]
+		private static void EndRevenantHypnosis(Pawn p)
+		{
+			Hediff hediff = p.health.hediffSet.hediffs.Find((Hediff hd) => hd.def == HediffDefOf.RevenantHypnosis);
+			if (hediff != null)
+			{
+				p.health.RemoveHediff(hediff);
+			}
+			p.stances.stunner.StopStun();
+			Find.Anomaly.EndHypnotize(p);
+		}
+
+		[DebugAction("General", "Layer pathfinder...", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnWorld)]
+		private static void LayerPathfinder()
+		{
+			List<DebugMenuOption> list = new List<DebugMenuOption>();
+			foreach (KeyValuePair<int, PlanetLayer> planetLayer3 in Find.WorldGrid.PlanetLayers)
+			{
+				planetLayer3.Deconstruct(out var _, out var value);
+				PlanetLayer planetLayer = value;
+				PlanetLayer origin = planetLayer;
+				list.Add(new DebugMenuOption(origin.Def.label, DebugMenuOptionMode.Action, delegate
+				{
+					List<DebugMenuOption> list2 = new List<DebugMenuOption>();
+					foreach (KeyValuePair<int, PlanetLayer> planetLayer4 in Find.WorldGrid.PlanetLayers)
+					{
+						planetLayer4.Deconstruct(out var _, out var value2);
+						PlanetLayer planetLayer2 = value2;
+						PlanetLayer dest = planetLayer2;
+						if (dest != origin)
+						{
+							list2.Add(new DebugMenuOption(dest.Def.label, DebugMenuOptionMode.Action, delegate
+							{
+								List<PlanetLayerConnection> list3 = new List<PlanetLayerConnection>();
+								string text;
+								if (origin.TryGetPath(dest, list3, out var cost))
+								{
+									text = $"Found path between {origin.Def.label} and {dest.Def.label}, cost: {cost}";
+									foreach (PlanetLayerConnection item in list3)
+									{
+										text += $"\n {item.origin.Def.label} ({item.fuelCost}) -> {item.target.Def.label}";
+									}
+								}
+								else
+								{
+									text = "No path between " + origin.Def.label + " and " + dest.Def.label;
+								}
+								Log.Message(text);
+							}));
+						}
+					}
+					Find.WindowStack.Add(new Dialog_DebugOptionListLister(list2, "Select destination"));
+				}));
+			}
+			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list, "Select origin"));
+		}
+
+		[DebugAction("Other", "Clear cached materials", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.Invalid, hideInSubMenu = true)]
+		private static void ClearCachedMaterials()
+		{
+			MatLoader.ClearCache();
+		}
+
+		[DebugAction("Pathing", null, false, false, false, false, false, 0, false, actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void LogCellMapData()
+		{
+			Find.CurrentMap.pathFinder.MapData.LogCell(UI.MouseCell());
+		}
+
+		[DebugAction("Pathing", null, false, false, false, false, false, 0, false, actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.IsCurrentlyOnMap)]
+		private static void LogPathfinderState()
+		{
+			Find.CurrentMap.pathFinder.LogPathfinderState();
+		}
+
+		[DebugAction("Pathing", null, false, false, false, false, false, 0, false, actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void LogCellGridResult()
+		{
+			Find.CurrentMap.pathFinder.LogGridCellResult(UI.MouseCell());
+		}
+
+		[DebugAction("Pathing", null, false, false, false, false, false, 0, false, actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void Breach()
+		{
+			IntVec3 start;
+			DebugTools.curTool = new DebugTool("start...", delegate
+			{
+				start = UI.MouseCell();
+				DebugTools.curTool = new DebugTool("end...", delegate
+				{
+					IntVec3 end = UI.MouseCell();
+					new BreachingGrid(Find.CurrentMap, null).CreateBreachPath(start, end, 1, 3, useAvoidGrid: true);
+					DebugTools.curTool = null;
+				});
+			});
+		}
+
+		[DebugAction("Pathing", null, false, false, false, false, false, 0, false, actionType = DebugActionType.ToolMapForPawns, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void Goto(Pawn pawn)
+		{
+			DebugTools.curTool = new DebugTool("Select destination...", delegate
+			{
+				IntVec3 intVec = UI.MouseCell();
+				if (!pawn.CanReach(intVec, PathEndMode.OnCell, Danger.Deadly))
+				{
+					MoteMaker.ThrowText(intVec.ToVector3(), Find.CurrentMap, "Cannot reach cell");
+				}
+				else
+				{
+					Job job = JobMaker.MakeJob(JobDefOf.Goto, intVec);
+					job.locomotionUrgency = LocomotionUrgency.Jog;
+					pawn.jobs.TryTakeOrderedJob(job, JobTag.Misc);
+					DebugTools.curTool = null;
+				}
+			});
+		}
+
+		[DebugAction("General", null, false, false, false, false, false, 0, false, actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.Playing, requiresOdyssey = true)]
+		private static void RetroactivelyAddLandmarksToWorld()
+		{
+			new WorldGenStep_Landmarks().GenerateFresh(Find.World.info.seedString, Find.WorldGrid.Surface);
+			Find.World.renderer.GetLayer<WorldDrawLayer_Terrain>(Find.WorldGrid.Surface).RegenerateNow();
+			Find.World.renderer.GetLayer<WorldDrawLayer_Landmarks>(Find.WorldGrid.Surface).RegenerateNow();
+			Find.World.renderer.GetLayer<WorldDrawLayer_Hills>(Find.WorldGrid.Surface).RegenerateNow();
+		}
+
+		[DebugAction("General", null, false, false, false, false, false, 0, false, actionType = DebugActionType.Action, allowedGameStates = AllowedGameStates.Playing, requiresOdyssey = true)]
+		private static void RegenerateMapFeatures()
+		{
+			foreach (Tile tile in Find.WorldGrid.Surface.Tiles)
+			{
+				tile.mutatorsNullable?.Clear();
+			}
+			WorldGenStep_Mutators.AddMutatorsFromTile(Find.WorldGrid.Surface);
 		}
 	}
 }

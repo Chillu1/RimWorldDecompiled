@@ -18,8 +18,7 @@ namespace RimWorld
 				bool flag3 = false;
 				for (int i = 0; i < args.Length; i++)
 				{
-					Pawn pawn = args[i] as Pawn;
-					if (pawn != null)
+					if (args[i] is Pawn pawn)
 					{
 						flag2 = true;
 						if (pawn.Faction == Faction.OfPlayer)
@@ -31,6 +30,16 @@ namespace RimWorld
 				if (flag2 && !flag3)
 				{
 					return null;
+				}
+			}
+			if (!def.usableWithChildren)
+			{
+				for (int j = 0; j < args.Length; j++)
+				{
+					if (args[j] is Pawn pawn2 && !pawn2.ageTracker.Adult)
+					{
+						return null;
+					}
 				}
 			}
 			Tale tale = TaleFactory.MakeRawTale(def, args);
@@ -47,16 +56,11 @@ namespace RimWorld
 				return null;
 			}
 			Find.TaleManager.Add(tale);
-			for (int j = 0; j < args.Length; j++)
+			for (int num = 0; num < args.Length; num++)
 			{
-				Pawn pawn2 = args[j] as Pawn;
-				if (pawn2 != null)
+				if (args[num] is Pawn { Dead: false } pawn3 && pawn3.needs.mood != null)
 				{
-					if (!pawn2.Dead && pawn2.needs.mood != null)
-					{
-						pawn2.needs.mood.thoughts.situational.Notify_SituationalThoughtsDirty();
-					}
-					pawn2.records.AccumulateStoryEvent(StoryEventDefOf.TaleCreated);
+					pawn3.needs.mood.thoughts.situational.Notify_SituationalThoughtsDirty();
 				}
 			}
 			return tale;

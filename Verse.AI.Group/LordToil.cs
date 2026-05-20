@@ -5,7 +5,7 @@ using RimWorld;
 
 namespace Verse.AI.Group
 {
-	public abstract class LordToil
+	public abstract class LordToil : IDisposable
 	{
 		public Lord lord;
 
@@ -25,6 +25,8 @@ namespace Verse.AI.Group
 
 		public virtual bool AllowRestingInBed => true;
 
+		public virtual bool AllowAggressiveTargetingOfRoamers => false;
+
 		public virtual bool AllowSelfTend => true;
 
 		public virtual bool ShouldFail
@@ -43,6 +45,8 @@ namespace Verse.AI.Group
 		}
 
 		public virtual bool ForceHighStoryDanger => false;
+
+		public virtual bool AssignsDuties => true;
 
 		public virtual void Init()
 		{
@@ -69,14 +73,45 @@ namespace Verse.AI.Group
 
 		public virtual IEnumerable<FloatMenuOption> ExtraFloatMenuOptions(Pawn target, Pawn forPawn)
 		{
-			return null;
+			return Enumerable.Empty<FloatMenuOption>();
+		}
+
+		public virtual IEnumerable<Gizmo> GetPawnGizmos(Pawn p)
+		{
+			return Enumerable.Empty<Gizmo>();
+		}
+
+		public virtual IEnumerable<Gizmo> GetBuildingGizmos(Building building)
+		{
+			return Enumerable.Empty<Gizmo>();
+		}
+
+		public virtual bool CanAddPawn(Pawn p)
+		{
+			return true;
 		}
 
 		public virtual void Notify_PawnLost(Pawn victim, PawnLostCondition cond)
 		{
 		}
 
+		public virtual void Notify_PawnJobDone(Pawn p, JobCondition condition)
+		{
+		}
+
+		public virtual void Notify_PawnAcquiredTarget(Pawn detector, Thing newTarg)
+		{
+		}
+
+		public virtual void Notify_PawnDamaged(Pawn victim, DamageInfo dinfo)
+		{
+		}
+
 		public virtual void Notify_BuildingLost(Building b)
+		{
+		}
+
+		public virtual void Notify_CorpseLost(Corpse c)
 		{
 		}
 
@@ -85,6 +120,18 @@ namespace Verse.AI.Group
 		}
 
 		public virtual void Notify_ConstructionFailed(Pawn pawn, Frame frame, Blueprint_Build newBlueprint)
+		{
+		}
+
+		public virtual void Notify_ConstructionCompleted(Pawn pawn, Building building)
+		{
+		}
+
+		public virtual void Notify_BuildingSpawnedOnMap(Building b)
+		{
+		}
+
+		public virtual void Notify_BuildingDespawnedOnMap(Building b)
 		{
 		}
 
@@ -105,6 +152,14 @@ namespace Verse.AI.Group
 				text = text.Substring(text.LastIndexOf('_') + 1);
 			}
 			return text;
+		}
+
+		public void Dispose()
+		{
+			if (data is IDisposable disposable)
+			{
+				disposable.Dispose();
+			}
 		}
 	}
 }

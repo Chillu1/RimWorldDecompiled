@@ -22,7 +22,7 @@ namespace Verse
 			node.DoSpecialPreElements(this);
 			if (node.children == null)
 			{
-				Log.Error(string.Concat(node, " children is null."));
+				Log.Error(node?.ToString() + " children is null.");
 				return;
 			}
 			for (int i = 0; i < node.children.Count; i++)
@@ -50,7 +50,7 @@ namespace Verse
 			ControlButtonsRight(node, widgetRow2);
 			ExtraInfoText(node, widgetRow2);
 			EndLine();
-			if (node.IsOpen(openMask))
+			if (IsOpen(node, openMask))
 			{
 				ContentLines(node, indentLevel + 1);
 			}
@@ -76,14 +76,11 @@ namespace Verse
 				Type baseType = node.obj.GetType().GetGenericArguments()[0];
 				Action<object> addAction2 = delegate(object o)
 				{
-					node.obj.GetType().GetMethod("Add").Invoke(node.obj, new object[1]
-					{
-						o
-					});
+					node.obj.GetType().GetMethod("Add").Invoke(node.obj, new object[1] { o });
 				};
 				MakeCreateNewObjectMenu(node, node.owningField, baseType, addAction2);
 			}
-			if (node.HasDeleteButton && widgetRow.ButtonIcon(TexButton.DeleteX, null, GenUI.SubtleMouseoverColor))
+			if (node.HasDeleteButton && widgetRow.ButtonIcon(TexButton.Delete, null, GenUI.SubtleMouseoverColor))
 			{
 				node.Delete();
 			}
@@ -160,9 +157,9 @@ namespace Verse
 				{
 					text2 = "";
 				}
-				string b = text2;
+				string text3 = text2;
 				text2 = Widgets.TextField(rect, text2);
-				if (text2 != b)
+				if (text2 != text3)
 				{
 					text = text2;
 				}
@@ -192,9 +189,9 @@ namespace Verse
 					obj = value;
 				}
 				rect.width = 60f;
-				string text3 = obj.ToString();
-				text3 = Widgets.TextField(rect, text3);
-				if (float.TryParse(text3, out var result2))
+				string text4 = obj.ToString();
+				text4 = Widgets.TextField(rect, text4);
+				if (float.TryParse(text4, out var result2))
 				{
 					obj = result2;
 				}
@@ -228,6 +225,20 @@ namespace Verse
 				FloatRange fRange = (FloatRange)obj;
 				Widgets.FloatRangeWithTypeIn(rect, rect.GetHashCode(), ref fRange, sliderMin, sliderMax);
 				obj = fRange;
+			}
+			else if (objectType == typeof(IntRange))
+			{
+				int min = 0;
+				int max = 100;
+				EditSliderRangeAttribute[] array3 = (EditSliderRangeAttribute[])node.owningField.GetCustomAttributes(typeof(EditSliderRangeAttribute), inherit: true);
+				if (array3.Length != 0)
+				{
+					min = Mathf.FloorToInt(array3[0].min);
+					max = Mathf.FloorToInt(array3[0].max);
+				}
+				IntRange range = (IntRange)obj;
+				Widgets.IntRange(rect, rect.GetHashCode(), ref range, min, max);
+				obj = range;
 			}
 			else
 			{

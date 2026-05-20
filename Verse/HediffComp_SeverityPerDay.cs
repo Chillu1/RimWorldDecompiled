@@ -1,11 +1,10 @@
-using System.Text;
 using UnityEngine;
 
 namespace Verse
 {
-	public class HediffComp_SeverityPerDay : HediffComp
+	public class HediffComp_SeverityPerDay : HediffComp_SeverityModifierBase
 	{
-		protected const int SeverityUpdateInterval = 200;
+		public float severityPerDay;
 
 		private HediffCompProperties_SeverityPerDay Props => (HediffCompProperties_SeverityPerDay)props;
 
@@ -13,9 +12,9 @@ namespace Verse
 		{
 			get
 			{
-				if (props is HediffCompProperties_SeverityPerDay && Props.showHoursToRecover && SeverityChangePerDay() < 0f)
+				if (Props.showHoursToRecover && SeverityChangePerDay() < 0f)
 				{
-					return Mathf.RoundToInt(parent.Severity / Mathf.Abs(SeverityChangePerDay()) * 24f) + (string)"LetterHour".Translate();
+					return Mathf.RoundToInt(parent.Severity / Mathf.Abs(SeverityChangePerDay()) * 24f).ToString() + "LetterHour".Translate();
 				}
 				return null;
 			}
@@ -25,39 +24,43 @@ namespace Verse
 		{
 			get
 			{
-				if (props is HediffCompProperties_SeverityPerDay && Props.showDaysToRecover && SeverityChangePerDay() < 0f)
+				if (Props.showDaysToRecover && SeverityChangePerDay() < 0f)
 				{
-					return "DaysToRecover".Translate((parent.Severity / Mathf.Abs(SeverityChangePerDay())).ToString("0.0"));
+					return "DaysToRecover".Translate((parent.Severity / Mathf.Abs(SeverityChangePerDay())).ToString("0.0")).Resolve();
 				}
 				return null;
 			}
 		}
 
-		public override void CompPostTick(ref float severityAdjustment)
+		public override void CompPostPostAdd(DamageInfo? dinfo)
 		{
-			base.CompPostTick(ref severityAdjustment);
-			if (base.Pawn.IsHashIntervalTick(200))
+			base.CompPostPostAdd(dinfo);
+			severityPerDay = Props.CalculateSeverityPerDay();
+		}
+
+		public override void CompExposeData()
+		{
+			base.CompExposeData();
+			Scribe_Values.Look(ref severityPerDay, "severityPerDay", 0f);
+			if (Scribe.mode == LoadSaveMode.PostLoadInit && severityPerDay == 0f && Props.severityPerDay != 0f && Props.severityPerDayRange == FloatRange.Zero)
 			{
-				float num = SeverityChangePerDay();
-				num *= 0.00333333341f;
-				severityAdjustment += num;
+				severityPerDay = Props.CalculateSeverityPerDay();
+				Log.Warning("Hediff " + parent.Label + " had severityPerDay not matching parent.");
 			}
 		}
 
-		protected virtual float SeverityChangePerDay()
+		public override float SeverityChangePerDay()
 		{
-			return Props.severityPerDay;
-		}
-
-		public override string CompDebugString()
-		{
-			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.Append(base.CompDebugString());
-			if (!base.Pawn.Dead)
+			if (base.Pawn.ageTracker.AgeBiologicalYearsFloat < Props.minAge)
 			{
-				stringBuilder.AppendLine("severity/day: " + SeverityChangePerDay().ToString("F3"));
+				return 0f;
 			}
-			return stringBuilder.ToString().TrimEndNewlines();
+			float num = severityPerDay * (parent.CurStage?.severityGainFactor ?? 1f);
+			if (ModsConfig.BiotechActive && MechanitorUtility.IsMechanitor(base.Pawn))
+			{
+				num *= Props.mechanitorFactor;
+			}
+			return num;
 		}
 	}
 }

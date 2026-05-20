@@ -21,6 +21,7 @@ namespace RimWorld
 		ColonistsDiseased,
 		Stockpiles,
 		GrowingZones,
-		Beds
+		Beds,
+		AllAncientJunk
 	}
 }

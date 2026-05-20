@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using Verse;
@@ -11,6 +10,90 @@ namespace RimWorld
 
 		public List<Ability> abilities = new List<Ability>();
 
+		private bool allAbilitiesCachedDirty = true;
+
+		private List<Ability> allAbilitiesCached = new List<Ability>();
+
+		private readonly List<Ability> tmpAbilities = new List<Ability>();
+
+		public List<Ability> AllAbilitiesForReading
+		{
+			get
+			{
+				if (allAbilitiesCachedDirty)
+				{
+					allAbilitiesCached.Clear();
+					allAbilitiesCached.AddRange(abilities);
+					if (pawn.health != null)
+					{
+						foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
+						{
+							if (!hediff.def.abilities.NullOrEmpty())
+							{
+								allAbilitiesCached.AddRange(hediff.AllAbilitiesForReading);
+							}
+						}
+					}
+					if (pawn.equipment != null)
+					{
+						CompEquippableAbility compEquippableAbility = pawn.equipment.Primary?.TryGetComp<CompEquippableAbility>();
+						if (compEquippableAbility != null && compEquippableAbility.AbilityForReading != null)
+						{
+							allAbilitiesCached.Add(compEquippableAbility.AbilityForReading);
+						}
+					}
+					if (pawn.apparel != null)
+					{
+						foreach (Apparel item in pawn.apparel.WornApparel)
+						{
+							allAbilitiesCached.AddRange(item.AllAbilitiesForReading);
+						}
+					}
+					if (ModsConfig.AnomalyActive && pawn.IsMutant)
+					{
+						allAbilitiesCached.AddRange(pawn.mutant.AllAbilitiesForReading);
+					}
+					if (pawn.royalty != null)
+					{
+						allAbilitiesCached.AddRange(pawn.royalty.AllAbilitiesForReading);
+					}
+					if (ModsConfig.IdeologyActive)
+					{
+						Precept_Role precept_Role = pawn.Ideo?.GetRole(pawn);
+						if (precept_Role != null && precept_Role.Active && !precept_Role.AbilitiesFor(pawn).NullOrEmpty())
+						{
+							foreach (Ability item2 in precept_Role.AbilitiesFor(pawn))
+							{
+								bool flag = false;
+								if (!item2.def.requiredMemes.NullOrEmpty())
+								{
+									foreach (MemeDef requiredMeme in item2.def.requiredMemes)
+									{
+										if (!pawn.Ideo.memes.Contains(requiredMeme))
+										{
+											flag = true;
+											break;
+										}
+									}
+								}
+								if (!flag)
+								{
+									allAbilitiesCached.Add(item2);
+								}
+							}
+						}
+					}
+					if (ModsConfig.AnomalyActive && pawn.IsMutant && pawn.mutant.Def.abilityWhitelist.Any())
+					{
+						allAbilitiesCached = allAbilitiesCached.Where((Ability a) => pawn.mutant.Def.abilityWhitelist.Contains(a.def)).ToList();
+					}
+					allAbilitiesCached.SortBy((Ability a) => a.def.category?.displayOrder ?? 0, (Ability a) => a.def.displayOrder, (Ability a) => a.def.level);
+					allAbilitiesCachedDirty = false;
+				}
+				return allAbilitiesCached;
+			}
+		}
+
 		public Pawn_AbilityTracker(Pawn pawn)
 		{
 			this.pawn = pawn;
@@ -18,9 +101,9 @@ namespace RimWorld
 
 		public void AbilitiesTick()
 		{
-			for (int i = 0; i < abilities.Count; i++)
+			for (int i = 0; i < AllAbilitiesForReading.Count; i++)
 			{
-				abilities[i].AbilityTick();
+				AllAbilitiesForReading[i].AbilityTick();
 			}
 		}
 
@@ -28,8 +111,9 @@ namespace RimWorld
 		{
 			if (!abilities.Any((Ability a) => a.def == def))
 			{
-				abilities.Add(Activator.CreateInstance(def.abilityClass, pawn, def) as Ability);
+				abilities.Add(AbilityUtility.MakeAbility(def, pawn));
 			}
+			Notify_TemporaryAbilitiesChanged();
 		}
 
 		public void RemoveAbility(AbilityDef def)
@@ -39,35 +123,65 @@ namespace RimWorld
 			{
 				abilities.Remove(ability);
 			}
+			Notify_TemporaryAbilitiesChanged();
 		}
 
-		public Ability GetAbility(AbilityDef def)
+		public Ability GetAbility(AbilityDef def, bool includeTemporary = false)
 		{
-			for (int i = 0; i < abilities.Count; i++)
+			List<Ability> list = (includeTemporary ? AllAbilitiesForReading : abilities);
+			for (int i = 0; i < list.Count; i++)
 			{
-				if (abilities[i].def == def)
+				if (list[i].def == def)
 				{
-					return abilities[i];
+					return list[i];
 				}
 			}
 			return null;
 		}
 
-		public IEnumerable<Gizmo> GetGizmos()
+		public List<Ability> AICastableAbilities(LocalTargetInfo target, bool offensive)
 		{
-			foreach (Ability item in from a in abilities
-				orderby (a.def.category != null) ? a.def.category.displayOrder : 0, a.def.level
-				select a)
+			tmpAbilities.Clear();
+			foreach (Ability item in AllAbilitiesForReading)
 			{
-				if (!pawn.Drafted && !item.def.displayGizmoWhileUndrafted)
+				if (item.def.ai_IsOffensive == offensive && (item.AICanTargetNow(target) || item.AICanTargetNow(pawn)))
 				{
-					continue;
-				}
-				foreach (Command gizmo in item.GetGizmos())
-				{
-					yield return gizmo;
+					tmpAbilities.Add(item);
 				}
 			}
+			return tmpAbilities;
+		}
+
+		public IEnumerable<Gizmo> GetGizmos()
+		{
+			bool visiblePrimary = pawn.IsColonistPlayerControlled || pawn.IsColonyMechPlayerControlled || pawn.IsColonySubhumanPlayerControlled || pawn.IsColonyAnimal;
+			foreach (Ability a in AllAbilitiesForReading)
+			{
+				if (visiblePrimary || DebugSettings.ShowDevGizmos)
+				{
+					bool visibleSecondary = (pawn.Drafted || a.def.displayGizmoWhileUndrafted) && a.GizmosVisible();
+					if (visibleSecondary || (!pawn.IsColonistPlayerControlled && !pawn.IsColonyMechPlayerControlled && DebugSettings.ShowDevGizmos))
+					{
+						foreach (Command gizmo in a.GetGizmos())
+						{
+							if (gizmo is Command_Ability command_Ability)
+							{
+								command_Ability.devGizmo = !visiblePrimary && !visibleSecondary && DebugSettings.ShowDevGizmos;
+							}
+							yield return gizmo;
+						}
+					}
+				}
+				foreach (Gizmo item in a.GetGizmosExtra())
+				{
+					yield return item;
+				}
+			}
+		}
+
+		public void Notify_TemporaryAbilitiesChanged()
+		{
+			allAbilitiesCachedDirty = true;
 		}
 
 		public void ExposeData()
@@ -75,7 +189,7 @@ namespace RimWorld
 			Scribe_Collections.Look(ref abilities, "abilities", LookMode.Deep, pawn);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
-				abilities.RemoveAll((Ability a) => a.def == null);
+				abilities.RemoveAll((Ability a) => a.def == null || a.def == AbilityDefOf.Speech);
 			}
 		}
 	}

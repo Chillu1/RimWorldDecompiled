@@ -9,7 +9,7 @@ namespace Verse
 			return regionType == RegionType.Portal;
 		}
 
-		public static bool AllowsMultipleRegionsPerRoom(this RegionType regionType)
+		public static bool AllowsMultipleRegionsPerDistrict(this RegionType regionType)
 		{
 			return regionType != RegionType.Portal;
 		}
@@ -24,7 +24,11 @@ namespace Verse
 			{
 				return RegionType.Portal;
 			}
-			if (c.Walkable(map))
+			if (c.GetFence(map) != null)
+			{
+				return RegionType.Fence;
+			}
+			if (c.WalkableByNormal(map))
 			{
 				return RegionType.Normal;
 			}
@@ -37,11 +41,6 @@ namespace Verse
 				}
 			}
 			return RegionType.ImpassableFreeAirExchange;
-		}
-
-		public static RegionType GetRegionType(this IntVec3 c, Map map)
-		{
-			return c.GetRegion(map, RegionType.Set_All)?.type ?? RegionType.None;
 		}
 
 		public static bool Passable(this RegionType regionType)

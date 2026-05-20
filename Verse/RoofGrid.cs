@@ -92,19 +92,25 @@ namespace Verse
 			if (roofGrid[map.cellIndices.CellToIndex(c)] != def)
 			{
 				roofGrid[map.cellIndices.CellToIndex(c)] = def;
-				map.glowGrid.MarkGlowGridDirty(c);
-				map.regionGrid.GetValidRegionAt_NoRebuild(c)?.Room.Notify_RoofChanged();
+				map.regionGrid.GetValidRegionAt_NoRebuild(c)?.District.Notify_RoofChanged();
 				if (drawerInt != null)
 				{
 					drawerInt.SetDirty();
 				}
-				map.mapDrawer.MapMeshDirty(c, MapMeshFlag.Roofs);
+				map.mapDrawer.MapMeshDirty(c, MapMeshFlagDefOf.Roofs);
+				map.glowGrid.DirtyCell(c);
+				map.events.Notify_RoofChanged(c);
 			}
+		}
+
+		public void RemoveRoofUnsafe(int index)
+		{
+			roofGrid[index] = null;
 		}
 
 		public void RoofGridUpdate()
 		{
-			if (Find.PlaySettings.showRoofOverlay)
+			if (Find.PlaySettings.showRoofOverlay && !Find.ScreenshotModeHandler.Active)
 			{
 				Drawer.MarkForDraw();
 			}

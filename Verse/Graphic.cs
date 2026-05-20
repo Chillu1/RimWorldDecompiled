@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
 
@@ -5,9 +7,64 @@ namespace Verse
 {
 	public class Graphic
 	{
+		private struct AtlasReplacementInfoCacheKey : IEquatable<AtlasReplacementInfoCacheKey>
+		{
+			public readonly Material mat;
+
+			public readonly TextureAtlasGroup group;
+
+			public readonly bool flipUv;
+
+			public readonly bool vertexColors;
+
+			private readonly int hash;
+
+			public AtlasReplacementInfoCacheKey(Material mat, TextureAtlasGroup group, bool flipUv, bool vertexColors)
+			{
+				this.mat = mat;
+				this.group = group;
+				this.flipUv = flipUv;
+				this.vertexColors = vertexColors;
+				hash = Gen.HashCombine(mat.GetHashCode(), group.GetHashCode());
+				if (flipUv)
+				{
+					hash = ~hash;
+				}
+				if (vertexColors)
+				{
+					hash ^= 123893723;
+				}
+			}
+
+			public bool Equals(AtlasReplacementInfoCacheKey other)
+			{
+				if ((object)mat == other.mat && group == other.group && flipUv == other.flipUv)
+				{
+					return vertexColors == other.vertexColors;
+				}
+				return false;
+			}
+
+			public override int GetHashCode()
+			{
+				return hash;
+			}
+		}
+
+		private struct CachedAtlasReplacementInfo
+		{
+			public Material material;
+
+			public Vector2[] uvs;
+
+			public Color32 vertexColor;
+		}
+
 		public GraphicData data;
 
 		public string path;
+
+		public string maskPath;
 
 		public Color color = Color.white;
 
@@ -18,6 +75,8 @@ namespace Verse
 		private Graphic_Shadow cachedShadowGraphicInt;
 
 		private Graphic cachedShadowlessGraphicInt;
+
+		private static Dictionary<AtlasReplacementInfoCacheKey, CachedAtlasReplacementInfo> replacementInfoCache = new Dictionary<AtlasReplacementInfoCacheKey, CachedAtlasReplacementInfo>();
 
 		public Shader Shader
 		{
@@ -41,6 +100,10 @@ namespace Verse
 					cachedShadowGraphicInt = new Graphic_Shadow(data.shadowData);
 				}
 				return cachedShadowGraphicInt;
+			}
+			set
+			{
+				cachedShadowGraphicInt = value;
 			}
 		}
 
@@ -90,9 +153,65 @@ namespace Verse
 			}
 		}
 
+		public static bool TryGetTextureAtlasReplacementInfo(Material mat, TextureAtlasGroup group, bool flipUv, bool vertexColors, out Material material, out Vector2[] uvs, out Color32 vertexColor)
+		{
+			material = mat;
+			uvs = null;
+			vertexColor = new Color32(byte.MaxValue, byte.MaxValue, byte.MaxValue, byte.MaxValue);
+			AtlasReplacementInfoCacheKey key = new AtlasReplacementInfoCacheKey(mat, group, flipUv, vertexColors);
+			if (replacementInfoCache.TryGetValue(key, out var value))
+			{
+				material = value.material;
+				uvs = value.uvs;
+				if (vertexColors)
+				{
+					vertexColor = value.vertexColor;
+				}
+				return true;
+			}
+			if (GlobalTextureAtlasManager.TryGetStaticTile(group, (Texture2D)mat.mainTexture, out var tile))
+			{
+				if (!MaterialPool.TryGetRequestForMat(mat, out var request))
+				{
+					Log.Error("Tried getting texture atlas replacement info for a material that was not created by MaterialPool!");
+					return false;
+				}
+				uvs = new Vector2[4];
+				Printer_Plane.GetUVs(tile.uvRect, out uvs[0], out uvs[1], out uvs[2], out uvs[3], flipUv);
+				request.mainTex = tile.atlas.ColorTexture;
+				if (vertexColors)
+				{
+					vertexColor = request.color;
+					request.color = Color.white;
+				}
+				if (request.maskTex != null)
+				{
+					request.maskTex = tile.atlas.MaskTexture;
+				}
+				material = MaterialPool.MatFrom(request);
+				replacementInfoCache.Add(key, new CachedAtlasReplacementInfo
+				{
+					material = material,
+					uvs = uvs,
+					vertexColor = vertexColor
+				});
+				return true;
+			}
+			return false;
+		}
+
+		public virtual void TryInsertIntoAtlas(TextureAtlasGroup groupKey)
+		{
+		}
+
 		public virtual void Init(GraphicRequest req)
 		{
-			Log.ErrorOnce("Cannot init Graphic of class " + GetType().ToString(), 658928);
+			Log.ErrorOnce($"Cannot init Graphic of class {GetType()}", 658928);
+		}
+
+		public virtual Material NodeGetMat(PawnDrawParms parms)
+		{
+			return MatAt(parms.facing, parms.pawn);
 		}
 
 		public virtual Material MatAt(Rot4 rot, Thing thing = null)
@@ -153,6 +272,10 @@ namespace Verse
 			{
 				quat *= Quaternion.Euler(Vector3.up * extraRotation);
 			}
+			if (data != null && data.addTopAltitudeBias)
+			{
+				quat *= Quaternion.Euler(Vector3.left * 2f);
+			}
 			loc += DrawOffset(rot);
 			Material mat = MatAt(rot, thing);
 			DrawMeshInt(mesh, loc, quat, mat);
@@ -167,7 +290,7 @@ namespace Verse
 			Graphics.DrawMesh(mesh, loc, quat, mat, 0);
 		}
 
-		public virtual void Print(SectionLayer layer, Thing thing)
+		public virtual void Print(SectionLayer layer, Thing thing, float extraRotation)
 		{
 			Vector2 size;
 			bool flag;
@@ -181,17 +304,20 @@ namespace Verse
 				size = (thing.Rotation.IsHorizontal ? drawSize.Rotated() : drawSize);
 				flag = (thing.Rotation == Rot4.West && WestFlipped) || (thing.Rotation == Rot4.East && EastFlipped);
 			}
-			float num = AngleFromRot(thing.Rotation);
+			if (thing.MultipleItemsPerCellDrawn())
+			{
+				size *= 0.8f;
+			}
+			float num = AngleFromRot(thing.Rotation) + extraRotation;
 			if (flag && data != null)
 			{
 				num += data.flipExtraRotation;
 			}
 			Vector3 center = thing.TrueCenter() + DrawOffset(thing.Rotation);
-			Printer_Plane.PrintPlane(layer, center, size, MatAt(thing.Rotation, thing), num, flag);
-			if (ShadowGraphic != null && thing != null)
-			{
-				ShadowGraphic.Print(layer, thing);
-			}
+			Material material = MatAt(thing.Rotation, thing);
+			TryGetTextureAtlasReplacementInfo(material, thing.def.category.ToAtlasGroup(), flag, vertexColors: true, out material, out var uvs, out var vertexColor);
+			Printer_Plane.PrintPlane(layer, center, size, material, num, flag, uvs, new Color32[4] { vertexColor, vertexColor, vertexColor, vertexColor });
+			ShadowGraphic?.Print(layer, thing, 0f);
 		}
 
 		public virtual Graphic GetColoredVersion(Shader newShader, Color newColor, Color newColorTwo)
@@ -200,9 +326,15 @@ namespace Verse
 			return BaseContent.BadGraphic;
 		}
 
+		[Obsolete("Will be removed in a future release")]
 		public virtual Graphic GetCopy(Vector2 newDrawSize)
 		{
-			return GraphicDatabase.Get(GetType(), path, Shader, newDrawSize, color, colorTwo);
+			return GetCopy(newDrawSize, null);
+		}
+
+		public virtual Graphic GetCopy(Vector2 newDrawSize, Shader overrideShader)
+		{
+			return GraphicDatabase.Get(GetType(), path, overrideShader ?? Shader, newDrawSize, color, colorTwo);
 		}
 
 		public virtual Graphic GetShadowlessGraphic()
@@ -236,7 +368,7 @@ namespace Verse
 			return 0f;
 		}
 
-		protected Quaternion QuatFromRot(Rot4 rot)
+		public Quaternion QuatFromRot(Rot4 rot)
 		{
 			float num = AngleFromRot(rot);
 			if (num == 0f)

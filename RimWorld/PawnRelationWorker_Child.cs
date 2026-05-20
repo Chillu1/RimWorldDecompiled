@@ -4,22 +4,36 @@ namespace RimWorld
 {
 	public class PawnRelationWorker_Child : PawnRelationWorker
 	{
+		private const float PlayerStartRelationFactor = 10f;
+
 		public override bool InRelation(Pawn me, Pawn other)
 		{
 			if (me == other)
 			{
 				return false;
 			}
-			if (other.GetMother() != me)
+			if (other.GetMother() == me || other.GetFather() == me)
 			{
-				return other.GetFather() == me;
+				return true;
 			}
-			return true;
+			if (ModsConfig.BiotechActive && other.GetBirthParent() == me)
+			{
+				return true;
+			}
+			return false;
 		}
 
 		public override float GenerationChance(Pawn generated, Pawn other, PawnGenerationRequest request)
 		{
 			float num = 0f;
+			if (!ChildRelationUtility.XenotypesCompatible(generated, other))
+			{
+				return 0f;
+			}
+			if (other.IsDuplicate)
+			{
+				return 0f;
+			}
 			if (generated.gender == Gender.Male)
 			{
 				num = ChildRelationUtility.ChanceOfBecomingChildOf(other, generated, other.GetMother(), null, request, null);
@@ -27,6 +41,10 @@ namespace RimWorld
 			else if (generated.gender == Gender.Female)
 			{
 				num = ChildRelationUtility.ChanceOfBecomingChildOf(other, other.GetFather(), generated, null, null, request);
+			}
+			if (ModsConfig.BiotechActive && request.Context == PawnGenerationContext.PlayerStarter && other.DevelopmentalStage.Juvenile())
+			{
+				num *= 10f;
 			}
 			return num * BaseGenerationChanceFactor(generated, other, request);
 		}
@@ -37,7 +55,6 @@ namespace RimWorld
 			{
 				other.SetFather(generated);
 				ResolveMyName(ref request, other, other.GetMother());
-				ResolveMySkinColor(ref request, other, other.GetMother());
 				if (other.GetMother() != null)
 				{
 					if (other.GetMother().story.traits.HasTrait(TraitDefOf.Gay))
@@ -63,7 +80,6 @@ namespace RimWorld
 				}
 				other.SetMother(generated);
 				ResolveMyName(ref request, other, other.GetFather());
-				ResolveMySkinColor(ref request, other, other.GetFather());
 				if (other.GetFather() != null)
 				{
 					if (other.GetFather().story.traits.HasTrait(TraitDefOf.Gay))
@@ -89,7 +105,7 @@ namespace RimWorld
 			{
 				return;
 			}
-			if (otherParent == null)
+			if (otherParent == null || !(otherParent.Name is NameTriple))
 			{
 				float num = 0.875f;
 				if (Rand.Value < num)
@@ -103,21 +119,6 @@ namespace RimWorld
 			if (last != last2)
 			{
 				request.SetFixedLastName(last);
-			}
-		}
-
-		private static void ResolveMySkinColor(ref PawnGenerationRequest request, Pawn child, Pawn otherParent)
-		{
-			if (!request.FixedMelanin.HasValue)
-			{
-				if (otherParent != null)
-				{
-					request.SetFixedMelanin(ParentRelationUtility.GetRandomSecondParentSkinColor(otherParent.story.melanin, child.story.melanin));
-				}
-				else
-				{
-					request.SetFixedMelanin(PawnSkinColors.GetRandomMelaninSimilarTo(child.story.melanin));
-				}
 			}
 		}
 	}

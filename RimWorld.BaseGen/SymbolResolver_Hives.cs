@@ -13,6 +13,10 @@ namespace RimWorld.BaseGen
 			{
 				return false;
 			}
+			if (Faction.OfInsects == null)
+			{
+				return false;
+			}
 			if (!TryFindFirstHivePos(rp.rect, out var _))
 			{
 				return false;
@@ -22,24 +26,10 @@ namespace RimWorld.BaseGen
 
 		public override void Resolve(ResolveParams rp)
 		{
-			if (!TryFindFirstHivePos(rp.rect, out var pos))
+			if (TryFindFirstHivePos(rp.rect, out var pos))
 			{
-				return;
-			}
-			int num = rp.hivesCount ?? DefaultHivesCountRange.RandomInRange;
-			Hive hive = (Hive)ThingMaker.MakeThing(ThingDefOf.Hive);
-			hive.SetFaction(Faction.OfInsects);
-			if (rp.disableHives.HasValue && rp.disableHives.Value)
-			{
-				hive.CompDormant.ToSleep();
-			}
-			hive = (Hive)GenSpawn.Spawn(hive, pos, BaseGen.globalSettings.map);
-			for (int i = 0; i < num - 1; i++)
-			{
-				if (hive.GetComp<CompSpawnerHives>().TrySpawnChildHive(ignoreRoofedRequirement: true, out var newHive))
-				{
-					hive = newHive;
-				}
+				int count = rp.hivesCount ?? DefaultHivesCountRange.RandomInRange;
+				HiveUtility.SpawnHives(pos, BaseGen.globalSettings.map, count, 5f, WipeMode.VanishOrMoveAside, spawnInsectsImmediately: false, canSpawnHives: true, canSpawnInsects: true, rp.disableHives == true);
 			}
 		}
 

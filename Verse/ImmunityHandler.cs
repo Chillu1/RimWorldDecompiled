@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -17,9 +16,11 @@ namespace Verse
 
 		private List<ImmunityRecord> immunityList = new List<ImmunityRecord>();
 
-		private const float ForcedImmunityLevel = 0.650000036f;
+		private const float ForcedImmunityLevel = 0.65000004f;
 
-		private static List<ImmunityInfo> tmpNeededImmunitiesNow = new List<ImmunityInfo>();
+		private static readonly List<ImmunityInfo> tmpNeededImmunitiesNow = new List<ImmunityInfo>();
+
+		public List<ImmunityRecord> ImmunityListForReading => immunityList;
 
 		public ImmunityHandler(Pawn pawn)
 		{
@@ -40,13 +41,21 @@ namespace Verse
 		public float DiseaseContractChanceFactor(HediffDef diseaseDef, out HediffDef immunityCause, BodyPartRecord part = null)
 		{
 			immunityCause = null;
-			if (!pawn.RaceProps.IsFlesh)
+			if (!pawn.RaceProps.IsFlesh || pawn.RaceProps.isImmuneToInfections)
 			{
 				return 0f;
 			}
-			if (AnyHediffMakesFullyImmuneTo_NewTemp(diseaseDef, out var sourceHediff))
+			if (pawn.IsMutant && pawn.mutant.Def.preventIllnesses && pawn.mutant.Def.isImmuneToInfections)
+			{
+				return 0f;
+			}
+			if (AnyHediffMakesFullyImmuneTo(diseaseDef, out var sourceHediff))
 			{
 				immunityCause = sourceHediff.def;
+				return 0f;
+			}
+			if (AnyGeneMakesFullyImmuneTo(diseaseDef))
+			{
 				return 0f;
 			}
 			List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
@@ -68,7 +77,7 @@ namespace Verse
 			return 1f;
 		}
 
-		public float GetImmunity(HediffDef def)
+		public float GetImmunity(HediffDef def, bool naturalImmunityOnly = false)
 		{
 			float num = 0f;
 			for (int i = 0; i < immunityList.Count; i++)
@@ -80,14 +89,14 @@ namespace Verse
 					break;
 				}
 			}
-			if (AnyHediffMakesFullyImmuneTo_NewTemp(def, out var _) && num < 0.650000036f)
+			if (!naturalImmunityOnly && (AnyHediffMakesFullyImmuneTo(def, out var _) || AnyGeneMakesFullyImmuneTo(def)) && num < 0.65000004f)
 			{
-				num = 0.650000036f;
+				num = 0.65000004f;
 			}
 			return num;
 		}
 
-		internal void ImmunityHandlerTick()
+		internal void ImmunityHandlerTickInterval(int delta)
 		{
 			List<ImmunityInfo> list = NeededImmunitiesNow();
 			for (int i = 0; i < list.Count; i++)
@@ -98,7 +107,7 @@ namespace Verse
 			{
 				ImmunityRecord immunityRecord = immunityList[j];
 				Hediff firstHediffOfDef = pawn.health.hediffSet.GetFirstHediffOfDef(immunityRecord.hediffDef);
-				immunityRecord.ImmunityTick(pawn, firstHediffOfDef != null, firstHediffOfDef);
+				immunityRecord.ImmunityTickInterval(pawn, firstHediffOfDef != null, firstHediffOfDef, delta);
 			}
 			for (int num = immunityList.Count - 1; num >= 0; num--)
 			{
@@ -140,14 +149,7 @@ namespace Verse
 			return tmpNeededImmunitiesNow;
 		}
 
-		[Obsolete("Will be removed in a future update, use AnyHediffMakesFullyImmuneTo_NewTemp")]
-		private bool AnyHediffMakesFullyImmuneTo(HediffDef def)
-		{
-			Hediff sourceHediff;
-			return AnyHediffMakesFullyImmuneTo_NewTemp(def, out sourceHediff);
-		}
-
-		private bool AnyHediffMakesFullyImmuneTo_NewTemp(HediffDef def, out Hediff sourceHediff)
+		private bool AnyHediffMakesFullyImmuneTo(HediffDef def, out Hediff sourceHediff)
 		{
 			List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
 			for (int i = 0; i < hediffs.Count; i++)
@@ -170,7 +172,31 @@ namespace Verse
 			return false;
 		}
 
-		private void TryAddImmunityRecord(HediffDef def, HediffDef source)
+		public bool AnyGeneMakesFullyImmuneTo(HediffDef def)
+		{
+			if (!ModsConfig.BiotechActive || pawn.genes == null)
+			{
+				return false;
+			}
+			for (int i = 0; i < pawn.genes.GenesListForReading.Count; i++)
+			{
+				Gene gene = pawn.genes.GenesListForReading[i];
+				if (gene.def.makeImmuneTo == null)
+				{
+					continue;
+				}
+				for (int j = 0; j < gene.def.makeImmuneTo.Count; j++)
+				{
+					if (gene.def.makeImmuneTo[j] == def)
+					{
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		public void TryAddImmunityRecord(HediffDef def, HediffDef source)
 		{
 			if (def.CompProps<HediffCompProperties_Immunizable>() != null && !ImmunityRecordExists(def))
 			{
@@ -192,11 +218,11 @@ namespace Verse
 					break;
 				}
 			}
-			if (AnyHediffMakesFullyImmuneTo_NewTemp(def, out var sourceHediff) && (immunityRecord == null || immunityRecord.immunity < 0.650000036f))
+			if (AnyHediffMakesFullyImmuneTo(def, out var sourceHediff) && (immunityRecord == null || immunityRecord.immunity < 0.65000004f))
 			{
 				immunityRecord = new ImmunityRecord
 				{
-					immunity = 0.650000036f,
+					immunity = 0.65000004f,
 					hediffDef = def,
 					source = sourceHediff.def
 				};

@@ -20,10 +20,14 @@ namespace RimWorld
 			return pawn.Map.mapPawns.SpawnedHungryPawns;
 		}
 
+		private bool TryFindBestFoodSourceFor(Pawn pawn, Pawn patient, out Thing foodSource, out ThingDef foodDef)
+		{
+			return FoodUtility.TryFindBestFoodSourceFor(pawn, patient, patient.needs.food.CurCategory == HungerCategory.Starving, out foodSource, out foodDef, canRefillDispenser: false, canUseInventory: true, canUsePackAnimalInventory: true, allowForbidden: false, allowCorpse: true, allowSociallyImproper: false, allowHarvest: false, forceScanWholeMap: false, ignoreReservations: false, calculateWantedStackCount: false, allowVenerated: true);
+		}
+
 		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			Pawn pawn2 = t as Pawn;
-			if (pawn2 == null || pawn2 == pawn)
+			if (!(t is Pawn pawn2) || pawn2 == pawn)
 			{
 				return false;
 			}
@@ -31,7 +35,11 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (def.feedAnimalsOnly && !pawn2.RaceProps.Animal)
+			if (def.feedAnimalsOnly && !pawn2.IsAnimal)
+			{
+				return false;
+			}
+			if (pawn2.DevelopmentalStage.Baby())
 			{
 				return false;
 			}
@@ -43,11 +51,24 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (WardenFeedUtility.ShouldBeFed(pawn2) && !pawn.IsColonyMech)
+			{
+				return false;
+			}
 			if (!pawn.CanReserve(t, 1, -1, null, forced))
 			{
 				return false;
 			}
-			if (!FoodUtility.TryFindBestFoodSourceFor(pawn, pawn2, pawn2.needs.food.CurCategory == HungerCategory.Starving, out var _, out var _, canRefillDispenser: false))
+			if (pawn2.foodRestriction != null)
+			{
+				FoodPolicy currentRespectedRestriction = pawn2.foodRestriction.GetCurrentRespectedRestriction(pawn);
+				if (currentRespectedRestriction != null && currentRespectedRestriction.filter.AllowedDefCount == 0)
+				{
+					JobFailReason.Is("NoFoodMatchingRestrictions".Translate());
+					return false;
+				}
+			}
+			if (!TryFindBestFoodSourceFor(pawn, pawn2, out var _, out var _))
 			{
 				JobFailReason.Is("NoFood".Translate());
 				return false;
@@ -58,9 +79,9 @@ namespace RimWorld
 		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
 			Pawn pawn2 = (Pawn)t;
-			if (FoodUtility.TryFindBestFoodSourceFor(pawn, pawn2, pawn2.needs.food.CurCategory == HungerCategory.Starving, out var foodSource, out var foodDef, canRefillDispenser: false))
+			if (TryFindBestFoodSourceFor(pawn, pawn2, out var foodSource, out var foodDef))
 			{
-				float nutrition = FoodUtility.GetNutrition(foodSource, foodDef);
+				float nutrition = FoodUtility.GetNutrition(pawn2, foodSource, foodDef);
 				Job job = JobMaker.MakeJob(JobDefOf.FeedPatient);
 				job.targetA = foodSource;
 				job.targetB = pawn2;
@@ -68,6 +89,15 @@ namespace RimWorld
 				return job;
 			}
 			return null;
+		}
+
+		public override string JobInfo(Pawn pawn, Job job)
+		{
+			if (FoodUtility.MoodFromIngesting((Pawn)(Thing)job.targetB, job.targetA.Thing, FoodUtility.GetFinalIngestibleDef(job.targetA.Thing)) < 0f)
+			{
+				return string.Format("({0})", "WarningFoodDisliked".Translate());
+			}
+			return string.Empty;
 		}
 	}
 }

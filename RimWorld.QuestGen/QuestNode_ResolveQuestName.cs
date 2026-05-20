@@ -31,7 +31,7 @@ namespace RimWorld.QuestGen
 		{
 			if (!QuestGen.slate.TryGet<string>("resolvedQuestName", out var var))
 			{
-				var = GenerateName().StripTags();
+				var = (QuestGen.quest.hidden ? QuestGen.quest.root.defName : GenerateName().StripTags());
 				QuestGen.slate.Set("resolvedQuestName", var);
 			}
 			QuestGen.quest.name = var;
@@ -52,18 +52,13 @@ namespace RimWorld.QuestGen
 				return NameGenerator.GenerateName(req, predicate, appendNumberIfNameUsed: false, "questName");
 			}
 			string text = null;
-			int i;
-			for (i = 0; i < 20; i++)
+			for (int num = 0; num < 20; num++)
 			{
 				text = NameGenerator.GenerateName(req, null, appendNumberIfNameUsed: false, "questName");
 				if (predicate(text) || QuestGen.Root.defaultHidden)
 				{
 					break;
 				}
-			}
-			if (i == 20)
-			{
-				Log.Warning(string.Concat("Generated duplicate quest name. QuestScriptDef: ", QuestGen.Root, ". Quest name: ", text));
 			}
 			return text;
 		}

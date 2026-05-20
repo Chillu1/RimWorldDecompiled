@@ -11,6 +11,8 @@ namespace RimWorld
 
 		public List<BackstoryCategoryAndSlot> incompatibleBackstoriesAny = new List<BackstoryCategoryAndSlot>();
 
+		private static List<string> tmpReasons = new List<string>();
+
 		public bool CanPawnUse(Pawn p)
 		{
 			return MeditationFocusTypeAvailabilityCache.PawnCanUse(p, this);
@@ -18,66 +20,77 @@ namespace RimWorld
 
 		public string EnablingThingsExplanation(Pawn pawn)
 		{
-			List<string> reasons = new List<string>();
+			tmpReasons.Clear();
 			if (requiresRoyalTitle && pawn.royalty != null && pawn.royalty.AllTitlesInEffectForReading.Count > 0)
 			{
 				RoyalTitle royalTitle = pawn.royalty.AllTitlesInEffectForReading.MaxBy((RoyalTitle t) => t.def.seniority);
-				reasons.Add("MeditationFocusEnabledByTitle".Translate(royalTitle.def.GetLabelCapFor(pawn).Named("TITLE"), royalTitle.faction.Named("FACTION")).Resolve());
+				tmpReasons.Add("MeditationFocusEnabledByTitle".Translate(royalTitle.def.GetLabelCapFor(pawn).Named("TITLE"), royalTitle.faction.Named("FACTION")).Resolve());
 			}
 			if (pawn.story != null)
 			{
-				Backstory adulthood = pawn.story.adulthood;
-				Backstory childhood = pawn.story.childhood;
+				BackstoryDef adulthood = pawn.story.Adulthood;
+				BackstoryDef childhood = pawn.story.Childhood;
 				if (!requiresRoyalTitle && requiredBackstoriesAny.Count == 0)
 				{
-					for (int i = 0; i < incompatibleBackstoriesAny.Count; i++)
+					for (int num = 0; num < incompatibleBackstoriesAny.Count; num++)
 					{
-						BackstoryCategoryAndSlot backstoryCategoryAndSlot = incompatibleBackstoriesAny[i];
-						Backstory backstory2 = ((backstoryCategoryAndSlot.slot == BackstorySlot.Adulthood) ? adulthood : childhood);
-						if (!backstory2.spawnCategories.Contains(backstoryCategoryAndSlot.categoryName))
+						BackstoryCategoryAndSlot backstoryCategoryAndSlot = incompatibleBackstoriesAny[num];
+						BackstoryDef backstoryDef = ((backstoryCategoryAndSlot.slot == BackstorySlot.Adulthood) ? adulthood : childhood);
+						if (!backstoryDef.spawnCategories.Contains(backstoryCategoryAndSlot.categoryName))
 						{
-							AddBackstoryReason(backstoryCategoryAndSlot.slot, backstory2);
+							AddBackstoryReason(backstoryCategoryAndSlot.slot, backstoryDef);
 						}
 					}
-					for (int j = 0; j < DefDatabase<TraitDef>.AllDefsListForReading.Count; j++)
+					for (int num2 = 0; num2 < DefDatabase<TraitDef>.AllDefsListForReading.Count; num2++)
 					{
-						TraitDef traitDef = DefDatabase<TraitDef>.AllDefsListForReading[j];
+						TraitDef traitDef = DefDatabase<TraitDef>.AllDefsListForReading[num2];
 						List<MeditationFocusDef> disallowedMeditationFocusTypes = traitDef.degreeDatas[0].disallowedMeditationFocusTypes;
 						if (disallowedMeditationFocusTypes != null && disallowedMeditationFocusTypes.Contains(this))
 						{
-							reasons.Add("MeditationFocusDisabledByTrait".Translate() + ": " + traitDef.degreeDatas[0].GetLabelCapFor(pawn) + ".");
+							tmpReasons.Add("MeditationFocusDisabledByTrait".Translate() + ": " + traitDef.degreeDatas[0].GetLabelCapFor(pawn) + ".");
 						}
 					}
 				}
-				for (int k = 0; k < requiredBackstoriesAny.Count; k++)
+				for (int num3 = 0; num3 < requiredBackstoriesAny.Count; num3++)
 				{
-					BackstoryCategoryAndSlot backstoryCategoryAndSlot2 = requiredBackstoriesAny[k];
-					Backstory backstory3 = ((backstoryCategoryAndSlot2.slot == BackstorySlot.Adulthood) ? adulthood : childhood);
-					if (backstory3.spawnCategories.Contains(backstoryCategoryAndSlot2.categoryName))
+					BackstoryCategoryAndSlot backstoryCategoryAndSlot2 = requiredBackstoriesAny[num3];
+					BackstoryDef backstoryDef2 = ((backstoryCategoryAndSlot2.slot == BackstorySlot.Adulthood) ? adulthood : childhood);
+					if (backstoryDef2.spawnCategories.Contains(backstoryCategoryAndSlot2.categoryName))
 					{
-						AddBackstoryReason(backstoryCategoryAndSlot2.slot, backstory3);
+						AddBackstoryReason(backstoryCategoryAndSlot2.slot, backstoryDef2);
 					}
 				}
-				for (int l = 0; l < pawn.story.traits.allTraits.Count; l++)
+				for (int num4 = 0; num4 < pawn.story.traits.allTraits.Count; num4++)
 				{
-					Trait trait = pawn.story.traits.allTraits[l];
-					List<MeditationFocusDef> allowedMeditationFocusTypes = trait.CurrentData.allowedMeditationFocusTypes;
-					if (allowedMeditationFocusTypes != null && allowedMeditationFocusTypes.Contains(this))
+					Trait trait = pawn.story.traits.allTraits[num4];
+					if (!trait.Suppressed)
 					{
-						reasons.Add("MeditationFocusEnabledByTrait".Translate() + ": " + trait.LabelCap + ".");
+						List<MeditationFocusDef> allowedMeditationFocusTypes = trait.CurrentData.allowedMeditationFocusTypes;
+						if (allowedMeditationFocusTypes != null && allowedMeditationFocusTypes.Contains(this))
+						{
+							tmpReasons.Add("MeditationFocusEnabledByTrait".Translate() + ": " + trait.LabelCap + ".");
+						}
 					}
 				}
 			}
-			return reasons.ToLineList("  - ", capitalizeItems: true);
-			void AddBackstoryReason(BackstorySlot slot, Backstory backstory)
+			for (int num5 = 0; num5 < pawn.health.hediffSet.hediffs.Count; num5++)
+			{
+				HediffDef def = pawn.health.hediffSet.hediffs[num5].def;
+				if (def.allowedMeditationFocusTypes.NotNullAndContains(this))
+				{
+					tmpReasons.Add("MeditationFocusEnabledByHediff".Translate() + ": " + def.LabelCap + ".");
+				}
+			}
+			return tmpReasons.ToLineList("  - ", capitalizeItems: true);
+			static void AddBackstoryReason(BackstorySlot slot, BackstoryDef backstory)
 			{
 				if (slot == BackstorySlot.Adulthood)
 				{
-					reasons.Add("MeditationFocusEnabledByAdulthood".Translate() + ": " + backstory.title.CapitalizeFirst() + ".");
+					tmpReasons.Add("MeditationFocusEnabledByAdulthood".Translate() + ": " + backstory.title.CapitalizeFirst() + ".");
 				}
 				else
 				{
-					reasons.Add("MeditationFocusEnabledByChildhood".Translate() + ": " + backstory.title.CapitalizeFirst() + ".");
+					tmpReasons.Add("MeditationFocusEnabledByChildhood".Translate() + ": " + backstory.title.CapitalizeFirst() + ".");
 				}
 			}
 		}

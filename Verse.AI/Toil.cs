@@ -12,11 +12,15 @@ namespace Verse.AI
 
 		public Action tickAction;
 
+		public Action<int> tickIntervalAction;
+
 		public List<Func<JobCondition>> endConditions = new List<Func<JobCondition>>();
 
 		public List<Action> preInitActions;
 
 		public List<Action> preTickActions;
+
+		public List<Action<int>> preTickIntervalActions;
 
 		public List<Action> finishActions;
 
@@ -32,6 +36,29 @@ namespace Verse.AI
 
 		public bool handlingFacing;
 
+		public bool inPool = true;
+
+		public string debugName;
+
+		public void Clear()
+		{
+			initAction = null;
+			tickAction = null;
+			tickIntervalAction = null;
+			endConditions.Clear();
+			preInitActions = null;
+			preTickActions = null;
+			preTickIntervalActions = null;
+			finishActions = null;
+			atomicWithPrevious = false;
+			socialMode = RandomSocialMode.Normal;
+			activeSkill = null;
+			defaultCompleteMode = ToilCompleteMode.Instant;
+			defaultDuration = 0;
+			handlingFacing = false;
+			debugName = null;
+		}
+
 		public void Cleanup(int myIndex, JobDriver jobDriver)
 		{
 			if (finishActions == null)
@@ -46,7 +73,7 @@ namespace Verse.AI
 				}
 				catch (Exception ex)
 				{
-					Log.Error("Pawn " + actor.ToStringSafe() + " threw exception while executing toil's finish action (" + i + "), jobDriver=" + jobDriver.ToStringSafe() + ", job=" + jobDriver.job.ToStringSafe() + ", toilIndex=" + myIndex + ": " + ex);
+					Log.Error($"Pawn {actor.ToStringSafe()} threw exception while executing toil {this}'s finish action ({i})" + ", jobDriver=" + jobDriver.ToStringSafe() + ", job=" + jobDriver.job.ToStringSafe() + ", toilIndex=" + myIndex + ": " + ex);
 				}
 			}
 		}
@@ -84,6 +111,15 @@ namespace Verse.AI
 			preTickActions.Add(newAct);
 		}
 
+		public void AddPreTickIntervalAction(Action<int> newAct)
+		{
+			if (preTickIntervalActions == null)
+			{
+				preTickIntervalActions = new List<Action<int>>();
+			}
+			preTickIntervalActions.Add(newAct);
+		}
+
 		public void AddFinishAction(Action newAct)
 		{
 			if (finishActions == null)
@@ -91,6 +127,11 @@ namespace Verse.AI
 				finishActions = new List<Action>();
 			}
 			finishActions.Add(newAct);
+		}
+
+		public override string ToString()
+		{
+			return debugName ?? "unnamed";
 		}
 	}
 }

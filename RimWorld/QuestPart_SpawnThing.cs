@@ -27,6 +27,8 @@ namespace RimWorld
 
 		public Pawn mapParentOfPawn;
 
+		public EffecterDef spawnEffecter;
+
 		private Thing innerSkyfallerThing;
 
 		private bool spawned;
@@ -35,11 +37,11 @@ namespace RimWorld
 		{
 			get
 			{
-				foreach (GlobalTargetInfo questLookTarget2 in base.QuestLookTargets)
+				foreach (GlobalTargetInfo questLookTarget in base.QuestLookTargets)
 				{
-					yield return questLookTarget2;
+					yield return questLookTarget;
 				}
-				if (questLookTarget)
+				if (this.questLookTarget)
 				{
 					yield return innerSkyfallerThing ?? thing;
 				}
@@ -50,12 +52,11 @@ namespace RimWorld
 		{
 			get
 			{
-				Pawn pawn = thing as Pawn;
-				if (pawn == null)
+				if (!(thing is Pawn val))
 				{
 					return false;
 				}
-				return PawnsArriveQuestPartUtility.IncreasesPopulation(Gen.YieldSingle(pawn), joinPlayer: false, makePrisoners: false);
+				return PawnsArriveQuestPartUtility.IncreasesPopulation(Gen.YieldSingle(val), joinPlayer: false, makePrisoners: false);
 			}
 		}
 
@@ -65,7 +66,7 @@ namespace RimWorld
 			{
 				if (mapParentOfPawn != null)
 				{
-					return mapParentOfPawn.MapHeld.Parent;
+					return mapParentOfPawn.MapHeld?.Parent;
 				}
 				return mapParent;
 			}
@@ -74,7 +75,17 @@ namespace RimWorld
 		public override void Notify_QuestSignalReceived(Signal signal)
 		{
 			base.Notify_QuestSignalReceived(signal);
-			if (!(signal.tag == inSignal) || !MapParent.HasMap)
+			if (signal.tag != inSignal)
+			{
+				return;
+			}
+			if (MapParent == null || MapParent.Destroyed)
+			{
+				mapParentOfPawn = null;
+				mapParent = quest.TryFindNewSuitableMapParentForRetarget();
+				cell = IntVec3.Invalid;
+			}
+			if (!MapParent.HasMap)
 			{
 				return;
 			}
@@ -108,8 +119,11 @@ namespace RimWorld
 			}
 			GenPlace.TryPlaceThing(thing, result, MapParent.Map, ThingPlaceMode.Near);
 			spawned = true;
-			Skyfaller skyfaller = thing as Skyfaller;
-			if (skyfaller != null && skyfaller.innerContainer.Count == 1)
+			if (spawnEffecter != null)
+			{
+				spawnEffecter.SpawnMaintained(thing, thing.Map);
+			}
+			if (thing is Skyfaller skyfaller && skyfaller.innerContainer.Count == 1)
 			{
 				innerSkyfallerThing = skyfaller.innerContainer.First();
 			}
@@ -154,6 +168,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref tryLandInShipLandingZone, "tryLandInShipLandingZone", defaultValue: false);
 			Scribe_References.Look(ref tryLandNearThing, "tryLandNearThing");
 			Scribe_References.Look(ref mapParentOfPawn, "mapParentOfPawn");
+			Scribe_Defs.Look(ref spawnEffecter, "spawnEffecter");
 		}
 
 		public override void AssignDebugData()

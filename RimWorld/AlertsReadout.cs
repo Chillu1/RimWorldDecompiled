@@ -16,28 +16,67 @@ namespace RimWorld
 
 		private int mouseoverAlertIndex = -1;
 
+		public static List<Type> allAlertTypesCached;
+
 		private readonly List<Alert> AllAlerts = new List<Alert>();
 
 		private const int StartTickDelay = 600;
-
-		public const float AlertListWidth = 164f;
 
 		private const int AlertCycleLength = 24;
 
 		private const int UpdateAlertsFromQuestsIntervalFrames = 20;
 
+		private const int UpdateAlertsFromPreceptsIntervalFrames = 20;
+
+		private const int UpdateAlertsFromScenarioIntervalFrames = 20;
+
+		private const int UpdateAlertsFromSignalActionsIntervalFrames = 20;
+
 		private readonly List<AlertPriority> PriosInDrawOrder;
+
+		private Dictionary<Precept, List<Alert>> activePreceptAlerts = new Dictionary<Precept, List<Alert>>();
+
+		private List<Alert> activeScenarioAlerts = new List<Alert>();
+
+		private List<Alert> activeSignalActionAlerts = new List<Alert>();
+
+		public float AlertsHeight
+		{
+			get
+			{
+				float num = 0f;
+				for (int i = 0; i < activeAlerts.Count; i++)
+				{
+					num += activeAlerts[i].Height;
+				}
+				return num;
+			}
+		}
 
 		public AlertsReadout()
 		{
-			AllAlerts.Clear();
-			foreach (Type item2 in typeof(Alert).AllLeafSubclasses())
+			DeepProfiler.Start("Instantiating Alerts");
+			if (allAlertTypesCached == null)
 			{
-				if (!(item2 == typeof(Alert_Custom)) && !(item2 == typeof(Alert_CustomCritical)))
+				allAlertTypesCached = new List<Type>();
+				foreach (Type item2 in typeof(Alert).AllLeafSubclasses())
 				{
-					AllAlerts.Add((Alert)Activator.CreateInstance(item2));
+					if (!typeof(Alert_Custom).IsAssignableFrom(item2) && !typeof(Alert_CustomCritical).IsAssignableFrom(item2))
+					{
+						allAlertTypesCached.Add(item2);
+					}
 				}
 			}
+			AllAlerts.Clear();
+			foreach (Type item3 in allAlertTypesCached)
+			{
+				Alert alert = (Alert)Activator.CreateInstance(item3);
+				if (alert.EnabledWithActiveExpansions)
+				{
+					AllAlerts.Add(alert);
+				}
+			}
+			DeepProfiler.End();
 			if (PriosInDrawOrder != null)
 			{
 				return;
@@ -70,44 +109,131 @@ namespace RimWorld
 			{
 				CheckAddOrRemoveAlert(AllAlerts[i]);
 			}
-			if (Time.frameCount % 20 == 0)
+			using (new ProfilerBlock("Alerts from quests"))
 			{
-				List<Quest> questsListForReading = Find.QuestManager.QuestsListForReading;
-				for (int j = 0; j < questsListForReading.Count; j++)
+				if (Time.frameCount % 20 == 0)
 				{
-					List<QuestPart> partsListForReading = questsListForReading[j].PartsListForReading;
-					for (int k = 0; k < partsListForReading.Count; k++)
+					List<Quest> questsListForReading = Find.QuestManager.QuestsListForReading;
+					for (int j = 0; j < questsListForReading.Count; j++)
 					{
-						QuestPartActivable questPartActivable = partsListForReading[k] as QuestPartActivable;
-						if (questPartActivable == null)
+						List<QuestPart> partsListForReading = questsListForReading[j].PartsListForReading;
+						for (int k = 0; k < partsListForReading.Count; k++)
 						{
-							continue;
-						}
-						Alert cachedAlert = questPartActivable.CachedAlert;
-						if (cachedAlert != null)
-						{
-							bool flag = questsListForReading[j].State != QuestState.Ongoing || questPartActivable.State != QuestPartState.Enabled;
-							bool alertDirty = questPartActivable.AlertDirty;
-							CheckAddOrRemoveAlert(cachedAlert, flag || alertDirty);
-							if (alertDirty)
+							if (partsListForReading[k] is QuestPartActivable { CachedAlert: { } cachedAlert } questPartActivable)
 							{
-								questPartActivable.ClearCachedAlert();
+								bool flag = questsListForReading[j].State != QuestState.Ongoing || questPartActivable.State != QuestPartState.Enabled;
+								bool alertDirty = questPartActivable.AlertDirty;
+								CheckAddOrRemoveAlert(cachedAlert, flag || alertDirty);
+								if (alertDirty)
+								{
+									questPartActivable.ClearCachedAlert();
+								}
 							}
 						}
 					}
 				}
 			}
-			for (int num = activeAlerts.Count - 1; num >= 0; num--)
+			using (new ProfilerBlock("Alerts from precepts"))
 			{
-				Alert alert = activeAlerts[num];
+				if (ModsConfig.IdeologyActive && Time.frameCount % 20 == 0)
+				{
+					foreach (List<Alert> value2 in activePreceptAlerts.Values)
+					{
+						value2.Clear();
+					}
+					foreach (Ideo allIdeo in Faction.OfPlayer.ideos.AllIdeos)
+					{
+						foreach (Precept item in allIdeo.PreceptsListForReading)
+						{
+							if (!activePreceptAlerts.TryGetValue(item, out var value))
+							{
+								value = new List<Alert>();
+								activePreceptAlerts[item] = value;
+							}
+							foreach (Alert alert2 in item.GetAlerts())
+							{
+								CheckAddOrRemoveAlert(alert2);
+								value.Add(alert2);
+							}
+						}
+					}
+					for (int l = 0; l < activeAlerts.Count; l++)
+					{
+						if (activeAlerts[l] is Alert_Precept { sourcePrecept: var sourcePrecept } alert_Precept)
+						{
+							CheckAddOrRemoveAlert(activeAlerts[l], sourcePrecept != null && (!activePreceptAlerts.ContainsKey(sourcePrecept) || !activePreceptAlerts[sourcePrecept].Contains(alert_Precept)));
+						}
+					}
+				}
+			}
+			using (new ProfilerBlock("Alerts from scenario"))
+			{
+				if (Time.frameCount % 20 == 0)
+				{
+					activeScenarioAlerts.Clear();
+					foreach (ScenPart allPart in Find.Scenario.AllParts)
+					{
+						foreach (Alert alert3 in allPart.GetAlerts())
+						{
+							CheckAddOrRemoveAlert(alert3);
+							activeScenarioAlerts.Add(alert3);
+						}
+					}
+					for (int m = 0; m < activeAlerts.Count; m++)
+					{
+						if (activeAlerts[m] is Alert_Scenario alert_Scenario)
+						{
+							CheckAddOrRemoveAlert(alert_Scenario, !activeScenarioAlerts.Contains(alert_Scenario));
+						}
+					}
+					for (int n = 0; n < activeScenarioAlerts.Count; n++)
+					{
+						CheckAddOrRemoveAlert(activeScenarioAlerts[n]);
+					}
+				}
+			}
+			using (new ProfilerBlock("Alerts from delayed actions"))
+			{
+				if (Time.frameCount % 20 == 0)
+				{
+					activeSignalActionAlerts.Clear();
+					List<Map> maps = Find.Maps;
+					for (int num = 0; num < maps.Count; num++)
+					{
+						List<Thing> list = maps[num].listerThings.ThingsInGroup(ThingRequestGroup.ActionDelay);
+						for (int num2 = 0; num2 < list.Count; num2++)
+						{
+							SignalAction_Delay signalAction_Delay = list[num2] as SignalAction_Delay;
+							if (signalAction_Delay.Activated && signalAction_Delay.Alert != null)
+							{
+								activeSignalActionAlerts.Add(signalAction_Delay.Alert);
+							}
+						}
+					}
+					for (int num3 = 0; num3 < activeAlerts.Count; num3++)
+					{
+						if (activeAlerts[num3] is Alert_ActionDelay alert_ActionDelay)
+						{
+							CheckAddOrRemoveAlert(alert_ActionDelay, !activeSignalActionAlerts.Contains(alert_ActionDelay));
+						}
+					}
+					for (int num4 = 0; num4 < activeSignalActionAlerts.Count; num4++)
+					{
+						CheckAddOrRemoveAlert(activeSignalActionAlerts[num4]);
+					}
+				}
+			}
+			for (int num5 = activeAlerts.Count - 1; num5 >= 0; num5--)
+			{
+				Alert alert = activeAlerts[num5];
 				try
 				{
-					activeAlerts[num].AlertActiveUpdate();
+					activeAlerts[num5].AlertActiveUpdate();
 				}
 				catch (Exception ex)
 				{
-					Log.ErrorOnce("Exception updating alert " + alert.ToString() + ": " + ex.ToString(), 743575);
-					activeAlerts.RemoveAt(num);
+					Log.ErrorOnce("Exception updating alert " + alert?.ToString() + ": " + ex, 743575);
+					activeAlerts.RemoveAt(num5);
 				}
 			}
 			if (mouseoverAlertIndex >= 0 && mouseoverAlertIndex < activeAlerts.Count)
@@ -115,9 +241,9 @@ namespace RimWorld
 				IEnumerable<GlobalTargetInfo> allCulprits = activeAlerts[mouseoverAlertIndex].GetReport().AllCulprits;
 				if (allCulprits != null)
 				{
-					foreach (GlobalTargetInfo item in allCulprits)
+					foreach (GlobalTargetInfo item2 in allCulprits)
 					{
-						TargetHighlighter.Highlight(item);
+						TargetHighlighter.Highlight(item2);
 					}
 				}
 			}
@@ -144,7 +270,7 @@ namespace RimWorld
 			}
 			catch (Exception ex)
 			{
-				Log.ErrorOnce("Exception processing alert " + alert.ToString() + ": " + ex.ToString(), 743575);
+				Log.ErrorOnce("Exception processing alert " + alert?.ToString() + ": " + ex, 743575);
 				activeAlerts.Remove(alert);
 			}
 		}
@@ -158,31 +284,27 @@ namespace RimWorld
 			Alert alert = null;
 			AlertPriority alertPriority = AlertPriority.Critical;
 			bool flag = false;
-			float num = 0f;
-			for (int i = 0; i < activeAlerts.Count; i++)
+			float alertsHeight = AlertsHeight;
+			float num = Find.LetterStack.LastTopY - alertsHeight;
+			Rect rect = new Rect((float)UI.screenWidth - 154f, num, 154f, lastFinalY - num);
+			float num2 = GenUI.BackgroundDarkAlphaForText();
+			if (num2 > 0.001f)
 			{
-				num += activeAlerts[i].Height;
-			}
-			float num2 = Find.LetterStack.LastTopY - num;
-			Rect rect = new Rect((float)UI.screenWidth - 154f, num2, 154f, lastFinalY - num2);
-			float num3 = GenUI.BackgroundDarkAlphaForText();
-			if (num3 > 0.001f)
-			{
-				GUI.color = new Color(1f, 1f, 1f, num3);
+				GUI.color = new Color(1f, 1f, 1f, num2);
 				Widgets.DrawShadowAround(rect);
 				GUI.color = Color.white;
 			}
-			float num4 = num2;
-			if (num4 < 0f)
+			float num3 = num;
+			if (num3 < 0f)
 			{
-				num4 = 0f;
+				num3 = 0f;
 			}
-			for (int j = 0; j < PriosInDrawOrder.Count; j++)
+			for (int i = 0; i < PriosInDrawOrder.Count; i++)
 			{
-				AlertPriority alertPriority2 = PriosInDrawOrder[j];
-				for (int k = 0; k < activeAlerts.Count; k++)
+				AlertPriority alertPriority2 = PriosInDrawOrder[i];
+				for (int j = 0; j < activeAlerts.Count; j++)
 				{
-					Alert alert2 = activeAlerts[k];
+					Alert alert2 = activeAlerts[j];
 					if (alert2.Priority == alertPriority2)
 					{
 						if (!flag)
@@ -190,17 +312,17 @@ namespace RimWorld
 							alertPriority = alertPriority2;
 							flag = true;
 						}
-						Rect rect2 = alert2.DrawAt(num4, alertPriority2 != alertPriority);
+						Rect rect2 = alert2.DrawAt(num3, alertPriority2 != alertPriority);
 						if (Mouse.IsOver(rect2))
 						{
 							alert = alert2;
-							mouseoverAlertIndex = k;
+							mouseoverAlertIndex = j;
 						}
-						num4 += rect2.height;
+						num3 += rect2.height;
 					}
 				}
 			}
-			lastFinalY = num4;
+			lastFinalY = num3;
 			UIHighlighter.HighlightOpportunity(rect, "Alerts");
 			if (alert != null)
 			{

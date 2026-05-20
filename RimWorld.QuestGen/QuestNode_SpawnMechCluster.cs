@@ -15,6 +15,8 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<float?> points;
 
+		public SlateRef<IntVec3?> dropSpot;
+
 		protected override void RunInt()
 		{
 			Slate slate = QuestGen.slate;
@@ -23,6 +25,7 @@ namespace RimWorld.QuestGen
 			questPart_MechCluster.tag = QuestGenUtility.HardcodedTargetQuestTagWithQuestID(tag.GetValue(slate));
 			questPart_MechCluster.mapParent = slate.Get<Map>("map").Parent;
 			questPart_MechCluster.sketch = GenerateSketch(slate);
+			questPart_MechCluster.dropSpot = dropSpot.GetValue(slate) ?? IntVec3.Invalid;
 			QuestGen.quest.AddPart(questPart_MechCluster);
 			string text = "";
 			if (questPart_MechCluster.sketch.pawns != null)
@@ -55,12 +58,16 @@ namespace RimWorld.QuestGen
 
 		private MechClusterSketch GenerateSketch(Slate slate)
 		{
-			return MechClusterGenerator.GenerateClusterSketch_NewTemp(points.GetValue(slate) ?? slate.Get("points", 0f), slate.Get<Map>("map"));
+			return MechClusterGenerator.GenerateClusterSketch(points.GetValue(slate) ?? slate.Get("points", 0f), slate.Get<Map>("map"));
 		}
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			if (!Find.Storyteller.difficultyValues.allowViolentQuests)
+			if (!Find.Storyteller.difficulty.allowViolentQuests)
+			{
+				return false;
+			}
+			if (Faction.OfMechanoids == null)
 			{
 				return false;
 			}

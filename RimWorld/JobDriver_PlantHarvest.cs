@@ -4,6 +4,8 @@ namespace RimWorld
 {
 	public class JobDriver_PlantHarvest : JobDriver_PlantWork
 	{
+		protected override PlantDestructionMode PlantDestructionMode => PlantDestructionMode.Chop;
+
 		protected override void Init()
 		{
 			xpPerTick = 0.085f;

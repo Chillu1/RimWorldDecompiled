@@ -5,16 +5,16 @@ namespace RimWorld.Planet
 {
 	public static class CaravanTendUtility
 	{
-		private static List<Pawn> tmpPawnsNeedingTreatment = new List<Pawn>();
+		private static readonly List<Pawn> tmpPawnsNeedingTreatment = new List<Pawn>();
 
 		private const int TendIntervalTicks = 1250;
 
-		public static void CheckTend(Caravan caravan)
+		public static void CheckTend(Caravan caravan, int delta)
 		{
 			for (int i = 0; i < caravan.pawns.Count; i++)
 			{
 				Pawn pawn = caravan.pawns[i];
-				if (IsValidDoctorFor(pawn, null, caravan) && pawn.IsHashIntervalTick(1250))
+				if (IsValidDoctorFor(pawn, null, caravan) && pawn.IsHashIntervalTick(1250, delta))
 				{
 					TryTendToAnyPawn(caravan);
 				}
@@ -28,7 +28,7 @@ namespace RimWorld.Planet
 			{
 				return;
 			}
-			tmpPawnsNeedingTreatment.SortByDescending((Pawn x) => GetTendPriority(x));
+			tmpPawnsNeedingTreatment.SortByDescending(GetTendPriority);
 			Pawn patient = null;
 			Pawn pawn = null;
 			for (int i = 0; i < tmpPawnsNeedingTreatment.Count; i++)
@@ -93,9 +93,12 @@ namespace RimWorld.Planet
 		{
 			if (!doctor.RaceProps.Humanlike)
 			{
-				return false;
+				if (!doctor.IsColonyMechPlayerControlled || !doctor.RaceProps.mechEnabledWorkTypes.NotNullAndContains(WorkTypeDefOf.Doctor))
+				{
+					return false;
+				}
 			}
-			if (!caravan.IsOwner(doctor))
+			else if (!caravan.IsOwner(doctor))
 			{
 				return false;
 			}
@@ -128,8 +131,7 @@ namespace RimWorld.Planet
 			for (int i = 0; i < patient.health.hediffSet.hediffs.Count; i++)
 			{
 				Hediff hediff = patient.health.hediffSet.hediffs[i];
-				HediffStage curStage = hediff.CurStage;
-				if (((curStage != null && curStage.lifeThreatening) || hediff.def.lethalSeverity >= 0f) && hediff.TendableNow())
+				if ((hediff.IsCurrentlyLifeThreatening || hediff.IsLethal) && hediff.TendableNow())
 				{
 					if (patient.RaceProps.Humanlike)
 					{

@@ -17,7 +17,7 @@ namespace RimWorld
 
 		public override bool ShouldSkip(Pawn pawn, bool forced = false)
 		{
-			if (!InteractionUtility.CanInitiateInteraction(pawn))
+			if (!SocialInteractionUtility.CanInitiateInteraction(pawn))
 			{
 				return true;
 			}
@@ -34,18 +34,22 @@ namespace RimWorld
 
 		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			Pawn pawn2 = t as Pawn;
-			if (pawn2 == null)
+			if (!(t is Pawn sick))
 			{
 				return false;
 			}
-			return SickPawnVisitUtility.CanVisit(pawn, pawn2, JoyCategory.VeryLow);
+			return SickPawnVisitUtility.CanVisit(pawn, sick, JoyCategory.VeryLow);
 		}
 
 		public override Job JobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
 			Pawn pawn2 = (Pawn)t;
-			Job job = JobMaker.MakeJob(JobDefOf.VisitSickPawn, pawn2, SickPawnVisitUtility.FindChair(pawn, pawn2));
+			Thing thing = SickPawnVisitUtility.FindChair(pawn, pawn2);
+			if (thing != null && !pawn.CanReserveAndReach(thing, PathEndMode.OnCell, Danger.Some))
+			{
+				return null;
+			}
+			Job job = JobMaker.MakeJob(JobDefOf.VisitSickPawn, pawn2, thing);
 			job.ignoreJoyTimeAssignment = true;
 			return job;
 		}

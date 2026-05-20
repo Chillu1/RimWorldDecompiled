@@ -5,11 +5,9 @@ namespace RimWorld.Planet
 {
 	public class WorldGlobalControls
 	{
-		public const float Width = 200f;
-
-		private const int VisibilityControlsPerRow = 5;
-
 		private WidgetRow rowVisibility = new WidgetRow();
+
+		public const float Width = 250f;
 
 		public void WorldGlobalControlsOnGUI()
 		{
@@ -17,7 +15,7 @@ namespace RimWorld.Planet
 			{
 				return;
 			}
-			float leftX = (float)UI.screenWidth - 200f;
+			float leftX = (float)UI.screenWidth - 250f;
 			float curBaseY = (float)UI.screenHeight - 4f;
 			if (Current.ProgramState == ProgramState.Playing)
 			{
@@ -27,23 +25,38 @@ namespace RimWorld.Planet
 			if (Current.ProgramState == ProgramState.Playing)
 			{
 				curBaseY -= 4f;
-				GlobalControlsUtility.DoTimespeedControls(leftX, 200f, ref curBaseY);
+				GlobalControlsUtility.DoTimespeedControls(leftX, 250f, ref curBaseY);
 				if (Find.CurrentMap != null || Find.WorldSelector.AnyObjectOrTileSelected)
 				{
 					curBaseY -= 4f;
-					GlobalControlsUtility.DoDate(leftX, 200f, ref curBaseY);
+					GlobalControlsUtility.DoDate(leftX, 250f, ref curBaseY);
 				}
 				float num = 154f;
 				float num2 = Find.World.gameConditionManager.TotalHeightAt(num);
 				Rect rect = new Rect((float)UI.screenWidth - num, curBaseY - num2, num, num2);
 				Find.World.gameConditionManager.DoConditionsUI(rect);
-				curBaseY -= rect.height;
+				curBaseY -= num2;
+			}
+			if (DebugViewSettings.showMemoryInfo)
+			{
+				GlobalControlsUtility.DrawMemoryInfo(leftX, 250f, ref curBaseY);
+			}
+			if (DebugViewSettings.showTpsCounter)
+			{
+				GlobalControlsUtility.DrawTpsCounter(leftX, 250f, ref curBaseY);
+			}
+			if (DebugViewSettings.showFpsCounter)
+			{
+				GlobalControlsUtility.DrawFpsCounter(leftX, 250f, ref curBaseY);
 			}
 			if (Prefs.ShowRealtimeClock)
 			{
-				GlobalControlsUtility.DoRealtimeClock(leftX, 200f, ref curBaseY);
+				GlobalControlsUtility.DoRealtimeClock(leftX, 250f, ref curBaseY);
 			}
-			Find.WorldRoutePlanner.DoRoutePlannerButton(ref curBaseY);
+			if (!Find.WorldTargeter.IsTargeting)
+			{
+				Find.WorldRoutePlanner.DoRoutePlannerButton(ref curBaseY);
+			}
 			if (!Find.PlaySettings.lockNorthUp)
 			{
 				CompassWidget.CompassOnGUI(ref curBaseY);

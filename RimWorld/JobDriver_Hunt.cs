@@ -16,6 +16,8 @@ namespace RimWorld
 
 		private const int MaxHuntTicks = 5000;
 
+		public const float MaxRangeFactor = 0.95f;
+
 		public Pawn Victim
 		{
 			get
@@ -55,17 +57,25 @@ namespace RimWorld
 		{
 			this.FailOn(delegate
 			{
+				if (Victim == null)
+				{
+					return true;
+				}
+				if (Victim.IsForbidden(pawn))
+				{
+					return true;
+				}
 				if (!job.ignoreDesignations)
 				{
-					Pawn victim2 = Victim;
-					if (victim2 != null && !victim2.Dead && base.Map.designationManager.DesignationOn(victim2, DesignationDefOf.Hunt) == null)
+					Pawn victim = Victim;
+					if (victim != null && !victim.Dead && base.Map.designationManager.DesignationOn(victim, DesignationDefOf.Hunt) == null)
 					{
 						return true;
 					}
 				}
 				return false;
 			});
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
 				jobStartTick = Find.TickManager.TicksGame;
@@ -74,7 +84,7 @@ namespace RimWorld
 			yield return Toils_Combat.TrySetJobToUseAttackVerb(TargetIndex.A);
 			Toil startCollectCorpseLabel = Toils_General.Label();
 			Toil slaughterLabel = Toils_General.Label();
-			Toil gotoCastPos = Toils_Combat.GotoCastPosition(TargetIndex.A, closeIfDowned: true, 0.95f).JumpIfDespawnedOrNull(TargetIndex.A, startCollectCorpseLabel).FailOn(() => Find.TickManager.TicksGame > jobStartTick + 5000);
+			Toil gotoCastPos = Toils_Combat.GotoCastPosition(TargetIndex.A, TargetIndex.None, closeIfDowned: true, 0.95f).JumpIfDespawnedOrNull(TargetIndex.A, startCollectCorpseLabel).FailOn(() => Find.TickManager.TicksGame > jobStartTick + 5000);
 			yield return gotoCastPos;
 			Toil slaughterIfPossible = Toils_Jump.JumpIf(slaughterLabel, delegate
 			{
@@ -97,11 +107,11 @@ namespace RimWorld
 			{
 				if (!Victim.Dead)
 				{
-					ExecutionUtility.DoExecutionByCut(pawn, Victim);
+					ExecutionUtility.DoHuntingExecution(pawn, Victim);
 					pawn.records.Increment(RecordDefOf.AnimalsSlaughtered);
 					if (pawn.InMentalState)
 					{
-						pawn.MentalState.Notify_SlaughteredAnimal();
+						pawn.MentalState.Notify_SlaughteredTarget();
 					}
 				}
 			});
@@ -117,7 +127,7 @@ namespace RimWorld
 
 		private Toil StartCollectCorpseToil()
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("StartCollectCorpseToil");
 			toil.initAction = delegate
 			{
 				if (Victim == null)

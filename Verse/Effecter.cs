@@ -15,12 +15,19 @@ namespace Verse
 
 		public float scale = 1f;
 
+		public int spawnTick;
+
 		public Effecter(EffecterDef def)
 		{
 			this.def = def;
+			spawnTick = Find.TickManager.TicksGame;
 			for (int i = 0; i < def.children.Count; i++)
 			{
-				children.Add(def.children[i].Spawn(this));
+				SubEffecterDef subEffecterDef = def.children[i];
+				if (DebugSettings.anomalyDarkeningFX)
+				{
+					children.Add(subEffecterDef.Spawn(this));
+				}
 			}
 		}
 
@@ -32,12 +39,19 @@ namespace Verse
 			}
 		}
 
-		public void Trigger(TargetInfo A, TargetInfo B)
+		public Effecter Trigger(TargetInfo A, TargetInfo B, int overrideSpawnTick = -1)
 		{
 			for (int i = 0; i < children.Count; i++)
 			{
-				children[i].SubTrigger(A, B);
+				children[i].SubTrigger(A, B, overrideSpawnTick);
 			}
+			return this;
+		}
+
+		public void ForceEnd()
+		{
+			ticksLeft = 0;
+			Cleanup();
 		}
 
 		public void Cleanup()

@@ -25,7 +25,22 @@ namespace RimWorld
 
 		public static WorkTypeDef Hauling;
 
+		public static WorkTypeDef Cleaning;
+
 		public static WorkTypeDef Research;
+
+		public static WorkTypeDef PlantCutting;
+
+		public static WorkTypeDef Smithing;
+
+		[MayRequireBiotech]
+		public static WorkTypeDef Childcare;
+
+		[MayRequireAnomaly]
+		public static WorkTypeDef DarkStudy;
+
+		[MayRequireOdyssey]
+		public static WorkTypeDef Fishing;
 
 		static WorkTypeDefOf()
 		{

@@ -31,11 +31,11 @@ namespace RimWorld
 			Building_Throne assignedThrone = forPawn.ownership.AssignedThrone;
 			if (assignedThrone == null)
 			{
-				return "QuestThroneRoomRequirementsUnsatisfied".Translate(forPawn.Named("PAWN"), forTitle.GetLabelFor(forPawn).Named("TITLE"));
+				return "QuestNoThroneRoom".Translate(forPawn.Named("PAWN"));
 			}
 			foreach (RoomRequirement throneRoomRequirement in forTitle.throneRoomRequirements)
 			{
-				if (!throneRoomRequirement.Met(assignedThrone.GetRoom(), forPawn))
+				if (!throneRoomRequirement.MetOrDisabled(assignedThrone.GetRoom(), forPawn))
 				{
 					acceptanceReportUnmetRequirements.Add(throneRoomRequirement.LabelCap(assignedThrone.GetRoom()));
 				}

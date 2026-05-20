@@ -22,6 +22,10 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (Faction.OfInsects == null)
+			{
+				return false;
+			}
 			Map map = (Map)parms.target;
 			tmpDrills.Clear();
 			DeepDrillInfestationIncidentUtility.GetUsableDeepDrills(map, tmpDrills);

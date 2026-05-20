@@ -7,9 +7,6 @@ namespace RimWorld
 
 		public static GatheringDef MarriageCeremony;
 
-		[MayRequireRoyalty]
-		public static GatheringDef ThroneSpeech;
-
 		static GatheringDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(GatheringDefOf));

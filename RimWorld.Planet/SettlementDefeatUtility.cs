@@ -17,16 +17,31 @@ namespace RimWorld.Planet
 			{
 				return;
 			}
-			DestroyedSettlement destroyedSettlement = (DestroyedSettlement)WorldObjectMaker.MakeWorldObject(WorldObjectDefOf.DestroyedSettlement);
+			IdeoUtility.Notify_PlayerRaidedSomeone(map.mapPawns.FreeColonistsSpawned);
+			DestroyedSettlement destroyedSettlement = (DestroyedSettlement)WorldObjectMaker.MakeWorldObject(factionBase.Tile.LayerDef.DestroyedSettlementWorldObjectDef);
 			destroyedSettlement.Tile = factionBase.Tile;
 			destroyedSettlement.SetFaction(factionBase.Faction);
 			Find.WorldObjects.Add(destroyedSettlement);
-			TimedDetectionRaids component = destroyedSettlement.GetComponent<TimedDetectionRaids>();
-			component.CopyFrom(factionBase.GetComponent<TimedDetectionRaids>());
-			component.SetNotifiedSilently();
 			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.Append("LetterFactionBaseDefeated".Translate(factionBase.Label, component.DetectionCountdownTimeLeftString));
-			if (!HasAnyOtherBase(factionBase))
+			bool num = HasAnyOtherBase(factionBase);
+			if (num && destroyedSettlement.TryGetComponent<TimedDetectionRaids>(out var comp))
+			{
+				comp.CopyFrom(factionBase.GetComponent<TimedDetectionRaids>());
+				comp.SetNotifiedSilently();
+				if (!string.IsNullOrEmpty(comp.DetectionCountdownTimeLeftString))
+				{
+					stringBuilder.Append("LetterFactionBaseDefeated".Translate(factionBase.Label, comp.DetectionCountdownTimeLeftString));
+				}
+				else
+				{
+					stringBuilder.Append("LetterFactionBaseDefeatedNoRaids".Translate(factionBase.Label));
+				}
+			}
+			else
+			{
+				stringBuilder.Append("LetterFactionBaseDefeatedNoRaids".Translate(factionBase.Label));
+			}
+			if (!num)
 			{
 				factionBase.Faction.defeated = true;
 				stringBuilder.AppendLine();
@@ -38,13 +53,11 @@ namespace RimWorld.Planet
 				if (!allFaction.Hidden && !allFaction.IsPlayer && allFaction != factionBase.Faction && allFaction.HostileTo(factionBase.Faction))
 				{
 					FactionRelationKind playerRelationKind = allFaction.PlayerRelationKind;
-					if (allFaction.TryAffectGoodwillWith(Faction.OfPlayer, 20, canSendMessage: false, canSendHostilityLetter: false))
-					{
-						stringBuilder.AppendLine();
-						stringBuilder.AppendLine();
-						stringBuilder.Append("RelationsWith".Translate(allFaction.Name) + ": " + 20.ToStringWithSign());
-						allFaction.TryAppendRelationKindChangedInfo(stringBuilder, playerRelationKind, allFaction.PlayerRelationKind);
-					}
+					Faction.OfPlayer.TryAffectGoodwillWith(allFaction, 20, canSendMessage: false, canSendHostilityLetter: false, HistoryEventDefOf.DestroyedEnemyBase);
+					stringBuilder.AppendLine();
+					stringBuilder.AppendLine();
+					stringBuilder.Append("RelationsWith".Translate(allFaction.Name) + ": " + 20.ToStringWithSign());
+					allFaction.TryAppendRelationKindChangedInfo(stringBuilder, playerRelationKind, allFaction.PlayerRelationKind);
 				}
 			}
 			Find.LetterStack.ReceiveLetter("LetterLabelFactionBaseDefeated".Translate(), stringBuilder.ToString(), LetterDefOf.PositiveEvent, new GlobalTargetInfo(factionBase.Tile), factionBase.Faction);
@@ -53,13 +66,13 @@ namespace RimWorld.Planet
 			TaleRecorder.RecordTale(TaleDefOf.CaravanAssaultSuccessful, map.mapPawns.FreeColonists.RandomElement());
 		}
 
-		private static bool IsDefeated(Map map, Faction faction)
+		public static bool IsDefeated(Map map, Faction faction)
 		{
 			List<Pawn> list = map.mapPawns.SpawnedPawnsInFaction(faction);
 			for (int i = 0; i < list.Count; i++)
 			{
 				Pawn pawn = list[i];
-				if (pawn.RaceProps.Humanlike && GenHostility.IsActiveThreatToPlayer(pawn))
+				if (pawn.RaceProps.Humanlike && GenHostility.IsActiveThreatToPlayer(pawn, map.Parent is Settlement && map.Parent.Faction == faction))
 				{
 					return false;
 				}

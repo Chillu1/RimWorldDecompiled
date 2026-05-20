@@ -188,6 +188,30 @@ namespace Verse
 			return GrammarResolverSimple.Formatted(str, argsLabels, argsObjects);
 		}
 
+		public static TaggedString Formatted(this string str, IEnumerable<NamedArgument> args)
+		{
+			argsLabels.Clear();
+			argsObjects.Clear();
+			foreach (NamedArgument arg in args)
+			{
+				argsLabels.Add(arg.label);
+				argsObjects.Add(arg.arg);
+			}
+			return GrammarResolverSimple.Formatted(str, argsLabels, argsObjects);
+		}
+
+		public static TaggedString Formatted(this TaggedString str, IEnumerable<NamedArgument> args)
+		{
+			argsLabels.Clear();
+			argsObjects.Clear();
+			foreach (NamedArgument arg in args)
+			{
+				argsLabels.Add(arg.label);
+				argsObjects.Add(arg.arg);
+			}
+			return GrammarResolverSimple.Formatted(str, argsLabels, argsObjects);
+		}
+
 		public static TaggedString Formatted(this TaggedString str, params NamedArgument[] args)
 		{
 			return str.RawText.Formatted(args);

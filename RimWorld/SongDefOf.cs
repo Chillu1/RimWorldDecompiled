@@ -9,6 +9,15 @@ namespace RimWorld
 
 		public static SongDef EndCreditsSong;
 
+		[MayRequireIdeology]
+		public static SongDef ArchonexusVictorySong;
+
+		[MayRequireAnomaly]
+		public static SongDef AnomalyCreditsSong;
+
+		[MayRequireOdyssey]
+		public static SongDef OdysseyCreditsSong;
+
 		static SongDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(SongDefOf));

@@ -17,6 +17,8 @@ namespace RimWorld
 
 		public const string QuestTargetSignalPart_MapRemoved = "MapRemoved";
 
+		public const string QuestTargetSignalPart_MapSettled = "MapSettled";
+
 		public const string QuestTargetSignalPart_Spawned = "Spawned";
 
 		public const string QuestTargetSignalPart_Despawned = "Despawned";
@@ -25,13 +27,43 @@ namespace RimWorld
 
 		public const string QuestTargetSignalPart_Killed = "Killed";
 
+		public const string QuestTargetSignalPart_TookDamage = "TookDamage";
+
+		public const string QuestTargetSignalPart_TookDamageFromPlayer = "TookDamageFromPlayer";
+
 		public const string QuestTargetSignalPart_ChangedFaction = "ChangedFaction";
+
+		public const string QuestTargetSignalPart_ChangedFactionToPlayer = "ChangedFactionToPlayer";
+
+		public const string QuestTargetSignalPart_ChangedFactionToNonPlayer = "ChangedFactionToNonPlayer";
+
+		public const string QuestTargetSignalPart_Hacked = "Hacked";
+
+		public const string QuestTargetSignalPart_HackingStarted = "HackingStarted";
+
+		public const string QuestTargetSignalPart_LockedOut = "LockedOut";
+
+		public const string QuestTargetSignalPart_StartedExtractingFromContainer = "StartedExtractingFromContainer";
+
+		public const string QuestTargetSignalPart_Studied = "Researched";
+
+		public const string QuestTargetSignalPart_KilledLeavingsLeft = "KilledLeavingsLeft";
+
+		public const string QuestTargetSignalPart_Unfogged = "Unfogged";
+
+		public const string QuestTargetSignalPart_Inspected = "Inspected";
+
+		public const string QuestTargetSignalPart_SwappedMap = "SwappedMap";
+
+		public const string QuestTargetSignalPart_LeftBehind = "LeftBehind";
 
 		public const string QuestTargetSignalPart_LeftMap = "LeftMap";
 
 		public const string QuestTargetSignalPart_SurgeryViolation = "SurgeryViolation";
 
 		public const string QuestTargetSignalPart_Arrested = "Arrested";
+
+		public const string QuestTargetSignalPart_Released = "Released";
 
 		public const string QuestTargetSignalPart_Recruited = "Recruited";
 
@@ -47,7 +79,23 @@ namespace RimWorld
 
 		public const string QuestTargetSignalPart_Banished = "Banished";
 
+		public const string QuestTargetSignalPart_Rescued = "Rescued";
+
 		public const string QuestTargetSignalPart_RanWild = "RanWild";
+
+		public const string QuestTargetSignalPart_Enslaved = "Enslaved";
+
+		public const string QuestTargetSignalPart_PlayerTended = "PlayerTended";
+
+		public const string QuestTargetSignalPart_XenogermAbsorbed = "XenogermAbsorbed";
+
+		public const string QuestTargetSignalPart_XenogermReimplanted = "XenogermReimplanted";
+
+		public const string QuestTargetSignalPart_BecameMutant = "BecameMutant";
+
+		public const string QuestTargetSignalPart_PsychicRitualTarget = "PsychicRitualTarget";
+
+		public const string QuestTargetSignalPart_ReceivedItems = "ReceivedItems";
 
 		public const string QuestTargetSignalPart_ShuttleSentSatisfied = "SentSatisfied";
 
@@ -79,13 +127,45 @@ namespace RimWorld
 
 		public const string QuestTargetSignalPart_FactionBecameHostileToPlayer = "BecameHostileToPlayer";
 
+		public const string QuestTargetSignalPart_FactionBuiltBuilding = "BuiltBuilding";
+
+		public const string QuestTargetSignalPart_FactionPlacedBlueprint = "PlacedBlueprint";
+
+		public const string QuestTargetSignalPart_FactionMemberArrested = "FactionMemberArrested";
+
 		public const string QuestTargetSignalPart_CeremonyExpired = "CeremonyExpired";
 
 		public const string QuestTargetSignalPart_CeremonyFailed = "CeremonyFailed";
 
 		public const string QuestTargetSignalPart_CeremonyDone = "CeremonyDone";
 
+		public const string QuestTargetSignalPart_BeingAttacked = "BeingAttacked";
+
+		public const string QuestTargetSignalPart_Fleeing = "Fleeing";
+
 		public const string QuestTargetSignalPart_QuestEnded = "QuestEnded";
+
+		public const string QuestTargetSignalPart_AllPawnsLost = "AllPawnsLost";
+
+		public const string QuestTargetSignalPart_ShipDisposed = "Disposed";
+
+		public const string QuestTargetSignalPart_ShipArrived = "Arrived";
+
+		public const string QuestTargetSignalPart_ShipFlewAway = "FlewAway";
+
+		public const string QuestTargetSignalPart_ShipThingAdded = "ThingAdded";
+
+		public const string QuestTargetSignalPart_Activated = "Activated";
+
+		public const string QuestTargetSignalPart_NodeClosed = "NodeClosed";
+
+		public const string QuestTargetSignalPart_CoreDefeated = "CoreDefeated";
+
+		public const string QuestTargetSignalPart_NoActiveThreats = "NoActiveThreats";
+
+		private static readonly List<Pawn> tmpPawns = new List<Pawn>();
+
+		private static List<QuestPart_WorkDisabled> tmpQuestWorkDisabled = new List<QuestPart_WorkDisabled>();
 
 		private static List<ExtraFaction> tmpExtraFactions = new List<ExtraFaction>();
 
@@ -105,39 +185,58 @@ namespace RimWorld
 			return quest;
 		}
 
-		public static void SendLetterQuestAvailable(Quest quest)
+		public static void SendLetterQuestAvailable(Quest quest, string discoveryMethod = null)
 		{
-			TaggedString label = IncidentDefOf.GiveQuest_Random.letterLabel + ": " + quest.name;
-			TaggedString text;
+			ChoiceLetter choiceLetter = LetterMaker.MakeLetter(QuestAvailableLetterLabel(quest), QuestAvailableLetterText(quest, discoveryMethod), quest.root?.questAvailableLetterDef ?? IncidentDefOf.GiveQuest_Random.letterDef, LookTargets.Invalid, null, quest);
+			choiceLetter.title = quest.name;
+			Find.LetterStack.ReceiveLetter(choiceLetter);
+		}
+
+		private static TaggedString QuestAvailableLetterLabel(Quest quest)
+		{
+			if (quest.root != null && !quest.root.questAvailableLetterLabel.NullOrEmpty())
+			{
+				return quest.root.questAvailableLetterLabel;
+			}
 			if (quest.initiallyAccepted)
 			{
-				label = "LetterQuestAutomaticallyAcceptedTitle".Translate(quest.name);
-				text = "LetterQuestBecameActive".Translate(quest.name);
-				int questTicksRemaining = GetQuestTicksRemaining(quest);
-				if (questTicksRemaining > 0)
-				{
-					text += " " + "LetterQuestActiveNowTime".Translate(questTicksRemaining.ToStringTicksToPeriod(allowSeconds: false, shortForm: false, canUseDecimals: false));
-				}
+				return "LetterLabelQuestAutomaticallyAcceptedTitle".Translate(quest.name);
+			}
+			return "LetterLabelQuestAvailableTitle".Translate(quest.name);
+		}
+
+		private static TaggedString QuestAvailableLetterText(Quest quest, string discoveryMethod = null)
+		{
+			TaggedString result;
+			if (quest.root != null && quest.root.questAvailableLetterTextIsDescription)
+			{
+				result = quest.description;
 			}
 			else
 			{
-				text = "LetterQuestBecameAvailable".Translate(quest.name);
-				if (quest.ticksUntilAcceptanceExpiry >= 0)
+				result = (discoveryMethod.NullOrEmpty() ? "LetterNewQuestFromUnknown".Translate() : "LetterNewQuest".Translate(discoveryMethod.Named("DISCOVEREDFROM")));
+				result += "\n\n" + "LetterQuestIsNamed".Translate(quest.name);
+			}
+			if (quest.initiallyAccepted)
+			{
+				int questTicksRemaining = GetQuestTicksRemaining(quest);
+				if (questTicksRemaining > 0)
 				{
-					text += "\n\n" + "LetterQuestRequiresAcceptance".Translate(quest.ticksUntilAcceptanceExpiry.ToStringTicksToPeriod(allowSeconds: false, shortForm: false, canUseDecimals: false));
+					result += "\n\n" + "LetterQuestActiveNowTime".Translate(questTicksRemaining.ToStringTicksToPeriod(allowSeconds: false, shortForm: false, canUseDecimals: false));
 				}
 			}
-			ChoiceLetter choiceLetter = LetterMaker.MakeLetter(label, text, (quest.root != null && quest.root.questAvailableLetterDef != null) ? quest.root.questAvailableLetterDef : IncidentDefOf.GiveQuest_Random.letterDef, LookTargets.Invalid, null, quest);
-			choiceLetter.title = quest.name;
-			Find.LetterStack.ReceiveLetter(choiceLetter);
+			else if (quest.TicksUntilExpiry >= 0)
+			{
+				result += "\n\n" + "LetterQuestRequiresAcceptance".Translate(quest.TicksUntilExpiry.ToStringTicksToPeriod(allowSeconds: false, shortForm: false, canUseDecimals: false));
+			}
+			return result;
 		}
 
 		public static int GetQuestTicksRemaining(Quest quest)
 		{
 			foreach (QuestPart item in quest.PartsListForReading)
 			{
-				QuestPart_Delay questPart_Delay = item as QuestPart_Delay;
-				if (questPart_Delay != null && questPart_Delay.State == QuestPartState.Enabled && questPart_Delay.isBad && !questPart_Delay.expiryInfoPart.NullOrEmpty())
+				if (item is QuestPart_Delay { State: QuestPartState.Enabled, isBad: not false } questPart_Delay && !questPart_Delay.expiryInfoPart.NullOrEmpty())
 				{
 					return questPart_Delay.TicksLeft;
 				}
@@ -154,8 +253,7 @@ namespace RimWorld
 		{
 			for (int i = 0; i < quest.PartsListForReading.Count; i++)
 			{
-				QuestPart_RequirementsToAccept questPart_RequirementsToAccept = quest.PartsListForReading[i] as QuestPart_RequirementsToAccept;
-				if (questPart_RequirementsToAccept != null && !questPart_RequirementsToAccept.CanPawnAccept(p))
+				if (quest.PartsListForReading[i] is QuestPart_RequirementsToAccept questPart_RequirementsToAccept && !questPart_RequirementsToAccept.CanPawnAccept(p))
 				{
 					return false;
 				}
@@ -167,14 +265,25 @@ namespace RimWorld
 			return false;
 		}
 
-		public static bool CanAcceptQuest(Quest quest)
+		public static AcceptanceReport CanAcceptQuest(Quest quest)
 		{
+			if (Find.AnyPlayerHomeMap == null)
+			{
+				return false;
+			}
+			if (!Current.Game.PlayerHasControl)
+			{
+				return false;
+			}
 			for (int i = 0; i < quest.PartsListForReading.Count; i++)
 			{
-				QuestPart_RequirementsToAccept questPart_RequirementsToAccept = quest.PartsListForReading[i] as QuestPart_RequirementsToAccept;
-				if (questPart_RequirementsToAccept != null && !questPart_RequirementsToAccept.CanAccept().Accepted)
+				if (quest.PartsListForReading[i] is QuestPart_RequirementsToAccept questPart_RequirementsToAccept)
 				{
-					return false;
+					AcceptanceReport result = questPart_RequirementsToAccept.CanAccept();
+					if (!result.Accepted)
+					{
+						return result;
+					}
 				}
 			}
 			return true;
@@ -248,50 +357,116 @@ namespace RimWorld
 			{
 				return;
 			}
-			if (obj is Thing)
+			if (obj is Thing thing)
 			{
-				AddQuestTag(ref ((Thing)obj).questTags, questTagToAdd);
+				AddQuestTag(ref thing.questTags, questTagToAdd);
 			}
-			else if (obj is WorldObject)
+			else if (obj is WorldObject worldObject)
 			{
-				AddQuestTag(ref ((WorldObject)obj).questTags, questTagToAdd);
+				AddQuestTag(ref worldObject.questTags, questTagToAdd);
 			}
-			else if (obj is Map)
+			else if (obj is Map map)
 			{
-				AddQuestTag(ref ((Map)obj).Parent.questTags, questTagToAdd);
+				AddQuestTag(ref map.Parent.questTags, questTagToAdd);
 			}
-			else if (obj is Lord)
+			else if (obj is Lord lord)
 			{
-				AddQuestTag(ref ((Lord)obj).questTags, questTagToAdd);
+				AddQuestTag(ref lord.questTags, questTagToAdd);
 			}
-			else if (obj is Faction)
+			else if (obj is Faction faction)
 			{
-				AddQuestTag(ref ((Faction)obj).questTags, questTagToAdd);
+				AddQuestTag(ref faction.questTags, questTagToAdd);
+			}
+			else if (obj is TransportShip transportShip)
+			{
+				AddQuestTag(ref transportShip.questTags, questTagToAdd);
 			}
 			else
 			{
-				if (!(obj is IEnumerable))
+				if (!(obj is IEnumerable enumerable))
 				{
 					return;
 				}
-				foreach (object item in (IEnumerable)obj)
+				foreach (object item in enumerable)
 				{
-					if (item is Thing)
+					if (item is Thing thing2)
 					{
-						AddQuestTag(ref ((Thing)item).questTags, questTagToAdd);
+						AddQuestTag(ref thing2.questTags, questTagToAdd);
 					}
-					else if (item is WorldObject)
+					else if (item is WorldObject worldObject2)
 					{
-						AddQuestTag(ref ((WorldObject)item).questTags, questTagToAdd);
+						AddQuestTag(ref worldObject2.questTags, questTagToAdd);
 					}
-					else if (item is Map)
+					else if (item is Map map2)
 					{
-						AddQuestTag(ref ((Map)item).Parent.questTags, questTagToAdd);
+						AddQuestTag(ref map2.Parent.questTags, questTagToAdd);
 					}
-					else if (item is Faction)
+					else if (item is Faction faction2)
 					{
-						AddQuestTag(ref ((Faction)item).questTags, questTagToAdd);
+						AddQuestTag(ref faction2.questTags, questTagToAdd);
 					}
+					else if (enumerable is TransportShip transportShip2)
+					{
+						AddQuestTag(ref transportShip2.questTags, questTagToAdd);
+					}
+				}
+			}
+		}
+
+		public static bool TryGetIdealColonist(out Pawn pawn, Map idealMap = null, Func<Pawn, bool> validator = null)
+		{
+			tmpPawns.Clear();
+			if (idealMap != null)
+			{
+				for (int i = 0; i <= 3; i++)
+				{
+					CacheIdealColonists(idealMap.mapPawns.AllHumanlikeSpawned, i, tmpPawns, validator);
+					if (!tmpPawns.Empty())
+					{
+						pawn = tmpPawns.RandomElement();
+						tmpPawns.Clear();
+						return true;
+					}
+				}
+			}
+			for (int j = 0; j <= 3; j++)
+			{
+				foreach (Map map in Find.Maps)
+				{
+					if (idealMap == null || idealMap != map)
+					{
+						CacheIdealColonists(map.mapPawns.AllHumanlikeSpawned, j, tmpPawns, validator);
+					}
+				}
+				if (!tmpPawns.Empty())
+				{
+					pawn = tmpPawns.RandomElement();
+					tmpPawns.Clear();
+					return true;
+				}
+			}
+			for (int k = 0; k <= 3; k++)
+			{
+				CacheIdealColonists(Find.WorldPawns.AllPawnsAlive, k, tmpPawns, validator);
+				if (!tmpPawns.Empty())
+				{
+					pawn = tmpPawns.RandomElement();
+					tmpPawns.Clear();
+					return true;
+				}
+			}
+			tmpPawns.Clear();
+			pawn = null;
+			return false;
+		}
+
+		private static void CacheIdealColonists(List<Pawn> pawnsToScan, int level, List<Pawn> pawns, Func<Pawn, bool> validator = null)
+		{
+			foreach (Pawn item in pawnsToScan)
+			{
+				if (!item.DevelopmentalStage.Baby() && (validator == null || validator(item)) && (item.IsColonistPlayerControlled || (item.IsColonist && item.IsCaravanMember())) && (level > 2 || item.IsSlaveOfColony || item.IsColonist) && (level > 1 || item.ageTracker.AgeBiologicalYears >= 13) && (level > 0 || item.health.capacities.CapableOf(PawnCapacityDefOf.Moving)))
+				{
+					pawns.Add(item);
 				}
 			}
 		}
@@ -324,26 +499,26 @@ namespace RimWorld
 			return true;
 		}
 
-		public static IEnumerable<QuestPart_WorkDisabled> GetWorkDisabledQuestPart(Pawn p)
+		public static List<QuestPart_WorkDisabled> GetWorkDisabledQuestPart(Pawn p)
 		{
-			List<Quest> quests = Find.QuestManager.QuestsListForReading;
-			for (int i = 0; i < quests.Count; i++)
+			tmpQuestWorkDisabled.Clear();
+			List<Quest> activeQuestsListForReading = Find.QuestManager.ActiveQuestsListForReading;
+			for (int i = 0; i < activeQuestsListForReading.Count; i++)
 			{
-				if (quests[i].State != QuestState.Ongoing)
+				if (activeQuestsListForReading[i].State != QuestState.Ongoing)
 				{
 					continue;
 				}
-				Quest quest = quests[i];
-				List<QuestPart> partList = quest.PartsListForReading;
-				for (int j = 0; j < partList.Count; j++)
+				List<QuestPart> partsListForReading = activeQuestsListForReading[i].PartsListForReading;
+				for (int j = 0; j < partsListForReading.Count; j++)
 				{
-					QuestPart_WorkDisabled questPart_WorkDisabled;
-					if ((questPart_WorkDisabled = partList[j] as QuestPart_WorkDisabled) != null && questPart_WorkDisabled.pawns.Contains(p))
+					if (partsListForReading[j] is QuestPart_WorkDisabled questPart_WorkDisabled && questPart_WorkDisabled.pawns.Contains(p))
 					{
-						yield return questPart_WorkDisabled;
+						tmpQuestWorkDisabled.Add(questPart_WorkDisabled);
 					}
 				}
 			}
+			return tmpQuestWorkDisabled;
 		}
 
 		public static bool IsQuestLodger(this Pawn p)
@@ -371,8 +546,7 @@ namespace RimWorld
 				List<QuestPart> partsListForReading = questsListForReading[i].PartsListForReading;
 				for (int j = 0; j < partsListForReading.Count; j++)
 				{
-					QuestPart_ExtraFaction questPart_ExtraFaction;
-					if ((questPart_ExtraFaction = partsListForReading[j] as QuestPart_ExtraFaction) != null && questPart_ExtraFaction.affectedPawns.Contains(p) && questPart_ExtraFaction.areHelpers)
+					if (partsListForReading[j] is QuestPart_ExtraFaction questPart_ExtraFaction && questPart_ExtraFaction.affectedPawns.Contains(p) && questPart_ExtraFaction.areHelpers)
 					{
 						return true;
 					}
@@ -386,28 +560,31 @@ namespace RimWorld
 			List<Quest> questsListForReading = Find.QuestManager.QuestsListForReading;
 			for (int i = 0; i < questsListForReading.Count; i++)
 			{
-				if (questsListForReading[i].State != 0 && questsListForReading[i].State != QuestState.Ongoing)
+				if ((questsListForReading[i].State == QuestState.NotYetAccepted || questsListForReading[i].State == QuestState.Ongoing) && pawn.IsQuestReward(questsListForReading[i]))
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public static bool IsQuestReward(this Pawn pawn, Quest quest)
+		{
+			List<QuestPart> partsListForReading = quest.PartsListForReading;
+			for (int i = 0; i < partsListForReading.Count; i++)
+			{
+				if (!(partsListForReading[i] is QuestPart_Choice questPart_Choice))
 				{
 					continue;
 				}
-				List<QuestPart> partsListForReading = questsListForReading[i].PartsListForReading;
-				for (int j = 0; j < partsListForReading.Count; j++)
+				for (int j = 0; j < questPart_Choice.choices.Count; j++)
 				{
-					QuestPart_Choice questPart_Choice;
-					if ((questPart_Choice = partsListForReading[j] as QuestPart_Choice) == null)
+					QuestPart_Choice.Choice choice = questPart_Choice.choices[j];
+					for (int k = 0; k < choice.rewards.Count; k++)
 					{
-						continue;
-					}
-					for (int k = 0; k < questPart_Choice.choices.Count; k++)
-					{
-						QuestPart_Choice.Choice choice = questPart_Choice.choices[k];
-						for (int l = 0; l < choice.rewards.Count; l++)
+						if (choice.rewards[k] is Reward_Pawn reward_Pawn && reward_Pawn.pawn == pawn)
 						{
-							Reward_Pawn reward_Pawn;
-							if ((reward_Pawn = choice.rewards[l] as Reward_Pawn) != null && reward_Pawn.pawn == pawn)
-							{
-								return true;
-							}
+							return true;
 						}
 					}
 				}
@@ -427,8 +604,7 @@ namespace RimWorld
 				List<QuestPart> partsListForReading = questsListForReading[i].PartsListForReading;
 				for (int j = 0; j < partsListForReading.Count; j++)
 				{
-					QuestPart_AllowDecreesForLodger questPart_AllowDecreesForLodger;
-					if ((questPart_AllowDecreesForLodger = partsListForReading[j] as QuestPart_AllowDecreesForLodger) != null && questPart_AllowDecreesForLodger.lodger == p)
+					if (partsListForReading[j] is QuestPart_AllowDecreesForLodger questPart_AllowDecreesForLodger && questPart_AllowDecreesForLodger.lodger == p)
 					{
 						return true;
 					}
@@ -530,39 +706,46 @@ namespace RimWorld
 		public static void GetExtraFactionsFromQuestParts(Pawn pawn, List<ExtraFaction> outExtraFactions, Quest forQuest = null)
 		{
 			outExtraFactions.Clear();
-			List<Quest> questsListForReading = Find.QuestManager.QuestsListForReading;
-			for (int i = 0; i < questsListForReading.Count; i++)
+			List<QuestPart_ExtraFaction> extraFactionQuestParts = Find.QuestManager.ExtraFactionQuestParts;
+			for (int i = 0; i < extraFactionQuestParts.Count; i++)
 			{
-				if (questsListForReading[i].State != QuestState.Ongoing && questsListForReading[i] != forQuest)
+				if (extraFactionQuestParts[i].extraFaction?.faction != null)
 				{
-					continue;
-				}
-				List<QuestPart> partsListForReading = questsListForReading[i].PartsListForReading;
-				for (int j = 0; j < partsListForReading.Count; j++)
-				{
-					QuestPart_ExtraFaction questPart_ExtraFaction = partsListForReading[j] as QuestPart_ExtraFaction;
-					if (questPart_ExtraFaction != null && questPart_ExtraFaction.affectedPawns.Contains(pawn))
+					Quest quest = extraFactionQuestParts[i].quest;
+					if ((quest.State == QuestState.Ongoing || quest == forQuest || (quest.root == QuestScriptDefOf.Hospitality_Refugee && !pawn.IsColonist)) && !AlreadyAdded(extraFactionQuestParts[i].extraFaction) && extraFactionQuestParts[i].affectedPawns.Contains(pawn))
 					{
-						outExtraFactions.Add(questPart_ExtraFaction.extraFaction);
+						outExtraFactions.Add(extraFactionQuestParts[i].extraFaction);
 					}
 				}
+			}
+			bool AlreadyAdded(ExtraFaction extraFaction)
+			{
+				for (int j = 0; j < outExtraFactions.Count; j++)
+				{
+					if (outExtraFactions[j].faction == extraFaction.faction && outExtraFactions[j].factionType == extraFaction.factionType)
+					{
+						return true;
+					}
+				}
+				return false;
 			}
 		}
 
 		public static bool IsBorrowedByAnyFaction(this Pawn pawn)
 		{
-			List<Quest> questsListForReading = Find.QuestManager.QuestsListForReading;
-			for (int i = 0; i < questsListForReading.Count; i++)
+			List<Quest> activeQuestsListForReading = Find.QuestManager.ActiveQuestsListForReading;
+			int count = activeQuestsListForReading.Count;
+			for (int i = 0; i < count; i++)
 			{
-				if (questsListForReading[i].State != QuestState.Ongoing)
+				if (activeQuestsListForReading[i].State != QuestState.Ongoing)
 				{
 					continue;
 				}
-				List<QuestPart> partsListForReading = questsListForReading[i].PartsListForReading;
-				for (int j = 0; j < partsListForReading.Count; j++)
+				List<QuestPart> partsListForReading = activeQuestsListForReading[i].PartsListForReading;
+				int count2 = partsListForReading.Count;
+				for (int j = 0; j < count2; j++)
 				{
-					QuestPart_LendColonistsToFaction questPart_LendColonistsToFaction;
-					if ((questPart_LendColonistsToFaction = partsListForReading[j] as QuestPart_LendColonistsToFaction) != null && questPart_LendColonistsToFaction.LentColonistsListForReading.Contains(pawn))
+					if (partsListForReading[j] is QuestPart_LendColonistsToFaction questPart_LendColonistsToFaction && questPart_LendColonistsToFaction.LentColonistsListForReading.Contains(pawn))
 					{
 						return true;
 					}
@@ -584,8 +767,7 @@ namespace RimWorld
 				List<QuestPart> partsListForReading = questsListForReading[i].PartsListForReading;
 				for (int j = 0; j < partsListForReading.Count; j++)
 				{
-					QuestPart_LendColonistsToFaction questPart_LendColonistsToFaction;
-					if ((questPart_LendColonistsToFaction = partsListForReading[j] as QuestPart_LendColonistsToFaction) != null)
+					if (partsListForReading[j] is QuestPart_LendColonistsToFaction questPart_LendColonistsToFaction)
 					{
 						num += questPart_LendColonistsToFaction.LentColonistsListForReading.Count;
 					}
@@ -606,8 +788,7 @@ namespace RimWorld
 				List<QuestPart> partList = quests[i].PartsListForReading;
 				for (int j = 0; j < partList.Count; j++)
 				{
-					T val = partList[j] as T;
-					if (val != null)
+					if (partList[j] is T val)
 					{
 						yield return val;
 					}
@@ -642,14 +823,12 @@ namespace RimWorld
 				{
 					continue;
 				}
-				_ = questsListForReading[i].State;
 				tmpQuestParts.Clear();
 				tmpQuestParts.AddRange(questsListForReading[i].PartsListForReading);
-				tmpQuestParts.SortBy((QuestPart x) => (x is QuestPartActivable) ? ((QuestPartActivable)x).EnableTick : 0);
-				for (int j = 0; j < tmpQuestParts.Count; j++)
+				tmpQuestParts.SortBy((QuestPart x) => (x is QuestPartActivable questPartActivable2) ? questPartActivable2.EnableTick : 0);
+				for (int num = 0; num < tmpQuestParts.Count; num++)
 				{
-					QuestPartActivable questPartActivable = tmpQuestParts[j] as QuestPartActivable;
-					if (questPartActivable != null && questPartActivable.State == QuestPartState.Enabled)
+					if (tmpQuestParts[num] is QuestPartActivable { State: QuestPartState.Enabled } questPartActivable)
 					{
 						string str = questPartActivable.ExtraInspectString(target);
 						if (!str.NullOrEmpty())
@@ -669,8 +848,37 @@ namespace RimWorld
 			{
 				yield break;
 			}
-			Quest linkedQuest = Find.QuestManager.QuestsListForReading.FirstOrDefault((Quest q) => !q.Historical && !q.dismissed && (q.QuestLookTargets.Contains(thing) || q.QuestSelectTargets.Contains(thing)));
-			if (linkedQuest != null && !linkedQuest.hidden)
+			Quest linkedQuest = null;
+			List<Quest> quests = Find.QuestManager.QuestsListForReading;
+			for (int i = 0; i < quests.Count; i++)
+			{
+				if (quests[i].hidden || quests[i].Historical || quests[i].dismissed)
+				{
+					continue;
+				}
+				if (quests[i].QuestLookTargets.Contains(thing) || quests[i].QuestSelectTargets.Contains(thing))
+				{
+					linkedQuest = quests[i];
+				}
+				List<QuestPart> parts = quests[i].PartsListForReading;
+				for (int j = 0; j < parts.Count; j++)
+				{
+					if (!(parts[j] is QuestPartActivable { State: QuestPartState.Enabled } questPartActivable))
+					{
+						continue;
+					}
+					IEnumerable<Gizmo> enumerable = questPartActivable.ExtraGizmos(thing);
+					if (enumerable == null)
+					{
+						continue;
+					}
+					foreach (Gizmo item in enumerable)
+					{
+						yield return item;
+					}
+				}
+			}
+			if (linkedQuest != null)
 			{
 				Command_Action command_Action = new Command_Action();
 				command_Action.defaultLabel = "CommandOpenLinkedQuest".Translate(linkedQuest.name);
@@ -692,10 +900,10 @@ namespace RimWorld
 				return null;
 			}
 			List<Thing> list = thing.Map.listerThings.ThingsOfDef(ThingDefOf.MonumentMarker);
-			for (int j = 0; j < list.Count; j++)
+			for (int i = 0; i < list.Count; i++)
 			{
-				MonumentMarker i = (MonumentMarker)list[j];
-				if (i.IsPart(thing))
+				MonumentMarker m = (MonumentMarker)list[i];
+				if (m.IsPart(thing))
 				{
 					return new Command_Action
 					{
@@ -706,7 +914,7 @@ namespace RimWorld
 						iconOffset = ThingDefOf.MonumentMarker.uiIconOffset,
 						action = delegate
 						{
-							CameraJumper.TrySelect(i);
+							CameraJumper.TrySelect(m);
 						}
 					};
 				}
@@ -726,14 +934,80 @@ namespace RimWorld
 				List<QuestPart> partsListForReading = questsListForReading[i].PartsListForReading;
 				for (int j = 0; j < partsListForReading.Count; j++)
 				{
-					QuestPart_DisableRandomMoodCausedMentalBreaks questPart_DisableRandomMoodCausedMentalBreaks;
-					if ((questPart_DisableRandomMoodCausedMentalBreaks = partsListForReading[j] as QuestPart_DisableRandomMoodCausedMentalBreaks) != null && questPart_DisableRandomMoodCausedMentalBreaks.State == QuestPartState.Enabled && questPart_DisableRandomMoodCausedMentalBreaks.pawns.Contains(p))
+					if (partsListForReading[j] is QuestPart_DisableRandomMoodCausedMentalBreaks { State: QuestPartState.Enabled } questPart_DisableRandomMoodCausedMentalBreaks && questPart_DisableRandomMoodCausedMentalBreaks.pawns.Contains(p))
 					{
 						return true;
 					}
 				}
 			}
 			return false;
+		}
+
+		public static IEnumerable<Quest> GetSubquests(this Quest quest, QuestState? state = null)
+		{
+			List<Quest> allQuests = Find.QuestManager.questsInDisplayOrder;
+			for (int i = 0; i < allQuests.Count; i++)
+			{
+				if (allQuests[i].parent == quest && (!state.HasValue || allQuests[i].State == state))
+				{
+					yield return allQuests[i];
+				}
+			}
+		}
+
+		public static bool IsSubquestOf(this Quest quest, Quest parent)
+		{
+			if (quest.parent != null)
+			{
+				return quest.parent == parent;
+			}
+			return false;
+		}
+
+		public static bool IsGoodwillLockedByQuest(Faction a, Faction b)
+		{
+			List<Quest> questsListForReading = Find.QuestManager.QuestsListForReading;
+			for (int i = 0; i < questsListForReading.Count; i++)
+			{
+				if (questsListForReading[i].State != QuestState.Ongoing)
+				{
+					continue;
+				}
+				List<QuestPart> partsListForReading = questsListForReading[i].PartsListForReading;
+				for (int j = 0; j < partsListForReading.Count; j++)
+				{
+					if (partsListForReading[j] is QuestPart_FactionGoodwillLocked { State: QuestPartState.Enabled } questPart_FactionGoodwillLocked && questPart_FactionGoodwillLocked.AppliesTo(a, b))
+					{
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		public static bool IsEndOnNewArchonexusSettlement(this Quest quest)
+		{
+			if (quest.root.endOnColonyMove)
+			{
+				if (quest.State != QuestState.NotYetAccepted)
+				{
+					return quest.State == QuestState.Ongoing;
+				}
+				return true;
+			}
+			return false;
+		}
+
+		public static IEnumerable<QuestScriptDef> GetGiverQuests(QuestGiverTag tag)
+		{
+			if (!ModsConfig.OdysseyActive)
+			{
+				yield break;
+			}
+			foreach (QuestScriptDef item in DefDatabase<QuestScriptDef>.AllDefs.Where((QuestScriptDef x) => x.givenBy.Contains(tag)))
+			{
+				yield return item;
+			}
 		}
 	}
 }

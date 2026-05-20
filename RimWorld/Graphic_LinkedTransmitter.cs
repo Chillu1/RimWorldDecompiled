@@ -23,9 +23,9 @@ namespace RimWorld
 			return false;
 		}
 
-		public override void Print(SectionLayer layer, Thing thing)
+		public override void Print(SectionLayer layer, Thing thing, float extraRotation)
 		{
-			base.Print(layer, thing);
+			base.Print(layer, thing, extraRotation);
 			for (int i = 0; i < 4; i++)
 			{
 				IntVec3 intVec = thing.Position + GenAdj.CardinalDirections[i];
@@ -35,7 +35,7 @@ namespace RimWorld
 					if (transmitter != null && !transmitter.def.graphicData.Linked)
 					{
 						Material mat = LinkedDrawMatFrom(thing, intVec);
-						Printer_Plane.PrintPlane(layer, intVec.ToVector3ShiftedWithAltitude(thing.def.Altitude), Vector2.one, mat);
+						Printer_Plane.PrintPlane(layer, intVec.ToVector3ShiftedWithAltitude(thing.def.Altitude), Vector2.one, mat, extraRotation);
 					}
 				}
 			}

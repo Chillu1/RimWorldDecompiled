@@ -9,6 +9,12 @@ namespace RimWorld
 	{
 		public IncidentDef def;
 
+		[Unsaved(false)]
+		private int lastCheckCanRunTick;
+
+		[Unsaved(false)]
+		private bool lastCanRunResult;
+
 		public virtual float BaseChanceThisGame
 		{
 			get
@@ -21,7 +27,12 @@ namespace RimWorld
 			}
 		}
 
-		public bool CanFireNow(IncidentParms parms, bool forced = false)
+		public virtual float ChanceFactorNow(IIncidentTarget target)
+		{
+			return 1f;
+		}
+
+		public bool CanFireNow(IncidentParms parms)
 		{
 			if (!parms.forced)
 			{
@@ -29,36 +40,69 @@ namespace RimWorld
 				{
 					return false;
 				}
-				if (GenDate.DaysPassed < def.earliestDay)
+				if (!parms.bypassStorytellerSettings)
 				{
-					return false;
-				}
-				if (!Find.Storyteller.difficultyValues.AllowedBy(def.disabledWhen) || (def.category == IncidentCategoryDefOf.ThreatBig && !Find.Storyteller.difficultyValues.allowBigThreats))
-				{
-					return false;
+					if (GenDate.DaysPassedSinceSettle < def.earliestDay)
+					{
+						return false;
+					}
+					if (!Find.Storyteller.difficulty.AllowedBy(def.disabledWhen) || (def.category == IncidentCategoryDefOf.ThreatBig && !Find.Storyteller.difficulty.allowBigThreats))
+					{
+						return false;
+					}
 				}
 				if (parms.points >= 0f && parms.points < def.minThreatPoints)
 				{
 					return false;
 				}
-				if (def.allowedBiomes != null)
+				if (parms.points >= 0f && parms.points > def.maxThreatPoints)
 				{
-					BiomeDef biome = Find.WorldGrid[parms.target.Tile].biome;
-					if (!def.allowedBiomes.Contains(biome))
+					return false;
+				}
+				if (!def.allowedBiomes.NullOrEmpty())
+				{
+					BiomeDef primaryBiome = Find.WorldGrid[parms.target.Tile].PrimaryBiome;
+					if (!def.allowedBiomes.Contains(primaryBiome))
 					{
 						return false;
 					}
 				}
-				Scenario scenario = Find.Scenario;
-				for (int i = 0; i < scenario.parts.Count; i++)
+				if (!def.disallowedBiomes.NullOrEmpty())
 				{
-					ScenPart_DisableIncident scenPart_DisableIncident = scenario.parts[i] as ScenPart_DisableIncident;
-					if (scenPart_DisableIncident != null && scenPart_DisableIncident.Incident == def)
+					BiomeDef primaryBiome2 = Find.WorldGrid[parms.target.Tile].PrimaryBiome;
+					if (def.disallowedBiomes.Contains(primaryBiome2))
 					{
 						return false;
 					}
 				}
-				if (def.minPopulation > 0 && PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists.Count() < def.minPopulation)
+				if (parms.target.Tile.Valid)
+				{
+					PlanetLayerDef layerDef = parms.target.Tile.LayerDef;
+					if (!def.layerWhitelist.NullOrEmpty() && !def.layerWhitelist.Contains(layerDef))
+					{
+						return false;
+					}
+					if (!def.layerBlacklist.NullOrEmpty() && def.layerBlacklist.Contains(layerDef))
+					{
+						return false;
+					}
+					if (!def.canOccurOnAllPlanetLayers && layerDef.onlyAllowWhitelistedIncidents && (def.layerWhitelist.NullOrEmpty() || !def.layerWhitelist.Contains(layerDef)))
+					{
+						return false;
+					}
+				}
+				if (!parms.bypassStorytellerSettings)
+				{
+					Scenario scenario = Find.Scenario;
+					for (int i = 0; i < scenario.parts.Count; i++)
+					{
+						if (scenario.parts[i] is ScenPart_DisableIncident scenPart_DisableIncident && scenPart_DisableIncident.Incident == def)
+						{
+							return false;
+						}
+					}
+				}
+				if (def.minPopulation > 0 && PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists.Count() < def.minPopulation)
 				{
 					return false;
 				}
@@ -70,12 +114,43 @@ namespace RimWorld
 				{
 					return false;
 				}
+				if (ModsConfig.AnomalyActive && def.IsAnomalyIncident && Find.Anomaly.LevelDef.anomalyThreatTier < def.minAnomalyThreatLevel && Find.Anomaly.GenerateMonolith)
+				{
+					return false;
+				}
+				if (parms.target is Map map)
+				{
+					foreach (GameCondition activeCondition in map.gameConditionManager.ActiveConditions)
+					{
+						if (activeCondition.def.preventIncidents)
+						{
+							return false;
+						}
+					}
+				}
+				if (Find.GameEnder.gameEnding && (def.category == IncidentCategoryDefOf.ThreatBig || def.category == IncidentCategoryDefOf.ThreatSmall))
+				{
+					return false;
+				}
+				if (Find.TickManager.TicksGame < Find.GameEnder.newWanderersCreatedTick + 300000 && def.category == IncidentCategoryDefOf.ThreatBig)
+				{
+					return false;
+				}
 			}
-			if (!CanFireNowSub(parms))
+			if (lastCheckCanRunTick == Find.TickManager.TicksGame)
 			{
-				return false;
+				return lastCanRunResult;
 			}
-			return true;
+			lastCheckCanRunTick = Find.TickManager.TicksGame;
+			if (ModsConfig.AnomalyActive && Find.Anomaly.VoidAwakeningActive())
+			{
+				lastCanRunResult = false;
+			}
+			else
+			{
+				lastCanRunResult = CanFireNowSub(parms);
+			}
+			return lastCanRunResult;
 		}
 
 		public bool FiredTooRecently(IIncidentTarget target)
@@ -107,8 +182,7 @@ namespace RimWorld
 
 		public bool TryExecute(IncidentParms parms)
 		{
-			Map map;
-			if ((map = parms.target as Map) != null && def.requireColonistsPresent && map.mapPawns.FreeColonistsSpawnedCount == 0)
+			if (parms.target is Map map && def.requireColonistsPresent && map.mapPawns.FreeColonistsSpawnedCount == 0)
 			{
 				return true;
 			}
@@ -118,17 +192,17 @@ namespace RimWorld
 				if (def.tale != null)
 				{
 					Pawn pawn = null;
-					if (parms.target is Caravan)
+					if (parms.target is Caravan caravan)
 					{
-						pawn = ((Caravan)parms.target).RandomOwner();
+						pawn = caravan.RandomOwner();
 					}
-					else if (parms.target is Map)
+					else if (parms.target is Map map2)
 					{
-						pawn = ((Map)parms.target).mapPawns.FreeColonistsSpawned.RandomElementWithFallback();
+						pawn = map2.mapPawns.FreeColonistsSpawned.RandomElementWithFallback();
 					}
 					else if (parms.target is World)
 					{
-						pawn = PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep.RandomElementWithFallback();
+						pawn = PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_FreeColonists_NoSuspended.RandomElementWithFallback();
 					}
 					if (pawn != null)
 					{
@@ -141,25 +215,27 @@ namespace RimWorld
 					if (tale != null)
 					{
 						tale.customLabel = def.label;
+						if (def.hidden)
+						{
+							tale.hidden = true;
+						}
 					}
 				}
+			}
+			Find.Storyteller.RecordIncidentFired(def);
+			if (ModsConfig.AnomalyActive && def.codexEntry != null)
+			{
+				Find.EntityCodex.SetDiscovered(def.codexEntry);
 			}
 			return flag;
 		}
 
-		protected virtual bool TryExecuteWorker(IncidentParms parms)
+		public static void SendIncidentLetter(TaggedString baseLetterLabel, TaggedString baseLetterText, LetterDef baseLetterDef, IncidentParms parms, LookTargets lookTargets, IncidentDef def, params NamedArgument[] textArgs)
 		{
-			Log.Error("Unimplemented incident " + this);
-			return false;
-		}
-
-		protected void SendStandardLetter(IncidentParms parms, LookTargets lookTargets, params NamedArgument[] textArgs)
-		{
-			SendStandardLetter(def.letterLabel, def.letterText, def.letterDef, parms, lookTargets, textArgs);
-		}
-
-		protected void SendStandardLetter(TaggedString baseLetterLabel, TaggedString baseLetterText, LetterDef baseLetterDef, IncidentParms parms, LookTargets lookTargets, params NamedArgument[] textArgs)
-		{
+			if (parms.silent || !parms.sendLetter)
+			{
+				return;
+			}
 			if (baseLetterLabel.NullOrEmpty() || baseLetterText.NullOrEmpty())
 			{
 				Log.Error("Sending standard incident letter with no label or text.");
@@ -202,16 +278,28 @@ namespace RimWorld
 			{
 				list3.AddRange(parms.letterHyperlinkHediffDefs);
 			}
-			if (!def.letterHyperlinkHediffDefs.NullOrEmpty())
+			if (def != null && !def.letterHyperlinkHediffDefs.NullOrEmpty())
 			{
-				if (list3 == null)
-				{
-					list3 = new List<HediffDef>();
-				}
 				list3.AddRange(def.letterHyperlinkHediffDefs);
 			}
 			choiceLetter.hyperlinkHediffDefs = list3;
 			Find.LetterStack.ReceiveLetter(choiceLetter);
+		}
+
+		protected virtual bool TryExecuteWorker(IncidentParms parms)
+		{
+			Log.Error("Unimplemented incident " + this);
+			return false;
+		}
+
+		protected void SendStandardLetter(IncidentParms parms, LookTargets lookTargets, params NamedArgument[] textArgs)
+		{
+			SendStandardLetter(def.letterLabel, def.letterText, def.letterDef, parms, lookTargets, textArgs);
+		}
+
+		protected void SendStandardLetter(TaggedString baseLetterLabel, TaggedString baseLetterText, LetterDef baseLetterDef, IncidentParms parms, LookTargets lookTargets, params NamedArgument[] textArgs)
+		{
+			SendIncidentLetter(baseLetterLabel, baseLetterText, baseLetterDef, parms, lookTargets, def, textArgs);
 		}
 	}
 }

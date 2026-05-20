@@ -30,8 +30,7 @@ namespace Verse.AI
 				{
 					return false;
 				}
-				MentalState_SocialFighting mentalState_SocialFighting = otherPawn.MentalState as MentalState_SocialFighting;
-				if (mentalState_SocialFighting == null)
+				if (!(otherPawn.MentalState is MentalState_SocialFighting mentalState_SocialFighting))
 				{
 					return false;
 				}
@@ -43,7 +42,7 @@ namespace Verse.AI
 			}
 		}
 
-		public override void MentalStateTick()
+		public override void MentalStateTick(int delta)
 		{
 			if (ShouldStop)
 			{
@@ -51,14 +50,17 @@ namespace Verse.AI
 			}
 			else
 			{
-				base.MentalStateTick();
+				base.MentalStateTick(delta);
 			}
 		}
 
 		public override void PostEnd()
 		{
 			base.PostEnd();
-			pawn.jobs.StopAll();
+			if (pawn.jobs != null)
+			{
+				pawn.jobs.StopAll();
+			}
 			pawn.mindState.meleeThreat = null;
 			if (IsOtherPawnSocialFightingWithMe)
 			{
@@ -70,8 +72,8 @@ namespace Verse.AI
 			}
 			if (!pawn.Dead && pawn.needs.mood != null && !otherPawn.Dead)
 			{
-				ThoughtDef def = ((!(Rand.Value < 0.5f)) ? ThoughtDefOf.HadCatharticFight : ThoughtDefOf.HadAngeringFight);
-				pawn.needs.mood.thoughts.memories.TryGainMemory(def, otherPawn);
+				ThoughtDef thoughtDef = ((!(Rand.Value < 0.5f)) ? ThoughtDefOf.HadCatharticFight : ThoughtDefOf.HadAngeringFight);
+				pawn.needs.mood.thoughts.memories.TryGainMemory(thoughtDef, otherPawn);
 			}
 		}
 

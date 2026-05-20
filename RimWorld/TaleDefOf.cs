@@ -3,6 +3,8 @@ namespace RimWorld
 	[DefOf]
 	public static class TaleDefOf
 	{
+		public static TaleDef TileSettled;
+
 		public static TaleDef FinishedResearchProject;
 
 		public static TaleDef ExecutedPrisoner;
@@ -39,6 +41,8 @@ namespace RimWorld
 
 		public static TaleDef CraftedArt;
 
+		public static TaleDef ReadBook;
+
 		public static TaleDef TradedWith;
 
 		public static TaleDef BuriedCorpse;
@@ -46,6 +50,9 @@ namespace RimWorld
 		public static TaleDef IllnessRevealed;
 
 		public static TaleDef KilledBy;
+
+		[MayRequireBiotech]
+		public static TaleDef KilledChild;
 
 		public static TaleDef KilledColonist;
 
@@ -116,6 +123,27 @@ namespace RimWorld
 		public static TaleDef SocialFight;
 
 		public static TaleDef CollapseDodged;
+
+		[MayRequireAnomaly]
+		public static TaleDef HealedMe;
+
+		[MayRequireAnomaly]
+		public static TaleDef MutatedMyArm;
+
+		[MayRequireAnomaly]
+		public static TaleDef PerformedPsychicRitual;
+
+		[MayRequireAnomaly]
+		public static TaleDef StudiedEntity;
+
+		[MayRequireAnomaly]
+		public static TaleDef UnnaturalDarkness;
+
+		[MayRequireAnomaly]
+		public static TaleDef ClosedTheVoid;
+
+		[MayRequireAnomaly]
+		public static TaleDef EmbracedTheVoid;
 
 		static TaleDefOf()
 		{

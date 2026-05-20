@@ -13,6 +13,8 @@ namespace Verse
 
 		public bool playerInterruptible = true;
 
+		public bool forceCompleteBeforeNextJob;
+
 		public CheckJobOverrideOnDamageMode checkOverrideOnDamage = CheckJobOverrideOnDamageMode.Always;
 
 		public bool alwaysShowWeapon;
@@ -33,9 +35,31 @@ namespace Verse
 
 		public bool neverFleeFromEnemies;
 
+		public bool sleepCanInterrupt = true;
+
 		public bool makeTargetPrisoner;
 
 		public int waitAfterArriving;
+
+		public bool carryThingAfterJob;
+
+		public bool dropThingBeforeJob = true;
+
+		public bool isCrawlingIfDowned = true;
+
+		public bool alwaysShowReport;
+
+		public bool abilityCasting;
+
+		public bool tryStartFlying;
+
+		public bool ifFlyingKeepFlying;
+
+		public float overrideFlyChance = -1f;
+
+		public bool displayAsAreaInFloatMenu = true;
+
+		public bool ignoreFenceBlocked;
 
 		public int joyDuration = 4000;
 
@@ -50,6 +74,12 @@ namespace Verse
 		public JoyKindDef joyKind;
 
 		public Rot4 faceDir = Rot4.Invalid;
+
+		public int learningDuration = 20000;
+
+		public ReservationLayerDef containerReservationLayer;
+
+		public bool boardingGravship;
 
 		public override IEnumerable<string> ConfigErrors()
 		{

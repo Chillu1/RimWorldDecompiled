@@ -16,10 +16,7 @@ namespace RimWorld
 
 		protected IntVec3 Cell => job.GetTarget(TargetIndex.A).Cell;
 
-		protected abstract PathEndMode PathEndMode
-		{
-			get;
-		}
+		protected abstract PathEndMode PathEndMode { get; }
 
 		protected abstract void DoEffect();
 
@@ -40,14 +37,14 @@ namespace RimWorld
 		{
 			this.FailOnDespawnedOrNull(TargetIndex.B);
 			yield return Toils_Goto.Goto(TargetIndex.B, PathEndMode);
-			Toil doWork = new Toil();
+			Toil doWork = ToilMaker.MakeToil("MakeNewToils");
 			doWork.initAction = delegate
 			{
 				workLeft = 65f;
 			};
-			doWork.tickAction = delegate
+			doWork.tickIntervalAction = delegate(int delta)
 			{
-				float num = doWork.actor.GetStatValue(StatDefOf.ConstructionSpeed) * 1.7f;
+				float num = doWork.actor.GetStatValue(StatDefOf.ConstructionSpeed) * 1.7f * (float)delta;
 				workLeft -= num;
 				if (workLeft <= 0f)
 				{

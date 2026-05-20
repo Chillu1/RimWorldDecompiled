@@ -14,7 +14,7 @@ namespace RimWorld
 			banks = new Dictionary<PawnNameCategory, NameBank>();
 			foreach (PawnNameCategory value in Enum.GetValues(typeof(PawnNameCategory)))
 			{
-				if (value != 0)
+				if (value != PawnNameCategory.NoName)
 				{
 					banks.Add(value, new NameBank(value));
 				}

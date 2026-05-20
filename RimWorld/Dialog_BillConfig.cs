@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
@@ -11,9 +13,9 @@ namespace RimWorld
 	{
 		private IntVec3 billGiverPos;
 
-		private Bill_Production bill;
+		protected Bill_Production bill;
 
-		private Vector2 thingFilterScrollPosition;
+		private ThingFilterUI.UIState thingFilterState = new ThingFilterUI.UIState();
 
 		private string repeatCountEditBuffer;
 
@@ -21,19 +23,47 @@ namespace RimWorld
 
 		private string unpauseCountEditBuffer;
 
+		protected const float RecipeIconSize = 34f;
+
 		[TweakValue("Interface", 0f, 400f)]
-		private static int RepeatModeSubdialogHeight = 324;
+		private static int RepeatModeSubdialogHeight = 354;
 
 		[TweakValue("Interface", 0f, 400f)]
 		private static int StoreModeSubdialogHeight = 30;
 
 		[TweakValue("Interface", 0f, 400f)]
-		private static int WorkerSelectionSubdialogHeight = 85;
+		private static int WorkerSelectionSubdialogHeight = 96;
 
 		[TweakValue("Interface", 0f, 400f)]
 		private static int IngredientRadiusSubdialogHeight = 50;
 
-		public override Vector2 InitialSize => new Vector2(800f, 634f);
+		private static List<IngredientCount> tmpSortedIngredients = new List<IngredientCount>();
+
+		private static List<SpecialThingFilterDef> cachedHiddenSpecialThingFilters;
+
+		private static readonly Dictionary<string, List<ISlotGroup>> tmpGroups = new Dictionary<string, List<ISlotGroup>>();
+
+		public override Vector2 InitialSize => new Vector2(800f, 664f);
+
+		private static IEnumerable<SpecialThingFilterDef> HiddenSpecialThingFilters
+		{
+			get
+			{
+				if (cachedHiddenSpecialThingFilters != null)
+				{
+					return cachedHiddenSpecialThingFilters;
+				}
+				cachedHiddenSpecialThingFilters = new List<SpecialThingFilterDef>();
+				if (ModsConfig.IdeologyActive)
+				{
+					cachedHiddenSpecialThingFilters.Add(SpecialThingFilterDefOf.AllowCarnivore);
+					cachedHiddenSpecialThingFilters.Add(SpecialThingFilterDefOf.AllowVegetarian);
+					cachedHiddenSpecialThingFilters.Add(SpecialThingFilterDefOf.AllowCannibal);
+					cachedHiddenSpecialThingFilters.Add(SpecialThingFilterDefOf.AllowInsectMeat);
+				}
+				return cachedHiddenSpecialThingFilters;
+			}
+		}
 
 		public Dialog_BillConfig(Bill_Production bill, IntVec3 billGiverPos)
 		{
@@ -44,6 +74,12 @@ namespace RimWorld
 			doCloseButton = true;
 			absorbInputAroundWindow = true;
 			closeOnClickedOutside = true;
+		}
+
+		public override void PreOpen()
+		{
+			base.PreOpen();
+			thingFilterState.quickSearch.Reset();
 		}
 
 		private void AdjustCount(int offset)
@@ -61,20 +97,32 @@ namespace RimWorld
 			bill.TryDrawIngredientSearchRadiusOnMap(billGiverPos);
 		}
 
+		protected override void LateWindowOnGUI(Rect inRect)
+		{
+			Rect rect = new Rect(inRect.x, inRect.y, 34f, 34f);
+			ThingStyleDef thingStyleDef = null;
+			if (ModsConfig.IdeologyActive && bill.recipe.ProducedThingDef != null)
+			{
+				thingStyleDef = ((!bill.globalStyle) ? bill.style : Faction.OfPlayer.ideos.PrimaryIdeo.style.StyleForThingDef(bill.recipe.ProducedThingDef)?.styleDef);
+			}
+			RecipeDef recipe = bill.recipe;
+			ThingStyleDef thingStyleDef2 = thingStyleDef;
+			int? graphicIndexOverride = bill.graphicIndexOverride;
+			Widgets.DefIcon(rect, recipe, null, 1f, thingStyleDef2, drawPlaceholder: true, null, null, graphicIndexOverride);
+		}
+
 		public override void DoWindowContents(Rect inRect)
 		{
 			Text.Font = GameFont.Medium;
-			Rect rect = new Rect(40f, 0f, 400f, 34f);
-			Widgets.Label(rect, bill.LabelCap);
-			Widgets.DefIcon(new Rect(0f, rect.y, 34f, 34f), bill.recipe, null, 1f, drawPlaceholder: true);
+			Widgets.Label(new Rect(40f, 0f, 400f, 34f), bill.LabelCap);
 			float width = (int)((inRect.width - 34f) / 3f);
-			Rect rect2 = new Rect(0f, 80f, width, inRect.height - 80f);
-			Rect rect3 = new Rect(rect2.xMax + 17f, 50f, width, inRect.height - 50f - CloseButSize.y);
-			Rect rect4 = new Rect(rect3.xMax + 17f, 50f, 0f, inRect.height - 50f - CloseButSize.y);
-			rect4.xMax = inRect.xMax;
+			Rect rect = new Rect(0f, 80f, width, inRect.height - 80f);
+			Rect rect2 = new Rect(rect.xMax + 17f, 50f, width, inRect.height - 50f - Window.CloseButSize.y);
+			Rect rect3 = new Rect(rect2.xMax + 17f, 50f, 0f, inRect.height - 50f - Window.CloseButSize.y);
+			rect3.xMax = inRect.xMax;
 			Text.Font = GameFont.Small;
 			Listing_Standard listing_Standard = new Listing_Standard();
-			listing_Standard.Begin(rect3);
+			listing_Standard.Begin(rect2);
 			Listing_Standard listing_Standard2 = listing_Standard.BeginSection(RepeatModeSubdialogHeight);
 			if (listing_Standard2.ButtonText(bill.repeatMode.LabelCap))
 			{
@@ -88,16 +136,16 @@ namespace RimWorld
 			}
 			else if (bill.repeatMode == BillRepeatModeDefOf.TargetCount)
 			{
-				string arg = "CurrentlyHave".Translate() + ": ";
-				arg += bill.recipe.WorkerCounter.CountProducts(bill);
-				arg += " / ";
-				arg += ((bill.targetCount < 999999) ? bill.targetCount.ToString() : "Infinite".Translate().ToLower().ToString());
+				string text = "CurrentlyHave".Translate() + ": ";
+				text += bill.recipe.WorkerCounter.CountProducts(bill);
+				text += " / ";
+				text += ((bill.targetCount < 999999) ? bill.targetCount.ToString() : "Infinite".Translate().ToLower().ToString());
 				string str = bill.recipe.WorkerCounter.ProductsDescription(bill);
 				if (!str.NullOrEmpty())
 				{
-					arg += "\n" + "CountingProducts".Translate() + ": " + str.CapitalizeFirst();
+					text += "\n" + "CountingProducts".Translate() + ": " + str.CapitalizeFirst();
 				}
-				listing_Standard2.Label(arg);
+				listing_Standard2.Label(text);
 				int targetCount = bill.targetCount;
 				listing_Standard2.IntEntry(ref bill.targetCount, ref targetCountEditBuffer, bill.recipe.targetCountAdjustment);
 				bill.unpauseWhenYouHave = Mathf.Max(0, bill.unpauseWhenYouHave + (bill.targetCount - targetCount));
@@ -112,16 +160,36 @@ namespace RimWorld
 					{
 						listing_Standard2.CheckboxLabeled("IncludeTainted".Translate(), ref bill.includeTainted);
 					}
-					Widgets.Dropdown(listing_Standard2.GetRect(30f), bill, (Bill_Production b) => b.includeFromZone, (Bill_Production b) => GenerateStockpileInclusion(), (bill.includeFromZone == null) ? "IncludeFromAll".Translate() : "IncludeSpecific".Translate(bill.includeFromZone.label));
+					TaggedString taggedString = ((bill.GetIncludeSlotGroup() == null) ? "IncludeFromAll".Translate() : "IncludeSpecific".Translate(SlotGroup.GetGroupLabel(bill.GetIncludeSlotGroup())));
+					if (listing_Standard2.ButtonText(taggedString))
+					{
+						Text.Font = GameFont.Small;
+						List<FloatMenuOption> opts = new List<FloatMenuOption>();
+						opts.Add(new FloatMenuOption("IncludeFromAll".Translate(), delegate
+						{
+							bill.SetIncludeGroup(null);
+						}));
+						foreach (BillStoreModeDef item in DefDatabase<BillStoreModeDef>.AllDefs.OrderBy((BillStoreModeDef bsm) => bsm.listOrder))
+						{
+							if (item == BillStoreModeDefOf.SpecificStockpile)
+							{
+								FillOutputDropdownOptions(ref opts, "IncludeSpecific".Translate(), delegate(ISlotGroup slot)
+								{
+									bill.SetIncludeGroup(slot);
+								});
+							}
+						}
+						Find.WindowStack.Add(new FloatMenu(opts));
+					}
 					if (bill.recipe.products.Any((ThingDefCountClass prod) => prod.thingDef.useHitPoints))
 					{
-						Widgets.FloatRange(listing_Standard2.GetRect(28f), 975643279, ref bill.hpRange, 0f, 1f, "HitPoints", ToStringStyle.PercentZero);
+						Widgets.FloatRange(listing_Standard2.GetRect(32f), 975643279, ref bill.hpRange, 0f, 1f, "HitPoints", ToStringStyle.PercentZero);
 						bill.hpRange.min = Mathf.Round(bill.hpRange.min * 100f) / 100f;
 						bill.hpRange.max = Mathf.Round(bill.hpRange.max * 100f) / 100f;
 					}
 					if (producedThingDef.HasComp(typeof(CompQuality)))
 					{
-						Widgets.QualityRange(listing_Standard2.GetRect(28f), 1098906561, ref bill.qualityRange);
+						Widgets.QualityRange(listing_Standard2.GetRect(32f), 1098906561, ref bill.qualityRange);
 					}
 					if (producedThingDef.MadeFromStuff)
 					{
@@ -146,112 +214,59 @@ namespace RimWorld
 			listing_Standard.EndSection(listing_Standard2);
 			listing_Standard.Gap();
 			Listing_Standard listing_Standard3 = listing_Standard.BeginSection(StoreModeSubdialogHeight);
-			string text = string.Format(bill.GetStoreMode().LabelCap, (bill.GetStoreZone() != null) ? bill.GetStoreZone().SlotYielderLabel() : "");
-			if (bill.GetStoreZone() != null && !bill.recipe.WorkerCounter.CanPossiblyStoreInStockpile(bill, bill.GetStoreZone()))
+			string text2 = string.Format(bill.GetStoreMode().LabelCap, (bill.GetSlotGroup() != null) ? SlotGroup.GetGroupLabel(bill.GetSlotGroup()) : "");
+			if (bill.GetSlotGroup() != null && !bill.recipe.WorkerCounter.CanPossiblyStore(bill, bill.GetSlotGroup()))
 			{
-				text += string.Format(" ({0})", "IncompatibleLower".Translate());
+				text2 += string.Format(" ({0})", "IncompatibleLower".Translate());
 				Text.Font = GameFont.Tiny;
 			}
-			if (listing_Standard3.ButtonText(text))
+			if (listing_Standard3.ButtonText(text2))
 			{
 				Text.Font = GameFont.Small;
-				List<FloatMenuOption> list = new List<FloatMenuOption>();
-				foreach (BillStoreModeDef item in DefDatabase<BillStoreModeDef>.AllDefs.OrderBy((BillStoreModeDef bsm) => bsm.listOrder))
+				List<FloatMenuOption> opts2 = new List<FloatMenuOption>();
+				foreach (BillStoreModeDef item2 in DefDatabase<BillStoreModeDef>.AllDefs.OrderBy((BillStoreModeDef bsm) => bsm.listOrder))
 				{
-					if (item == BillStoreModeDefOf.SpecificStockpile)
+					if (item2 == BillStoreModeDefOf.SpecificStockpile)
 					{
-						List<SlotGroup> allGroupsListInPriorityOrder = bill.billStack.billGiver.Map.haulDestinationManager.AllGroupsListInPriorityOrder;
-						int count = allGroupsListInPriorityOrder.Count;
-						for (int i = 0; i < count; i++)
+						FillOutputDropdownOptions(ref opts2, BillStoreModeDefOf.SpecificStockpile.LabelCap, delegate(ISlotGroup slot)
 						{
-							SlotGroup group = allGroupsListInPriorityOrder[i];
-							Zone_Stockpile zone_Stockpile = group.parent as Zone_Stockpile;
-							if (zone_Stockpile == null)
-							{
-								continue;
-							}
-							if (!bill.recipe.WorkerCounter.CanPossiblyStoreInStockpile(bill, zone_Stockpile))
-							{
-								list.Add(new FloatMenuOption(string.Format("{0} ({1})", string.Format(item.LabelCap, group.parent.SlotYielderLabel()), "IncompatibleLower".Translate()), null));
-								continue;
-							}
-							list.Add(new FloatMenuOption(string.Format(item.LabelCap, group.parent.SlotYielderLabel()), delegate
-							{
-								bill.SetStoreMode(BillStoreModeDefOf.SpecificStockpile, (Zone_Stockpile)group.parent);
-							}));
-						}
+							bill.SetStoreMode(BillStoreModeDefOf.SpecificStockpile, slot);
+						});
+						continue;
 					}
-					else
+					BillStoreModeDef smLocal = item2;
+					opts2.Add(new FloatMenuOption(smLocal.LabelCap, delegate
 					{
-						BillStoreModeDef smLocal = item;
-						list.Add(new FloatMenuOption(smLocal.LabelCap, delegate
-						{
-							bill.SetStoreMode(smLocal);
-						}));
-					}
+						bill.SetStoreMode(smLocal);
+					}));
 				}
-				Find.WindowStack.Add(new FloatMenu(list));
+				Find.WindowStack.Add(new FloatMenu(opts2));
 			}
 			Text.Font = GameFont.Small;
 			listing_Standard.EndSection(listing_Standard3);
 			listing_Standard.Gap();
 			Listing_Standard listing_Standard4 = listing_Standard.BeginSection(WorkerSelectionSubdialogHeight);
-			Widgets.Dropdown(listing_Standard4.GetRect(30f), bill, (Bill_Production b) => b.pawnRestriction, (Bill_Production b) => GeneratePawnRestrictionOptions(), (bill.pawnRestriction == null) ? "AnyWorker".TranslateSimple() : bill.pawnRestriction.LabelShortCap);
-			if (bill.pawnRestriction == null && bill.recipe.workSkill != null)
+			Widgets.Dropdown(buttonLabel: (bill.PawnRestriction != null) ? bill.PawnRestriction.LabelShortCap : ((ModsConfig.IdeologyActive && bill.SlavesOnly) ? ((string)"AnySlave".Translate()) : ((ModsConfig.BiotechActive && bill.recipe.mechanitorOnlyRecipe) ? ((string)"AnyMechanitor".Translate()) : ((ModsConfig.BiotechActive && bill.MechsOnly) ? ((string)"AnyMech".Translate()) : ((!ModsConfig.BiotechActive || !bill.NonMechsOnly) ? ((string)"AnyWorker".Translate()) : ((string)"AnyNonMech".Translate()))))), rect: listing_Standard4.GetRect(30f), target: bill, getPayload: (Bill_Production b) => b.PawnRestriction, menuGenerator: (Bill_Production b) => GeneratePawnRestrictionOptions());
+			if (bill.PawnRestriction == null && bill.recipe.workSkill != null && !bill.MechsOnly)
 			{
-				listing_Standard4.Label("AllowedSkillRange".Translate(bill.recipe.workSkill.label));
+				listing_Standard4.Label("AllowedSkillRange".Translate(bill.recipe.workSkill.label) + ":");
 				listing_Standard4.IntRange(ref bill.allowedSkillRange, 0, 20);
 			}
 			listing_Standard.EndSection(listing_Standard4);
 			listing_Standard.End();
-			Rect rect5 = rect4;
-			bool flag = true;
-			for (int j = 0; j < bill.recipe.ingredients.Count; j++)
-			{
-				if (!bill.recipe.ingredients[j].IsFixedIngredient)
-				{
-					flag = false;
-					break;
-				}
-			}
-			if (!flag)
-			{
-				rect5.yMin = rect5.yMax - (float)IngredientRadiusSubdialogHeight;
-				rect4.yMax = rect5.yMin - 17f;
-				bool num = bill.GetStoreZone() == null || bill.recipe.WorkerCounter.CanPossiblyStoreInStockpile(bill, bill.GetStoreZone());
-				ThingFilterUI.DoThingFilterConfigWindow(rect4, ref thingFilterScrollPosition, bill.ingredientFilter, bill.recipe.fixedIngredientFilter, 4, null, bill.recipe.forceHiddenSpecialFilters, forceHideHitPointsConfig: false, bill.recipe.GetPremultipliedSmallIngredients(), bill.Map);
-				bool flag2 = bill.GetStoreZone() == null || bill.recipe.WorkerCounter.CanPossiblyStoreInStockpile(bill, bill.GetStoreZone());
-				if (num && !flag2)
-				{
-					Messages.Message("MessageBillValidationStoreZoneInsufficient".Translate(bill.LabelCap, bill.billStack.billGiver.LabelShort.CapitalizeFirst(), bill.GetStoreZone().label), bill.billStack.billGiver as Thing, MessageTypeDefOf.RejectInput, historical: false);
-				}
-			}
-			else
-			{
-				rect5.yMin = 50f;
-			}
+			float y = rect3.y;
+			DoIngredientConfigPane(rect3.x, ref y, rect3.width, rect3.height);
 			Listing_Standard listing_Standard5 = new Listing_Standard();
-			listing_Standard5.Begin(rect5);
-			string str2 = "IngredientSearchRadius".Translate().Truncate(rect5.width * 0.6f);
-			string str3 = ((bill.ingredientSearchRadius == 999f) ? "Unlimited".TranslateSimple().Truncate(rect5.width * 0.3f) : bill.ingredientSearchRadius.ToString("F0"));
-			listing_Standard5.Label(str2 + ": " + str3);
-			bill.ingredientSearchRadius = listing_Standard5.Slider((bill.ingredientSearchRadius > 100f) ? 100f : bill.ingredientSearchRadius, 3f, 100f);
-			if (bill.ingredientSearchRadius >= 100f)
-			{
-				bill.ingredientSearchRadius = 999f;
-			}
-			listing_Standard5.End();
-			Listing_Standard listing_Standard6 = new Listing_Standard();
-			listing_Standard6.Begin(rect2);
+			listing_Standard5.Begin(rect);
 			if (bill.suspended)
 			{
-				if (listing_Standard6.ButtonText("Suspended".Translate()))
+				if (listing_Standard5.ButtonText("Suspended".Translate()))
 				{
 					bill.suspended = false;
 					SoundDefOf.Click.PlayOneShotOnCamera();
 				}
 			}
-			else if (listing_Standard6.ButtonText("NotSuspended".Translate()))
+			else if (listing_Standard5.ButtonText("NotSuspended".Translate()))
 			{
 				bill.suspended = true;
 				SoundDefOf.Click.PlayOneShotOnCamera();
@@ -263,19 +278,44 @@ namespace RimWorld
 				stringBuilder.AppendLine();
 			}
 			stringBuilder.AppendLine("WorkAmount".Translate() + ": " + bill.recipe.WorkAmountTotal(null).ToStringWorkAmount());
-			for (int k = 0; k < bill.recipe.ingredients.Count; k++)
+			if (ModsConfig.BiotechActive && bill.recipe.products.Count == 1)
 			{
-				IngredientCount ingredientCount = bill.recipe.ingredients[k];
-				if (!ingredientCount.filter.Summary.NullOrEmpty())
+				ThingDef thingDef = bill.recipe.products[0].thingDef;
+				if (thingDef.IsApparel)
 				{
-					stringBuilder.AppendLine(bill.recipe.IngredientValueGetter.BillRequirementsDescription(bill.recipe, ingredientCount));
+					stringBuilder.AppendLine("WearableBy".Translate() + ": " + thingDef.apparel.developmentalStageFilter.ToCommaList().CapitalizeFirst());
+				}
+			}
+			if (bill is Bill_Mech bill_Mech)
+			{
+				stringBuilder.AppendLine(string.Concat("GestationCycles".Translate() + ": ", bill.recipe.gestationCycles.ToString()));
+				ThingDef thingDef2 = bill_Mech.Gestator.GestatingMech?.def ?? bill_Mech.recipe.ProducedThingDef;
+				if (thingDef2 != null)
+				{
+					stringBuilder.AppendLine(string.Concat("Bandwidth".Translate() + ": ", thingDef2.GetStatValueAbstract(StatDefOf.BandwidthCost).ToString()));
+				}
+				if (!bill.recipe.mechResurrection)
+				{
+					float num = (float)(int)bill.recipe.ProducedThingDef.GetStatValueAbstract(StatDefOf.WastepacksPerRecharge) * bill.recipe.ProducedThingDef.GetStatValueAbstract(StatDefOf.BandwidthCost);
+					stringBuilder.AppendLine(string.Concat(Find.ActiveLanguageWorker.Pluralize(ThingDefOf.Wastepack.LabelCap) + " " + "ThingsProduced".Translate() + ": ", num.ToString()));
+				}
+			}
+			stringBuilder.AppendLine("BillRequires".Translate() + ": ");
+			tmpSortedIngredients.Clear();
+			tmpSortedIngredients.AddRange(bill.recipe.ingredients);
+			tmpSortedIngredients.Sort((IngredientCount a, IngredientCount b) => Mathf.RoundToInt(b.CountFor(bill.recipe) - a.CountFor(bill.recipe)));
+			foreach (IngredientCount tmpSortedIngredient in tmpSortedIngredients)
+			{
+				if (!tmpSortedIngredient.filter.Summary.NullOrEmpty())
+				{
+					stringBuilder.AppendLine(" - " + bill.recipe.IngredientValueGetter.BillRequirementsDescription(bill.recipe, tmpSortedIngredient));
 				}
 			}
 			stringBuilder.AppendLine();
-			string text2 = bill.recipe.IngredientValueGetter.ExtraDescriptionLine(bill.recipe);
-			if (text2 != null)
+			string text3 = bill.recipe.IngredientValueGetter.ExtraDescriptionLine(bill.recipe);
+			if (text3 != null)
 			{
-				stringBuilder.AppendLine(text2);
+				stringBuilder.AppendLine(text3);
 				stringBuilder.AppendLine();
 			}
 			if (!bill.recipe.skillRequirements.NullOrEmpty())
@@ -284,153 +324,279 @@ namespace RimWorld
 				stringBuilder.AppendLine(bill.recipe.MinSkillString);
 			}
 			Text.Font = GameFont.Small;
-			string text3 = stringBuilder.ToString();
-			if (Text.CalcHeight(text3, rect2.width) > rect2.height)
+			string text4 = stringBuilder.ToString();
+			if (Text.CalcHeight(text4, rect.width) > rect.height)
 			{
 				Text.Font = GameFont.Tiny;
 			}
-			listing_Standard6.Label(text3);
+			listing_Standard5.Label(text4);
 			Text.Font = GameFont.Small;
-			listing_Standard6.End();
-			if (bill.recipe.products.Count == 1)
+			if (ModsConfig.IdeologyActive && Find.IdeoManager.classicMode && bill.recipe.ProducedThingDef != null)
 			{
-				ThingDef thingDef = bill.recipe.products[0].thingDef;
-				Widgets.InfoCardButton(rect2.x, rect4.y, thingDef, GenStuff.DefaultStuffFor(thingDef));
-			}
-		}
-
-		private IEnumerable<Widgets.DropdownMenuElement<Pawn>> GeneratePawnRestrictionOptions()
-		{
-			Widgets.DropdownMenuElement<Pawn> dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
-			{
-				option = new FloatMenuOption("AnyWorker".Translate(), delegate
+				listing_Standard5.Gap(rect.height - listing_Standard5.CurHeight - 90f);
+				ThingDef producedThingDef2 = bill.recipe.ProducedThingDef;
+				List<StyleCategoryDef> relevantStyleCategories = bill.recipe.ProducedThingDef.RelevantStyleCategories;
+				if (relevantStyleCategories.Any())
 				{
-					bill.pawnRestriction = null;
-				}),
-				payload = null
-			};
-			yield return dropdownMenuElement;
-			SkillDef workSkill = bill.recipe.workSkill;
-			IEnumerable<Pawn> allMaps_FreeColonists = PawnsFinder.AllMaps_FreeColonists;
-			allMaps_FreeColonists = allMaps_FreeColonists.OrderBy((Pawn pawn) => pawn.LabelShortCap);
-			if (workSkill != null)
-			{
-				allMaps_FreeColonists = allMaps_FreeColonists.OrderByDescending((Pawn pawn) => pawn.skills.GetSkill(bill.recipe.workSkill).Level);
-			}
-			WorkGiverDef workGiver = bill.billStack.billGiver.GetWorkgiver();
-			if (workGiver == null)
-			{
-				Log.ErrorOnce("Generating pawn restrictions for a BillGiver without a Workgiver", 96455148);
-				yield break;
-			}
-			allMaps_FreeColonists = allMaps_FreeColonists.OrderByDescending((Pawn pawn) => pawn.workSettings.WorkIsActive(workGiver.workType));
-			allMaps_FreeColonists = allMaps_FreeColonists.OrderBy((Pawn pawn) => pawn.WorkTypeIsDisabled(workGiver.workType));
-			foreach (Pawn pawn2 in allMaps_FreeColonists)
-			{
-				if (pawn2.WorkTypeIsDisabled(workGiver.workType))
-				{
-					dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
+					StyleCategoryPair global = Faction.OfPlayer.ideos.PrimaryIdeo.style.StyleForThingDef(producedThingDef2);
+					string text5 = ((global == null) ? "Basic".Translate().CapitalizeFirst() : global.category.LabelCap);
+					string text6 = ((bill.style != null) ? bill.style.Category.LabelCap : "Basic".Translate().CapitalizeFirst());
+					string text7 = (bill.globalStyle ? ("UseGlobalStyle".Translate().ToString() + " (" + text5 + ")") : text6);
+					if (!bill.globalStyle && bill.style != null && bill.graphicIndexOverride.HasValue)
 					{
-						option = new FloatMenuOption(string.Format("{0} ({1})", pawn2.LabelShortCap, "WillNever".Translate(workGiver.verb)), null),
-						payload = pawn2
-					};
-					yield return dropdownMenuElement;
-				}
-				else if (bill.recipe.workSkill != null && !pawn2.workSettings.WorkIsActive(workGiver.workType))
-				{
-					dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
+						text7 = text7 + " " + (bill.graphicIndexOverride.Value + 1);
+					}
+					if (listing_Standard5.ButtonText(text7))
 					{
-						option = new FloatMenuOption(string.Format("{0} ({1} {2}, {3})", pawn2.LabelShortCap, pawn2.skills.GetSkill(bill.recipe.workSkill).Level, bill.recipe.workSkill.label, "NotAssigned".Translate()), delegate
+						GenStuff.DefaultStuffFor(producedThingDef2);
+						List<FloatMenuOption> list = new List<FloatMenuOption>();
+						list.Add(new FloatMenuOption("UseGlobalStyle".Translate() + " (" + text5 + ")", delegate
 						{
-							bill.pawnRestriction = pawn2;
-						}),
-						payload = pawn2
-					};
-					yield return dropdownMenuElement;
-				}
-				else if (!pawn2.workSettings.WorkIsActive(workGiver.workType))
-				{
-					dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
-					{
-						option = new FloatMenuOption(string.Format("{0} ({1})", pawn2.LabelShortCap, "NotAssigned".Translate()), delegate
+							bill.style = global?.styleDef;
+							bill.globalStyle = true;
+							bill.graphicIndexOverride = null;
+						}, bill.recipe.UIIconThing, bill.recipe.UIIcon, global?.styleDef));
+						list.Add(new FloatMenuOption("Basic".Translate().CapitalizeFirst(), delegate
 						{
-							bill.pawnRestriction = pawn2;
-						}),
-						payload = pawn2
-					};
-					yield return dropdownMenuElement;
-				}
-				else if (bill.recipe.workSkill != null)
-				{
-					dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
-					{
-						option = new FloatMenuOption($"{pawn2.LabelShortCap} ({pawn2.skills.GetSkill(bill.recipe.workSkill).Level} {bill.recipe.workSkill.label})", delegate
+							bill.style = null;
+							bill.globalStyle = false;
+							bill.graphicIndexOverride = null;
+						}, bill.recipe.UIIconThing, bill.recipe.UIIcon, null, forceBasicStyle: true));
+						foreach (StyleCategoryDef item3 in relevantStyleCategories)
 						{
-							bill.pawnRestriction = pawn2;
-						}),
-						payload = pawn2
-					};
-					yield return dropdownMenuElement;
+							foreach (ThingDefStyle style in item3.thingDefStyles)
+							{
+								if (producedThingDef2 != style.ThingDef)
+								{
+									continue;
+								}
+								if (style.StyleDef.Graphic is Graphic_Random graphic_Random)
+								{
+									for (int num2 = 0; num2 < graphic_Random.SubGraphicsCount; num2++)
+									{
+										int index = num2;
+										list.Add(new FloatMenuOption(string.Concat(item3.LabelCap + " ", (index + 1).ToString()), delegate
+										{
+											bill.style = style.StyleDef;
+											bill.globalStyle = false;
+											bill.graphicIndexOverride = index;
+										}, bill.recipe.UIIconThing, bill.recipe.UIIcon, style.StyleDef, forceBasicStyle: false, MenuOptionPriority.Default, null, null, 0f, null, null, playSelectionSound: true, 0, index));
+									}
+								}
+								else
+								{
+									list.Add(new FloatMenuOption(item3.LabelCap, delegate
+									{
+										bill.style = style.StyleDef;
+										bill.globalStyle = false;
+										bill.graphicIndexOverride = null;
+									}, bill.recipe.UIIconThing, bill.recipe.UIIcon, style.StyleDef));
+								}
+							}
+						}
+						Find.WindowStack.Add(new FloatMenu(list));
+					}
 				}
 				else
 				{
-					dropdownMenuElement = new Widgets.DropdownMenuElement<Pawn>
+					Rect rect4 = listing_Standard5.GetRect(30f);
+					Widgets.DrawHighlight(rect4);
+					Text.Anchor = TextAnchor.MiddleCenter;
+					Widgets.Label(rect4, "NoStylesAvailable".Translate());
+					Text.Anchor = TextAnchor.UpperLeft;
+				}
+			}
+			listing_Standard5.End();
+			float num3 = rect.x;
+			if (bill.recipe.products.Count == 1)
+			{
+				ThingDef thingDef3 = bill.recipe.products[0].thingDef;
+				Widgets.InfoCardButton(num3, rect3.y, thingDef3, GenStuff.DefaultStuffFor(thingDef3));
+				num3 += 28f;
+			}
+			if (Widgets.ButtonImage(new Rect(num3, rect3.y, 30f, 30f), TexButton.Rename))
+			{
+				Find.WindowStack.Add(new Dialog_RenameBill(bill));
+			}
+		}
+
+		private void FillOutputDropdownOptions(ref List<FloatMenuOption> opts, string prefix, Action<ISlotGroup> selected)
+		{
+			List<SlotGroup> allGroupsListInPriorityOrder = bill.billStack.billGiver.Map.haulDestinationManager.AllGroupsListInPriorityOrder;
+			tmpGroups.ClearValueLists();
+			for (int i = 0; i < allGroupsListInPriorityOrder.Count; i++)
+			{
+				SlotGroup slotGroup = allGroupsListInPriorityOrder[i];
+				if (slotGroup.StorageGroup != null)
+				{
+					StorageGroup storageGroup = slotGroup.StorageGroup;
+					if (!tmpGroups.ContainsKey(storageGroup.GroupingLabel))
 					{
-						option = new FloatMenuOption($"{pawn2.LabelShortCap}", delegate
-						{
-							bill.pawnRestriction = pawn2;
-						}),
-						payload = pawn2
-					};
-					yield return dropdownMenuElement;
+						tmpGroups.Add(storageGroup.GroupingLabel, new List<ISlotGroup>());
+					}
+					if (!tmpGroups[storageGroup.GroupingLabel].Contains(slotGroup.StorageGroup))
+					{
+						tmpGroups[storageGroup.GroupingLabel].Add(slotGroup.StorageGroup);
+					}
+				}
+				else if (!(slotGroup.parent is Building_Storage building_Storage) || building_Storage is IRenameable)
+				{
+					if (!tmpGroups.ContainsKey(slotGroup.GroupingLabel))
+					{
+						tmpGroups.Add(slotGroup.GroupingLabel, new List<ISlotGroup>());
+					}
+					tmpGroups[slotGroup.GroupingLabel].Add(slotGroup);
+				}
+			}
+			foreach (KeyValuePair<string, List<ISlotGroup>> kvp in tmpGroups.OrderBy((KeyValuePair<string, List<ISlotGroup>> keyValuePair) => (keyValuePair.Value.Count > 0) ? keyValuePair.Value[0].GroupingOrder : 0))
+			{
+				if (ShouldCollapseGroup(kvp.Key))
+				{
+					opts.Add(new FloatMenuOption(kvp.Key, delegate
+					{
+						List<FloatMenuOption> list = new List<FloatMenuOption>();
+						FillSlotGroupOptions(kvp.Value, list, prefix, selected);
+						Find.WindowStack.Add(new FloatMenu(list));
+					}));
+				}
+			}
+			foreach (KeyValuePair<string, List<ISlotGroup>> item in tmpGroups.OrderBy((KeyValuePair<string, List<ISlotGroup>> keyValuePair) => (keyValuePair.Value.Count > 0) ? keyValuePair.Value[0].GroupingOrder : 0))
+			{
+				if (!ShouldCollapseGroup(item.Key))
+				{
+					FillSlotGroupOptions(item.Value, opts, prefix, selected);
 				}
 			}
 		}
 
-		private IEnumerable<Widgets.DropdownMenuElement<Zone_Stockpile>> GenerateStockpileInclusion()
+		private bool ShouldCollapseGroup(string key)
 		{
-			Widgets.DropdownMenuElement<Zone_Stockpile> dropdownMenuElement = new Widgets.DropdownMenuElement<Zone_Stockpile>
+			bool flag = false;
+			foreach (KeyValuePair<string, List<ISlotGroup>> tmpGroup in tmpGroups)
 			{
-				option = new FloatMenuOption("IncludeFromAll".Translate(), delegate
+				if (tmpGroup.Key != key && tmpGroup.Value.Count > 0)
 				{
-					bill.includeFromZone = null;
+					flag = true;
+					break;
+				}
+			}
+			return tmpGroups[key].Count > 2 && flag;
+		}
+
+		protected virtual void DoIngredientConfigPane(float x, ref float y, float width, float height)
+		{
+			bool flag = true;
+			for (int i = 0; i < bill.recipe.ingredients.Count; i++)
+			{
+				if (!bill.recipe.ingredients[i].IsFixedIngredient)
+				{
+					flag = false;
+					break;
+				}
+			}
+			if (!flag)
+			{
+				Rect rect = new Rect(x, y, width, height - (float)IngredientRadiusSubdialogHeight);
+				bool num = bill.GetSlotGroup() == null || bill.recipe.WorkerCounter.CanPossiblyStore(bill, bill.GetSlotGroup());
+				ThingFilterUI.DoThingFilterConfigWindow(rect, thingFilterState, bill.ingredientFilter, bill.recipe.fixedIngredientFilter, 4, null, HiddenSpecialThingFilters.ConcatIfNotNull(bill.recipe.forceHiddenSpecialFilters), forceHideHitPointsConfig: false, forceHideQualityConfig: false, showMentalBreakChanceRange: false, bill.recipe.GetPremultipliedSmallIngredients(), bill.Map);
+				y += rect.height;
+				bool flag2 = bill.GetSlotGroup() == null || bill.recipe.WorkerCounter.CanPossiblyStore(bill, bill.GetSlotGroup());
+				if (num && !flag2)
+				{
+					Messages.Message("MessageBillValidationStoreZoneInsufficient".Translate(bill.LabelCap, bill.billStack.billGiver.LabelShort.CapitalizeFirst(), SlotGroup.GetGroupLabel(bill.GetSlotGroup())), bill.billStack.billGiver as Thing, MessageTypeDefOf.RejectInput, historical: false);
+				}
+			}
+			Rect rect2 = new Rect(x, y, width, IngredientRadiusSubdialogHeight);
+			Listing_Standard listing_Standard = new Listing_Standard();
+			listing_Standard.Begin(rect2);
+			string text = "IngredientSearchRadius".Translate().Truncate(rect2.width * 0.6f);
+			string text2 = ((bill.ingredientSearchRadius == 999f) ? "Unlimited".TranslateSimple().Truncate(rect2.width * 0.3f) : bill.ingredientSearchRadius.ToString("F0"));
+			listing_Standard.Label(text + ": " + text2);
+			bill.ingredientSearchRadius = listing_Standard.Slider((bill.ingredientSearchRadius > 100f) ? 100f : bill.ingredientSearchRadius, 3f, 100f);
+			if (bill.ingredientSearchRadius >= 100f)
+			{
+				bill.ingredientSearchRadius = 999f;
+			}
+			listing_Standard.End();
+			y += IngredientRadiusSubdialogHeight;
+		}
+
+		protected virtual IEnumerable<Widgets.DropdownMenuElement<Pawn>> GeneratePawnRestrictionOptions()
+		{
+			if (ModsConfig.BiotechActive && bill.recipe.mechanitorOnlyRecipe)
+			{
+				yield return new Widgets.DropdownMenuElement<Pawn>
+				{
+					option = new FloatMenuOption("AnyMechanitor".Translate(), delegate
+					{
+						bill.SetAnyPawnRestriction();
+					}),
+					payload = null
+				};
+				foreach (Widgets.DropdownMenuElement<Pawn> item in BillDialogUtility.GetPawnRestrictionOptionsForBill(bill, (Pawn p) => MechanitorUtility.IsMechanitor(p)))
+				{
+					yield return item;
+				}
+				yield break;
+			}
+			yield return new Widgets.DropdownMenuElement<Pawn>
+			{
+				option = new FloatMenuOption("AnyWorker".Translate(), delegate
+				{
+					bill.SetAnyPawnRestriction();
 				}),
 				payload = null
 			};
-			yield return dropdownMenuElement;
-			List<SlotGroup> groupList = bill.billStack.billGiver.Map.haulDestinationManager.AllGroupsListInPriorityOrder;
-			int groupCount = groupList.Count;
-			int i = 0;
-			while (i < groupCount)
+			if (ModsConfig.IdeologyActive)
 			{
-				SlotGroup slotGroup = groupList[i];
-				Zone_Stockpile stockpile = slotGroup.parent as Zone_Stockpile;
-				if (stockpile != null)
+				yield return new Widgets.DropdownMenuElement<Pawn>
 				{
-					if (!bill.recipe.WorkerCounter.CanPossiblyStoreInStockpile(bill, stockpile))
+					option = new FloatMenuOption("AnySlave".Translate(), delegate
 					{
-						dropdownMenuElement = new Widgets.DropdownMenuElement<Zone_Stockpile>
-						{
-							option = new FloatMenuOption(string.Format("{0} ({1})", "IncludeSpecific".Translate(slotGroup.parent.SlotYielderLabel()), "IncompatibleLower".Translate()), null),
-							payload = stockpile
-						};
-						yield return dropdownMenuElement;
-					}
-					else
+						bill.SetAnySlaveRestriction();
+					}),
+					payload = null
+				};
+			}
+			if (ModsConfig.BiotechActive && MechWorkUtility.AnyWorkMechCouldDo(bill.recipe))
+			{
+				yield return new Widgets.DropdownMenuElement<Pawn>
+				{
+					option = new FloatMenuOption("AnyMech".Translate(), delegate
 					{
-						dropdownMenuElement = new Widgets.DropdownMenuElement<Zone_Stockpile>
-						{
-							option = new FloatMenuOption("IncludeSpecific".Translate(slotGroup.parent.SlotYielderLabel()), delegate
-							{
-								bill.includeFromZone = stockpile;
-							}),
-							payload = stockpile
-						};
-						yield return dropdownMenuElement;
-					}
+						bill.SetAnyMechRestriction();
+					}),
+					payload = null
+				};
+				yield return new Widgets.DropdownMenuElement<Pawn>
+				{
+					option = new FloatMenuOption("AnyNonMech".Translate(), delegate
+					{
+						bill.SetAnyNonMechRestriction();
+					}),
+					payload = null
+				};
+			}
+			foreach (Widgets.DropdownMenuElement<Pawn> item2 in BillDialogUtility.GetPawnRestrictionOptionsForBill(bill))
+			{
+				yield return item2;
+			}
+		}
+
+		private void FillSlotGroupOptions(List<ISlotGroup> groups, List<FloatMenuOption> opts, string prefix, Action<ISlotGroup> selected)
+		{
+			for (int i = 0; i < groups.Count; i++)
+			{
+				ISlotGroup group = groups[i];
+				if (!bill.recipe.WorkerCounter.CanPossiblyStore(bill, group))
+				{
+					opts.Add(new FloatMenuOption(string.Format("{0} ({1})", string.Format(prefix, SlotGroup.GetGroupLabel(group)), "IncompatibleLower".Translate()), null));
+					continue;
 				}
-				int num = i + 1;
-				i = num;
+				opts.Add(new FloatMenuOption(string.Format(prefix, SlotGroup.GetGroupLabel(group)), delegate
+				{
+					selected(group);
+				}));
 			}
 		}
 	}

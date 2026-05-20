@@ -6,8 +6,7 @@ namespace Verse
 	{
 		public static bool CanBeStrippedByColony(Thing th)
 		{
-			IStrippable strippable = th as IStrippable;
-			if (strippable == null)
+			if (!(th is IStrippable strippable))
 			{
 				return false;
 			}
@@ -15,12 +14,15 @@ namespace Verse
 			{
 				return false;
 			}
-			Pawn pawn = th as Pawn;
-			if (pawn == null)
+			if (!(th is Pawn pawn))
 			{
 				return true;
 			}
-			if (pawn.IsQuestLodger())
+			if (!pawn.kindDef.canStrip)
+			{
+				return false;
+			}
+			if (pawn.CarriedBy != null)
 			{
 				return false;
 			}
@@ -32,13 +34,13 @@ namespace Verse
 			{
 				return true;
 			}
+			pawn.IsQuestLodger();
 			return false;
 		}
 
 		public static void CheckSendStrippingImpactsGoodwillMessage(Thing th)
 		{
-			Pawn pawn;
-			if ((pawn = th as Pawn) != null && !pawn.Dead && pawn.Faction != null && pawn.Faction != Faction.OfPlayer && !pawn.Faction.HostileTo(Faction.OfPlayer) && !pawn.Faction.Hidden)
+			if (th is Pawn { Dead: false, Faction: not null } pawn && pawn.Faction != Faction.OfPlayer && !pawn.Faction.HostileTo(Faction.OfPlayer) && !pawn.Faction.Hidden)
 			{
 				Messages.Message("MessageStrippingWillAngerFaction".Translate(pawn.Named("PAWN")), pawn, MessageTypeDefOf.CautionInput, historical: false);
 			}

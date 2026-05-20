@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 using Verse.AI;
 using Verse.AI.Group;
@@ -11,7 +11,7 @@ namespace RimWorld
 
 		public override float? CustomWakeThreshold => 0.5f;
 
-		public override bool AllowRestingInBed => false;
+		public override bool AllowRestingInBed => true;
 
 		public LordToil_PrepareCaravan_GatherItems(IntVec3 meetingPoint)
 		{
@@ -37,36 +37,15 @@ namespace RimWorld
 		public override void LordToilTick()
 		{
 			base.LordToilTick();
-			if (Find.TickManager.TicksGame % 120 != 0)
+			if (Find.TickManager.TicksGame % 120 != 0 || !CaravanFormingUtility.AllItemsLoadedOntoCaravan(lord, base.Map))
 			{
 				return;
 			}
-			bool flag = true;
-			for (int i = 0; i < lord.ownedPawns.Count; i++)
+			foreach (Pawn ownedPawn in lord.ownedPawns)
 			{
-				Pawn pawn = lord.ownedPawns[i];
-				if (pawn.IsColonist && pawn.mindState.lastJobTag != JobTag.WaitingForOthersToFinishGatheringItems)
-				{
-					flag = false;
-					break;
-				}
+				ownedPawn.inventory.ClearHaulingCaravanCache();
 			}
-			if (flag)
-			{
-				List<Pawn> allPawnsSpawned = base.Map.mapPawns.AllPawnsSpawned;
-				for (int j = 0; j < allPawnsSpawned.Count; j++)
-				{
-					if (allPawnsSpawned[j].CurJob != null && allPawnsSpawned[j].jobs.curDriver is JobDriver_PrepareCaravan_GatherItems && allPawnsSpawned[j].CurJob.lord == lord)
-					{
-						flag = false;
-						break;
-					}
-				}
-			}
-			if (flag)
-			{
-				lord.ReceiveMemo("AllItemsGathered");
-			}
+			lord.ReceiveMemo("AllItemsGathered");
 		}
 	}
 }

@@ -24,7 +24,17 @@ namespace RimWorld
 			}
 		}
 
-		private bool Active => (parent as Hive)?.CompDormant.Awake ?? true;
+		private bool Active
+		{
+			get
+			{
+				if (parent is Hive hive)
+				{
+					return hive.CompDormant.Awake;
+				}
+				return true;
+			}
+		}
 
 		public override void PostExposeData()
 		{
@@ -37,7 +47,7 @@ namespace RimWorld
 			if (Active)
 			{
 				ticksSinceMaintain++;
-				if (Find.TickManager.TicksGame % 250 == 0)
+				if (parent.IsHashIntervalTick(250))
 				{
 					CheckTakeDamage();
 				}

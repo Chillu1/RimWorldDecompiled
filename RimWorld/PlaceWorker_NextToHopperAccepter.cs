@@ -17,8 +17,7 @@ namespace RimWorld
 				List<Thing> thingList = c.GetThingList(map);
 				for (int j = 0; j < thingList.Count; j++)
 				{
-					ThingDef thingDef = GenConstruct.BuiltDefOf(thingList[j].def) as ThingDef;
-					if (thingDef != null && thingDef.building != null && thingDef.building.wantsHopperAdjacent)
+					if (GenConstruct.BuiltDefOf(thingList[j].def) is ThingDef { building: not null } thingDef && thingDef.building.wantsHopperAdjacent)
 					{
 						return true;
 					}

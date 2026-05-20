@@ -1,4 +1,3 @@
-using UnityEngine;
 using Verse;
 
 namespace RimWorld
@@ -7,23 +6,31 @@ namespace RimWorld
 	{
 		private Pawn pawn;
 
-		public int lastGuiltyTick = -99999;
+		public bool awaitingExecution;
 
-		private const int GuiltyDuration = 60000;
+		private int guiltyTicksLeft;
+
+		private const int DefaultGuiltyDuration = 60000;
 
 		public bool IsGuilty
 		{
 			get
 			{
-				if (TicksUntilInnocent <= 0)
+				if (guiltyTicksLeft <= 0)
 				{
-					return pawn.InAggroMentalState;
+					if (pawn.InAggroMentalState)
+					{
+						return pawn.MentalStateDef.allowGuilty;
+					}
+					return false;
 				}
 				return true;
 			}
 		}
 
-		public int TicksUntilInnocent => Mathf.Max(0, lastGuiltyTick + 60000 - Find.TickManager.TicksGame);
+		public int TicksUntilInnocent => guiltyTicksLeft;
+
+		public string Tip => "GuiltyDesc".Translate() + ": " + TicksUntilInnocent.ToStringTicksToPeriod();
 
 		public Pawn_GuiltTracker(Pawn pawn)
 		{
@@ -32,12 +39,25 @@ namespace RimWorld
 
 		public void ExposeData()
 		{
-			Scribe_Values.Look(ref lastGuiltyTick, "lastGuiltyTick", -99999);
+			Scribe_Values.Look(ref guiltyTicksLeft, "guiltyTicksLeft", 0);
+			Scribe_Values.Look(ref awaitingExecution, "awaitingExecution", defaultValue: false);
 		}
 
-		public void Notify_Guilty()
+		public void Notify_Guilty(int durationTicks = 60000)
 		{
-			lastGuiltyTick = Find.TickManager.TicksGame;
+			guiltyTicksLeft = durationTicks;
+		}
+
+		public void GuiltTrackerTickInterval(int delta)
+		{
+			if (guiltyTicksLeft > 0)
+			{
+				guiltyTicksLeft -= delta;
+			}
+			else if (!IsGuilty)
+			{
+				awaitingExecution = false;
+			}
 		}
 	}
 }

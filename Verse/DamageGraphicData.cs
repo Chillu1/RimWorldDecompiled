@@ -80,40 +80,50 @@ namespace Verse
 					scratchMats = new List<Material>();
 					for (int i = 0; i < scratches.Count; i++)
 					{
-						scratchMats[i] = MaterialPool.MatFrom(scratches[i], ShaderDatabase.Transparent);
+						Material material = MaterialPool.MatFrom(scratches[i], ShaderDatabase.Transparent, 2905);
+						scratchMats.Add(material);
+						GlobalTextureAtlasManager.TryInsertStatic(TextureAtlasGroup.Building, (Texture2D)material.mainTexture);
 					}
 				}
 				if (cornerTL != null)
 				{
-					cornerTLMat = MaterialPool.MatFrom(cornerTL, ShaderDatabase.Transparent);
+					cornerTLMat = MaterialPool.MatFrom(cornerTL, ShaderDatabase.Transparent, 2905);
+					GlobalTextureAtlasManager.TryInsertStatic(TextureAtlasGroup.Building, (Texture2D)cornerTLMat.mainTexture);
 				}
 				if (cornerTR != null)
 				{
-					cornerTRMat = MaterialPool.MatFrom(cornerTR, ShaderDatabase.Transparent);
+					cornerTRMat = MaterialPool.MatFrom(cornerTR, ShaderDatabase.Transparent, 2905);
+					GlobalTextureAtlasManager.TryInsertStatic(TextureAtlasGroup.Building, (Texture2D)cornerTRMat.mainTexture);
 				}
 				if (cornerBL != null)
 				{
-					cornerBLMat = MaterialPool.MatFrom(cornerBL, ShaderDatabase.Transparent);
+					cornerBLMat = MaterialPool.MatFrom(cornerBL, ShaderDatabase.Transparent, 2905);
+					GlobalTextureAtlasManager.TryInsertStatic(TextureAtlasGroup.Building, (Texture2D)cornerBLMat.mainTexture);
 				}
 				if (cornerBR != null)
 				{
-					cornerBRMat = MaterialPool.MatFrom(cornerBR, ShaderDatabase.Transparent);
+					cornerBRMat = MaterialPool.MatFrom(cornerBR, ShaderDatabase.Transparent, 2905);
+					GlobalTextureAtlasManager.TryInsertStatic(TextureAtlasGroup.Building, (Texture2D)cornerBRMat.mainTexture);
 				}
 				if (edgeTop != null)
 				{
-					edgeTopMat = MaterialPool.MatFrom(edgeTop, ShaderDatabase.Transparent);
+					edgeTopMat = MaterialPool.MatFrom(edgeTop, ShaderDatabase.Transparent, 2905);
+					GlobalTextureAtlasManager.TryInsertStatic(TextureAtlasGroup.Building, (Texture2D)edgeTopMat.mainTexture);
 				}
 				if (edgeBot != null)
 				{
-					edgeBotMat = MaterialPool.MatFrom(edgeBot, ShaderDatabase.Transparent);
+					edgeBotMat = MaterialPool.MatFrom(edgeBot, ShaderDatabase.Transparent, 2905);
+					GlobalTextureAtlasManager.TryInsertStatic(TextureAtlasGroup.Building, (Texture2D)edgeBotMat.mainTexture);
 				}
 				if (edgeLeft != null)
 				{
-					edgeLeftMat = MaterialPool.MatFrom(edgeLeft, ShaderDatabase.Transparent);
+					edgeLeftMat = MaterialPool.MatFrom(edgeLeft, ShaderDatabase.Transparent, 2905);
+					GlobalTextureAtlasManager.TryInsertStatic(TextureAtlasGroup.Building, (Texture2D)edgeLeftMat.mainTexture);
 				}
 				if (edgeRight != null)
 				{
-					edgeRightMat = MaterialPool.MatFrom(edgeRight, ShaderDatabase.Transparent);
+					edgeRightMat = MaterialPool.MatFrom(edgeRight, ShaderDatabase.Transparent, 2905);
+					GlobalTextureAtlasManager.TryInsertStatic(TextureAtlasGroup.Building, (Texture2D)edgeRightMat.mainTexture);
 				}
 			});
 		}

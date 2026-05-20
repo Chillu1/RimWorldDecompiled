@@ -30,18 +30,18 @@ namespace RimWorld.BaseGen
 		{
 			Map map = BaseGen.globalSettings.map;
 			IntVec3 loc = (from cell in rect.Cells.InRandomOrder()
-				where GenConstruct.CanPlaceBlueprintAt(thingDef, cell, rotation, map).Accepted && GenAdj.OccupiedRect(cell, rotation, thingDef.Size).AdjacentCellsCardinal.Any((IntVec3 edgeCell) => edgeCell.InBounds(map) && edgeCell.GetThingList(map).Any((Thing thing) => thing.def == ThingDefOf.Ship_Beam))
+				where GenConstruct.CanPlaceBlueprintAt(thingDef, cell, rotation, map).Accepted && GenAdj.OccupiedRect(cell, rotation, thingDef.Size).AdjacentCellsCardinal.Any((IntVec3 edgeCell) => edgeCell.InBounds(map) && edgeCell.GetThingList(map).Any((Thing thing2) => thing2.def == ThingDefOf.Ship_Beam))
 				select cell).FirstOrFallback(IntVec3.Invalid);
 			if (loc.IsValid)
 			{
-				Thing thing2 = ThingMaker.MakeThing(thingDef);
-				thing2.SetFaction(faction);
-				CompHibernatable compHibernatable = thing2.TryGetComp<CompHibernatable>();
+				Thing thing = ThingMaker.MakeThing(thingDef);
+				thing.SetFaction(faction);
+				CompHibernatable compHibernatable = thing.TryGetComp<CompHibernatable>();
 				if (compHibernatable != null)
 				{
 					compHibernatable.State = HibernatableStateDefOf.Hibernating;
 				}
-				GenSpawn.Spawn(thing2, loc, BaseGen.globalSettings.map, rotation);
+				GenSpawn.Spawn(thing, loc, BaseGen.globalSettings.map, rotation);
 			}
 		}
 	}

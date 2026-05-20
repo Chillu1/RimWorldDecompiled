@@ -10,8 +10,7 @@ namespace RimWorld
 
 		public override bool HasJobOnThing(Pawn pawn, Thing t, bool forced = false)
 		{
-			Building building = t.GetInnerIfMinified() as Building;
-			if (building == null)
+			if (!(t.GetInnerIfMinified() is Building building))
 			{
 				return false;
 			}

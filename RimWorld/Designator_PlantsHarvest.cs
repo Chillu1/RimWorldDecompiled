@@ -13,7 +13,7 @@ namespace RimWorld
 			soundDragSustain = SoundDefOf.Designate_DragStandard;
 			soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
 			useMouseIcon = true;
-			soundSucceeded = SoundDefOf.Designate_Harvest;
+			soundSucceeded = SoundDefOf.Designate_HarvestPlants;
 			hotKey = KeyBindingDefOf.Misc2;
 			designationDef = DesignationDefOf.HarvestPlant;
 		}

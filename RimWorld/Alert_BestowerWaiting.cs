@@ -30,16 +30,9 @@ namespace RimWorld
 		public Alert_BestowerWaiting()
 		{
 			defaultPriority = AlertPriority.High;
-		}
-
-		public override string GetLabel()
-		{
-			return "BestowerWaitingAlert".Translate();
-		}
-
-		public override TaggedString GetExplanation()
-		{
-			return "BestowerWaitingAlertDesc".Translate();
+			defaultLabel = "BestowerWaitingAlert".Translate();
+			defaultExplanation = "BestowerWaitingAlertDesc".Translate();
+			requireRoyalty = true;
 		}
 
 		public override AlertReport GetReport()

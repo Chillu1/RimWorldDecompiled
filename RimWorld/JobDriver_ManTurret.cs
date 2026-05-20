@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Verse;
 using Verse.AI;
@@ -8,14 +7,21 @@ namespace RimWorld
 {
 	public class JobDriver_ManTurret : JobDriver
 	{
-		private const float ShellSearchRadius = 40f;
+		private const float SearchRadius = 40f;
 
-		private const int MaxPawnAmmoReservations = 10;
+		private const int MaxPawnReservations = 10;
+
+		private const TargetIndex TurretInd = TargetIndex.A;
+
+		private const TargetIndex HaulingInd = TargetIndex.B;
+
+		private Building_TurretGun Turret => (Building_TurretGun)job.GetTarget(TargetIndex.A).Thing;
+
+		private Thing Hauling => job.GetTarget(TargetIndex.B).Thing;
 
 		private static bool GunNeedsLoading(Building b)
 		{
-			Building_TurretGun building_TurretGun = b as Building_TurretGun;
-			if (building_TurretGun == null)
+			if (!(b is Building_TurretGun building_TurretGun))
 			{
 				return false;
 			}
@@ -27,10 +33,25 @@ namespace RimWorld
 			return true;
 		}
 
+		private static bool GunNeedsRefueling(Building b)
+		{
+			if (!(b is Building_TurretGun thing))
+			{
+				return false;
+			}
+			CompRefuelable compRefuelable = thing.TryGetComp<CompRefuelable>();
+			if (compRefuelable == null || compRefuelable.HasFuel || !compRefuelable.Props.fuelIsMortarBarrel || Find.Storyteller.difficulty.classicMortars)
+			{
+				return false;
+			}
+			return true;
+		}
+
 		public static Thing FindAmmoForTurret(Pawn pawn, Building_TurretGun gun)
 		{
-			StorageSettings allowedShellsSettings = (pawn.IsColonist ? gun.gun.TryGetComp<CompChangeableProjectile>().allowedShellsSettings : null);
-			Predicate<Thing> validator = delegate(Thing t)
+			StorageSettings allowedShellsSettings = ((pawn.IsColonist || pawn.IsColonyMech) ? gun.gun.TryGetComp<CompChangeableProjectile>().allowedShellsSettings : null);
+			return GenClosest.ClosestThingReachable(gun.Position, gun.Map, ThingRequest.ForGroup(ThingRequestGroup.Shell), PathEndMode.OnCell, TraverseParms.For(pawn), 40f, ShellValidator);
+			bool ShellValidator(Thing t)
 			{
 				if (t.IsForbidden(pawn))
 				{
@@ -40,9 +61,34 @@ namespace RimWorld
 				{
 					return false;
 				}
-				return (allowedShellsSettings == null || allowedShellsSettings.AllowedToAccept(t)) ? true : false;
-			};
-			return GenClosest.ClosestThingReachable(gun.Position, gun.Map, ThingRequest.ForGroup(ThingRequestGroup.Shell), PathEndMode.OnCell, TraverseParms.For(pawn), 40f, validator);
+				if (allowedShellsSettings != null && !allowedShellsSettings.AllowedToAccept(t))
+				{
+					return false;
+				}
+				if (pawn.Faction != Faction.OfPlayer && t.def.projectileWhenLoaded?.projectile != null && !t.def.projectileWhenLoaded.projectile.damageDef.harmsHealth)
+				{
+					return false;
+				}
+				return true;
+			}
+		}
+
+		public static Thing FindFuelForTurret(Pawn pawn, Building_TurretGun gun)
+		{
+			CompRefuelable refuelableComp = gun.TryGetComp<CompRefuelable>();
+			if (refuelableComp == null)
+			{
+				return null;
+			}
+			return GenClosest.ClosestThingReachable(gun.Position, gun.Map, ThingRequest.ForGroup(ThingRequestGroup.HaulableEver), PathEndMode.OnCell, TraverseParms.For(pawn), 40f, FuelValidator);
+			bool FuelValidator(Thing t)
+			{
+				if (t.IsForbidden(pawn) || !pawn.CanReserve(t, 10, 1))
+				{
+					return false;
+				}
+				return refuelableComp.Props.fuelFilter.Allows(t);
+			}
 		}
 
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
@@ -54,29 +100,64 @@ namespace RimWorld
 		{
 			this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
 			Toil gotoTurret = Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.InteractionCell);
-			Toil loadIfNeeded = new Toil();
+			Toil refuelIfNeeded = ToilMaker.MakeToil("MakeNewToils");
+			refuelIfNeeded.initAction = delegate
+			{
+				Pawn actor = refuelIfNeeded.actor;
+				Building building = (Building)actor.CurJob.targetA.Thing;
+				Building_TurretGun building_TurretGun = building as Building_TurretGun;
+				if (!GunNeedsRefueling(building))
+				{
+					JumpToToil(gotoTurret);
+				}
+				else
+				{
+					Thing thing = FindFuelForTurret(pawn, building_TurretGun);
+					if (thing == null)
+					{
+						CompRefuelable compRefuelable = building.TryGetComp<CompRefuelable>();
+						if (actor.Faction == Faction.OfPlayer && compRefuelable != null)
+						{
+							Messages.Message("MessageOutOfNearbyFuelFor".Translate(actor.LabelShort, building_TurretGun.Label, actor.Named("PAWN"), building_TurretGun.Named("GUN"), compRefuelable.Props.fuelFilter.Summary.Named("FUEL")).CapitalizeFirst(), building_TurretGun, MessageTypeDefOf.NegativeEvent);
+						}
+						actor.jobs.EndCurrentJob(JobCondition.Incompletable);
+					}
+					actor.CurJob.targetB = thing;
+					actor.CurJob.count = 1;
+				}
+			};
+			yield return refuelIfNeeded;
+			yield return Toils_Reserve.Reserve(TargetIndex.B, 10, 1);
+			yield return Toils_Goto.GotoThing(TargetIndex.B, PathEndMode.OnCell).FailOnSomeonePhysicallyInteracting(TargetIndex.B);
+			yield return Toils_Haul.StartCarryThing(TargetIndex.B);
+			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
+			yield return Toils_General.Wait(240).FailOnDestroyedNullOrForbidden(TargetIndex.B).FailOnDestroyedNullOrForbidden(TargetIndex.A)
+				.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch)
+				.WithProgressBarToilDelay(TargetIndex.A);
+			yield return Toils_Refuel.FinalizeRefueling(TargetIndex.A, TargetIndex.B);
+			Toil loadIfNeeded = ToilMaker.MakeToil("MakeNewToils");
 			loadIfNeeded.initAction = delegate
 			{
-				Pawn actor3 = loadIfNeeded.actor;
-				Building obj = (Building)actor3.CurJob.targetA.Thing;
-				Building_TurretGun building_TurretGun2 = obj as Building_TurretGun;
+				Pawn actor = loadIfNeeded.actor;
+				Building obj = (Building)actor.CurJob.targetA.Thing;
+				Building_TurretGun building_TurretGun = obj as Building_TurretGun;
 				if (!GunNeedsLoading(obj))
 				{
 					JumpToToil(gotoTurret);
 				}
 				else
 				{
-					Thing thing = FindAmmoForTurret(pawn, building_TurretGun2);
+					Thing thing = FindAmmoForTurret(pawn, building_TurretGun);
 					if (thing == null)
 					{
-						if (actor3.Faction == Faction.OfPlayer)
+						if (actor.Faction == Faction.OfPlayer)
 						{
-							Messages.Message("MessageOutOfNearbyShellsFor".Translate(actor3.LabelShort, building_TurretGun2.Label, actor3.Named("PAWN"), building_TurretGun2.Named("GUN")).CapitalizeFirst(), building_TurretGun2, MessageTypeDefOf.NegativeEvent);
+							Messages.Message("MessageOutOfNearbyShellsFor".Translate(actor.LabelShort, building_TurretGun.Label, actor.Named("PAWN"), building_TurretGun.Named("GUN")).CapitalizeFirst(), building_TurretGun, MessageTypeDefOf.NegativeEvent);
 						}
-						actor3.jobs.EndCurrentJob(JobCondition.Incompletable);
+						actor.jobs.EndCurrentJob(JobCondition.Incompletable);
 					}
-					actor3.CurJob.targetB = thing;
-					actor3.CurJob.count = 1;
+					actor.CurJob.targetB = thing;
+					actor.CurJob.count = 1;
 				}
 			};
 			yield return loadIfNeeded;
@@ -84,18 +165,17 @@ namespace RimWorld
 			yield return Toils_Goto.GotoThing(TargetIndex.B, PathEndMode.OnCell).FailOnSomeonePhysicallyInteracting(TargetIndex.B);
 			yield return Toils_Haul.StartCarryThing(TargetIndex.B);
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
-			Toil toil = new Toil();
-			toil.initAction = delegate
+			Toil loadShell = ToilMaker.MakeToil("MakeNewToils");
+			loadShell.initAction = delegate
 			{
-				Pawn actor2 = loadIfNeeded.actor;
-				Building_TurretGun building_TurretGun = ((Building)actor2.CurJob.targetA.Thing) as Building_TurretGun;
-				SoundDefOf.Artillery_ShellLoaded.PlayOneShot(new TargetInfo(building_TurretGun.Position, building_TurretGun.Map));
-				building_TurretGun.gun.TryGetComp<CompChangeableProjectile>().LoadShell(actor2.CurJob.targetB.Thing.def, 1);
-				actor2.carryTracker.innerContainer.ClearAndDestroyContents();
+				Pawn actor = loadShell.actor;
+				SoundDefOf.Artillery_ShellLoaded.PlayOneShot(new TargetInfo(Turret.Position, Turret.Map));
+				Turret.gun.TryGetComp<CompChangeableProjectile>().LoadShell(Hauling.def, 1);
+				actor.carryTracker.innerContainer.ClearAndDestroyContents();
 			};
-			yield return toil;
+			yield return loadShell;
 			yield return gotoTurret;
-			Toil man = new Toil();
+			Toil man = ToilMaker.MakeToil("MakeNewToils");
 			man.tickAction = delegate
 			{
 				Pawn actor = man.actor;
@@ -103,6 +183,10 @@ namespace RimWorld
 				if (GunNeedsLoading(building))
 				{
 					JumpToToil(loadIfNeeded);
+				}
+				else if (GunNeedsRefueling(building))
+				{
+					JumpToToil(refuelIfNeeded);
 				}
 				else
 				{

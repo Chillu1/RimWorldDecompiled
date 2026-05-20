@@ -8,7 +8,7 @@ namespace RimWorld
 	{
 		protected override LordJob MakeLordJob(IncidentParms parms, Map map, List<Pawn> pawns, int raidSeed)
 		{
-			return new LordJob_AssaultColony(parms.faction, canKidnap: true, canTimeoutOrFlee: true, sappers: false, useAvoidGridSmart: true);
+			return new LordJob_AssaultColony(parms.faction, canTimeoutOrFlee: parms.canTimeoutOrFlee, canKidnap: parms.canKidnap, sappers: false, useAvoidGridSmart: true, canSteal: parms.canSteal);
 		}
 
 		public override bool CanUseWith(IncidentParms parms, PawnGroupKindDef groupKind)

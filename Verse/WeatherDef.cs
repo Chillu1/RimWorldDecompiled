@@ -12,15 +12,33 @@ namespace Verse
 
 		public bool isBad;
 
+		public bool canOccurAsRandomForcedEvent = true;
+
 		public Favorability favorability = Favorability.Neutral;
 
 		public FloatRange temperatureRange = new FloatRange(-999f, 999f);
 
 		public SimpleCurve commonalityRainfallFactor;
 
+		public int transitionTicksOverride = int.MaxValue;
+
+		public int minMonolithLevel;
+
+		public bool canOccurInAmbientHorror;
+
+		[MustTranslate]
+		public string letterText;
+
+		[MustTranslate]
+		public string letterLabel;
+
+		public LetterDef letterDef;
+
 		public float rainRate;
 
 		public float snowRate;
+
+		public float sandRate;
 
 		public float windSpeedFactor = 1f;
 
@@ -30,9 +48,19 @@ namespace Verse
 
 		public float accuracyMultiplier = 1f;
 
+		public float maxRangeCap = -1f;
+
 		public float perceivePriority;
 
-		public ThoughtDef exposedThought;
+		public bool doToxicBuildup;
+
+		public ThoughtDef weatherThought;
+
+		public float maxGlow = 1f;
+
+		public bool preventSkygaze;
+
+		public bool preventsShuttleLaunch;
 
 		public List<SoundDef> ambientSounds = new List<SoundDef>();
 
@@ -48,6 +76,8 @@ namespace Verse
 
 		public SkyColorSet skyColorsDusk;
 
+		public Type workerClass = typeof(WeatherWorker);
+
 		[Unsaved(false)]
 		private WeatherWorker workerInt;
 
@@ -57,16 +87,10 @@ namespace Verse
 			{
 				if (workerInt == null)
 				{
-					workerInt = new WeatherWorker(this);
+					workerInt = (WeatherWorker)Activator.CreateInstance(workerClass, this);
 				}
 				return workerInt;
 			}
-		}
-
-		public override void PostLoad()
-		{
-			base.PostLoad();
-			workerInt = new WeatherWorker(this);
 		}
 
 		public override IEnumerable<string> ConfigErrors()

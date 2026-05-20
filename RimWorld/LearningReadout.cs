@@ -39,9 +39,9 @@ namespace RimWorld
 
 		private const float OpenButtonSize = 24f;
 
-		public static readonly Texture2D ProgressBarFillTex = SolidColorMaterials.NewSolidColorTexture(new Color(38f / 51f, 154f / 255f, 0.2f));
+		public static readonly Texture2D ProgressBarFillTex = SolidColorMaterials.NewSolidColorTexture(new Color(38f / 51f, 0.6039216f, 0.2f));
 
-		public static readonly Texture2D ProgressBarBGTex = SolidColorMaterials.NewSolidColorTexture(new Color(26f / 51f, 104f / 255f, 142f / (339f * (float)Math.PI)));
+		public static readonly Texture2D ProgressBarBGTex = SolidColorMaterials.NewSolidColorTexture(new Color(26f / 51f, 0.40784314f, 2f / 15f));
 
 		private static List<ConceptDef> tmpConceptsToShow = new List<ConceptDef>();
 
@@ -142,24 +142,13 @@ namespace RimWorld
 		private void WindowOnGUI()
 		{
 			Rect rect = windowRect.AtZero().ContractedBy(7f);
-			Rect viewRect = rect.AtZero();
 			bool flag = contentHeight > rect.height;
 			Widgets.DrawWindowBackgroundTutor(windowRect.AtZero());
-			if (flag)
-			{
-				viewRect.height = contentHeight + 40f;
-				viewRect.width -= 20f;
-				scrollPosition = GUI.BeginScrollView(rect, scrollPosition, viewRect);
-			}
-			else
-			{
-				GUI.BeginGroup(rect);
-			}
-			float num = 0f;
+			float y = rect.y;
 			Text.Font = GameFont.Small;
-			Rect rect2 = new Rect(0f, 0f, viewRect.width - 24f, 24f);
+			Rect rect2 = new Rect(rect.x, y, rect.width - 24f, 24f);
 			Widgets.Label(rect2, "LearningHelper".Translate());
-			num = rect2.yMax;
+			y += rect2.height;
 			if (Widgets.ButtonImage(new Rect(rect2.xMax, rect2.y, 24f, 24f), (!showAllMode) ? TexButton.Plus : TexButton.Minus))
 			{
 				showAllMode = !showAllMode;
@@ -174,7 +163,7 @@ namespace RimWorld
 			}
 			if (showAllMode)
 			{
-				Rect rect3 = new Rect(0f, num, viewRect.width - 20f - 2f, 28f);
+				Rect rect3 = new Rect(rect.x, y, rect.width - 20f - 2f, 28f);
 				searchString = FilterSearchStringInput(Widgets.TextField(rect3, searchString));
 				if (searchString == "")
 				{
@@ -186,12 +175,12 @@ namespace RimWorld
 					Text.Anchor = TextAnchor.UpperLeft;
 					GUI.color = Color.white;
 				}
-				if (Widgets.ButtonImage(new Rect(viewRect.width - 20f, num + 14f - 10f, 20f, 20f), TexButton.CloseXSmall))
+				if (Widgets.ButtonImage(new Rect(rect3.xMax + 4f, y + 14f - 10f, 20f, 20f), TexButton.CloseXSmall))
 				{
 					searchString = "";
 					SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
 				}
-				num = rect3.yMax + 4f;
+				y += 32f;
 			}
 			tmpConceptsToShow.Clear();
 			if (showAllMode)
@@ -205,30 +194,44 @@ namespace RimWorld
 			if (tmpConceptsToShow.Any())
 			{
 				GUI.color = new Color(1f, 1f, 1f, 0.5f);
-				Widgets.DrawLineHorizontal(0f, num, viewRect.width);
+				Widgets.DrawLineHorizontal(rect.x, y, rect.width);
 				GUI.color = Color.white;
-				num += 4f;
+				y += 4f;
 			}
+			float num = y - rect.y;
+			rect.yMin = y;
+			Rect viewRect = rect.AtZero();
+			if (flag)
+			{
+				viewRect.height = contentHeight - num;
+				viewRect.width -= 20f;
+				Widgets.BeginScrollView(rect, ref scrollPosition, viewRect);
+			}
+			else
+			{
+				Widgets.BeginGroup(rect);
+			}
+			y = 0f;
 			if (showAllMode)
 			{
 				tmpConceptsToShow.SortBy((ConceptDef x) => -DisplayPriority(x), (ConceptDef x) => x.label);
 			}
-			for (int i = 0; i < tmpConceptsToShow.Count; i++)
+			for (int num2 = 0; num2 < tmpConceptsToShow.Count; num2++)
 			{
-				if (!tmpConceptsToShow[i].TriggeredDirect)
+				if (!tmpConceptsToShow[num2].TriggeredDirect)
 				{
-					num = DrawConceptListRow(0f, num, viewRect.width, tmpConceptsToShow[i]).yMax;
+					y = DrawConceptListRow(0f, y, viewRect.width, tmpConceptsToShow[num2]).yMax;
 				}
 			}
 			tmpConceptsToShow.Clear();
-			contentHeight = num;
+			contentHeight = num + y;
 			if (flag)
 			{
-				GUI.EndScrollView();
+				Widgets.EndScrollView();
 			}
 			else
 			{
-				GUI.EndGroup();
+				Widgets.EndGroup();
 			}
 		}
 

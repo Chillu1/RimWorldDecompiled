@@ -11,6 +11,11 @@ namespace RimWorld
 			{
 				return null;
 			}
+			Pawn pawn2 = pawn.Map.physicalInteractionReservationManager.FirstReserverOf(t);
+			if (pawn2 != null && pawn2.RaceProps.Animal && pawn2.Faction != Faction.OfPlayer)
+			{
+				return null;
+			}
 			return base.JobOnThing(pawn, t, forced);
 		}
 

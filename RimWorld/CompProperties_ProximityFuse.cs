@@ -22,7 +22,7 @@ namespace RimWorld
 			}
 			if (parentDef.tickerType != TickerType.Normal)
 			{
-				yield return string.Concat("CompProximityFuse needs tickerType ", TickerType.Rare, " or faster, has ", parentDef.tickerType);
+				yield return "CompProximityFuse needs tickerType " + TickerType.Rare.ToString() + " or faster, has " + parentDef.tickerType;
 			}
 			if (parentDef.CompDefFor<CompExplosive>() == null)
 			{

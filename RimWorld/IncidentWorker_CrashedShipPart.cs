@@ -17,6 +17,10 @@ namespace RimWorld
 
 		protected override bool CanFireNowSub(IncidentParms parms)
 		{
+			if (Faction.OfMechanoids == null)
+			{
+				return false;
+			}
 			if (((Map)parms.target).listerThings.ThingsOfDef(def.mechClusterBuilding).Count > 0)
 			{
 				return false;
@@ -44,10 +48,7 @@ namespace RimWorld
 			}).ToList();
 			Thing thing = ThingMaker.MakeThing(shipPartDef);
 			thing.SetFaction(Faction.OfMechanoids);
-			LordMaker.MakeNewLord(Faction.OfMechanoids, new LordJob_SleepThenMechanoidsDefend(new List<Thing>
-			{
-				thing
-			}, Faction.OfMechanoids, 28f, intVec, canAssaultColony: false, isMechCluster: false), map, list2);
+			LordMaker.MakeNewLord(Faction.OfMechanoids, new LordJob_SleepThenMechanoidsDefend(new List<Thing> { thing }, Faction.OfMechanoids, 28f, intVec, canAssaultColony: false, isMechCluster: false), map, list2);
 			DropPodUtility.DropThingsNear(intVec, map, list2.Cast<Thing>());
 			foreach (Pawn item in list2)
 			{
@@ -85,7 +86,7 @@ namespace RimWorld
 		{
 			for (int i = 0; i < 200; i++)
 			{
-				IntVec3 intVec = RCellFinder.FindSiegePositionFrom_NewTemp(DropCellFinder.FindRaidDropCenterDistant_NewTemp(map, allowRoofed: true), map, allowRoofed: true);
+				IntVec3 intVec = RCellFinder.FindSiegePositionFrom(DropCellFinder.FindRaidDropCenterDistant(map, allowRoofed: true), map, allowRoofed: true);
 				if (validator(intVec))
 				{
 					return intVec;

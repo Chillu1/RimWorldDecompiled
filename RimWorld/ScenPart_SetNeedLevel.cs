@@ -52,8 +52,7 @@ namespace RimWorld
 
 		public override bool TryMerge(ScenPart other)
 		{
-			ScenPart_SetNeedLevel scenPart_SetNeedLevel = other as ScenPart_SetNeedLevel;
-			if (scenPart_SetNeedLevel != null && need == scenPart_SetNeedLevel.need)
+			if (other is ScenPart_SetNeedLevel scenPart_SetNeedLevel && need == scenPart_SetNeedLevel.need)
 			{
 				chance = GenMath.ChanceEitherHappens(chance, scenPart_SetNeedLevel.chance);
 				return true;
@@ -63,14 +62,24 @@ namespace RimWorld
 
 		protected override void ModifyPawnPostGenerate(Pawn p, bool redressed)
 		{
-			if (p.needs != null)
+			if (p.needs != null && p.needs.TryGetNeed(this.need, out var need))
 			{
-				Need need = p.needs.TryGetNeed(this.need);
-				if (need != null)
-				{
-					need.CurLevelPercentage = levelRange.RandomInRange;
-				}
+				need.CurLevelPercentage = levelRange.RandomInRange;
 			}
+		}
+
+		public override bool HasNullDefs()
+		{
+			if (!base.HasNullDefs())
+			{
+				return need == null;
+			}
+			return true;
+		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode() ^ ((need != null) ? need.GetHashCode() : 0) ^ levelRange.GetHashCode();
 		}
 	}
 }

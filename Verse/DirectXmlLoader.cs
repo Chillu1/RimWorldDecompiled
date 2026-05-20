@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Xml;
 using RimWorld.IO;
 using UnityEngine;
@@ -10,69 +12,98 @@ namespace Verse
 {
 	public static class DirectXmlLoader
 	{
-		private static LoadableXmlAsset[] emptyXmlAssetsArray = new LoadableXmlAsset[0];
+		private static readonly LoadableXmlAsset[] EmptyXmlAssetsArray = Array.Empty<LoadableXmlAsset>();
 
 		public static LoadableXmlAsset[] XmlAssetsInModFolder(ModContentPack mod, string folderPath, List<string> foldersToLoadDebug = null)
 		{
 			List<string> list = foldersToLoadDebug ?? mod.foldersToLoadDescendingOrder;
 			Dictionary<string, FileInfo> dictionary = new Dictionary<string, FileInfo>();
-			for (int j = 0; j < list.Count; j++)
+			for (int i = 0; i < list.Count; i++)
 			{
-				string text = list[j];
+				string text = list[i];
 				DirectoryInfo directoryInfo = new DirectoryInfo(Path.Combine(text, folderPath));
-				if (!directoryInfo.Exists)
+				if (directoryInfo.Exists)
 				{
-					continue;
-				}
-				FileInfo[] files = directoryInfo.GetFiles("*.xml", SearchOption.AllDirectories);
-				foreach (FileInfo fileInfo in files)
-				{
-					string key = fileInfo.FullName.Substring(text.Length + 1);
-					if (!dictionary.ContainsKey(key))
+					FileInfo[] files = directoryInfo.GetFiles("*.xml", SearchOption.AllDirectories);
+					foreach (FileInfo fileInfo in files)
 					{
-						dictionary.Add(key, fileInfo);
+						string key = fileInfo.FullName.Substring(text.Length + 1);
+						dictionary.TryAdd(key, fileInfo);
 					}
 				}
 			}
 			if (dictionary.Count == 0)
 			{
-				return emptyXmlAssetsArray;
+				return EmptyXmlAssetsArray;
 			}
-			List<FileInfo> fileList = dictionary.Values.ToList();
-			LoadableXmlAsset[] assets = new LoadableXmlAsset[fileList.Count];
-			GenThreading.ParallelFor(0, fileList.Count, delegate(int i)
+			List<FileInfo> list2 = dictionary.Values.ToList();
+			LoadableXmlAsset[] assets = new LoadableXmlAsset[list2.Count];
+			ConcurrentBag<KeyValuePair<int, FileInfo>> toLoad = new ConcurrentBag<KeyValuePair<int, FileInfo>>();
+			for (int k = 0; k < list2.Count; k++)
 			{
-				FileInfo fileInfo2 = fileList[i];
-				LoadableXmlAsset loadableXmlAsset = new LoadableXmlAsset(fileInfo2.Name, fileInfo2.Directory.FullName, File.ReadAllText(fileInfo2.FullName))
+				int key2 = k;
+				FileInfo value = list2[k];
+				toLoad.Add(new KeyValuePair<int, FileInfo>(key2, value));
+			}
+			Thread[] array = new Thread[2];
+			for (int l = 0; l < array.Length; l++)
+			{
+				array[l] = new Thread((ThreadStart)delegate
 				{
-					mod = mod
+					KeyValuePair<int, FileInfo> result2;
+					while (toLoad.TryTake(out result2))
+					{
+						int key4 = result2.Key;
+						FileInfo value3 = result2.Value;
+						assets[key4] = new LoadableXmlAsset(value3, mod);
+					}
+				})
+				{
+					Name = $"DirectXmlLoader Thread {l + 1} of {2}"
 				};
-				assets[i] = loadableXmlAsset;
-			});
+				array[l].Start();
+			}
+			KeyValuePair<int, FileInfo> result;
+			while (toLoad.TryTake(out result))
+			{
+				int key3 = result.Key;
+				FileInfo value2 = result.Value;
+				assets[key3] = new LoadableXmlAsset(value2, mod);
+			}
+			Thread[] array2 = array;
+			for (int num = 0; num < array2.Length; num++)
+			{
+				array2[num].Join();
+			}
 			return assets;
 		}
 
 		public static IEnumerable<T> LoadXmlDataInResourcesFolder<T>(string folderPath) where T : new()
 		{
 			XmlInheritance.Clear();
-			List<LoadableXmlAsset> assets = new List<LoadableXmlAsset>();
-			object[] array = Resources.LoadAll<TextAsset>(folderPath);
-			array = array;
-			for (int j = 0; j < array.Length; j++)
+			DeepProfiler.Start("Resources.LoadAll<TextAsset>");
+			TextAsset[] source = Resources.LoadAll<TextAsset>(folderPath);
+			DeepProfiler.End();
+			DeepProfiler.Start("Load XML");
+			List<LoadableXmlAsset> assets = (from x in source.Select((TextAsset x) => new { x.name, x.text }).ToList().AsParallel()
+				select new LoadableXmlAsset(x.name, x.text)).ToList();
+			DeepProfiler.End();
+			DeepProfiler.Start("Resolve inheritance");
+			foreach (LoadableXmlAsset item in assets)
 			{
-				TextAsset textAsset = (TextAsset)array[j];
-				LoadableXmlAsset loadableXmlAsset = new LoadableXmlAsset(textAsset.name, "", textAsset.text);
-				XmlInheritance.TryRegisterAllFrom(loadableXmlAsset, null);
-				assets.Add(loadableXmlAsset);
+				XmlInheritance.TryRegisterAllFrom(item, null);
 			}
 			XmlInheritance.Resolve();
+			DeepProfiler.End();
+			DeepProfiler.Start("Read game items from XML");
 			for (int i = 0; i < assets.Count; i++)
 			{
-				foreach (T item in AllGameItemsFromAsset<T>(assets[i]))
+				foreach (T item2 in AllGameItemsFromAsset<T>(assets[i]))
 				{
-					yield return item;
+					yield return item2;
 				}
 			}
+			DeepProfiler.End();
 			XmlInheritance.Clear();
 		}
 
@@ -91,7 +122,7 @@ namespace Verse
 			{
 				return new T();
 			}
-			return ItemFromXmlString<T>(directory.ReadAllText(filePath), filePath, resolveCrossRefs);
+			return ItemFromXmlString<T>(directory.ReadAllText(filePath), directory.FullPath + "/" + filePath, resolveCrossRefs);
 		}
 
 		public static T ItemFromXmlString<T>(string xmlContent, string filePath, bool resolveCrossRefs = true) where T : new()
@@ -132,31 +163,35 @@ namespace Verse
 				return null;
 			}
 			XmlAttribute xmlAttribute = node.Attributes["Abstract"];
-			if (xmlAttribute != null && xmlAttribute.Value.ToLower() == "true")
+			if (xmlAttribute != null && xmlAttribute.Value.Equals("true", StringComparison.InvariantCultureIgnoreCase))
 			{
 				return null;
+			}
+			XmlNode resolvedNodeFor = XmlInheritance.GetResolvedNodeFor(node);
+			string text = node.Name;
+			XmlAttribute xmlAttribute2 = resolvedNodeFor.Attributes["Class"];
+			if (xmlAttribute2 != null)
+			{
+				text = xmlAttribute2.Value;
 			}
 			Type typeInAnyAssembly = GenTypes.GetTypeInAnyAssembly(node.Name);
-			if (typeInAnyAssembly == null)
+			if (typeInAnyAssembly == null || !GenTypes.IsDef(typeInAnyAssembly))
 			{
-				return null;
-			}
-			if (!typeof(Def).IsAssignableFrom(typeInAnyAssembly))
-			{
+				Log.ErrorOnce("Type " + text + " is not a Def type or could not be found, in file " + ((loadingAsset != null) ? loadingAsset.name : "(unknown)") + ". Context: " + node.OuterXml, text.GetHashCode());
 				return null;
 			}
 			Func<XmlNode, bool, object> objectFromXmlMethod = DirectXmlToObject.GetObjectFromXmlMethod(typeInAnyAssembly);
-			Def result = null;
+			Def def = null;
 			try
 			{
-				result = (Def)objectFromXmlMethod(node, arg2: true);
-				return result;
+				def = (Def)objectFromXmlMethod(node, arg2: true);
+				def.ResolveDefNameHash();
 			}
 			catch (Exception ex)
 			{
 				Log.Error("Exception loading def from file " + ((loadingAsset != null) ? loadingAsset.name : "(unknown)") + ": " + ex);
-				return result;
 			}
+			return def;
 		}
 
 		public static IEnumerable<T> AllGameItemsFromAsset<T>(LoadableXmlAsset asset) where T : new()
@@ -170,25 +205,31 @@ namespace Verse
 			foreach (XmlNode item in xmlNodeList)
 			{
 				XmlAttribute xmlAttribute = item.Attributes["Abstract"];
-				if (xmlAttribute == null || !(xmlAttribute.Value.ToLower() == "true"))
+				if (xmlAttribute != null && xmlAttribute.Value.Equals("true", StringComparison.InvariantCultureIgnoreCase))
 				{
-					T val;
-					try
-					{
-						val = DirectXmlToObject.ObjectFromXml<T>(item, doPostLoad: true);
-						gotData = true;
-					}
-					catch (Exception ex)
-					{
-						Log.Error("Exception loading data from file " + asset.name + ": " + ex);
-						continue;
-					}
-					yield return val;
+					continue;
 				}
+				DeepProfiler.Start("DirectXmlToObject.ObjectFromXml<" + typeof(T).Name + ">");
+				T val;
+				try
+				{
+					val = DirectXmlToObject.ObjectFromXml<T>(item, doPostLoad: true);
+					gotData = true;
+				}
+				catch (Exception ex)
+				{
+					Log.Error("Exception loading data from file " + asset.name + ": " + ex);
+					continue;
+				}
+				finally
+				{
+					DeepProfiler.End();
+				}
+				yield return val;
 			}
 			if (!gotData)
 			{
-				Log.Error(string.Concat("Found no usable data when trying to get ", typeof(T), "s from file ", asset.name));
+				Log.Error("Found no usable data when trying to get " + typeof(T)?.ToString() + "s from file " + asset.name);
 			}
 		}
 	}

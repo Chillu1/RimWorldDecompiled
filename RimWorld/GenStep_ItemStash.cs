@@ -23,10 +23,6 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!map.reachability.CanReachMapEdge(c, TraverseParms.For(TraverseMode.PassDoors)))
-			{
-				return false;
-			}
 			CellRect rect = CellRect.CenteredOn(c, 7, 7);
 			if (MapGenerator.TryGetVar<List<CellRect>>("UsedRects", out var var) && var.Any((CellRect x) => x.Overlaps(rect)))
 			{
@@ -45,14 +41,12 @@ namespace RimWorld
 		protected override void ScatterAt(IntVec3 loc, Map map, GenStepParams parms, int count = 1)
 		{
 			CellRect cellRect = CellRect.CenteredOn(loc, 7, 7).ClipInsideMap(map);
-			if (!MapGenerator.TryGetVar<List<CellRect>>("UsedRects", out var var))
+			List<CellRect> orGenerateVar = MapGenerator.GetOrGenerateVar<List<CellRect>>("UsedRects");
+			ResolveParams resolveParams = new ResolveParams
 			{
-				var = new List<CellRect>();
-				MapGenerator.SetVar("UsedRects", var);
-			}
-			ResolveParams resolveParams = default(ResolveParams);
-			resolveParams.rect = cellRect;
-			resolveParams.faction = map.ParentFaction;
+				rect = cellRect,
+				faction = map.ParentFaction
+			};
 			if (parms.sitePart != null && parms.sitePart.things != null && parms.sitePart.things.Any)
 			{
 				resolveParams.stockpileConcreteContents = parms.sitePart.things;
@@ -73,7 +67,7 @@ namespace RimWorld
 			RimWorld.BaseGen.BaseGen.symbolStack.Push("storage", resolveParams);
 			RimWorld.BaseGen.BaseGen.Generate();
 			MapGenerator.SetVar("RectOfInterest", cellRect);
-			var.Add(cellRect);
+			orGenerateVar.Add(cellRect);
 		}
 	}
 }

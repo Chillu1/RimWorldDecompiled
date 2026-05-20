@@ -6,84 +6,55 @@ namespace Verse
 {
 	public class LanguageWorker_Korean : LanguageWorker
 	{
-		private struct JosaPair
-		{
-			public readonly string josa1;
-
-			public readonly string josa2;
-
-			public JosaPair(string josa1, string josa2)
-			{
-				this.josa1 = josa1;
-				this.josa2 = josa2;
-			}
-		}
-
 		private static StringBuilder tmpStringBuilder = new StringBuilder();
 
-		private static readonly Regex JosaPattern = new Regex("\\(이\\)가|\\(와\\)과|\\(을\\)를|\\(은\\)는|\\(아\\)야|\\(이\\)여|\\(으\\)로|\\(이\\)라");
+		private static readonly Regex JosaPattern = new Regex("\\(이\\)가|\\(와\\)과|\\(을\\)를|\\(은\\)는|\\(아\\)야|\\(이\\)어|\\(으\\)로|\\(이\\)", RegexOptions.Compiled);
 
-		private static readonly Dictionary<string, JosaPair> JosaPatternPaired = new Dictionary<string, JosaPair>
+		private static readonly Dictionary<string, (string, string)> JosaPatternPaired = new Dictionary<string, (string, string)>
 		{
 			{
 				"(이)가",
-				new JosaPair("이", "가")
+				("이", "가")
 			},
 			{
 				"(와)과",
-				new JosaPair("과", "와")
+				("과", "와")
 			},
 			{
 				"(을)를",
-				new JosaPair("을", "를")
+				("을", "를")
 			},
 			{
 				"(은)는",
-				new JosaPair("은", "는")
+				("은", "는")
 			},
 			{
 				"(아)야",
-				new JosaPair("아", "야")
+				("아", "야")
 			},
 			{
-				"(이)여",
-				new JosaPair("이여", "여")
+				"(이)어",
+				("이어", "여")
 			},
 			{
 				"(으)로",
-				new JosaPair("으로", "로")
+				("으로", "로")
 			},
 			{
-				"(이)라",
-				new JosaPair("이라", "라")
+				"(이)",
+				("이", "")
 			}
 		};
 
-		private static readonly Regex TagPattern = new Regex("\\(/[a-zA-Z]+\\)", RegexOptions.Compiled);
+		private static readonly Regex TagOrNodeOpeningPattern = new Regex("\\(\\*|<", RegexOptions.Compiled);
 
-		private static readonly Regex NodePattern = new Regex("</[a-zA-Z]+>", RegexOptions.Compiled);
+		private static readonly Regex TagOrNodeClosingPattern = new Regex("(\\(|<)\\/\\w+(\\)|>)", RegexOptions.Compiled);
 
-		private static readonly List<char> AlphabetEndPattern = new List<char>
-		{
-			'b',
-			'c',
-			'k',
-			'l',
-			'm',
-			'n',
-			'p',
-			'q',
-			't'
-		};
+		private static readonly List<char> AlphabetEndPattern = new List<char> { 'b', 'c', 'k', 'l', 'm', 'n', 'p', 'q', 't' };
 
 		public override string PostProcessed(string str)
 		{
 			return ReplaceJosa(base.PostProcessed(str));
-		}
-
-		public override string PostProcessedKeyedTranslation(string translation)
-		{
-			return ReplaceJosa(base.PostProcessedKeyedTranslation(translation));
 		}
 
 		public string ReplaceJosa(string src)
@@ -101,17 +72,15 @@ namespace Verse
 			{
 				Match match = matchCollection[i];
 				Match match2 = matchCollection2[i];
-				JosaPair josaPair = JosaPatternPaired[match.Value];
 				tmpStringBuilder.Append(src, num, match.Index - num);
-				if (match.Index > 0)
+				char? c = FindLastChar(text, match2.Index);
+				if (c.HasValue)
 				{
-					char inChar = text[match2.Index - 1];
-					string value = (((match.Value == "(으)로") ? HasJongExceptRieul(inChar) : HasJong(inChar)) ? josaPair.josa1 : josaPair.josa2);
-					tmpStringBuilder.Append(value);
+					tmpStringBuilder.Append(ResolveJosa(match.Value, c.Value));
 				}
 				else
 				{
-					tmpStringBuilder.Append(josaPair.josa2);
+					tmpStringBuilder.Append(match.Value);
 				}
 				num = match.Index + match.Length;
 			}
@@ -121,16 +90,61 @@ namespace Verse
 
 		private string StripTags(string inString)
 		{
-			string text = inString;
-			if (text.IndexOf("(*") >= 0)
+			if (TagOrNodeOpeningPattern.Match(inString).Success)
 			{
-				text = TagPattern.Replace(text, "");
+				return TagOrNodeClosingPattern.Replace(inString, "");
 			}
-			if (text.IndexOf("<") >= 0)
+			return inString;
+		}
+
+		private string ResolveJosa(string josaToken, char lastChar)
+		{
+			if (char.IsLetterOrDigit(lastChar))
 			{
-				text = NodePattern.Replace(text, "");
+				if (!((josaToken == "(으)로") ? HasJongExceptRieul(lastChar) : HasJong(lastChar)))
+				{
+					return JosaPatternPaired[josaToken].Item2;
+				}
+				return JosaPatternPaired[josaToken].Item1;
 			}
-			return text;
+			return josaToken;
+		}
+
+		private char? FindLastChar(string stripped, int strippedMatchIndex)
+		{
+			if (strippedMatchIndex == 0)
+			{
+				return null;
+			}
+			char c = stripped[strippedMatchIndex - 1];
+			switch (c)
+			{
+			case '"':
+			case '\'':
+				if (strippedMatchIndex == 1)
+				{
+					return null;
+				}
+				return stripped[strippedMatchIndex - 2];
+			default:
+				return c;
+			case ')':
+			{
+				int num = stripped.LastIndexOf('(', strippedMatchIndex - 1, strippedMatchIndex - 1);
+				if (num == -1)
+				{
+					return null;
+				}
+				for (int num2 = num; num2 >= 0; num2--)
+				{
+					if (stripped[num2] != ' ')
+					{
+						return stripped[num2];
+					}
+				}
+				return null;
+			}
+			}
 		}
 
 		private bool HasJong(char inChar)
@@ -146,6 +160,10 @@ namespace Verse
 		{
 			if (!IsKorean(inChar))
 			{
+				if (inChar != 'l')
+				{
+					return AlphabetEndPattern.Contains(inChar);
+				}
 				return false;
 			}
 			int num = ExtractJongCode(inChar);

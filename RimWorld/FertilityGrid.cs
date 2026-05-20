@@ -5,13 +5,17 @@ namespace RimWorld
 {
 	public sealed class FertilityGrid
 	{
+		public const float MaxPollutedFertility = 0.5f;
+
 		private Map map;
 
 		private CellBoolDrawer drawerInt;
 
-		private static readonly Color MediumFertilityColor = new Color(0.59f, 0.98f, 0.59f, 1f);
+		private static readonly Color ExtraLowFertilityColor = Color.red;
 
 		private static readonly Color LowFertilityColor = Color.yellow;
+
+		private static readonly Color MediumFertilityColor = new Color(0.59f, 0.98f, 0.59f, 1f);
 
 		private static readonly Color HighFertilityColor = Color.green;
 
@@ -44,12 +48,17 @@ namespace RimWorld
 			{
 				return edifice.def.fertility;
 			}
-			return map.terrainGrid.TerrainAt(loc).fertility;
+			float num = map.terrainGrid.TerrainAt(loc).fertility;
+			if (ModsConfig.BiotechActive && map.pollutionGrid.IsPolluted(loc))
+			{
+				num = Mathf.Min(num, 0.5f);
+			}
+			return num;
 		}
 
 		public void FertilityGridUpdate()
 		{
-			if (Find.PlaySettings.showFertilityOverlay)
+			if (Find.PlaySettings.showFertilityOverlay && !Find.ScreenshotModeHandler.Active)
 			{
 				Drawer.MarkForDraw();
 			}
@@ -68,12 +77,21 @@ namespace RimWorld
 			{
 				return false;
 			}
-			return FertilityAt(intVec) > 0.69f;
+			float num = FertilityAt(intVec);
+			if (ModsConfig.BiotechActive)
+			{
+				return num >= 0.5f;
+			}
+			return num > 0.69f;
 		}
 
 		private Color CellBoolDrawerGetExtraColorInt(int index)
 		{
 			float num = FertilityAt(CellIndicesUtility.IndexToCell(index, map.Size.x));
+			if (ModsConfig.BiotechActive && num <= 0.5f)
+			{
+				return ExtraLowFertilityColor;
+			}
 			if (num <= 0.95f)
 			{
 				return LowFertilityColor;

@@ -43,10 +43,7 @@ namespace RimWorld
 				return;
 			}
 			pawn.PreKidnapped(kidnapper);
-			if (pawn.Spawned)
-			{
-				pawn.DeSpawn();
-			}
+			pawn.DeSpawnOrDeselect();
 			kidnappedPawns.Add(pawn);
 			if (!Find.WorldPawns.Contains(pawn))
 			{
@@ -81,7 +78,7 @@ namespace RimWorld
 			}
 			else
 			{
-				Log.Warning(string.Concat("Tried to remove kidnapped pawn ", pawn, " but he's not here."));
+				Log.Warning("Tried to remove kidnapped pawn " + pawn?.ToString() + " but he's not here.");
 			}
 		}
 

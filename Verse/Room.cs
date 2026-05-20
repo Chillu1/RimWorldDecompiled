@@ -1,31 +1,28 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using RimWorld;
 using UnityEngine;
 
 namespace Verse
 {
-	public sealed class Room
+	public class Room
 	{
-		public sbyte mapIndex = -1;
+		public int ID = -1;
 
-		private RoomGroup groupInt;
+		private List<District> districts = new List<District>();
 
-		private List<Region> regions = new List<Region>();
-
-		public int ID = -16161616;
-
-		public int lastChangeTick = -1;
-
-		private int numRegionsTouchingMapEdge;
+		private RoomTempTracker tempTracker;
 
 		private int cachedOpenRoofCount = -1;
 
-		private IEnumerator<IntVec3> cachedOpenRoofState;
+		private int cachedExposedCount = -1;
 
-		public bool isPrisonCell;
+		private int cachedExposedThreshold;
 
 		private int cachedCellCount = -1;
+
+		private bool isPrisonCell;
 
 		private bool statsAndRoleDirty = true;
 
@@ -33,86 +30,171 @@ namespace Verse
 
 		private RoomRoleDef role;
 
-		public int newOrReusedRoomGroupIndex = -1;
+		private List<IntVec3> cachedBorderCells = new List<IntVec3>();
+
+		private long cachedBorderCellsTick = -1L;
+
+		private float vacuum;
+
+		public bool vacuumOverlayDrawn;
+
+		public int vacuumOverlayRects;
 
 		private static int nextRoomID;
 
 		private const int RegionCountHuge = 60;
 
-		private const int MaxRegionsToAssignRoomRole = 36;
+		private const float UseOutdoorTemperatureUnroofedFraction = 0.25f;
+
+		public const float MinVaccum = -0.1f;
+
+		private const int MaxRegionsToAssignRoomRole = 60;
 
 		private static readonly Color PrisonFieldColor = new Color(1f, 0.7f, 0.2f);
 
 		private static readonly Color NonPrisonFieldColor = new Color(0.3f, 0.3f, 1f);
 
-		private HashSet<Room> uniqueNeighborsSet = new HashSet<Room>();
+		public const string VacuumChangedSignal = "Vacuum";
 
-		private List<Room> uniqueNeighbors = new List<Room>();
+		private List<Region> tmpRegions = new List<Region>();
 
-		private HashSet<Thing> uniqueContainedThingsSet = new HashSet<Thing>();
+		private readonly HashSet<Thing> uniqueContainedThingsSet = new HashSet<Thing>();
 
-		private List<Thing> uniqueContainedThings = new List<Thing>();
+		private readonly List<Thing> uniqueContainedThings = new List<Thing>();
 
-		private HashSet<Thing> uniqueContainedThingsOfDef = new HashSet<Thing>();
+		private readonly HashSet<Thing> uniqueContainedThingsOfDef = new HashSet<Thing>();
 
 		private static List<IntVec3> fields = new List<IntVec3>();
+
+		public List<District> Districts => districts;
 
 		public Map Map
 		{
 			get
 			{
-				if (mapIndex >= 0)
+				if (!districts.Any())
 				{
-					return Find.Maps[mapIndex];
+					return null;
 				}
-				return null;
+				return districts[0].Map;
 			}
 		}
 
-		public RegionType RegionType
+		public int DistrictCount => districts.Count;
+
+		public RoomTempTracker TempTracker => tempTracker;
+
+		public float Temperature
 		{
 			get
 			{
-				if (!regions.Any())
-				{
-					return RegionType.None;
-				}
-				return regions[0].type;
-			}
-		}
-
-		public List<Region> Regions => regions;
-
-		public int RegionCount => regions.Count;
-
-		public bool IsHuge => regions.Count > 60;
-
-		public bool Dereferenced => regions.Count == 0;
-
-		public bool TouchesMapEdge => numRegionsTouchingMapEdge > 0;
-
-		public float Temperature => Group.Temperature;
-
-		public bool UsesOutdoorTemperature => Group.UsesOutdoorTemperature;
-
-		public RoomGroup Group
-		{
-			get
-			{
-				return groupInt;
+				return tempTracker.Temperature;
 			}
 			set
 			{
-				if (value != groupInt)
+				tempTracker.Temperature = value;
+			}
+		}
+
+		public bool UsesOutdoorTemperature
+		{
+			get
+			{
+				if (!TouchesMapEdge)
 				{
-					if (groupInt != null)
+					return OpenRoofCount >= Mathf.CeilToInt((float)CellCount * 0.25f);
+				}
+				return true;
+			}
+		}
+
+		public bool ExposedToSpace
+		{
+			get
+			{
+				if (Map.Biome.inVacuum)
+				{
+					if (!TouchesMapEdge)
 					{
-						groupInt.RemoveRoom(this);
+						return ExposedCountStopAt(1) > 0;
 					}
-					groupInt = value;
-					if (groupInt != null)
+					return true;
+				}
+				return false;
+			}
+		}
+
+		public bool Dereferenced => RegionCount == 0;
+
+		public bool IsHuge => RegionCount > 60;
+
+		public bool IsPrisonCell => isPrisonCell;
+
+		public float Vacuum
+		{
+			get
+			{
+				if (!Map.Biome.inVacuum)
+				{
+					return 0f;
+				}
+				if (ExposedToSpace)
+				{
+					return vacuum = 1f;
+				}
+				if (IsDoorway)
+				{
+					if (!Map.regionAndRoomUpdater.Enabled)
 					{
-						groupInt.AddRoom(this);
+						return 0f;
+					}
+					float num = 0f;
+					Region region = Regions[0];
+					foreach (RegionLink link in region.links)
+					{
+						Room room = link.GetOtherRegion(region)?.Room;
+						if (room != null)
+						{
+							num += room.UnsanitizedVacuum;
+						}
+					}
+					if (Mathf.Approximately(num, 0f) || region.links.Count == 0)
+					{
+						return 0f;
+					}
+					num /= (float)region.links.Count;
+					return vacuum = ((num <= 0.01f) ? 0f : num);
+				}
+				if (!(vacuum <= 0.01f))
+				{
+					return vacuum;
+				}
+				return 0f;
+			}
+			set
+			{
+				vacuum = Mathf.Clamp(value, -0.1f, 1f);
+				foreach (Thing uniqueContainedThing in uniqueContainedThings)
+				{
+					if (uniqueContainedThing is ThingWithComps thingWithComps)
+					{
+						thingWithComps.BroadcastCompSignal("Vacuum");
+					}
+				}
+			}
+		}
+
+		internal float UnsanitizedVacuum => vacuum;
+
+		public IEnumerable<IntVec3> Cells
+		{
+			get
+			{
+				for (int i = 0; i < districts.Count; i++)
+				{
+					foreach (IntVec3 cell in districts[i].Cells)
+					{
+						yield return cell;
 					}
 				}
 			}
@@ -125,77 +207,98 @@ namespace Verse
 				if (cachedCellCount == -1)
 				{
 					cachedCellCount = 0;
-					for (int i = 0; i < regions.Count; i++)
+					for (int i = 0; i < districts.Count; i++)
 					{
-						cachedCellCount += regions[i].CellCount;
+						cachedCellCount += districts[i].CellCount;
 					}
 				}
 				return cachedCellCount;
 			}
 		}
 
-		public int OpenRoofCount => OpenRoofCountStopAt(int.MaxValue);
-
-		public bool PsychologicallyOutdoors
+		public Region FirstRegion
 		{
 			get
 			{
-				if (OpenRoofCountStopAt(300) >= 300)
+				for (int i = 0; i < districts.Count; i++)
 				{
-					return true;
-				}
-				if (Group.AnyRoomTouchesMapEdge && (float)OpenRoofCount / (float)CellCount >= 0.5f)
-				{
-					return true;
-				}
-				return false;
-			}
-		}
-
-		public bool OutdoorsForWork
-		{
-			get
-			{
-				if (OpenRoofCountStopAt(101) > 100 || (float)OpenRoofCount > (float)CellCount * 0.25f)
-				{
-					return true;
-				}
-				return false;
-			}
-		}
-
-		public List<Room> Neighbors
-		{
-			get
-			{
-				uniqueNeighborsSet.Clear();
-				uniqueNeighbors.Clear();
-				for (int i = 0; i < regions.Count; i++)
-				{
-					foreach (Region neighbor in regions[i].Neighbors)
+					List<Region> regions = districts[i].Regions;
+					if (regions.Count > 0)
 					{
-						if (uniqueNeighborsSet.Add(neighbor.Room) && neighbor.Room != this)
-						{
-							uniqueNeighbors.Add(neighbor.Room);
-						}
+						return regions[0];
 					}
 				}
-				uniqueNeighborsSet.Clear();
-				return uniqueNeighbors;
+				return null;
 			}
 		}
 
-		public IEnumerable<IntVec3> Cells
+		public List<Region> Regions
 		{
 			get
 			{
-				for (int i = 0; i < regions.Count; i++)
+				tmpRegions.Clear();
+				for (int i = 0; i < districts.Count; i++)
 				{
-					foreach (IntVec3 cell in regions[i].Cells)
+					List<Region> regions = districts[i].Regions;
+					for (int j = 0; j < regions.Count; j++)
 					{
-						yield return cell;
+						tmpRegions.Add(regions[j]);
 					}
 				}
+				return tmpRegions;
+			}
+		}
+
+		public int RegionCount
+		{
+			get
+			{
+				int num = 0;
+				for (int i = 0; i < districts.Count; i++)
+				{
+					num += districts[i].RegionCount;
+				}
+				return num;
+			}
+		}
+
+		public CellRect ExtentsClose
+		{
+			get
+			{
+				CellRect result = new CellRect(int.MaxValue, int.MaxValue, int.MinValue, int.MinValue);
+				foreach (Region region in Regions)
+				{
+					if (region.extentsClose.minX < result.minX)
+					{
+						result.minX = region.extentsClose.minX;
+					}
+					if (region.extentsClose.minZ < result.minZ)
+					{
+						result.minZ = region.extentsClose.minZ;
+					}
+					if (region.extentsClose.maxX > result.maxX)
+					{
+						result.maxX = region.extentsClose.maxX;
+					}
+					if (region.extentsClose.maxZ > result.maxZ)
+					{
+						result.maxZ = region.extentsClose.maxZ;
+					}
+				}
+				return result;
+			}
+		}
+
+		public int OpenRoofCount
+		{
+			get
+			{
+				if (cachedOpenRoofCount == -1)
+				{
+					cachedOpenRoofCount = OpenRoofCountStopAt(int.MaxValue);
+				}
+				return cachedOpenRoofCount;
 			}
 		}
 
@@ -221,6 +324,85 @@ namespace Verse
 			}
 		}
 
+		public IEnumerable<IntVec3> BorderCellsCardinal
+		{
+			get
+			{
+				foreach (IntVec3 c in Cells)
+				{
+					int i = 0;
+					while (i < 4)
+					{
+						IntVec3 intVec = c + GenAdj.CardinalDirections[i];
+						Region region = intVec.GetRegion(Map);
+						if (intVec.InBounds(Map) && (region == null || region.Room != this))
+						{
+							yield return intVec;
+						}
+						int num = i + 1;
+						i = num;
+					}
+				}
+			}
+		}
+
+		public IEnumerable<IntVec3> BorderCellsCached
+		{
+			get
+			{
+				if (GenTicks.TicksGame - cachedBorderCellsTick > 120)
+				{
+					cachedBorderCellsTick = GenTicks.TicksGame;
+					cachedBorderCells.Clear();
+					cachedBorderCells.AddRange(BorderCells);
+				}
+				return cachedBorderCells;
+			}
+		}
+
+		public bool TouchesMapEdge
+		{
+			get
+			{
+				for (int i = 0; i < districts.Count; i++)
+				{
+					if (districts[i].TouchesMapEdge)
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+		}
+
+		public bool PsychologicallyOutdoors
+		{
+			get
+			{
+				if (OpenRoofCountStopAt(300) >= 300)
+				{
+					return true;
+				}
+				if (TouchesMapEdge && (float)OpenRoofCount / (float)CellCount >= 0.5f)
+				{
+					return true;
+				}
+				return false;
+			}
+		}
+
+		public bool OutdoorsForWork
+		{
+			get
+			{
+				if (OpenRoofCountStopAt(101) > 100 || (float)OpenRoofCount > (float)CellCount * 0.25f)
+				{
+					return true;
+				}
+				return false;
+			}
+		}
+
 		public IEnumerable<Pawn> Owners
 		{
 			get
@@ -229,39 +411,17 @@ namespace Verse
 				{
 					yield break;
 				}
-				Pawn pawn = null;
-				Pawn secondOwner = null;
-				foreach (Building_Bed containedBed in ContainedBeds)
+				IEnumerable<Building_Bed> enumerable = ContainedBeds.Where((Building_Bed x) => x.def.building.bed_humanlike);
+				if (enumerable.Count() > 1 && (Role == RoomRoleDefOf.Barracks || Role == RoomRoleDefOf.PrisonBarracks) && enumerable.Where((Building_Bed b) => b.OwnersForReading.Any()).Count() > 1)
 				{
-					if (!containedBed.def.building.bed_humanlike)
-					{
-						continue;
-					}
-					for (int i = 0; i < containedBed.OwnersForReading.Count; i++)
-					{
-						if (pawn == null)
-						{
-							pawn = containedBed.OwnersForReading[i];
-							continue;
-						}
-						if (secondOwner == null)
-						{
-							secondOwner = containedBed.OwnersForReading[i];
-							continue;
-						}
-						yield break;
-					}
+					yield break;
 				}
-				if (pawn != null)
+				foreach (Building_Bed item in enumerable)
 				{
-					if (secondOwner == null)
+					List<Pawn> assignedPawns = item.OwnersForReading;
+					for (int i = 0; i < assignedPawns.Count; i++)
 					{
-						yield return pawn;
-					}
-					else if (LovePartnerRelationUtility.LovePartnerRelationExists(pawn, secondOwner))
-					{
-						yield return pawn;
-						yield return secondOwner;
+						yield return assignedPawns[i];
 					}
 				}
 			}
@@ -274,8 +434,7 @@ namespace Verse
 				List<Thing> things = ContainedAndAdjacentThings;
 				for (int i = 0; i < things.Count; i++)
 				{
-					Building_Bed building_Bed = things[i] as Building_Bed;
-					if (building_Bed != null)
+					if (things[i] is Building_Bed building_Bed)
 					{
 						yield return building_Bed;
 					}
@@ -287,11 +446,11 @@ namespace Verse
 		{
 			get
 			{
-				if (regions.Count == 0)
+				if (RegionCount == 0)
 				{
 					return false;
 				}
-				return regions[0].AnyCell.Fogged(Map);
+				return FirstRegion.AnyCell.Fogged(Map);
 			}
 		}
 
@@ -299,11 +458,23 @@ namespace Verse
 		{
 			get
 			{
-				if (regions.Count == 1)
+				if (districts.Count == 1)
 				{
-					return regions[0].IsDoorway;
+					return districts[0].IsDoorway;
 				}
 				return false;
+			}
+		}
+
+		public Building_Door Door
+		{
+			get
+			{
+				if (!IsDoorway)
+				{
+					return null;
+				}
+				return districts[0].Regions[0].door;
 			}
 		}
 
@@ -313,6 +484,7 @@ namespace Verse
 			{
 				uniqueContainedThingsSet.Clear();
 				uniqueContainedThings.Clear();
+				List<Region> regions = Regions;
 				for (int i = 0; i < regions.Count; i++)
 				{
 					List<Thing> allThings = regions[i].ListerThings.AllThings;
@@ -346,60 +518,128 @@ namespace Verse
 			}
 		}
 
+		public bool AnyPassable
+		{
+			get
+			{
+				for (int i = 0; i < districts.Count; i++)
+				{
+					if (districts[i].Passable)
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+		}
+
+		public bool ProperRoom
+		{
+			get
+			{
+				if (TouchesMapEdge)
+				{
+					return false;
+				}
+				for (int i = 0; i < districts.Count; i++)
+				{
+					if (districts[i].RegionType == RegionType.Normal)
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+		}
+
+		private int OpenRoofCountStopAt(int threshold)
+		{
+			if (cachedOpenRoofCount != -1)
+			{
+				return cachedOpenRoofCount;
+			}
+			int num = 0;
+			for (int i = 0; i < districts.Count; i++)
+			{
+				num += districts[i].OpenRoofCountStopAt(threshold);
+				if (num >= threshold)
+				{
+					return num;
+				}
+				threshold -= num;
+			}
+			return num;
+		}
+
+		private int ExposedCountStopAt(int threshold)
+		{
+			if (cachedExposedThreshold > 0 && cachedExposedThreshold <= threshold)
+			{
+				return cachedExposedCount;
+			}
+			cachedExposedThreshold = threshold;
+			int num = 0;
+			for (int i = 0; i < districts.Count; i++)
+			{
+				num += districts[i].ExposedVacuumCount(threshold);
+				if (num >= threshold)
+				{
+					return cachedExposedCount = num;
+				}
+				threshold -= num;
+			}
+			return cachedExposedCount = num;
+		}
+
 		public static Room MakeNew(Map map)
 		{
-			Room result = new Room
-			{
-				mapIndex = (sbyte)map.Index,
-				ID = nextRoomID
-			};
+			Room room = new Room();
+			room.ID = nextRoomID;
+			room.tempTracker = new RoomTempTracker(room, map);
+			map.regionAndRoomUpdater.roomLookup[room.ID] = room;
 			nextRoomID++;
-			return result;
+			return room;
 		}
 
-		public void AddRegion(Region r)
+		public void AddDistrict(District district)
 		{
-			if (regions.Contains(r))
+			if (districts.Contains(district))
 			{
-				Log.Error(string.Concat("Tried to add the same region twice to Room. region=", r, ", room=", this));
+				Log.Error("Tried to add the same district twice to Room. district=" + district?.ToString() + ", room=" + this);
 				return;
 			}
-			regions.Add(r);
-			if (r.touchesMapEdge)
+			districts.Add(district);
+			if (districts.Count == 1)
 			{
-				numRegionsTouchingMapEdge++;
-			}
-			if (regions.Count == 1)
-			{
-				Map.regionGrid.allRooms.Add(this);
+				Map.regionGrid.RoomAdded(this);
 			}
 		}
 
-		public void RemoveRegion(Region r)
+		public void RemoveDistrict(District district)
 		{
-			if (!regions.Contains(r))
+			if (!districts.Contains(district))
 			{
-				Log.Error(string.Concat("Tried to remove region from Room but this region is not here. region=", r, ", room=", this));
+				Log.Error("Tried to remove district from Room but this district is not here. district=" + district?.ToString() + ", room=" + this);
 				return;
 			}
-			regions.Remove(r);
-			if (r.touchesMapEdge)
+			Map map = Map;
+			districts.Remove(district);
+			tmpRegions.Clear();
+			if (districts.Count == 0)
 			{
-				numRegionsTouchingMapEdge--;
+				map?.regionGrid.RoomRemoved(this);
 			}
-			if (regions.Count == 0)
-			{
-				Group = null;
-				cachedOpenRoofCount = -1;
-				cachedOpenRoofState = null;
-				statsAndRoleDirty = true;
-				Map.regionGrid.allRooms.Remove(this);
-			}
+			statsAndRoleDirty = true;
 		}
 
-		public void Notify_MyMapRemoved()
+		public bool PushHeat(float energy)
 		{
-			mapIndex = -1;
+			if (UsesOutdoorTemperature)
+			{
+				return false;
+			}
+			Temperature += energy / (float)CellCount;
+			return true;
 		}
 
 		public void Notify_ContainedThingSpawnedOrDespawned(Thing th)
@@ -410,6 +650,7 @@ namespace Verse
 			}
 			if (IsDoorway)
 			{
+				List<Region> regions = districts[0].Regions;
 				for (int i = 0; i < regions[0].links.Count; i++)
 				{
 					Region otherRegion = regions[0].links[i].GetOtherRegion(regions[0]);
@@ -424,6 +665,8 @@ namespace Verse
 
 		public void Notify_TerrainChanged()
 		{
+			cachedExposedCount = -1;
+			cachedExposedThreshold = 0;
 			statsAndRoleDirty = true;
 		}
 
@@ -435,16 +678,25 @@ namespace Verse
 		public void Notify_RoofChanged()
 		{
 			cachedOpenRoofCount = -1;
-			cachedOpenRoofState = null;
-			Group.Notify_RoofChanged();
+			cachedExposedCount = -1;
+			cachedExposedThreshold = 0;
+			tempTracker.RoofChanged();
 		}
 
-		public void Notify_RoomShapeOrContainedBedsChanged()
+		public void Notify_RoomShapeChanged()
 		{
 			cachedCellCount = -1;
 			cachedOpenRoofCount = -1;
-			cachedOpenRoofState = null;
-			if (Current.ProgramState == ProgramState.Playing && !Fogged)
+			cachedExposedCount = -1;
+			cachedExposedThreshold = 0;
+			if (Dereferenced)
+			{
+				isPrisonCell = false;
+				statsAndRoleDirty = true;
+				return;
+			}
+			tempTracker.RoomChanged();
+			if (Current.ProgramState == ProgramState.Playing && !Fogged && !GravshipPlacementUtility.placingGravship)
 			{
 				Map.autoBuildRoofAreaSetter.TryGenerateAreaFor(this);
 			}
@@ -454,8 +706,7 @@ namespace Verse
 				List<Thing> containedAndAdjacentThings = ContainedAndAdjacentThings;
 				for (int i = 0; i < containedAndAdjacentThings.Count; i++)
 				{
-					Building_Bed building_Bed = containedAndAdjacentThings[i] as Building_Bed;
-					if (building_Bed != null && building_Bed.ForPrisoners)
+					if (containedAndAdjacentThings[i] is Building_Bed { ForPrisoners: not false })
 					{
 						isPrisonCell = true;
 						break;
@@ -474,22 +725,21 @@ namespace Verse
 					containedBed.ForPrisoners = true;
 				}
 			}
-			lastChangeTick = Find.TickManager.TicksGame;
 			statsAndRoleDirty = true;
-			FacilitiesUtility.NotifyFacilitiesAboutChangedLOSBlockers(regions);
 		}
 
 		public bool ContainsCell(IntVec3 cell)
 		{
 			if (Map != null)
 			{
-				return cell.GetRoom(Map, RegionType.Set_All) == this;
+				return cell.GetRoom(Map) == this;
 			}
 			return false;
 		}
 
 		public bool ContainsThing(ThingDef def)
 		{
+			List<Region> regions = Regions;
 			for (int i = 0; i < regions.Count; i++)
 			{
 				if (regions[i].ListerThings.ThingsOfDef(def).Any())
@@ -503,6 +753,7 @@ namespace Verse
 		public IEnumerable<Thing> ContainedThings(ThingDef def)
 		{
 			uniqueContainedThingsOfDef.Clear();
+			List<Region> regions = Regions;
 			int i = 0;
 			while (i < regions.Count)
 			{
@@ -522,9 +773,37 @@ namespace Verse
 			uniqueContainedThingsOfDef.Clear();
 		}
 
+		public IEnumerable<T> ContainedThings<T>() where T : Thing
+		{
+			uniqueContainedThingsOfDef.Clear();
+			foreach (Region region in Regions)
+			{
+				foreach (T item in region.ListerThings.GetThingsOfType<T>())
+				{
+					if (uniqueContainedThingsOfDef.Add(item))
+					{
+						yield return item;
+					}
+				}
+			}
+			uniqueContainedThingsOfDef.Clear();
+		}
+
+		public IEnumerable<Thing> ContainedThingsList(IEnumerable<ThingDef> thingDefs)
+		{
+			foreach (ThingDef thingDef in thingDefs)
+			{
+				foreach (Thing item in ContainedThings(thingDef))
+				{
+					yield return item;
+				}
+			}
+		}
+
 		public int ThingCount(ThingDef def)
 		{
 			uniqueContainedThingsOfDef.Clear();
+			List<Region> regions = Regions;
 			int num = 0;
 			for (int i = 0; i < regions.Count; i++)
 			{
@@ -541,18 +820,6 @@ namespace Verse
 			return num;
 		}
 
-		public void DecrementMapIndex()
-		{
-			if (mapIndex <= 0)
-			{
-				Log.Warning("Tried to decrement map index for room " + ID + ", but mapIndex=" + mapIndex);
-			}
-			else
-			{
-				mapIndex--;
-			}
-		}
-
 		public float GetStat(RoomStatDef roomStat)
 		{
 			if (statsAndRoleDirty)
@@ -566,11 +833,6 @@ namespace Verse
 			return stats[roomStat];
 		}
 
-		public RoomStatScoreStage GetStatScoreStage(RoomStatDef stat)
-		{
-			return stat.GetScoreStage(GetStat(stat));
-		}
-
 		public void DrawFieldEdges()
 		{
 			fields.Clear();
@@ -581,35 +843,23 @@ namespace Verse
 			fields.Clear();
 		}
 
-		public int OpenRoofCountStopAt(int threshold)
+		public RoomRoleDef GetRoomRoleIfBuildingPlaced(ThingDef buildingDef)
 		{
-			if (cachedOpenRoofCount == -1 && cachedOpenRoofState == null)
+			if (statsAndRoleDirty)
 			{
-				cachedOpenRoofCount = 0;
-				cachedOpenRoofState = Cells.GetEnumerator();
+				UpdateRoomStatsAndRole();
 			}
-			if (cachedOpenRoofCount < threshold && cachedOpenRoofState != null)
+			if (!ProperRoom || RegionCount > 60)
 			{
-				RoofGrid roofGrid = Map.roofGrid;
-				while (cachedOpenRoofCount < threshold && cachedOpenRoofState.MoveNext())
-				{
-					if (!roofGrid.Roofed(cachedOpenRoofState.Current))
-					{
-						cachedOpenRoofCount++;
-					}
-				}
-				if (cachedOpenRoofCount < threshold)
-				{
-					cachedOpenRoofState = null;
-				}
+				return RoomRoleDefOf.None;
 			}
-			return cachedOpenRoofCount;
+			return DefDatabase<RoomRoleDef>.AllDefs.MaxBy((RoomRoleDef x) => x.Worker.GetScore(this) + x.Worker.GetScoreDeltaIfBuildingPlaced(this, buildingDef));
 		}
 
 		private void UpdateRoomStatsAndRole()
 		{
 			statsAndRoleDirty = false;
-			if (!TouchesMapEdge && RegionType == RegionType.Normal && regions.Count <= 36)
+			if (ProperRoom && RegionCount <= 60)
 			{
 				if (stats == null)
 				{
@@ -628,28 +878,61 @@ namespace Verse
 			}
 		}
 
-		internal void DebugDraw()
+		public string GetRoomRoleLabel()
 		{
-			int hashCode = GetHashCode();
-			foreach (IntVec3 cell in Cells)
+			Pawn pawn = null;
+			Pawn pawn2 = null;
+			foreach (Pawn owner in Owners)
 			{
-				CellRenderer.RenderCell(cell, (float)hashCode * 0.01f);
+				if (pawn == null)
+				{
+					pawn = owner;
+				}
+				else
+				{
+					pawn2 = owner;
+				}
 			}
+			TaggedString taggedString = ((pawn == null) ? ((TaggedString)Role.PostProcessedLabel(this)) : ((pawn2 != null && pawn2 != pawn) ? "CouplesRoom".Translate(pawn.LabelShort, pawn2.LabelShort, Role.label, pawn.Named("PAWN1"), pawn2.Named("PAWN2")) : "SomeonesRoom".Translate(pawn.LabelShort, Role.label, pawn.Named("PAWN"))));
+			return taggedString;
 		}
 
-		internal string DebugString()
+		public string DebugString()
 		{
-			return string.Concat("Room ID=", ID, "\n  first cell=", Cells.FirstOrDefault(), "\n  RegionCount=", RegionCount, "\n  RegionType=", RegionType, "\n  CellCount=", CellCount, "\n  OpenRoofCount=", OpenRoofCount, "\n  numRegionsTouchingMapEdge=", numRegionsTouchingMapEdge, "\n  lastChangeTick=", lastChangeTick, "\n  isPrisonCell=", isPrisonCell.ToString(), "\n  RoomGroup=", (Group != null) ? Group.ID.ToString() : "null");
+			return "Room ID=" + ID + "\n  first cell=" + Cells.FirstOrDefault().ToString() + "\n  DistrictCount=" + DistrictCount + "\n  RegionCount=" + RegionCount + "\n  CellCount=" + CellCount + "\n  OpenRoofCount=" + OpenRoofCount + "\n  PsychologicallyOutdoors=" + PsychologicallyOutdoors + "\n  OutdoorsForWork=" + OutdoorsForWork + "\n  WellEnclosed=" + ProperRoom + "\n  " + tempTracker.DebugString() + (DebugViewSettings.writeRoomRoles ? ("\n" + DebugRolesString()) : "");
+		}
+
+		private string DebugRolesString()
+		{
+			StringBuilder stringBuilder = new StringBuilder();
+			foreach (var (num, arg) in from x in DefDatabase<RoomRoleDef>.AllDefs
+				select (score: x.Worker.GetScore(this), role: x) into tuple2
+				orderby tuple2.score descending
+				select tuple2)
+			{
+				stringBuilder.AppendLine($"{num}: {arg}");
+			}
+			return stringBuilder.ToString();
+		}
+
+		internal void DebugDraw()
+		{
+			int num = Gen.HashCombineInt(GetHashCode(), 1948571531);
+			foreach (IntVec3 cell in Cells)
+			{
+				CellRenderer.RenderCell(cell, (float)num * 0.01f);
+			}
+			tempTracker.DebugDraw();
 		}
 
 		public override string ToString()
 		{
-			return "Room(roomID=" + ID + ", first=" + Cells.FirstOrDefault().ToString() + ", RegionsCount=" + RegionCount.ToString() + ", lastChangeTick=" + lastChangeTick + ")";
+			return "Room(roomID=" + ID + ", first=" + Cells.FirstOrDefault().ToString() + ", RegionsCount=" + RegionCount + ")";
 		}
 
 		public override int GetHashCode()
 		{
-			return Gen.HashCombineInt(ID, 1538478890);
+			return Gen.HashCombineInt(ID, 1538478891);
 		}
 	}
 }

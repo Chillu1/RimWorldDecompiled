@@ -1,4 +1,5 @@
 using System;
+using RimWorld.Planet;
 using UnityEngine;
 
 namespace Verse
@@ -41,6 +42,18 @@ namespace Verse
 
 		public static TargetInfo Invalid => new TargetInfo(IntVec3.Invalid, null);
 
+		public bool Fogged
+		{
+			get
+			{
+				if (!HasThing)
+				{
+					return cellInt.Fogged(mapInt);
+				}
+				return thingInt.Fogged();
+			}
+		}
+
 		public string Label
 		{
 			get
@@ -65,11 +78,23 @@ namespace Verse
 			}
 		}
 
-		public int Tile
+		public IntVec3 CenterCell
 		{
 			get
 			{
-				if (thingInt != null && thingInt.Tile >= 0)
+				if (thingInt != null)
+				{
+					return thingInt.OccupiedRect().CenterCell;
+				}
+				return cellInt;
+			}
+		}
+
+		public PlanetTile Tile
+		{
+			get
+			{
+				if (thingInt != null && thingInt.Tile.Valid)
 				{
 					return thingInt.Tile;
 				}
@@ -77,7 +102,7 @@ namespace Verse
 				{
 					return mapInt.Tile;
 				}
-				return -1;
+				return PlanetTile.Invalid;
 			}
 		}
 
@@ -106,7 +131,8 @@ namespace Verse
 		{
 			if (!allowNullMap && cell.IsValid && map == null)
 			{
-				Log.Warning(string.Concat("Constructed TargetInfo with cell=", cell, " and a null map."));
+				IntVec3 intVec = cell;
+				Log.Warning("Constructed TargetInfo with cell=" + intVec.ToString() + " and a null map.");
 			}
 			thingInt = null;
 			cellInt = cell;
@@ -140,7 +166,8 @@ namespace Verse
 		{
 			if (targ.cellInt.IsValid)
 			{
-				Log.ErrorOnce("Casted TargetInfo to Thing but it had cell " + targ.cellInt, 631672);
+				IntVec3 intVec = targ.cellInt;
+				Log.ErrorOnce("Casted TargetInfo to Thing but it had cell " + intVec.ToString(), 631672);
 			}
 			return targ.thingInt;
 		}

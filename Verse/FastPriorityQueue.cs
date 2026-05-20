@@ -74,14 +74,22 @@ namespace Verse
 
 		protected void SwapElements(int i, int j)
 		{
-			T value = innerList[i];
-			innerList[i] = innerList[j];
-			innerList[j] = value;
+			List<T> list = innerList;
+			List<T> list2 = innerList;
+			T val = innerList[j];
+			T val2 = innerList[i];
+			T val3 = (list[i] = val);
+			val3 = (list2[j] = val2);
 		}
 
 		protected int CompareElements(int i, int j)
 		{
 			return comparer.Compare(innerList[i], innerList[j]);
+		}
+
+		public bool Contains(T item)
+		{
+			return innerList.Contains(item);
 		}
 	}
 }

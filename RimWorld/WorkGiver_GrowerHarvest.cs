@@ -15,15 +15,31 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (plant.IsForbidden(pawn))
-			{
-				return false;
-			}
 			if (!plant.HarvestableNow || plant.LifeStage != PlantLifeStage.Mature)
 			{
 				return false;
 			}
+			if (!forced && plant.TryGetComp<CompPlantPreventCutting>(out var comp) && comp.PreventCutting)
+			{
+				return false;
+			}
 			if (!plant.CanYieldNow())
+			{
+				return false;
+			}
+			if (!plant.def.plant.autoHarvestable && !forced)
+			{
+				return false;
+			}
+			if (WorkGiver_Grower.wantedPlantDef == null)
+			{
+				WorkGiver_Grower.wantedPlantDef = WorkGiver_Grower.CalculateWantedPlantDef(c, pawn.Map);
+			}
+			if (c.GetZone(pawn.Map) is Zone_Growing { allowCut: false } && plant.def != WorkGiver_Grower.wantedPlantDef)
+			{
+				return false;
+			}
+			if (!PlantUtility.PawnWillingToCutPlant_Job(plant, pawn))
 			{
 				return false;
 			}
@@ -52,7 +68,7 @@ namespace RimWorld
 			for (int i = 0; i < 40; i++)
 			{
 				IntVec3 intVec = c + GenRadial.RadialPattern[i];
-				if (intVec.GetRoom(map) != room || !HasJobOnCell(pawn, intVec))
+				if (intVec.GetRoom(map) != room || !HasJobOnCell(pawn, intVec, forced))
 				{
 					continue;
 				}

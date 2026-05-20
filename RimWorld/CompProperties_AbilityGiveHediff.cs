@@ -12,6 +12,12 @@ namespace RimWorld
 
 		public bool onlyApplyToSelf;
 
+		public bool applyToTarget = true;
+
 		public bool replaceExisting;
+
+		public float severity = -1f;
+
+		public bool ignoreSelf;
 	}
 }

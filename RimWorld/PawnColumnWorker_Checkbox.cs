@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
+using Verse.Steam;
 
 namespace RimWorld
 {
@@ -38,7 +39,7 @@ namespace RimWorld
 			}
 			if (checkOn != flag)
 			{
-				SetValue(pawn, checkOn);
+				SetValue(pawn, checkOn, table);
 			}
 		}
 
@@ -87,7 +88,7 @@ namespace RimWorld
 
 		protected abstract bool GetValue(Pawn pawn);
 
-		protected abstract void SetValue(Pawn pawn, bool value);
+		protected abstract void SetValue(Pawn pawn, bool value, PawnTable table);
 
 		protected override void HeaderClicked(Rect headerRect, PawnTable table)
 		{
@@ -107,12 +108,12 @@ namespace RimWorld
 				{
 					if (!GetValue(pawnsListForReading[i]))
 					{
-						SetValue(pawnsListForReading[i], value: true);
+						SetValue(pawnsListForReading[i], value: true, table);
 					}
 				}
 				else if (Event.current.button == 1 && GetValue(pawnsListForReading[i]))
 				{
-					SetValue(pawnsListForReading[i], value: false);
+					SetValue(pawnsListForReading[i], value: false, table);
 				}
 			}
 			if (Event.current.button == 0)
@@ -127,7 +128,12 @@ namespace RimWorld
 
 		protected override string GetHeaderTip(PawnTable table)
 		{
-			return base.GetHeaderTip(table) + "\n" + "CheckboxShiftClickTip".Translate();
+			string text = base.GetHeaderTip(table);
+			if (!SteamDeck.IsSteamDeckInNonKeyboardMode)
+			{
+				text += "\n" + "CheckboxShiftClickTip".Translate();
+			}
+			return text;
 		}
 	}
 }

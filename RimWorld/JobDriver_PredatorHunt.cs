@@ -61,20 +61,20 @@ namespace RimWorld
 			{
 				base.Map.attackTargetsCache.UpdateTarget(pawn);
 			});
-			Toil prepareToEatCorpse = new Toil();
+			Toil prepareToEatCorpse = ToilMaker.MakeToil("MakeNewToils");
 			prepareToEatCorpse.initAction = delegate
 			{
 				Pawn actor = prepareToEatCorpse.actor;
 				Corpse corpse = Corpse;
 				if (corpse == null)
 				{
-					Pawn prey2 = Prey;
-					if (prey2 == null)
+					Pawn prey = Prey;
+					if (prey == null)
 					{
 						actor.jobs.EndCurrentJob(JobCondition.Incompletable);
 						return;
 					}
-					corpse = prey2.Corpse;
+					corpse = prey.Corpse;
 					if (corpse == null || !corpse.Spawned)
 					{
 						actor.jobs.EndCurrentJob(JobCondition.Incompletable);
@@ -112,7 +112,7 @@ namespace RimWorld
 			};
 			Toil toil = Toils_Combat.FollowAndMeleeAttack(TargetIndex.A, hitAction).JumpIfDespawnedOrNull(TargetIndex.A, prepareToEatCorpse).JumpIf(() => Corpse != null, prepareToEatCorpse)
 				.FailOn(() => Find.TickManager.TicksGame > startTick + 5000 && (float)(job.GetTarget(TargetIndex.A).Cell - pawn.Position).LengthHorizontalSquared > 4f);
-			toil.AddPreTickAction(CheckWarnPlayer);
+			toil.AddPreTickIntervalAction(CheckWarnPlayerInterval);
 			yield return toil;
 			yield return prepareToEatCorpse;
 			Toil gotoCorpse = Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
@@ -132,7 +132,7 @@ namespace RimWorld
 			}
 		}
 
-		private void CheckWarnPlayer()
+		private void CheckWarnPlayerInterval(int delta)
 		{
 			if (notifiedPlayerAttacking)
 			{

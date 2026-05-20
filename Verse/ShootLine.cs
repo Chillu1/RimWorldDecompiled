@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
+using LudeonTK;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -20,22 +22,38 @@ namespace Verse
 			this.dest = dest;
 		}
 
-		public void ChangeDestToMissWild(float aimOnChance)
+		public void ChangeDestToMissWild(float aimOnChance, bool flyOverhead, Map map)
 		{
 			float num = ShootTuning.MissDistanceFromAimOnChanceCurves.Evaluate(aimOnChance, Rand.Value);
 			if (num < 0f)
 			{
 				Log.ErrorOnce("Attempted to wild-miss less than zero tiles away", 94302089);
 			}
-			IntVec3 a;
+			IntVec3 intVec;
 			do
 			{
 				Vector2 unitVector = Rand.UnitVector2;
-				Vector3 b = new Vector3(unitVector.x * num, 0f, unitVector.y * num);
-				a = (dest.ToVector3Shifted() + b).ToIntVec3();
+				Vector3 vector = new Vector3(unitVector.x * num, 0f, unitVector.y * num);
+				intVec = (dest.ToVector3Shifted() + vector).ToIntVec3();
 			}
-			while (Vector3.Dot((dest - source).ToVector3(), (a - source).ToVector3()) < 0f);
-			dest = a;
+			while (Vector3.Dot((dest - source).ToVector3(), (intVec - source).ToVector3()) < 0f);
+			dest = intVec;
+			if (flyOverhead || map == null || ShootLeanUtility.CellCanSeeCell(source, dest, map))
+			{
+				return;
+			}
+			foreach (IntVec3 item in Points())
+			{
+				IntVec3 intVec2 = (dest = item);
+				if (intVec2 != source && intVec2.InBounds(map) && intVec2.Filled(map) && !source.InHorDistOf(dest, 1.5f))
+				{
+					Building_Door door = intVec2.GetDoor(map);
+					if (door == null || !door.Open)
+					{
+						break;
+					}
+				}
+			}
 		}
 
 		public IEnumerable<IntVec3> Points()
@@ -45,7 +63,14 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return string.Concat("(", source, "->", dest, ")");
+			string[] obj = new string[5] { "(", null, null, null, null };
+			IntVec3 intVec = source;
+			obj[1] = intVec.ToString();
+			obj[2] = "->";
+			intVec = dest;
+			obj[3] = intVec.ToString();
+			obj[4] = ")";
+			return string.Concat(obj);
 		}
 
 		[DebugOutput]
@@ -61,7 +86,7 @@ namespace Verse
 				for (int i = 0; i < 10000; i++)
 				{
 					ShootLine shootLine2 = shootLine;
-					shootLine2.ChangeDestToMissWild((float)item / 100f);
+					shootLine2.ChangeDestToMissWild((float)item / 100f, flyOverhead: false, null);
 					if (shootLine2.dest.z == 0 && shootLine2.dest.x > intVec.x)
 					{
 						results[item, shootLine2.dest.x - intVec.x]++;

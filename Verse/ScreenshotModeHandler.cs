@@ -7,7 +7,17 @@ namespace Verse
 	{
 		private bool active;
 
-		public bool Active => active;
+		public bool Active
+		{
+			get
+			{
+				return active;
+			}
+			set
+			{
+				active = value;
+			}
+		}
 
 		public bool FiltersCurrentEvent
 		{
@@ -31,7 +41,7 @@ namespace Verse
 
 		public void ScreenshotModesOnGUI()
 		{
-			if (KeyBindingDefOf.ToggleScreenshotMode.KeyDownEvent)
+			if (KeyBindingDefOf.ToggleScreenshotMode.KeyDownEvent && !WorldComponent_GravshipController.CutsceneInProgress)
 			{
 				active = !active;
 				Event.current.Use();

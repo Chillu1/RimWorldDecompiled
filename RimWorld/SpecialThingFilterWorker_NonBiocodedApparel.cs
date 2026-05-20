@@ -10,7 +10,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			return !EquipmentUtility.IsBiocoded(t);
+			return !CompBiocodable.IsBiocoded(t);
 		}
 
 		public override bool CanEverMatch(ThingDef def)

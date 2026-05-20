@@ -7,11 +7,11 @@ namespace RimWorld
 {
 	public class Designator_Hunt : Designator
 	{
-		private List<Pawn> justDesignated = new List<Pawn>();
-
-		public override int DraggableDimensions => 2;
+		private readonly List<Pawn> justDesignated = new List<Pawn>();
 
 		protected override DesignationDef Designation => DesignationDefOf.Hunt;
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
 
 		public Designator_Hunt()
 		{
@@ -48,8 +48,7 @@ namespace RimWorld
 
 		public override AcceptanceReport CanDesignateThing(Thing t)
 		{
-			Pawn pawn = t as Pawn;
-			if (pawn != null && pawn.AnimalOrWildMan() && !pawn.IsPrisonerInPrisonCell() && (pawn.Faction == null || !pawn.Faction.def.humanlikeFaction) && base.Map.designationManager.DesignationOn(pawn, Designation) == null)
+			if (t is Pawn pawn && pawn.AnimalOrWildMan() && !pawn.IsPrisonerInPrisonCell() && (pawn.Faction == null || !pawn.Faction.def.humanlikeFaction) && base.Map.designationManager.DesignationOn(pawn, Designation) == null)
 			{
 				return true;
 			}
@@ -89,13 +88,42 @@ namespace RimWorld
 			}
 		}
 
-		private void ShowDesignationWarnings(Pawn pawn)
+		public static void ShowDesignationWarnings(Pawn pawn)
 		{
+			CheckHunters(pawn.MapHeld, out var anyAssignedHunting, out var anyProperWeapon);
+			if (!anyAssignedHunting)
+			{
+				Messages.Message("MessageNoHuntersAvailable".Translate(), pawn, MessageTypeDefOf.CautionInput, historical: false);
+			}
+			else if (!anyProperWeapon)
+			{
+				Messages.Message("MessageNoHuntersWithProperWeapon".Translate(), pawn, MessageTypeDefOf.CautionInput, historical: false);
+			}
 			float manhunterOnDamageChance = pawn.RaceProps.manhunterOnDamageChance;
-			float manhunterOnDamageChance2 = PawnUtility.GetManhunterOnDamageChance(pawn.kindDef);
+			float manhunterOnDamageChance2 = PawnUtility.GetManhunterOnDamageChance(pawn);
 			if (manhunterOnDamageChance >= 0.015f)
 			{
 				Messages.Message("MessageAnimalsGoPsychoHunted".Translate(pawn.kindDef.GetLabelPlural().CapitalizeFirst(), manhunterOnDamageChance2.ToStringPercent(), pawn.Named("ANIMAL")).CapitalizeFirst(), pawn, MessageTypeDefOf.CautionInput, historical: false);
+			}
+			SlaughterDesignatorUtility.CheckWarnAboutVeneratedAnimal(pawn);
+		}
+
+		private static void CheckHunters(Map map, out bool anyAssignedHunting, out bool anyProperWeapon)
+		{
+			anyAssignedHunting = false;
+			anyProperWeapon = false;
+			foreach (Pawn item in map.mapPawns.FreeColonistsSpawned)
+			{
+				bool flag = item.workSettings.WorkIsActive(WorkTypeDefOf.Hunting);
+				if (flag)
+				{
+					anyAssignedHunting = true;
+				}
+				if (!item.Downed && flag && WorkGiver_HunterHunt.HasHuntingWeapon(item))
+				{
+					anyProperWeapon = true;
+					break;
+				}
 			}
 		}
 	}

@@ -71,13 +71,13 @@ namespace Verse
 				else if (hashSet.Count == 1)
 				{
 					request.Includes.Add(RulePackDefOf.Battle_Internal);
-					request.Rules.AddRange(GrammarUtility.RulesForFaction("FACTION1", hashSet.First()));
+					request.Rules.AddRange(GrammarUtility.RulesForFaction("FACTION1", hashSet.First(), request.Constants));
 				}
 				else if (hashSet.Count == 2)
 				{
 					request.Includes.Add(RulePackDefOf.Battle_War);
-					request.Rules.AddRange(GrammarUtility.RulesForFaction("FACTION1", hashSet.First()));
-					request.Rules.AddRange(GrammarUtility.RulesForFaction("FACTION2", hashSet.Last()));
+					request.Rules.AddRange(GrammarUtility.RulesForFaction("FACTION1", hashSet.First(), request.Constants));
+					request.Rules.AddRange(GrammarUtility.RulesForFaction("FACTION2", hashSet.Last(), request.Constants));
 				}
 				else
 				{
@@ -130,7 +130,7 @@ namespace Verse
 				{
 					if (!silentlyRemoveReferences)
 					{
-						Log.Warning(string.Concat("Discarding pawn ", p, ", but he is referenced by a battle log entry ", entries[num], "."));
+						Log.Warning("Discarding pawn " + p?.ToString() + ", but he is referenced by a battle log entry " + entries[num]?.ToString() + ".");
 					}
 					entries.RemoveAt(num);
 				}

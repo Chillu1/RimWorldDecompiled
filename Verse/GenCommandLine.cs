@@ -1,6 +1,5 @@
 using System;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading;
 
 namespace Verse
@@ -63,9 +62,9 @@ namespace Verse
 					Thread.Sleep(10000);
 				}, "Restarting", doAsynchronously: true, null);
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Error restarting: " + arg);
+				Log.Error("Error restarting: " + ex);
 				Find.WindowStack.Add(new Dialog_MessageBox("FailedToRestart".Translate()));
 			}
 		}

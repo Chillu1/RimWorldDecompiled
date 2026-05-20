@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using RimWorld.Planet;
 using Verse;
 
@@ -10,6 +9,8 @@ namespace RimWorld
 		private List<GlobalTargetInfo> targets = new List<GlobalTargetInfo>();
 
 		private List<string> pawnNames = new List<string>();
+
+		private static Dictionary<Pawn, Building> CachedSpots = new Dictionary<Pawn, Building>();
 
 		private List<GlobalTargetInfo> Targets
 		{
@@ -28,10 +29,27 @@ namespace RimWorld
 							break;
 						}
 					}
-					if ((item.HasPsylink || flag) && !MeditationUtility.AllMeditationSpotCandidates(item, allowFallbackSpots: false).Any())
+					if ((!item.HasPsylink && !flag) || !item.psychicEntropy.IsPsychicallySensitive)
+					{
+						continue;
+					}
+					if (CachedSpots.TryGetValue(item, out var value))
+					{
+						if (MeditationUtility.IsValidMeditationBuildingForPawn(value, item))
+						{
+							continue;
+						}
+						CachedSpots.Remove(item);
+					}
+					LocalTargetInfo localTargetInfo = MeditationUtility.AllMeditationSpotCandidates(item, allowFallbackSpots: false).FirstOrFallback(LocalTargetInfo.Invalid);
+					if (!localTargetInfo.IsValid)
 					{
 						targets.Add(item);
-						pawnNames.Add(item.LabelShort);
+						pawnNames.Add(item.NameShortColored.Resolve());
+					}
+					else if (localTargetInfo.Thing is Building value2)
+					{
+						CachedSpots[item] = value2;
 					}
 				}
 				return targets;
@@ -41,6 +59,7 @@ namespace RimWorld
 		public Alert_NeedMeditationSpot()
 		{
 			defaultLabel = "NeedMeditationSpotAlert".Translate();
+			requireRoyalty = true;
 		}
 
 		public override TaggedString GetExplanation()
@@ -50,11 +69,12 @@ namespace RimWorld
 
 		public override AlertReport GetReport()
 		{
-			if (!ModsConfig.RoyaltyActive)
-			{
-				return false;
-			}
 			return AlertReport.CulpritsAre(Targets);
+		}
+
+		public static void ClearCache()
+		{
+			CachedSpots.Clear();
 		}
 	}
 }

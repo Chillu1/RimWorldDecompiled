@@ -22,7 +22,17 @@ namespace Verse
 
 		private DefMap<PawnCapacityDef, CacheElement> cachedCapacityLevels;
 
-		public bool CanBeAwake => GetLevel(PawnCapacityDefOf.Consciousness) >= 0.3f;
+		public bool CanBeAwake
+		{
+			get
+			{
+				if (pawn.RaceProps.alwaysAwake || GetLevel(PawnCapacityDefOf.Consciousness) >= 0.3f)
+				{
+					return !pawn.IsDeactivated();
+				}
+				return false;
+			}
+		}
 
 		public PawnCapacitiesHandler(Pawn pawn)
 		{

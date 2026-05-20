@@ -1,11 +1,13 @@
 using System;
+using System.Collections.Generic;
 using System.Xml;
-using RimWorld;
 
 namespace Verse
 {
 	public abstract class BackCompatibilityConverter
 	{
+		private readonly Dictionary<object, Dictionary<string, object>> typeToTypeLookup = new Dictionary<object, Dictionary<string, object>>();
+
 		public abstract bool AppliesToVersion(int majorVer, int minorVer);
 
 		public abstract string BackCompatibleDefName(Type defType, string defName, bool forDefInjections = false, XmlNode node = null);
@@ -41,7 +43,22 @@ namespace Verse
 			{
 				return false;
 			}
-			return AppliesToVersion(VersionControl.MajorFromVersionString(ScribeMetaHeaderUtility.loadedGameVersion), VersionControl.MinorFromVersionString(ScribeMetaHeaderUtility.loadedGameVersion));
+			return AppliesToVersion(ScribeMetaHeaderUtility.loadedGameVersionMajor, ScribeMetaHeaderUtility.loadedGameVersionMinor);
+		}
+
+		protected void Scribe_TypeToType<T1, T2>(object obj, ref T2 v, string label, Func<T1, T2> converter) where T2 : new()
+		{
+			if (!typeToTypeLookup.ContainsKey(obj))
+			{
+				typeToTypeLookup[obj] = new Dictionary<string, object>();
+			}
+			object value = typeToTypeLookup[obj][label];
+			Scribe_Values.Look(ref value, label);
+			typeToTypeLookup[obj][label] = value;
+			if (Scribe.mode == LoadSaveMode.LoadingVars)
+			{
+				v = converter((T1)typeToTypeLookup[obj][label]);
+			}
 		}
 	}
 }

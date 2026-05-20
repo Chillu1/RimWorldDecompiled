@@ -24,8 +24,8 @@ namespace RimWorld
 		public void ExposeData()
 		{
 			Scribe_Defs.Look(ref def, "def");
-			Scribe_References.Look(ref otherPawn, "otherPawn", saveDestroyedThings: true);
 			Scribe_Values.Look(ref startTicks, "startTicks", 0);
+			Scribe_References.Look(ref otherPawn, "otherPawn", saveDestroyedThings: true);
 		}
 	}
 }

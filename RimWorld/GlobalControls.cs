@@ -20,6 +20,8 @@ namespace RimWorld
 
 		private static float cachedTemperatureStringForTemperature;
 
+		private static TemperatureDisplayMode cachedTemperatureDisplayMode;
+
 		public void GlobalControlsOnGUI()
 		{
 			if (Event.current.type != EventType.Layout)
@@ -34,9 +36,12 @@ namespace RimWorld
 				GlobalControlsUtility.DoTimespeedControls(num, 200f, ref num2);
 				num2 -= 4f;
 				GlobalControlsUtility.DoDate(num, 200f, ref num2);
-				Rect rect = new Rect(num - 22f, num2 - 26f, 230f, 26f);
-				Find.CurrentMap.weatherManager.DoWeatherGUI(rect);
-				num2 -= rect.height;
+				if (!Find.CurrentMap.IsPocketMap)
+				{
+					Rect rect = new Rect(num - 22f, num2 - 26f, 230f, 26f);
+					Find.CurrentMap.weatherManager.DoWeatherGUI(rect);
+					num2 -= rect.height;
+				}
 				Rect rect2 = new Rect(num - 100f, num2 - 26f, 293f, 26f);
 				Text.Anchor = TextAnchor.MiddleRight;
 				Widgets.Label(rect2, TemperatureString());
@@ -47,16 +52,28 @@ namespace RimWorld
 				Rect rect3 = new Rect((float)UI.screenWidth - num3, num2 - num4, num3, num4);
 				Find.CurrentMap.gameConditionManager.DoConditionsUI(rect3);
 				num2 -= rect3.height;
+				if (DebugViewSettings.showMemoryInfo)
+				{
+					GlobalControlsUtility.DrawMemoryInfo(num, 200f, ref num2);
+				}
+				if (DebugViewSettings.showTpsCounter)
+				{
+					GlobalControlsUtility.DrawTpsCounter(num, 200f, ref num2);
+				}
+				if (DebugViewSettings.showFpsCounter)
+				{
+					GlobalControlsUtility.DrawFpsCounter(num, 200f, ref num2);
+				}
 				if (Prefs.ShowRealtimeClock)
 				{
 					GlobalControlsUtility.DoRealtimeClock(num, 200f, ref num2);
 				}
-				TimedDetectionRaids component = Find.CurrentMap.Parent.GetComponent<TimedDetectionRaids>();
-				if (component != null && component.NextRaidCountdownActiveAndVisible)
+				TimedDetectionRaids timedDetectionRaids = Find.CurrentMap.Parent?.GetComponent<TimedDetectionRaids>();
+				if (timedDetectionRaids != null && timedDetectionRaids.NextRaidCountdownActiveAndVisible)
 				{
 					Rect rect4 = new Rect(num, num2 - 26f, 193f, 26f);
 					Text.Anchor = TextAnchor.MiddleRight;
-					DoCountdownTimer(rect4, component);
+					DoCountdownTimer(rect4, timedDetectionRaids);
 					Text.Anchor = TextAnchor.UpperLeft;
 					num2 -= 26f;
 				}
@@ -69,7 +86,7 @@ namespace RimWorld
 		{
 			IntVec3 intVec = UI.MouseCell();
 			IntVec3 c = intVec;
-			Room room = intVec.GetRoom(Find.CurrentMap, RegionType.Set_All);
+			Room room = intVec.GetRoom(Find.CurrentMap);
 			if (room == null)
 			{
 				for (int i = 0; i < 9; i++)
@@ -77,7 +94,7 @@ namespace RimWorld
 					IntVec3 intVec2 = intVec + GenAdj.AdjacentCellsAndInside[i];
 					if (intVec2.InBounds(Find.CurrentMap))
 					{
-						Room room2 = intVec2.GetRoom(Find.CurrentMap, RegionType.Set_All);
+						Room room2 = intVec2.GetRoom(Find.CurrentMap);
 						if (room2 != null && ((!room2.PsychologicallyOutdoors && !room2.UsesOutdoorTemperature) || (!room2.PsychologicallyOutdoors && (room == null || room.PsychologicallyOutdoors)) || (room2.PsychologicallyOutdoors && room == null)))
 						{
 							c = intVec2;
@@ -93,7 +110,7 @@ namespace RimWorld
 				{
 					foreach (IntVec3 item in edifice.OccupiedRect().ExpandedBy(1).ClipInsideMap(Find.CurrentMap))
 					{
-						room = item.GetRoom(Find.CurrentMap, RegionType.Set_All);
+						room = item.GetRoom(Find.CurrentMap);
 						if (room != null && !room.PsychologicallyOutdoors)
 						{
 							c = item;
@@ -121,16 +138,17 @@ namespace RimWorld
 			}
 			else
 			{
-				text = "Outdoors".Translate();
+				text = "Outdoors".Translate().CapitalizeFirst();
 			}
 			float num = ((room == null || c.Fogged(Find.CurrentMap)) ? Find.CurrentMap.mapTemperature.OutdoorTemp : room.Temperature);
 			int num2 = Mathf.RoundToInt(GenTemperature.CelsiusTo(cachedTemperatureStringForTemperature, Prefs.TemperatureMode));
 			int num3 = Mathf.RoundToInt(GenTemperature.CelsiusTo(num, Prefs.TemperatureMode));
-			if (cachedTemperatureStringForLabel != text || num2 != num3)
+			if (cachedTemperatureStringForLabel != text || num2 != num3 || cachedTemperatureDisplayMode != Prefs.TemperatureMode)
 			{
 				cachedTemperatureStringForLabel = text;
 				cachedTemperatureStringForTemperature = num;
 				cachedTemperatureString = text + " " + num.ToStringTemperature("F0");
+				cachedTemperatureDisplayMode = Prefs.TemperatureMode;
 			}
 			return cachedTemperatureString;
 		}

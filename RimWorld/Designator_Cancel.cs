@@ -9,7 +9,7 @@ namespace RimWorld
 	{
 		private static HashSet<Thing> seenThings = new HashSet<Thing>();
 
-		public override int DraggableDimensions => 2;
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.Cancel;
 
 		public Designator_Cancel()
 		{
@@ -30,7 +30,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (CancelableDesignationsAt(c).Count() > 0)
+			if (CancelableDesignationsAt(c).Any())
 			{
 				return true;
 			}
@@ -49,6 +49,10 @@ namespace RimWorld
 		{
 			foreach (Designation item in CancelableDesignationsAt(c).ToList())
 			{
+				if (item.def == DesignationDefOf.MineVein)
+				{
+					Designator_MineVein.RemoveContiguousDesignations(c, base.Map, c.GetEdifice(base.Map).def);
+				}
 				if (item.def.designateCancelable)
 				{
 					base.Map.designationManager.RemoveDesignation(item);
@@ -80,6 +84,10 @@ namespace RimWorld
 			{
 				return true;
 			}
+			if (t.def.mineable && base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.MineVein) != null)
+			{
+				return true;
+			}
 			if (t.def.IsSmoothable && base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.SmoothWall) != null)
 			{
 				return true;
@@ -102,6 +110,10 @@ namespace RimWorld
 				{
 					base.Map.designationManager.RemoveDesignation(designation);
 				}
+				if (base.Map.designationManager.DesignationAt(t.Position, DesignationDefOf.MineVein) != null)
+				{
+					Designator_MineVein.RemoveContiguousDesignations(t.Position, base.Map, t.def);
+				}
 			}
 			if (t.def.IsSmoothable)
 			{
@@ -120,28 +132,26 @@ namespace RimWorld
 
 		private IEnumerable<Designation> CancelableDesignationsAt(IntVec3 c)
 		{
-			return from x in base.Map.designationManager.AllDesignationsAt(c)
-				where x.def != DesignationDefOf.Plan
-				select x;
+			return base.Map.designationManager.AllDesignationsAt(c);
 		}
 
 		public override void RenderHighlight(List<IntVec3> dragCells)
 		{
 			seenThings.Clear();
-			for (int i = 0; i < dragCells.Count; i++)
+			foreach (IntVec3 dragCell in dragCells)
 			{
-				if (base.Map.designationManager.HasMapDesignationAt(dragCells[i]))
+				if (base.Map.designationManager.HasMapDesignationAt(dragCell))
 				{
-					Graphics.DrawMesh(MeshPool.plane10, dragCells[i].ToVector3ShiftedWithAltitude(AltitudeLayer.MetaOverlays.AltitudeFor()), Quaternion.identity, DesignatorUtility.DragHighlightCellMat, 0);
-					if (base.Map.designationManager.DesignationAt(dragCells[i], DesignationDefOf.Mine) != null)
+					Graphics.DrawMesh(MeshPool.plane10, dragCell.ToVector3ShiftedWithAltitude(AltitudeLayer.MetaOverlays.AltitudeFor()), Quaternion.identity, DesignatorUtility.DragHighlightCellMat, 0);
+					if (base.Map.designationManager.DesignationAt(dragCell, DesignationDefOf.Mine) != null)
 					{
 						continue;
 					}
 				}
-				List<Thing> thingList = dragCells[i].GetThingList(base.Map);
-				for (int j = 0; j < thingList.Count; j++)
+				List<Thing> thingList = dragCell.GetThingList(base.Map);
+				for (int i = 0; i < thingList.Count; i++)
 				{
-					Thing thing = thingList[j];
+					Thing thing = thingList[i];
 					if (!seenThings.Contains(thing) && CanDesignateThing(thing).Accepted)
 					{
 						Vector3 drawPos = thing.DrawPos;

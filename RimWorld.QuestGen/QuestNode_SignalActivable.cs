@@ -56,7 +56,7 @@ namespace RimWorld.QuestGen
 					questPart_PassActivable.outSignalsCompleted.Add(QuestGenUtility.HardcodedSignalWithQuestID(item));
 				}
 			}
-			questPart_PassActivable.signalListenMode = signalListenMode.GetValue(slate) ?? QuestPart.SignalListenMode.OngoingOnly;
+			questPart_PassActivable.signalListenMode = signalListenMode.GetValue(slate).GetValueOrDefault();
 		}
 	}
 }

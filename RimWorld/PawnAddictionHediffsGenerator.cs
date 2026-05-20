@@ -21,7 +21,13 @@ namespace RimWorld
 				return;
 			}
 			allDrugs.Clear();
-			for (int i = 0; i < 3; i++)
+			int i = 0;
+			foreach (ChemicalDef forcedAddiction in pawn.kindDef.forcedAddictions)
+			{
+				ApplyAddiction(pawn, forcedAddiction);
+				i++;
+			}
+			for (; i < 3; i++)
 			{
 				if (Rand.Value >= pawn.kindDef.chemicalAddictionChance)
 				{
@@ -31,28 +37,34 @@ namespace RimWorld
 				{
 					allDrugs.AddRange(DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef x) => x.category == ThingCategory.Item && x.GetCompProperties<CompProperties_Drug>() != null));
 				}
-				if (!DefDatabase<ChemicalDef>.AllDefsListForReading.Where((ChemicalDef x) => PossibleWithTechLevel(x, pawn.Faction) && !AddictionUtility.IsAddicted(pawn, x)).TryRandomElement(out var result))
+				if (DefDatabase<ChemicalDef>.AllDefsListForReading.Where((ChemicalDef x) => x.canBeAddicted && PossibleWithTechLevel(x, pawn.Faction) && PossibleWithGenes(x, pawn) && !AddictionUtility.IsAddicted(pawn, x)).TryRandomElement(out var result))
 				{
-					break;
+					ApplyAddiction(pawn, result);
+					continue;
 				}
-				Hediff hediff = HediffMaker.MakeHediff(result.addictionHediff, pawn);
-				hediff.Severity = GeneratedAddictionSeverityRange.RandomInRange;
-				pawn.health.AddHediff(hediff);
-				if (result.toleranceHediff != null && Rand.Value < result.onGeneratedAddictedToleranceChance)
-				{
-					Hediff hediff2 = HediffMaker.MakeHediff(result.toleranceHediff, pawn);
-					hediff2.Severity = GeneratedToleranceSeverityRange.RandomInRange;
-					pawn.health.AddHediff(hediff2);
-				}
-				if (result.onGeneratedAddictedEvents != null)
-				{
-					foreach (HediffGiver_Event onGeneratedAddictedEvent in result.onGeneratedAddictedEvents)
-					{
-						onGeneratedAddictedEvent.EventOccurred(pawn);
-					}
-				}
-				DoIngestionOutcomeDoers(pawn, result);
+				break;
 			}
+		}
+
+		private static void ApplyAddiction(Pawn pawn, ChemicalDef chemicalDef)
+		{
+			Hediff hediff = HediffMaker.MakeHediff(chemicalDef.addictionHediff, pawn);
+			hediff.Severity = GeneratedAddictionSeverityRange.RandomInRange;
+			pawn.health.AddHediff(hediff);
+			if (chemicalDef.toleranceHediff != null && Rand.Value < chemicalDef.onGeneratedAddictedToleranceChance)
+			{
+				Hediff hediff2 = HediffMaker.MakeHediff(chemicalDef.toleranceHediff, pawn);
+				hediff2.Severity = GeneratedToleranceSeverityRange.RandomInRange;
+				pawn.health.AddHediff(hediff2);
+			}
+			if (chemicalDef.onGeneratedAddictedEvents != null)
+			{
+				foreach (HediffGiver_Event onGeneratedAddictedEvent in chemicalDef.onGeneratedAddictedEvents)
+				{
+					onGeneratedAddictedEvent.EventOccurred(pawn);
+				}
+			}
+			DoIngestionOutcomeDoers(pawn, chemicalDef);
 		}
 
 		private static bool PossibleWithTechLevel(ChemicalDef chemical, Faction faction)
@@ -62,6 +74,15 @@ namespace RimWorld
 				return true;
 			}
 			return allDrugs.Any((ThingDef x) => x.GetCompProperties<CompProperties_Drug>().chemical == chemical && (int)x.techLevel <= (int)faction.def.techLevel);
+		}
+
+		private static bool PossibleWithGenes(ChemicalDef chemical, Pawn pawn)
+		{
+			if (ModsConfig.BiotechActive && pawn.genes != null)
+			{
+				return Rand.Value < pawn.genes.AddictionChanceFactor(chemical);
+			}
+			return true;
 		}
 
 		private static void DoIngestionOutcomeDoers(Pawn pawn, ChemicalDef chemical)
@@ -77,7 +98,7 @@ namespace RimWorld
 				{
 					if (outcomeDoers[j].doToGeneratedPawnIfAddicted)
 					{
-						outcomeDoers[j].DoIngestionOutcome(pawn, null);
+						outcomeDoers[j].DoIngestionOutcome(pawn, null, 1);
 					}
 				}
 			}

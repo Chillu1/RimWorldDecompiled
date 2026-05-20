@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using RimWorld;
 using UnityEngine;
 using Verse.Sound;
@@ -18,6 +19,8 @@ namespace Verse
 
 		public LocalTargetInfo intendedTarget;
 
+		protected Thing equipment;
+
 		protected ThingDef equipmentDef;
 
 		protected Thing launcher;
@@ -26,7 +29,17 @@ namespace Verse
 
 		private ProjectileHitFlags desiredHitFlags = ProjectileHitFlags.All;
 
-		protected float weaponDamageMultiplier = 1f;
+		protected bool preventFriendlyFire;
+
+		protected int lifetime;
+
+		protected QualityCategory equipmentQuality = QualityCategory.Normal;
+
+		public float stoppingPower;
+
+		public DamageDef damageDefOverride;
+
+		public List<ExtraDamage> extraDamages = new List<ExtraDamage>();
 
 		protected bool landed;
 
@@ -36,7 +49,17 @@ namespace Verse
 
 		private static List<IntVec3> checkedCells = new List<IntVec3>();
 
-		private static readonly List<Thing> cellThingsFiltered = new List<Thing>();
+		public DamageDef DamageDef => damageDefOverride ?? def.projectile.damageDef;
+
+		public IEnumerable<ExtraDamage> ExtraDamages
+		{
+			get
+			{
+				List<ExtraDamage> first = extraDamages;
+				IEnumerable<ExtraDamage> enumerable = def.projectile.extraDamages;
+				return first.Concat(enumerable ?? Enumerable.Empty<ExtraDamage>());
+			}
+		}
 
 		public ProjectileHitFlags HitFlags
 		{
@@ -77,24 +100,42 @@ namespace Verse
 		{
 			get
 			{
-				Vector3 b = (destination - origin).Yto0() * DistanceCoveredFraction;
-				return origin.Yto0() + b + Vector3.up * def.Altitude;
+				Vector3 vector = (destination - origin).Yto0() * DistanceCoveredFraction;
+				return origin.Yto0() + vector + Vector3.up * def.Altitude;
 			}
 		}
 
 		protected float DistanceCoveredFraction => Mathf.Clamp01(1f - (float)ticksToImpact / StartingTicksToImpact);
 
+		protected float DistanceCoveredFractionArc => Mathf.Clamp01(1f - (float)(landed ? lifetime : ticksToImpact) / StartingTicksToImpact);
+
 		public virtual Quaternion ExactRotation => Quaternion.LookRotation((destination - origin).Yto0());
+
+		public virtual bool AnimalsFleeImpact => false;
 
 		public override Vector3 DrawPos => ExactPosition;
 
-		public int DamageAmount => def.projectile.GetDamageAmount(weaponDamageMultiplier);
+		public virtual Material DrawMat => def.graphic.MatSingleFor(this);
 
-		public float ArmorPenetration => def.projectile.GetArmorPenetration(weaponDamageMultiplier);
+		public virtual int DamageAmount => def.projectile.GetDamageAmount(equipment);
+
+		public virtual float ArmorPenetration => def.projectile.GetArmorPenetration(equipment);
 
 		public ThingDef EquipmentDef => equipmentDef;
 
 		public Thing Launcher => launcher;
+
+		public override int UpdateRateTicks
+		{
+			get
+			{
+				if (base.Spawned && Find.CurrentMap == base.Map && Find.CameraDriver.InViewOf(this))
+				{
+					return 1;
+				}
+				return 15;
+			}
+		}
 
 		private float ArcHeightFactor
 		{
@@ -119,35 +160,54 @@ namespace Verse
 			Scribe_TargetInfo.Look(ref usedTarget, "usedTarget");
 			Scribe_TargetInfo.Look(ref intendedTarget, "intendedTarget");
 			Scribe_References.Look(ref launcher, "launcher");
+			Scribe_References.Look(ref equipment, "equipment");
 			Scribe_Defs.Look(ref equipmentDef, "equipmentDef");
 			Scribe_Defs.Look(ref targetCoverDef, "targetCoverDef");
 			Scribe_Values.Look(ref desiredHitFlags, "desiredHitFlags", ProjectileHitFlags.All);
-			Scribe_Values.Look(ref weaponDamageMultiplier, "weaponDamageMultiplier", 1f);
+			Scribe_Values.Look(ref preventFriendlyFire, "preventFriendlyFire", defaultValue: false);
 			Scribe_Values.Look(ref landed, "landed", defaultValue: false);
+			Scribe_Values.Look(ref lifetime, "lifetime", 0);
+			Scribe_Values.Look(ref equipmentQuality, "equipmentQuality", QualityCategory.Normal);
 		}
 
-		public void Launch(Thing launcher, LocalTargetInfo usedTarget, LocalTargetInfo intendedTarget, ProjectileHitFlags hitFlags, Thing equipment = null)
+		public void Launch(Thing launcher, LocalTargetInfo usedTarget, LocalTargetInfo intendedTarget, ProjectileHitFlags hitFlags, bool preventFriendlyFire = false, Thing equipment = null)
 		{
-			Launch(launcher, base.Position.ToVector3Shifted(), usedTarget, intendedTarget, hitFlags, equipment);
+			Launch(launcher, base.Position.ToVector3Shifted(), usedTarget, intendedTarget, hitFlags, preventFriendlyFire, equipment);
 		}
 
-		public void Launch(Thing launcher, Vector3 origin, LocalTargetInfo usedTarget, LocalTargetInfo intendedTarget, ProjectileHitFlags hitFlags, Thing equipment = null, ThingDef targetCoverDef = null)
+		public virtual void Launch(Thing launcher, Vector3 origin, LocalTargetInfo usedTarget, LocalTargetInfo intendedTarget, ProjectileHitFlags hitFlags, bool preventFriendlyFire = false, Thing equipment = null, ThingDef targetCoverDef = null)
 		{
 			this.launcher = launcher;
 			this.origin = origin;
 			this.usedTarget = usedTarget;
 			this.intendedTarget = intendedTarget;
 			this.targetCoverDef = targetCoverDef;
+			this.preventFriendlyFire = preventFriendlyFire;
 			HitFlags = hitFlags;
+			stoppingPower = def.projectile.stoppingPower;
+			if (stoppingPower == 0f && def.projectile.damageDef != null)
+			{
+				stoppingPower = def.projectile.damageDef.defaultStoppingPower;
+			}
 			if (equipment != null)
 			{
+				this.equipment = equipment;
 				equipmentDef = equipment.def;
-				weaponDamageMultiplier = equipment.GetStatValue(StatDefOf.RangedWeapon_DamageMultiplier);
+				equipment.TryGetQuality(out equipmentQuality);
+				if (equipment.TryGetComp(out CompUniqueWeapon comp))
+				{
+					foreach (WeaponTraitDef item in comp.TraitsListForReading)
+					{
+						if (!Mathf.Approximately(item.additionalStoppingPower, 0f))
+						{
+							stoppingPower += item.additionalStoppingPower;
+						}
+					}
+				}
 			}
 			else
 			{
 				equipmentDef = null;
-				weaponDamageMultiplier = 1f;
 			}
 			destination = usedTarget.Cell.ToVector3Shifted() + Gen.RandomHorizontalVector(0.3f);
 			ticksToImpact = Mathf.CeilToInt(StartingTicksToImpact);
@@ -155,25 +215,39 @@ namespace Verse
 			{
 				ticksToImpact = 1;
 			}
+			lifetime = ticksToImpact;
 			if (!def.projectile.soundAmbient.NullOrUndefined())
 			{
-				SoundInfo info = SoundInfo.InMap(this, MaintenanceType.PerTick);
-				ambientSustainer = def.projectile.soundAmbient.TrySpawnSustainer(info);
+				ambientSustainer = def.projectile.soundAmbient.TrySpawnSustainer(SoundInfo.InMap(this, MaintenanceType.PerTick));
 			}
 		}
 
-		public override void Tick()
+		protected override void Tick()
 		{
 			base.Tick();
+			if (ticksToImpact == 60 && Find.TickManager.CurTimeSpeed == TimeSpeed.Normal && def.projectile.soundImpactAnticipate != null)
+			{
+				def.projectile.soundImpactAnticipate.PlayOneShot(this);
+			}
+			if (ambientSustainer != null)
+			{
+				ambientSustainer.Maintain();
+			}
+		}
+
+		protected override void TickInterval(int delta)
+		{
+			base.TickInterval(delta);
+			lifetime -= delta;
 			if (landed)
 			{
 				return;
 			}
 			Vector3 exactPosition = ExactPosition;
-			ticksToImpact--;
+			ticksToImpact -= delta;
 			if (!ExactPosition.InBounds(base.Map))
 			{
-				ticksToImpact++;
+				ticksToImpact += delta;
 				base.Position = ExactPosition.ToIntVec3();
 				Destroy();
 				return;
@@ -184,10 +258,6 @@ namespace Verse
 				return;
 			}
 			base.Position = ExactPosition.ToIntVec3();
-			if (ticksToImpact == 60 && Find.TickManager.CurTimeSpeed == TimeSpeed.Normal && def.projectile.soundImpactAnticipate != null)
-			{
-				def.projectile.soundImpactAnticipate.PlayOneShot(this);
-			}
 			if (ticksToImpact <= 0)
 			{
 				if (DestinationCell.InBounds(base.Map))
@@ -195,10 +265,6 @@ namespace Verse
 					base.Position = DestinationCell;
 				}
 				ImpactSomething();
-			}
-			else if (ambientSustainer != null)
-			{
-				ambientSustainer.Maintain();
 			}
 		}
 
@@ -213,7 +279,7 @@ namespace Verse
 			{
 				if (list[i].TryGetComp<CompProjectileInterceptor>().CheckIntercept(this, lastExactPos, newExactPos))
 				{
-					Destroy();
+					Impact(null, blockedByShield: true);
 					return true;
 				}
 			}
@@ -287,8 +353,7 @@ namespace Verse
 				bool flag2 = false;
 				if (thing.def.Fillage == FillCategory.Full)
 				{
-					Building_Door building_Door = thing as Building_Door;
-					if (building_Door == null || !building_Door.Open)
+					if (!(thing is Building_Door { Open: not false }))
 					{
 						ThrowDebugText("int-wall", c);
 						Impact(thing);
@@ -297,17 +362,24 @@ namespace Verse
 					flag2 = true;
 				}
 				float num2 = 0f;
-				Pawn pawn = thing as Pawn;
-				if (pawn != null)
+				if (thing is Pawn pawn)
 				{
 					num2 = 0.4f * Mathf.Clamp(pawn.BodySize, 0.1f, 2f);
-					if (pawn.GetPosture() != 0)
+					if (pawn.GetPosture() != PawnPosture.Standing)
 					{
 						num2 *= 0.1f;
 					}
 					if (launcher != null && pawn.Faction != null && launcher.Faction != null && !pawn.Faction.HostileTo(launcher.Faction))
 					{
-						num2 *= Find.Storyteller.difficultyValues.friendlyFireChanceFactor;
+						if (preventFriendlyFire)
+						{
+							num2 = 0f;
+							ThrowDebugText("ff-miss", c);
+						}
+						else
+						{
+							num2 *= Find.Storyteller.difficulty.friendlyFireChanceFactor;
+						}
 					}
 				}
 				else if (thing.def.fillPercent > 0.2f)
@@ -342,16 +414,28 @@ namespace Verse
 			}
 		}
 
-		public override void Draw()
+		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
 		{
-			float num = ArcHeightFactor * GenMath.InverseParabola(DistanceCoveredFraction);
-			Vector3 drawPos = DrawPos;
-			Vector3 position = drawPos + new Vector3(0f, 0f, 1f) * num;
+			float num = ArcHeightFactor * GenMath.InverseParabola(DistanceCoveredFractionArc);
+			Vector3 vector = drawLoc + new Vector3(0f, 0f, 1f) * num;
 			if (def.projectile.shadowSize > 0f)
 			{
-				DrawShadow(drawPos, num);
+				DrawShadow(drawLoc, num);
 			}
-			Graphics.DrawMesh(MeshPool.GridPlane(def.graphicData.drawSize), position, ExactRotation, def.DrawMatSingle, 0);
+			Quaternion rotation = ExactRotation;
+			if (def.projectile.spinRate != 0f)
+			{
+				float num2 = 60f / def.projectile.spinRate;
+				rotation = Quaternion.AngleAxis((float)Find.TickManager.TicksGame % num2 / num2 * 360f, Vector3.up);
+			}
+			if (def.projectile.useGraphicClass)
+			{
+				Graphic.Draw(vector, base.Rotation, this, rotation.eulerAngles.y);
+			}
+			else
+			{
+				Graphics.DrawMesh(MeshPool.GridPlane(def.graphicData.drawSize), vector, rotation, DrawMat, 0);
+			}
 			Comps_PostDraw();
 		}
 
@@ -365,31 +449,20 @@ namespace Verse
 			{
 				return false;
 			}
-			bool flag = false;
-			foreach (IntVec3 item in thing.OccupiedRect())
-			{
-				List<Thing> thingList = item.GetThingList(base.Map);
-				bool flag2 = false;
-				for (int i = 0; i < thingList.Count; i++)
-				{
-					if (thingList[i] != thing && thingList[i].def.Fillage == FillCategory.Full && thingList[i].def.Altitude >= thing.def.Altitude)
-					{
-						flag2 = true;
-						break;
-					}
-				}
-				if (!flag2)
-				{
-					flag = true;
-					break;
-				}
-			}
-			if (!flag)
+			ProjectileHitFlags hitFlags = HitFlags;
+			if (hitFlags == ProjectileHitFlags.None)
 			{
 				return false;
 			}
-			ProjectileHitFlags hitFlags = HitFlags;
-			if (thing == intendedTarget && (hitFlags & ProjectileHitFlags.IntendedTarget) != 0)
+			if (thing.Map != base.Map)
+			{
+				return false;
+			}
+			if (CoverUtility.ThingCovered(thing, base.Map))
+			{
+				return false;
+			}
+			if (thing == intendedTarget && (hitFlags & ProjectileHitFlags.IntendedTarget) != ProjectileHitFlags.None)
 			{
 				return true;
 			}
@@ -397,12 +470,12 @@ namespace Verse
 			{
 				if (thing is Pawn)
 				{
-					if ((hitFlags & ProjectileHitFlags.NonTargetPawns) != 0)
+					if ((hitFlags & ProjectileHitFlags.NonTargetPawns) != ProjectileHitFlags.None)
 					{
 						return true;
 					}
 				}
-				else if ((hitFlags & ProjectileHitFlags.NonTargetWorld) != 0)
+				else if ((hitFlags & ProjectileHitFlags.NonTargetWorld) != ProjectileHitFlags.None)
 				{
 					return true;
 				}
@@ -414,7 +487,7 @@ namespace Verse
 			return false;
 		}
 
-		private void ImpactSomething()
+		protected virtual void ImpactSomething()
 		{
 			if (def.projectile.flyOverhead)
 			{
@@ -424,7 +497,10 @@ namespace Verse
 					if (roofDef.isThickRoof)
 					{
 						ThrowDebugText("hit-thick-roof", base.Position);
-						def.projectile.soundHitThickRoof.PlayOneShot(new TargetInfo(base.Position, base.Map));
+						if (!def.projectile.soundHitThickRoof.NullOrUndefined())
+						{
+							def.projectile.soundHitThickRoof.PlayOneShot(new TargetInfo(base.Position, base.Map));
+						}
 						Destroy();
 						return;
 					}
@@ -436,8 +512,7 @@ namespace Verse
 			}
 			if (usedTarget.HasThing && CanHit(usedTarget.Thing))
 			{
-				Pawn pawn = usedTarget.Thing as Pawn;
-				if (pawn != null && pawn.GetPosture() != 0 && (origin - destination).MagnitudeHorizontalSquared() >= 20.25f && !Rand.Chance(0.2f))
+				if (usedTarget.Thing is Pawn p && p.GetPosture() != PawnPosture.Standing && (origin - destination).MagnitudeHorizontalSquared() >= 20.25f && !Rand.Chance(0.5f))
 				{
 					ThrowDebugText("miss-laying", base.Position);
 					Impact(null);
@@ -448,42 +523,32 @@ namespace Verse
 				}
 				return;
 			}
-			cellThingsFiltered.Clear();
-			List<Thing> thingList = base.Position.GetThingList(base.Map);
-			for (int i = 0; i < thingList.Count; i++)
+			List<Thing> list = VerbUtility.ThingsToHit(base.Position, base.Map, CanHit);
+			list.Shuffle();
+			for (int i = 0; i < list.Count; i++)
 			{
-				Thing thing = thingList[i];
-				if ((thing.def.category == ThingCategory.Building || thing.def.category == ThingCategory.Pawn || thing.def.category == ThingCategory.Item || thing.def.category == ThingCategory.Plant) && CanHit(thing))
-				{
-					cellThingsFiltered.Add(thing);
-				}
-			}
-			cellThingsFiltered.Shuffle();
-			for (int j = 0; j < cellThingsFiltered.Count; j++)
-			{
-				Thing thing2 = cellThingsFiltered[j];
-				Pawn pawn2 = thing2 as Pawn;
+				Thing thing = list[i];
 				float num;
-				if (pawn2 != null)
+				if (thing is Pawn pawn)
 				{
-					num = 0.5f * Mathf.Clamp(pawn2.BodySize, 0.1f, 2f);
-					if (pawn2.GetPosture() != 0 && (origin - destination).MagnitudeHorizontalSquared() >= 20.25f)
+					num = 0.5f * Mathf.Clamp(pawn.BodySize, 0.1f, 2f);
+					if (pawn.GetPosture() != PawnPosture.Standing && (origin - destination).MagnitudeHorizontalSquared() >= 20.25f)
 					{
-						num *= 0.2f;
+						num *= 0.5f;
 					}
-					if (launcher != null && pawn2.Faction != null && launcher.Faction != null && !pawn2.Faction.HostileTo(launcher.Faction))
+					if (launcher != null && pawn.Faction != null && launcher.Faction != null && !pawn.Faction.HostileTo(launcher.Faction))
 					{
 						num *= VerbUtility.InterceptChanceFactorFromDistance(origin, base.Position);
 					}
 				}
 				else
 				{
-					num = 1.5f * thing2.def.fillPercent;
+					num = 1.5f * thing.def.fillPercent;
 				}
 				if (Rand.Chance(num))
 				{
 					ThrowDebugText("hit-" + num.ToStringPercent(), base.Position);
-					Impact(cellThingsFiltered.RandomElement());
+					Impact(thing);
 					return;
 				}
 				ThrowDebugText("miss-" + num.ToStringPercent(), base.Position);
@@ -491,9 +556,13 @@ namespace Verse
 			Impact(null);
 		}
 
-		protected virtual void Impact(Thing hitThing)
+		protected virtual void Impact(Thing hitThing, bool blockedByShield = false)
 		{
-			GenClamor.DoClamor(this, 2.1f, ClamorDefOf.Impact);
+			GenClamor.DoClamor(this, 12f, ClamorDefOf.Impact);
+			if (!blockedByShield && def.projectile.landedEffecter != null)
+			{
+				def.projectile.landedEffecter.Spawn(base.Position, base.Map).Cleanup();
+			}
 			Destroy();
 		}
 
@@ -503,9 +572,9 @@ namespace Verse
 			{
 				float num = def.projectile.shadowSize * Mathf.Lerp(1f, 0.6f, height);
 				Vector3 s = new Vector3(num, 1f, num);
-				Vector3 b = new Vector3(0f, -0.01f, 0f);
+				Vector3 vector = new Vector3(0f, -0.01f, 0f);
 				Matrix4x4 matrix = default(Matrix4x4);
-				matrix.SetTRS(drawLoc + b, Quaternion.identity, s);
+				matrix.SetTRS(drawLoc + vector, Quaternion.identity, s);
 				Graphics.DrawMesh(MeshPool.plane10, matrix, shadowMaterial, 0);
 			}
 		}

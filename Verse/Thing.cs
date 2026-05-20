@@ -5,12 +5,14 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using RimWorld;
+using RimWorld.Planet;
 using UnityEngine;
 using Verse.AI;
+using Verse.Sound;
 
 namespace Verse
 {
-	public class Thing : Entity, IExposable, ISelectable, ILoadReferenceable, ISignalReceiver
+	public class Thing : Entity, ISelectable, ILoadReferenceable, ISignalReceiver, IExposable, IEquatable<Thing>
 	{
 		public ThingDef def;
 
@@ -30,11 +32,35 @@ namespace Verse
 
 		private Graphic graphicInt;
 
+		protected Graphic styleGraphicInt;
+
 		private int hitPointsInt = -1;
 
 		public ThingOwner holdingOwner;
 
 		public List<string> questTags;
+
+		public int spawnedTick = -1;
+
+		public int despawnedTick = -1;
+
+		public int? overrideGraphicIndex;
+
+		public bool debugRotLocked;
+
+		private bool beingTransportedOnGravship;
+
+		private int tickDelta;
+
+		private bool beenRevealed;
+
+		public bool shouldHighlightCached;
+
+		public int shouldHighlightCachedTick;
+
+		public Color highlightColorCached;
+
+		public int highlightColorCachedTick;
 
 		protected const sbyte UnspawnedState = -1;
 
@@ -42,9 +68,25 @@ namespace Verse
 
 		private const sbyte DiscardedState = -3;
 
+		private List<IThingHolder> tmpHolders;
+
+		private bool cached;
+
+		private bool cachedIsHolder;
+
+		private IThingHolder cachedHolder;
+
+		private IThingHolderTickable cachedTickable;
+
 		public static bool allowDestroyNonDestroyable = false;
 
+		private static Dictionary<Thing, string> facIDsCached = new Dictionary<Thing, string>();
+
 		private static List<string> tmpDeteriorationReasons = new List<string>();
+
+		public static HashSet<RitualPatternDef> showingGizmosForRitualsTmp = new HashSet<RitualPatternDef>();
+
+		private static List<string> tmpIdeoNames = new List<string>();
 
 		public const float SmeltCostRecoverFraction = 0.25f;
 
@@ -60,11 +102,52 @@ namespace Verse
 			}
 		}
 
-		public int MaxHitPoints => Mathf.RoundToInt(this.GetStatValue(StatDefOf.MaxHitPoints));
+		public int MaxHitPoints => Mathf.RoundToInt(this.GetStatValue(StatDefOf.MaxHitPoints, applyPostProcess: true, 10));
 
-		public float MarketValue => this.GetStatValue(StatDefOf.MarketValue);
+		public virtual float MarketValue => this.GetStatValue(StatDefOf.MarketValue);
 
 		public virtual float RoyalFavorValue => this.GetStatValue(StatDefOf.RoyalFavorValue);
+
+		public virtual int? OverrideGraphicIndex => overrideGraphicIndex;
+
+		public virtual Texture UIIconOverride => null;
+
+		public bool EverSeenByPlayer
+		{
+			get
+			{
+				return this.GetEverSeenByPlayer();
+			}
+			set
+			{
+				this.SetEverSeenByPlayer(value);
+			}
+		}
+
+		public virtual ThingStyleDef StyleDef
+		{
+			get
+			{
+				return this.GetStyleDef();
+			}
+			set
+			{
+				styleGraphicInt = null;
+				this.SetStyleDef(value);
+			}
+		}
+
+		public Precept_ThingStyle StyleSourcePrecept
+		{
+			get
+			{
+				return this.GetStyleSourcePrecept();
+			}
+			set
+			{
+				this.SetStyleSourcePrecept(value);
+			}
+		}
 
 		public bool FlammableNow
 		{
@@ -112,7 +195,7 @@ namespace Verse
 		{
 			get
 			{
-				if (mapIndexOrState < 0)
+				if (mapIndexOrState < 0 || Find.Maps == null)
 				{
 					return false;
 				}
@@ -120,7 +203,7 @@ namespace Verse
 				{
 					return true;
 				}
-				Log.ErrorOnce("Thing is associated with invalid map index", 64664487);
+				Log.ErrorOnce($"Thing {ThingID} is associated with invalid map index {mapIndexOrState}", 64664487);
 				return false;
 			}
 		}
@@ -143,13 +226,17 @@ namespace Verse
 			}
 		}
 
+		public int TickSpawned => spawnedTick;
+
+		public int TickDeSpawned => despawnedTick;
+
 		public Map Map
 		{
 			get
 			{
 				if (mapIndexOrState >= 0)
 				{
-					return Find.Maps[mapIndexOrState];
+					return Find.Maps?[mapIndexOrState];
 				}
 				return null;
 			}
@@ -163,11 +250,11 @@ namespace Verse
 				{
 					return Map;
 				}
-				if (ParentHolder != null)
+				if (ParentHolder == null)
 				{
-					return ThingOwnerUtility.GetRootMap(ParentHolder);
+					return null;
 				}
-				return null;
+				return ThingOwnerUtility.GetRootMap(ParentHolder);
 			}
 		}
 
@@ -192,11 +279,14 @@ namespace Verse
 					DirtyMapMesh(Map);
 					RegionListersUpdater.DeregisterInRegions(this, Map);
 					Map.thingGrid.Deregister(this);
+					Map.coverGrid.DeRegister(this);
 				}
 				positionInt = value;
 				if (Spawned)
 				{
 					Map.thingGrid.Register(this);
+					Map.coverGrid.Register(this);
+					Map.gasGrid.Notify_ThingSpawned(this);
 					RegionListersUpdater.RegisterInRegions(this, Map);
 					DirtyMapMesh(Map);
 					if (def.AffectsReachability)
@@ -232,7 +322,7 @@ namespace Verse
 			}
 			set
 			{
-				if (value == rotationInt)
+				if (value == rotationInt || debugRotLocked)
 				{
 					return;
 				}
@@ -250,6 +340,7 @@ namespace Verse
 				{
 					Map.thingGrid.Register(this);
 					RegionListersUpdater.RegisterInRegions(this, Map);
+					Map.gasGrid.Notify_ThingSpawned(this);
 					if (def.AffectsReachability)
 					{
 						Map.reachability.ClearCache();
@@ -262,6 +353,10 @@ namespace Verse
 		{
 			get
 			{
+				if (this.IsRelic())
+				{
+					return false;
+				}
 				if (def.smeltable)
 				{
 					if (def.MadeFromStuff)
@@ -290,17 +385,7 @@ namespace Verse
 			}
 		}
 
-		public IThingHolder ParentHolder
-		{
-			get
-			{
-				if (holdingOwner == null)
-				{
-					return null;
-				}
-				return holdingOwner.Owner;
-			}
-		}
+		public IThingHolder ParentHolder => holdingOwner?.Owner;
 
 		public Faction Faction => factionInt;
 
@@ -354,6 +439,12 @@ namespace Verse
 
 		public override string LabelShort => LabelNoCount;
 
+		public virtual string LabelNoParenthesis => GenLabel.ThingLabel(this, 1, includeHp: false, includeQuality: false);
+
+		public string LabelNoParenthesisCap => LabelNoParenthesis.CapitalizeFirst();
+
+		public virtual ModContentPack ContentSource => def.modContentPack;
+
 		public virtual bool IngestibleNow
 		{
 			get
@@ -384,7 +475,31 @@ namespace Verse
 			}
 		}
 
-		public virtual Graphic Graphic => DefaultGraphic;
+		public virtual Graphic Graphic
+		{
+			get
+			{
+				ThingStyleDef styleDef = StyleDef;
+				if (styleDef?.Graphic != null)
+				{
+					if (styleGraphicInt == null)
+					{
+						if (styleDef.graphicData != null)
+						{
+							styleGraphicInt = styleDef.graphicData.GraphicColoredFor(this);
+						}
+						else
+						{
+							styleGraphicInt = styleDef.Graphic;
+						}
+					}
+					return styleGraphicInt;
+				}
+				return DefaultGraphic;
+			}
+		}
+
+		public virtual List<IntVec3> InteractionCells => ThingUtility.InteractionCellsWhenAt(def, Position, Rotation, Map, allowFallbackCell: true);
 
 		public virtual IntVec3 InteractionCell => ThingUtility.InteractionCellWhenAt(def, Position, Rotation, Map);
 
@@ -410,7 +525,7 @@ namespace Verse
 				{
 					return GenTemperature.GetTemperatureForCell(PositionHeld, MapHeld);
 				}
-				if (Tile >= 0)
+				if (Tile.Valid)
 				{
 					return GenTemperature.GetTemperatureAtTile(Tile);
 				}
@@ -418,7 +533,7 @@ namespace Verse
 			}
 		}
 
-		public int Tile
+		public PlanetTile Tile
 		{
 			get
 			{
@@ -430,11 +545,11 @@ namespace Verse
 				{
 					return ThingOwnerUtility.GetRootTile(ParentHolder);
 				}
-				return -1;
+				return PlanetTile.Invalid;
 			}
 		}
 
-		public bool Suspended
+		public virtual bool Suspended
 		{
 			get
 			{
@@ -450,13 +565,75 @@ namespace Verse
 			}
 		}
 
+		public bool InCryptosleep
+		{
+			get
+			{
+				if (Spawned)
+				{
+					return false;
+				}
+				if (ParentHolder != null)
+				{
+					return ThingOwnerUtility.ContentsInCryptosleep(ParentHolder);
+				}
+				return false;
+			}
+		}
+
 		public virtual string DescriptionDetailed => def.DescriptionDetailed;
 
 		public virtual string DescriptionFlavor => def.description;
 
+		public bool IsOnHoldingPlatform
+		{
+			get
+			{
+				if (ModsConfig.AnomalyActive)
+				{
+					return ParentHolder is Building_HoldingPlatform;
+				}
+				return false;
+			}
+		}
+
 		public TerrainAffordanceDef TerrainAffordanceNeeded => def.GetTerrainAffordanceNeed(stuffInt);
 
+		public bool BeingTransportedOnGravship => beingTransportedOnGravship;
+
+		protected virtual int MinTickIntervalRate => 1;
+
+		protected virtual int MaxTickIntervalRate => 15;
+
+		protected virtual int UpdateRateTickOffset => this.HashOffset();
+
+		public virtual int UpdateRateTicks => GenTicks.GetCameraUpdateRate(this);
+
+		public Vector3? DrawPosHeld
+		{
+			get
+			{
+				if (Spawned)
+				{
+					return DrawPos;
+				}
+				return ThingOwnerUtility.SpawnedParentOrMe(ParentHolder)?.DrawPos;
+			}
+		}
+
 		public virtual Vector3 DrawPos => this.TrueCenter();
+
+		public virtual Vector2 DrawSize
+		{
+			get
+			{
+				if (def.graphicData != null)
+				{
+					return def.graphicData.drawSize;
+				}
+				return Vector2.one;
+			}
+		}
 
 		public virtual Color DrawColor
 		{
@@ -474,7 +651,7 @@ namespace Verse
 			}
 			set
 			{
-				Log.Error(string.Concat("Cannot set instance color on non-ThingWithComps ", LabelCap, " at ", Position, "."));
+				Log.Error($"Cannot set instance color on non-ThingWithComps {LabelCap} at {Position}.");
 			}
 		}
 
@@ -490,6 +667,20 @@ namespace Verse
 			}
 		}
 
+		public virtual IEnumerable<DefHyperlink> DescriptionHyperlinks
+		{
+			get
+			{
+				if (def.descriptionHyperlinks != null)
+				{
+					for (int i = 0; i < def.descriptionHyperlinks.Count; i++)
+					{
+						yield return def.descriptionHyperlinks[i];
+					}
+				}
+			}
+		}
+
 		public static int IDNumberFromThingID(string thingID)
 		{
 			string value = Regex.Match(thingID, "\\d+$").Value;
@@ -498,13 +689,89 @@ namespace Verse
 			{
 				CultureInfo invariantCulture = CultureInfo.InvariantCulture;
 				result = Convert.ToInt32(value, invariantCulture);
-				return result;
 			}
 			catch (Exception ex)
 			{
-				Log.Error("Could not convert id number from thingID=" + thingID + ", numString=" + value + " Exception=" + ex.ToString());
-				return result;
+				Log.Error("Could not convert id number from thingID=" + thingID + ", numString=" + value + " Exception=" + ex);
 			}
+			return result;
+		}
+
+		public void DoTick()
+		{
+			if (Destroyed)
+			{
+				return;
+			}
+			if (!cached)
+			{
+				cached = true;
+				cachedHolder = this as IThingHolder;
+				cachedTickable = this as IThingHolderTickable;
+				cachedIsHolder = cachedHolder != null;
+			}
+			bool flag = holdingOwner != null && !Spawned;
+			if (def.tickerType == TickerType.Normal)
+			{
+				using (ProfilerBlock.Scope("DoTick()"))
+				{
+					using (ProfilerBlock.Scope("Tick()"))
+					{
+						Tick();
+					}
+					if (Destroyed)
+					{
+						return;
+					}
+					tickDelta++;
+					int num = Mathf.Min(Mathf.Max(UpdateRateTicks, MinTickIntervalRate), MaxTickIntervalRate);
+					if (tickDelta >= num || GenTicks.IsTickInterval(UpdateRateTickOffset, num))
+					{
+						using (ProfilerBlock.Scope("TickInterval()"))
+						{
+							TickInterval(tickDelta);
+						}
+						tickDelta = 0;
+					}
+				}
+			}
+			else if (def.tickerType == TickerType.Rare && ((!cachedIsHolder && !flag) || this.IsHashIntervalTick(250)))
+			{
+				using (ProfilerBlock.Scope("TickRare()"))
+				{
+					TickRare();
+				}
+			}
+			else if (def.tickerType == TickerType.Long && ((!cachedIsHolder && !flag) || this.IsHashIntervalTick(2000)))
+			{
+				using (ProfilerBlock.Scope("TickLong()"))
+				{
+					TickLong();
+				}
+			}
+			if (Destroyed || !cachedIsHolder || (cachedTickable != null && !cachedTickable.ShouldTickContents))
+			{
+				return;
+			}
+			if (tmpHolders == null)
+			{
+				tmpHolders = new List<IThingHolder>(8);
+			}
+			tmpHolders.Add(cachedHolder);
+			cachedHolder.GetChildHolders(tmpHolders);
+			for (int i = 0; i < tmpHolders.Count; i++)
+			{
+				ThingOwner directlyHeldThings = tmpHolders[i].GetDirectlyHeldThings();
+				if (directlyHeldThings != null)
+				{
+					directlyHeldThings.DoTick();
+					if (Destroyed)
+					{
+						break;
+					}
+				}
+			}
+			tmpHolders.Clear();
 		}
 
 		public virtual void PostMake()
@@ -516,6 +783,18 @@ namespace Verse
 			}
 		}
 
+		public virtual void PostPostMake()
+		{
+			if (!def.randomStyle.NullOrEmpty() && Rand.Chance(def.randomStyleChance))
+			{
+				StyleDef = def.randomStyle.RandomElementByWeight((ThingStyleChance x) => x.Chance).StyleDef;
+			}
+		}
+
+		public virtual void PostQualitySet()
+		{
+		}
+
 		public string GetUniqueLoadID()
 		{
 			return "Thing_" + ThingID;
@@ -525,7 +804,7 @@ namespace Verse
 		{
 			if (Destroyed)
 			{
-				Log.Error(string.Concat("Spawning destroyed thing ", this, " at ", Position, ". Correcting."));
+				Log.Error("Spawning destroyed thing " + this?.ToString() + " at " + Position.ToString() + ". Correcting.");
 				mapIndexOrState = -1;
 				if (HitPoints <= 0 && def.useHitPoints)
 				{
@@ -534,28 +813,34 @@ namespace Verse
 			}
 			if (Spawned)
 			{
-				Log.Error(string.Concat("Tried to spawn already-spawned thing ", this, " at ", Position));
+				Log.Error("Tried to spawn already-spawned thing " + this?.ToString() + " at " + Position.ToString());
 				return;
 			}
 			int num = Find.Maps.IndexOf(map);
 			if (num < 0)
 			{
-				Log.Error(string.Concat("Tried to spawn thing ", this, ", but the map provided does not exist."));
+				Log.Error("Tried to spawn thing " + this?.ToString() + ", but the map provided does not exist.");
 				return;
 			}
 			if (stackCount > def.stackLimit)
 			{
-				Log.Error(string.Concat("Spawned ", this, " with stackCount ", stackCount, " but stackLimit is ", def.stackLimit, ". Truncating."));
+				Log.Error("Spawned " + this?.ToString() + " with stackCount " + stackCount + " but stackLimit is " + def.stackLimit + ". Truncating.");
 				stackCount = def.stackLimit;
 			}
 			mapIndexOrState = (sbyte)num;
 			RegionListersUpdater.RegisterInRegions(this, map);
 			if (!map.spawnedThings.TryAdd(this, canMergeWithExistingStacks: false))
 			{
-				Log.Error(string.Concat("Couldn't add thing ", this, " to spawned things."));
+				Log.Error("Couldn't add thing " + this?.ToString() + " to spawned things.");
 			}
 			map.listerThings.Add(this);
 			map.thingGrid.Register(this);
+			map.gasGrid.Notify_ThingSpawned(this);
+			map.mapTemperature.Notify_ThingSpawned(this);
+			if (map.IsPlayerHome)
+			{
+				EverSeenByPlayer = true;
+			}
 			if (Find.TickManager != null)
 			{
 				Find.TickManager.RegisterAllTickabilityFor(this);
@@ -566,10 +851,10 @@ namespace Verse
 				map.dynamicDrawManager.RegisterDrawable(this);
 			}
 			map.tooltipGiverList.Notify_ThingSpawned(this);
-			if (def.graphicData != null && def.graphicData.Linked)
+			if (def.CanAffectLinker)
 			{
 				map.linkGrid.Notify_LinkerCreatedOrDestroyed(this);
-				map.mapDrawer.MapMeshDirty(Position, MapMeshFlag.Things, regenAdjacentCells: true, regenAdjacentSections: false);
+				map.mapDrawer.MapMeshDirty(Position, MapMeshFlagDefOf.Things, regenAdjacentCells: true, regenAdjacentSections: false);
 			}
 			if (!def.CanOverlapZones)
 			{
@@ -581,7 +866,7 @@ namespace Verse
 			}
 			if (def.pathCost != 0 || def.passability == Traversability.Impassable)
 			{
-				map.pathGrid.RecalculatePerceivedPathCostUnderThing(this);
+				map.pathing.RecalculatePerceivedPathCostUnderThing(this);
 			}
 			if (def.AffectsReachability)
 			{
@@ -594,12 +879,15 @@ namespace Verse
 				map.listerMergeables.Notify_Spawned(this);
 			}
 			map.attackTargetsCache.Notify_ThingSpawned(this);
-			(map.regionGrid.GetValidRegionAt_NoRebuild(Position)?.Room)?.Notify_ContainedThingSpawnedOrDespawned(this);
+			map.regionGrid.GetValidRegionAt_NoRebuild(Position)?.Room?.Notify_ContainedThingSpawnedOrDespawned(this);
 			StealAIDebugDrawer.Notify_ThingChanged(this);
-			IHaulDestination haulDestination = this as IHaulDestination;
-			if (haulDestination != null)
+			if (this is IHaulDestination haulDestination)
 			{
 				map.haulDestinationManager.AddHaulDestination(haulDestination);
+			}
+			if (this is IHaulSource source)
+			{
+				map.haulDestinationManager.AddHaulSource(source);
 			}
 			if (this is IThingHolder && Find.ColonistBar != null)
 			{
@@ -607,20 +895,51 @@ namespace Verse
 			}
 			if (def.category == ThingCategory.Item)
 			{
-				SlotGroup slotGroup = Position.GetSlotGroup(map);
-				if (slotGroup != null && slotGroup.parent != null)
+				ISlotGroupParent slotGroupParent = Position.GetSlotGroup(map)?.parent;
+				if (slotGroupParent != null)
 				{
-					slotGroup.parent.Notify_ReceivedThing(this);
+					slotGroupParent.Notify_ReceivedThing(this);
+					GenThing.TryDirtyAdjacentGroupContainers(slotGroupParent, map);
 				}
 			}
 			if (def.receivesSignals)
 			{
 				Find.SignalManager.RegisterReceiver(this);
 			}
-			if (!respawningAfterLoad)
+			if (!BeingTransportedOnGravship)
 			{
-				QuestUtility.SendQuestTargetSignals(questTags, "Spawned", this.Named("SUBJECT"));
+				def.soundSpawned?.PlayOneShot(this);
+				if (!respawningAfterLoad)
+				{
+					QuestUtility.SendQuestTargetSignals(questTags, "Spawned", this.Named("SUBJECT"));
+					spawnedTick = Find.TickManager.TicksGame;
+					despawnedTick = -1;
+					if (AnomalyUtility.ShouldNotifyCodex(this, EntityDiscoveryType.Spawn, out var entries))
+					{
+						Find.EntityCodex.SetDiscovered(entries, def, this);
+					}
+					else
+					{
+						Find.HiddenItemsManager.SetDiscovered(def);
+					}
+				}
 			}
+			map.events.Notify_ThingSpawned(this);
+		}
+
+		public bool DeSpawnOrDeselect(DestroyMode mode = DestroyMode.Vanish)
+		{
+			bool flag = Current.ProgramState == ProgramState.Playing && Find.Selector.IsSelected(this);
+			if (Spawned)
+			{
+				DeSpawn(mode);
+			}
+			else if (flag)
+			{
+				Find.Selector.Deselect(this);
+				Find.MainButtonsRoot.tabs.Notify_SelectedObjectDespawned();
+			}
+			return flag;
 		}
 
 		public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish)
@@ -636,6 +955,7 @@ namespace Verse
 				return;
 			}
 			Map map = Map;
+			map.overlayDrawer.DisposeHandle(this);
 			RegionListersUpdater.DeregisterInRegions(this, map);
 			map.spawnedThings.Remove(this);
 			map.listerThings.Remove(this);
@@ -646,10 +966,10 @@ namespace Verse
 				Find.SignalManager.DeregisterReceiver(this);
 			}
 			map.tooltipGiverList.Notify_ThingDespawned(this);
-			if (def.graphicData != null && def.graphicData.Linked)
+			if (def.CanAffectLinker)
 			{
 				map.linkGrid.Notify_LinkerCreatedOrDestroyed(this);
-				map.mapDrawer.MapMeshDirty(Position, MapMeshFlag.Things, regenAdjacentCells: true, regenAdjacentSections: false);
+				map.mapDrawer.MapMeshDirty(Position, MapMeshFlagDefOf.Things, regenAdjacentCells: true, regenAdjacentSections: false);
 			}
 			if (Find.Selector.IsSelected(this))
 			{
@@ -661,14 +981,14 @@ namespace Verse
 			{
 				map.dynamicDrawManager.DeRegisterDrawable(this);
 			}
-			(map.regionGrid.GetValidRegionAt_NoRebuild(Position)?.Room)?.Notify_ContainedThingSpawnedOrDespawned(this);
+			map.regionGrid.GetValidRegionAt_NoRebuild(Position)?.Room?.Notify_ContainedThingSpawnedOrDespawned(this);
 			if (def.AffectsRegions)
 			{
 				map.regionDirtyer.Notify_ThingAffectingRegionsDespawned(this);
 			}
 			if (def.pathCost != 0 || def.passability == Traversability.Impassable)
 			{
-				map.pathGrid.RecalculatePerceivedPathCostUnderThing(this);
+				map.pathing.RecalculatePerceivedPathCostUnderThing(this);
 			}
 			if (def.AffectsReachability)
 			{
@@ -683,11 +1003,18 @@ namespace Verse
 			}
 			map.attackTargetsCache.Notify_ThingDespawned(this);
 			map.physicalInteractionReservationManager.ReleaseAllForTarget(this);
+			if (this is IHaulEnroute thing)
+			{
+				map.enrouteManager.Notify_ContainerDespawned(thing);
+			}
 			StealAIDebugDrawer.Notify_ThingChanged(this);
-			IHaulDestination haulDestination = this as IHaulDestination;
-			if (haulDestination != null)
+			if (this is IHaulDestination haulDestination)
 			{
 				map.haulDestinationManager.RemoveHaulDestination(haulDestination);
+			}
+			if (this is IHaulSource source)
+			{
+				map.haulDestinationManager.RemoveHaulSource(source);
 			}
 			if (this is IThingHolder && Find.ColonistBar != null)
 			{
@@ -695,13 +1022,17 @@ namespace Verse
 			}
 			if (def.category == ThingCategory.Item)
 			{
-				SlotGroup slotGroup = Position.GetSlotGroup(map);
-				if (slotGroup != null && slotGroup.parent != null)
+				ISlotGroupParent slotGroupParent = Position.GetSlotGroup(map)?.parent;
+				if (slotGroupParent != null)
 				{
-					slotGroup.parent.Notify_LostThing(this);
+					slotGroupParent.Notify_LostThing(this);
+					GenThing.TryDirtyAdjacentGroupContainers(slotGroupParent, map);
 				}
 			}
 			QuestUtility.SendQuestTargetSignals(questTags, "Despawned", this.Named("SUBJECT"));
+			spawnedTick = -1;
+			despawnedTick = Find.TickManager.TicksGame;
+			map.events.Notify_ThingDespawned(this);
 		}
 
 		public virtual void Kill(DamageInfo? dinfo = null, Hediff exactCulprit = null)
@@ -723,9 +1054,18 @@ namespace Verse
 			}
 			bool spawned = Spawned;
 			Map map = Map;
+			if (StyleSourcePrecept != null)
+			{
+				StyleSourcePrecept.Notify_ThingLost(this, spawned);
+			}
 			if (Spawned)
 			{
 				DeSpawn(mode);
+			}
+			else if (Current.ProgramState == ProgramState.Playing && Find.Selector.IsSelected(this))
+			{
+				Find.Selector.Deselect(this);
+				Find.MainButtonsRoot.tabs.Notify_SelectedObjectDespawned();
 			}
 			mapIndexOrState = -2;
 			if (def.DiscardOnDestroyed)
@@ -735,9 +1075,10 @@ namespace Verse
 			CompExplosive compExplosive = this.TryGetComp<CompExplosive>();
 			if (spawned)
 			{
-				List<Thing> list = ((compExplosive != null) ? new List<Thing>() : null);
+				List<Thing> list = new List<Thing>();
 				GenLeaving.DoLeavingsFor(this, map, mode, list);
 				compExplosive?.AddThingsIgnoredByExplosion(list);
+				Notify_KilledLeavingsLeft(list);
 			}
 			if (holdingOwner != null)
 			{
@@ -754,7 +1095,7 @@ namespace Verse
 			}
 			if (mode == DestroyMode.KillFinalize)
 			{
-				QuestUtility.SendQuestTargetSignals(questTags, "Killed", this.Named("SUBJECT"));
+				QuestUtility.SendQuestTargetSignals(questTags, "Killed", this.Named("SUBJECT"), map.Named("MAP"));
 			}
 		}
 
@@ -762,12 +1103,21 @@ namespace Verse
 		{
 		}
 
-		public virtual void PostGeneratedForTrader(TraderKindDef trader, int forTile, Faction forFaction)
+		public virtual void PostGeneratedForTrader(TraderKindDef trader, PlanetTile forTile, Faction forFaction)
 		{
 			if (def.colorGeneratorInTraderStock != null)
 			{
 				this.SetColor(def.colorGeneratorInTraderStock.NewRandomizedColor());
 			}
+		}
+
+		public virtual float GetBeauty(bool outside)
+		{
+			if (!outside || !def.StatBaseDefined(StatDefOf.BeautyOutdoors))
+			{
+				return this.GetStatValue(StatDefOf.Beauty);
+			}
+			return this.GetStatValue(StatDefOf.BeautyOutdoors);
 		}
 
 		public virtual void Notify_MyMapRemoved()
@@ -776,15 +1126,58 @@ namespace Verse
 			{
 				Find.SignalManager.DeregisterReceiver(this);
 			}
+			if (StyleSourcePrecept != null)
+			{
+				StyleSourcePrecept.Notify_ThingLost(this);
+			}
 			if (!ThingOwnerUtility.AnyParentIs<Pawn>(this))
 			{
 				mapIndexOrState = -3;
+			}
+			ThingOwner thingOwner = holdingOwner;
+			if (thingOwner != null && thingOwner.Owner is Map)
+			{
+				holdingOwner = null;
 			}
 			RemoveAllReservationsAndDesignationsOnThis();
 		}
 
 		public virtual void Notify_LordDestroyed()
 		{
+		}
+
+		public virtual void Notify_AbandonedAtTile(PlanetTile tile)
+		{
+		}
+
+		public virtual void Notify_KilledLeavingsLeft(List<Thing> leavings)
+		{
+		}
+
+		public virtual void Notify_Studied(Pawn studier, float amount, KnowledgeCategoryDef category = null)
+		{
+		}
+
+		public virtual void Notify_Unfogged()
+		{
+			if (!beenRevealed)
+			{
+				beenRevealed = true;
+				if (ModsConfig.AnomalyActive && AnomalyUtility.ShouldNotifyCodex(this, EntityDiscoveryType.Unfog, out var entries))
+				{
+					Find.EntityCodex.SetDiscovered(entries, def, this);
+				}
+				else
+				{
+					Find.HiddenItemsManager.SetDiscovered(def);
+				}
+				QuestUtility.SendQuestTargetSignals(questTags, "Unfogged", this);
+				CompLetterOnRevealed compLetterOnRevealed = this.TryGetComp<CompLetterOnRevealed>();
+				if (compLetterOnRevealed != null)
+				{
+					Find.LetterStack.ReceiveLetter(compLetterOnRevealed.Props.label, compLetterOnRevealed.Props.text, compLetterOnRevealed.Props.letterDef, this);
+				}
+			}
 		}
 
 		public void ForceSetStateToUnspawned()
@@ -796,7 +1189,7 @@ namespace Verse
 		{
 			if (mapIndexOrState <= 0)
 			{
-				Log.Warning(string.Concat("Tried to decrement map index for ", this, ", but mapIndexOrState=", mapIndexOrState));
+				Log.Warning("Tried to decrement map index for " + this?.ToString() + ", but mapIndexOrState=" + mapIndexOrState);
 			}
 			else
 			{
@@ -815,10 +1208,9 @@ namespace Verse
 			{
 				maps[i].reservationManager.ReleaseAllForTarget(this);
 				maps[i].physicalInteractionReservationManager.ReleaseAllForTarget(this);
-				IAttackTarget attackTarget = this as IAttackTarget;
-				if (attackTarget != null)
+				if (this is IAttackTarget target)
 				{
-					maps[i].attackTargetReservationManager.ReleaseAllForTarget(attackTarget);
+					maps[i].attackTargetReservationManager.ReleaseAllForTarget(target);
 				}
 				maps[i].designationManager.RemoveAllDesignationsOn(this);
 			}
@@ -827,11 +1219,15 @@ namespace Verse
 		public virtual void ExposeData()
 		{
 			Scribe_Defs.Look(ref def, "def");
+			Scribe_Values.Look(ref tickDelta, "tickDelta", 0);
 			if (def.HasThingIDNumber)
 			{
 				string value = ThingID;
 				Scribe_Values.Look(ref value, "id");
-				ThingID = value;
+				if (Scribe.mode != LoadSaveMode.Saving)
+				{
+					ThingID = value;
+				}
 			}
 			Scribe_Values.Look<sbyte>(ref mapIndexOrState, "map", -1);
 			if (Scribe.mode == LoadSaveMode.LoadingVars && mapIndexOrState >= 0)
@@ -840,11 +1236,12 @@ namespace Verse
 			}
 			Scribe_Values.Look(ref positionInt, "pos", IntVec3.Invalid);
 			Scribe_Values.Look(ref rotationInt, "rot", Rot4.North);
+			Scribe_Values.Look(ref debugRotLocked, "debugRotLocked", defaultValue: false);
 			if (def.useHitPoints)
 			{
 				Scribe_Values.Look(ref hitPointsInt, "health", -1);
 			}
-			bool flag = def.tradeability != 0 && def.category == ThingCategory.Item;
+			bool flag = def.tradeability != Tradeability.None && def.category == ThingCategory.Item;
 			if (def.stackLimit > 1 || flag)
 			{
 				Scribe_Values.Look(ref stackCount, "stackCount", 0, forceSave: true);
@@ -852,7 +1249,7 @@ namespace Verse
 			Scribe_Defs.Look(ref stuffInt, "stuff");
 			string facID = ((factionInt != null) ? factionInt.GetUniqueLoadID() : "null");
 			Scribe_Values.Look(ref facID, "faction", "null");
-			if (Scribe.mode == LoadSaveMode.LoadingVars || Scribe.mode == LoadSaveMode.ResolvingCrossRefs || Scribe.mode == LoadSaveMode.PostLoadInit)
+			if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
 				if (facID == "null")
 				{
@@ -862,8 +1259,40 @@ namespace Verse
 				{
 					factionInt = Find.FactionManager.AllFactions.FirstOrDefault((Faction fa) => fa.GetUniqueLoadID() == facID);
 				}
+				else
+				{
+					facIDsCached.SetOrAdd(this, facID);
+				}
+			}
+			if (Scribe.mode == LoadSaveMode.ResolvingCrossRefs)
+			{
+				if (facID == "null" && facIDsCached.TryGetValue(this, out facID))
+				{
+					facIDsCached.Remove(this);
+				}
+				if (facID != "null")
+				{
+					factionInt = Find.FactionManager.AllFactions.FirstOrDefault((Faction fa) => fa.GetUniqueLoadID() == facID);
+				}
+			}
+			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			{
+				facIDsCached.Clear();
+				if (def.MadeFromStuff && Stuff == null)
+				{
+					Log.Error($"{this} is made from stuff but has no stuff set. Setting default stuff.");
+					SetStuffDirect(GenStuff.DefaultStuffFor(def));
+					if (Stuff == null)
+					{
+						Log.Error($"Failed to find stuff for {this} after loading.");
+					}
+				}
 			}
 			Scribe_Collections.Look(ref questTags, "questTags", LookMode.Value);
+			Scribe_Values.Look(ref overrideGraphicIndex, "overrideGraphicIndex");
+			Scribe_Values.Look(ref spawnedTick, "spawnedTick", -1);
+			Scribe_Values.Look(ref despawnedTick, "despawnedTick", 0);
+			Scribe_Values.Look(ref beenRevealed, "beenRevealed", defaultValue: false);
 			BackCompatibility.PostExposeData(this);
 		}
 
@@ -871,19 +1300,42 @@ namespace Verse
 		{
 		}
 
-		public virtual void Draw()
+		public void DrawNowAt(Vector3 drawLoc, bool flip = false)
 		{
-			DrawAt(DrawPos);
+			DynamicDrawPhaseAt(DrawPhase.Draw, drawLoc, flip);
 		}
 
-		public virtual void DrawAt(Vector3 drawLoc, bool flip = false)
+		public void DynamicDrawPhase(DrawPhase phase)
 		{
-			Graphic.Draw(drawLoc, flip ? Rotation.Opposite : Rotation, this);
+			if (def.drawerType != DrawerType.MapMeshOnly)
+			{
+				DynamicDrawPhaseAt(phase, DrawPos);
+			}
+		}
+
+		public virtual void DynamicDrawPhaseAt(DrawPhase phase, Vector3 drawLoc, bool flip = false)
+		{
+			if (phase == DrawPhase.Draw)
+			{
+				DrawAt(drawLoc, flip);
+			}
+		}
+
+		protected virtual void DrawAt(Vector3 drawLoc, bool flip = false)
+		{
+			if (def.drawerType == DrawerType.RealtimeOnly || !Spawned)
+			{
+				Graphic.Draw(drawLoc, flip ? Rotation.Opposite : Rotation, this);
+			}
+			SilhouetteUtility.DrawGraphicSilhouette(this, drawLoc);
 		}
 
 		public virtual void Print(SectionLayer layer)
 		{
-			Graphic.Print(layer, this);
+			if (!def.dontPrint)
+			{
+				Graphic.Print(layer, this, 0f);
+			}
 		}
 
 		public void DirtyMapMesh(Map map)
@@ -894,7 +1346,7 @@ namespace Verse
 			}
 			foreach (IntVec3 item in this.OccupiedRect())
 			{
-				map.mapDrawer.MapMeshDirty(item, MapMeshFlag.Things);
+				map.mapDrawer.MapMeshDirty(item, MapMeshFlagDefOf.Things);
 			}
 		}
 
@@ -927,10 +1379,7 @@ namespace Verse
 					def.PlaceWorkers[i].DrawGhost(def, Position, Rotation, Color.white, this);
 				}
 			}
-			if (def.hasInteractionCell)
-			{
-				GenDraw.DrawInteractionCell(def, Position, rotationInt);
-			}
+			GenDraw.DrawInteractionCells(def, Position, rotationInt);
 		}
 
 		public virtual string GetInspectString()
@@ -944,27 +1393,75 @@ namespace Verse
 		{
 			string result = null;
 			tmpDeteriorationReasons.Clear();
-			SteadyEnvironmentEffects.FinalDeteriorationRate(this, tmpDeteriorationReasons);
+			float f = SteadyEnvironmentEffects.FinalDeteriorationRate(this, tmpDeteriorationReasons);
 			if (tmpDeteriorationReasons.Count != 0)
 			{
-				result = string.Format("{0}: {1}", "DeterioratingBecauseOf".Translate(), tmpDeteriorationReasons.ToCommaList().CapitalizeFirst());
+				result = string.Format("{0}: {1} ({2})", "DeterioratingBecauseOf".Translate(), tmpDeteriorationReasons.ToCommaList().CapitalizeFirst(), "PerDay".Translate(f.ToStringByStyle(ToStringStyle.FloatMaxTwo)));
 			}
 			return result;
 		}
 
 		public virtual IEnumerable<Gizmo> GetGizmos()
 		{
-			yield break;
+			Gizmo gizmo = ContainingSelectionUtility.SelectContainingThingGizmo(this);
+			if (gizmo != null)
+			{
+				yield return gizmo;
+			}
+			showingGizmosForRitualsTmp.Clear();
+			foreach (Ideo ideo in Faction.OfPlayer.ideos.AllIdeos)
+			{
+				for (int i = 0; i < ideo.PreceptsListForReading.Count; i++)
+				{
+					Precept precept = ideo.PreceptsListForReading[i];
+					if (!(precept is Precept_Ritual ritual) || (precept.def.mergeRitualGizmosFromAllIdeos && showingGizmosForRitualsTmp.Contains(ritual.sourcePattern)) || !ritual.ShouldShowGizmo(this))
+					{
+						continue;
+					}
+					foreach (Gizmo item in ritual.GetGizmoFor(this))
+					{
+						yield return item;
+						showingGizmosForRitualsTmp.Add(ritual.sourcePattern);
+					}
+				}
+			}
+			List<LordJob_Ritual> activeRituals = Find.IdeoManager.GetActiveRituals(MapHeld);
+			foreach (LordJob_Ritual item2 in activeRituals)
+			{
+				if (item2.selectedTarget == this)
+				{
+					yield return item2.GetCancelGizmo();
+				}
+			}
+			if (ModsConfig.AnomalyActive)
+			{
+				Gizmo gizmo2 = AnomalyUtility.OpenCodexGizmo(this);
+				if (gizmo2 != null)
+				{
+					yield return gizmo2;
+				}
+			}
+			if (DebugSettings.ShowDevGizmos && this.HasAttachment(ThingDefOf.Fire))
+			{
+				yield return new Command_Action
+				{
+					defaultLabel = "DEV: Extinguish",
+					action = delegate
+					{
+						this.GetAttachment(ThingDefOf.Fire)?.Destroy();
+					}
+				};
+			}
 		}
 
 		public virtual IEnumerable<FloatMenuOption> GetFloatMenuOptions(Pawn selPawn)
 		{
-			yield break;
+			return Enumerable.Empty<FloatMenuOption>();
 		}
 
-		public virtual IEnumerable<FloatMenuOption> GetMultiSelectFloatMenuOptions(List<Pawn> selPawns)
+		public virtual IEnumerable<FloatMenuOption> GetMultiSelectFloatMenuOptions(IEnumerable<Pawn> selPawns)
 		{
-			yield break;
+			return Enumerable.Empty<FloatMenuOption>();
 		}
 
 		public virtual IEnumerable<InspectTabBase> GetInspectTabs()
@@ -1010,18 +1507,35 @@ namespace Verse
 			{
 				mapHeld.damageWatcher.Notify_DamageTaken(this, damageResult.totalDamageDealt);
 			}
+			if (dinfo.Instigator is Pawn pawn)
+			{
+				foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
+				{
+					hediff.Notify_PawnDamagedThing(this, dinfo, damageResult);
+				}
+			}
 			if (dinfo.Def.ExternalViolenceFor(this))
 			{
-				GenLeaving.DropFilthDueToDamage(this, damageResult.totalDamageDealt);
+				if (dinfo.SpawnFilth)
+				{
+					GenLeaving.DropFilthDueToDamage(this, damageResult.totalDamageDealt);
+				}
 				if (dinfo.Instigator != null)
 				{
-					Pawn pawn = dinfo.Instigator as Pawn;
-					if (pawn != null)
+					if (dinfo.Instigator is Pawn pawn2)
 					{
-						pawn.records.AddTo(RecordDefOf.DamageDealt, damageResult.totalDamageDealt);
-						pawn.records.AccumulateStoryEvent(StoryEventDefOf.DamageDealt);
+						pawn2.records.AddTo(RecordDefOf.DamageDealt, damageResult.totalDamageDealt);
+					}
+					if (dinfo.Instigator.Faction == Faction.OfPlayer)
+					{
+						QuestUtility.SendQuestTargetSignals(questTags, "TookDamageFromPlayer", this.Named("SUBJECT"), dinfo.Instigator.Named("INSTIGATOR"));
 					}
 				}
+				QuestUtility.SendQuestTargetSignals(questTags, "TookDamage", this.Named("SUBJECT"), dinfo.Instigator.Named("INSTIGATOR"), mapHeld.Named("MAP"));
+			}
+			if (!Destroyed && FlammableNow && dinfo.Def.igniteChanceByTargetFlammability != null && Rand.Chance(dinfo.Def.igniteChanceByTargetFlammability.Evaluate(this.GetStatValue(StatDefOf.Flammability))))
+			{
+				this.TryAttachFire(Rand.Range(0.55f, 0.85f), dinfo.Instigator);
 			}
 			PostApplyDamage(dinfo, damageResult.totalDamageDealt);
 			return damageResult;
@@ -1046,6 +1560,10 @@ namespace Verse
 			{
 				return false;
 			}
+			if (this.IsRelic() || other.IsRelic())
+			{
+				return false;
+			}
 			if (def == other.def)
 			{
 				return Stuff == other.Stuff;
@@ -1066,6 +1584,10 @@ namespace Verse
 			}
 			stackCount += num;
 			other.stackCount -= num;
+			if (Map != null)
+			{
+				DirtyMapMesh(Map);
+			}
 			StealAIDebugDrawer.Notify_ThingChanged(this);
 			if (Spawned)
 			{
@@ -1089,21 +1611,19 @@ namespace Verse
 			{
 				if (count > stackCount)
 				{
-					Log.Error(string.Concat("Tried to split off ", count, " of ", this, " but there are only ", stackCount));
+					Log.Error("Tried to split off " + count + " of " + this?.ToString() + " but there are only " + stackCount);
 				}
-				if (Spawned)
-				{
-					DeSpawn();
-				}
-				if (holdingOwner != null)
-				{
-					holdingOwner.Remove(this);
-				}
+				DeSpawnOrDeselect();
+				holdingOwner?.Remove(this);
 				return this;
 			}
 			Thing thing = ThingMaker.MakeThing(def, Stuff);
 			thing.stackCount = count;
 			stackCount -= count;
+			if (Map != null)
+			{
+				DirtyMapMesh(Map);
+			}
 			if (Spawned)
 			{
 				Map.listerMergeables.Notify_ThingStackChanged(this);
@@ -1124,14 +1644,33 @@ namespace Verse
 					new Dialog_InfoCard.Hyperlink(Stuff)
 				});
 			}
+			if (!ModsConfig.IdeologyActive || Find.IdeoManager.classicMode)
+			{
+				yield break;
+			}
+			tmpIdeoNames.Clear();
+			StyleCategoryDef styleCategoryDef = StyleDef?.Category ?? def.dominantStyleCategory;
+			if (styleCategoryDef == null)
+			{
+				yield break;
+			}
+			foreach (Ideo item in Find.IdeoManager.IdeosListForReading)
+			{
+				if (IdeoUtility.ThingSatisfiesIdeo(this, item))
+				{
+					tmpIdeoNames.Add(item.name.Colorize(item.Color));
+				}
+			}
+			yield return new StatDrawEntry(StatCategoryDefOf.BasicsNonPawn, "Stat_Thing_StyleDominanceCategory".Translate(), styleCategoryDef.LabelCap, "Stat_Thing_StyleDominanceCategoryDesc".Translate() + "\n\n" + "Stat_Thing_IdeosSatisfied".Translate() + ":" + "\n" + tmpIdeoNames.ToLineList("  - "), 6005);
 		}
 
 		public virtual void Notify_ColorChanged()
 		{
 			graphicInt = null;
+			styleGraphicInt = null;
 			if (Spawned && (def.drawerType == DrawerType.MapMeshOnly || def.drawerType == DrawerType.MapMeshAndRealTime))
 			{
-				Map.mapDrawer.MapMeshDirty(Position, MapMeshFlag.Things);
+				Map.mapDrawer.MapMeshDirty(Position, MapMeshFlagDefOf.Things);
 			}
 		}
 
@@ -1139,7 +1678,27 @@ namespace Verse
 		{
 		}
 
+		public virtual void Notify_Unequipped(Pawn pawn)
+		{
+		}
+
+		public virtual void Notify_UsedVerb(Pawn pawn, Verb verb)
+		{
+		}
+
 		public virtual void Notify_UsedWeapon(Pawn pawn)
+		{
+		}
+
+		public virtual void Notify_DebugSpawned()
+		{
+		}
+
+		public virtual void Notify_MinifiedThingAboutToBeDestroyed(DestroyMode mode)
+		{
+		}
+
+		public virtual void Notify_RecipeProduced(Pawn pawn)
 		{
 		}
 
@@ -1155,6 +1714,10 @@ namespace Verse
 		{
 		}
 
+		public virtual void Notify_ThingSelected()
+		{
+		}
+
 		public virtual TipSignal GetTooltip()
 		{
 			string text = LabelCap;
@@ -1167,14 +1730,22 @@ namespace Verse
 
 		public virtual bool BlocksPawn(Pawn p)
 		{
-			return def.passability == Traversability.Impassable;
+			if (def.passability == Traversability.Impassable)
+			{
+				return true;
+			}
+			if (def.IsFence && p.FenceBlocked)
+			{
+				return true;
+			}
+			return false;
 		}
 
 		public void SetFactionDirect(Faction newFaction)
 		{
 			if (!def.CanHaveFaction)
 			{
-				Log.Error(string.Concat("Tried to SetFactionDirect on ", this, " which cannot have a faction."));
+				Log.Error("Tried to SetFactionDirect on " + this?.ToString() + " which cannot have a faction.");
 			}
 			else
 			{
@@ -1186,19 +1757,120 @@ namespace Verse
 		{
 			if (!def.CanHaveFaction)
 			{
-				Log.Error(string.Concat("Tried to SetFaction on ", this, " which cannot have a faction."));
+				Log.Error("Tried to SetFaction on " + this?.ToString() + " which cannot have a faction.");
 				return;
 			}
+			Faction previous = factionInt;
 			factionInt = newFaction;
-			if (Spawned)
+			if (Spawned && this is IAttackTarget t)
 			{
-				IAttackTarget attackTarget = this as IAttackTarget;
-				if (attackTarget != null)
-				{
-					Map.attackTargetsCache.UpdateTarget(attackTarget);
-				}
+				Map.attackTargetsCache.UpdateTarget(t);
 			}
 			QuestUtility.SendQuestTargetSignals(questTags, "ChangedFaction", this.Named("SUBJECT"), newFaction.Named("FACTION"));
+			if (newFaction != Faction.OfPlayer)
+			{
+				QuestUtility.SendQuestTargetSignals(questTags, "ChangedFactionToNonPlayer", this.Named("SUBJECT"), newFaction.Named("FACTION"));
+			}
+			else
+			{
+				QuestUtility.SendQuestTargetSignals(questTags, "ChangedFactionToPlayer", this.Named("SUBJECT"), newFaction.Named("FACTION"));
+			}
+			if (Spawned)
+			{
+				Map.events.Notify_ThingFactionChanged(previous, factionInt);
+			}
+		}
+
+		public virtual AcceptanceReport ClaimableBy(Faction by)
+		{
+			return false;
+		}
+
+		public virtual bool AdoptableBy(Faction by, StringBuilder reason = null)
+		{
+			return false;
+		}
+
+		public bool FactionPreventsClaimingOrAdopting(Faction faction, bool forClaim, out string reason)
+		{
+			reason = null;
+			if (faction == null)
+			{
+				return false;
+			}
+			if (faction == Faction.OfInsects)
+			{
+				if (HiveUtility.AnyHivePreventsClaiming(this))
+				{
+					return true;
+				}
+			}
+			else if (faction == Faction.OfMechanoids)
+			{
+				if (MechClusterUtility.PartOfActiveMechCluster(this))
+				{
+					return true;
+				}
+				foreach (IAttackTarget item in MapHeld.attackTargetsCache.TargetsHostileToFaction(Faction.OfPlayer))
+				{
+					if (item.Thing == null || item.Thing.Faction != faction)
+					{
+						continue;
+					}
+					if (item.Thing is Pawn pawn)
+					{
+						if (GenHostility.IsActiveThreatToPlayer(pawn))
+						{
+							if (forClaim)
+							{
+								reason = "MessageCannotClaimWhenPawnThreatsAreNear".Translate(this.Named("CLAIMABLE"), pawn.Named("THREAT"));
+							}
+							else
+							{
+								reason = "MessageCannotAdoptWhilePawnThreatsAreNear".Translate(this.Named("CLAIMABLE"), pawn.Named("THREAT"));
+							}
+							return true;
+						}
+						continue;
+					}
+					if (forClaim)
+					{
+						reason = "MessageCannotClaimWhenThreatsAreNear".Translate(this.Named("CLAIMABLE"), item.Named("THREAT"));
+					}
+					else
+					{
+						reason = "MessageCannotAdoptWhileThreatsAreNear".Translate(this.Named("CLAIMABLE"), item.Named("THREAT"));
+					}
+					return true;
+				}
+			}
+			else
+			{
+				if (faction == Faction.OfAncients && Spawned && !Map.IsPlayerHome && GenHostility.AnyHostileActiveThreatToPlayer(Map, countDormantPawnsAsHostile: true, canBeFogged: true))
+				{
+					return true;
+				}
+				if (Spawned && faction != Faction.OfPlayer)
+				{
+					List<Pawn> list = Map.mapPawns.SpawnedPawnsInFaction(faction);
+					for (int i = 0; i < list.Count; i++)
+					{
+						if (list[i].RaceProps.ToolUser && GenHostility.IsPotentialThreat(list[i]))
+						{
+							if (forClaim)
+							{
+								reason = "MessageCannotClaimWhenThreatsAreNear".Translate(this.Named("CLAIMABLE"), list[i].Named("THREAT"));
+							}
+							else
+							{
+								reason = "MessageCannotAdoptWhileThreatsAreNear".Translate(this.Named("CLAIMABLE"), list[i].Named("THREAT"));
+							}
+							return true;
+						}
+					}
+				}
+			}
+			return false;
 		}
 
 		public void SetPositionDirect(IntVec3 newPos)
@@ -1220,8 +1892,29 @@ namespace Verse
 			return GetType().ToString();
 		}
 
+		public bool Equals(Thing other)
+		{
+			if (other == null)
+			{
+				return false;
+			}
+			if (def.category == ThingCategory.Mote)
+			{
+				return this == other;
+			}
+			if (thingIDNumber == other.thingIDNumber)
+			{
+				return def.Equals(other.def);
+			}
+			return false;
+		}
+
 		public override int GetHashCode()
 		{
+			if (thingIDNumber == -1)
+			{
+				return base.GetHashCode();
+			}
 			return thingIDNumber;
 		}
 
@@ -1229,12 +1922,17 @@ namespace Verse
 		{
 			if (mapIndexOrState != -2)
 			{
-				Log.Warning(string.Concat("Tried to discard ", this, " whose state is ", mapIndexOrState, "."));
+				Log.Warning("Tried to discard " + this?.ToString() + " whose state is " + mapIndexOrState + ".");
 			}
 			else
 			{
 				mapIndexOrState = -3;
 			}
+		}
+
+		public virtual void Notify_DefsHotReloaded()
+		{
+			graphicInt = null;
 		}
 
 		public virtual IEnumerable<Thing> ButcherProducts(Pawn butcher, float efficiency)
@@ -1247,6 +1945,7 @@ namespace Verse
 			{
 				ThingDefCountClass thingDefCountClass = def.butcherProducts[i];
 				int num = GenMath.RoundRandom((float)thingDefCountClass.count * efficiency);
+				num = GenMath.RoundRandom((float)num * Find.Storyteller.difficulty.butcherYieldFactor);
 				if (num > 0)
 				{
 					Thing thing = ThingMaker.MakeThing(thingDefCountClass.thingDef);
@@ -1259,14 +1958,14 @@ namespace Verse
 		public virtual IEnumerable<Thing> SmeltProducts(float efficiency)
 		{
 			List<ThingDefCountClass> costListAdj = def.CostListAdjusted(Stuff);
-			for (int j = 0; j < costListAdj.Count; j++)
+			for (int i = 0; i < costListAdj.Count; i++)
 			{
-				if (!costListAdj[j].thingDef.intricate)
+				if (!costListAdj[i].thingDef.intricate && costListAdj[i].thingDef.smeltable)
 				{
-					int num = GenMath.RoundRandom((float)costListAdj[j].count * 0.25f);
+					int num = GenMath.RoundRandom((float)costListAdj[i].count * 0.25f);
 					if (num > 0)
 					{
-						Thing thing = ThingMaker.MakeThing(costListAdj[j].thingDef);
+						Thing thing = ThingMaker.MakeThing(costListAdj[i].thingDef);
 						thing.stackCount = num;
 						yield return thing;
 					}
@@ -1274,9 +1973,9 @@ namespace Verse
 			}
 			if (def.smeltProducts != null)
 			{
-				for (int j = 0; j < def.smeltProducts.Count; j++)
+				for (int i = 0; i < def.smeltProducts.Count; i++)
 				{
-					ThingDefCountClass thingDefCountClass = def.smeltProducts[j];
+					ThingDefCountClass thingDefCountClass = def.smeltProducts[i];
 					Thing thing2 = ThingMaker.MakeThing(thingDefCountClass.thingDef);
 					thing2.stackCount = thingDefCountClass.count;
 					yield return thing2;
@@ -1288,51 +1987,156 @@ namespace Verse
 		{
 			if (Destroyed)
 			{
-				Log.Error(string.Concat(ingester, " ingested destroyed thing ", this));
+				Log.Error(ingester?.ToString() + " ingested destroyed thing " + this);
 				return 0f;
 			}
 			if (!IngestibleNow)
 			{
-				Log.Error(string.Concat(ingester, " ingested IngestibleNow=false thing ", this));
+				Log.Error(ingester?.ToString() + " ingested IngestibleNow=false thing " + this);
 				return 0f;
 			}
 			ingester.mindState.lastIngestTick = Find.TickManager.TicksGame;
 			if (ingester.needs.mood != null)
 			{
-				List<ThoughtDef> list = FoodUtility.ThoughtsFromIngesting(ingester, this, def);
+				List<FoodUtility.ThoughtFromIngesting> list = FoodUtility.ThoughtsFromIngesting(ingester, this, def);
 				for (int i = 0; i < list.Count; i++)
 				{
-					ingester.needs.mood.thoughts.memories.TryGainMemory(list[i]);
+					Thought_Memory thought_Memory = ThoughtMaker.MakeThought(list[i].thought, list[i].fromPrecept);
+					if (thought_Memory is Thought_FoodEaten thought_FoodEaten)
+					{
+						thought_FoodEaten.SetFood(this);
+					}
+					ingester.needs.mood.thoughts.memories.TryGainMemory(thought_Memory);
 				}
 			}
-			if (ingester.needs.drugsDesire != null)
-			{
-				ingester.needs.drugsDesire.Notify_IngestedDrug(this);
-			}
-			if (ingester.IsColonist && FoodUtility.IsHumanlikeMeatOrHumanlikeCorpse(this))
+			ingester.needs.drugsDesire?.Notify_IngestedDrug(this);
+			bool flag = FoodUtility.IsHumanlikeCorpseOrHumanlikeMeat(this, def);
+			bool flag2 = FoodUtility.IsHumanlikeCorpseOrHumanlikeMeatOrIngredient(this);
+			if (flag && ingester.IsColonist)
 			{
 				TaleRecorder.RecordTale(TaleDefOf.AteRawHumanlikeMeat, ingester);
+			}
+			if (flag2)
+			{
+				ingester.mindState.lastHumanMeatIngestedTick = Find.TickManager.TicksGame;
+				Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AteHumanMeat, ingester.Named(HistoryEventArgsNames.Doer)), canApplySelfTookThoughts: false);
+				if (flag)
+				{
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AteHumanMeatDirect, ingester.Named(HistoryEventArgsNames.Doer)), canApplySelfTookThoughts: false);
+				}
+			}
+			else if (ModsConfig.IdeologyActive && !FoodUtility.AcceptableCannibalNonHumanlikeMeatFood(def))
+			{
+				Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AteNonCannibalFood, ingester.Named(HistoryEventArgsNames.Doer)), canApplySelfTookThoughts: false);
+			}
+			if (def.ingestible.ateEvent != null)
+			{
+				Find.HistoryEventsManager.RecordEvent(new HistoryEvent(def.ingestible.ateEvent, ingester.Named(HistoryEventArgsNames.Doer)), canApplySelfTookThoughts: false);
+			}
+			if (ModsConfig.IdeologyActive)
+			{
+				FoodKind foodKind = FoodUtility.GetFoodKind(this);
+				if (foodKind != FoodKind.Any && !def.IsProcessedFood)
+				{
+					if (foodKind == FoodKind.Meat)
+					{
+						if (!flag2)
+						{
+							Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AteMeat, ingester.Named(HistoryEventArgsNames.Doer)), canApplySelfTookThoughts: false);
+						}
+					}
+					else if (!def.IsDrug && def.ingestible.CachedNutrition > 0f)
+					{
+						Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AteNonMeat, ingester.Named(HistoryEventArgsNames.Doer)), canApplySelfTookThoughts: false);
+					}
+				}
+				if (FoodUtility.IsVeneratedAnimalMeatOrCorpseOrHasIngredients(this, ingester))
+				{
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AteVeneratedAnimalMeat, ingester.Named(HistoryEventArgsNames.Doer)), canApplySelfTookThoughts: false);
+				}
+				if (def.thingCategories != null && def.thingCategories.Contains(ThingCategoryDefOf.PlantFoodRaw))
+				{
+					if (def.IsFungus)
+					{
+						Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AteFungus, ingester.Named(HistoryEventArgsNames.Doer)), canApplySelfTookThoughts: false);
+					}
+					else
+					{
+						Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AteNonFungusPlant, ingester.Named(HistoryEventArgsNames.Doer)), canApplySelfTookThoughts: false);
+					}
+				}
+			}
+			CompIngredients compIngredients = this.TryGetComp<CompIngredients>();
+			if (compIngredients != null)
+			{
+				bool flag3 = false;
+				bool flag4 = false;
+				bool flag5 = false;
+				bool flag6 = false;
+				bool flag7 = false;
+				for (int j = 0; j < compIngredients.ingredients.Count; j++)
+				{
+					if (!flag3 && FoodUtility.GetMeatSourceCategory(compIngredients.ingredients[j]) == MeatSourceCategory.Humanlike)
+					{
+						ingester.mindState.lastHumanMeatIngestedTick = Find.TickManager.TicksGame;
+						Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AteHumanMeatAsIngredient, ingester.Named(HistoryEventArgsNames.Doer)), canApplySelfTookThoughts: false);
+						flag3 = true;
+					}
+					else if (!flag4 && ingester.Ideo != null && compIngredients.ingredients[j].IsMeat && ingester.Ideo.IsVeneratedAnimal(compIngredients.ingredients[j].ingestible.sourceDef))
+					{
+						Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AteVeneratedAnimalMeat, ingester.Named(HistoryEventArgsNames.Doer)), canApplySelfTookThoughts: false);
+						flag4 = true;
+					}
+					if (!flag5 && FoodUtility.GetMeatSourceCategory(compIngredients.ingredients[j]) == MeatSourceCategory.Insect)
+					{
+						Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AteInsectMeatAsIngredient, ingester.Named(HistoryEventArgsNames.Doer)), canApplySelfTookThoughts: false);
+						flag5 = true;
+					}
+					if (ModsConfig.IdeologyActive && !flag6 && compIngredients.ingredients[j].thingCategories.Contains(ThingCategoryDefOf.PlantFoodRaw))
+					{
+						if (compIngredients.ingredients[j].IsFungus)
+						{
+							Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AteFungusAsIngredient, ingester.Named(HistoryEventArgsNames.Doer)), canApplySelfTookThoughts: false);
+							flag6 = true;
+						}
+						else
+						{
+							flag7 = true;
+						}
+					}
+				}
+				if (ModsConfig.IdeologyActive && !flag6 && flag7)
+				{
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.AteNonFungusMealWithPlants, ingester.Named(HistoryEventArgsNames.Doer)), canApplySelfTookThoughts: false);
+				}
 			}
 			IngestedCalculateAmounts(ingester, nutritionWanted, out var numTaken, out var nutritionIngested);
 			if (!ingester.Dead && ingester.needs.joy != null && Mathf.Abs(def.ingestible.joy) > 0.0001f && numTaken > 0)
 			{
-				JoyKindDef joyKind = ((def.ingestible.joyKind != null) ? def.ingestible.joyKind : JoyKindDefOf.Gluttonous);
-				ingester.needs.joy.GainJoy((float)numTaken * def.ingestible.joy, joyKind);
+				ingester.needs.joy.GainJoy((float)numTaken * def.ingestible.joy, def.ingestible.joyKind ?? JoyKindDefOf.Gluttonous);
 			}
-			if (ingester.RaceProps.Humanlike && Rand.Chance(this.GetStatValue(StatDefOf.FoodPoisonChanceFixedHuman) * FoodUtility.GetFoodPoisonChanceFactor(ingester)))
+			float poisonChanceOverride;
+			float chance = (FoodUtility.TryGetFoodPoisoningChanceOverrideFromTraits(ingester, this, out poisonChanceOverride) ? poisonChanceOverride : (this.GetStatValue(StatDefOf.FoodPoisonChanceFixedHuman) * FoodUtility.GetFoodPoisonChanceFactor(ingester)));
+			if (ingester.RaceProps.Humanlike && Rand.Chance(chance))
 			{
 				FoodUtility.AddFoodPoisoningHediff(ingester, this, FoodPoisonCause.DangerousFoodType);
 			}
-			bool flag = false;
+			List<Hediff> hediffs = ingester.health.hediffSet.hediffs;
+			for (int k = 0; k < hediffs.Count; k++)
+			{
+				hediffs[k].Notify_IngestedThing(this, numTaken);
+			}
+			ingester.genes?.Notify_IngestedThing(this, numTaken);
+			bool flag8 = false;
 			if (numTaken > 0)
 			{
 				if (stackCount == 0)
 				{
-					Log.Error(string.Concat(this, " stack count is 0."));
+					Log.Error(this?.ToString() + " stack count is 0.");
 				}
 				if (numTaken == stackCount)
 				{
-					flag = true;
+					flag8 = true;
 				}
 				else
 				{
@@ -1340,18 +2144,18 @@ namespace Verse
 				}
 			}
 			PrePostIngested(ingester);
-			if (flag)
+			if (flag8)
 			{
 				ingester.carryTracker.innerContainer.Remove(this);
 			}
 			if (def.ingestible.outcomeDoers != null)
 			{
-				for (int j = 0; j < def.ingestible.outcomeDoers.Count; j++)
+				for (int l = 0; l < def.ingestible.outcomeDoers.Count; l++)
 				{
-					def.ingestible.outcomeDoers[j].DoIngestionOutcome(ingester, this);
+					def.ingestible.outcomeDoers[l].DoIngestionOutcome(ingester, this, numTaken);
 				}
 			}
-			if (flag)
+			if (flag8 && !Destroyed)
 			{
 				Destroy();
 			}
@@ -1369,10 +2173,15 @@ namespace Verse
 
 		protected virtual void IngestedCalculateAmounts(Pawn ingester, float nutritionWanted, out int numTaken, out float nutritionIngested)
 		{
-			numTaken = Mathf.CeilToInt(nutritionWanted / this.GetStatValue(StatDefOf.Nutrition));
-			numTaken = Mathf.Min(numTaken, def.ingestible.maxNumToIngestAtOnce, stackCount);
+			float num = FoodUtility.NutritionForEater(ingester, this);
+			numTaken = Mathf.CeilToInt(nutritionWanted / num);
+			numTaken = Mathf.Min(numTaken, stackCount);
+			if (def.ingestible.maxNumToIngestAtOnce > 0)
+			{
+				numTaken = Mathf.Min(numTaken, def.ingestible.maxNumToIngestAtOnce);
+			}
 			numTaken = Mathf.Max(numTaken, 1);
-			nutritionIngested = (float)numTaken * this.GetStatValue(StatDefOf.Nutrition);
+			nutritionIngested = (float)numTaken * num;
 		}
 
 		public virtual bool PreventPlayerSellingThingsNearby(out string reason)
@@ -1381,9 +2190,28 @@ namespace Verse
 			return false;
 		}
 
-		public virtual ushort PathFindCostFor(Pawn p)
+		public virtual void PreSwapMap()
 		{
-			return 0;
+			beingTransportedOnGravship = true;
+		}
+
+		public virtual void PostSwapMap()
+		{
+			beingTransportedOnGravship = false;
+			QuestUtility.SendQuestTargetSignals(questTags, "SwappedMap", this.Named("SUBJECT"));
+		}
+
+		public virtual void Notify_LeftBehind()
+		{
+			QuestUtility.SendQuestTargetSignals(questTags, "LeftBehind", this.Named("SUBJECT"));
+			if (!(this is IThingHolder thingHolder) || thingHolder.GetDirectlyHeldThings() == null)
+			{
+				return;
+			}
+			foreach (Thing item in thingHolder.GetDirectlyHeldThings().ToList())
+			{
+				item.Notify_LeftBehind();
+			}
 		}
 	}
 }

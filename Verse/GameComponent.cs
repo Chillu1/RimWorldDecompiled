@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace Verse
 {
 	public abstract class GameComponent : IExposable
@@ -27,6 +29,10 @@ namespace Verse
 		}
 
 		public virtual void LoadedGame()
+		{
+		}
+
+		public virtual void AppendDebugString(StringBuilder sb)
 		{
 		}
 	}

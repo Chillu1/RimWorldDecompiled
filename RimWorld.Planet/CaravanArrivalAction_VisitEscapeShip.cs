@@ -20,7 +20,7 @@ namespace RimWorld.Planet
 			target = (MapParent)escapeShip.parent;
 		}
 
-		public override FloatMenuAcceptanceReport StillValid(Caravan caravan, int destinationTile)
+		public override FloatMenuAcceptanceReport StillValid(Caravan caravan, PlanetTile destinationTile)
 		{
 			FloatMenuAcceptanceReport floatMenuAcceptanceReport = base.StillValid(caravan, destinationTile);
 			if (!floatMenuAcceptanceReport)
@@ -68,7 +68,7 @@ namespace RimWorld.Planet
 			if (num)
 			{
 				Find.TickManager.Notify_GeneratedPotentiallyHostileMap();
-				Find.LetterStack.ReceiveLetter("EscapeShipFoundLabel".Translate(), (!Find.Storyteller.difficultyValues.allowBigThreats) ? "EscapeShipFoundPeaceful".Translate() : "EscapeShipFound".Translate(), LetterDefOf.PositiveEvent, new GlobalTargetInfo(target.Map.Center, target.Map));
+				Find.LetterStack.ReceiveLetter("EscapeShipFoundLabel".Translate(), (!Find.Storyteller.difficulty.allowBigThreats) ? "EscapeShipFoundPeaceful".Translate() : "EscapeShipFound".Translate(), LetterDefOf.PositiveEvent, new GlobalTargetInfo(target.Map.Center, target.Map));
 			}
 			else
 			{

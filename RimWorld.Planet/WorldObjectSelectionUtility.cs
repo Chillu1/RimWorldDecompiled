@@ -31,7 +31,15 @@ namespace RimWorld.Planet
 
 		public static bool HiddenBehindTerrainNow(this WorldObject o)
 		{
-			return WorldRendererUtility.HiddenBehindTerrainNow(o.DrawPos);
+			if (!WorldRendererUtility.HiddenBehindTerrainNow(o.DrawPos))
+			{
+				if (!o.VisibleInBackground)
+				{
+					return o.Tile.Layer != PlanetLayer.Selected;
+				}
+				return false;
+			}
+			return true;
 		}
 
 		public static Vector2 ScreenPos(this WorldObject o)
@@ -41,7 +49,7 @@ namespace RimWorld.Planet
 
 		public static bool VisibleToCameraNow(this WorldObject o)
 		{
-			if (!WorldRendererUtility.WorldRenderedNow)
+			if (!WorldRendererUtility.WorldSelected)
 			{
 				return false;
 			}

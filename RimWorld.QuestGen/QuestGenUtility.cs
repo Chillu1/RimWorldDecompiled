@@ -41,14 +41,14 @@ namespace RimWorld.QuestGen
 			{
 				int num = signal.IndexOf('.');
 				string text = signal.Substring(0, num);
-				string str = signal.Substring(num + 1);
+				string text2 = signal.Substring(num + 1);
 				if (!QuestGen.slate.CurrentPrefix.NullOrEmpty())
 				{
 					text = QuestGen.slate.CurrentPrefix + "/" + text;
 				}
 				text = NormalizeVarPath(text);
 				QuestGen.AddSlateQuestTagToAddWhenFinished(text);
-				return QuestGen.GenerateNewSignal(text + "." + str, ensureUnique: false);
+				return QuestGen.GenerateNewSignal(text + "." + text2, ensureUnique: false);
 			}
 			if (!QuestGen.slate.CurrentPrefix.NullOrEmpty())
 			{
@@ -70,7 +70,7 @@ namespace RimWorld.QuestGen
 			}
 			if (questTag.StartsWith("Quest") && questTag.IndexOf('.') >= 0)
 			{
-				return null;
+				return questTag;
 			}
 			if (!QuestGen.slate.CurrentPrefix.NullOrEmpty())
 			{
@@ -133,8 +133,7 @@ namespace RimWorld.QuestGen
 			List<Rule> rules = req.Rules;
 			for (int i = 0; i < rules.Count; i++)
 			{
-				Rule_String rule_String = rules[i] as Rule_String;
-				if (rule_String == null)
+				if (!(rules[i] is Rule_String rule_String))
 				{
 					continue;
 				}
@@ -233,7 +232,7 @@ namespace RimWorld.QuestGen
 			else if (obj is Faction)
 			{
 				Faction faction = (Faction)obj;
-				req.Rules.AddRange(GrammarUtility.RulesForFaction(absoluteName, faction));
+				req.Rules.AddRange(GrammarUtility.RulesForFaction(absoluteName, faction, req.Constants));
 				if (faction.leader != null)
 				{
 					req.Rules.AddRange(GrammarUtility.RulesForPawn(absoluteName + "_leader", faction.leader, req.Constants));
@@ -245,8 +244,12 @@ namespace RimWorld.QuestGen
 				req.Rules.AddRange(GrammarUtility.RulesForPawn(absoluteName, pawn, req.Constants));
 				if (pawn.Faction != null)
 				{
-					req.Rules.AddRange(GrammarUtility.RulesForFaction(absoluteName + "_faction", pawn.Faction));
+					req.Rules.AddRange(GrammarUtility.RulesForFaction(absoluteName + "_faction", pawn.Faction, req.Constants));
 				}
+			}
+			else if (obj is Thing thing)
+			{
+				req.Rules.AddRange(GrammarUtility.RulesForThing(absoluteName, thing));
 			}
 			else if (obj is WorldObject)
 			{
@@ -274,6 +277,10 @@ namespace RimWorld.QuestGen
 				{
 					req.Rules.Add(new Rule_String(absoluteName, GenLabel.ThingsLabel(((IEnumerable<object>)obj).Where((object x) => x != null).Cast<Thing>())));
 				}
+				else if (obj is IEnumerable<WorldObject> source)
+				{
+					req.Rules.Add(new Rule_String(absoluteName, source.Select(PossiblyWithTags).ToCommaList(useAnd: true)));
+				}
 				else
 				{
 					List<string> list = new List<string>();
@@ -293,6 +300,14 @@ namespace RimWorld.QuestGen
 					AddSlateVar(ref req, absoluteName + num, item2);
 					num++;
 				}
+			}
+			else if (obj is Ideo)
+			{
+				req.Rules.AddRange(GrammarUtility.RulesForIdeo(absoluteName, (Ideo)obj));
+			}
+			else if (obj is Precept precept)
+			{
+				req.Rules.AddRange(GrammarUtility.RulesForPrecept(absoluteName, precept));
 			}
 			else
 			{
@@ -347,6 +362,15 @@ namespace RimWorld.QuestGen
 				{
 					req.Constants.Add(key, ((IEnumerable)obj).EnumerableCount().ToString());
 				}
+			}
+			static string PossiblyWithTags(WorldObject w)
+			{
+				string text = Find.ActiveLanguageWorker.WithDefiniteArticle(w.Label, plural: false, w.HasName);
+				if (w.Faction == null || !w.HasName)
+				{
+					return text;
+				}
+				return text.ApplyTag(TagType.Settlement, w.Faction.GetUniqueLoadID()).Resolve();
 			}
 		}
 
@@ -417,7 +441,10 @@ namespace RimWorld.QuestGen
 					rule.keyword = currentPrefix + "/" + rule.keyword;
 				}
 				rule.keyword = NormalizeVarPath(rule.keyword);
-				(rule as Rule_String)?.AppendPrefixToAllKeywords(currentPrefix);
+				if (rule is Rule_String { OutputNull: false } rule_String)
+				{
+					rule_String.AppendPrefixToAllKeywords(currentPrefix);
+				}
 				list.Add(rule);
 			}
 			return list;
@@ -474,6 +501,10 @@ namespace RimWorld.QuestGen
 				{
 					lookTargets.targets.Add(((Map)@object).Parent);
 				}
+				else if (@object is GlobalTargetInfo)
+				{
+					lookTargets.targets.Add((GlobalTargetInfo)@object);
+				}
 			}
 			return lookTargets;
 		}
@@ -497,11 +528,11 @@ namespace RimWorld.QuestGen
 			ChoiceLetter letter = LetterMaker.MakeLetter("error", "error", def, relatedFaction, quest);
 			QuestGen.AddTextRequest(labelKeyword, delegate(string x)
 			{
-				letter.label = x;
+				letter.Label = x;
 			});
 			QuestGen.AddTextRequest(textKeyword, delegate(string x)
 			{
-				letter.text = x;
+				letter.Text = x;
 			});
 			return letter;
 		}
@@ -511,11 +542,11 @@ namespace RimWorld.QuestGen
 			ChoiceLetter letter = LetterMaker.MakeLetter("error", "error", def, lookTargets, relatedFaction, quest);
 			QuestGen.AddTextRequest(labelKeyword, delegate(string x)
 			{
-				letter.label = x;
+				letter.Label = x;
 			});
 			QuestGen.AddTextRequest(textKeyword, delegate(string x)
 			{
-				letter.text = x;
+				letter.Text = x;
 			});
 			return letter;
 		}
@@ -672,6 +703,16 @@ namespace RimWorld.QuestGen
 				tmpSb.Append(tmpPathParts[k]);
 			}
 			return tmpSb.ToString();
+		}
+
+		public static void RunAdjustPointsForDistantFight()
+		{
+			QuestScriptDefOf.Util_AdjustPointsForDistantFight.root.Run();
+		}
+
+		public static void TestRunAdjustPointsForDistantFight(Slate slate)
+		{
+			QuestScriptDefOf.Util_AdjustPointsForDistantFight.root.TestRun(slate);
 		}
 	}
 }

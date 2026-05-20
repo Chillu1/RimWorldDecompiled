@@ -27,6 +27,12 @@ namespace RimWorld
 
 		private static float sectionHeightAdaptation = 0f;
 
+		private static float sectionHeightIdeology = 0f;
+
+		private static float sectionHeightChildren = 0f;
+
+		private static float sectionHeightAnomaly = 0f;
+
 		private static readonly Texture2D StorytellerHighlightTex = ContentFinder<Texture2D>.Get("UI/HeroArt/Storytellers/Highlight");
 
 		private const float CustomSettingsPrecision = 0.01f;
@@ -38,29 +44,24 @@ namespace RimWorld
 			explanationScrollPositionAnimated = null;
 		}
 
-		[Obsolete]
-		public static void DrawStorytellerSelectionInterface(Rect rect, ref StorytellerDef chosenStoryteller, ref DifficultyDef difficulty, Listing_Standard infoListing)
+		public static void DrawStorytellerSelectionInterface(Rect rect, ref StorytellerDef chosenStoryteller, ref DifficultyDef difficulty, ref Difficulty difficultyValues, Listing_Standard infoListing)
 		{
-			Difficulty difficultyValues = new Difficulty();
-			DrawStorytellerSelectionInterface_NewTemp(rect, ref chosenStoryteller, ref difficulty, ref difficultyValues, infoListing);
-		}
-
-		public static void DrawStorytellerSelectionInterface_NewTemp(Rect rect, ref StorytellerDef chosenStoryteller, ref DifficultyDef difficulty, ref Difficulty difficultyValues, Listing_Standard infoListing)
-		{
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			Rect outRect = new Rect(0f, 0f, Storyteller.PortraitSizeTiny.x + 16f, rect.height);
 			Widgets.BeginScrollView(viewRect: new Rect(0f, 0f, Storyteller.PortraitSizeTiny.x, (float)DefDatabase<StorytellerDef>.AllDefs.Count() * (Storyteller.PortraitSizeTiny.y + 10f)), outRect: outRect, scrollPosition: ref scrollPosition);
-			Rect rect2 = new Rect(0f, 0f, Storyteller.PortraitSizeTiny.x, Storyteller.PortraitSizeTiny.y);
+			Rect rect2 = new Rect(0f, 0f, Storyteller.PortraitSizeTiny.x, Storyteller.PortraitSizeTiny.y).ContractedBy(4f);
 			foreach (StorytellerDef item in DefDatabase<StorytellerDef>.AllDefs.OrderBy((StorytellerDef tel) => tel.listOrder))
 			{
 				if (item.listVisible)
 				{
-					if (Widgets.ButtonImage(rect2, item.portraitTinyTex))
+					bool flag = chosenStoryteller == item;
+					Widgets.DrawOptionBackground(rect2, flag);
+					if (Widgets.ButtonImage(rect2, item.portraitTinyTex, Color.white, new Color(0.72f, 0.68f, 0.59f)))
 					{
 						TutorSystem.Notify_Event("ChooseStoryteller");
 						chosenStoryteller = item;
 					}
-					if (chosenStoryteller == item)
+					if (flag)
 					{
 						GUI.DrawTexture(rect2, StorytellerHighlightTex);
 					}
@@ -96,7 +97,7 @@ namespace RimWorld
 					{
 						labelCap += "...";
 					}
-					if (infoListing.RadioButton_NewTemp(labelCap, difficulty == allDef, 0f, allDef.description, 0f))
+					if (infoListing.RadioButton(labelCap, difficulty == allDef, 0f, allDef.description.ResolveTags(), 0f))
 					{
 						if (!allDef.isCustom)
 						{
@@ -115,7 +116,7 @@ namespace RimWorld
 				}
 				if (Current.ProgramState == ProgramState.Entry)
 				{
-					infoListing.Gap(25f);
+					infoListing.Gap(15f);
 					bool active = Find.GameInitData.permadeathChosen && Find.GameInitData.permadeath;
 					bool active2 = Find.GameInitData.permadeathChosen && !Find.GameInitData.permadeath;
 					if (infoListing.RadioButton("ReloadAnytimeMode".Translate(), active2, 0f, "ReloadAnytimeModeInfo".Translate()))
@@ -128,6 +129,21 @@ namespace RimWorld
 					{
 						Find.GameInitData.permadeathChosen = true;
 						Find.GameInitData.permadeath = true;
+					}
+					if (ModsConfig.AnomalyActive)
+					{
+						infoListing.Gap(15f);
+						if (infoListing.ButtonText("AnomalySettings".Translate() + "..."))
+						{
+							if (difficulty == null)
+							{
+								Messages.Message("MustChooseDifficulty".Translate(), MessageTypeDefOf.RejectInput, historical: false);
+							}
+							else
+							{
+								Find.WindowStack.Add(new Dialog_AnomalySettings(difficultyValues));
+							}
+						}
 					}
 				}
 				num = rect3.y + infoListing.CurHeight;
@@ -149,7 +165,7 @@ namespace RimWorld
 					Listing_Standard listing_Standard = new Listing_Standard();
 					float num3 = position.xMax - explanationInnerRect.x;
 					listing_Standard.ColumnWidth = num3 / 2f - 17f;
-					Rect rect4 = new Rect(0f, Math.Max(position.yMax, num) - 45f, num3, 9999f);
+					Rect rect4 = new Rect(0f, Math.Max(position.yMax, num), num3, 9999f);
 					listing_Standard.Begin(rect4);
 					Text.Font = GameFont.Medium;
 					listing_Standard.Indent(15f);
@@ -175,7 +191,7 @@ namespace RimWorld
 			}
 			explanationInnerRect.height = num;
 			Widgets.EndScrollView();
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		private static void DrawCustomLeft(Listing_Standard listing, Difficulty difficulty)
@@ -187,11 +203,19 @@ namespace RimWorld
 			DrawCustomDifficultyCheckbox(listing_Standard, "allowIntroThreats", ref difficulty.allowIntroThreats);
 			DrawCustomDifficultyCheckbox(listing_Standard, "predatorsHuntHumanlikes", ref difficulty.predatorsHuntHumanlikes);
 			DrawCustomDifficultyCheckbox(listing_Standard, "allowExtremeWeatherIncidents", ref difficulty.allowExtremeWeatherIncidents);
+			if (ModsConfig.BiotechActive)
+			{
+				DrawCustomDifficultySlider(listing_Standard, "wastepackInfestationChanceFactor", ref difficulty.wastepackInfestationChanceFactor, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0f, 5f);
+			}
 			DrawCustomSectionEnd(listing, listing_Standard, out sectionHeightThreats);
 			listing_Standard = DrawCustomSectionStart(listing, sectionHeightEconomy, "DifficultyEconomySection".Translate());
 			DrawCustomDifficultySlider(listing_Standard, "cropYieldFactor", ref difficulty.cropYieldFactor, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0f, 5f);
 			DrawCustomDifficultySlider(listing_Standard, "mineYieldFactor", ref difficulty.mineYieldFactor, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0f, 5f);
 			DrawCustomDifficultySlider(listing_Standard, "butcherYieldFactor", ref difficulty.butcherYieldFactor, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0f, 5f);
+			if (ModsConfig.OdysseyActive)
+			{
+				DrawCustomDifficultySlider(listing_Standard, "fishingYieldFactor", ref difficulty.fishingYieldFactor, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0f, 5f);
+			}
 			DrawCustomDifficultySlider(listing_Standard, "researchSpeedFactor", ref difficulty.researchSpeedFactor, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0f, 5f);
 			DrawCustomDifficultySlider(listing_Standard, "questRewardValueFactor", ref difficulty.questRewardValueFactor, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0f, 5f);
 			DrawCustomDifficultySlider(listing_Standard, "raidLootPointsFactor", ref difficulty.raidLootPointsFactor, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0f, 5f);
@@ -199,7 +223,58 @@ namespace RimWorld
 			DrawCustomDifficultySlider(listing_Standard, "maintenanceCostFactor", ref difficulty.maintenanceCostFactor, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0.01f, 1f);
 			DrawCustomDifficultySlider(listing_Standard, "scariaRotChance", ref difficulty.scariaRotChance, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0f, 1f);
 			DrawCustomDifficultySlider(listing_Standard, "enemyDeathOnDownedChanceFactor", ref difficulty.enemyDeathOnDownedChanceFactor, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0f, 1f);
+			DrawCustomDifficultySlider(listing_Standard, "nomadicMineableResourcesFactor", ref difficulty.nomadicMineableResourcesFactor, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0f, 2f);
 			DrawCustomSectionEnd(listing, listing_Standard, out sectionHeightEconomy);
+			if (ModsConfig.IdeologyActive)
+			{
+				listing_Standard = DrawCustomSectionStart(listing, sectionHeightIdeology, "DifficultyIdeologySection".Translate());
+				DrawCustomDifficultySlider(listing_Standard, "lowPopConversionBoost", ref difficulty.lowPopConversionBoost, ToStringStyle.Integer, ToStringNumberSense.Factor, 1f, 5f, 1f);
+				DrawCustomSectionEnd(listing, listing_Standard, out sectionHeightIdeology);
+			}
+			if (ModsConfig.AnomalyActive && difficulty.AnomalyPlaystyleDef.enableAnomalyContent)
+			{
+				listing_Standard = DrawCustomSectionStart(listing, sectionHeightAnomaly, "DifficultyAnomalySection".Translate());
+				if (difficulty.AnomalyPlaystyleDef.overrideThreatFraction)
+				{
+					float value = difficulty.overrideAnomalyThreatsFraction ?? 0.15f;
+					DrawCustomDifficultySlider(listing_Standard, "Difficulty_AnomalyThreats_Label".Translate(), Dialog_AnomalySettings.GetFrequencyLabel(value), "Difficulty_AnomalyThreats_Info".Translate(), ref value, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0f, 1f);
+					difficulty.overrideAnomalyThreatsFraction = value;
+				}
+				else
+				{
+					DrawCustomDifficultySlider(listing_Standard, "Difficulty_AnomalyThreatsInactive_Label".Translate(), Dialog_AnomalySettings.GetFrequencyLabel(difficulty.anomalyThreatsInactiveFraction), "Difficulty_AnomalyThreatsInactive_Info".Translate(), ref difficulty.anomalyThreatsInactiveFraction, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0f, 1f);
+					float anomalyThreatsActiveFraction = difficulty.anomalyThreatsActiveFraction;
+					DrawCustomDifficultySlider(listing_Standard, "Difficulty_AnomalyThreatsActive_Label".Translate(), Dialog_AnomalySettings.GetFrequencyLabel(anomalyThreatsActiveFraction), "Difficulty_AnomalyThreatsActive_Info".Translate(Mathf.Clamp01(anomalyThreatsActiveFraction).ToStringPercent(), Mathf.Clamp01(anomalyThreatsActiveFraction * 1.5f).ToStringPercent()), ref difficulty.anomalyThreatsActiveFraction, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0.1f, 1f);
+				}
+				DrawCustomDifficultySlider(listing_Standard, "Difficulty_StudyEfficiency_Label".Translate(), "Difficulty_StudyEfficiency_Info".Translate(), ref difficulty.studyEfficiencyFactor, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0f, 5f);
+				DrawCustomSectionEnd(listing, listing_Standard, out sectionHeightAnomaly);
+			}
+			if (!ModsConfig.BiotechActive)
+			{
+				return;
+			}
+			listing_Standard = DrawCustomSectionStart(listing, sectionHeightChildren, "DifficultyChildrenSection".Translate());
+			DrawCustomDifficultyCheckbox(listing_Standard, "noBabiesOrChildren", ref difficulty.noBabiesOrChildren);
+			DrawCustomDifficultyCheckbox(listing_Standard, "babiesAreHealthy", ref difficulty.babiesAreHealthy);
+			if (!difficulty.noBabiesOrChildren)
+			{
+				DrawCustomDifficultyCheckbox(listing_Standard, "childRaidersAllowed", ref difficulty.childRaidersAllowed);
+				if (ModsConfig.AnomalyActive)
+				{
+					DrawCustomDifficultyCheckbox(listing_Standard, "childShamblersAllowed", ref difficulty.childShamblersAllowed);
+				}
+			}
+			else
+			{
+				DrawDisabledCustomDifficultySetting(listing_Standard, "childRaidersAllowed", "BabiesAreHealthyDisableReason".Translate());
+				if (ModsConfig.AnomalyActive)
+				{
+					DrawDisabledCustomDifficultySetting(listing_Standard, "childShamblersAllowed", "BabiesAreHealthyDisableReason".Translate());
+				}
+			}
+			DrawCustomDifficultySlider(listing_Standard, "childAgingRate", ref difficulty.childAgingRate, ToStringStyle.Integer, ToStringNumberSense.Factor, 1f, 6f, 1f);
+			DrawCustomDifficultySlider(listing_Standard, "adultAgingRate", ref difficulty.adultAgingRate, ToStringStyle.Integer, ToStringNumberSense.Factor, 1f, 6f, 1f);
+			DrawCustomSectionEnd(listing, listing_Standard, out sectionHeightChildren);
 		}
 
 		private static void DrawCustomRight(Listing_Standard listing, Difficulty difficulty)
@@ -216,11 +291,13 @@ namespace RimWorld
 			DrawCustomDifficultySlider(listing_Standard, "allowInstantKillChance", ref difficulty.allowInstantKillChance, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0f, 1f);
 			DrawCustomDifficultyCheckbox(listing_Standard, "peacefulTemples", ref difficulty.peacefulTemples, invert: true);
 			DrawCustomDifficultyCheckbox(listing_Standard, "allowCaveHives", ref difficulty.allowCaveHives);
+			DrawCustomDifficultyCheckbox(listing_Standard, "unwaveringPrisoners", ref difficulty.unwaveringPrisoners);
 			DrawCustomSectionEnd(listing, listing_Standard, out sectionHeightGeneral);
 			listing_Standard = DrawCustomSectionStart(listing, sectionHeightPlayerTools, "DifficultyPlayerToolsSection".Translate());
 			DrawCustomDifficultyCheckbox(listing_Standard, "allowTraps", ref difficulty.allowTraps);
 			DrawCustomDifficultyCheckbox(listing_Standard, "allowTurrets", ref difficulty.allowTurrets);
 			DrawCustomDifficultyCheckbox(listing_Standard, "allowMortars", ref difficulty.allowMortars);
+			DrawCustomDifficultyCheckbox(listing_Standard, "classicMortars", ref difficulty.classicMortars);
 			DrawCustomSectionEnd(listing, listing_Standard, out sectionHeightPlayerTools);
 			listing_Standard = DrawCustomSectionStart(listing, sectionHeightAdaptation, "DifficultyAdaptationSection".Translate());
 			DrawCustomDifficultySlider(listing_Standard, "adaptationGrowthRateFactorOverZero", ref difficulty.adaptationGrowthRateFactorOverZero, ToStringStyle.PercentZero, ToStringNumberSense.Absolute, 0f, 1f);
@@ -237,8 +314,8 @@ namespace RimWorld
 		private static Listing_Standard DrawCustomSectionStart(Listing_Standard listing, float height, string label, string tooltip = null)
 		{
 			listing.Gap();
-			listing.Label(label, -1f, tooltip);
-			Listing_Standard listing_Standard = listing.BeginSection_NewTemp(height, 8f, 6f);
+			listing.Label((TaggedString)label, -1f, tooltip);
+			Listing_Standard listing_Standard = listing.BeginSection(height, 8f, 6f);
 			listing_Standard.maxOneColumn = true;
 			return listing_Standard;
 		}
@@ -267,10 +344,10 @@ namespace RimWorld
 
 		private static void DrawCustomDifficultySlider(Listing_Standard listing, string optionName, ref float value, ToStringStyle style, ToStringNumberSense numberSense, float min, float max, float precision = 0.01f, bool reciprocate = false, float reciprocalCutoff = 1000f)
 		{
-			string str = (reciprocate ? "_Inverted" : "");
-			string str2 = optionName.CapitalizeFirst();
-			string key = "Difficulty_" + str2 + str + "_Label";
-			string key2 = "Difficulty_" + str2 + str + "_Info";
+			string text = (reciprocate ? "_Inverted" : "");
+			string text2 = optionName.CapitalizeFirst();
+			string key = "Difficulty_" + text2 + text + "_Label";
+			string key2 = "Difficulty_" + text2 + text + "_Info";
 			float num = value;
 			if (reciprocate)
 			{
@@ -290,15 +367,56 @@ namespace RimWorld
 			value = num;
 		}
 
+		private static void DrawCustomDifficultySlider(Listing_Standard listing, string label, string tooltip, ref float value, ToStringStyle style, ToStringNumberSense numberSense, float min, float max, float precision = 0.01f, bool reciprocate = false, float reciprocalCutoff = 1000f)
+		{
+			DrawCustomDifficultySlider(listing, label, null, tooltip, ref value, style, numberSense, min, max, precision, reciprocate, reciprocalCutoff);
+		}
+
+		private static void DrawCustomDifficultySlider(Listing_Standard listing, string label, string labelSuffix, string tooltip, ref float value, ToStringStyle style, ToStringNumberSense numberSense, float min, float max, float precision = 0.01f, bool reciprocate = false, float reciprocalCutoff = 1000f)
+		{
+			float num = value;
+			if (reciprocate)
+			{
+				num = Reciprocal(num, reciprocalCutoff);
+			}
+			label = label.CapitalizeFirst() + ": " + num.ToStringByStyle(style, numberSense);
+			if (!labelSuffix.NullOrEmpty())
+			{
+				label = label + " - " + labelSuffix;
+			}
+			listing.Label((TaggedString)label, -1f, tooltip.CapitalizeFirst());
+			float num2 = listing.Slider(num, min, max);
+			if (num2 != num)
+			{
+				num = GenMath.RoundTo(num2, precision);
+			}
+			if (reciprocate)
+			{
+				num = Reciprocal(num, reciprocalCutoff);
+			}
+			value = num;
+		}
+
 		private static void DrawCustomDifficultyCheckbox(Listing_Standard listing, string optionName, ref bool value, bool invert = false, bool showTooltip = true)
 		{
-			string str = (invert ? "_Inverted" : "");
-			string str2 = optionName.CapitalizeFirst();
-			string key = "Difficulty_" + str2 + str + "_Label";
-			string key2 = "Difficulty_" + str2 + str + "_Info";
+			string text = (invert ? "_Inverted" : "");
+			string text2 = optionName.CapitalizeFirst();
+			string key = "Difficulty_" + text2 + text + "_Label";
+			string key2 = "Difficulty_" + text2 + text + "_Info";
 			bool checkOn = (invert ? (!value) : value);
 			listing.CheckboxLabeled(key.Translate(), ref checkOn, showTooltip ? key2.Translate() : ((TaggedString)null));
 			value = (invert ? (!checkOn) : checkOn);
+		}
+
+		private static void DrawDisabledCustomDifficultySetting(Listing_Standard listing, string optionName, TaggedString disableReason)
+		{
+			string text = optionName.CapitalizeFirst();
+			string key = "Difficulty_" + text + "_Label";
+			string key2 = "Difficulty_" + text + "_Info";
+			Color color = GUI.color;
+			GUI.color = ColoredText.SubtleGrayColor;
+			listing.Label(key.Translate(), -1f, (key2.Translate() + "\n\n" + disableReason.Colorize(ColoredText.WarningColor)).ToString());
+			GUI.color = color;
 		}
 
 		private static float Reciprocal(float f, float cutOff)

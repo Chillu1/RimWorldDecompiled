@@ -14,7 +14,7 @@ namespace RimWorld.Planet
 
 		public const float NotMovingProgressFactor = 2f;
 
-		public static Pair<ThingDef, float> ForagedFoodPerDay(List<Pawn> pawns, BiomeDef biome, Faction faction, bool caravanMovingNow, bool caravanNightResting, StringBuilder explanation = null)
+		public static (ThingDef food, float perDay) ForagedFoodPerDay(List<Pawn> pawns, BiomeDef biome, Faction faction, bool caravanMovingNow, bool caravanNightResting, StringBuilder explanation = null)
 		{
 			float foragedFoodCountPerInterval = GetForagedFoodCountPerInterval(pawns, biome, faction, explanation);
 			float progressPerTick = GetProgressPerTick(caravanMovingNow, caravanNightResting, explanation);
@@ -31,7 +31,7 @@ namespace RimWorld.Planet
 				}
 				explanation.Append(taggedString);
 			}
-			return new Pair<ThingDef, float>(biome.foragedFood, num);
+			return (food: biome.foragedFood, perDay: num);
 		}
 
 		public static float GetProgressPerTick(bool caravanMovingNow, bool caravanNightResting, StringBuilder explanation = null)
@@ -105,7 +105,7 @@ namespace RimWorld.Planet
 
 		public static float GetBaseForagedNutritionPerDay(Pawn p, out bool skip)
 		{
-			if (!p.IsFreeColonist || p.InMentalState || p.Downed || p.CarriedByCaravan())
+			if ((!p.IsAnimal && !p.IsFreeColonist) || p.InMentalState || p.Downed || p.CarriedByCaravan())
 			{
 				skip = true;
 				return 0f;
@@ -118,7 +118,7 @@ namespace RimWorld.Planet
 			return 0f;
 		}
 
-		public static Pair<ThingDef, float> ForagedFoodPerDay(Caravan caravan, StringBuilder explanation = null)
+		public static (ThingDef food, float perDay) ForagedFoodPerDay(Caravan caravan, StringBuilder explanation = null)
 		{
 			return ForagedFoodPerDay(caravan.PawnsListForReading, caravan.Biome, caravan.Faction, caravan.pather.MovingNow, caravan.NightResting, explanation);
 		}
@@ -133,7 +133,7 @@ namespace RimWorld.Planet
 			return GetForagedFoodCountPerInterval(caravan.PawnsListForReading, caravan.Biome, caravan.Faction, explanation);
 		}
 
-		public static Pair<ThingDef, float> ForagedFoodPerDay(List<TransferableOneWay> transferables, BiomeDef biome, Faction faction, StringBuilder explanation = null)
+		public static (ThingDef food, float perDay) ForagedFoodPerDay(List<TransferableOneWay> transferables, BiomeDef biome, Faction faction, StringBuilder explanation = null)
 		{
 			tmpPawns.Clear();
 			for (int i = 0; i < transferables.Count; i++)
@@ -147,12 +147,12 @@ namespace RimWorld.Planet
 					}
 				}
 			}
-			Pair<ThingDef, float> result = ForagedFoodPerDay(tmpPawns, biome, faction, caravanMovingNow: true, caravanNightResting: false, explanation);
+			(ThingDef food, float perDay) result = ForagedFoodPerDay(tmpPawns, biome, faction, caravanMovingNow: true, caravanNightResting: false, explanation);
 			tmpPawns.Clear();
 			return result;
 		}
 
-		public static Pair<ThingDef, float> ForagedFoodPerDayLeftAfterTransfer(List<TransferableOneWay> transferables, BiomeDef biome, Faction faction, StringBuilder explanation = null)
+		public static (ThingDef food, float perDay) ForagedFoodPerDayLeftAfterTransfer(List<TransferableOneWay> transferables, BiomeDef biome, Faction faction, StringBuilder explanation = null)
 		{
 			tmpPawns.Clear();
 			for (int i = 0; i < transferables.Count; i++)
@@ -166,35 +166,31 @@ namespace RimWorld.Planet
 					}
 				}
 			}
-			Pair<ThingDef, float> result = ForagedFoodPerDay(tmpPawns, biome, faction, caravanMovingNow: true, caravanNightResting: false, explanation);
+			(ThingDef food, float perDay) result = ForagedFoodPerDay(tmpPawns, biome, faction, caravanMovingNow: true, caravanNightResting: false, explanation);
 			tmpPawns.Clear();
 			return result;
 		}
 
-		public static Pair<ThingDef, float> ForagedFoodPerDayLeftAfterTradeableTransfer(List<Thing> allCurrentThings, List<Tradeable> tradeables, BiomeDef biome, Faction faction, StringBuilder explanation = null)
+		public static (ThingDef food, float perDay) ForagedFoodPerDayLeftAfterTradeableTransfer(List<Thing> allCurrentThings, List<Tradeable> tradeables, BiomeDef biome, Faction faction, StringBuilder explanation = null)
 		{
 			tmpThingCounts.Clear();
 			TransferableUtility.SimulateTradeableTransfer(allCurrentThings, tradeables, tmpThingCounts);
-			Pair<ThingDef, float> result = ForagedFoodPerDay(tmpThingCounts, biome, faction, explanation);
+			(ThingDef food, float perDay) result = ForagedFoodPerDay(tmpThingCounts, biome, faction, explanation);
 			tmpThingCounts.Clear();
 			return result;
 		}
 
-		public static Pair<ThingDef, float> ForagedFoodPerDay(List<ThingCount> thingCounts, BiomeDef biome, Faction faction, StringBuilder explanation = null)
+		public static (ThingDef food, float perDay) ForagedFoodPerDay(List<ThingCount> thingCounts, BiomeDef biome, Faction faction, StringBuilder explanation = null)
 		{
 			tmpPawns.Clear();
 			for (int i = 0; i < thingCounts.Count; i++)
 			{
-				if (thingCounts[i].Count > 0)
+				if (thingCounts[i].Count > 0 && thingCounts[i].Thing is Pawn item)
 				{
-					Pawn pawn = thingCounts[i].Thing as Pawn;
-					if (pawn != null)
-					{
-						tmpPawns.Add(pawn);
-					}
+					tmpPawns.Add(item);
 				}
 			}
-			Pair<ThingDef, float> result = ForagedFoodPerDay(tmpPawns, biome, faction, caravanMovingNow: true, caravanNightResting: false, explanation);
+			(ThingDef food, float perDay) result = ForagedFoodPerDay(tmpPawns, biome, faction, caravanMovingNow: true, caravanNightResting: false, explanation);
 			tmpPawns.Clear();
 			return result;
 		}

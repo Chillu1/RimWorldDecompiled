@@ -5,10 +5,13 @@ namespace RimWorld
 {
 	public class Recipe_RemoveHediff : Recipe_Surgery
 	{
-		public override bool AvailableOnNow(Thing thing)
+		public override bool AvailableOnNow(Thing thing, BodyPartRecord part = null)
 		{
-			Pawn pawn;
-			if ((pawn = thing as Pawn) == null)
+			if (!base.AvailableOnNow(thing, part))
+			{
+				return false;
+			}
+			if (!(thing is Pawn pawn))
 			{
 				return false;
 			}
@@ -50,10 +53,22 @@ namespace RimWorld
 					Messages.Message(text, pawn, MessageTypeDefOf.PositiveEvent);
 				}
 			}
-			Hediff hediff = pawn.health.hediffSet.hediffs.Find((Hediff x) => x.def == recipe.removesHediff && x.Part == part && x.Visible);
-			if (hediff != null)
+			if (recipe.targetsBodyPart)
 			{
-				pawn.health.RemoveHediff(hediff);
+				Hediff hediff = pawn.health.hediffSet.hediffs.Find((Hediff x) => x.def == recipe.removesHediff && x.Part == part && x.Visible);
+				if (hediff != null)
+				{
+					pawn.health.RemoveHediff(hediff);
+				}
+				return;
+			}
+			for (int num = pawn.health.hediffSet.hediffs.Count - 1; num >= 0; num--)
+			{
+				Hediff hediff2 = pawn.health.hediffSet.hediffs[num];
+				if (hediff2.def == recipe.removesHediff && hediff2.Visible)
+				{
+					pawn.health.RemoveHediff(hediff2);
+				}
 			}
 		}
 	}

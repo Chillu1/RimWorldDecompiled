@@ -43,7 +43,7 @@ namespace RimWorld
 				bool flag = true;
 				foreach (IntVec3 item in cellRect)
 				{
-					if (item.Fogged(map) || !item.Walkable(map) || !item.GetTerrain(map).affordances.Contains(TerrainAffordanceDefOf.Heavy) || item.GetTerrain(map).fertility < minFertility || item.GetZone(map) != null || ContainsBlockingThing(item, map, noItems) || item.InNoBuildEdgeArea(map) || item.InNoZoneEdgeArea(map))
+					if (item.Fogged(map) || !item.Walkable(map) || !item.GetAffordances(map).Contains(TerrainAffordanceDefOf.Heavy) || item.GetFertility(map) < minFertility || item.GetZone(map) != null || ContainsBlockingThing(item, map, noItems) || item.InNoBuildEdgeArea(map) || item.InNoZoneEdgeArea(map))
 					{
 						flag = false;
 						break;

@@ -127,6 +127,19 @@ namespace Verse
 			return null;
 		}
 
+		public virtual Color? IconColorFromPOV(Thing pov)
+		{
+			return null;
+		}
+
+		public virtual void Notify_FactionRemoved(Faction faction)
+		{
+		}
+
+		public virtual void Notify_IdeoRemoved(Ideo ideo)
+		{
+		}
+
 		public virtual string GetTipString()
 		{
 			return "OccurredTimeAgo".Translate(Age.ToStringTicksToPeriod()).CapitalizeFirst() + ".";

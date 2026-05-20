@@ -16,15 +16,16 @@ namespace Verse
 
 		public Vector3 CurrentOffset => curOffset;
 
-		public void JitterHandlerTick()
+		public void ProcessPostTickVisuals(int ticksPassed)
 		{
-			if (curOffset.sqrMagnitude < JitterDropPerTick * JitterDropPerTick)
+			float num = (float)ticksPassed * JitterDropPerTick;
+			if (curOffset.sqrMagnitude < num * num)
 			{
 				curOffset = new Vector3(0f, 0f, 0f);
 			}
 			else
 			{
-				curOffset -= curOffset.normalized * JitterDropPerTick;
+				curOffset -= curOffset.normalized * num;
 			}
 		}
 

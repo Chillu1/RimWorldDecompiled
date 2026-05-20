@@ -13,7 +13,7 @@ namespace RimWorld
 			get
 			{
 				hypothermiaDangerColonistsResult.Clear();
-				foreach (Pawn item in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_FreeColonists_NoCryptosleep)
+				foreach (Pawn item in PawnsFinder.AllMapsCaravansAndTravellingTransporters_AliveSpawned_FreeColonists_NoSuspended)
 				{
 					if (!item.SafeTemperatureRange().Includes(item.AmbientTemperature))
 					{
@@ -36,11 +36,11 @@ namespace RimWorld
 		public override TaggedString GetExplanation()
 		{
 			StringBuilder stringBuilder = new StringBuilder();
-			foreach (Pawn hypothermiaDangerColonist in HypothermiaDangerColonists)
+			foreach (Pawn item in hypothermiaDangerColonistsResult)
 			{
-				stringBuilder.AppendLine("  - " + hypothermiaDangerColonist.NameShortColored.Resolve());
+				stringBuilder.AppendLine("  - " + item.NameShortColored.Resolve());
 			}
-			return "AlertHypothermiaDesc".Translate(stringBuilder.ToString());
+			return "AlertHypothermiaDesc".Translate(stringBuilder.ToString().TrimEndNewlines());
 		}
 
 		public override AlertReport GetReport()

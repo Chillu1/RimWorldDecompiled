@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Text;
+using UnityEngine;
 using Verse;
 
 namespace RimWorld
@@ -24,7 +25,6 @@ namespace RimWorld
 		{
 			string explanationUnfinalized = base.GetExplanationUnfinalized(req, numberSense);
 			StringBuilder stringBuilder = new StringBuilder();
-			ThingDef thingDef;
 			if (req.Thing != null)
 			{
 				Thing thing = req.Thing;
@@ -61,7 +61,7 @@ namespace RimWorld
 					}
 				}
 			}
-			else if ((thingDef = req.Def as ThingDef) != null)
+			else if (req.Def is ThingDef thingDef)
 			{
 				CompProperties_MeditationFocus compProperties = thingDef.GetCompProperties<CompProperties_MeditationFocus>();
 				if (compProperties != null && compProperties.offsets.Count > 0 && compProperties.statDef == stat)
@@ -109,15 +109,15 @@ namespace RimWorld
 			{
 				(num2, num) = AbstractValueRange(optionalReq, numberSense);
 			}
-			string str = (flag ? " (+)" : "");
-			return RangeToString(num2, num, numberSense, finalized) + str;
+			string text = (flag ? " (+)" : "");
+			return RangeToString(num2, num, numberSense, finalized) + text;
 		}
 
 		private (float, float) AbstractValueRange(StatRequest req, ToStringNumberSense numberSense)
 		{
 			ThingDef obj = (ThingDef)req.Def;
-			float num;
-			float num2 = (num = obj.GetStatValueAbstract(stat));
+			float num2;
+			float num = (num2 = obj.GetStatValueAbstract(stat));
 			CompProperties_MeditationFocus compProperties = obj.GetCompProperties<CompProperties_MeditationFocus>();
 			if (compProperties != null && compProperties.statDef == stat)
 			{
@@ -126,32 +126,37 @@ namespace RimWorld
 					FocusStrengthOffset focusStrengthOffset = compProperties.offsets[i];
 					if (!focusStrengthOffset.NeedsToBeSpawned && req.Thing != null)
 					{
-						num += focusStrengthOffset.GetOffset(req.Thing);
+						num2 += focusStrengthOffset.GetOffset(req.Thing);
 						continue;
 					}
 					float num3 = focusStrengthOffset.MinOffset();
 					float num4 = focusStrengthOffset.MaxOffset();
 					if (num4 > 0f)
 					{
-						num2 += num4;
+						num += num4;
 					}
 					if (num4 < 0f)
 					{
-						num += num4;
+						num2 += num4;
 					}
-					num += num3;
+					num2 += num3;
 				}
 			}
-			return (num, num2);
+			return (num2, num);
 		}
 
 		private string RangeToString(float min, float max, ToStringNumberSense numberSense, bool finalized)
 		{
+			if (finalized)
+			{
+				min = Mathf.Clamp(min, stat.minValue, stat.maxValue);
+				max = Mathf.Clamp(max, stat.minValue, stat.maxValue);
+			}
 			if (max - min >= float.Epsilon)
 			{
-				string str = min.ToStringByStyle(stat.toStringStyle, numberSense);
-				string str2 = stat.ValueToString(max, numberSense, finalized);
-				return str + " - " + str2;
+				string text = min.ToStringByStyle(stat.toStringStyle, numberSense);
+				string text2 = stat.ValueToString(max, numberSense, finalized);
+				return text + " - " + text2;
 			}
 			return stat.ValueToString(max, numberSense, finalized);
 		}

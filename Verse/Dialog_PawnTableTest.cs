@@ -1,5 +1,5 @@
 using System.Collections.Generic;
-using System.Linq;
+using LudeonTK;
 using RimWorld;
 using UnityEngine;
 
@@ -19,7 +19,7 @@ namespace Verse
 
 		public override Vector2 InitialSize => new Vector2(UI.screenWidth, UI.screenHeight);
 
-		private List<Pawn> Pawns => Find.CurrentMap.mapPawns.PawnsInFaction(Faction.OfPlayer).ToList();
+		private List<Pawn> Pawns => Find.CurrentMap.mapPawns.PawnsInFaction(Faction.OfPlayer);
 
 		public Dialog_PawnTableTest(PawnColumnDef singleColumn)
 		{
@@ -30,10 +30,7 @@ namespace Verse
 		{
 			int num = ((int)inRect.height - 90) / 3;
 			PawnTableDef pawnTableDef = new PawnTableDef();
-			pawnTableDef.columns = new List<PawnColumnDef>
-			{
-				singleColumn
-			};
+			pawnTableDef.columns = new List<PawnColumnDef> { singleColumn };
 			pawnTableDef.minWidth = 0;
 			if (pawnTableMin == null)
 			{

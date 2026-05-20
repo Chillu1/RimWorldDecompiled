@@ -78,6 +78,10 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (!pawn.kindDef.canMeleeAttack)
+			{
+				return false;
+			}
 			if (verbToUse != null)
 			{
 				if (!verbToUse.IsStillUsableBy(pawn))
@@ -86,11 +90,11 @@ namespace RimWorld
 				}
 				if (!verbToUse.IsMeleeAttack)
 				{
-					Log.Warning(string.Concat("Pawn ", pawn, " tried to melee attack ", target, " with non melee-attack verb ", verbToUse, "."));
+					Log.Warning("Pawn " + pawn?.ToString() + " tried to melee attack " + target?.ToString() + " with non melee-attack verb " + verbToUse?.ToString() + ".");
 					return false;
 				}
 			}
-			Verb verb = ((verbToUse == null) ? TryGetMeleeVerb(target) : verbToUse);
+			Verb verb = verbToUse ?? TryGetMeleeVerb(target);
 			if (verb == null)
 			{
 				return false;
@@ -118,21 +122,16 @@ namespace RimWorld
 					List<ThingWithComps> allEquipmentListForReading = pawn.equipment.AllEquipmentListForReading;
 					for (int j = 0; j < allEquipmentListForReading.Count; j++)
 					{
-						CompEquippable comp = allEquipmentListForReading[j].GetComp<CompEquippable>();
-						if (comp == null)
+						List<Verb> list = allEquipmentListForReading[j].GetComp<CompEquippable>()?.AllVerbs;
+						if (list == null)
 						{
 							continue;
 						}
-						List<Verb> allVerbs2 = comp.AllVerbs;
-						if (allVerbs2 == null)
+						for (int k = 0; k < list.Count; k++)
 						{
-							continue;
-						}
-						for (int k = 0; k < allVerbs2.Count; k++)
-						{
-							if (IsUsableMeleeVerb(allVerbs2[k]))
+							if (IsUsableMeleeVerb(list[k]))
 							{
-								verbsToAdd.Add(allVerbs2[k]);
+								verbsToAdd.Add(list[k]);
 							}
 						}
 					}
@@ -142,21 +141,16 @@ namespace RimWorld
 					List<Apparel> wornApparel = pawn.apparel.WornApparel;
 					for (int l = 0; l < wornApparel.Count; l++)
 					{
-						CompEquippable comp2 = wornApparel[l].GetComp<CompEquippable>();
-						if (comp2 == null)
+						List<Verb> list2 = wornApparel[l].GetComp<CompEquippable>()?.AllVerbs;
+						if (list2 == null)
 						{
 							continue;
 						}
-						List<Verb> allVerbs3 = comp2.AllVerbs;
-						if (allVerbs3 == null)
+						for (int m = 0; m < list2.Count; m++)
 						{
-							continue;
-						}
-						for (int m = 0; m < allVerbs3.Count; m++)
-						{
-							if (IsUsableMeleeVerb(allVerbs3[m]))
+							if (IsUsableMeleeVerb(list2[m]))
 							{
-								verbsToAdd.Add(allVerbs3[m]);
+								verbsToAdd.Add(list2[m]);
 							}
 						}
 					}
@@ -168,18 +162,28 @@ namespace RimWorld
 						verbsToAdd.Add(hediffsVerb);
 					}
 				}
+				if (ModsConfig.AnomalyActive && pawn.IsMutant)
+				{
+					foreach (Verb allVerb in pawn.mutant.AllVerbs)
+					{
+						if (IsUsableMeleeVerb(allVerb))
+						{
+							verbsToAdd.Add(allVerb);
+						}
+					}
+				}
 			}
-			else if (pawn.Spawned)
+			else if (pawn.Spawned && !pawn.IsSubhuman)
 			{
 				TerrainDef terrain = pawn.Position.GetTerrain(pawn.Map);
 				if (terrainVerbs == null || terrainVerbs.def != terrain)
 				{
 					terrainVerbs = Pawn_MeleeVerbs_TerrainSource.Create(this, terrain);
 				}
-				List<Verb> allVerbs4 = terrainVerbs.tracker.AllVerbs;
-				for (int n = 0; n < allVerbs4.Count; n++)
+				List<Verb> allVerbs2 = terrainVerbs.tracker.AllVerbs;
+				for (int n = 0; n < allVerbs2.Count; n++)
 				{
-					Verb verb = allVerbs4[n];
+					Verb verb = allVerbs2[n];
 					if (IsUsableMeleeVerb(verb))
 					{
 						verbsToAdd.Add(verb);
@@ -202,9 +206,9 @@ namespace RimWorld
 			return meleeVerbs;
 			bool IsUsableMeleeVerb(Verb v)
 			{
-				if (v.IsStillUsableBy(pawn))
+				if (v.IsMeleeAttack)
 				{
-					return v.IsMeleeAttack;
+					return v.IsStillUsableBy(pawn);
 				}
 				return false;
 			}

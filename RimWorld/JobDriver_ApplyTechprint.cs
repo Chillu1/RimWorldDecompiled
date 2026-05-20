@@ -46,7 +46,7 @@ namespace RimWorld
 			yield return Toils_General.Wait(600).FailOnDestroyedNullOrForbidden(TargetIndex.B).FailOnDestroyedNullOrForbidden(TargetIndex.A)
 				.FailOnCannotTouch(TargetIndex.A, PathEndMode.InteractionCell)
 				.WithProgressBarToilDelay(TargetIndex.A);
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
 				Find.ResearchManager.ApplyTechprint(TechprintComp.Props.project, pawn);

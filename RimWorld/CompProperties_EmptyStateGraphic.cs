@@ -6,6 +6,8 @@ namespace RimWorld
 	{
 		public GraphicData graphicData;
 
+		public bool alwaysDrawParent;
+
 		public CompProperties_EmptyStateGraphic()
 		{
 			compClass = typeof(CompEmptyStateGraphic);

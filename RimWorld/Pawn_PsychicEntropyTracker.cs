@@ -29,14 +29,7 @@ namespace RimWorld
 
 		private int psylinkCachedForTick = -1;
 
-		private static readonly int[] TicksBetweenMotes = new int[5]
-		{
-			300,
-			200,
-			100,
-			75,
-			50
-		};
+		private static readonly int[] TicksBetweenMotes = new int[5] { 300, 200, 100, 75, 50 };
 
 		public const float PercentageAfterGainingPsylink = 0.75f;
 
@@ -55,40 +48,24 @@ namespace RimWorld
 				1f
 			},
 			{
-				PsychicEntropySeverity.Hyperloaded,
+				PsychicEntropySeverity.VeryOverloaded,
 				1.33f
 			},
 			{
-				PsychicEntropySeverity.BrainCharring,
+				PsychicEntropySeverity.Extreme,
 				1.66f
 			},
 			{
-				PsychicEntropySeverity.BrainRoasting,
+				PsychicEntropySeverity.Overwhelming,
 				2f
 			}
 		};
 
-		public static readonly List<float> PsyfocusBandPercentages = new List<float>
-		{
-			0f,
-			0.25f,
-			0.5f,
-			1f
-		};
+		public static readonly List<float> PsyfocusBandPercentages = new List<float> { 0f, 0.25f, 0.5f, 1f };
 
-		public static readonly List<float> FallRatePerPsyfocusBand = new List<float>
-		{
-			0.035f,
-			0.055f,
-			0.075f
-		};
+		public static readonly List<float> FallRatePerPsyfocusBand = new List<float> { 0.035f, 0.055f, 0.075f };
 
-		public static readonly List<int> MaxAbilityLevelPerPsyfocusBand = new List<int>
-		{
-			2,
-			4,
-			6
-		};
+		public static readonly List<int> MaxAbilityLevelPerPsyfocusBand = new List<int> { 2, 4, 6 };
 
 		public static Dictionary<PsychicEntropySeverity, SoundDef> EntropyThresholdSounds;
 
@@ -104,9 +81,7 @@ namespace RimWorld
 
 		public float MaxPotentialEntropy => Mathf.Max(pawn.GetStatValue(StatDefOf.PsychicEntropyMax), MaxEntropy);
 
-		public float PainMultiplier => 1f + pawn.health.hediffSet.PainTotal * 3f;
-
-		public float RecoveryRate => pawn.GetStatValue(StatDefOf.PsychicEntropyRecoveryRate) * PainMultiplier;
+		public float RecoveryRate => pawn.GetStatValue(StatDefOf.PsychicEntropyRecoveryRate);
 
 		public float EntropyValue => currentEntropy;
 
@@ -131,6 +106,8 @@ namespace RimWorld
 			}
 		}
 
+		public bool IsPsychicallySensitive => PsychicSensitivity > float.Epsilon;
+
 		public float EntropyRelativeValue => EntropyToRelativeValue(currentEntropy);
 
 		public PsychicEntropySeverity Severity
@@ -145,7 +122,7 @@ namespace RimWorld
 						result = key;
 						continue;
 					}
-					return result;
+					break;
 				}
 				return result;
 			}
@@ -226,25 +203,25 @@ namespace RimWorld
 					SoundDefOf.PsychicEntropyOverloaded
 				},
 				{
-					PsychicEntropySeverity.Hyperloaded,
+					PsychicEntropySeverity.VeryOverloaded,
 					SoundDefOf.PsychicEntropyHyperloaded
 				},
 				{
-					PsychicEntropySeverity.BrainCharring,
+					PsychicEntropySeverity.Extreme,
 					SoundDefOf.PsychicEntropyBrainCharring
 				},
 				{
-					PsychicEntropySeverity.BrainRoasting,
+					PsychicEntropySeverity.Overwhelming,
 					SoundDefOf.PsychicEntropyBrainRoasting
 				}
 			};
 		}
 
-		public void PsychicEntropyTrackerTick()
+		public void PsychicEntropyTrackerTickInterval(int delta)
 		{
 			if (currentEntropy > float.Epsilon)
 			{
-				currentEntropy = Mathf.Max(currentEntropy - 1.TicksToSeconds() * RecoveryRate, 0f);
+				currentEntropy = Mathf.Max(currentEntropy - 1.TicksToSeconds() * RecoveryRate * (float)delta, 0f);
 			}
 			if (currentEntropy > float.Epsilon && !pawn.health.hediffSet.HasHediff(HediffDefOf.PsychicEntropy))
 			{
@@ -256,20 +233,20 @@ namespace RimWorld
 				{
 					if (pawn.Spawned)
 					{
-						MoteMaker.MakeAttachedOverlay(pawn, ThingDefOf.Mote_EntropyPulse, Vector3.zero);
+						FleckMaker.AttachedOverlay(pawn, FleckDefOf.EntropyPulse, Vector3.zero);
 					}
 					ticksSinceLastMote = 0;
 				}
 				else
 				{
-					ticksSinceLastMote++;
+					ticksSinceLastMote += delta;
 				}
 			}
 			else
 			{
 				ticksSinceLastMote = 0;
 			}
-			if (NeedsPsyfocus && pawn.IsHashIntervalTick(150))
+			if (NeedsPsyfocus && pawn.IsHashIntervalTick(150, delta))
 			{
 				float num = 400f;
 				if (!IsCurrentlyMeditating)
@@ -300,7 +277,7 @@ namespace RimWorld
 				{
 					hediff.Notify_EntropyGained(value, num, source);
 				}
-				if (severity != Severity && num > 0f && Severity != 0)
+				if (severity != Severity && num > 0f && Severity != PsychicEntropySeverity.Safe)
 				{
 					EntropyThresholdSounds[Severity].PlayOneShot(new TargetInfo(pawn.Position, pawn.Map));
 					if (severity < PsychicEntropySeverity.Overloaded && Severity >= PsychicEntropySeverity.Overloaded)
@@ -318,19 +295,15 @@ namespace RimWorld
 			currentEntropy = 0f;
 		}
 
-		[Obsolete("Only used for mod compatibility")]
-		private void GiveHangoverIfNeeded()
-		{
-		}
-
-		[Obsolete("Only used for mod compatibility")]
-		private void GiveHangoverIfNeeded_NewTemp(float entropyChange)
-		{
-		}
-
+		[Obsolete]
 		public void GainPsyfocus(Thing focus = null)
 		{
-			currentPsyfocus = Mathf.Clamp(currentPsyfocus + MeditationUtility.PsyfocusGainPerTick(pawn, focus), 0f, 1f);
+			GainPsyfocus_NewTemp(1, focus);
+		}
+
+		public void GainPsyfocus_NewTemp(int delta, Thing focus = null)
+		{
+			currentPsyfocus = Mathf.Clamp(currentPsyfocus + MeditationUtility.PsyfocusGainPerTick(pawn, focus) * (float)delta, 0f, 1f);
 			if (focus != null && !focus.Destroyed)
 			{
 				focus.TryGetComp<CompMeditationFocus>()?.Used(pawn);
@@ -345,6 +318,11 @@ namespace RimWorld
 		public void OffsetPsyfocusDirectly(float offset)
 		{
 			currentPsyfocus = Mathf.Clamp(currentPsyfocus + offset, 0f, 1f);
+		}
+
+		public void RechargePsyfocus()
+		{
+			currentPsyfocus = 1f;
 		}
 
 		public void SetInitialPsyfocusLevel()
@@ -422,13 +400,7 @@ namespace RimWorld
 			return gizmo;
 		}
 
-		[Obsolete("Only need this overload to not break mod compatibility.")]
-		public string PsyfocusTipString()
-		{
-			return PsyfocusTipString_NewTemp();
-		}
-
-		public string PsyfocusTipString_NewTemp(float psyfocusTargetOverride = -1f)
+		public string PsyfocusTipString(float psyfocusTargetOverride = -1f)
 		{
 			if (psyfocusLevelInfoCached == null)
 			{
@@ -442,7 +414,7 @@ namespace RimWorld
 					psyfocusLevelInfoCached += "PsyfocusLevelInfoRange".Translate((PsyfocusBandPercentages[j] * 100f).ToStringDecimalIfSmall(), (PsyfocusBandPercentages[j + 1] * 100f).ToStringDecimalIfSmall()) + ": " + "PsyfocusLevelInfoFallRate".Translate(FallRatePerPsyfocusBand[j].ToStringPercent()) + "\n";
 				}
 			}
-			return "Psyfocus".Translate() + ": " + currentPsyfocus.ToStringPercent("0.#") + "\n" + "DesiredPsyfocus".Translate() + ": " + ((psyfocusTargetOverride >= 0f) ? psyfocusTargetOverride : targetPsyfocus).ToStringPercent("0.#") + "\n\n" + "DesiredPsyfocusDesc".Translate(pawn.Named("PAWN")) + "\n\n" + "PsyfocusDesc".Translate() + ":\n\n" + psyfocusLevelInfoCached;
+			return (("Psyfocus".Translate() + ": ").Colorize(ColoredText.TipSectionTitleColor) + currentPsyfocus.ToStringPercent("0.#") + "\n" + "DesiredPsyfocus".Translate() + ": " + ((psyfocusTargetOverride >= 0f) ? psyfocusTargetOverride : targetPsyfocus).ToStringPercent("0.#") + "\n\n" + "DesiredPsyfocusDesc".Translate(pawn.Named("PAWN")) + "\n\n" + "PsyfocusDesc".Translate() + ":\n\n" + psyfocusLevelInfoCached).Resolve();
 		}
 
 		public void ExposeData()

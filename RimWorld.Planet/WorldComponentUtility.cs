@@ -38,14 +38,30 @@ namespace RimWorld.Planet
 			}
 		}
 
-		public static void FinalizeInit(World world)
+		public static void WorldComponentOnGUI(World world)
 		{
 			List<WorldComponent> components = world.components;
 			for (int i = 0; i < components.Count; i++)
 			{
 				try
 				{
-					components[i].FinalizeInit();
+					components[i].WorldComponentOnGUI();
+				}
+				catch (Exception ex)
+				{
+					Log.Error(ex.ToString());
+				}
+			}
+		}
+
+		public static void FinalizeInit(World world, bool fromLoad)
+		{
+			List<WorldComponent> components = world.components;
+			for (int i = 0; i < components.Count; i++)
+			{
+				try
+				{
+					components[i].FinalizeInit(fromLoad);
 				}
 				catch (Exception ex)
 				{

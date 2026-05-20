@@ -18,7 +18,7 @@ namespace Verse.AI
 			MentalState mentalState = pawn.MentalState;
 			if (mentalState != null)
 			{
-				return stateClass.IsAssignableFrom(mentalState.GetType());
+				return stateClass.IsInstanceOfType(mentalState);
 			}
 			return false;
 		}

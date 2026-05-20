@@ -34,21 +34,20 @@ namespace RimWorld
 
 		private Toil FindCarrierToil()
 		{
-			return new Toil
+			Toil toil = ToilMaker.MakeToil("FindCarrierToil");
+			toil.initAction = delegate
 			{
-				initAction = delegate
+				Pawn pawn = FindCarrier();
+				if (pawn == null)
 				{
-					Pawn pawn = FindCarrier();
-					if (pawn == null)
-					{
-						base.pawn.jobs.EndCurrentJob(JobCondition.Incompletable);
-					}
-					else
-					{
-						job.SetTarget(TargetIndex.B, pawn);
-					}
+					base.pawn.jobs.EndCurrentJob(JobCondition.Incompletable);
+				}
+				else
+				{
+					job.SetTarget(TargetIndex.B, pawn);
 				}
 			};
+			return toil;
 		}
 
 		private Pawn FindCarrier()
@@ -83,21 +82,20 @@ namespace RimWorld
 
 		private Toil GiveToCarrierAsMuchAsPossibleToil()
 		{
-			return new Toil
+			Toil toil = ToilMaker.MakeToil("GiveToCarrierAsMuchAsPossibleToil");
+			toil.initAction = delegate
 			{
-				initAction = delegate
+				if (Item == null)
 				{
-					if (Item == null)
-					{
-						pawn.jobs.EndCurrentJob(JobCondition.Incompletable);
-					}
-					else
-					{
-						int count = Mathf.Min(MassUtility.CountToPickUpUntilOverEncumbered(Animal, Item), Item.stackCount);
-						pawn.carryTracker.innerContainer.TryTransferToContainer(Item, Animal.inventory.innerContainer, count);
-					}
+					pawn.jobs.EndCurrentJob(JobCondition.Incompletable);
+				}
+				else
+				{
+					int count = Mathf.Min(MassUtility.CountToPickUpUntilOverEncumbered(Animal, Item), Item.stackCount);
+					pawn.carryTracker.innerContainer.TryTransferToContainer(Item, Animal.inventory.innerContainer, count);
 				}
 			};
+			return toil;
 		}
 	}
 }

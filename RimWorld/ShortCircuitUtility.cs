@@ -56,15 +56,15 @@ namespace RimWorld
 			{
 				flag = TryStartFireNear(culprit);
 			}
-			string value = ((culprit.def != ThingDefOf.PowerConduit) ? Find.ActiveLanguageWorker.WithIndefiniteArticlePostProcessed(culprit.Label) : ((string)"AnElectricalConduit".Translate()));
+			string text = ((culprit.def != ThingDefOf.PowerConduit) ? Find.ActiveLanguageWorker.WithIndefiniteArticlePostProcessed(culprit.Label) : ((string)"AnElectricalConduit".Translate()));
 			StringBuilder stringBuilder = new StringBuilder();
 			if (flag)
 			{
-				stringBuilder.Append("ShortCircuitStartedFire".Translate(value));
+				stringBuilder.Append("ShortCircuitStartedFire".Translate(text));
 			}
 			else
 			{
-				stringBuilder.Append("ShortCircuit".Translate(value));
+				stringBuilder.Append("ShortCircuit".Translate(text));
 			}
 			if (totalEnergy > 0f)
 			{
@@ -93,14 +93,14 @@ namespace RimWorld
 			if ((compPowerTrader != null && compPowerTrader.PowerOn && compPowerTrader.Props.shortCircuitInRain) || (thing.TryGetComp<CompPowerBattery>() != null && thing.TryGetComp<CompPowerBattery>().StoredEnergy > 100f))
 			{
 				TaggedString taggedString = "ShortCircuitRain".Translate(thing.Label, thing);
-				TargetInfo target = new TargetInfo(thing.Position, thing.Map);
+				TargetInfo targetInfo = new TargetInfo(thing.Position, thing.Map);
 				if (thing.Faction == Faction.OfPlayer)
 				{
-					Find.LetterStack.ReceiveLetter("LetterLabelShortCircuit".Translate(), taggedString, LetterDefOf.NegativeEvent, target);
+					Find.LetterStack.ReceiveLetter("LetterLabelShortCircuit".Translate(), taggedString, LetterDefOf.NegativeEvent, targetInfo);
 				}
 				else
 				{
-					Messages.Message(taggedString, target, MessageTypeDefOf.NeutralEvent);
+					Messages.Message(taggedString, targetInfo, MessageTypeDefOf.NeutralEvent);
 				}
 				GenExplosion.DoExplosion(thing.OccupiedRect().RandomCell, thing.Map, 1.9f, DamageDefOf.Flame, null);
 				return true;
@@ -141,7 +141,7 @@ namespace RimWorld
 			}
 			if (tmpCells.Any())
 			{
-				return FireUtility.TryStartFireIn(tmpCells.RandomElement(), b.Map, Rand.Range(0.1f, 1.75f));
+				return FireUtility.TryStartFireIn(tmpCells.RandomElement(), b.Map, Rand.Range(0.1f, 1.75f), null);
 			}
 			return false;
 		}

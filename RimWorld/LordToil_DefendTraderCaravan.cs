@@ -21,13 +21,13 @@ namespace RimWorld
 
 		public override void UpdateAllDuties()
 		{
-			LordToilData_DefendPoint data = base.Data;
+			LordToilData_DefendPoint lordToilData_DefendPoint = base.Data;
 			Pawn pawn = TraderCaravanUtility.FindTrader(lord);
 			if (pawn == null)
 			{
 				return;
 			}
-			pawn.mindState.duty = new PawnDuty(DutyDefOf.Defend, data.defendPoint, data.defendRadius);
+			pawn.mindState.duty = new PawnDuty(DutyDefOf.Defend, lordToilData_DefendPoint.defendPoint, lordToilData_DefendPoint.defendRadius);
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
 				Pawn pawn2 = lord.ownedPawns[i];
@@ -42,7 +42,7 @@ namespace RimWorld
 					pawn2.mindState.duty.locomotion = LocomotionUrgency.Walk;
 					break;
 				case TraderCaravanRole.Guard:
-					pawn2.mindState.duty = new PawnDuty(DutyDefOf.Defend, data.defendPoint, data.defendRadius);
+					pawn2.mindState.duty = new PawnDuty(DutyDefOf.Defend, lordToilData_DefendPoint.defendPoint, lordToilData_DefendPoint.defendRadius);
 					break;
 				}
 			}

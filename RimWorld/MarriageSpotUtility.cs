@@ -46,6 +46,11 @@ namespace RimWorld
 					return false;
 				}
 			}
+			if (cell.GetTerrain(firstFiance.Map).dangerous)
+			{
+				outFailReason?.Append("MarriageSpotDangerous".Translate(firstFiance.LabelShort, firstFiance));
+				return false;
+			}
 			if (cell.GetDangerFor(firstFiance, firstFiance.Map) != Danger.None)
 			{
 				outFailReason?.Append("MarriageSpotDangerous".Translate(firstFiance.LabelShort, firstFiance));
@@ -84,7 +89,7 @@ namespace RimWorld
 			if (!firstFiance.IsPrisoner && !secondFiance.IsPrisoner)
 			{
 				Room room = cell.GetRoom(firstFiance.Map);
-				if (room != null && room.isPrisonCell)
+				if (room != null && room.IsPrisonCell)
 				{
 					outFailReason?.Append("MarriageSpotInPrisonCell".Translate());
 					return false;

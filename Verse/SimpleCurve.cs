@@ -1,11 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace Verse
 {
-	public class SimpleCurve : IEnumerable<CurvePoint>, IEnumerable
+	public class SimpleCurve : IEnumerable<CurvePoint>, IEnumerable, IExposable
 	{
 		private List<CurvePoint> points = new List<CurvePoint>();
 
@@ -40,6 +41,10 @@ namespace Verse
 			}
 		}
 
+		public float MinY => points.Min((CurvePoint point) => point.y);
+
+		public float MaxY => points.Max((CurvePoint point) => point.y);
+
 		public CurvePoint this[int i]
 		{
 			get
@@ -59,6 +64,11 @@ namespace Verse
 
 		public SimpleCurve()
 		{
+		}
+
+		public void ExposeData()
+		{
+			Scribe_Collections.Look(ref points, "points", LookMode.Value);
 		}
 
 		IEnumerator IEnumerable.GetEnumerator()
@@ -225,7 +235,7 @@ namespace Verse
 			float num = Evaluate(startX + span) - Evaluate(startX);
 			if (num < 0f)
 			{
-				Log.Error(string.Concat("PeriodicProbability got negative probability from ", this, ": slope should never be negative."));
+				Log.Error("PeriodicProbability got negative probability from " + this?.ToString() + ": slope should never be negative.");
 				num = 0f;
 			}
 			if (num > 1f)
@@ -245,6 +255,33 @@ namespace Verse
 					break;
 				}
 			}
+		}
+
+		public static SimpleCurve Empty()
+		{
+			return new SimpleCurve { new CurvePoint(0f, 0f) };
+		}
+
+		public AnimationCurve ToAnimationCurve()
+		{
+			AnimationCurve animationCurve = new AnimationCurve();
+			foreach (CurvePoint point in Points)
+			{
+				animationCurve.AddKey(point.x, point.y);
+			}
+			return animationCurve;
+		}
+
+		public static SimpleCurve FromAnimationCurve(AnimationCurve curve)
+		{
+			SimpleCurve simpleCurve = new SimpleCurve();
+			UnityEngine.Keyframe[] keys = curve.keys;
+			for (int i = 0; i < keys.Length; i++)
+			{
+				UnityEngine.Keyframe keyframe = keys[i];
+				simpleCurve.Points.Add(new CurvePoint(keyframe.time, keyframe.value));
+			}
+			return simpleCurve;
 		}
 	}
 }

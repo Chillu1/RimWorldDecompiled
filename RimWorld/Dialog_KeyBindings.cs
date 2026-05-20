@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
+using Verse.Steam;
 
 namespace RimWorld
 {
@@ -13,7 +14,7 @@ namespace RimWorld
 
 		protected KeyPrefsData keyPrefsData;
 
-		protected Vector2 WindowSize = new Vector2(900f, 760f);
+		protected Vector2 WindowSize = new Vector2(700f, 760f);
 
 		protected const float EntryHeight = 34f;
 
@@ -22,8 +23,6 @@ namespace RimWorld
 		private static List<KeyBindingDef> keyBindingsWorkingList = new List<KeyBindingDef>();
 
 		public override Vector2 InitialSize => WindowSize;
-
-		protected override float Margin => 0f;
 
 		public Dialog_KeyBindings()
 		{
@@ -49,59 +48,54 @@ namespace RimWorld
 		{
 			Vector2 vector = new Vector2(120f, 40f);
 			float y = vector.y;
-			float num = 600f;
-			Rect position = new Rect((inRect.width - num) / 2f + inRect.x, inRect.y, num, inRect.height - (y + 10f)).ContractedBy(10f);
-			Rect position2 = new Rect(position.x, position.y + position.height + 10f, position.width, y);
-			GUI.BeginGroup(position);
-			Rect rect = new Rect(0f, 0f, position.width, 40f);
+			Rect rect = new Rect(inRect.x, inRect.y, inRect.width, inRect.height - (y + 10f)).ContractedBy(10f);
+			Rect rect2 = new Rect(rect.x, rect.y + rect.height + 10f, rect.width, y);
+			Widgets.BeginGroup(rect);
+			Rect rect3 = new Rect(0f, 0f, rect.width, 40f);
 			Text.Font = GameFont.Medium;
 			GenUI.SetLabelAlign(TextAnchor.MiddleCenter);
-			Widgets.Label(rect, "KeyboardConfig".Translate());
+			Widgets.Label(rect3, "KeyboardConfig".Translate());
 			GenUI.ResetLabelAlign();
 			Text.Font = GameFont.Small;
-			Rect outRect = new Rect(0f, rect.height, position.width, position.height - rect.height);
-			Rect rect2 = new Rect(0f, 0f, outRect.width - 16f, contentHeight);
-			Widgets.BeginScrollView(outRect, ref scrollPosition, rect2);
+			Rect outRect = new Rect(0f, rect3.height, rect.width, rect.height - rect3.height);
+			Rect rect4 = new Rect(0f, 0f, outRect.width - 16f, contentHeight);
+			Widgets.BeginScrollView(outRect, ref scrollPosition, rect4);
 			float curY = 0f;
 			KeyBindingCategoryDef keyBindingCategoryDef = null;
 			keyBindingsWorkingList.Clear();
 			keyBindingsWorkingList.AddRange(DefDatabase<KeyBindingDef>.AllDefs);
 			keyBindingsWorkingList.SortBy((KeyBindingDef x) => x.category.index, (KeyBindingDef x) => x.index);
-			for (int i = 0; i < keyBindingsWorkingList.Count; i++)
+			for (int num = 0; num < keyBindingsWorkingList.Count; num++)
 			{
-				KeyBindingDef keyBindingDef = keyBindingsWorkingList[i];
+				KeyBindingDef keyBindingDef = keyBindingsWorkingList[num];
 				if (keyBindingCategoryDef != keyBindingDef.category)
 				{
 					bool skipDrawing = curY - scrollPosition.y + 40f < 0f || curY - scrollPosition.y > outRect.height;
 					keyBindingCategoryDef = keyBindingDef.category;
-					DrawCategoryEntry(keyBindingCategoryDef, rect2.width, ref curY, skipDrawing);
+					DrawCategoryEntry(keyBindingCategoryDef, rect4.width, ref curY, skipDrawing);
 				}
 				bool skipDrawing2 = curY - scrollPosition.y + 34f < 0f || curY - scrollPosition.y > outRect.height;
-				DrawKeyEntry(keyBindingDef, rect2, ref curY, skipDrawing2);
+				DrawKeyEntry(keyBindingDef, rect4, ref curY, skipDrawing2);
 			}
 			Widgets.EndScrollView();
-			GUI.EndGroup();
-			GUI.BeginGroup(position2);
-			int num2 = 3;
-			float num3 = vector.x * (float)num2 + 10f * (float)(num2 - 1);
-			float num4 = (position2.width - num3) / 2f;
-			float num5 = vector.x + 10f;
-			Rect rect3 = new Rect(num4, 0f, vector.x, vector.y);
-			Rect rect4 = new Rect(num4 + num5, 0f, vector.x, vector.y);
-			Rect rect5 = new Rect(num4 + num5 * 2f, 0f, vector.x, vector.y);
-			if (Widgets.ButtonText(rect3, "ResetButton".Translate()))
+			Widgets.EndGroup();
+			Widgets.BeginGroup(rect2);
+			Rect rect5 = new Rect(0f, 0f, vector.x, vector.y);
+			Rect rect6 = new Rect((rect2.width - vector.x) / 2f, 0f, vector.x, vector.y);
+			Rect rect7 = new Rect(rect2.width - vector.x, 0f, vector.x, vector.y);
+			if (Widgets.ButtonText(rect6, "ResetButton".Translate()))
 			{
 				keyPrefsData.ResetToDefaults();
 				keyPrefsData.ErrorCheck();
 				SoundDefOf.Tick_Low.PlayOneShotOnCamera();
 				Event.current.Use();
 			}
-			if (Widgets.ButtonText(rect4, "CancelButton".Translate()))
+			if (Widgets.ButtonText(rect5, "CancelButton".Translate()))
 			{
 				Close();
 				Event.current.Use();
 			}
-			if (Widgets.ButtonText(rect5, "OK".Translate()))
+			if (Widgets.ButtonText(rect7, "OK".Translate()))
 			{
 				KeyPrefs.KeyPrefsData = keyPrefsData;
 				KeyPrefs.Save();
@@ -109,7 +103,7 @@ namespace RimWorld
 				keyPrefsData.ErrorCheck();
 				Event.current.Use();
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		private void DrawCategoryEntry(KeyBindingCategoryDef category, float width, ref float curY, bool skipDrawing)
@@ -148,8 +142,9 @@ namespace RimWorld
 				Vector2 vector = new Vector2(140f, 28f);
 				Rect rect2 = new Rect(rect.x + rect.width - vector.x * 2f - num, rect.y, vector.x, vector.y);
 				Rect rect3 = new Rect(rect.x + rect.width - vector.x, rect.y, vector.x, vector.y);
-				TooltipHandler.TipRegionByKey(rect2, "BindingButtonToolTip");
-				TooltipHandler.TipRegionByKey(rect3, "BindingButtonToolTip");
+				string key = (SteamDeck.IsSteamDeckInNonKeyboardMode ? "BindingButtonToolTipController" : "BindingButtonToolTip");
+				TooltipHandler.TipRegionByKey(rect2, key);
+				TooltipHandler.TipRegionByKey(rect3, key);
 				if (Widgets.ButtonText(rect2, keyPrefsData.GetBoundKeyCode(keyDef, KeyPrefs.BindingSlot.A).ToStringReadable()))
 				{
 					SettingButtonClicked(keyDef, KeyPrefs.BindingSlot.A);

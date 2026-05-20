@@ -7,6 +7,8 @@ namespace RimWorld
 	{
 		private const float CameraShakeMag = 1f;
 
+		private Effecter effecter;
+
 		public virtual float OrderPriority => 0f;
 
 		private CompProperties_UseEffect Props => (CompProperties_UseEffect)props;
@@ -23,6 +25,27 @@ namespace RimWorld
 				{
 					MoteMaker.MakeAttachedOverlay(usedBy, Props.moteOnUsed, Vector3.zero, Props.moteOnUsedScale);
 				}
+				if (Props.fleckOnUsed != null)
+				{
+					FleckMaker.AttachedOverlay(usedBy, Props.fleckOnUsed, Vector3.zero, Props.fleckOnUsedScale);
+				}
+				if (Props.effecterOnUsed != null)
+				{
+					Props.effecterOnUsed.SpawnMaintained(usedBy, new TargetInfo(parent.Position, parent.Map));
+				}
+				effecter?.Cleanup();
+			}
+		}
+
+		public virtual void PrepareTick()
+		{
+			if (Props.warmupEffecter != null)
+			{
+				if (effecter == null)
+				{
+					effecter = Props.warmupEffecter.Spawn(parent, parent.Map);
+				}
+				effecter?.EffectTick(parent, parent);
 			}
 		}
 
@@ -36,9 +59,8 @@ namespace RimWorld
 			return false;
 		}
 
-		public virtual bool CanBeUsedBy(Pawn p, out string failReason)
+		public virtual AcceptanceReport CanBeUsedBy(Pawn p)
 		{
-			failReason = null;
 			return true;
 		}
 	}

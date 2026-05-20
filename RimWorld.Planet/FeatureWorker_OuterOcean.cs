@@ -5,54 +5,52 @@ namespace RimWorld.Planet
 {
 	public class FeatureWorker_OuterOcean : FeatureWorker
 	{
-		private List<int> group = new List<int>();
+		private readonly List<PlanetTile> group = new List<PlanetTile>();
 
-		private List<int> edgeTiles = new List<int>();
+		private readonly List<PlanetTile> edgeTiles = new List<PlanetTile>();
 
-		public override void GenerateWhereAppropriate()
+		public override void GenerateWhereAppropriate(PlanetLayer layer)
 		{
-			WorldGrid worldGrid = Find.WorldGrid;
-			int tilesCount = worldGrid.TilesCount;
 			edgeTiles.Clear();
-			for (int i = 0; i < tilesCount; i++)
+			for (int i = 0; i < layer.TilesCount; i++)
 			{
-				if (IsRoot(i))
+				PlanetTile planetTile = new PlanetTile(i, layer);
+				if (IsRoot(planetTile))
 				{
-					edgeTiles.Add(i);
+					edgeTiles.Add(planetTile);
 				}
 			}
 			if (edgeTiles.Any())
 			{
 				group.Clear();
-				Find.WorldFloodFiller.FloodFill(-1, (int x) => CanTraverse(x), delegate(int tile, int traversalDist)
+				layer.Filler.FloodFill(PlanetTile.Invalid, CanTraverse, delegate(PlanetTile tile, int traversalDist)
 				{
 					group.Add(tile);
 					return false;
 				}, int.MaxValue, edgeTiles);
-				group.RemoveAll((int x) => worldGrid[x].feature != null);
+				group.RemoveAll((PlanetTile x) => layer[x].feature != null);
 				if (group.Count >= def.minSize && group.Count <= def.maxSize)
 				{
-					AddFeature(group, group);
+					AddFeature(layer, group, group);
 				}
 			}
 		}
 
-		private bool IsRoot(int tile)
+		private bool IsRoot(PlanetTile tile)
 		{
-			WorldGrid worldGrid = Find.WorldGrid;
-			if (worldGrid.IsOnEdge(tile) && CanTraverse(tile))
+			if (Find.WorldGrid.IsOnEdge(tile) && CanTraverse(tile))
 			{
-				return worldGrid[tile].feature == null;
+				return Find.WorldGrid[tile].feature == null;
 			}
 			return false;
 		}
 
-		private bool CanTraverse(int tile)
+		private bool CanTraverse(PlanetTile tile)
 		{
-			BiomeDef biome = Find.WorldGrid[tile].biome;
-			if (biome != BiomeDefOf.Ocean)
+			BiomeDef primaryBiome = Find.WorldGrid[tile].PrimaryBiome;
+			if (primaryBiome != BiomeDefOf.Ocean)
 			{
-				return biome == BiomeDefOf.Lake;
+				return primaryBiome == BiomeDefOf.Lake;
 			}
 			return true;
 		}

@@ -4,15 +4,15 @@ namespace RimWorld.SketchGen
 {
 	public class SketchResolver_MonumentRuin : SketchResolver
 	{
-		protected override bool CanResolveInt(ResolveParams parms)
+		protected override bool CanResolveInt(SketchResolveParams parms)
 		{
 			return true;
 		}
 
-		protected override void ResolveInt(ResolveParams parms)
+		protected override void ResolveInt(SketchResolveParams parms)
 		{
-			ResolveParams parms2 = parms;
-			parms2.allowWood = parms.allowWood ?? false;
+			SketchResolveParams parms2 = parms;
+			parms2.allowWood = parms.allowWood == true;
 			if (parms2.allowedMonumentThings == null)
 			{
 				parms2.allowedMonumentThings = new ThingFilter();

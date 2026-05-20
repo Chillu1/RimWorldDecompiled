@@ -14,15 +14,6 @@ namespace RimWorld
 			generated.relations.AddDirectRelation(PawnRelationDefOf.Spouse, other);
 			LovePartnerRelationUtility.TryToShareChildrenForGeneratedLovePartner(generated, other, request, 1f);
 			SpouseRelationUtility.ResolveNameForSpouseOnGeneration(ref request, generated);
-			ResolveMySkinColor(ref request, generated, other);
-		}
-
-		private static void ResolveMySkinColor(ref PawnGenerationRequest request, Pawn generated, Pawn other)
-		{
-			if (!request.FixedMelanin.HasValue)
-			{
-				request.SetFixedMelanin(PawnSkinColors.GetRandomMelaninSimilarTo(other.story.melanin));
-			}
 		}
 	}
 }

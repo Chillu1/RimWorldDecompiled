@@ -14,5 +14,14 @@ namespace Verse
 			}
 			return stringBuilder.ToString();
 		}
+
+		public static bool NullOrEmpty<K, V>(this Dictionary<K, V> dict)
+		{
+			if (dict != null)
+			{
+				return dict.Count == 0;
+			}
+			return true;
+		}
 	}
 }

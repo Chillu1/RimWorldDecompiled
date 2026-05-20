@@ -16,8 +16,7 @@ namespace RimWorld
 
 		private void SpawnTrigger(CellRect rectToDefend, IntVec3 root, Map map, GenStepParams parms)
 		{
-			int nextSignalTagID = Find.UniqueIDsManager.GetNextSignalTagID();
-			string signalTag = "ambushActivated-" + nextSignalTagID;
+			string signalTag = "ambushActivated-" + Find.UniqueIDsManager.GetNextSignalTagID();
 			CellRect rect = ((!root.IsValid) ? rectToDefend.ExpandedBy(12) : CellRect.CenteredOn(root, 17));
 			SignalAction_Ambush signalAction_Ambush = MakeAmbushSignalAction(rectToDefend, root, parms);
 			signalAction_Ambush.signalTag = signalTag;

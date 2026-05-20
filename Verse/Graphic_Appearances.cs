@@ -11,6 +11,15 @@ namespace Verse
 
 		public override Material MatSingle => subGraphics[StuffAppearanceDefOf.Smooth.index].MatSingle;
 
+		private ThingDef StuffOfThing(Thing thing)
+		{
+			if (thing is IConstructible constructible)
+			{
+				return constructible.EntityToBuildStuff();
+			}
+			return thing.Stuff;
+		}
+
 		public override Material MatAt(Rot4 rot, Thing thing = null)
 		{
 			return SubGraphicFor(thing).MatAt(rot, thing);
@@ -40,11 +49,11 @@ namespace Verse
 					subGraphics[i] = GraphicDatabase.Get<Graphic_Single>(text + "/" + texture2D.name, req.shader, drawSize, color);
 				}
 			}
-			for (int j = 0; j < subGraphics.Length; j++)
+			for (int num = 0; num < subGraphics.Length; num++)
 			{
-				if (subGraphics[j] == null)
+				if (subGraphics[num] == null)
 				{
-					subGraphics[j] = subGraphics[StuffAppearanceDefOf.Smooth.index];
+					subGraphics[num] = subGraphics[StuffAppearanceDefOf.Smooth.index];
 				}
 			}
 		}
@@ -73,24 +82,33 @@ namespace Verse
 			StuffAppearanceDef smooth = StuffAppearanceDefOf.Smooth;
 			if (thing != null)
 			{
-				return SubGraphicFor(thing.Stuff);
+				return SubGraphicFor(StuffOfThing(thing));
 			}
 			return subGraphics[smooth.index];
 		}
 
 		public Graphic SubGraphicFor(ThingDef stuff)
 		{
-			StuffAppearanceDef stuffAppearanceDef = StuffAppearanceDefOf.Smooth;
+			StuffAppearanceDef app = StuffAppearanceDefOf.Smooth;
 			if (stuff != null && stuff.stuffProps.appearance != null)
 			{
-				stuffAppearanceDef = stuff.stuffProps.appearance;
+				app = stuff.stuffProps.appearance;
 			}
-			return subGraphics[stuffAppearanceDef.index];
+			return SubGraphicFor(app);
+		}
+
+		public Graphic SubGraphicFor(StuffAppearanceDef app)
+		{
+			return subGraphics[app.index];
 		}
 
 		public override string ToString()
 		{
-			return string.Concat("Appearance(path=", path, ", color=", color, ", colorTwo=unsupported)");
+			string[] obj = new string[5] { "Appearance(path=", path, ", color=", null, null };
+			Color color = base.color;
+			obj[3] = color.ToString();
+			obj[4] = ", colorTwo=unsupported)";
+			return string.Concat(obj);
 		}
 	}
 }

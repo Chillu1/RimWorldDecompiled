@@ -40,6 +40,18 @@ namespace Verse
 			}
 		}
 
+		public bool ThingDiscarded
+		{
+			get
+			{
+				if (Thing != null)
+				{
+					return Thing.Discarded;
+				}
+				return false;
+			}
+		}
+
 		public static LocalTargetInfo Invalid => new LocalTargetInfo(IntVec3.Invalid);
 
 		public string Label
@@ -102,6 +114,12 @@ namespace Verse
 			cellInt = cell;
 		}
 
+		public bool TryGetPawn(out Pawn pawn)
+		{
+			pawn = Pawn;
+			return pawn != null;
+		}
+
 		public static implicit operator LocalTargetInfo(Thing t)
 		{
 			return new LocalTargetInfo(t);
@@ -125,7 +143,8 @@ namespace Verse
 		{
 			if (targ.cellInt.IsValid)
 			{
-				Log.ErrorOnce("Casted LocalTargetInfo to Thing but it had cell " + targ.cellInt, 631672);
+				IntVec3 intVec = targ.cellInt;
+				Log.ErrorOnce("Casted LocalTargetInfo to Thing but it had cell " + intVec.ToString(), 631672);
 			}
 			return targ.thingInt;
 		}
@@ -158,9 +177,9 @@ namespace Verse
 
 		public static bool operator ==(LocalTargetInfo a, LocalTargetInfo b)
 		{
-			if (a.Thing != null || b.Thing != null)
+			if (a.thingInt != null || b.thingInt != null)
 			{
-				return a.Thing == b.Thing;
+				return a.thingInt == b.thingInt;
 			}
 			if (a.cellInt.IsValid || b.cellInt.IsValid)
 			{

@@ -20,6 +20,11 @@ namespace RimWorld
 
 		public override IEnumerable<FloatMenuOption> GetRoyalAidOptions(Map map, Pawn pawn, Faction faction)
 		{
+			if (map.generatorDef.isUnderground)
+			{
+				yield return new FloatMenuOption(def.LabelCap + ": " + "CommandCallRoyalAidMapUnreachable".Translate(faction.Named("FACTION")), null);
+				yield break;
+			}
 			if (faction.HostileTo(Faction.OfPlayer))
 			{
 				yield return new FloatMenuOption("CommandCallRoyalAidFactionHostile".Translate(faction.Named("FACTION")), null);
@@ -70,6 +75,10 @@ namespace RimWorld
 					}
 				}
 			};
+			if (pawn.MapHeld != null && pawn.MapHeld.generatorDef.isUnderground)
+			{
+				command_Action.Disable("CommandCallRoyalAidMapUnreachable".Translate(faction.Named("FACTION")));
+			}
 			if (faction.HostileTo(Faction.OfPlayer))
 			{
 				command_Action.Disable("CommandCallRoyalAidFactionHostile".Translate(faction.Named("FACTION")));
@@ -91,17 +100,18 @@ namespace RimWorld
 			base.map = map;
 			this.faction = faction;
 			base.free = free;
+			float rangeActual = base.RangeClamped;
 			targetingParameters.validator = delegate(TargetInfo target)
 			{
-				if (def.royalAid.targetingRange > 0f && target.Cell.DistanceTo(caller.Position) > def.royalAid.targetingRange)
+				if (rangeActual > 0f && target.Cell.DistanceTo(caller.Position) > rangeActual)
 				{
 					return false;
 				}
-				if (!target.Cell.Walkable(map))
+				if (target.Cell.Fogged(map))
 				{
 					return false;
 				}
-				return (!target.Cell.Fogged(map)) ? true : false;
+				return DropCellFinder.CanPhysicallyDropInto(target.Cell, map, canRoofPunch: true) ? true : false;
 			};
 			Find.Targeter.BeginTargeting(this);
 		}
@@ -117,9 +127,9 @@ namespace RimWorld
 			}
 			if (list.Any())
 			{
-				ActiveDropPodInfo activeDropPodInfo = new ActiveDropPodInfo();
-				activeDropPodInfo.innerContainer.TryAddRangeOrTransfer(list);
-				DropPodUtility.MakeDropPodAt(cell, map, activeDropPodInfo);
+				ActiveTransporterInfo activeTransporterInfo = new ActiveTransporterInfo();
+				activeTransporterInfo.innerContainer.TryAddRangeOrTransfer(list);
+				DropPodUtility.MakeDropPodAt(cell, map, activeTransporterInfo);
 				Messages.Message("MessagePermitTransportDrop".Translate(faction.Named("FACTION")), new LookTargets(cell, map), MessageTypeDefOf.NeutralEvent);
 				caller.royalty.GetPermit(def, faction).Notify_Used();
 				if (!free)

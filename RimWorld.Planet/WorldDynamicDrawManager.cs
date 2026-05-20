@@ -6,7 +6,7 @@ namespace RimWorld.Planet
 {
 	public class WorldDynamicDrawManager
 	{
-		private HashSet<WorldObject> drawObjects = new HashSet<WorldObject>();
+		private readonly HashSet<WorldObject> drawObjects = new HashSet<WorldObject>();
 
 		private bool drawingNow;
 
@@ -16,7 +16,7 @@ namespace RimWorld.Planet
 			{
 				if (drawingNow)
 				{
-					Log.Warning(string.Concat("Cannot register drawable ", o, " while drawing is in progress. WorldObjects shouldn't be spawned in Draw methods."));
+					Log.Warning("Cannot register drawable " + o?.ToString() + " while drawing is in progress. WorldObjects shouldn't be spawned in Draw methods.");
 				}
 				drawObjects.Add(o);
 			}
@@ -28,7 +28,7 @@ namespace RimWorld.Planet
 			{
 				if (drawingNow)
 				{
-					Log.Warning(string.Concat("Cannot deregister drawable ", o, " while drawing is in progress. WorldObjects shouldn't be despawned in Draw methods."));
+					Log.Warning("Cannot deregister drawable " + o?.ToString() + " while drawing is in progress. WorldObjects shouldn't be despawned in Draw methods.");
 				}
 				drawObjects.Remove(o);
 			}
@@ -36,6 +36,10 @@ namespace RimWorld.Planet
 
 		public void DrawDynamicWorldObjects()
 		{
+			if (WorldRendererUtility.WorldBackgroundNow || !DebugViewSettings.drawWorldObjects)
+			{
+				return;
+			}
 			drawingNow = true;
 			try
 			{
@@ -43,20 +47,20 @@ namespace RimWorld.Planet
 				{
 					try
 					{
-						if (!drawObject.def.expandingIcon || !(ExpandableWorldObjectsUtility.TransitionPct >= 1f))
+						if ((!drawObject.def.expandingIcon || !(ExpandableWorldObjectsUtility.TransitionPct(drawObject) >= 1f)) && (!WorldRendererUtility.WorldBackgroundNow || drawObject.VisibleInBackground))
 						{
 							drawObject.Draw();
 						}
 					}
 					catch (Exception ex)
 					{
-						Log.Error(string.Concat("Exception drawing ", drawObject, ": ", ex));
+						Log.Error("Exception drawing " + drawObject?.ToString() + ": " + ex);
 					}
 				}
 			}
-			catch (Exception arg)
+			catch (Exception ex2)
 			{
-				Log.Error("Exception drawing dynamic world objects: " + arg);
+				Log.Error("Exception drawing dynamic world objects: " + ex2);
 			}
 			drawingNow = false;
 		}

@@ -9,22 +9,35 @@ namespace Verse.AI
 			return GotoThing(ind, peMode);
 		}
 
-		public static Toil GotoThing(TargetIndex ind, PathEndMode peMode)
+		public static Toil GotoThing(TargetIndex ind, PathEndMode peMode, bool canGotoSpawnedParent = false)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("GotoThing");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;
-				actor.pather.StartPath(actor.jobs.curJob.GetTarget(ind), peMode);
+				LocalTargetInfo dest = actor.jobs.curJob.GetTarget(ind);
+				Thing thing = dest.Thing;
+				if (thing != null && canGotoSpawnedParent)
+				{
+					dest = thing.SpawnedParentOrMe;
+				}
+				actor.pather.StartPath(dest, peMode);
 			};
 			toil.defaultCompleteMode = ToilCompleteMode.PatherArrival;
-			toil.FailOnDespawnedOrNull(ind);
+			if (canGotoSpawnedParent)
+			{
+				toil.FailOnSelfAndParentsDespawnedOrNull(ind);
+			}
+			else
+			{
+				toil.FailOnDespawnedOrNull(ind);
+			}
 			return toil;
 		}
 
 		public static Toil GotoThing(TargetIndex ind, IntVec3 exactCell)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("GotoThing");
 			toil.initAction = delegate
 			{
 				toil.actor.pather.StartPath(exactCell, PathEndMode.OnCell);
@@ -36,11 +49,20 @@ namespace Verse.AI
 
 		public static Toil GotoCell(TargetIndex ind, PathEndMode peMode)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("GotoCell");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;
-				actor.pather.StartPath(actor.jobs.curJob.GetTarget(ind), peMode);
+				LocalTargetInfo target = actor.jobs.curJob.GetTarget(ind);
+				if (actor.Position == target.Cell)
+				{
+					actor.pather.StopDead();
+					actor.jobs.curDriver.ReadyForNextToil();
+				}
+				else
+				{
+					actor.pather.StartPath(target, peMode);
+				}
 			};
 			toil.defaultCompleteMode = ToilCompleteMode.PatherArrival;
 			return toil;
@@ -48,10 +70,18 @@ namespace Verse.AI
 
 		public static Toil GotoCell(IntVec3 cell, PathEndMode peMode)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("GotoCell");
 			toil.initAction = delegate
 			{
-				toil.actor.pather.StartPath(cell, peMode);
+				Pawn actor = toil.actor;
+				if (actor.Position == cell)
+				{
+					actor.jobs.curDriver.ReadyForNextToil();
+				}
+				else
+				{
+					actor.pather.StartPath(cell, peMode);
+				}
 			};
 			toil.defaultCompleteMode = ToilCompleteMode.PatherArrival;
 			return toil;
@@ -59,17 +89,17 @@ namespace Verse.AI
 
 		public static Toil MoveOffTargetBlueprint(TargetIndex targetInd)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MoveOffTargetBlueprint");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;
-				Thing thing = actor.jobs.curJob.GetTarget(targetInd).Thing as Blueprint;
+				Blueprint blueprint = actor.jobs.curJob.GetTarget(targetInd).Thing as Blueprint;
 				IntVec3 result;
-				if (thing == null || !actor.Position.IsInside(thing))
+				if (blueprint.DestroyedOrNull() || !actor.Position.IsInside(blueprint))
 				{
 					actor.jobs.curDriver.ReadyForNextToil();
 				}
-				else if (RCellFinder.TryFindGoodAdjacentSpotToTouch(actor, thing, out result))
+				else if (RCellFinder.TryFindGoodAdjacentSpotToTouch(actor, blueprint, out result))
 				{
 					actor.pather.StartPath(result, PathEndMode.OnCell);
 				}
@@ -79,6 +109,39 @@ namespace Verse.AI
 				}
 			};
 			toil.defaultCompleteMode = ToilCompleteMode.PatherArrival;
+			return toil;
+		}
+
+		public static Toil GotoBuild(TargetIndex ind)
+		{
+			Toil toil = ToilMaker.MakeToil("GotoBuild");
+			toil.initAction = delegate
+			{
+				Pawn actor = toil.actor;
+				LocalTargetInfo target = actor.jobs.curJob.GetTarget(ind);
+				Thing thing = target.Thing;
+				if (RCellFinder.TryFindGoodAdjacentSpotToTouch(actor, thing, out var result))
+				{
+					actor.pather.StartPath(result, PathEndMode.OnCell);
+				}
+				else
+				{
+					actor.pather.StartPath(target, PathEndMode.OnCell);
+				}
+			};
+			toil.tickIntervalAction = delegate
+			{
+				Pawn actor = toil.actor;
+				Thing thing = actor.jobs.curJob.GetTarget(ind).Thing;
+				if (actor.CanReachImmediate(thing, PathEndMode.Touch) && actor.Map.reservationManager.CanReserve(actor, actor.Position))
+				{
+					actor.Reserve(actor.Position, actor.CurJob);
+					actor.pather.StopDead();
+					actor.jobs.curDriver.ReadyForNextToil();
+				}
+			};
+			toil.defaultCompleteMode = ToilCompleteMode.PatherArrival;
+			toil.FailOnDespawnedOrNull(ind);
 			return toil;
 		}
 	}

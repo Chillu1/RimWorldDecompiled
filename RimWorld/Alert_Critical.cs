@@ -11,20 +11,19 @@ namespace RimWorld
 
 		private const float PulseAmpCritical = 0.6f;
 
-		private const float PulseAmpTutorial = 0.2f;
+		protected override Color BGColor => BgColor();
 
-		protected override Color BGColor
+		protected virtual bool DoMessage => true;
+
+		public static Color BgColor()
 		{
-			get
-			{
-				float num = Pulser.PulseBrightness(0.5f, Pulser.PulseBrightness(0.5f, 0.6f));
-				return new Color(num, num, num) * Color.red;
-			}
+			float num = Pulser.PulseBrightness(0.5f, Pulser.PulseBrightness(0.5f, 0.6f));
+			return new Color(num, num, num) * Color.red;
 		}
 
 		public override void AlertActiveUpdate()
 		{
-			if (lastActiveFrame < Time.frameCount - 1)
+			if (DoMessage && lastActiveFrame < Time.frameCount - 1)
 			{
 				Messages.Message("MessageCriticalAlert".Translate(base.Label.CapitalizeFirst()), new LookTargets(GetReport().AllCulprits), MessageTypeDefOf.ThreatBig);
 			}

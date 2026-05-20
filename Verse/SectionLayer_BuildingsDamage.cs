@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -10,7 +11,7 @@ namespace Verse
 		public SectionLayer_BuildingsDamage(Section section)
 			: base(section)
 		{
-			relevantChangeTypes = MapMeshFlag.Buildings | MapMeshFlag.BuildingsDamage;
+			relevantChangeTypes = (ulong)MapMeshFlagDefOf.BuildingsDamage | (ulong)MapMeshFlagDefOf.Buildings;
 		}
 
 		public override void Regenerate()
@@ -22,8 +23,7 @@ namespace Verse
 				int count = list.Count;
 				for (int i = 0; i < count; i++)
 				{
-					Building building = list[i] as Building;
-					if (building != null && building.def.useHitPoints && building.HitPoints < building.MaxHitPoints && building.def.drawDamagedOverlay && building.Position.x == item.x && building.Position.z == item.z)
+					if (list[i] is Building building && building.def.useHitPoints && building.HitPoints < building.MaxHitPoints && building.def.drawDamagedOverlay && building.Position.x == item.x && building.Position.z == item.z)
 					{
 						PrintDamageVisualsFrom(building);
 					}
@@ -69,7 +69,7 @@ namespace Verse
 			Rand.Seed = b.thingIDNumber * 3697;
 			for (int j = 0; j < num; j++)
 			{
-				AddScratch(b, damageRect.width, damageRect.height, ref minDist);
+				AddScratch(damageRect.width, damageRect.height, ref minDist);
 			}
 			Rand.PopState();
 			float damageTexturesAltitude = GetDamageTexturesAltitude(b);
@@ -87,12 +87,14 @@ namespace Verse
 					num3 *= Rand.Range(0.85f, 1f);
 				}
 				Vector3 center = new Vector3(damageRect.xMin + x, damageTexturesAltitude, damageRect.yMin + y);
-				Printer_Plane.PrintPlane(this, center, new Vector2(num3, num3), scratchMats.RandomElement(), rot, flipUv: false, null, null, 0f);
+				Material material = scratchMats.RandomElement();
+				Graphic.TryGetTextureAtlasReplacementInfo(material, TextureAtlasGroup.Building, flipUv: false, vertexColors: false, out material, out var uvs, out var _);
+				Printer_Plane.PrintPlane(this, center, new Vector2(num3, num3), material, rot, flipUv: false, uvs, null, 0f);
 			}
 			Rand.PopState();
 		}
 
-		private void AddScratch(Building b, float rectWidth, float rectHeight, ref float minDist)
+		private void AddScratch(float rectWidth, float rectHeight, ref float minDist)
 		{
 			bool flag = false;
 			float num = 0f;
@@ -167,41 +169,75 @@ namespace Verse
 			float z = Rand.Range(0.4f, 0.6f);
 			float x2 = Rand.Range(0.4f, 0.6f);
 			float z2 = Rand.Range(0.4f, 0.6f);
+			Vector2[] uvs = null;
 			for (int i = 0; i < overlays.Count; i++)
 			{
+				Color32 vertexColor;
 				switch (overlays[i])
 				{
 				case DamageOverlay.TopEdge:
-					Printer_Plane.PrintPlane(this, vector + new Vector3(x, 0f, 0f), Vector2.one, damageData.edgeTopMat, 0f, flipUv: false, null, null, 0f);
+				{
+					Material material = damageData.edgeTopMat;
+					Graphic.TryGetTextureAtlasReplacementInfo(material, TextureAtlasGroup.Building, flipUv: false, vertexColors: false, out material, out uvs, out vertexColor);
+					Printer_Plane.PrintPlane(this, vector + new Vector3(x, 0f, 0f), Vector2.one, material, 0f, flipUv: false, uvs, null, 0f);
 					break;
+				}
 				case DamageOverlay.RightEdge:
-					Printer_Plane.PrintPlane(this, vector + new Vector3(0f, 0f, z), Vector2.one, damageData.edgeRightMat, 90f, flipUv: false, null, null, 0f);
+				{
+					Material material = damageData.edgeRightMat;
+					Graphic.TryGetTextureAtlasReplacementInfo(material, TextureAtlasGroup.Building, flipUv: false, vertexColors: false, out material, out uvs, out vertexColor);
+					Printer_Plane.PrintPlane(this, vector + new Vector3(0f, 0f, z), Vector2.one, material, 90f, flipUv: false, uvs, null, 0f);
 					break;
+				}
 				case DamageOverlay.BotEdge:
-					Printer_Plane.PrintPlane(this, vector + new Vector3(x2, 0f, 0f), Vector2.one, damageData.edgeBotMat, 180f, flipUv: false, null, null, 0f);
+				{
+					Material material = damageData.edgeBotMat;
+					Graphic.TryGetTextureAtlasReplacementInfo(material, TextureAtlasGroup.Building, flipUv: false, vertexColors: false, out material, out uvs, out vertexColor);
+					Printer_Plane.PrintPlane(this, vector + new Vector3(x2, 0f, 0f), Vector2.one, material, 180f, flipUv: false, uvs, null, 0f);
 					break;
+				}
 				case DamageOverlay.LeftEdge:
-					Printer_Plane.PrintPlane(this, vector + new Vector3(0f, 0f, z2), Vector2.one, damageData.edgeLeftMat, 270f, flipUv: false, null, null, 0f);
+				{
+					Material material = damageData.edgeLeftMat;
+					Graphic.TryGetTextureAtlasReplacementInfo(material, TextureAtlasGroup.Building, flipUv: false, vertexColors: false, out material, out uvs, out vertexColor);
+					Printer_Plane.PrintPlane(this, vector + new Vector3(0f, 0f, z2), Vector2.one, material, 270f, flipUv: false, uvs, null, 0f);
 					break;
+				}
 				case DamageOverlay.TopLeftCorner:
-					Printer_Plane.PrintPlane(this, vector, Vector2.one, damageData.cornerTLMat, 0f, flipUv: false, null, null, 0f);
+				{
+					Material material = damageData.cornerTLMat;
+					Graphic.TryGetTextureAtlasReplacementInfo(material, TextureAtlasGroup.Building, flipUv: false, vertexColors: false, out material, out uvs, out vertexColor);
+					Printer_Plane.PrintPlane(this, vector, Vector2.one, material, 0f, flipUv: false, uvs, null, 0f);
 					break;
+				}
 				case DamageOverlay.TopRightCorner:
-					Printer_Plane.PrintPlane(this, vector, Vector2.one, damageData.cornerTRMat, 90f, flipUv: false, null, null, 0f);
+				{
+					Material material = damageData.cornerTRMat;
+					Graphic.TryGetTextureAtlasReplacementInfo(material, TextureAtlasGroup.Building, flipUv: false, vertexColors: false, out material, out uvs, out vertexColor);
+					Printer_Plane.PrintPlane(this, vector, Vector2.one, material, 90f, flipUv: false, uvs, null, 0f);
 					break;
+				}
 				case DamageOverlay.BotRightCorner:
-					Printer_Plane.PrintPlane(this, vector, Vector2.one, damageData.cornerBRMat, 180f, flipUv: false, null, null, 0f);
+				{
+					Material material = damageData.cornerBRMat;
+					Graphic.TryGetTextureAtlasReplacementInfo(material, TextureAtlasGroup.Building, flipUv: false, vertexColors: false, out material, out uvs, out vertexColor);
+					Printer_Plane.PrintPlane(this, vector, Vector2.one, material, 180f, flipUv: false, uvs, null, 0f);
 					break;
+				}
 				case DamageOverlay.BotLeftCorner:
-					Printer_Plane.PrintPlane(this, vector, Vector2.one, damageData.cornerBLMat, 270f, flipUv: false, null, null, 0f);
+				{
+					Material material = damageData.cornerBLMat;
+					Graphic.TryGetTextureAtlasReplacementInfo(material, TextureAtlasGroup.Building, flipUv: false, vertexColors: false, out material, out uvs, out vertexColor);
+					Printer_Plane.PrintPlane(this, vector, Vector2.one, material, 270f, flipUv: false, uvs, null, 0f);
 					break;
+				}
 				}
 			}
 		}
 
 		private void DrawFullThingCorners(Building b)
 		{
-			if (b.def.graphicData == null || b.def.graphicData.damageData == null)
+			if (b.def.graphicData?.damageData == null)
 			{
 				return;
 			}
@@ -213,33 +249,43 @@ namespace Verse
 			float num3 = num * Rand.Range(0.9f, 1f);
 			float num4 = num * Rand.Range(0.9f, 1f);
 			float num5 = num * Rand.Range(0.9f, 1f);
+			Vector2[] uvs = null;
 			List<DamageOverlay> overlays = BuildingsDamageSectionLayerUtility.GetOverlays(b);
 			for (int i = 0; i < overlays.Count; i++)
 			{
+				Color32 vertexColor;
 				switch (overlays[i])
 				{
 				case DamageOverlay.TopLeftCorner:
 				{
 					Rect rect4 = new Rect(damageRect.xMin, damageRect.yMax - num2, num2, num2);
-					Printer_Plane.PrintPlane(this, new Vector3(rect4.center.x, damageTexturesAltitude, rect4.center.y), rect4.size, topLeft, 0f, flipUv: false, null, null, 0f);
+					Material material = topLeft;
+					Graphic.TryGetTextureAtlasReplacementInfo(material, TextureAtlasGroup.Building, flipUv: false, vertexColors: false, out material, out uvs, out vertexColor);
+					Printer_Plane.PrintPlane(this, new Vector3(rect4.center.x, damageTexturesAltitude, rect4.center.y), rect4.size, material, 0f, flipUv: false, uvs, null, 0f);
 					break;
 				}
 				case DamageOverlay.TopRightCorner:
 				{
 					Rect rect3 = new Rect(damageRect.xMax - num3, damageRect.yMax - num3, num3, num3);
-					Printer_Plane.PrintPlane(this, new Vector3(rect3.center.x, damageTexturesAltitude, rect3.center.y), rect3.size, topRight, 90f, flipUv: false, null, null, 0f);
+					Material material = topRight;
+					Graphic.TryGetTextureAtlasReplacementInfo(material, TextureAtlasGroup.Building, flipUv: false, vertexColors: false, out material, out uvs, out vertexColor);
+					Printer_Plane.PrintPlane(this, new Vector3(rect3.center.x, damageTexturesAltitude, rect3.center.y), rect3.size, material, 90f, flipUv: false, uvs, null, 0f);
 					break;
 				}
 				case DamageOverlay.BotRightCorner:
 				{
 					Rect rect2 = new Rect(damageRect.xMax - num4, damageRect.yMin, num4, num4);
-					Printer_Plane.PrintPlane(this, new Vector3(rect2.center.x, damageTexturesAltitude, rect2.center.y), rect2.size, botRight, 180f, flipUv: false, null, null, 0f);
+					Material material = botRight;
+					Graphic.TryGetTextureAtlasReplacementInfo(material, TextureAtlasGroup.Building, flipUv: false, vertexColors: false, out material, out uvs, out vertexColor);
+					Printer_Plane.PrintPlane(this, new Vector3(rect2.center.x, damageTexturesAltitude, rect2.center.y), rect2.size, material, 180f, flipUv: false, uvs, null, 0f);
 					break;
 				}
 				case DamageOverlay.BotLeftCorner:
 				{
 					Rect rect = new Rect(damageRect.xMin, damageRect.yMin, num5, num5);
-					Printer_Plane.PrintPlane(this, new Vector3(rect.center.x, damageTexturesAltitude, rect.center.y), rect.size, botLeft, 270f, flipUv: false, null, null, 0f);
+					Material material = botLeft;
+					Graphic.TryGetTextureAtlasReplacementInfo(material, TextureAtlasGroup.Building, flipUv: false, vertexColors: false, out material, out uvs, out vertexColor);
+					Printer_Plane.PrintPlane(this, new Vector3(rect.center.x, damageTexturesAltitude, rect.center.y), rect.size, material, 270f, flipUv: false, uvs, null, 0f);
 					break;
 				}
 				}
@@ -248,7 +294,7 @@ namespace Verse
 
 		private float GetDamageTexturesAltitude(Building b)
 		{
-			return b.def.Altitude + 3f / 70f;
+			return b.def.Altitude + 15f / 82f;
 		}
 	}
 }

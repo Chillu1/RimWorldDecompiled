@@ -32,6 +32,7 @@ namespace RimWorld.BaseGen
 					if (thing.def.CanHaveFaction && thing.Faction != rp.faction)
 					{
 						thing.SetFaction(rp.faction);
+						thing.SetStyleDef(rp.faction.ideos?.PrimaryIdeo?.GetStyleFor(thing.def));
 					}
 					nearbyGlowers.Add(thing.TryGetComp<CompGlower>());
 				}
@@ -68,7 +69,7 @@ namespace RimWorld.BaseGen
 		{
 			for (int i = 0; i < nearbyGlowers.Count; i++)
 			{
-				if (c.InHorDistOf(nearbyGlowers[i].parent.Position, nearbyGlowers[i].Props.glowRadius + 2f))
+				if (c.InHorDistOf(nearbyGlowers[i].parent.Position, nearbyGlowers[i].GlowRadius + 2f))
 				{
 					return true;
 				}

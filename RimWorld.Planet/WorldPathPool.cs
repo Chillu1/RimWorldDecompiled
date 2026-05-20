@@ -5,15 +5,13 @@ namespace RimWorld.Planet
 {
 	public class WorldPathPool
 	{
-		private List<WorldPath> paths = new List<WorldPath>(64);
+		private readonly List<WorldPath> paths = new List<WorldPath>(64);
 
-		private static readonly WorldPath notFoundPathInt;
-
-		public static WorldPath NotFoundPath => notFoundPathInt;
+		public static WorldPath NotFoundPath { get; }
 
 		static WorldPathPool()
 		{
-			notFoundPathInt = WorldPath.NewNotFound();
+			NotFoundPath = WorldPath.NewNotFound();
 		}
 
 		public WorldPath GetEmptyWorldPath()

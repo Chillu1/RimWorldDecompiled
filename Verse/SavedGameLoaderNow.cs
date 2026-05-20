@@ -7,8 +7,8 @@ namespace Verse
 	{
 		public static void LoadGameFromSaveFileNow(string fileName)
 		{
-			string str = LoadedModManager.RunningMods.Select((ModContentPack mod) => mod.PackageIdPlayerFacing).ToLineList("  - ");
-			Log.Message("Loading game from file " + fileName + " with mods:\n" + str);
+			string text = LoadedModManager.RunningMods.Select((ModContentPack mod) => mod.PackageIdPlayerFacing + ((!mod.ModMetaData.VersionCompatible) ? " (incompatible version)" : "")).ToLineList("  - ");
+			Log.Message("Loading game from file " + fileName + " with mods:\n" + text);
 			DeepProfiler.Start("Loading game from file " + fileName);
 			Current.Game = new Game();
 			DeepProfiler.Start("InitLoading (read file)");

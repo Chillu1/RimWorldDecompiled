@@ -9,25 +9,13 @@ namespace RimWorld
 	{
 		public IntVec3 pos;
 
-		public abstract string Label
-		{
-			get;
-		}
+		public abstract string Label { get; }
 
-		public abstract string LabelCap
-		{
-			get;
-		}
+		public abstract string LabelCap { get; }
 
-		public abstract CellRect OccupiedRect
-		{
-			get;
-		}
+		public abstract CellRect OccupiedRect { get; }
 
-		public abstract float SpawnOrder
-		{
-			get;
-		}
+		public abstract float SpawnOrder { get; }
 
 		public virtual bool LostImportantReferences => false;
 
@@ -43,23 +31,17 @@ namespace RimWorld
 
 		public abstract bool CanBuildOnTerrain(IntVec3 at, Map map);
 
-		public abstract bool Spawn(IntVec3 at, Map map, Faction faction, Sketch.SpawnMode spawnMode = Sketch.SpawnMode.Normal, bool wipeIfCollides = false, List<Thing> spawnedThings = null, bool dormant = false);
+		public abstract bool Spawn(IntVec3 at, Map map, Faction faction, Sketch.SpawnMode spawnMode = Sketch.SpawnMode.Normal, bool wipeIfCollides = false, bool forceTerrainAffordance = false, List<Thing> spawnedThings = null, bool dormant = false, TerrainDef defaultAffordanceTerrain = null);
 
 		public abstract bool SameForSubtracting(SketchEntity other);
 
-		[Obsolete("Only used for mod compatibility")]
-		public bool SpawnNear(IntVec3 near, Map map, float radius, Faction faction, Sketch.SpawnMode spawnMode = Sketch.SpawnMode.Normal, bool wipeIfCollides = false, List<Thing> spawnedThings = null, bool dormant = false)
-		{
-			return SpawnNear_NewTmp(near, map, radius, faction, spawnMode, wipeIfCollides, spawnedThings, dormant);
-		}
-
-		public bool SpawnNear_NewTmp(IntVec3 near, Map map, float radius, Faction faction, Sketch.SpawnMode spawnMode = Sketch.SpawnMode.Normal, bool wipeIfCollides = false, List<Thing> spawnedThings = null, bool dormant = false, Func<SketchEntity, IntVec3, bool> validator = null)
+		public bool SpawnNear(IntVec3 near, Map map, float radius, Faction faction, Sketch.SpawnMode spawnMode = Sketch.SpawnMode.Normal, bool wipeIfCollides = false, bool forceTerrainAffordance = false, List<Thing> spawnedThings = null, bool dormant = false, Func<SketchEntity, IntVec3, bool> validator = null, TerrainDef affordanceTerrain = null)
 		{
 			int num = GenRadial.NumCellsInRadius(radius);
 			for (int i = 0; i < num; i++)
 			{
 				IntVec3 intVec = near + GenRadial.RadialPattern[i];
-				if (intVec.InBounds(map) && (validator == null || validator(this, intVec)) && Spawn(intVec, map, faction, spawnMode, wipeIfCollides, spawnedThings, dormant))
+				if (intVec.InBounds(map) && (validator == null || validator(this, intVec)) && Spawn(intVec, map, faction, spawnMode, wipeIfCollides, forceTerrainAffordance, spawnedThings, dormant))
 				{
 					return true;
 				}

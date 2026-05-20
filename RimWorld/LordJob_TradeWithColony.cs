@@ -16,6 +16,15 @@ namespace RimWorld
 		{
 		}
 
+		public override bool CanOpenAnyDoor(Pawn p)
+		{
+			if (p.FenceBlocked)
+			{
+				return true;
+			}
+			return false;
+		}
+
 		public LordJob_TradeWithColony(Faction faction, IntVec3 chillSpot)
 		{
 			this.faction = faction;
@@ -24,6 +33,7 @@ namespace RimWorld
 
 		public override StateGraph CreateGraph()
 		{
+			Pawn trader = TraderCaravanUtility.FindTrader(lord);
 			StateGraph stateGraph = new StateGraph();
 			LordToil_Travel lordToil_Travel = (LordToil_Travel)(stateGraph.StartingToil = new LordToil_Travel(chillSpot));
 			LordToil_DefendTraderCaravan lordToil_DefendTraderCaravan = new LordToil_DefendTraderCaravan();
@@ -44,56 +54,77 @@ namespace RimWorld
 			transition.AddPostAction(new TransitionAction_EndAllJobs());
 			transition.AddTrigger(new Trigger_PawnExperiencingDangerousTemperatures());
 			stateGraph.AddTransition(transition);
-			Transition transition2 = new Transition(lordToil_Travel, lordToil_ExitMap2);
-			transition2.AddSources(lordToil_DefendTraderCaravan, lordToil_DefendTraderCaravan2, lordToil_ExitMapAndEscortCarriers, lordToil_ExitMap, lordToil_ExitMapTraderFighting);
-			transition2.AddTrigger(new Trigger_PawnCannotReachMapEdge());
-			transition2.AddPostAction(new TransitionAction_Message("MessageVisitorsTrappedLeaving".Translate(faction.def.pawnsPlural.CapitalizeFirst(), faction.Name)));
-			transition2.AddPostAction(new TransitionAction_WakeAll());
+			Transition transition2 = new Transition(lordToil_Travel, lordToil_ExitMapAndEscortCarriers);
+			transition2.AddSources(lordToil_DefendTraderCaravan, lordToil_DefendTraderCaravan2);
+			transition2.AddPreAction(new TransitionAction_Message("MessageVisitorsAnomalousWeather".Translate(faction.def.pawnsPlural.CapitalizeFirst(), faction.Name)));
 			transition2.AddPostAction(new TransitionAction_EndAllJobs());
+			transition2.AddTrigger(new Trigger_PawnExperiencingAnomalousWeather());
 			stateGraph.AddTransition(transition2);
-			Transition transition3 = new Transition(lordToil_ExitMap2, lordToil_ExitMapTraderFighting);
-			transition3.AddTrigger(new Trigger_PawnCanReachMapEdge());
+			Transition transition3 = new Transition(lordToil_Travel, lordToil_ExitMapAndEscortCarriers);
+			transition3.AddSources(lordToil_DefendTraderCaravan, lordToil_DefendTraderCaravan2);
+			transition3.AddPreAction(new TransitionAction_Message("MessageVisitorsDangerousConditions".Translate(faction.def.pawnsPlural.CapitalizeFirst(), faction.Name)));
 			transition3.AddPostAction(new TransitionAction_EndAllJobs());
+			Trigger_GameCondition trigger_GameCondition = new Trigger_GameCondition();
+			trigger_GameCondition.gameConditions = DefDatabase<GameConditionDef>.AllDefsListForReading.FindAll((GameConditionDef x) => x.causesTraderCaravanExit);
+			transition3.AddTrigger(trigger_GameCondition);
 			stateGraph.AddTransition(transition3);
-			Transition transition4 = new Transition(lordToil_Travel, lordToil_ExitMapTraderFighting);
-			transition4.AddSources(lordToil_DefendTraderCaravan, lordToil_DefendTraderCaravan2, lordToil_ExitMapAndEscortCarriers, lordToil_ExitMap);
-			transition4.AddTrigger(new Trigger_FractionPawnsLost(0.2f));
+			Transition transition4 = new Transition(lordToil_Travel, lordToil_ExitMap2);
+			transition4.AddSources(lordToil_DefendTraderCaravan, lordToil_DefendTraderCaravan2, lordToil_ExitMapAndEscortCarriers, lordToil_ExitMap, lordToil_ExitMapTraderFighting);
+			transition4.AddTrigger(new Trigger_PawnCannotReachMapEdge());
+			transition4.AddPostAction(new TransitionAction_Message("MessageVisitorsTrappedLeaving".Translate(faction.def.pawnsPlural.CapitalizeFirst(), faction.Name)));
+			transition4.AddPostAction(new TransitionAction_WakeAll());
 			transition4.AddPostAction(new TransitionAction_EndAllJobs());
 			stateGraph.AddTransition(transition4);
-			Transition transition5 = new Transition(lordToil_Travel, lordToil_DefendTraderCaravan);
-			transition5.AddTrigger(new Trigger_PawnHarmed());
-			transition5.AddPreAction(new TransitionAction_SetDefendTrader());
-			transition5.AddPostAction(new TransitionAction_WakeAll());
+			Transition transition5 = new Transition(lordToil_ExitMap2, lordToil_ExitMapTraderFighting);
+			transition5.AddTrigger(new Trigger_PawnCanReachMapEdge());
 			transition5.AddPostAction(new TransitionAction_EndAllJobs());
 			stateGraph.AddTransition(transition5);
-			Transition transition6 = new Transition(lordToil_DefendTraderCaravan, lordToil_Travel);
-			transition6.AddTrigger(new Trigger_TicksPassedWithoutHarm(1200));
+			Transition transition6 = new Transition(lordToil_Travel, lordToil_ExitMapTraderFighting);
+			transition6.AddSources(lordToil_DefendTraderCaravan, lordToil_DefendTraderCaravan2, lordToil_ExitMapAndEscortCarriers, lordToil_ExitMap);
+			transition6.AddTrigger(new Trigger_FractionPawnsLost(0.2f));
+			transition6.AddPostAction(new TransitionAction_EndAllJobs());
 			stateGraph.AddTransition(transition6);
-			Transition transition7 = new Transition(lordToil_Travel, lordToil_DefendTraderCaravan2);
-			transition7.AddTrigger(new Trigger_Memo("TravelArrived"));
+			Transition transition7 = new Transition(lordToil_Travel, lordToil_DefendTraderCaravan);
+			transition7.AddTrigger(new Trigger_PawnHarmed());
+			transition7.AddPreAction(new TransitionAction_SetDefendTrader());
+			transition7.AddPostAction(new TransitionAction_WakeAll());
+			transition7.AddPostAction(new TransitionAction_EndAllJobs());
 			stateGraph.AddTransition(transition7);
-			Transition transition8 = new Transition(lordToil_DefendTraderCaravan2, lordToil_ExitMapAndEscortCarriers);
-			transition8.AddTrigger(new Trigger_TicksPassed((!DebugSettings.instantVisitorsGift) ? Rand.Range(27000, 45000) : 0));
-			transition8.AddPreAction(new TransitionAction_CheckGiveGift());
-			transition8.AddPreAction(new TransitionAction_Message("MessageTraderCaravanLeaving".Translate(faction.Name)));
-			transition8.AddPostAction(new TransitionAction_WakeAll());
+			Transition transition8 = new Transition(lordToil_DefendTraderCaravan, lordToil_Travel);
+			transition8.AddTrigger(new Trigger_TicksPassedWithoutHarm(1200));
 			stateGraph.AddTransition(transition8);
-			Transition transition9 = new Transition(lordToil_ExitMapAndEscortCarriers, lordToil_ExitMapAndEscortCarriers, canMoveToSameState: true);
-			transition9.canMoveToSameState = true;
-			transition9.AddTrigger(new Trigger_PawnLost());
-			transition9.AddTrigger(new Trigger_TickCondition(() => LordToil_ExitMapAndEscortCarriers.IsAnyDefendingPosition(lord.ownedPawns) && !GenHostility.AnyHostileActiveThreatTo(base.Map, faction, countDormantPawnsAsHostile: true), 60));
+			Transition transition9 = new Transition(lordToil_Travel, lordToil_DefendTraderCaravan2);
+			transition9.AddTrigger(new Trigger_Memo("TravelArrived"));
 			stateGraph.AddTransition(transition9);
-			Transition transition10 = new Transition(lordToil_ExitMapAndEscortCarriers, lordToil_ExitMap);
-			transition10.AddTrigger(new Trigger_TicksPassed(60000));
+			Transition transition10 = new Transition(lordToil_DefendTraderCaravan2, lordToil_ExitMapAndEscortCarriers);
+			transition10.AddTrigger(new Trigger_TicksPassed((!DebugSettings.instantVisitorsGift) ? Rand.Range(27000, 45000) : 0));
+			transition10.AddPreAction(new TransitionAction_CheckGiveGift());
+			transition10.AddPreAction(new TransitionAction_Message("MessageTraderCaravanLeaving".Translate(faction.Name)));
 			transition10.AddPostAction(new TransitionAction_WakeAll());
 			stateGraph.AddTransition(transition10);
 			Transition transition11 = new Transition(lordToil_DefendTraderCaravan2, lordToil_ExitMapAndEscortCarriers);
-			transition11.AddSources(lordToil_Travel, lordToil_DefendTraderCaravan);
-			transition11.AddTrigger(new Trigger_ImportantTraderCaravanPeopleLost());
-			transition11.AddTrigger(new Trigger_BecamePlayerEnemy());
+			transition11.AddSource(lordToil_Travel);
+			transition11.AddTrigger(new Trigger_Custom((TriggerSignal s) => s.type == TriggerSignalType.Tick && ((trader?.mindState)?.traderDismissed ?? false)));
+			transition11.AddPreAction(new TransitionAction_Message("MessageTraderCaravanDismissed".Translate(faction.Name)));
 			transition11.AddPostAction(new TransitionAction_WakeAll());
 			transition11.AddPostAction(new TransitionAction_EndAllJobs());
 			stateGraph.AddTransition(transition11);
+			Transition transition12 = new Transition(lordToil_ExitMapAndEscortCarriers, lordToil_ExitMapAndEscortCarriers, canMoveToSameState: true);
+			transition12.canMoveToSameState = true;
+			transition12.AddTrigger(new Trigger_PawnLost());
+			transition12.AddTrigger(new Trigger_TickCondition(() => LordToil_ExitMapAndEscortCarriers.IsAnyDefendingPosition(lord.ownedPawns) && !GenHostility.AnyHostileActiveThreatTo(base.Map, faction, countDormantPawnsAsHostile: true), 60));
+			stateGraph.AddTransition(transition12);
+			Transition transition13 = new Transition(lordToil_ExitMapAndEscortCarriers, lordToil_ExitMap);
+			transition13.AddTrigger(new Trigger_TicksPassed(60000));
+			transition13.AddPostAction(new TransitionAction_WakeAll());
+			stateGraph.AddTransition(transition13);
+			Transition transition14 = new Transition(lordToil_DefendTraderCaravan2, lordToil_ExitMapAndEscortCarriers);
+			transition14.AddSources(lordToil_Travel, lordToil_DefendTraderCaravan);
+			transition14.AddTrigger(new Trigger_ImportantTraderCaravanPeopleLost());
+			transition14.AddTrigger(new Trigger_BecamePlayerEnemy());
+			transition14.AddPostAction(new TransitionAction_WakeAll());
+			transition14.AddPostAction(new TransitionAction_EndAllJobs());
+			stateGraph.AddTransition(transition14);
 			return stateGraph;
 		}
 

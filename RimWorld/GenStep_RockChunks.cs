@@ -26,10 +26,15 @@ namespace RimWorld
 			freqFactorNoise = new ScaleBias(1.0, 1.0, freqFactorNoise);
 			NoiseDebugUI.StoreNoiseRender(freqFactorNoise, "rock_chunks_freq_factor");
 			MapGenFloatGrid elevation = MapGenerator.Elevation;
+			float num = 0.006f;
+			foreach (TileMutatorDef mutator in map.TileInfo.Mutators)
+			{
+				num *= mutator.chunkDensityFactor;
+			}
 			foreach (IntVec3 allCell in map.AllCells)
 			{
-				float num = 0.006f * freqFactorNoise.GetValue(allCell);
-				if (elevation[allCell] < 0.55f && Rand.Value < num)
+				float num2 = num * freqFactorNoise.GetValue(allCell);
+				if ((elevation[allCell] < 0.55f || map.generatorDef.isUnderground) && Rand.Value < num2)
 				{
 					GrowLowRockFormationFrom(allCell, map);
 				}
@@ -40,7 +45,13 @@ namespace RimWorld
 		private void GrowLowRockFormationFrom(IntVec3 root, Map map)
 		{
 			ThingDef filth_RubbleRock = ThingDefOf.Filth_RubbleRock;
-			ThingDef mineableThing = Find.World.NaturalRockTypesIn(map.Tile).RandomElement().building.mineableThing;
+			List<ThingDef> forceRockTypes = map.Biome.forceRockTypes;
+			ThingDef thingDef = ((forceRockTypes == null) ? Find.World.NaturalRockTypesIn(map.Tile).RandomElement() : forceRockTypes.RandomElement());
+			ThingDef mineableThing = thingDef.building.mineableThing;
+			if (mineableThing == null)
+			{
+				return;
+			}
 			Rot4 random = Rot4.Random;
 			MapGenFloatGrid elevation = MapGenerator.Elevation;
 			IntVec3 intVec = root;
@@ -52,19 +63,19 @@ namespace RimWorld
 					continue;
 				}
 				intVec += random2.FacingCell;
-				if (!intVec.InBounds(map) || intVec.GetEdifice(map) != null || intVec.GetFirstItem(map) != null || elevation[intVec] > 0.55f || !map.terrainGrid.TerrainAt(intVec).affordances.Contains(TerrainAffordanceDefOf.Heavy))
+				if (!intVec.InBounds(map) || intVec.GetEdifice(map) != null || intVec.GetFirstItem(map) != null || (!map.generatorDef.isUnderground && elevation[intVec] > 0.55f) || !intVec.GetAffordances(map).Contains(TerrainAffordanceDefOf.Heavy) || intVec.GetDoor(map) != null)
 				{
 					break;
 				}
 				GenSpawn.Spawn(mineableThing, intVec, map);
 				IntVec3[] adjacentCellsAndInside = GenAdj.AdjacentCellsAndInside;
-				foreach (IntVec3 b in adjacentCellsAndInside)
+				foreach (IntVec3 intVec2 in adjacentCellsAndInside)
 				{
 					if (!(Rand.Value < 0.5f))
 					{
 						continue;
 					}
-					IntVec3 c = intVec + b;
+					IntVec3 c = intVec + intVec2;
 					if (!c.InBounds(map))
 					{
 						continue;

@@ -13,7 +13,7 @@ namespace RimWorld
 
 		public static Material InactiveFacilityLineMat = MaterialPool.MatFrom(GenDraw.LineTexPath, ShaderDatabase.Transparent, new Color(1f, 0.5f, 0.5f));
 
-		private static Dictionary<ThingDef, int> alreadyReturnedCount = new Dictionary<ThingDef, int>();
+		private static readonly Dictionary<ThingDef, int> alreadyReturnedCount = new Dictionary<ThingDef, int>();
 
 		private List<ThingDef> alreadyUsed = new List<ThingDef>();
 
@@ -40,6 +40,14 @@ namespace RimWorld
 
 		public bool CanLinkTo(Thing facility)
 		{
+			if (!facility.TryGetComp(out CompFacility comp))
+			{
+				return false;
+			}
+			if (!comp.CanLink())
+			{
+				return false;
+			}
 			if (!CanPotentiallyLinkTo(facility.def, facility.Position, facility.Rotation))
 			{
 				return false;
@@ -58,9 +66,9 @@ namespace RimWorld
 			return true;
 		}
 
-		public static bool CanPotentiallyLinkTo_Static(Thing facility, ThingDef myDef, IntVec3 myPos, Rot4 myRot)
+		public static bool CanPotentiallyLinkTo_Static(Thing facility, ThingDef myDef, IntVec3 myPos, Rot4 myRot, Map myMap)
 		{
-			if (!CanPotentiallyLinkTo_Static(facility.def, facility.Position, facility.Rotation, myDef, myPos, myRot))
+			if (!CanPotentiallyLinkTo_Static(facility.def, facility.Position, facility.Rotation, myDef, myPos, myRot, myMap))
 			{
 				return false;
 			}
@@ -73,7 +81,7 @@ namespace RimWorld
 
 		public bool CanPotentiallyLinkTo(ThingDef facilityDef, IntVec3 facilityPos, Rot4 facilityRot)
 		{
-			if (!CanPotentiallyLinkTo_Static(facilityDef, facilityPos, facilityRot, parent.def, parent.Position, parent.Rotation))
+			if (!CanPotentiallyLinkTo_Static(facilityDef, facilityPos, facilityRot, parent.def, parent.Position, parent.Rotation, parent.Map))
 			{
 				return false;
 			}
@@ -107,7 +115,7 @@ namespace RimWorld
 			return true;
 		}
 
-		public static bool CanPotentiallyLinkTo_Static(ThingDef facilityDef, IntVec3 facilityPos, Rot4 facilityRot, ThingDef myDef, IntVec3 myPos, Rot4 myRot)
+		public static bool CanPotentiallyLinkTo_Static(ThingDef facilityDef, IntVec3 facilityPos, Rot4 facilityRot, ThingDef myDef, IntVec3 myPos, Rot4 myRot, Map myMap)
 		{
 			CompProperties_Facility compProperties = facilityDef.GetCompProperties<CompProperties_Facility>();
 			if (compProperties.mustBePlacedAdjacent)
@@ -119,7 +127,23 @@ namespace RimWorld
 					return false;
 				}
 			}
-			if (compProperties.mustBePlacedAdjacentCardinalToBedHead)
+			if (compProperties.mustBePlacedFacingThingLinear)
+			{
+				if (ContainmentUtility.IsLinearBuildingBlocked(facilityDef, facilityPos, facilityRot, myMap))
+				{
+					return false;
+				}
+				CellRect cellRect = GenAdj.OccupiedRect(myPos, myRot, myDef.size);
+				foreach (IntVec3 inhibitorAffectedCell in ContainmentUtility.GetInhibitorAffectedCells(facilityDef, facilityPos, facilityRot, myMap))
+				{
+					if (cellRect.Cells.Contains(inhibitorAffectedCell))
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+			if (compProperties.mustBePlacedAdjacentCardinalToBedHead || compProperties.mustBePlacedAdjacentCardinalToAndFacingBedHead)
 			{
 				if (!myDef.IsBed)
 				{
@@ -130,7 +154,19 @@ namespace RimWorld
 				int sleepingSlotsCount = BedUtility.GetSleepingSlotsCount(myDef.size);
 				for (int i = 0; i < sleepingSlotsCount; i++)
 				{
-					if (BedUtility.GetSleepingSlotPos(i, myPos, myRot, myDef.size).IsAdjacentToCardinalOrInside(other))
+					IntVec3 sleepingSlotPos = BedUtility.GetSleepingSlotPos(i, myPos, myRot, myDef.size);
+					if (!sleepingSlotPos.IsAdjacentToCardinalOrInside(other))
+					{
+						continue;
+					}
+					if (compProperties.mustBePlacedAdjacentCardinalToAndFacingBedHead)
+					{
+						if (other.MovedBy(facilityRot.FacingCell).Contains(sleepingSlotPos))
+						{
+							flag = true;
+						}
+					}
+					else
 					{
 						flag = true;
 					}
@@ -140,11 +176,12 @@ namespace RimWorld
 					return false;
 				}
 			}
-			if (!compProperties.mustBePlacedAdjacent && !compProperties.mustBePlacedAdjacentCardinalToBedHead)
+			if (!compProperties.mustBePlacedAdjacent && !compProperties.mustBePlacedAdjacentCardinalToBedHead && !compProperties.mustBePlacedAdjacentCardinalToAndFacingBedHead)
 			{
 				Vector3 a = GenThing.TrueCenter(myPos, myRot, myDef.size, myDef.Altitude);
 				Vector3 b = GenThing.TrueCenter(facilityPos, facilityRot, facilityDef.size, facilityDef.Altitude);
-				if (Vector3.Distance(a, b) > compProperties.maxDistance)
+				float num = Vector3.Distance(a, b);
+				if (num > compProperties.maxDistance || (compProperties.minDistance > 0f && num < compProperties.minDistance))
 				{
 					return false;
 				}
@@ -167,13 +204,9 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (facilityDef.GetCompProperties<CompProperties_Facility>().canLinkToMedBedsOnly)
+			if (facilityDef.GetCompProperties<CompProperties_Facility>().canLinkToMedBedsOnly && !(parent is Building_Bed { Medical: not false }))
 			{
-				Building_Bed building_Bed = parent as Building_Bed;
-				if (building_Bed == null || !building_Bed.Medical)
-				{
-					return false;
-				}
+				return false;
 			}
 			return true;
 		}
@@ -185,6 +218,10 @@ namespace RimWorld
 
 		private static bool IsPotentiallyValidFacilityForMe_Static(ThingDef facilityDef, IntVec3 facilityPos, Rot4 facilityRot, ThingDef myDef, IntVec3 myPos, Rot4 myRot, Map map)
 		{
+			if (!facilityDef.GetCompProperties<CompProperties_Facility>().requiresLOS)
+			{
+				return true;
+			}
 			CellRect startRect = GenAdj.OccupiedRect(myPos, myRot, myDef.size);
 			CellRect endRect = GenAdj.OccupiedRect(facilityPos, facilityRot, facilityDef.size);
 			bool flag = false;
@@ -204,12 +241,12 @@ namespace RimWorld
 								num++;
 								continue;
 							}
-							goto IL_006a;
+							goto IL_007a;
 						}
 					}
 				}
 				continue;
-				IL_006a:
+				IL_007a:
 				flag = true;
 				break;
 			}
@@ -272,7 +309,7 @@ namespace RimWorld
 			LinkToNearbyFacilities();
 		}
 
-		public override void PostDeSpawn(Map map)
+		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
 		{
 			UnlinkAll();
 		}
@@ -314,7 +351,7 @@ namespace RimWorld
 			return facilityPos.z < thanThisFacility.Position.z;
 		}
 
-		public static IEnumerable<Thing> PotentialThingsToLinkTo(ThingDef myDef, IntVec3 myPos, Rot4 myRot, Map map)
+		public static IEnumerable<Thing> PotentialThingsToLinkTo(ThingDef myDef, IntVec3 myPos, Rot4 myRot, Map myMap)
 		{
 			alreadyReturnedCount.Clear();
 			CompProperties_AffectedByFacilities compProperties = myDef.GetCompProperties<CompProperties_AffectedByFacilities>();
@@ -325,7 +362,7 @@ namespace RimWorld
 			IEnumerable<Thing> enumerable = Enumerable.Empty<Thing>();
 			for (int i = 0; i < compProperties.linkableFacilities.Count; i++)
 			{
-				enumerable = enumerable.Concat(map.listerThings.ThingsOfDef(compProperties.linkableFacilities[i]));
+				enumerable = enumerable.Concat(myMap.listerThings.ThingsOfDef(compProperties.linkableFacilities[i]));
 			}
 			Vector3 myTrueCenter = GenThing.TrueCenter(myPos, myRot, myDef.size, myDef.Altitude);
 			IOrderedEnumerable<Thing> orderedEnumerable = from x in enumerable
@@ -333,14 +370,13 @@ namespace RimWorld
 				select x;
 			foreach (Thing item in orderedEnumerable)
 			{
-				if (!CanPotentiallyLinkTo_Static(item, myDef, myPos, myRot))
+				if (!item.TryGetComp(out CompFacility comp) || !comp.CanLink() || !CanPotentiallyLinkTo_Static(item, myDef, myPos, myRot, myMap))
 				{
 					continue;
 				}
-				CompProperties_Facility compProperties2 = item.def.GetCompProperties<CompProperties_Facility>();
-				if (alreadyReturnedCount.ContainsKey(item.def))
+				if (alreadyReturnedCount.TryGetValue(item.def, out var value))
 				{
-					if (alreadyReturnedCount[item.def] >= compProperties2.maxSimultaneous)
+					if (value >= comp.Props.maxSimultaneous)
 					{
 						continue;
 					}
@@ -360,6 +396,26 @@ namespace RimWorld
 			foreach (Thing item in PotentialThingsToLinkTo(myDef, myPos, myRot, map))
 			{
 				GenDraw.DrawLineBetween(a, item.TrueCenter());
+			}
+		}
+
+		public static void DrawPlaceMouseAttachmentsToPotentialThingsToLinkTo(float curX, ref float curY, ThingDef myDef, IntVec3 myPos, Rot4 myRot, Map map)
+		{
+			int num = 0;
+			foreach (Thing item in PotentialThingsToLinkTo(myDef, myPos, myRot, map))
+			{
+				num++;
+				if (num == 1)
+				{
+					DrawTextLine(ref curY, "FacilityPotentiallyLinkedTo".Translate() + ":");
+				}
+				DrawTextLine(ref curY, "  - " + item.LabelCap);
+			}
+			void DrawTextLine(ref float y, string text)
+			{
+				float lineHeight = Text.LineHeight;
+				Widgets.Label(new Rect(curX, y, 999f, lineHeight), text);
+				y += lineHeight;
 			}
 		}
 
@@ -407,24 +463,25 @@ namespace RimWorld
 			return thing2;
 		}
 
-		public float GetStatOffset(StatDef stat)
+		public override float GetStatOffset(StatDef stat)
 		{
 			float num = 0f;
 			for (int i = 0; i < linkedFacilities.Count; i++)
 			{
-				if (IsFacilityActive(linkedFacilities[i]))
+				CompFacility compFacility = linkedFacilities[i].TryGetComp<CompFacility>();
+				if (compFacility.StatOffsets != null)
 				{
-					CompProperties_Facility compProperties = linkedFacilities[i].def.GetCompProperties<CompProperties_Facility>();
-					if (compProperties.statOffsets != null)
+					float statOffsetFromList = compFacility.StatOffsets.GetStatOffsetFromList(stat);
+					if (statOffsetFromList != 0f && IsFacilityActive(linkedFacilities[i]))
 					{
-						num += compProperties.statOffsets.GetStatOffsetFromList(stat);
+						num += statOffsetFromList;
 					}
 				}
 			}
 			return num;
 		}
 
-		public void GetStatsExplanation(StatDef stat, StringBuilder sb)
+		public override void GetStatsExplanation(StatDef stat, StringBuilder sb, string whitespace = "")
 		{
 			alreadyUsed.Clear();
 			bool flag = false;
@@ -443,12 +500,12 @@ namespace RimWorld
 				{
 					continue;
 				}
-				CompProperties_Facility compProperties = linkedFacilities[i].def.GetCompProperties<CompProperties_Facility>();
-				if (compProperties.statOffsets == null)
+				CompFacility compFacility = linkedFacilities[i].TryGetComp<CompFacility>();
+				if (compFacility.StatOffsets == null)
 				{
 					continue;
 				}
-				float statOffsetFromList = compProperties.statOffsets.GetStatOffsetFromList(stat);
+				float statOffsetFromList = compFacility.StatOffsets.GetStatOffsetFromList(stat);
 				if (statOffsetFromList == 0f)
 				{
 					continue;
@@ -457,7 +514,7 @@ namespace RimWorld
 				{
 					flag = true;
 					sb.AppendLine();
-					sb.AppendLine("StatsReport_Facilities".Translate() + ":");
+					sb.AppendLine(whitespace + "StatsReport_Facilities".Translate() + ":");
 				}
 				int num = 0;
 				for (int k = 0; k < linkedFacilities.Count; k++)
@@ -468,7 +525,7 @@ namespace RimWorld
 					}
 				}
 				statOffsetFromList *= (float)num;
-				sb.Append("    ");
+				sb.Append(whitespace + "    ");
 				if (num != 1)
 				{
 					sb.Append(num + "x ");
@@ -497,8 +554,11 @@ namespace RimWorld
 			}
 			foreach (Thing item in ThingsICanLinkTo)
 			{
-				linkedFacilities.Add(item);
-				item.TryGetComp<CompFacility>().Notify_NewLink(parent);
+				if (item.TryGetComp(out CompFacility comp))
+				{
+					linkedFacilities.Add(item);
+					comp.Notify_NewLink(parent);
+				}
 			}
 		}
 

@@ -62,7 +62,8 @@ namespace RimWorld.BaseGen
 			FillOptions(rp.rect);
 			if ((Rand.Chance(0.2f) || (!TryResolveRandomOption(0, 0, rp) && !TryResolveRandomOption(0, 1, rp))) && !TryResolveRandomOption(1, 0, rp) && !TryResolveRandomOption(2, 0, rp) && !TryResolveRandomOption(2, 1, rp) && !TryResolveRandomOption(999999, 999999, rp))
 			{
-				Log.Warning("Grid resolver could not resolve any grid size. params=" + rp);
+				ResolveParams resolveParams = rp;
+				Log.Warning("Grid resolver could not resolve any grid size. params=" + resolveParams.ToString());
 			}
 		}
 

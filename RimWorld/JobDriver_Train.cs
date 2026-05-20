@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Verse.AI;
 
@@ -9,16 +10,13 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
+			Func<bool> noLongerTrainable = () => base.Animal.training.NextTrainableToTrain() == null;
 			foreach (Toil item in base.MakeNewToils())
 			{
+				item.FailOn(noLongerTrainable);
 				yield return item;
 			}
-			this.FailOn(() => base.Animal.training.NextTrainableToTrain() == null && !base.OnLastToil);
-		}
-
-		protected override Toil FinalInteractToil()
-		{
-			return Toils_Interpersonal.TryTrain(TargetIndex.A);
+			yield return Toils_Interpersonal.TryTrain(TargetIndex.A);
 		}
 	}
 }

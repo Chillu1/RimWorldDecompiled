@@ -20,6 +20,8 @@ namespace RimWorld
 
 		private bool holdFire;
 
+		private bool burstActivated;
+
 		public Thing gun;
 
 		protected TurretTop top;
@@ -32,9 +34,17 @@ namespace RimWorld
 
 		protected CompMannable mannableComp;
 
+		protected CompInteractable interactableComp;
+
+		public CompRefuelable refuelableComp;
+
 		protected Effecter progressBarEffecter;
 
-		private const int TryStartShootSomethingIntervalTicks = 10;
+		protected CompMechPowerCell powerCellComp;
+
+		protected CompHackable hackableComp;
+
+		private const int TryStartShootSomethingIntervalTicks = 15;
 
 		public static Material ForcedTargetLineMat = MaterialPool.MatFrom(GenDraw.LineTexPath, ShaderDatabase.Transparent, new Color(1f, 0.5f, 0.5f));
 
@@ -42,11 +52,11 @@ namespace RimWorld
 		{
 			get
 			{
-				if ((powerComp == null || powerComp.PowerOn) && (dormantComp == null || dormantComp.Awake))
+				if ((powerComp == null || powerComp.PowerOn) && (dormantComp == null || dormantComp.Awake) && (initiatableComp == null || initiatableComp.Initiated) && (interactableComp == null || burstActivated) && (powerCellComp == null || !powerCellComp.depleted))
 				{
-					if (initiatableComp != null)
+					if (hackableComp != null)
 					{
-						return initiatableComp.Initiated;
+						return !hackableComp.IsHacked;
 					}
 					return true;
 				}
@@ -68,15 +78,15 @@ namespace RimWorld
 		{
 			get
 			{
-				if (base.Faction == Faction.OfPlayer || MannedByColonist)
+				if ((base.Faction == Faction.OfPlayer || MannedByColonist) && !MannedByNonColonist)
 				{
-					return !MannedByNonColonist;
+					return !IsActivable;
 				}
 				return false;
 			}
 		}
 
-		private bool CanSetForcedTarget
+		protected virtual bool CanSetForcedTarget
 		{
 			get
 			{
@@ -103,6 +113,12 @@ namespace RimWorld
 				return true;
 			}
 		}
+
+		private bool IsActivable => interactableComp != null;
+
+		protected virtual bool HideForceTargetGizmo => false;
+
+		public TurretTop Top => top;
 
 		private bool CanExtractShell
 		{
@@ -145,6 +161,13 @@ namespace RimWorld
 			top = new TurretTop(this);
 		}
 
+		public override void PostMake()
+		{
+			base.PostMake();
+			burstCooldownTicksLeft = def.building.turretInitialCooldownTime.SecondsToTicks();
+			MakeGun();
+		}
+
 		public override void SpawnSetup(Map map, bool respawningAfterLoad)
 		{
 			base.SpawnSetup(map, respawningAfterLoad);
@@ -152,17 +175,14 @@ namespace RimWorld
 			initiatableComp = GetComp<CompInitiatable>();
 			powerComp = GetComp<CompPowerTrader>();
 			mannableComp = GetComp<CompMannable>();
+			interactableComp = GetComp<CompInteractable>();
+			refuelableComp = GetComp<CompRefuelable>();
+			powerCellComp = GetComp<CompMechPowerCell>();
+			hackableComp = GetComp<CompHackable>();
 			if (!respawningAfterLoad)
 			{
 				top.SetRotationFromOrientation();
-				burstCooldownTicksLeft = def.building.turretInitialCooldownTime.SecondsToTicks();
 			}
-		}
-
-		public override void PostMake()
-		{
-			base.PostMake();
-			MakeGun();
 		}
 
 		public override void DeSpawn(DestroyMode mode = DestroyMode.Vanish)
@@ -179,19 +199,29 @@ namespace RimWorld
 			Scribe_Values.Look(ref burstWarmupTicksLeft, "burstWarmupTicksLeft", 0);
 			Scribe_TargetInfo.Look(ref currentTargetInt, "currentTarget");
 			Scribe_Values.Look(ref holdFire, "holdFire", defaultValue: false);
+			Scribe_Values.Look(ref burstActivated, "burstActivated", defaultValue: false);
 			Scribe_Deep.Look(ref gun, "gun");
 			BackCompatibility.PostExposeData(this);
 			if (Scribe.mode == LoadSaveMode.PostLoadInit)
 			{
-				UpdateGunVerbs();
+				if (gun == null)
+				{
+					Log.Error("Turret had null gun after loading. Recreating.");
+					MakeGun();
+				}
+				else
+				{
+					UpdateGunVerbs();
+				}
 			}
 		}
 
-		public override bool ClaimableBy(Faction by)
+		public override AcceptanceReport ClaimableBy(Faction by)
 		{
-			if (!base.ClaimableBy(by))
+			AcceptanceReport result = base.ClaimableBy(by);
+			if (!result.Accepted)
 			{
-				return false;
+				return result;
 			}
 			if (mannableComp != null && mannableComp.ManningPawn != null)
 			{
@@ -223,7 +253,7 @@ namespace RimWorld
 				Messages.Message("MessageTargetBelowMinimumRange".Translate(), this, MessageTypeDefOf.RejectInput, historical: false);
 				return;
 			}
-			if ((targ.Cell - base.Position).LengthHorizontal > AttackVerb.verbProps.range)
+			if ((targ.Cell - base.Position).LengthHorizontal > AttackVerb.EffectiveRange)
 			{
 				Messages.Message("MessageTargetBeyondMaximumRange".Translate(), this, MessageTypeDefOf.RejectInput, historical: false);
 				return;
@@ -242,7 +272,7 @@ namespace RimWorld
 			}
 		}
 
-		public override void Tick()
+		protected override void Tick()
 		{
 			base.Tick();
 			if (CanExtractShell && MannedByColonist)
@@ -265,17 +295,18 @@ namespace RimWorld
 			{
 				ResetForcedTarget();
 			}
-			if (Active && (mannableComp == null || mannableComp.MannedNow) && !stunner.Stunned && base.Spawned)
+			if (Active && (mannableComp == null || mannableComp.MannedNow) && !base.IsStunned && base.Spawned)
 			{
 				GunCompEq.verbTracker.VerbsTick();
 				if (AttackVerb.state == VerbState.Bursting)
 				{
 					return;
 				}
+				burstActivated = false;
 				if (WarmingUp)
 				{
 					burstWarmupTicksLeft--;
-					if (burstWarmupTicksLeft == 0)
+					if (burstWarmupTicksLeft <= 0)
 					{
 						BeginBurst();
 					}
@@ -297,7 +328,7 @@ namespace RimWorld
 							mote.offsetZ = -0.8f;
 						}
 					}
-					if (burstCooldownTicksLeft <= 0 && this.IsHashIntervalTick(10))
+					if (burstCooldownTicksLeft <= 0 && this.IsHashIntervalTick(15))
 					{
 						TryStartShootSomething(canBeginBurstImmediately: true);
 					}
@@ -310,7 +341,13 @@ namespace RimWorld
 			}
 		}
 
-		protected void TryStartShootSomething(bool canBeginBurstImmediately)
+		public void TryActivateBurst()
+		{
+			burstActivated = true;
+			TryStartShootSomething(canBeginBurstImmediately: true);
+		}
+
+		public void TryStartShootSomething(bool canBeginBurstImmediately)
 		{
 			if (progressBarEffecter != null)
 			{
@@ -331,15 +368,16 @@ namespace RimWorld
 			{
 				currentTargetInt = TryFindNewTarget();
 			}
-			if (!isValid && currentTargetInt.IsValid)
+			if (!isValid && currentTargetInt.IsValid && def.building.playTargetAcquiredSound)
 			{
 				SoundDefOf.TurretAcquireTarget.PlayOneShot(new TargetInfo(base.Position, base.Map));
 			}
 			if (currentTargetInt.IsValid)
 			{
-				if (def.building.turretBurstWarmupTime > 0f)
+				float randomInRange = def.building.turretBurstWarmupTime.RandomInRange;
+				if (randomInRange > 0f)
 				{
-					burstWarmupTicksLeft = def.building.turretBurstWarmupTime.SecondsToTicks();
+					burstWarmupTicksLeft = randomInRange.SecondsToTicks();
 				}
 				else if (canBeginBurstImmediately)
 				{
@@ -356,11 +394,11 @@ namespace RimWorld
 			}
 		}
 
-		protected LocalTargetInfo TryFindNewTarget()
+		public virtual LocalTargetInfo TryFindNewTarget()
 		{
 			IAttackTargetSearcher attackTargetSearcher = TargSearcher();
 			Faction faction = attackTargetSearcher.Thing.Faction;
-			float range = AttackVerb.verbProps.range;
+			float range = AttackVerb.EffectiveRange;
 			if (Rand.Value < 0.5f && AttackVerb.ProjectileFliesOverhead() && faction.HostileTo(Faction.OfPlayer) && base.Map.listerBuildings.allBuildingsColonist.Where(delegate(Building x)
 			{
 				float num = AttackVerb.verbProps.EffectiveMinRange(x, this);
@@ -376,7 +414,7 @@ namespace RimWorld
 				targetScanFlags |= TargetScanFlags.NeedLOSToAll;
 				targetScanFlags |= TargetScanFlags.LOSBlockableByGas;
 			}
-			if (AttackVerb.IsIncendiary())
+			if (AttackVerb.IsIncendiary_Ranged())
 			{
 				targetScanFlags |= TargetScanFlags.NeedNonBurning;
 			}
@@ -398,9 +436,12 @@ namespace RimWorld
 
 		private bool IsValidTarget(Thing t)
 		{
-			Pawn pawn = t as Pawn;
-			if (pawn != null)
+			if (t is Pawn pawn)
 			{
+				if (base.Faction == Faction.OfPlayer && pawn.IsPrisoner)
+				{
+					return false;
+				}
 				if (AttackVerb.ProjectileFliesOverhead())
 				{
 					RoofDef roofDef = base.Map.roofGrid.RoofAt(t.Position);
@@ -421,18 +462,18 @@ namespace RimWorld
 			return true;
 		}
 
-		protected void BeginBurst()
+		protected virtual void BeginBurst()
 		{
 			AttackVerb.TryStartCastOn(CurrentTarget);
 			OnAttackedTarget(CurrentTarget);
 		}
 
-		protected void BurstComplete()
+		protected virtual void BurstComplete()
 		{
 			burstCooldownTicksLeft = BurstCooldownTime().SecondsToTicks();
 		}
 
-		protected float BurstCooldownTime()
+		protected virtual float BurstCooldownTime()
 		{
 			if (def.building.turretBurstCooldownTime >= 0f)
 			{
@@ -476,23 +517,33 @@ namespace RimWorld
 			return stringBuilder.ToString().TrimEndNewlines();
 		}
 
-		public override void Draw()
+		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
 		{
-			top.DrawTurret();
-			base.Draw();
+			Vector3 drawOffset = Vector3.zero;
+			float angleOffset = 0f;
+			if (IsMortar)
+			{
+				EquipmentUtility.Recoil(def.building.turretGunDef, (Verb_LaunchProjectile)AttackVerb, out drawOffset, out angleOffset, top.CurRotation);
+			}
+			top.DrawTurret(drawLoc, drawOffset, angleOffset);
+			base.DrawAt(drawLoc, flip);
 		}
 
 		public override void DrawExtraSelectionOverlays()
 		{
-			float range = AttackVerb.verbProps.range;
-			if (range < 90f)
-			{
-				GenDraw.DrawRadiusRing(base.Position, range);
-			}
+			base.DrawExtraSelectionOverlays();
+			float effectiveRange = AttackVerb.EffectiveRange;
 			float num = AttackVerb.verbProps.EffectiveMinRange(allowAdjacentShot: true);
-			if (num < 90f && num > 0.1f)
+			if (num < effectiveRange)
 			{
-				GenDraw.DrawRadiusRing(base.Position, num);
+				if (effectiveRange < 90f)
+				{
+					GenDraw.DrawRadiusRing(base.Position, effectiveRange);
+				}
+				if (num < 90f && num > 0.1f)
+				{
+					GenDraw.DrawRadiusRing(base.Position, num);
+				}
 			}
 			if (WarmingUp)
 			{
@@ -540,38 +591,53 @@ namespace RimWorld
 					yield return item;
 				}
 			}
-			if (CanSetForcedTarget)
+			if (!HideForceTargetGizmo)
 			{
-				Command_VerbTarget command_VerbTarget = new Command_VerbTarget();
-				command_VerbTarget.defaultLabel = "CommandSetForceAttackTarget".Translate();
-				command_VerbTarget.defaultDesc = "CommandSetForceAttackTargetDesc".Translate();
-				command_VerbTarget.icon = ContentFinder<Texture2D>.Get("UI/Commands/Attack");
-				command_VerbTarget.verb = AttackVerb;
-				command_VerbTarget.hotKey = KeyBindingDefOf.Misc4;
-				command_VerbTarget.drawRadius = false;
-				if (base.Spawned && IsMortarOrProjectileFliesOverhead && base.Position.Roofed(base.Map))
+				if (CanSetForcedTarget)
 				{
-					command_VerbTarget.Disable("CannotFire".Translate() + ": " + "Roofed".Translate().CapitalizeFirst());
+					Command_VerbTarget command_VerbTarget = new Command_VerbTarget();
+					command_VerbTarget.defaultLabel = "CommandSetForceAttackTarget".Translate();
+					command_VerbTarget.defaultDesc = "CommandSetForceAttackTargetDesc".Translate();
+					command_VerbTarget.icon = ContentFinder<Texture2D>.Get("UI/Commands/Attack");
+					command_VerbTarget.verb = AttackVerb;
+					command_VerbTarget.hotKey = KeyBindingDefOf.Misc4;
+					command_VerbTarget.drawRadius = false;
+					command_VerbTarget.requiresAvailableVerb = false;
+					if (base.Spawned)
+					{
+						if (IsMortarOrProjectileFliesOverhead && base.Position.Roofed(base.Map))
+						{
+							command_VerbTarget.Disable("CannotFire".Translate() + ": " + "Roofed".Translate().CapitalizeFirst());
+						}
+						else
+						{
+							float curWeatherMaxRangeCap = base.Map.weatherManager.CurWeatherMaxRangeCap;
+							if (curWeatherMaxRangeCap > 0f && curWeatherMaxRangeCap < AttackVerb.verbProps.minRange)
+							{
+								command_VerbTarget.Disable("CannotFire".Translate() + ": " + base.Map.weatherManager.curWeather.LabelCap);
+							}
+						}
+					}
+					yield return command_VerbTarget;
 				}
-				yield return command_VerbTarget;
-			}
-			if (forcedTarget.IsValid)
-			{
-				Command_Action command_Action2 = new Command_Action();
-				command_Action2.defaultLabel = "CommandStopForceAttack".Translate();
-				command_Action2.defaultDesc = "CommandStopForceAttackDesc".Translate();
-				command_Action2.icon = ContentFinder<Texture2D>.Get("UI/Commands/Halt");
-				command_Action2.action = delegate
+				if (forcedTarget.IsValid)
 				{
-					ResetForcedTarget();
-					SoundDefOf.Tick_Low.PlayOneShotOnCamera();
-				};
-				if (!forcedTarget.IsValid)
-				{
-					command_Action2.Disable("CommandStopAttackFailNotForceAttacking".Translate());
+					Command_Action command_Action2 = new Command_Action();
+					command_Action2.defaultLabel = "CommandStopForceAttack".Translate();
+					command_Action2.defaultDesc = "CommandStopForceAttackDesc".Translate();
+					command_Action2.icon = ContentFinder<Texture2D>.Get("UI/Commands/Halt");
+					command_Action2.action = delegate
+					{
+						ResetForcedTarget();
+						SoundDefOf.Tick_Low.PlayOneShotOnCamera();
+					};
+					if (!forcedTarget.IsValid)
+					{
+						command_Action2.Disable("CommandStopAttackFailNotForceAttacking".Translate());
+					}
+					command_Action2.hotKey = KeyBindingDefOf.Misc5;
+					yield return command_Action2;
 				}
-				command_Action2.hotKey = KeyBindingDefOf.Misc5;
-				yield return command_Action2;
 			}
 			if (!CanToggleHoldFire)
 			{

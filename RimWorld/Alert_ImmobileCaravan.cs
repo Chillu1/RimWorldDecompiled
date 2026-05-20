@@ -13,12 +13,11 @@ namespace RimWorld
 			get
 			{
 				immobileCaravansResult.Clear();
-				List<Caravan> caravans = Find.WorldObjects.Caravans;
-				for (int i = 0; i < caravans.Count; i++)
+				foreach (Caravan caravan in Find.WorldObjects.Caravans)
 				{
-					if (caravans[i].IsPlayerControlled && caravans[i].ImmobilizedByMass)
+					if (caravan.Shuttle == null && caravan.IsPlayerControlled && caravan.ImmobilizedByMass)
 					{
-						immobileCaravansResult.Add(caravans[i]);
+						immobileCaravansResult.Add(caravan);
 					}
 				}
 				return immobileCaravansResult;

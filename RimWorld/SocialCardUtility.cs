@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,7 @@ using Verse.Sound;
 
 namespace RimWorld
 {
+	[StaticConstructorOnStartup]
 	public static class SocialCardUtility
 	{
 		private class CachedSocialTabEntry
@@ -19,6 +21,8 @@ namespace RimWorld
 			public int opinionOfMe;
 
 			public List<PawnRelationDef> relations = new List<PawnRelationDef>();
+
+			public PregnancyApproach? pregnancyApproach;
 		}
 
 		private class CachedSocialTabEntryComparer : IComparer<CachedSocialTabEntry>
@@ -64,11 +68,15 @@ namespace RimWorld
 
 		private static Vector2 listScrollPosition = Vector2.zero;
 
+		private static Vector2 ideoExposureScrollPosition = Vector2.zero;
+
 		private static float listScrollViewHeight = 0f;
 
 		private static bool showAllRelations;
 
 		private static List<CachedSocialTabEntry> cachedEntries = new List<CachedSocialTabEntry>();
+
+		private static List<Precept_Role> cachedRoles = new List<Precept_Role>();
 
 		private static Pawn cachedForPawn;
 
@@ -86,31 +94,88 @@ namespace RimWorld
 
 		private const float RowLeftRightPadding = 5f;
 
+		private const float IconSize = 32f;
+
 		private static CachedSocialTabEntryComparer CachedEntriesComparer = new CachedSocialTabEntryComparer();
+
+		private static readonly Texture2D BarFullTexHor = SolidColorMaterials.NewSolidColorTexture(GenUI.FillableBar_Green);
+
+		private static readonly Vector2 RoleChangeButtonSize = new Vector2(115f, 28f);
+
+		private const float IdeoExposurePctWidth = 40f;
+
+		private const float IdeoExposureWidth = 93f;
+
+		private const float IdeoExposureHeight = 36f;
+
+		private const float IdeoExposureMaxRowsBeforeScroll = 2.5f;
+
+		private const float IdeoExposureHighlightMargin = 4f;
+
+		private const float IdeoExposureDetailSpace = 30f;
+
+		private static float ideoChooseAge = -1f;
 
 		private static HashSet<Pawn> tmpToCache = new HashSet<Pawn>();
 
+		private static List<Pawn> pawnsForSocialInfoTmp = new List<Pawn>();
+
+		public static List<Pair<Trait, MemeDef>> tmpAgreeableMemeTraitPairs = new List<Pair<Trait, MemeDef>>();
+
+		public static List<Pair<Trait, MemeDef>> tmpDisagreeableMemeTraitPairs = new List<Pair<Trait, MemeDef>>();
+
+		private static float IdeoligionChooseAge
+		{
+			get
+			{
+				if (ideoChooseAge == -1f)
+				{
+					ideoChooseAge = ThingDefOf.Human.race.lifeStageAges.First((LifeStageAge lsa) => lsa.def == LifeStageDefOf.HumanlikeChild).minAge;
+				}
+				return ideoChooseAge;
+			}
+		}
+
 		public static void DrawSocialCard(Rect rect, Pawn pawn)
 		{
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			Text.Font = GameFont.Small;
 			float num = (Prefs.DevMode ? 20f : 15f);
 			Rect rect2 = new Rect(0f, num, rect.width, rect.height - num).ContractedBy(10f);
-			Rect rect3 = rect2;
-			Rect rect4 = rect2;
-			rect3.height *= 0.63f;
-			rect4.y = rect3.yMax + 17f;
-			rect4.yMax = rect2.yMax;
+			Rect rect3 = new Rect(0f, 5f, rect.width, 40f);
+			Rect rect4 = new Rect(0f, 40f, rect.width, 40f);
+			Rect rect5 = rect2;
+			Rect rect6 = rect2;
+			if (ModsConfig.IdeologyActive && !pawn.Dead && pawn.Ideo != null)
+			{
+				if (!pawn.Ideo.classicMode)
+				{
+					rect5.yMin += 40f;
+					DrawPawnCertainty(pawn, rect3);
+				}
+				else
+				{
+					rect4.y = rect3.y;
+				}
+				rect5.yMin += 45f;
+				Precept_Role precept_Role = pawn.Ideo?.GetRole(pawn);
+				string label = ((precept_Role != null) ? precept_Role.LabelForPawn(pawn) : ((string)"NoRoleAssigned".Translate()));
+				DrawPawnRole(pawn, precept_Role, label, rect4);
+				DrawPawnRoleSelection(pawn, rect4);
+			}
+			rect5.height *= 0.63f;
+			rect6.y = rect5.yMax + 17f;
+			rect6.yMax = rect2.yMax;
 			GUI.color = new Color(1f, 1f, 1f, 0.5f);
-			Widgets.DrawLineHorizontal(0f, (rect3.yMax + rect4.y) / 2f, rect.width);
+			Widgets.DrawLineHorizontal(0f, (rect5.yMax + rect6.y) / 2f, rect.width);
 			GUI.color = Color.white;
 			if (Prefs.DevMode && !pawn.Dead)
 			{
-				DrawDebugOptions(new Rect(5f, 5f, rect.width, 22f), pawn);
+				DrawDebugOptions(new Rect(5f, rect5.yMin - 20f, rect.width, 22f), pawn);
 			}
-			DrawRelationsAndOpinions(rect3, pawn);
-			InteractionCardUtility.DrawInteractionsLog(rect4, pawn, Find.PlayLog.AllEntries, 12);
-			GUI.EndGroup();
+			DrawRelationsAndOpinions(rect5, pawn);
+			InteractionCardUtility.DrawInteractionsLog(rect6, pawn, Find.PlayLog.AllEntries, 12);
+			Widgets.EndGroup();
 		}
 
 		private static void CheckRecache(Pawn selPawnForSocialInfo)
@@ -133,29 +198,24 @@ namespace RimWorld
 					tmpToCache.Add(relatedPawn);
 				}
 			}
-			List<Pawn> list = null;
-			if (selPawnForSocialInfo.MapHeld != null)
+			List<Pawn> list = PawnsForSocialInfo(selPawnForSocialInfo);
+			for (int i = 0; i < list.Count; i++)
 			{
-				list = selPawnForSocialInfo.MapHeld.mapPawns.AllPawns;
-			}
-			else if (selPawnForSocialInfo.IsCaravanMember())
-			{
-				list = selPawnForSocialInfo.GetCaravan().PawnsListForReading;
-			}
-			if (list != null)
-			{
-				for (int i = 0; i < list.Count; i++)
+				Pawn pawn = list[i];
+				if (!tmpToCache.Contains(pawn))
 				{
-					Pawn pawn = list[i];
-					if (pawn.RaceProps.Humanlike && pawn != selPawnForSocialInfo && ShouldShowPawnRelations(pawn, selPawnForSocialInfo) && !tmpToCache.Contains(pawn) && (pawn.relations.OpinionOf(selPawnForSocialInfo) != 0 || selPawnForSocialInfo.relations.OpinionOf(pawn) != 0))
-					{
-						RecacheEntry(pawn, selPawnForSocialInfo);
-						tmpToCache.Add(pawn);
-					}
+					RecacheEntry(pawn, selPawnForSocialInfo);
+					tmpToCache.Add(pawn);
 				}
 			}
 			cachedEntries.RemoveAll((CachedSocialTabEntry x) => !tmpToCache.Contains(x.otherPawn));
 			cachedEntries.Sort(CachedEntriesComparer);
+			cachedRoles.Clear();
+			if (selPawnForSocialInfo.Ideo != null)
+			{
+				cachedRoles.AddRange(RitualUtility.AllRolesForPawn(selPawnForSocialInfo));
+				cachedRoles.SortBy((Precept_Role x) => x.def.displayOrderInImpact);
+			}
 		}
 
 		private static bool ShouldShowPawnRelations(Pawn pawn, Pawn selPawnForSocialInfo)
@@ -168,11 +228,41 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (pawn.relations.hidePawnRelations || selPawnForSocialInfo.relations.hidePawnRelations)
+			{
+				return false;
+			}
 			if (pawn.relations.everSeenByPlayer)
 			{
 				return true;
 			}
 			return false;
+		}
+
+		public static List<Pawn> PawnsForSocialInfo(Pawn pawn)
+		{
+			pawnsForSocialInfoTmp.Clear();
+			List<Pawn> list = null;
+			if (pawn.MapHeld != null)
+			{
+				list = pawn.MapHeld.mapPawns.AllPawns;
+			}
+			else if (pawn.IsCaravanMember())
+			{
+				list = pawn.GetCaravan().PawnsListForReading;
+			}
+			if (list != null)
+			{
+				for (int i = 0; i < list.Count; i++)
+				{
+					Pawn pawn2 = list[i];
+					if (pawn2.RaceProps.Humanlike && pawn2 != pawn && ShouldShowPawnRelations(pawn2, pawn) && (pawn2.relations.OpinionOf(pawn) != 0 || pawn.relations.OpinionOf(pawn2) != 0))
+					{
+						pawnsForSocialInfoTmp.AddUnique(pawn2);
+					}
+				}
+			}
+			return pawnsForSocialInfoTmp;
 		}
 
 		private static void RecacheEntry(Pawn pawn, Pawn selPawnForSocialInfo, int? opinionOfMe = null, int? opinionOfOtherPawn = null)
@@ -200,11 +290,361 @@ namespace RimWorld
 			entry.opinionOfMe = (opinionOfMe.HasValue ? opinionOfMe.Value : entry.otherPawn.relations.OpinionOf(selPawnForSocialInfo));
 			entry.opinionOfOtherPawn = (opinionOfOtherPawn.HasValue ? opinionOfOtherPawn.Value : selPawnForSocialInfo.relations.OpinionOf(entry.otherPawn));
 			entry.relations.Clear();
+			bool flag = false;
 			foreach (PawnRelationDef relation in selPawnForSocialInfo.GetRelations(entry.otherPawn))
 			{
 				entry.relations.Add(relation);
+				if (LovePartnerRelationUtility.IsLovePartnerRelation(relation))
+				{
+					flag = true;
+				}
+				if ((selPawnForSocialInfo.IsMutant && selPawnForSocialInfo.mutant.Def.incapableOfSocialInteractions) || (entry.otherPawn.IsMutant && entry.otherPawn.mutant.Def.incapableOfSocialInteractions))
+				{
+					flag = false;
+				}
 			}
 			entry.relations.Sort((PawnRelationDef a, PawnRelationDef b) => b.importance.CompareTo(a.importance));
+			if (Current.ProgramState == ProgramState.Playing && ModsConfig.BiotechActive && flag)
+			{
+				entry.pregnancyApproach = selPawnForSocialInfo.relations.GetPregnancyApproachForPartner(entry.otherPawn);
+			}
+			else
+			{
+				entry.pregnancyApproach = null;
+			}
+		}
+
+		public static void DrawPawnCertainty(Pawn pawn, Rect rect)
+		{
+			tmpAgreeableMemeTraitPairs.Clear();
+			tmpDisagreeableMemeTraitPairs.Clear();
+			float num = rect.x + 17f;
+			Rect rect2 = new Rect(num, rect.y + rect.height / 2f - 16f, 32f, 32f);
+			pawn.Ideo.DrawIcon(rect2);
+			num += 42f;
+			Text.Anchor = TextAnchor.MiddleLeft;
+			Rect rect3 = new Rect(num, rect.y, rect.width / 2f - num, rect.height);
+			Widgets.Label(rect3, pawn.Ideo.name.Truncate(rect3.width));
+			Text.Anchor = TextAnchor.UpperLeft;
+			num += rect3.width + 10f;
+			Rect rect4 = new Rect(rect2.x, rect.y + rect.height / 2f - 16f, 0f, 32f);
+			Rect rect5 = new Rect(num, rect.y + rect.height / 2f - 16f, rect.width - num - 26f, 32f);
+			rect4.xMax = rect5.xMax;
+			if (Mouse.IsOver(rect4))
+			{
+				Widgets.DrawHighlight(rect4);
+				string text = pawn.ideo.CertaintyChangePerDay.ToStringPercent();
+				if (pawn.ideo.CertaintyChangePerDay >= 0f)
+				{
+					text = "+" + text;
+				}
+				TaggedString tip = "CertaintyInIdeo".Translate(pawn.Named("PAWN"), pawn.Ideo.Named("IDEO")) + ": " + pawn.ideo.Certainty.ToStringPercent() + "\n\n" + "CertaintyChangePerDay".Translate() + ": " + text + "\n\n";
+				float statValue = pawn.GetStatValue(StatDefOf.CertaintyLossFactor);
+				if (statValue != 1f)
+				{
+					tip += StatDefOf.CertaintyLossFactor.LabelCap + ": " + statValue.ToStringPercent();
+					foreach (Trait allTrait in pawn.story.traits.allTraits)
+					{
+						if (!allTrait.Suppressed)
+						{
+							float num2 = allTrait.MultiplierOfStat(StatDefOf.CertaintyLossFactor);
+							if (num2 != 1f)
+							{
+								tip += "\n -  " + "AbilityIdeoConvertBreakdownTrait".Translate(allTrait.LabelCap.Named("TRAIT")) + ": x" + num2.ToStringPercent();
+							}
+						}
+					}
+					foreach (Precept item in pawn.Ideo.PreceptsListForReading)
+					{
+						if (item.def.statFactors != null)
+						{
+							float statFactorFromList = item.def.statFactors.GetStatFactorFromList(StatDefOf.CertaintyLossFactor);
+							if (statFactorFromList != 1f)
+							{
+								tip += "\n -  " + "AbilityIdeoConvertBreakdownPercept".Translate(item.LabelCap.Named("PRECEPT")) + ": x" + statFactorFromList.ToStringPercent();
+							}
+						}
+					}
+					tip += "\n\n";
+				}
+				string text2 = ConversionUtility.GetCertaintyReductionFactorsDescription(pawn).Resolve();
+				if (!text2.NullOrEmpty())
+				{
+					tip += text2 + "\n\n";
+				}
+				if (pawn.story.traits != null)
+				{
+					string text3 = string.Empty;
+					foreach (Trait allTrait2 in pawn.story.traits.allTraits)
+					{
+						if (allTrait2.Suppressed)
+						{
+							continue;
+						}
+						List<MemeDef> affectedMemes = allTrait2.CurrentData.GetAffectedMemes(allTrait2.def, agreeable: true);
+						for (int i = 0; i < affectedMemes.Count; i++)
+						{
+							if (pawn.Ideo.HasMeme(affectedMemes[i]))
+							{
+								tmpAgreeableMemeTraitPairs.Add(new Pair<Trait, MemeDef>(allTrait2, affectedMemes[i]));
+							}
+						}
+						List<MemeDef> affectedMemes2 = allTrait2.CurrentData.GetAffectedMemes(allTrait2.def, agreeable: false);
+						for (int j = 0; j < affectedMemes2.Count; j++)
+						{
+							if (pawn.Ideo.HasMeme(affectedMemes2[j]))
+							{
+								tmpDisagreeableMemeTraitPairs.Add(new Pair<Trait, MemeDef>(allTrait2, affectedMemes2[j]));
+							}
+						}
+					}
+					tmpAgreeableMemeTraitPairs.OrderBy((Pair<Trait, MemeDef> x) => x.First.Label);
+					tmpDisagreeableMemeTraitPairs.OrderBy((Pair<Trait, MemeDef> x) => x.First.Label);
+					if (tmpAgreeableMemeTraitPairs.Any())
+					{
+						text3 += "ConversionWeakerDueToTraitAgreements".Translate() + ":\n" + tmpAgreeableMemeTraitPairs.Select((Pair<Trait, MemeDef> x) => x.First.LabelCap + "/" + x.Second.LabelCap).ToLineList("  - ");
+					}
+					if (tmpDisagreeableMemeTraitPairs.Any())
+					{
+						if (!text3.NullOrEmpty())
+						{
+							text3 += "\n\n";
+						}
+						text3 += "ConversionStrongerDueToTraitAgreements".Translate() + ":\n" + tmpDisagreeableMemeTraitPairs.Select((Pair<Trait, MemeDef> x) => x.First.LabelCap + "/" + x.Second.LabelCap).ToLineList("  - ");
+					}
+					if (!text3.NullOrEmpty())
+					{
+						tip += text3 + "\n\n";
+					}
+				}
+				string text4 = "MoodChangeRate".Translate() + ": ";
+				foreach (CurvePoint point in ConversionTuning.CertaintyPerDayByMoodCurve.Points)
+				{
+					string text5 = point.y.ToStringPercent();
+					if (point.y >= 0f)
+					{
+						text5 = "+" + text5;
+					}
+					text4 += "\n -  " + "Mood".Translate() + " " + point.x.ToStringPercent() + ": " + "PerDay".Translate(text5);
+				}
+				tip += text4.Colorize(Color.grey);
+				TooltipHandler.TipRegion(rect4, () => tip.Resolve(), 10218219);
+			}
+			if (Widgets.ButtonInvisible(rect4))
+			{
+				IdeoUIUtility.OpenIdeoInfo(pawn.ideo.Ideo);
+			}
+			Widgets.FillableBar(rect5.ContractedBy(4f), pawn.ideo.Certainty, BarFullTexHor);
+		}
+
+		public static void DrawPawnRole(Pawn pawn, Precept_Role role, string label, Rect rect, bool drawLine = true)
+		{
+			float num = rect.x + 17f;
+			if (role != null)
+			{
+				float y = rect.y + rect.height / 2f - 16f;
+				Rect outerRect = rect;
+				outerRect.x = num;
+				outerRect.y = y;
+				outerRect.width = 32f;
+				outerRect.height = 32f;
+				GUI.color = role.ideo.Color;
+				Widgets.DrawTextureFitted(outerRect, role.Icon, 1f);
+				GUI.color = Color.white;
+				num += 42f;
+			}
+			else
+			{
+				GUI.color = Color.gray;
+			}
+			Rect rect2 = new Rect(rect.x + 17f, rect.y + rect.height / 2f - 16f, rect.width - num - RoleChangeButtonSize.x, 32f);
+			Rect rect3 = rect;
+			rect3.xMin = num;
+			Text.Anchor = TextAnchor.MiddleLeft;
+			Widgets.Label(rect3, label);
+			Text.Anchor = TextAnchor.UpperLeft;
+			GUI.color = Color.white;
+			if (Mouse.IsOver(rect2))
+			{
+				string roleDesc = "RoleDesc".Translate().Resolve();
+				if (role != null)
+				{
+					roleDesc = roleDesc + "\n\n" + role.LabelForPawn(pawn) + ": " + role.GetTip();
+				}
+				Widgets.DrawHighlight(rect2);
+				TipSignal tip = new TipSignal(() => roleDesc, pawn.thingIDNumber * 39);
+				TooltipHandler.TipRegion(rect2, tip);
+			}
+			if (drawLine)
+			{
+				GUI.color = new Color(1f, 1f, 1f, 0.5f);
+				Widgets.DrawLineHorizontal(0f, rect.yMax, rect.width);
+				GUI.color = Color.white;
+			}
+		}
+
+		public static void DrawPawnRoleSelection(Pawn pawn, Rect rect)
+		{
+			if (!pawn.IsFreeNonSlaveColonist)
+			{
+				return;
+			}
+			Precept_Role precept_Role = pawn.Ideo?.GetRole(pawn);
+			Ideo primaryIdeo = Faction.OfPlayer.ideos.PrimaryIdeo;
+			Precept_Ritual roleChangeRitual = (Precept_Ritual)(pawn.Ideo?.GetPrecept(PreceptDefOf.RoleChange));
+			TargetInfo ritualTarget = roleChangeRitual.targetFilter.BestTarget(pawn, TargetInfo.Invalid);
+			bool flag = cachedRoles.Any() && pawn.Ideo != null;
+			if (!flag)
+			{
+				GUI.color = Color.gray;
+			}
+			float y = rect.y + rect.height / 2f - 14f;
+			Rect rect2 = new Rect(rect.width - 150f, y, RoleChangeButtonSize.x, RoleChangeButtonSize.y);
+			rect2.xMax = rect.width - 26f - 4f;
+			if (Widgets.ButtonText(rect2, "ChooseRole".Translate() + "...", drawBackground: true, doMouseoverSound: true, flag))
+			{
+				if (ritualTarget.IsValid)
+				{
+					List<FloatMenuOption> list = new List<FloatMenuOption>();
+					if (precept_Role != null)
+					{
+						list.Add(new FloatMenuOption("RemoveCurrentRole".Translate(), delegate
+						{
+							Dialog_BeginRitual dialog_BeginRitual = (Dialog_BeginRitual)roleChangeRitual.GetRitualBeginWindow(ritualTarget, null, null, pawn, new Dictionary<string, Pawn> { { "role_changer", pawn } });
+							dialog_BeginRitual.SetRoleToChangeTo(null);
+							Find.WindowStack.Add(dialog_BeginRitual);
+						}, Widgets.PlaceholderIconTex, Color.white));
+					}
+					foreach (Precept_Role cachedRole in cachedRoles)
+					{
+						Precept_Role newRole = cachedRole;
+						if (newRole != precept_Role && newRole.Active && newRole.RequirementsMet(pawn) && (!newRole.def.leaderRole || pawn.Ideo == primaryIdeo))
+						{
+							string text = newRole.LabelForPawn(pawn).CapitalizeFirst();
+							if (!pawn.Ideo.classicMode)
+							{
+								text = text + " (" + newRole.def.label + ")";
+							}
+							list.Add(new FloatMenuOption(text, delegate
+							{
+								Dialog_BeginRitual dialog_BeginRitual = (Dialog_BeginRitual)roleChangeRitual.GetRitualBeginWindow(ritualTarget, null, null, pawn, new Dictionary<string, Pawn> { { "role_changer", pawn } });
+								dialog_BeginRitual.SetRoleToChangeTo(newRole);
+								Find.WindowStack.Add(dialog_BeginRitual);
+							}, newRole.Icon, newRole.ideo.Color, MenuOptionPriority.Default, DrawTooltip)
+							{
+								orderInPriority = newRole.def.displayOrderInImpact
+							});
+						}
+						void DrawTooltip(Rect r)
+						{
+							TipSignal tip = new TipSignal(() => newRole.GetTip(), pawn.thingIDNumber * 39);
+							TooltipHandler.TipRegion(r, tip);
+						}
+					}
+					foreach (Precept_Role cachedRole2 in cachedRoles)
+					{
+						if ((cachedRole2 != precept_Role && !cachedRole2.RequirementsMet(pawn)) || !cachedRole2.Active)
+						{
+							string text2 = cachedRole2.LabelForPawn(pawn) + " (" + cachedRole2.def.label + ")";
+							if (cachedRole2.ChosenPawnSingle() != null)
+							{
+								text2 = text2 + ": " + cachedRole2.ChosenPawnSingle().LabelShort;
+							}
+							else if (!cachedRole2.RequirementsMet(pawn))
+							{
+								text2 = text2 + ": " + cachedRole2.GetFirstUnmetRequirement(pawn).GetLabel(cachedRole2).CapitalizeFirst();
+							}
+							else if (!cachedRole2.Active && cachedRole2.def.activationBelieverCount > cachedRole2.ideo.ColonistBelieverCountCached)
+							{
+								text2 += ": " + "InactiveRoleRequiresMoreBelievers".Translate(cachedRole2.def.activationBelieverCount, cachedRole2.ideo.memberName, cachedRole2.ideo.ColonistBelieverCountCached).CapitalizeFirst();
+							}
+							list.Add(new FloatMenuOption(text2, null, cachedRole2.Icon, cachedRole2.ideo.Color)
+							{
+								orderInPriority = cachedRole2.def.displayOrderInImpact
+							});
+						}
+					}
+					Find.WindowStack.Add(new FloatMenu(list));
+				}
+				else
+				{
+					Messages.Message((Find.IdeoManager.classicMode ? "AbilityDisabledNoRitualSpot" : "AbilityDisabledNoAltarIdeogramOrRitualsSpot").Translate(), pawn, MessageTypeDefOf.RejectInput);
+				}
+			}
+			GUI.color = Color.white;
+		}
+
+		private static void DrawIdeoExposure(Pawn baby, float rectWidth, out float heightOffset)
+		{
+			List<Pawn_IdeoTracker.IdeoExposureWeight> babyIdeoExposureSorted = baby.ideo.BabyIdeoExposureSorted;
+			float babyIdeoExposureTotal = baby.ideo.BabyIdeoExposureTotal;
+			int num = babyIdeoExposureSorted?.Count ?? 0;
+			float num2 = rectWidth - 20f - 18f;
+			int num3 = Mathf.FloorToInt(num2 / 93f);
+			int num4 = Mathf.FloorToInt((num - 1) / num3) + 1;
+			float num5 = ((num == 0) ? 90f : (Mathf.Min(num4, 2.5f) * 36f + 10f));
+			Rect rect = new Rect(10f, 10f, num2, 25f + num5 + 10f);
+			GUI.BeginGroup(rect);
+			float curY = 0f;
+			Widgets.ListSeparator(ref curY, num2, "IdeoExposureSectionHeader".Translate().CapitalizeFirst());
+			curY += 4f;
+			TextAnchor anchor = Text.Anchor;
+			Rect rect2 = new Rect(0f, curY, num2, num5);
+			if (num > 0)
+			{
+				float width = (((float)num4 > 2.5f) ? (num2 - 16f) : num2);
+				Widgets.BeginScrollView(viewRect: new Rect(0f, curY, width, (float)num4 * 36f + 10f), outRect: rect2, scrollPosition: ref ideoExposureScrollPosition);
+				Text.Anchor = TextAnchor.MiddleCenter;
+				int num6 = 0;
+				foreach (Pawn_IdeoTracker.IdeoExposureWeight item in babyIdeoExposureSorted)
+				{
+					if (num6 > 0 && num6 % num3 == 0)
+					{
+						curY += 36f;
+					}
+					DrawIdeoExposureItem(baby, item.ideo, rect, item.exposure, babyIdeoExposureTotal, num6 % num3, curY);
+					num6++;
+				}
+				Widgets.EndScrollView();
+			}
+			else
+			{
+				GameFont font = Text.Font;
+				Text.Font = GameFont.Small;
+				Widgets.Label(rect2, "IdeoExposureNoExposure".Translate(baby.Named("BABY")));
+				Text.Font = GameFont.Tiny;
+				rect2.yMin += 30f;
+				Widgets.Label(rect2, "IdeoExposureNoExposureDetail".Translate(baby.Named("BABY"), IdeoligionChooseAge.ToStringDecimalIfSmall().Named("CHILDAGE")).CapitalizeFirst());
+				Text.Font = font;
+			}
+			Text.Anchor = anchor;
+			GUI.EndGroup();
+			heightOffset = rect.height + rect.yMin;
+		}
+
+		private static void DrawIdeoExposureItem(Pawn baby, Ideo ideo, Rect rect, float ideoExposure, float totalExposure, int rowIndex, float yOff)
+		{
+			float num = rect.x + 93f * (float)rowIndex;
+			float f = Mathf.Clamp01(ideoExposure / totalExposure);
+			ideo.DrawIcon(new Rect(num, rect.y + yOff, 32f, 32f).ContractedBy(4f));
+			Widgets.Label(new Rect(num + 32f + 4f, rect.y + yOff, 40f, 32f), f.ToStringPercent());
+			Rect rect2 = new Rect(num, rect.y + yOff, 80f, 32f);
+			if (Mouse.IsOver(rect2))
+			{
+				Widgets.DrawHighlight(rect2);
+				TaggedString taggedString = "IdeoExposurePointsTooltipJoinLikelihood".Translate(baby.Named("BABY"), f.ToStringPercent().Named("PERCENT"), ideo.Named("IDEO")) + "\n\n" + "IdeoExposurePointsTooltipJoinDescription".Translate(baby.Named("BABY"), IdeoligionChooseAge.ToStringDecimalIfSmall().Named("CHILDAGE")) + "\n\n" + "IdeoExposurePointsTooltipExposureDescription".Translate(baby.Named("BABY")) + "\n\n" + "IdeoExposurePointsTooltipIdeoExposure".Translate(ideo.Named("IDEO")) + ": " + ideoExposure.ToStringDecimalIfSmall() + "\n" + "IdeoExposurePointsTooltipTotalExposure".Translate() + ": " + totalExposure.ToStringDecimalIfSmall();
+				TooltipHandler.TipRegion(rect2, taggedString);
+				if (Widgets.ButtonInvisible(rect2))
+				{
+					IdeoUIUtility.OpenIdeoInfo(ideo);
+				}
+			}
+		}
+
+		public static bool AnyRelations(Pawn selPawnForSocialInfo)
+		{
+			CheckRecache(selPawnForSocialInfo);
+			return cachedEntries.Any();
 		}
 
 		public static void DrawRelationsAndOpinions(Rect rect, Pawn selPawnForSocialInfo)
@@ -214,10 +654,12 @@ namespace RimWorld
 			{
 				showAllRelations = false;
 			}
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			Text.Font = GameFont.Small;
 			GUI.color = Color.white;
-			Rect outRect = new Rect(0f, 0f, rect.width, rect.height);
+			bool flag = CanDrawTryRomance(selPawnForSocialInfo);
+			float num = (flag ? (RoleChangeButtonSize.y + 10f) : 0f);
+			Rect outRect = new Rect(0f, 0f, rect.width, rect.height - num);
 			Rect viewRect = new Rect(0f, 0f, rect.width - 16f, listScrollViewHeight);
 			Rect rect2 = rect;
 			if (viewRect.height > outRect.height)
@@ -225,32 +667,93 @@ namespace RimWorld
 				rect2.width -= 16f;
 			}
 			Widgets.BeginScrollView(outRect, ref listScrollPosition, viewRect);
-			float num = 0f;
+			float num2 = 0f;
 			float y = listScrollPosition.y;
-			float num2 = listScrollPosition.y + outRect.height;
+			float num3 = listScrollPosition.y + outRect.height;
 			for (int i = 0; i < cachedEntries.Count; i++)
 			{
 				float rowHeight = GetRowHeight(cachedEntries[i], rect2.width, selPawnForSocialInfo);
-				if (num > y - rowHeight && num < num2)
+				if (num2 > y - rowHeight && num2 < num3)
 				{
-					DrawPawnRow(num, rect2.width, cachedEntries[i], selPawnForSocialInfo);
+					DrawPawnRow(num2, rect2.width, cachedEntries[i], selPawnForSocialInfo);
 				}
-				num += rowHeight;
-			}
-			if (!cachedEntries.Any())
-			{
-				GUI.color = Color.gray;
-				Text.Anchor = TextAnchor.UpperCenter;
-				Widgets.Label(new Rect(0f, 0f, rect2.width, 30f), "NoRelationships".Translate());
-				Text.Anchor = TextAnchor.UpperLeft;
+				num2 += rowHeight;
 			}
 			if (Event.current.type == EventType.Layout)
 			{
-				listScrollViewHeight = num + 30f;
+				listScrollViewHeight = num2 + 30f;
 			}
 			Widgets.EndScrollView();
-			GUI.EndGroup();
+			if (flag)
+			{
+				DrawTryRomance(new Rect(rect.width - 150f + 10f, rect.height - RoleChangeButtonSize.y, RoleChangeButtonSize.x, RoleChangeButtonSize.y), selPawnForSocialInfo);
+			}
+			Widgets.EndGroup();
 			GUI.color = Color.white;
+		}
+
+		private static bool CanDrawTryRomance(Pawn pawn)
+		{
+			if (ModsConfig.BiotechActive && pawn.ageTracker.AgeBiologicalYearsFloat >= 16f && pawn.Spawned)
+			{
+				return pawn.IsFreeColonist;
+			}
+			return false;
+		}
+
+		private static void DrawTryRomance(Rect buttonRect, Pawn pawn)
+		{
+			Color color = GUI.color;
+			bool isTryRomanceOnCooldown = pawn.relations.IsTryRomanceOnCooldown;
+			AcceptanceReport acceptanceReport = RelationsUtility.RomanceEligible(pawn, initiator: true, forOpinionExplanation: false);
+			List<FloatMenuOption> list = (acceptanceReport.Accepted ? RomanceOptions(pawn) : null);
+			GUI.color = ((!acceptanceReport.Accepted || list.NullOrEmpty() || isTryRomanceOnCooldown) ? ColoredText.SubtleGrayColor : Color.white);
+			if (Widgets.ButtonText(buttonRect, "TryRomanceButtonLabel".Translate() + "..."))
+			{
+				if (isTryRomanceOnCooldown)
+				{
+					int numTicks = pawn.relations.romanceEnableTick - Find.TickManager.TicksGame;
+					Messages.Message("CantRomanceInitiateMessageCooldown".Translate(pawn, numTicks.ToStringTicksToPeriod()), MessageTypeDefOf.RejectInput, historical: false);
+					return;
+				}
+				if (!acceptanceReport.Accepted)
+				{
+					if (!acceptanceReport.Reason.NullOrEmpty())
+					{
+						Messages.Message(acceptanceReport.Reason, MessageTypeDefOf.RejectInput, historical: false);
+					}
+					return;
+				}
+				if (list.NullOrEmpty())
+				{
+					Messages.Message("TryRomanceNoOptsMessage".Translate(pawn), MessageTypeDefOf.RejectInput, historical: false);
+				}
+				else
+				{
+					Find.WindowStack.Add(new FloatMenu(list));
+				}
+			}
+			GUI.color = color;
+		}
+
+		private static List<FloatMenuOption> RomanceOptions(Pawn romancer)
+		{
+			List<(float, FloatMenuOption)> list = new List<(float, FloatMenuOption)>();
+			List<FloatMenuOption> list2 = new List<FloatMenuOption>();
+			foreach (Pawn item in romancer.Map.mapPawns.FreeColonistsSpawned)
+			{
+				if (RelationsUtility.RomanceOption(romancer, item, out var option, out var chance))
+				{
+					list.Add((chance, option));
+				}
+				else if (option != null)
+				{
+					list2.Add(option);
+				}
+			}
+			return (from pair in list
+				orderby pair.Item1 descending
+				select pair.Item2).Concat(list2.OrderBy((FloatMenuOption opt) => opt.Label)).ToList();
 		}
 
 		private static void DrawPawnRow(float y, float width, CachedSocialTabEntry entry, Pawn selPawnForSocialInfo)
@@ -263,11 +766,16 @@ namespace RimWorld
 				GUI.color = HighlightColor;
 				GUI.DrawTexture(rect, TexUI.HighlightTex);
 			}
-			if (Mouse.IsOver(rect))
+			Rect rect2 = rect;
+			if (entry.pregnancyApproach.HasValue)
 			{
-				TooltipHandler.TipRegion(rect, () => GetPawnRowTooltip(entry, selPawnForSocialInfo), entry.otherPawn.thingIDNumber * 13 + selPawnForSocialInfo.thingIDNumber);
+				rect2.xMax -= 28f;
 			}
-			if (Widgets.ButtonInvisible(rect))
+			if (Mouse.IsOver(rect2))
+			{
+				TooltipHandler.TipRegion(rect2, () => GetPawnRowTooltip(entry, selPawnForSocialInfo), entry.otherPawn.thingIDNumber * 13 + selPawnForSocialInfo.thingIDNumber);
+			}
+			if (Widgets.ButtonInvisible(rect2))
 			{
 				if (Current.ProgramState == ProgramState.Playing)
 				{
@@ -295,21 +803,49 @@ namespace RimWorld
 				}
 			}
 			CalculateColumnsWidths(width, out var relationsWidth, out var pawnLabelWidth, out var myOpinionWidth, out var hisOpinionWidth, out var pawnSituationLabelWidth);
-			Rect rect2 = new Rect(5f, y + 3f, relationsWidth, rowHeight - 3f);
-			DrawRelationLabel(entry, rect2, selPawnForSocialInfo);
-			Rect rect3 = new Rect(rect2.xMax, y + 3f, pawnLabelWidth, rowHeight - 3f);
-			DrawPawnLabel(otherPawn, rect3);
-			Rect rect4 = new Rect(rect3.xMax, y + 3f, myOpinionWidth, rowHeight - 3f);
-			DrawMyOpinion(entry, rect4, selPawnForSocialInfo);
-			Rect rect5 = new Rect(rect4.xMax, y + 3f, hisOpinionWidth, rowHeight - 3f);
-			DrawHisOpinion(entry, rect5, selPawnForSocialInfo);
-			DrawPawnSituationLabel(rect: new Rect(rect5.xMax, y + 3f, pawnSituationLabelWidth, rowHeight - 3f), pawn: entry.otherPawn, selPawnForSocialInfo: selPawnForSocialInfo);
+			if (Current.ProgramState != ProgramState.Playing)
+			{
+				DrawPawnAndRelationLabel(rect: new Rect(5f, y + 3f, width - myOpinionWidth - hisOpinionWidth - 5f, rowHeight - 3f), entry: entry, pawn: otherPawn, selPawnForSocialInfo: selPawnForSocialInfo);
+				Rect rect3 = new Rect(width - myOpinionWidth - hisOpinionWidth, y + 3f, myOpinionWidth, rowHeight - 3f);
+				DrawMyOpinion(entry, rect3, selPawnForSocialInfo);
+				DrawHisOpinion(rect: new Rect(rect3.xMax, y + 3f, hisOpinionWidth, rowHeight - 3f), entry: entry, selPawnForSocialInfo: selPawnForSocialInfo);
+				return;
+			}
+			if (entry.pregnancyApproach.HasValue)
+			{
+				pawnSituationLabelWidth -= 28f;
+			}
+			Rect rect4 = new Rect(5f, y + 3f, relationsWidth, rowHeight - 3f);
+			DrawRelationLabel(entry, rect4, selPawnForSocialInfo);
+			Rect rect5 = new Rect(rect4.xMax, y + 3f, pawnLabelWidth, rowHeight - 3f);
+			DrawPawnLabel(otherPawn, rect5);
+			Rect rect6 = new Rect(rect5.xMax, y + 3f, myOpinionWidth, rowHeight - 3f);
+			DrawMyOpinion(entry, rect6, selPawnForSocialInfo);
+			Rect rect7 = new Rect(rect6.xMax, y + 3f, hisOpinionWidth, rowHeight - 3f);
+			DrawHisOpinion(entry, rect7, selPawnForSocialInfo);
+			Rect rect8 = new Rect(rect7.xMax, y + 3f, pawnSituationLabelWidth, rowHeight - 3f);
+			DrawPawnSituationLabel(entry.otherPawn, rect8, selPawnForSocialInfo);
+			if (entry.pregnancyApproach.HasValue)
+			{
+				DrawPregnancyApproach(entry, new Rect(rect8.xMax + 4f, y + 3f, 24f, 24f), selPawnForSocialInfo);
+			}
 		}
 
 		private static float GetRowHeight(CachedSocialTabEntry entry, float rowWidth, Pawn selPawnForSocialInfo)
 		{
-			CalculateColumnsWidths(rowWidth, out var relationsWidth, out var pawnLabelWidth, out var _, out var _, out var _);
-			return Mathf.Max(Mathf.Max(0f, Text.CalcHeight(GetRelationsString(entry, selPawnForSocialInfo), relationsWidth)), Text.CalcHeight(GetPawnLabel(entry.otherPawn), pawnLabelWidth)) + 3f;
+			CalculateColumnsWidths(rowWidth, out var relationsWidth, out var pawnLabelWidth, out var myOpinionWidth, out var hisOpinionWidth, out var _);
+			float a = 0f;
+			if (Current.ProgramState != ProgramState.Playing)
+			{
+				float width = rowWidth - hisOpinionWidth - myOpinionWidth - 10f;
+				a = Text.CalcHeight(GetRelationsString(entry, selPawnForSocialInfo) + ": " + GetPawnLabel(entry.otherPawn), width);
+			}
+			else
+			{
+				a = Mathf.Max(a, Text.CalcHeight(GetRelationsString(entry, selPawnForSocialInfo), relationsWidth));
+				a = Mathf.Max(a, Text.CalcHeight(GetPawnLabel(entry.otherPawn), pawnLabelWidth));
+			}
+			return a + 3f;
 		}
 
 		private static void CalculateColumnsWidths(float rowWidth, out float relationsWidth, out float pawnLabelWidth, out float myOpinionWidth, out float hisOpinionWidth, out float pawnSituationLabelWidth)
@@ -348,6 +884,11 @@ namespace RimWorld
 			Widgets.Label(rect, GetPawnLabel(pawn));
 		}
 
+		private static void DrawPawnAndRelationLabel(CachedSocialTabEntry entry, Pawn pawn, Rect rect, Pawn selPawnForSocialInfo)
+		{
+			Widgets.Label(rect, (GetRelationsString(entry, selPawnForSocialInfo) + ": ").Colorize(RelationLabelColor) + GetPawnLabel(pawn).Colorize(PawnLabelColor));
+		}
+
 		private static void DrawMyOpinion(CachedSocialTabEntry entry, Rect rect, Pawn selPawnForSocialInfo)
 		{
 			if (entry.otherPawn.RaceProps.Humanlike && selPawnForSocialInfo.RaceProps.Humanlike)
@@ -376,6 +917,51 @@ namespace RimWorld
 			Widgets.Label(rect, label);
 		}
 
+		private static void DrawPregnancyApproach(CachedSocialTabEntry entry, Rect rect, Pawn selPawnForSocialInfo)
+		{
+			if (!entry.pregnancyApproach.HasValue || !Find.Storyteller.difficulty.ChildrenAllowed)
+			{
+				return;
+			}
+			GUI.color = Color.white;
+			PregnancyApproach value = entry.pregnancyApproach.Value;
+			AcceptanceReport acceptanceReport = PregnancyUtility.CanEverProduceChild(selPawnForSocialInfo, entry.otherPawn);
+			if (selPawnForSocialInfo.IsWorldPawn())
+			{
+				acceptanceReport = "PawnIsAway".Translate(selPawnForSocialInfo.Named("PAWN"));
+			}
+			if (!acceptanceReport.Accepted)
+			{
+				GUI.color = Color.grey;
+			}
+			GUI.DrawTexture(rect, value.GetIcon());
+			GUI.color = Color.white;
+			if (Widgets.ButtonInvisible(rect))
+			{
+				if (acceptanceReport.Accepted)
+				{
+					List<FloatMenuOption> list = new List<FloatMenuOption>();
+					foreach (PregnancyApproach value2 in Enum.GetValues(typeof(PregnancyApproach)))
+					{
+						PregnancyApproach rmLocal = value2;
+						list.Add(new FloatMenuOption(rmLocal.GetDescription(), delegate
+						{
+							selPawnForSocialInfo.relations.SetPregnancyApproach(entry.otherPawn, rmLocal);
+						}, value2.GetIcon(), Color.white));
+					}
+					Find.WindowStack.Add(new FloatMenu(list));
+				}
+				else
+				{
+					Messages.Message("PregnancyNotPossible".Translate(), null, MessageTypeDefOf.RejectInput, historical: false);
+				}
+			}
+			if (Mouse.IsOver(rect))
+			{
+				TooltipHandler.TipRegion(rect, acceptanceReport ? ("PregnancyApproach".Translate().Colorize(ColoredText.TipSectionTitleColor) + "\n" + value.GetDescription() + "\n\n" + "ClickToChangePregnancyApproach".Translate().Colorize(ColoredText.SubtleGrayColor)) : ("PregnancyNotPossible".Translate().Resolve() + ": " + acceptanceReport.Reason.CapitalizeFirst()));
+			}
+		}
+
 		private static Color OpinionLabelColor(int opinion)
 		{
 			if (Mathf.Abs(opinion) < 10)
@@ -384,7 +970,7 @@ namespace RimWorld
 			}
 			if (opinion < 0)
 			{
-				return ColoredText.RedReadable;
+				return ColorLibrary.RedReadable;
 			}
 			return Color.green;
 		}
@@ -415,11 +1001,11 @@ namespace RimWorld
 			QuestPart_LendColonistsToFaction questPart_LendColonistsToFaction = QuestUtility.GetAllQuestPartsOfType<QuestPart_LendColonistsToFaction>().FirstOrDefault((QuestPart_LendColonistsToFaction p) => p.LentColonistsListForReading.Contains(pawn));
 			if (questPart_LendColonistsToFaction != null)
 			{
-				return "Lent".Translate(questPart_LendColonistsToFaction.lendColonistsToFaction.Named("FACTION"), questPart_LendColonistsToFaction.returnLentColonistsInTicks.ToStringTicksToDays("0.0"));
+				return "Lent".Translate(questPart_LendColonistsToFaction.lendColonistsToFaction.Named("FACTION"), questPart_LendColonistsToFaction.ReturnPawnsInDurationTicks.ToStringTicksToDays("0.0")).Resolve();
 			}
 			if (pawn.kindDef == PawnKindDefOf.Slave)
 			{
-				return "Slave".Translate();
+				return "Slave".Translate().CapitalizeFirst();
 			}
 			if (PawnUtility.IsFactionLeader(pawn))
 			{
@@ -473,20 +1059,27 @@ namespace RimWorld
 			{
 				stringBuilder.AppendLine(selPawnForSocialInfo.relations.OpinionExplanation(entry.otherPawn));
 				stringBuilder.AppendLine();
-				stringBuilder.Append("SomeonesOpinionOfMe".Translate(entry.otherPawn.LabelShort, entry.otherPawn));
-				stringBuilder.Append(": ");
+				string text = RomanceExplanation(selPawnForSocialInfo, entry.otherPawn);
+				if (!text.NullOrEmpty())
+				{
+					stringBuilder.AppendLine(text);
+				}
+				stringBuilder.Append(("SomeonesOpinionOfMe".Translate(entry.otherPawn.LabelShort) + ": ").Colorize(ColoredText.TipSectionTitleColor));
 				stringBuilder.Append(entry.opinionOfMe.ToStringWithSign());
 			}
 			else
 			{
-				stringBuilder.AppendLine(entry.otherPawn.LabelCapNoCount);
+				stringBuilder.Append(entry.otherPawn.LabelCapNoCount);
 				string pawnSituationLabel = GetPawnSituationLabel(entry.otherPawn, selPawnForSocialInfo);
 				if (!pawnSituationLabel.NullOrEmpty())
 				{
-					stringBuilder.AppendLine(pawnSituationLabel);
+					stringBuilder.AppendLine(" (" + pawnSituationLabel + ")");
 				}
-				stringBuilder.AppendLine("--------------");
-				stringBuilder.Append(GetRelationsString(entry, selPawnForSocialInfo));
+				else
+				{
+					stringBuilder.AppendLine();
+				}
+				stringBuilder.Append(" - " + GetRelationsString(entry, selPawnForSocialInfo));
 			}
 			if (Prefs.DevMode)
 			{
@@ -497,182 +1090,44 @@ namespace RimWorld
 			return stringBuilder.ToString();
 		}
 
+		private static string RomanceExplanation(Pawn romancer, Pawn romanceTarget)
+		{
+			if (!CanDrawTryRomance(romancer))
+			{
+				return null;
+			}
+			AcceptanceReport acceptanceReport = RelationsUtility.RomanceEligiblePair(romancer, romanceTarget, forOpinionExplanation: true);
+			if (!acceptanceReport.Accepted && acceptanceReport.Reason.NullOrEmpty())
+			{
+				return null;
+			}
+			if (!acceptanceReport.Accepted)
+			{
+				return "RomanceChanceCant".Translate() + (" (" + acceptanceReport.Reason + ")\n");
+			}
+			StringBuilder stringBuilder = new StringBuilder();
+			float f = InteractionWorker_RomanceAttempt.SuccessChance(romancer, romanceTarget, 1f);
+			stringBuilder.AppendLine(("RomanceChance".Translate() + (": " + f.ToStringPercent())).Colorize(ColoredText.TipSectionTitleColor));
+			stringBuilder.Append(InteractionWorker_RomanceAttempt.RomanceFactors(romancer, romanceTarget));
+			return stringBuilder.ToString();
+		}
+
 		private static void DrawDebugOptions(Rect rect, Pawn pawn)
 		{
-			GUI.BeginGroup(rect);
-			Widgets.CheckboxLabeled(new Rect(0f, 0f, 145f, 22f), "Dev: AllRelations", ref showAllRelations);
-			if (Widgets.ButtonText(new Rect(150f, 0f, 115f, 22f), "Debug info"))
-			{
-				List<FloatMenuOption> list = new List<FloatMenuOption>();
-				list.Add(new FloatMenuOption("RomanceChance", delegate
-				{
-					StringBuilder stringBuilder5 = new StringBuilder();
-					stringBuilder5.AppendLine("My gender: " + pawn.gender);
-					stringBuilder5.AppendLine("My age: " + pawn.ageTracker.AgeBiologicalYears);
-					stringBuilder5.AppendLine();
-					foreach (Pawn item in from x in pawn.Map.mapPawns.AllPawnsSpawned
-						where x.def == pawn.def
-						orderby pawn.relations.SecondaryRomanceChanceFactor(x) descending
-						select x)
-					{
-						if (item != pawn)
-						{
-							stringBuilder5.AppendLine(string.Concat(item.LabelShort, " (", item.gender, ", age: ", item.ageTracker.AgeBiologicalYears, ", compat: ", pawn.relations.CompatibilityWith(item).ToString("F2"), "): ", pawn.relations.SecondaryRomanceChanceFactor(item).ToStringPercent("F0"), "        [vs ", item.relations.SecondaryRomanceChanceFactor(pawn).ToStringPercent("F0"), "]"));
-						}
-					}
-					Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder5.ToString()));
-				}));
-				list.Add(new FloatMenuOption("CompatibilityTo", delegate
-				{
-					StringBuilder stringBuilder4 = new StringBuilder();
-					stringBuilder4.AppendLine("My age: " + pawn.ageTracker.AgeBiologicalYears);
-					stringBuilder4.AppendLine();
-					foreach (Pawn item2 in from x in pawn.Map.mapPawns.AllPawnsSpawned
-						where x.def == pawn.def
-						orderby pawn.relations.CompatibilityWith(x) descending
-						select x)
-					{
-						if (item2 != pawn)
-						{
-							stringBuilder4.AppendLine(item2.LabelShort + " (" + item2.KindLabel + ", age: " + item2.ageTracker.AgeBiologicalYears + "): " + pawn.relations.CompatibilityWith(item2).ToString("0.##"));
-						}
-					}
-					Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder4.ToString()));
-				}));
-				if (pawn.RaceProps.Humanlike)
-				{
-					list.Add(new FloatMenuOption("Interaction chance", delegate
-					{
-						StringBuilder stringBuilder3 = new StringBuilder();
-						stringBuilder3.AppendLine("(selected pawn is the initiator)");
-						stringBuilder3.AppendLine("(\"fight chance\" is the chance that the receiver will start social fight)");
-						stringBuilder3.AppendLine("Interaction chance (real chance, not just weights):");
-						foreach (Pawn c in from x in pawn.Map.mapPawns.AllPawnsSpawned
-							where x.RaceProps.Humanlike
-							orderby (x.Faction != null) ? x.Faction.loadID : (-1)
-							select x)
-						{
-							if (c != pawn)
-							{
-								stringBuilder3.AppendLine();
-								stringBuilder3.AppendLine(string.Concat(c.LabelShort, " (", c.KindLabel, ", ", c.gender, ", age: ", c.ageTracker.AgeBiologicalYears, ", compat: ", pawn.relations.CompatibilityWith(c).ToString("F2"), ", romCh: ", pawn.relations.SecondaryRomanceChanceFactor(c).ToStringPercent("F0"), "):"));
-								List<InteractionDef> list2 = (from x in DefDatabase<InteractionDef>.AllDefs
-									where x.Worker.RandomSelectionWeight(pawn, c) > 0f
-									orderby x.Worker.RandomSelectionWeight(pawn, c) descending
-									select x).ToList();
-								float num12 = list2.Sum((InteractionDef x) => x.Worker.RandomSelectionWeight(pawn, c));
-								foreach (InteractionDef item3 in list2)
-								{
-									float f = c.interactions.SocialFightChance(item3, pawn);
-									float f2 = item3.Worker.RandomSelectionWeight(pawn, c) / num12;
-									stringBuilder3.AppendLine("  " + item3.defName + ": " + f2.ToStringPercent() + " (fight chance: " + f.ToStringPercent("F2") + ")");
-									if (item3 == InteractionDefOf.RomanceAttempt)
-									{
-										stringBuilder3.AppendLine("    success chance: " + ((InteractionWorker_RomanceAttempt)item3.Worker).SuccessChance(pawn, c).ToStringPercent());
-									}
-									else if (item3 == InteractionDefOf.MarriageProposal)
-									{
-										stringBuilder3.AppendLine("    acceptance chance: " + ((InteractionWorker_MarriageProposal)item3.Worker).AcceptanceChance(pawn, c).ToStringPercent());
-									}
-								}
-							}
-						}
-						Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder3.ToString()));
-					}));
-					list.Add(new FloatMenuOption("Lovin' MTB", delegate
-					{
-						StringBuilder stringBuilder2 = new StringBuilder();
-						stringBuilder2.AppendLine("Lovin' MTB hours with pawn X.");
-						stringBuilder2.AppendLine("Assuming both pawns are in bed and are partners.");
-						stringBuilder2.AppendLine();
-						foreach (Pawn item4 in from x in pawn.Map.mapPawns.AllPawnsSpawned
-							where x.def == pawn.def
-							orderby pawn.relations.SecondaryRomanceChanceFactor(x) descending
-							select x)
-						{
-							if (item4 != pawn)
-							{
-								stringBuilder2.AppendLine(item4.LabelShort + " (" + item4.KindLabel + ", age: " + item4.ageTracker.AgeBiologicalYears + "): " + LovePartnerRelationUtility.GetLovinMtbHours(pawn, item4).ToString("F1") + " h");
-							}
-						}
-						Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder2.ToString()));
-					}));
-				}
-				list.Add(new FloatMenuOption("Test per pawns pair compatibility factor probability", delegate
-				{
-					StringBuilder stringBuilder = new StringBuilder();
-					int num = 0;
-					int num2 = 0;
-					int num3 = 0;
-					int num4 = 0;
-					int num5 = 0;
-					int num6 = 0;
-					int num7 = 0;
-					int num8 = 0;
-					float num9 = -999999f;
-					float num10 = 999999f;
-					for (int i = 0; i < 10000; i++)
-					{
-						int otherPawnID = Rand.RangeInclusive(0, 30000);
-						float num11 = pawn.relations.ConstantPerPawnsPairCompatibilityOffset(otherPawnID);
-						if (num11 < -3f)
-						{
-							num++;
-						}
-						else if (num11 < -2f)
-						{
-							num2++;
-						}
-						else if (num11 < -1f)
-						{
-							num3++;
-						}
-						else if (num11 < 0f)
-						{
-							num4++;
-						}
-						else if (num11 < 1f)
-						{
-							num5++;
-						}
-						else if (num11 < 2f)
-						{
-							num6++;
-						}
-						else if (num11 < 3f)
-						{
-							num7++;
-						}
-						else
-						{
-							num8++;
-						}
-						if (num11 > num9)
-						{
-							num9 = num11;
-						}
-						else if (num11 < num10)
-						{
-							num10 = num11;
-						}
-					}
-					stringBuilder.AppendLine("< -3: " + ((float)num / 10000f).ToStringPercent("F2"));
-					stringBuilder.AppendLine("< -2: " + ((float)num2 / 10000f).ToStringPercent("F2"));
-					stringBuilder.AppendLine("< -1: " + ((float)num3 / 10000f).ToStringPercent("F2"));
-					stringBuilder.AppendLine("< 0: " + ((float)num4 / 10000f).ToStringPercent("F2"));
-					stringBuilder.AppendLine("< 1: " + ((float)num5 / 10000f).ToStringPercent("F2"));
-					stringBuilder.AppendLine("< 2: " + ((float)num6 / 10000f).ToStringPercent("F2"));
-					stringBuilder.AppendLine("< 3: " + ((float)num7 / 10000f).ToStringPercent("F2"));
-					stringBuilder.AppendLine("> 3: " + ((float)num8 / 10000f).ToStringPercent("F2"));
-					stringBuilder.AppendLine();
-					stringBuilder.AppendLine("trials: " + 10000);
-					stringBuilder.AppendLine("min: " + num10);
-					stringBuilder.AppendLine("max: " + num9);
-					Find.WindowStack.Add(new Dialog_MessageBox(stringBuilder.ToString()));
-				}));
-				Find.WindowStack.Add(new FloatMenu(list));
-			}
-			GUI.EndGroup();
+			Widgets.BeginGroup(rect);
+			Widgets.CheckboxLabeled(new Rect(0f, 0f, 145f, 22f), "DEV: AllRelations", ref showAllRelations);
+			Widgets.EndGroup();
+		}
+
+		public static void ClearCaches()
+		{
+			cachedForPawn = null;
+			cachedEntries.Clear();
+			cachedRoles.Clear();
+			tmpToCache.Clear();
+			tmpDisagreeableMemeTraitPairs.Clear();
+			tmpAgreeableMemeTraitPairs.Clear();
+			pawnsForSocialInfoTmp.Clear();
 		}
 	}
 }

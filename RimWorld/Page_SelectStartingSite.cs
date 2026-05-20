@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using RimWorld.Planet;
 using UnityEngine;
@@ -11,11 +12,11 @@ namespace RimWorld
 	{
 		private const float GapBetweenBottomButtons = 10f;
 
-		private const float UseTwoRowsIfScreenWidthBelow = 1340f;
+		private const float UseTwoRowsIfScreenWidthBelowBase = 540f;
 
-		private static List<Vector3> tmpTileVertices = new List<Vector3>();
+		private static readonly List<Vector3> TmpTileVertices = new List<Vector3>();
 
-		private int? tutorialStartTilePatch;
+		private PlanetTile? tutorialStartTilePatch;
 
 		public override string PageTitle => "SelectStartingSite".TranslateWithBackup("SelectLandingSite");
 
@@ -51,31 +52,31 @@ namespace RimWorld
 			}
 			Find.WorldCameraDriver.ResetAltitude();
 			Find.WorldCameraDriver.Update();
-			List<int> list = new List<int>();
-			float[] array = new float[Find.WorldGrid.TilesCount];
-			WorldGrid worldGrid = Find.WorldGrid;
+			List<PlanetTile> list = new List<PlanetTile>();
+			PlanetLayer planetLayer = Find.GameInitData.startingTile.Layer;
+			float[] array = new float[planetLayer.TilesCount];
 			Vector2 a = new Vector2((float)Screen.width / 2f, (float)Screen.height / 2f);
 			float num = Vector2.Distance(a, Vector2.zero);
-			for (int i = 0; i < worldGrid.TilesCount; i++)
+			for (int i = 0; i < planetLayer.TilesCount; i++)
 			{
-				Tile tile = worldGrid[i];
-				if (TutorSystem.AllowAction("ChooseBiome-" + tile.biome.defName + "-" + tile.hilliness))
+				if (TutorSystem.AllowAction(GetActionStringForChoosingTile(planetLayer[i])))
 				{
-					tmpTileVertices.Clear();
-					worldGrid.GetTileVertices(i, tmpTileVertices);
+					TmpTileVertices.Clear();
+					planetLayer.GetTileVertices(i, TmpTileVertices);
 					Vector3 zero = Vector3.zero;
-					for (int j = 0; j < tmpTileVertices.Count; j++)
+					for (int j = 0; j < TmpTileVertices.Count; j++)
 					{
-						zero += tmpTileVertices[j];
+						zero += TmpTileVertices[j];
 					}
-					zero /= (float)tmpTileVertices.Count;
-					Vector3 v = Find.WorldCamera.WorldToScreenPoint(zero) / Prefs.UIScale;
-					v.y = (float)UI.screenHeight - v.y;
-					v.x = Mathf.Clamp(v.x, 0f, UI.screenWidth);
-					v.y = Mathf.Clamp(v.y, 0f, UI.screenHeight);
-					float num2 = 1f - Vector2.Distance(a, v) / num;
-					Vector3 normalized = (zero - Find.WorldCamera.transform.position).normalized;
-					float num3 = Vector3.Dot(Find.WorldCamera.transform.forward, normalized);
+					zero /= (float)TmpTileVertices.Count;
+					Vector3 vector = Find.WorldCamera.WorldToScreenPoint(zero) / Prefs.UIScale;
+					vector.y = (float)UI.screenHeight - vector.y;
+					vector.x = Mathf.Clamp(vector.x, 0f, UI.screenWidth);
+					vector.y = Mathf.Clamp(vector.y, 0f, UI.screenHeight);
+					float num2 = 1f - Vector2.Distance(a, vector) / num;
+					Transform transform = Find.WorldCamera.transform;
+					Vector3 normalized = (zero - transform.position).normalized;
+					float num3 = Vector3.Dot(transform.forward, normalized);
 					array[i] = num2 * num3;
 				}
 				else
@@ -88,7 +89,7 @@ namespace RimWorld
 				for (int l = 0; l < array.Length; l++)
 				{
 					list.Clear();
-					worldGrid.GetTileNeighbors(l, list);
+					planetLayer.GetTileNeighbors(l, list);
 					float num4 = array[l];
 					if (num4 < 0f)
 					{
@@ -96,7 +97,7 @@ namespace RimWorld
 					}
 					for (int m = 0; m < list.Count; m++)
 					{
-						float num5 = array[list[m]];
+						float num5 = array[list[m].tileId];
 						if (!(num5 < 0f))
 						{
 							num4 += num5;
@@ -106,19 +107,35 @@ namespace RimWorld
 				}
 			}
 			float num6 = float.NegativeInfinity;
-			int num7 = -1;
+			PlanetTile value = PlanetTile.Invalid;
 			for (int n = 0; n < array.Length; n++)
 			{
 				if (array[n] > 0f && num6 < array[n])
 				{
 					num6 = array[n];
-					num7 = n;
+					value = new PlanetTile(n, planetLayer);
 				}
 			}
-			if (num7 != -1)
+			if (value.Valid)
 			{
-				tutorialStartTilePatch = num7;
+				tutorialStartTilePatch = value;
 			}
+		}
+
+		private static string GetActionStringForChoosingTile(Tile tile)
+		{
+			StringBuilder stringBuilder = new StringBuilder("ChooseBiome");
+			if (tile.Biomes.Count() > 1)
+			{
+				stringBuilder.Append('-').Append(string.Join('-', tile.Biomes.Select((BiomeDef x) => x.defName)));
+			}
+			else
+			{
+				stringBuilder.Append('-').Append(tile.PrimaryBiome.defName);
+			}
+			stringBuilder.Append('-').Append(tile.hilliness.ToString()).Append('-')
+				.Append(tile.Landmark?.def.defName ?? "None");
+			return stringBuilder.ToString();
 		}
 
 		public override void PostClose()
@@ -129,7 +146,7 @@ namespace RimWorld
 
 		public override void DoWindowContents(Rect rect)
 		{
-			if (Find.WorldInterface.SelectedTile >= 0)
+			if (Find.WorldInterface.SelectedTile.Valid)
 			{
 				Find.GameInitData.startingTile = Find.WorldInterface.SelectedTile;
 			}
@@ -148,16 +165,16 @@ namespace RimWorld
 			DoCustomBottomButtons();
 			if (tutorialStartTilePatch.HasValue)
 			{
-				tmpTileVertices.Clear();
-				Find.WorldGrid.GetTileVertices(tutorialStartTilePatch.Value, tmpTileVertices);
+				TmpTileVertices.Clear();
+				Find.WorldGrid.GetTileVertices(tutorialStartTilePatch.Value, TmpTileVertices);
 				Vector3 zero = Vector3.zero;
-				for (int i = 0; i < tmpTileVertices.Count; i++)
+				for (int i = 0; i < TmpTileVertices.Count; i++)
 				{
-					zero += tmpTileVertices[i];
+					zero += TmpTileVertices[i];
 				}
 				Color color = GUI.color;
 				GUI.color = Color.white;
-				GenUI.DrawArrowPointingAtWorldspace(zero / tmpTileVertices.Count, Find.WorldCamera);
+				GenUI.DrawArrowPointingAtWorldspace(zero / TmpTileVertices.Count, Find.WorldCamera);
 				GUI.color = color;
 			}
 		}
@@ -168,9 +185,15 @@ namespace RimWorld
 			{
 				return false;
 			}
-			int selectedTile = Find.WorldInterface.SelectedTile;
-			if (selectedTile < 0)
+			PlanetTile selectedTile = Find.WorldInterface.SelectedTile;
+			if (!selectedTile.Valid)
 			{
+				if (Prefs.DevMode && !Find.WorldInterface.selector.AnyObjectOrTileSelected)
+				{
+					Messages.Message("Tile has been randomly selected (debug mode only)", MessageTypeDefOf.SilentInput, historical: false);
+					Find.WorldInterface.SelectedTile = TileFinder.RandomStartingTile();
+					return true;
+				}
 				Messages.Message("MustSelectStartingSite".TranslateWithBackup("MustSelectLandingSite"), MessageTypeDefOf.RejectInput, historical: false);
 				return false;
 			}
@@ -180,8 +203,7 @@ namespace RimWorld
 				Messages.Message(stringBuilder.ToString(), MessageTypeDefOf.RejectInput, historical: false);
 				return false;
 			}
-			Tile tile = Find.WorldGrid[selectedTile];
-			if (!TutorSystem.AllowAction("ChooseBiome-" + tile.biome.defName + "-" + tile.hilliness))
+			if (!TutorSystem.AllowAction(GetActionStringForChoosingTile(selectedTile.Tile)))
 			{
 				return false;
 			}
@@ -190,7 +212,7 @@ namespace RimWorld
 
 		protected override void DoNext()
 		{
-			int selTile = Find.WorldInterface.SelectedTile;
+			PlanetTile selTile = Find.WorldInterface.SelectedTile;
 			SettlementProximityGoodwillUtility.CheckConfirmSettle(selTile, delegate
 			{
 				Find.GameInitData.startingTile = selTile;
@@ -200,8 +222,8 @@ namespace RimWorld
 
 		private void DoCustomBottomButtons()
 		{
-			int num = (TutorSystem.TutorialMode ? 4 : 5);
-			int num2 = ((num < 4 || !((float)UI.screenWidth < 1340f)) ? 1 : 2);
+			int num = 4;
+			int num2 = ((num < 3 || !((float)UI.screenWidth < 540f + (float)num * (Page.BottomButSize.x + 10f))) ? 1 : 2);
 			int num3 = Mathf.CeilToInt((float)num / (float)num2);
 			float num4 = Page.BottomButSize.x * (float)num3 + 10f * (float)(num3 + 1);
 			float num5 = (float)num2 * Page.BottomButSize.y + 10f * (float)(num2 + 1);
@@ -215,23 +237,22 @@ namespace RimWorld
 			float num6 = rect.xMin + 10f;
 			float num7 = rect.yMin + 10f;
 			Text.Font = GameFont.Small;
-			if (Widgets.ButtonText(new Rect(num6, num7, Page.BottomButSize.x, Page.BottomButSize.y), "Back".Translate()) && CanDoBack())
+			if ((Widgets.ButtonText(new Rect(num6, num7, Page.BottomButSize.x, Page.BottomButSize.y), "Back".Translate()) || KeyBindingDefOf.Cancel.KeyDownEvent) && CanDoBack())
 			{
 				DoBack();
 			}
 			num6 += Page.BottomButSize.x + 10f;
-			if (!TutorSystem.TutorialMode)
-			{
-				if (Widgets.ButtonText(new Rect(num6, num7, Page.BottomButSize.x, Page.BottomButSize.y), "Advanced".Translate()))
-				{
-					Find.WindowStack.Add(new Dialog_AdvancedGameConfig(Find.WorldInterface.SelectedTile));
-				}
-				num6 += Page.BottomButSize.x + 10f;
-			}
 			if (Widgets.ButtonText(new Rect(num6, num7, Page.BottomButSize.x, Page.BottomButSize.y), "SelectRandomSite".Translate()))
 			{
 				SoundDefOf.Click.PlayOneShotOnCamera();
-				Find.WorldInterface.SelectedTile = TileFinder.RandomStartingTile();
+				if (ModsConfig.OdysseyActive && Rand.Bool)
+				{
+					Find.WorldInterface.SelectedTile = TileFinder.RandomSettlementTileFor(Find.WorldGrid.Surface, Faction.OfPlayer, mustBeAutoChoosable: true, (PlanetTile x) => x.Tile.Landmark != null);
+				}
+				else
+				{
+					Find.WorldInterface.SelectedTile = TileFinder.RandomStartingTile();
+				}
 				Find.WorldCameraDriver.JumpTo(Find.WorldGrid.GetTileCenter(Find.WorldInterface.SelectedTile));
 			}
 			num6 += Page.BottomButSize.x + 10f;
@@ -251,6 +272,14 @@ namespace RimWorld
 			}
 			num6 += Page.BottomButSize.x + 10f;
 			GenUI.AbsorbClicksInRect(rect);
+		}
+
+		public override void OnAcceptKeyPressed()
+		{
+			if (CanDoNext())
+			{
+				DoNext();
+			}
 		}
 	}
 }

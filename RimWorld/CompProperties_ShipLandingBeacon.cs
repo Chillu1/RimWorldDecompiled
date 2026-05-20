@@ -6,6 +6,8 @@ namespace RimWorld
 	{
 		public FloatRange edgeLengthRange;
 
+		public TerrainAffordanceDef landingAreaTerrainSupport;
+
 		public CompProperties_ShipLandingBeacon()
 		{
 			compClass = typeof(CompShipLandingBeacon);

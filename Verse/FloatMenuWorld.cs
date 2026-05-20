@@ -18,8 +18,7 @@ namespace Verse
 
 		public override void DoWindowContents(Rect inRect)
 		{
-			Caravan caravan = Find.WorldSelector.SingleSelectedObject as Caravan;
-			if (caravan == null)
+			if (!(Find.WorldSelector.SingleSelectedObject is Caravan caravan))
 			{
 				Find.WindowStack.TryRemove(this);
 				return;

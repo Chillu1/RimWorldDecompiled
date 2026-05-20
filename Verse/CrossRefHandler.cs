@@ -15,7 +15,7 @@ namespace Verse
 		{
 			if (Scribe.mode != LoadSaveMode.LoadingVars)
 			{
-				Log.Error(string.Concat("Registered ", s, " for cross ref resolve, but current mode is ", Scribe.mode));
+				Log.Error("Registered " + s?.ToString() + " for cross ref resolve, but current mode is " + Scribe.mode);
 			}
 			else if (s != null)
 			{
@@ -36,8 +36,7 @@ namespace Verse
 			}
 			foreach (IExposable crossReferencingExposable in crossReferencingExposables)
 			{
-				ILoadReferenceable loadReferenceable = crossReferencingExposable as ILoadReferenceable;
-				if (loadReferenceable != null)
+				if (crossReferencingExposable is ILoadReferenceable loadReferenceable)
 				{
 					if (DebugViewSettings.logMapLoad)
 					{
@@ -62,9 +61,9 @@ namespace Verse
 					Scribe.loader.curPathRelToParent = null;
 					crossReferencingExposable2.ExposeData();
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Error("Could not resolve cross refs: " + arg);
+					Log.Error("Could not resolve cross refs: " + ex);
 				}
 			}
 			Scribe.loader.curParent = null;

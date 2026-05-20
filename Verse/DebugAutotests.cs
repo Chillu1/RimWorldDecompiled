@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using RimWorld;
 using RimWorld.Planet;
 
@@ -11,111 +12,68 @@ namespace Verse
 	{
 		private static List<PawnKindDef> pawnKindsForDamageTypeBattleRoyale;
 
-		[DebugAction("Autotests", "Make colony (full)", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("Autotests", "Make colony (full)", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void MakeColonyFull()
 		{
 			Autotests_ColonyMaker.MakeColony_Full();
 		}
 
-		[DebugAction("Autotests", "Make colony (animals)", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("Autotests", "Make colony (animals)", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void MakeColonyAnimals()
 		{
 			Autotests_ColonyMaker.MakeColony_Animals();
 		}
 
-		[DebugAction("Autotests", "Test force downed x100", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("Autotests", "Make colony (ancient junk)", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		private static void MakeColonyAncientJunk()
+		{
+			Autotests_ColonyMaker.MakeColony_AncientJunk();
+		}
+
+		[DebugAction("Autotests", "Test force downed x100", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void TestForceDownedx100()
 		{
 			for (int i = 0; i < 100; i++)
 			{
 				PawnKindDef random = DefDatabase<PawnKindDef>.GetRandom();
-				Pawn pawn = PawnGenerator.GeneratePawn(random, FactionUtility.DefaultFactionFrom(random.defaultFactionType));
+				Pawn pawn = PawnGenerator.GeneratePawn(random, FactionUtility.DefaultFactionFrom(random.defaultFactionDef));
 				GenSpawn.Spawn(pawn, CellFinderLoose.RandomCellWith((IntVec3 c) => c.Standable(Find.CurrentMap), Find.CurrentMap), Find.CurrentMap);
 				HealthUtility.DamageUntilDowned(pawn);
 				if (pawn.Dead)
 				{
-					Log.Error(string.Concat("Pawn died while force downing: ", pawn, " at ", pawn.Position));
+					Log.Error("Pawn died while force downing: " + pawn?.ToString() + " at " + pawn.Position.ToString());
 					break;
 				}
 			}
 		}
 
-		[DebugAction("Autotests", "Test force kill x100", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("Autotests", "Test force kill x100", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void TestForceKillx100()
 		{
 			for (int i = 0; i < 100; i++)
 			{
 				PawnKindDef random = DefDatabase<PawnKindDef>.GetRandom();
-				Pawn pawn = PawnGenerator.GeneratePawn(random, FactionUtility.DefaultFactionFrom(random.defaultFactionType));
+				Pawn pawn = PawnGenerator.GeneratePawn(random, FactionUtility.DefaultFactionFrom(random.defaultFactionDef));
 				GenSpawn.Spawn(pawn, CellFinderLoose.RandomCellWith((IntVec3 c) => c.Standable(Find.CurrentMap), Find.CurrentMap), Find.CurrentMap);
 				HealthUtility.DamageUntilDead(pawn);
 				if (!pawn.Dead)
 				{
-					Log.Error(string.Concat("Pawn died not die: ", pawn, " at ", pawn.Position));
+					Log.Error("Pawn died not die: " + pawn?.ToString() + " at " + pawn.Position.ToString());
 					break;
 				}
 			}
 		}
 
-		[DebugAction("Autotests", "Test Surgery fail catastrophic x100", allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void TestSurgeryFailCatastrophicx100()
-		{
-			for (int i = 0; i < 100; i++)
-			{
-				PawnKindDef random = DefDatabase<PawnKindDef>.GetRandom();
-				Pawn pawn = PawnGenerator.GeneratePawn(random, FactionUtility.DefaultFactionFrom(random.defaultFactionType));
-				GenSpawn.Spawn(pawn, CellFinderLoose.RandomCellWith((IntVec3 c) => c.Standable(Find.CurrentMap), Find.CurrentMap), Find.CurrentMap);
-				pawn.health.forceIncap = true;
-				BodyPartRecord part = pawn.health.hediffSet.GetNotMissingParts().RandomElement();
-				HealthUtility.GiveInjuriesOperationFailureCatastrophic(pawn, part);
-				pawn.health.forceIncap = false;
-				if (pawn.Dead)
-				{
-					Log.Error(string.Concat("Pawn died: ", pawn, " at ", pawn.Position));
-				}
-			}
-		}
-
-		[DebugAction("Autotests", "Test Surgery fail ridiculous x100", allowedGameStates = AllowedGameStates.PlayingOnMap)]
-		private static void TestSurgeryFailRidiculousx100()
-		{
-			for (int i = 0; i < 100; i++)
-			{
-				PawnKindDef random = DefDatabase<PawnKindDef>.GetRandom();
-				Pawn pawn = PawnGenerator.GeneratePawn(random, FactionUtility.DefaultFactionFrom(random.defaultFactionType));
-				GenSpawn.Spawn(pawn, CellFinderLoose.RandomCellWith((IntVec3 c) => c.Standable(Find.CurrentMap), Find.CurrentMap), Find.CurrentMap);
-				pawn.health.forceIncap = true;
-				HealthUtility.GiveInjuriesOperationFailureRidiculous(pawn);
-				pawn.health.forceIncap = false;
-				if (pawn.Dead)
-				{
-					Log.Error(string.Concat("Pawn died: ", pawn, " at ", pawn.Position));
-				}
-			}
-		}
-
-		[DebugAction("Autotests", "Test generate pawn x1000", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("Autotests", "Test generate pawn x1000", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void TestGeneratePawnx1000()
 		{
-			float[] array = new float[10]
-			{
-				10f,
-				20f,
-				50f,
-				100f,
-				200f,
-				500f,
-				1000f,
-				2000f,
-				5000f,
-				1E+20f
-			};
+			float[] array = new float[10] { 10f, 20f, 50f, 100f, 200f, 500f, 1000f, 2000f, 5000f, 1E+20f };
 			int[] array2 = new int[array.Length];
 			for (int i = 0; i < 1000; i++)
 			{
 				PawnKindDef random = DefDatabase<PawnKindDef>.GetRandom();
 				PerfLogger.Reset();
-				Pawn pawn = PawnGenerator.GeneratePawn(random, FactionUtility.DefaultFactionFrom(random.defaultFactionType));
+				Pawn pawn = PawnGenerator.GeneratePawn(random, FactionUtility.DefaultFactionFrom(random.defaultFactionDef));
 				float ms = PerfLogger.Duration() * 1000f;
 				array2[array.FirstIndexOf((float time) => ms <= time)]++;
 				if (pawn.Dead)
@@ -126,14 +84,14 @@ namespace Verse
 			}
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.AppendLine("Pawn creation time histogram:");
-			for (int j = 0; j < array2.Length; j++)
+			for (int num = 0; num < array2.Length; num++)
 			{
-				stringBuilder.AppendLine($"<{array[j]}ms: {array2[j]}");
+				stringBuilder.AppendLine($"<{array[num]}ms: {array2[num]}");
 			}
 			Log.Message(stringBuilder.ToString());
 		}
 
-		[DebugAction("Autotests", null, actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("Autotests", null, false, false, false, false, false, 0, false, actionType = DebugActionType.ToolMap, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void GeneratePawnsOfAllShapes()
 		{
 			Rot4[] array = new Rot4[4]
@@ -166,13 +124,13 @@ namespace Verse
 			}
 		}
 
-		[DebugAction("Autotests", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("Autotests", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void CheckRegionListers()
 		{
 			Autotests_RegionListers.CheckBugs(Find.CurrentMap);
 		}
 
-		[DebugAction("Autotests", "Test time-to-down", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("Autotests", "Test time-to-down", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void TestTimeToDown()
 		{
 			List<DebugMenuOption> list = new List<DebugMenuOption>();
@@ -191,7 +149,7 @@ namespace Verse
 					list3.Add(kindDef);
 					ArenaUtility.BeginArenaFightSet(1000, list2, list3, delegate(ArenaUtility.ArenaResult result)
 					{
-						if (result.winner != 0)
+						if (result.winner != ArenaUtility.ArenaResult.Winner.Other)
 						{
 							results.Add(result.tickDuration.TicksToSeconds());
 						}
@@ -204,19 +162,19 @@ namespace Verse
 			Find.WindowStack.Add(new Dialog_DebugOptionListLister(list));
 		}
 
-		[DebugAction("Autotests", "Battle Royale All PawnKinds", allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("Autotests", "Battle Royale All PawnKinds", false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void BattleRoyaleAllPawnKinds()
 		{
 			ArenaUtility.PerformBattleRoyale(DefDatabase<PawnKindDef>.AllDefs);
 		}
 
-		[DebugAction("Autotests", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("Autotests", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void BattleRoyaleHumanlikes()
 		{
 			ArenaUtility.PerformBattleRoyale(DefDatabase<PawnKindDef>.AllDefs.Where((PawnKindDef k) => k.RaceProps.Humanlike));
 		}
 
-		[DebugAction("Autotests", null, allowedGameStates = AllowedGameStates.PlayingOnMap)]
+		[DebugAction("Autotests", null, false, false, false, false, false, 0, false, allowedGameStates = AllowedGameStates.PlayingOnMap)]
 		private static void BattleRoyaleByDamagetype()
 		{
 			PawnKindDef[] array = new PawnKindDef[2]

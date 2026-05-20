@@ -17,21 +17,20 @@ namespace RimWorld
 
 		private static readonly int EndRadialIndex = GenRadial.NumCellsInRadius(2f);
 
-		private static readonly int RadialIndexStride = 3;
+		private const int RadialIndexStride = 3;
 
 		public static bool TryFindWalkPath(Pawn pawn, IntVec3 root, out List<IntVec3> result)
 		{
-			List<IntVec3> list = new List<IntVec3>();
-			list.Add(root);
+			List<IntVec3> list = new List<IntVec3> { root };
 			IntVec3 intVec = root;
 			for (int i = 0; i < 8; i++)
 			{
 				IntVec3 intVec2 = IntVec3.Invalid;
 				float num = -1f;
-				for (int num2 = StartRadialIndex; num2 > EndRadialIndex; num2 -= RadialIndexStride)
+				for (int num2 = StartRadialIndex; num2 > EndRadialIndex; num2 -= 3)
 				{
 					IntVec3 intVec3 = intVec + GenRadial.RadialPattern[num2];
-					if (intVec3.InBounds(pawn.Map) && intVec3.Standable(pawn.Map) && !intVec3.IsForbidden(pawn) && !intVec3.GetTerrain(pawn.Map).avoidWander && GenSight.LineOfSight(intVec, intVec3, pawn.Map) && !intVec3.Roofed(pawn.Map) && !PawnUtility.KnownDangerAt(intVec3, pawn.Map, pawn))
+					if (ValidCell(intVec3, intVec))
 					{
 						float num3 = 10000f;
 						for (int j = 0; j < list.Count; j++)
@@ -84,6 +83,14 @@ namespace RimWorld
 			list.Add(root);
 			result = list;
 			return true;
+			bool ValidCell(IntVec3 c, IntVec3 start)
+			{
+				if (c.InBounds(pawn.Map) && !c.Fogged(pawn.Map) && !c.GetTerrain(pawn.Map).avoidWander && !c.Roofed(pawn.Map) && c.Standable(pawn.Map) && !c.IsForbidden(pawn) && GenSight.LineOfSight(start, c, pawn.Map))
+				{
+					return !PawnUtility.KnownDangerAt(c, pawn.Map, pawn);
+				}
+				return false;
+			}
 		}
 
 		public static void DebugFlashWalkPath(IntVec3 root, int numEntries = 8)

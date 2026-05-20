@@ -13,7 +13,7 @@ namespace RimWorld
 				if (randomAvailableInspirationDef != null)
 				{
 					base.Apply(target, dest);
-					pawn.mindState.inspirationHandler.TryStartInspiration_NewTemp(randomAvailableInspirationDef, "LetterPsychicInspiration".Translate(pawn.Named("PAWN"), parent.pawn.Named("CASTER")));
+					pawn.mindState.inspirationHandler.TryStartInspiration(randomAvailableInspirationDef, "LetterPsychicInspiration".Translate(pawn.Named("PAWN"), parent.pawn.Named("CASTER")));
 				}
 			}
 		}
@@ -28,11 +28,11 @@ namespace RimWorld
 			Pawn pawn = target.Pawn;
 			if (pawn != null)
 			{
-				if (!AbilityUtility.ValidateNoInspiration(pawn, throwMessages))
+				if (!AbilityUtility.ValidateNoInspiration(pawn, throwMessages, parent))
 				{
 					return false;
 				}
-				if (!AbilityUtility.ValidateCanGetInspiration(pawn, throwMessages))
+				if (!AbilityUtility.ValidateCanGetInspiration(pawn, throwMessages, parent))
 				{
 					return false;
 				}

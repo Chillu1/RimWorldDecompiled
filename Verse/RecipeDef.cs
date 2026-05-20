@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using RimWorld;
+using UnityEngine;
 
 namespace Verse
 {
@@ -69,6 +70,9 @@ namespace Verse
 
 		private ThingDef uiIconThing;
 
+		[NoTranslate]
+		private string uiIconPath;
+
 		public List<ThingDef> recipeUsers;
 
 		public List<BodyPartDef> appliedOnFixedBodyParts = new List<BodyPartDef>();
@@ -78,6 +82,8 @@ namespace Verse
 		public HediffDef addsHediff;
 
 		public HediffDef removesHediff;
+
+		public HediffDef addsHediffOnFailure;
 
 		public HediffDef changesHediffLevel;
 
@@ -100,16 +106,54 @@ namespace Verse
 
 		public bool anesthetize = true;
 
+		public int minPartCount = -1;
+
+		public bool surgeryIgnoreEnvironment;
+
+		public SurgeryOutcomeEffectDef surgeryOutcomeEffect;
+
+		public Gender? genderPrerequisite;
+
+		public bool mustBeFertile;
+
+		public bool allowedForQuestLodgers = true;
+
+		public int minAllowedAge = -1;
+
+		public DevelopmentalStage? developmentalStageFilter;
+
+		public bool humanlikeOnly;
+
+		public List<MutantDef> mutantPrerequisite;
+
+		public List<MutantDef> mutantBlacklist;
+
+		public float smeltingWorkAmount = -1f;
+
 		public ResearchProjectDef researchPrerequisite;
+
+		public List<MemeDef> memePrerequisitesAny;
 
 		public List<ResearchProjectDef> researchPrerequisites;
 
 		[NoTranslate]
 		public List<string> factionPrerequisiteTags;
 
+		public bool fromIdeoBuildingPreceptOnly;
+
 		public ConceptDef conceptLearned;
 
 		public bool dontShowIfAnyIngredientMissing;
+
+		public int displayPriority = 99999;
+
+		public int formingTicks;
+
+		public bool mechanitorOnlyRecipe;
+
+		public int gestationCycles;
+
+		public bool mechResurrection;
 
 		[Unsaved(false)]
 		private RecipeWorker workerInt;
@@ -123,7 +167,38 @@ namespace Verse
 		[Unsaved(false)]
 		private List<ThingDef> premultipliedSmallIngredients;
 
+		[Unsaved(false)]
+		public bool regenerateOnDifficultyChange;
+
+		[Unsaved(false)]
+		public int adjustedCount = 1;
+
+		[Unsaved(false)]
+		private Texture2D cachedIcon;
+
+		[Unsaved(false)]
+		private bool resolvedCachedIcon;
+
+		[Unsaved(false)]
 		private bool? isSurgeryCached;
+
+		public ThingDef UIIconThing => uiIconThing ?? ProducedThingDef;
+
+		public Texture2D UIIcon
+		{
+			get
+			{
+				if (!resolvedCachedIcon)
+				{
+					resolvedCachedIcon = true;
+					if (!uiIconPath.NullOrEmpty())
+					{
+						cachedIcon = ContentFinder<Texture2D>.Get(uiIconPath);
+					}
+				}
+				return cachedIcon;
+			}
+		}
 
 		public RecipeWorker Worker
 		{
@@ -171,15 +246,69 @@ namespace Verse
 				{
 					return false;
 				}
+				if (memePrerequisitesAny != null)
+				{
+					bool flag = false;
+					foreach (MemeDef item in memePrerequisitesAny)
+					{
+						if (Faction.OfPlayer.ideos.HasAnyIdeoWithMeme(item))
+						{
+							flag = true;
+							break;
+						}
+					}
+					if (!flag)
+					{
+						return false;
+					}
+				}
 				if (researchPrerequisites != null && researchPrerequisites.Any((ResearchProjectDef r) => !r.IsFinished))
 				{
 					return false;
 				}
+				bool unlockedByIdeo;
 				if (factionPrerequisiteTags != null && factionPrerequisiteTags.Any((string tag) => Faction.OfPlayer.def.recipePrerequisiteTags == null || !Faction.OfPlayer.def.recipePrerequisiteTags.Contains(tag)))
+				{
+					unlockedByIdeo = false;
+					Check();
+					if (!unlockedByIdeo)
+					{
+						return false;
+					}
+				}
+				if (fromIdeoBuildingPreceptOnly && (!ModsConfig.IdeologyActive || !IdeoUtility.PlayerHasPreceptForBuilding(ProducedThingDef)))
 				{
 					return false;
 				}
 				return true;
+				void Check()
+				{
+					foreach (Ideo allIdeo in Faction.OfPlayer.ideos.AllIdeos)
+					{
+						foreach (Precept_Role item2 in allIdeo.RolesListForReading)
+						{
+							if (item2.apparelRequirements != null)
+							{
+								foreach (PreceptApparelRequirement apparelRequirement in item2.apparelRequirements)
+								{
+									ThingDef thingDef = apparelRequirement.requirement.AllRequiredApparel().FirstOrDefault();
+									if (thingDef == null)
+									{
+										Log.Error("Apparel requirement for role " + item2.Label + " is null");
+									}
+									foreach (ThingDefCountClass product in products)
+									{
+										if (product.thingDef == thingDef)
+										{
+											unlockedByIdeo = true;
+											return;
+										}
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 
@@ -212,17 +341,17 @@ namespace Verse
 			{
 				if (recipeUsers != null)
 				{
-					for (int j = 0; j < recipeUsers.Count; j++)
+					for (int i = 0; i < recipeUsers.Count; i++)
 					{
-						yield return recipeUsers[j];
+						yield return recipeUsers[i];
 					}
 				}
 				List<ThingDef> thingDefs = DefDatabase<ThingDef>.AllDefsListForReading;
-				for (int j = 0; j < thingDefs.Count; j++)
+				for (int i = 0; i < thingDefs.Count; i++)
 				{
-					if (thingDefs[j].recipes != null && thingDefs[j].recipes.Contains(this))
+					if (thingDefs[i].recipes != null && thingDefs[i].recipes.Contains(this))
 					{
-						yield return thingDefs[j];
+						yield return thingDefs[i];
 					}
 				}
 			}
@@ -266,20 +395,31 @@ namespace Verse
 			}
 		}
 
-		public ThingDef UIIconThing => uiIconThing ?? ProducedThingDef;
-
-		public bool AvailableOnNow(Thing thing)
+		public bool AvailableOnNow(Thing thing, BodyPartRecord part = null)
 		{
-			return Worker.AvailableOnNow(thing);
+			return Worker.AvailableOnNow(thing, part);
 		}
 
-		public float WorkAmountTotal(ThingDef stuffDef)
+		public float WorkAmountTotal(Thing thing)
+		{
+			if (thing == null)
+			{
+				return WorkAmountForStuff(null);
+			}
+			if (this == RecipeDefOf.SmeltOrDestroyThing && thing.Smeltable)
+			{
+				return smeltingWorkAmount;
+			}
+			return WorkAmountForStuff(thing.Stuff);
+		}
+
+		public float WorkAmountForStuff(ThingDef stuff)
 		{
 			if (workAmount >= 0f)
 			{
 				return workAmount;
 			}
-			return products[0].thingDef.GetStatValueAbstract(StatDefOf.WorkToMake, stuffDef);
+			return products[0].thingDef.GetStatValueAbstract(StatDefOf.WorkToMake, stuff);
 		}
 
 		public IEnumerable<ThingDef> PotentiallyMissingIngredients(Pawn billDoer, Map map)
@@ -373,10 +513,7 @@ namespace Verse
 			DeepProfiler.Start("fixedIngredientFilter.ResolveReferences()");
 			try
 			{
-				if (fixedIngredientFilter != null)
-				{
-					fixedIngredientFilter.ResolveReferences();
-				}
+				fixedIngredientFilter?.ResolveReferences();
 			}
 			finally
 			{
@@ -462,13 +599,13 @@ namespace Verse
 			while (flag)
 			{
 				flag = false;
-				for (int i = 0; i < ingredients.Count; i++)
+				for (int num = 0; num < ingredients.Count; num++)
 				{
-					if (!ingredients[i].filter.AllowedThingDefs.Any((ThingDef td) => !premultipliedSmallIngredients.Contains(td)))
+					if (!ingredients[num].filter.AllowedThingDefs.Any((ThingDef td) => !premultipliedSmallIngredients.Contains(td)))
 					{
 						continue;
 					}
-					foreach (ThingDef allowedThingDef in ingredients[i].filter.AllowedThingDefs)
+					foreach (ThingDef allowedThingDef in ingredients[num].filter.AllowedThingDefs)
 					{
 						flag |= premultipliedSmallIngredients.Remove(allowedThingDef);
 					}
@@ -497,11 +634,11 @@ namespace Verse
 			{
 				yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Skill".Translate(), workSkill.LabelCap, "Stat_Recipe_Skill_Desc".Translate(), 4404);
 			}
-			if (ingredients != null && ingredients.Count > 0)
+			if (!ingredients.NullOrEmpty())
 			{
-				yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Ingredients".Translate(), ingredients.Select((IngredientCount ic) => ic.Summary).ToCommaList(), "Stat_Recipe_Ingredients_Desc".Translate(), 4405, null, GetIngredientsHyperlinks());
+				yield return new StatDrawEntry(StatCategoryDefOf.Basics, "Ingredients".Translate(), ingredients.Select((IngredientCount ic) => ic.SummaryFor(this)).ToCommaList(), "Stat_Recipe_Ingredients_Desc".Translate(), 4405, null, GetIngredientsHyperlinks());
 			}
-			if (skillRequirements != null && skillRequirements.Count > 0)
+			if (!skillRequirements.NullOrEmpty())
 			{
 				yield return new StatDrawEntry(StatCategoryDefOf.Basics, "SkillRequirements".Translate(), skillRequirements.Select((SkillRequirement sr) => sr.Summary).ToCommaList(), "Stat_Recipe_SkillRequirements_Desc".Translate(), 4403);
 			}
@@ -522,23 +659,32 @@ namespace Verse
 			{
 				yield return new StatDrawEntry(StatCategoryDefOf.Basics, "EfficiencyStat".Translate(), efficiencyStat.LabelCap, "Stat_Recipe_EfficiencyStat_Desc".Translate(), 4401);
 			}
-			if (!IsSurgery)
+			if (IsSurgery)
+			{
+				if (surgerySuccessChanceFactor >= 99999f)
+				{
+					yield return new StatDrawEntry(StatCategoryDefOf.Surgery, "SurgerySuccessChanceFactor".Translate(), "Stat_Thing_Surgery_SuccessChanceFactor_CantFail".Translate(), "Stat_Thing_Surgery_SuccessChanceFactor_CantFail_Desc".Translate(), 4102);
+				}
+				else
+				{
+					yield return new StatDrawEntry(StatCategoryDefOf.Surgery, "SurgerySuccessChanceFactor".Translate(), surgerySuccessChanceFactor.ToStringPercent(), "Stat_Thing_Surgery_SuccessChanceFactor_Desc".Translate(), 4102);
+					if (deathOnFailedSurgeryChance >= 99999f)
+					{
+						yield return new StatDrawEntry(StatCategoryDefOf.Surgery, "SurgeryDeathOnFailChance".Translate(), "100%", "Stat_Thing_Surgery_DeathOnFailChance_Desc".Translate(), 4101);
+					}
+					else
+					{
+						yield return new StatDrawEntry(StatCategoryDefOf.Surgery, "SurgeryDeathOnFailChance".Translate(), deathOnFailedSurgeryChance.ToStringPercent(), "Stat_Thing_Surgery_DeathOnFailChance_Desc".Translate(), 4101);
+					}
+				}
+			}
+			if (addsHediff == null)
 			{
 				yield break;
 			}
-			if (surgerySuccessChanceFactor >= 99999f)
+			foreach (StatDrawEntry medicalStatsFromRecipeDef in MedicalRecipesUtility.GetMedicalStatsFromRecipeDefs(Gen.YieldSingle(this)))
 			{
-				yield return new StatDrawEntry(StatCategoryDefOf.Surgery, "SurgerySuccessChanceFactor".Translate(), "Stat_Thing_Surgery_SuccessChanceFactor_CantFail".Translate(), "Stat_Thing_Surgery_SuccessChanceFactor_CantFail_Desc".Translate(), 4102);
-				yield break;
-			}
-			yield return new StatDrawEntry(StatCategoryDefOf.Surgery, "SurgerySuccessChanceFactor".Translate(), surgerySuccessChanceFactor.ToStringPercent(), "Stat_Thing_Surgery_SuccessChanceFactor_Desc".Translate(), 4102);
-			if (deathOnFailedSurgeryChance >= 99999f)
-			{
-				yield return new StatDrawEntry(StatCategoryDefOf.Surgery, "SurgeryDeathOnFailChance".Translate(), "100%", "Stat_Thing_Surgery_DeathOnFailChance_Desc".Translate(), 4101);
-			}
-			else
-			{
-				yield return new StatDrawEntry(StatCategoryDefOf.Surgery, "SurgeryDeathOnFailChance".Translate(), deathOnFailedSurgeryChance.ToStringPercent(), "Stat_Thing_Surgery_DeathOnFailChance_Desc".Translate(), 4101);
+				yield return medicalStatsFromRecipeDef;
 			}
 		}
 	}

@@ -14,20 +14,19 @@ namespace Verse
 			}
 			Map map = victim.Map;
 			DamageResult damageResult = base.Apply(dinfo, victim);
+			if (map == null)
+			{
+				return damageResult;
+			}
 			if (!damageResult.deflected && !dinfo.InstantPermanentInjury && Rand.Chance(FireUtility.ChanceToAttachFireFromEvent(victim)))
 			{
-				victim.TryAttachFire(Rand.Range(0.15f, 0.25f));
+				victim.TryAttachFire(Rand.Range(0.15f, 0.25f), dinfo.Instigator);
 			}
-			if (victim.Destroyed && map != null && pawn == null)
+			if (victim.Destroyed && pawn == null)
 			{
 				foreach (IntVec3 item in victim.OccupiedRect())
 				{
 					FilthMaker.TryMakeFilth(item, map, ThingDefOf.Filth_Ash);
-				}
-				Plant plant = victim as Plant;
-				if (plant != null && victim.def.plant.IsTree && plant.LifeStage != 0 && victim.def != ThingDefOf.BurnedTree)
-				{
-					((DeadPlant)GenSpawn.Spawn(ThingDefOf.BurnedTree, victim.Position, map)).Growth = plant.Growth;
 				}
 			}
 			return damageResult;
@@ -38,7 +37,7 @@ namespace Verse
 			base.ExplosionAffectCell(explosion, c, damagedThings, ignoredThings, canThrowMotes);
 			if (def == DamageDefOf.Flame && Rand.Chance(FireUtility.ChanceToStartFireIn(c, explosion.Map)))
 			{
-				FireUtility.TryStartFireIn(c, explosion.Map, Rand.Range(0.2f, 0.6f));
+				FireUtility.TryStartFireIn(c, explosion.Map, Rand.Range(0.2f, 0.6f), explosion.instigator);
 			}
 		}
 	}

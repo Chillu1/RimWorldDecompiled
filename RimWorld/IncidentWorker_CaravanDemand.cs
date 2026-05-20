@@ -58,7 +58,7 @@ namespace RimWorld
 			List<Pawn> attackers = PawnGroupMakerUtility.GeneratePawns(defaultPawnGroupMakerParms).ToList();
 			if (attackers.Count == 0)
 			{
-				Log.Error(string.Concat("Caravan demand incident couldn't generate any enemies even though min points have been checked. faction=", defaultPawnGroupMakerParms.faction, "(", (defaultPawnGroupMakerParms.faction != null) ? defaultPawnGroupMakerParms.faction.def.ToString() : "null", ") parms=", parms));
+				Log.Error("Caravan demand incident couldn't generate any enemies even though min points have been checked. faction=" + defaultPawnGroupMakerParms.faction?.ToString() + "(" + ((defaultPawnGroupMakerParms.faction != null) ? defaultPawnGroupMakerParms.faction.def.ToString() : "null") + ") parms=" + parms);
 				return false;
 			}
 			CameraJumper.TryJumpAndSelect(caravan);
@@ -180,7 +180,7 @@ namespace RimWorld
 			int num = 0;
 			for (int i = 0; i < caravan.pawns.Count; i++)
 			{
-				if (caravan.pawns[i].RaceProps.Animal)
+				if (caravan.pawns[i].IsAnimal)
 				{
 					num++;
 				}
@@ -191,7 +191,7 @@ namespace RimWorld
 			}
 			int count = Rand.RangeInclusive(1, (int)Mathf.Max((float)num * 0.6f, 1f));
 			return (from x in (from x in caravan.pawns.InnerListForReading
-					where x.RaceProps.Animal
+					where x.IsAnimal
 					orderby x.MarketValue descending
 					select x).Take(count)
 				select new ThingCount(x, 1)).ToList();
@@ -204,6 +204,7 @@ namespace RimWorld
 			list2.AddRange(caravan.PawnsListForReading.SelectMany((Pawn x) => ThingOwnerUtility.GetAllThingsRecursively(x, allowUnreal: false)));
 			list2.RemoveAll((Thing x) => x.MarketValue * (float)x.stackCount < 50f);
 			list2.RemoveAll((Thing x) => x.ParentHolder is Pawn_ApparelTracker && x.MarketValue < 500f);
+			list2.RemoveAll((Thing x) => x.ParentHolder is Pawn_EquipmentTracker pawn_EquipmentTracker && pawn_EquipmentTracker.pawn.kindDef.destroyGearOnDrop);
 			float num = list2.Sum((Thing x) => x.MarketValue * (float)x.stackCount);
 			float requestedCaravanValue = Mathf.Clamp(DemandAsPercentageOfCaravan.RandomInRange * num, 300f, 3500f);
 			while (requestedCaravanValue > 50f)
@@ -222,7 +223,7 @@ namespace RimWorld
 
 		private string GenerateMessageText(Faction enemyFaction, int attackerCount, List<ThingCount> demands, Caravan caravan)
 		{
-			return "CaravanDemand".Translate(caravan.Name, enemyFaction.Name, attackerCount, GenLabel.ThingsLabel(demands), enemyFaction.def.pawnsPlural).CapitalizeFirst();
+			return "CaravanDemand".Translate(caravan.Name, enemyFaction.NameColored, attackerCount, GenLabel.ThingsLabel(demands), enemyFaction.def.pawnsPlural).Resolve().CapitalizeFirst();
 		}
 
 		private void TakeFromCaravan(Caravan caravan, List<ThingCount> demands, Faction enemyFaction)

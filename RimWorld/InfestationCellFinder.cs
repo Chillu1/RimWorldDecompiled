@@ -7,26 +7,11 @@ namespace RimWorld
 {
 	public static class InfestationCellFinder
 	{
-		private struct LocationCandidate
-		{
-			public IntVec3 cell;
-
-			public float score;
-
-			public LocationCandidate(IntVec3 cell, float score)
-			{
-				this.cell = cell;
-				this.score = score;
-			}
-		}
-
 		private static List<LocationCandidate> locationCandidates = new List<LocationCandidate>();
 
 		private static Dictionary<Region, float> regionsDistanceToUnroofed = new Dictionary<Region, float>();
 
 		private static ByteGrid closedAreaSize;
-
-		private static ByteGrid distToColonyBuilding;
 
 		private const float MinRequiredScore = 7.5f;
 
@@ -48,10 +33,6 @@ namespace RimWorld
 
 		private static HashSet<Region> tempUnroofedRegions = new HashSet<Region>();
 
-		private static List<IntVec3> tmpColonyBuildingsLocs = new List<IntVec3>();
-
-		private static List<KeyValuePair<IntVec3, float>> tmpDistanceResult = new List<KeyValuePair<IntVec3, float>>();
-
 		public static bool TryFindCell(out IntVec3 cell, Map map)
 		{
 			CalculateLocationCandidates(map);
@@ -66,7 +47,7 @@ namespace RimWorld
 
 		private static float GetScoreAt(IntVec3 cell, Map map)
 		{
-			if ((float)(int)distToColonyBuilding[cell] > 30f)
+			if ((float)(int)CellFinderUtility.DistToColonyBuilding[cell] > 30f)
 			{
 				return 0f;
 			}
@@ -106,19 +87,19 @@ namespace RimWorld
 				return 0f;
 			}
 			int num = StraightLineDistToUnroofed(cell, map);
-			float value = (regionsDistanceToUnroofed.TryGetValue(region, out value) ? Mathf.Min(value, (float)num * 4f) : ((float)num * 1.15f));
-			value = Mathf.Pow(value, 1.55f);
+			float f = (regionsDistanceToUnroofed.TryGetValue(region, out f) ? Mathf.Min(f, (float)num * 4f) : ((float)num * 1.15f));
+			f = Mathf.Pow(f, 1.55f);
 			float num2 = Mathf.InverseLerp(0f, 12f, num);
-			float num3 = Mathf.Lerp(1f, 0.18f, map.glowGrid.GameGlowAt(cell));
+			float num3 = Mathf.Lerp(1f, 0.18f, map.glowGrid.GroundGlowAt(cell));
 			float num4 = 1f - Mathf.Clamp(DistToBlocker(cell, map) / 11f, 0f, 0.6f);
 			float num5 = Mathf.InverseLerp(-17f, -7f, temperature);
-			float f = value * num2 * num4 * mountainousnessScoreAt * num3 * num5;
-			f = Mathf.Pow(f, 1.2f);
-			if (f < 7.5f)
+			float f2 = f * num2 * num4 * mountainousnessScoreAt * num3 * num5;
+			f2 = Mathf.Pow(f2, 1.2f);
+			if (f2 < 7.5f)
 			{
 				return 0f;
 			}
-			return f;
+			return f2;
 		}
 
 		public static void DebugDraw()
@@ -138,7 +119,7 @@ namespace RimWorld
 					currentViewRect = currentViewRect.ExpandedBy(1);
 					CalculateTraversalDistancesToUnroofed(currentMap);
 					CalculateClosedAreaSizeGrid(currentMap);
-					CalculateDistanceToColonyBuildingGrid(currentMap);
+					CellFinderUtility.CalculateDistanceToColonyBuildingGrid(currentMap);
 					float num = 0.001f;
 					for (int i = 0; i < currentMap.Size.z; i++)
 					{
@@ -186,7 +167,7 @@ namespace RimWorld
 			locationCandidates.Clear();
 			CalculateTraversalDistancesToUnroofed(map);
 			CalculateClosedAreaSizeGrid(map);
-			CalculateDistanceToColonyBuildingGrid(map);
+			CellFinderUtility.CalculateDistanceToColonyBuildingGrid(map);
 			for (int i = 0; i < map.Size.z; i++)
 			{
 				for (int j = 0; j < map.Size.x; j++)
@@ -378,30 +359,6 @@ namespace RimWorld
 						});
 					}
 				}
-			}
-		}
-
-		private static void CalculateDistanceToColonyBuildingGrid(Map map)
-		{
-			if (distToColonyBuilding == null)
-			{
-				distToColonyBuilding = new ByteGrid(map);
-			}
-			else if (!distToColonyBuilding.MapSizeMatches(map))
-			{
-				distToColonyBuilding.ClearAndResizeTo(map);
-			}
-			distToColonyBuilding.Clear(byte.MaxValue);
-			tmpColonyBuildingsLocs.Clear();
-			List<Building> allBuildingsColonist = map.listerBuildings.allBuildingsColonist;
-			for (int i = 0; i < allBuildingsColonist.Count; i++)
-			{
-				tmpColonyBuildingsLocs.Add(allBuildingsColonist[i].Position);
-			}
-			Dijkstra<IntVec3>.Run(tmpColonyBuildingsLocs, (IntVec3 x) => DijkstraUtility.AdjacentCellsNeighborsGetter(x, map), (IntVec3 a, IntVec3 b) => (a.x == b.x || a.z == b.z) ? 1f : 1.41421354f, tmpDistanceResult);
-			for (int j = 0; j < tmpDistanceResult.Count; j++)
-			{
-				distToColonyBuilding[tmpDistanceResult[j].Key] = (byte)Mathf.Min(tmpDistanceResult[j].Value, 254.999f);
 			}
 		}
 	}

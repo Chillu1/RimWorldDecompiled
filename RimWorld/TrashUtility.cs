@@ -31,7 +31,7 @@ namespace RimWorld
 
 		public static bool ShouldTrashBuilding(Pawn pawn, Building b, bool attackAllInert = false)
 		{
-			if (!b.def.useHitPoints || (b.def.building != null && b.def.building.ai_neverTrashThis))
+			if (!ShouldTrashBuilding(b))
 			{
 				return false;
 			}
@@ -48,6 +48,23 @@ namespace RimWorld
 					return false;
 				}
 			}
+			if (!CanTrash(pawn, b) || !pawn.HostileTo(b))
+			{
+				return false;
+			}
+			return true;
+		}
+
+		public static bool ShouldTrashBuilding(Building b)
+		{
+			if (b?.def.building == null)
+			{
+				return false;
+			}
+			if (!b.def.useHitPoints || b.def.building.ai_neverTrashThis || b.IsClearableFreeBuilding)
+			{
+				return false;
+			}
 			if (b.def.building.isTrap)
 			{
 				return false;
@@ -57,11 +74,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (b.Faction == Faction.OfMechanoids)
-			{
-				return false;
-			}
-			if (!CanTrash(pawn, b) || !pawn.HostileTo(b))
+			if (b.Faction != null && b.Faction == Faction.OfMechanoids)
 			{
 				return false;
 			}
@@ -77,14 +90,9 @@ namespace RimWorld
 			return true;
 		}
 
-		public static Job TrashJob(Pawn pawn, Thing t, bool allowPunchingInert = false)
+		public static Job TrashJob(Pawn pawn, Thing t, bool allowPunchingInert = false, bool killIncappedTarget = false)
 		{
-			return TrashJob_NewTemp(pawn, t, allowPunchingInert);
-		}
-
-		public static Job TrashJob_NewTemp(Pawn pawn, Thing t, bool allowPunchingInert = false, bool killIncappedTarget = false)
-		{
-			if (t is Plant)
+			if (t is Plant && t.FlammableNow)
 			{
 				Job job = JobMaker.MakeJob(JobDefOf.Ignite, t);
 				FinalizeTrashJob(job);
@@ -103,14 +111,14 @@ namespace RimWorld
 					}
 				}
 			}
-			Job job3 = null;
-			if (Rand.Value < 0.35f && pawn.natives.IgniteVerb != null && pawn.natives.IgniteVerb.IsStillUsableBy(pawn) && t.FlammableNow && !t.IsBurning() && !(t is Building_Door))
+			Job job3;
+			if (Rand.Value < 0.35f && pawn.natives.IgniteVerb != null && pawn.natives.IgniteVerb.IsStillUsableBy(pawn) && t.FlammableNow && !t.IsBurning() && !(t is Building_Door) && FireUtility.GetEffectiveVacuumForFire(t.Position, t.Map) <= 0f)
 			{
 				job3 = JobMaker.MakeJob(JobDefOf.Ignite, t);
 			}
 			else
 			{
-				if (!(!((t as Building)?.def.building.isInert ?? false) || allowPunchingInert))
+				if (!(!(t is Building building) || !building.def.building.isInert || allowPunchingInert))
 				{
 					return null;
 				}
@@ -126,6 +134,7 @@ namespace RimWorld
 			job.expiryInterval = TrashJobCheckOverrideInterval.RandomInRange;
 			job.checkOverrideOnExpire = true;
 			job.expireRequiresEnemiesNearby = true;
+			job.ensureReachable = true;
 		}
 	}
 }

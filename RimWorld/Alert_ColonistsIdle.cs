@@ -10,6 +10,8 @@ namespace RimWorld
 
 		private List<Pawn> idleColonistsResult = new List<Pawn>();
 
+		private StringBuilder sb = new StringBuilder();
+
 		private List<Pawn> IdleColonists
 		{
 			get
@@ -24,7 +26,7 @@ namespace RimWorld
 					}
 					foreach (Pawn item in maps[i].mapPawns.FreeColonistsSpawned)
 					{
-						if (!item.mindState.IsIdle)
+						if (!item.mindState.IsIdle || item.IsQuestLodger())
 						{
 							continue;
 						}
@@ -48,17 +50,21 @@ namespace RimWorld
 
 		public override string GetLabel()
 		{
-			return "ColonistsIdle".Translate(IdleColonists.Count.ToStringCached());
+			if (idleColonistsResult.Count == 1)
+			{
+				return "ColonistIdle".Translate();
+			}
+			return "ColonistsIdle".Translate(idleColonistsResult.Count.ToStringCached());
 		}
 
 		public override TaggedString GetExplanation()
 		{
-			StringBuilder stringBuilder = new StringBuilder();
-			foreach (Pawn idleColonist in IdleColonists)
+			sb.Length = 0;
+			foreach (Pawn item in idleColonistsResult)
 			{
-				stringBuilder.AppendLine("  - " + idleColonist.NameShortColored.Resolve());
+				sb.AppendLine("  - " + item.NameShortColored.Resolve());
 			}
-			return "ColonistsIdleDesc".Translate(stringBuilder.ToString());
+			return "ColonistsIdleDesc".Translate(sb.ToString().TrimEndNewlines());
 		}
 
 		public override AlertReport GetReport()

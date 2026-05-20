@@ -9,8 +9,7 @@ namespace Verse
 
 		public override void SubEffectTick(TargetInfo A, TargetInfo B)
 		{
-			float chancePerTick = def.chancePerTick;
-			if (Rand.Value < chancePerTick)
+			if (Rand.Chance(def.chancePerTick))
 			{
 				MakeMote(A);
 			}

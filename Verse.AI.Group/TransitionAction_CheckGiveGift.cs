@@ -8,7 +8,7 @@ namespace Verse.AI.Group
 		{
 			if (DebugSettings.instantVisitorsGift || (trans.target.lord.numPawnsLostViolently == 0 && Rand.Chance(VisitorGiftForPlayerUtility.ChanceToLeaveGift(trans.target.lord.faction, trans.Map))))
 			{
-				VisitorGiftForPlayerUtility.GiveGift(trans.target.lord.ownedPawns, trans.target.lord.faction);
+				VisitorGiftForPlayerUtility.GiveRandomGift(trans.target.lord.ownedPawns, trans.target.lord.faction);
 			}
 		}
 	}

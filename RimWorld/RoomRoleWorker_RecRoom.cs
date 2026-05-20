@@ -19,14 +19,31 @@ namespace RimWorld
 				List<JoyGiverDef> allDefsListForReading = DefDatabase<JoyGiverDef>.AllDefsListForReading;
 				for (int j = 0; j < allDefsListForReading.Count; j++)
 				{
-					if (allDefsListForReading[j].thingDefs != null && allDefsListForReading[j].thingDefs.Contains(thing.def))
+					if (allDefsListForReading[j].countsForRecRoom && allDefsListForReading[j].thingDefs != null && allDefsListForReading[j].thingDefs.Contains(thing.def))
 					{
 						num++;
 						break;
 					}
 				}
 			}
-			return (float)num * 5f;
+			return (float)num * 7f;
+		}
+
+		public override float GetScoreDeltaIfBuildingPlaced(Room room, ThingDef buildingDef)
+		{
+			if (buildingDef.category != ThingCategory.Building)
+			{
+				return 0f;
+			}
+			List<JoyGiverDef> allDefsListForReading = DefDatabase<JoyGiverDef>.AllDefsListForReading;
+			for (int i = 0; i < allDefsListForReading.Count; i++)
+			{
+				if (allDefsListForReading[i].countsForRecRoom && allDefsListForReading[i].thingDefs != null && allDefsListForReading[i].thingDefs.Contains(buildingDef))
+				{
+					return 7f;
+				}
+			}
+			return 0f;
 		}
 	}
 }

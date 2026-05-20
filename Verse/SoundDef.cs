@@ -48,6 +48,11 @@ namespace Verse
 		[DefaultValue(0f)]
 		public float sustainFadeoutTime;
 
+		[LoadAlias("sustainerFadeoutStartSound")]
+		[Description("The name of the SoundDef that will be played when this sustainer starts to fade out.")]
+		[DefaultValue("")]
+		public SoundDef sustainFadeoutStartSound;
+
 		[Description("All the sounds that will play when this set is triggered.")]
 		public List<SubSoundDef> subSounds = new List<SubSoundDef>();
 
@@ -110,9 +115,14 @@ namespace Verse
 
 		public override void ResolveReferences()
 		{
+			base.ResolveReferences();
 			for (int i = 0; i < subSounds.Count; i++)
 			{
 				subSounds[i].parentDef = this;
+				if (subSounds[i].name == "UnnamedSubSoundDef")
+				{
+					subSounds[i].name = defName + "_" + i;
+				}
 				subSounds[i].ResolveReferences();
 			}
 		}
@@ -139,28 +149,43 @@ namespace Verse
 			{
 				yield return "Sustainer start and end sounds only work with sounds defined as sustainers.";
 			}
+			if (sustainFadeoutStartSound != null && sustainFadeoutTime <= 0f)
+			{
+				yield return "Sustainer fadeout sound is set, but fadeout time is not set.";
+			}
 			if (!sustain)
 			{
-				for (int j = 0; j < subSounds.Count; j++)
+				for (int i = 0; i < subSounds.Count; i++)
 				{
-					if (subSounds[j].startDelayRange.TrueMax > 0.001f)
+					if (subSounds[i].startDelayRange.TrueMax > 0.001f)
 					{
 						yield return "startDelayRange is only supported on sustainers.";
 					}
 				}
 			}
-			List<SoundDef> defs = DefDatabase<SoundDef>.AllDefsListForReading;
-			for (int j = 0; j < defs.Count; j++)
+			if (!subSounds.NullOrEmpty())
 			{
-				if (defs[j].eventNames.NullOrEmpty())
+				for (int i = 0; i < subSounds.Count; i++)
+				{
+					SubSoundDef s = subSounds[i];
+					foreach (string item in s.ConfigErrors())
+					{
+						yield return $"SubSound[{i}] ({s}): {item}";
+					}
+				}
+			}
+			List<SoundDef> defs = DefDatabase<SoundDef>.AllDefsListForReading;
+			for (int i = 0; i < defs.Count; i++)
+			{
+				if (defs[i].eventNames.NullOrEmpty())
 				{
 					continue;
 				}
-				for (int k = 0; k < defs[j].eventNames.Count; k++)
+				for (int j = 0; j < defs[i].eventNames.Count; j++)
 				{
-					if (defs[j].eventNames[k] == defName)
+					if (defs[i].eventNames[j] == defName)
 					{
-						yield return defName + " is also defined in the eventNames list for " + defs[j];
+						yield return defName + " is also defined in the eventNames list for " + defs[i];
 					}
 				}
 			}
@@ -182,7 +207,7 @@ namespace Verse
 					info = SoundInfo.InMap(new TargetInfo(mapPosition, Find.CurrentMap), MaintenanceType.PerFrame);
 					for (int i = 0; i < 5; i++)
 					{
-						MoteMaker.ThrowDustPuff(mapPosition, Find.CurrentMap, 1.5f);
+						FleckMaker.ThrowDustPuff(mapPosition, Find.CurrentMap, 1.5f);
 					}
 				}
 				else
@@ -251,18 +276,19 @@ namespace Verse
 
 		private static SoundDef UndefinedDefNamed(string defName)
 		{
+			SoundDef value;
 			lock (undefinedSoundDefsLock)
 			{
-				if (!undefinedSoundDefs.TryGetValue(defName, out var value))
+				if (!undefinedSoundDefs.TryGetValue(defName, out value))
 				{
 					value = new SoundDef();
 					value.isUndefined = true;
 					value.defName = defName;
+					value.ResolveDefNameHash();
 					undefinedSoundDefs.Add(defName, value);
-					return value;
 				}
-				return value;
 			}
+			return value;
 		}
 	}
 }

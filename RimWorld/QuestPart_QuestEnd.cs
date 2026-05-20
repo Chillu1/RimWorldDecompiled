@@ -10,10 +10,12 @@ namespace RimWorld
 
 		public bool sendLetter;
 
+		public bool playSound;
+
 		public override void Notify_QuestSignalReceived(Signal signal)
 		{
 			base.Notify_QuestSignalReceived(signal);
-			if (signal.tag == inSignal)
+			if (!(signal.tag != inSignal))
 			{
 				QuestEndOutcome arg;
 				if (outcome.HasValue)
@@ -24,7 +26,7 @@ namespace RimWorld
 				{
 					arg = QuestEndOutcome.Unknown;
 				}
-				quest.End(arg, sendLetter);
+				quest.End(arg, sendLetter, playSound);
 			}
 		}
 
@@ -34,6 +36,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref inSignal, "inSignal");
 			Scribe_Values.Look(ref outcome, "outcome");
 			Scribe_Values.Look(ref sendLetter, "sendLetter", defaultValue: false);
+			Scribe_Values.Look(ref playSound, "playSound", defaultValue: false);
 		}
 
 		public override void AssignDebugData()

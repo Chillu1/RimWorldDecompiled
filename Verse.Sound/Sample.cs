@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse.Sound
@@ -36,30 +37,15 @@ namespace Verse.Sound
 			}
 		}
 
-		public abstract float ParentStartRealTime
-		{
-			get;
-		}
+		public abstract float ParentStartRealTime { get; }
 
-		public abstract float ParentStartTick
-		{
-			get;
-		}
+		public abstract float ParentStartTick { get; }
 
-		public abstract float ParentHashCode
-		{
-			get;
-		}
+		public abstract float ParentHashCode { get; }
 
-		public abstract SoundParams ExternalParams
-		{
-			get;
-		}
+		public abstract SoundParams ExternalParams { get; }
 
-		public abstract SoundInfo Info
-		{
-			get;
-		}
+		public abstract SoundInfo Info { get; }
 
 		public Map Map => Info.Maker.Map;
 
@@ -82,8 +68,20 @@ namespace Verse.Sound
 		{
 			get
 			{
-				if (SoundDefHelper.CorrectContextNow(subDef.parentDef, Map))
+				if (Screen_Credits.creditsShowing)
 				{
+					return 1f - Mathf.Clamp01((Time.realtimeSinceStartup - Screen_Credits.creationRealtime) / 3f);
+				}
+				if (TestPlaying || SoundDefHelper.CorrectContextNow(subDef.parentDef, Map))
+				{
+					if (subDef.parentDef.context != SoundContext.MapOnly && subDef.parentDef.context != SoundContext.WorldOnly)
+					{
+						return Prefs.VolumeUI;
+					}
+					if ((subDef.parentDef.context == SoundContext.MapOnly || subDef.parentDef.context == SoundContext.WorldOnly) && !IsAmbient)
+					{
+						return Prefs.VolumeGame;
+					}
 					return 1f;
 				}
 				return 0f;
@@ -103,6 +101,24 @@ namespace Verse.Sound
 		}
 
 		public float SanitizedVolume => AudioSourceUtility.GetSanitizedVolume(Volume, subDef.parentDef);
+
+		public bool IsAmbient
+		{
+			get
+			{
+				foreach (SubSoundDef subSound in subDef.parentDef.subSounds)
+				{
+					foreach (SoundParameterMapping paramMapping in subSound.paramMappings)
+					{
+						if (paramMapping.inParam is SoundParamSource_AmbientVolume)
+						{
+							return true;
+						}
+					}
+				}
+				return false;
+			}
+		}
 
 		protected virtual float Pitch
 		{
@@ -201,7 +217,7 @@ namespace Verse.Sound
 
 		public override string ToString()
 		{
-			return "Sample_" + subDef.name + " volume=" + source.volume + " at " + source.transform.position.ToIntVec3();
+			return $"Sample_{subDef.name} volume={source.volume} pitch={source.pitch} at {source.transform.position.ToIntVec3()}";
 		}
 
 		public override int GetHashCode()

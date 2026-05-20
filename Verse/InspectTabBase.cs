@@ -13,17 +13,15 @@ namespace Verse
 
 		private string cachedTutorHighlightTagClosed;
 
-		protected abstract float PaneTopY
-		{
-			get;
-		}
+		protected abstract float PaneTopY { get; }
 
-		protected abstract bool StillValid
-		{
-			get;
-		}
+		protected abstract bool StillValid { get; }
 
 		public virtual bool IsVisible => true;
+
+		public virtual bool Hidden => false;
+
+		public virtual bool VisibleInBlueprintMode { get; } = true;
 
 		public string TutorHighlightTagClosed
 		{
@@ -56,22 +54,23 @@ namespace Verse
 			Rect rect = TabRect;
 			Find.WindowStack.ImmediateWindow(235086, rect, WindowLayer.GameUI, delegate
 			{
-				if (StillValid && IsVisible)
+				if (!StillValid || !IsVisible)
 				{
-					if (Widgets.CloseButtonFor(rect.AtZero()))
-					{
-						CloseTab();
-					}
-					try
-					{
-						FillTab();
-					}
-					catch (Exception ex)
-					{
-						Log.ErrorOnce(string.Concat("Exception filling tab ", GetType(), ": ", ex), 49827);
-					}
+					return;
 				}
-			});
+				if (Widgets.CloseButtonFor(rect.AtZero()))
+				{
+					CloseTab();
+				}
+				try
+				{
+					FillTab();
+				}
+				catch (Exception ex)
+				{
+					Log.ErrorOnce("Exception filling tab " + GetType()?.ToString() + ": " + ex, 49827);
+				}
+			}, doBackground: true, absorbInputAroundWindow: false, 1f, Notify_ClickOutsideWindow);
 			ExtraOnGUI();
 		}
 
@@ -100,6 +99,10 @@ namespace Verse
 		}
 
 		public virtual void Notify_ClearingAllMapsMemory()
+		{
+		}
+
+		public virtual void Notify_ClickOutsideWindow()
 		{
 		}
 	}

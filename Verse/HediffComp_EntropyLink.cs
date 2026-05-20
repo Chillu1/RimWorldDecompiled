@@ -10,9 +10,9 @@ namespace Verse
 		{
 			base.Notify_EntropyGained(baseAmount, finalAmount, source);
 			HediffComp_Link hediffComp_Link = parent.TryGetComp<HediffComp_Link>();
-			if (hediffComp_Link != null && hediffComp_Link.other != source && hediffComp_Link.other.psychicEntropy != null)
+			if (hediffComp_Link != null && hediffComp_Link.other != source && hediffComp_Link.OtherPawn.psychicEntropy != null)
 			{
-				hediffComp_Link.other.psychicEntropy.TryAddEntropy(baseAmount * Props.entropyTransferAmount, parent.pawn, scale: false);
+				hediffComp_Link.OtherPawn.psychicEntropy.TryAddEntropy(baseAmount * Props.entropyTransferAmount, parent.pawn, scale: false);
 				MoteMaker.MakeInteractionOverlay(ThingDefOf.Mote_PsychicLinkPulse, parent.pawn, hediffComp_Link.other);
 			}
 		}

@@ -7,11 +7,15 @@ using Verse.Sound;
 namespace RimWorld
 {
 	[StaticConstructorOnStartup]
-	public class Skyfaller : Thing, IThingHolder
+	public class Skyfaller : ThingWithComps, IThingHolder, IRoofCollapseAlert
 	{
 		public ThingOwner innerContainer;
 
 		public int ticksToImpact;
+
+		public int ageTicks;
+
+		public int ticksToDiscard;
 
 		public float angle;
 
@@ -19,9 +23,25 @@ namespace RimWorld
 
 		private int ticksToImpactMax = 220;
 
+		public Letter impactLetter;
+
+		public bool contentsCanOverlap = true;
+
+		private bool hasHitRoof;
+
+		protected bool hasImpacted;
+
+		private bool hasLeftMap;
+
+		public bool moveAside;
+
 		private Material cachedShadowMaterial;
 
 		private bool anticipationSoundPlayed;
+
+		private Sustainer floatingSoundPlaying;
+
+		private Sustainer anticipationSoundPlaying;
 
 		private static MaterialPropertyBlock shadowPropertyBlock = new MaterialPropertyBlock();
 
@@ -29,13 +49,37 @@ namespace RimWorld
 
 		private const int RoofHitPreDelay = 15;
 
-		private const int LeaveMapAfterTicks = 220;
+		private const int LeaveMapAfterTicksDefault = 220;
+
+		protected CompSkyfallerRandomizeDirection randomizeDirectionComp;
+
+		private static readonly List<IntVec3> usedCells = new List<IntVec3>();
+
+		public int LeaveMapAfterTicks
+		{
+			get
+			{
+				if (ticksToDiscard <= 0)
+				{
+					return 220;
+				}
+				return ticksToDiscard;
+			}
+		}
+
+		public bool? OverrideFlightFlippedHorizontal { get; set; }
+
+		public CompSkyfallerRandomizeDirection RandomizeDirectionComp => randomizeDirectionComp;
 
 		public override Graphic Graphic
 		{
 			get
 			{
 				Thing thingForGraphic = GetThingForGraphic();
+				if (def.skyfaller.fadeInTicks > 0 || def.skyfaller.fadeOutTicks > 0)
+				{
+					return def.graphicData.GraphicColoredFor(thingForGraphic);
+				}
 				if (thingForGraphic == this)
 				{
 					return base.Graphic;
@@ -51,19 +95,55 @@ namespace RimWorld
 				switch (def.skyfaller.movementType)
 				{
 				case SkyfallerMovementType.Accelerate:
-					return SkyfallerDrawPosUtility.DrawPos_Accelerate(base.DrawPos, ticksToImpact, angle, CurrentSpeed);
+					return SkyfallerDrawPosUtility.DrawPos_Accelerate(base.DrawPos, ticksToImpact, angle, CurrentSpeed, OverrideFlightFlippedHorizontal ?? def.skyfaller.flightFlippedHorizontally, randomizeDirectionComp);
 				case SkyfallerMovementType.ConstantSpeed:
-					return SkyfallerDrawPosUtility.DrawPos_ConstantSpeed(base.DrawPos, ticksToImpact, angle, CurrentSpeed);
+					return SkyfallerDrawPosUtility.DrawPos_ConstantSpeed(base.DrawPos, ticksToImpact, angle, CurrentSpeed, OverrideFlightFlippedHorizontal ?? def.skyfaller.flightFlippedHorizontally, randomizeDirectionComp);
 				case SkyfallerMovementType.Decelerate:
-					return SkyfallerDrawPosUtility.DrawPos_Decelerate(base.DrawPos, ticksToImpact, angle, CurrentSpeed);
+					return SkyfallerDrawPosUtility.DrawPos_Decelerate(base.DrawPos, ticksToImpact, angle, CurrentSpeed, OverrideFlightFlippedHorizontal ?? def.skyfaller.flightFlippedHorizontally, randomizeDirectionComp);
 				default:
 					Log.ErrorOnce("SkyfallerMovementType not handled: " + def.skyfaller.movementType, thingIDNumber ^ 0x7424EBC7);
-					return SkyfallerDrawPosUtility.DrawPos_Accelerate(base.DrawPos, ticksToImpact, angle, CurrentSpeed);
+					return SkyfallerDrawPosUtility.DrawPos_Accelerate(base.DrawPos, ticksToImpact, angle, CurrentSpeed, OverrideFlightFlippedHorizontal ?? def.skyfaller.flightFlippedHorizontally, randomizeDirectionComp);
 				}
 			}
 		}
 
-		private Material ShadowMaterial
+		public override Color DrawColor
+		{
+			get
+			{
+				if (def.skyfaller.fadeInTicks > 0 && ageTicks < def.skyfaller.fadeInTicks)
+				{
+					Color drawColor = base.DrawColor;
+					drawColor.a *= Mathf.Lerp(0f, 1f, Mathf.Min((float)ageTicks / (float)def.skyfaller.fadeInTicks, 1f));
+					return drawColor;
+				}
+				if (FadingOut)
+				{
+					Color drawColor2 = base.DrawColor;
+					drawColor2.a *= Mathf.Lerp(1f, 0f, Mathf.Max((float)ageTicks - (float)(LeaveMapAfterTicks - def.skyfaller.fadeOutTicks), 0f) / (float)def.skyfaller.fadeOutTicks);
+					return drawColor2;
+				}
+				return base.DrawColor;
+			}
+			set
+			{
+				base.DrawColor = value;
+			}
+		}
+
+		public bool FadingOut
+		{
+			get
+			{
+				if (def.skyfaller.fadeOutTicks > 0)
+				{
+					return ageTicks >= LeaveMapAfterTicks - def.skyfaller.fadeOutTicks;
+				}
+				return false;
+			}
+		}
+
+		protected Material ShadowMaterial
 		{
 			get
 			{
@@ -81,7 +161,7 @@ namespace RimWorld
 			{
 				if (def.skyfaller.reversed)
 				{
-					return (float)ticksToImpact / 220f;
+					return (float)ticksToImpact / (float)LeaveMapAfterTicks;
 				}
 				return 1f - (float)ticksToImpact / (float)ticksToImpactMax;
 			}
@@ -111,6 +191,12 @@ namespace RimWorld
 			}
 		}
 
+		public override void PostPostMake()
+		{
+			base.PostPostMake();
+			randomizeDirectionComp = GetComp<CompSkyfallerRandomizeDirection>();
+		}
+
 		public Skyfaller()
 		{
 			innerContainer = new ThingOwner<Thing>(this);
@@ -120,10 +206,18 @@ namespace RimWorld
 		{
 			base.ExposeData();
 			Scribe_Deep.Look(ref innerContainer, "innerContainer", this);
+			Scribe_Deep.Look(ref impactLetter, "impactLetter");
 			Scribe_Values.Look(ref ticksToImpact, "ticksToImpact", 0);
-			Scribe_Values.Look(ref ticksToImpactMax, "ticksToImpactMax", 220);
+			Scribe_Values.Look(ref ticksToDiscard, "ticksToDiscard", 0);
+			Scribe_Values.Look(ref ageTicks, "ageTicks", 0);
+			Scribe_Values.Look(ref ticksToImpactMax, "ticksToImpactMax", LeaveMapAfterTicks);
 			Scribe_Values.Look(ref angle, "angle", 0f);
 			Scribe_Values.Look(ref shrapnelDirection, "shrapnelDirection", 0f);
+			Scribe_Values.Look(ref hasHitRoof, "hasHitRoof", defaultValue: false);
+			Scribe_Values.Look(ref hasImpacted, "hasImpacted", defaultValue: false);
+			Scribe_Values.Look(ref hasLeftMap, "hasLeftMap", defaultValue: false);
+			Scribe_Values.Look(ref contentsCanOverlap, "contentsCanOverlap", defaultValue: true);
+			Scribe_Values.Look(ref moveAside, "moveAside", defaultValue: false);
 		}
 
 		public override void PostMake()
@@ -138,11 +232,12 @@ namespace RimWorld
 		public override void SpawnSetup(Map map, bool respawningAfterLoad)
 		{
 			base.SpawnSetup(map, respawningAfterLoad);
-			if (respawningAfterLoad)
+			if (respawningAfterLoad || base.BeingTransportedOnGravship)
 			{
 				return;
 			}
 			ticksToImpact = (ticksToImpactMax = def.skyfaller.ticksToImpactRange.RandomInRange);
+			ticksToDiscard = ((def.skyfaller.ticksToDiscardInReverse != IntRange.Zero) ? def.skyfaller.ticksToDiscardInReverse.RandomInRange : (-1));
 			if (def.skyfaller.MakesShrapnel)
 			{
 				float num = GenMath.PositiveMod(shrapnelDirection, 360f);
@@ -173,15 +268,34 @@ namespace RimWorld
 		{
 			base.Destroy(mode);
 			innerContainer.ClearAndDestroyContents();
+			if (anticipationSoundPlaying != null)
+			{
+				anticipationSoundPlaying.End();
+				anticipationSoundPlaying = null;
+			}
 		}
 
-		public override void DrawAt(Vector3 drawLoc, bool flip = false)
+		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
 		{
+			GetDrawPositionAndRotation(ref drawLoc, out var extraRotation);
 			Thing thingForGraphic = GetThingForGraphic();
-			float num = 0f;
+			if (!WorldComponent_GravshipController.GravshipRenderInProgess)
+			{
+				Graphic.Draw(drawLoc, flip ? thingForGraphic.Rotation.Opposite : thingForGraphic.Rotation, thingForGraphic, extraRotation);
+			}
+			DrawDropSpotShadow();
+		}
+
+		protected virtual void GetDrawPositionAndRotation(ref Vector3 drawLoc, out float extraRotation)
+		{
+			extraRotation = 0f;
 			if (def.skyfaller.rotateGraphicTowardsDirection)
 			{
-				num = angle;
+				extraRotation = angle;
+			}
+			if (randomizeDirectionComp != null)
+			{
+				extraRotation += randomizeDirectionComp.ExtraDrawAngle;
 			}
 			if (def.skyfaller.angleCurve != null)
 			{
@@ -189,7 +303,7 @@ namespace RimWorld
 			}
 			if (def.skyfaller.rotationCurve != null)
 			{
-				num += def.skyfaller.rotationCurve.Evaluate(TimeInAnimation);
+				extraRotation += def.skyfaller.rotationCurve.Evaluate(TimeInAnimation);
 			}
 			if (def.skyfaller.xPositionCurve != null)
 			{
@@ -199,59 +313,87 @@ namespace RimWorld
 			{
 				drawLoc.z += def.skyfaller.zPositionCurve.Evaluate(TimeInAnimation);
 			}
-			Graphic.Draw(drawLoc, flip ? thingForGraphic.Rotation.Opposite : thingForGraphic.Rotation, thingForGraphic, num);
-			DrawDropSpotShadow();
 		}
 
-		public override void Tick()
+		public virtual float DrawAngle()
 		{
-			innerContainer.ThingOwnerTick();
+			float num = 0f;
+			if (def.skyfaller.rotateGraphicTowardsDirection)
+			{
+				num = angle;
+			}
+			num += def.skyfaller.rotationCurve.Evaluate(TimeInAnimation);
+			if (randomizeDirectionComp != null)
+			{
+				num += randomizeDirectionComp.ExtraDrawAngle;
+			}
+			return num;
+		}
+
+		protected override void Tick()
+		{
+			base.Tick();
 			if (SpawnTimedMotes)
 			{
 				CellRect cellRect = this.OccupiedRect();
 				for (int i = 0; i < cellRect.Area * def.skyfaller.motesPerCell; i++)
 				{
-					MoteMaker.ThrowDustPuff(cellRect.RandomVector3, base.Map, 2f);
+					FleckMaker.ThrowDustPuff(cellRect.RandomVector3, base.Map, 2f);
 				}
 			}
+			if (def.skyfaller.floatingSound != null && (floatingSoundPlaying == null || floatingSoundPlaying.Ended))
+			{
+				floatingSoundPlaying = def.skyfaller.floatingSound.TrySpawnSustainer(SoundInfo.InMap(new TargetInfo(this), MaintenanceType.PerTick));
+			}
+			floatingSoundPlaying?.Maintain();
 			if (def.skyfaller.reversed)
 			{
 				ticksToImpact++;
 				if (!anticipationSoundPlayed && def.skyfaller.anticipationSound != null && ticksToImpact > def.skyfaller.anticipationSoundTicks)
 				{
 					anticipationSoundPlayed = true;
-					def.skyfaller.anticipationSound.PlayOneShot(new TargetInfo(base.Position, base.Map));
+					TargetInfo targetInfo = new TargetInfo(base.Position, base.Map);
+					if (def.skyfaller.anticipationSound.sustain)
+					{
+						anticipationSoundPlaying = def.skyfaller.anticipationSound.TrySpawnSustainer(targetInfo);
+					}
+					else
+					{
+						def.skyfaller.anticipationSound.PlayOneShot(targetInfo);
+					}
 				}
-				if (ticksToImpact == 220)
+				if (ticksToImpact >= LeaveMapAfterTicks && !hasLeftMap)
 				{
 					LeaveMap();
 				}
-				else if (ticksToImpact > 220)
+			}
+			else
+			{
+				ticksToImpact--;
+				if (ticksToImpact <= 15 && !hasHitRoof)
 				{
-					Log.Error("ticksToImpact > LeaveMapAfterTicks. Was there an exception? Destroying skyfaller.");
-					Destroy();
+					HitRoof();
 				}
-				return;
+				if (!anticipationSoundPlayed && def.skyfaller.anticipationSound != null && ticksToImpact < def.skyfaller.anticipationSoundTicks)
+				{
+					anticipationSoundPlayed = true;
+					TargetInfo targetInfo2 = new TargetInfo(base.Position, base.Map);
+					if (def.skyfaller.anticipationSound.sustain)
+					{
+						anticipationSoundPlaying = def.skyfaller.anticipationSound.TrySpawnSustainer(targetInfo2);
+					}
+					else
+					{
+						def.skyfaller.anticipationSound.PlayOneShot(targetInfo2);
+					}
+				}
+				anticipationSoundPlaying?.Maintain();
+				if (ticksToImpact <= 0 && !hasImpacted)
+				{
+					Impact();
+				}
 			}
-			ticksToImpact--;
-			if (ticksToImpact == 15)
-			{
-				HitRoof();
-			}
-			if (!anticipationSoundPlayed && def.skyfaller.anticipationSound != null && ticksToImpact < def.skyfaller.anticipationSoundTicks)
-			{
-				anticipationSoundPlayed = true;
-				def.skyfaller.anticipationSound.PlayOneShot(new TargetInfo(base.Position, base.Map));
-			}
-			if (ticksToImpact == 0)
-			{
-				Impact();
-			}
-			else if (ticksToImpact < 0)
-			{
-				Log.Error("ticksToImpact < 0. Was there an exception? Destroying skyfaller.");
-				Destroy();
-			}
+			ageTicks++;
 		}
 
 		protected virtual void HitRoof()
@@ -261,18 +403,21 @@ namespace RimWorld
 				return;
 			}
 			CellRect cr = this.OccupiedRect();
-			if (!cr.Cells.Any((IntVec3 x) => x.Roofed(base.Map)))
+			hasHitRoof = true;
+			if (!cr.Cells.Any((IntVec3 x) => x.InBounds(base.Map) && x.Roofed(base.Map)))
 			{
 				return;
 			}
-			RoofDef roof = cr.Cells.First((IntVec3 x) => x.Roofed(base.Map)).GetRoof(base.Map);
+			RoofDef roof = cr.Cells.First((IntVec3 x) => x.InBounds(base.Map) && x.Roofed(base.Map)).GetRoof(base.Map);
 			if (!roof.soundPunchThrough.NullOrUndefined())
 			{
 				roof.soundPunchThrough.PlayOneShot(new TargetInfo(base.Position, base.Map));
 			}
-			RoofCollapserImmediate.DropRoofInCells(cr.ExpandedBy(1).ClipInsideMap(base.Map).Cells.Where(delegate(IntVec3 c)
+			CellRect cellRect = cr.ExpandedBy((!def.skyfaller.minimalRoofDestruction) ? 1 : 0).ClipInsideMap(base.Map);
+			Map map = base.Map;
+			RoofCollapserImmediate.DropRoofInCells(cellRect.Cells.Where(delegate(IntVec3 c)
 			{
-				if (!c.InBounds(base.Map))
+				if (!c.InBounds(map))
 				{
 					return false;
 				}
@@ -280,42 +425,75 @@ namespace RimWorld
 				{
 					return true;
 				}
-				if (c.GetFirstPawn(base.Map) != null)
+				if (c.GetFirstPawn(map) != null)
 				{
 					return false;
 				}
-				Building edifice = c.GetEdifice(base.Map);
+				Building edifice = c.GetEdifice(map);
 				return (edifice == null || !edifice.def.holdsRoof) ? true : false;
-			}), base.Map);
+			}), map);
 		}
 
 		protected virtual void SpawnThings()
 		{
-			for (int num = innerContainer.Count - 1; num >= 0; num--)
+			usedCells.Clear();
+			int i;
+			for (i = innerContainer.Count - 1; i >= 0; i--)
 			{
-				GenPlace.TryPlaceThing(innerContainer[num], base.Position, base.Map, ThingPlaceMode.Near, delegate(Thing thing, int count)
+				GenPlace.TryPlaceThing(innerContainer[i], base.Position, base.Map, ThingPlaceMode.Near, delegate(Thing thing, int count)
 				{
 					PawnUtility.RecoverFromUnwalkablePositionOrKill(thing.Position, thing.Map);
 					if (thing.def.Fillage == FillCategory.Full && def.skyfaller.CausesExplosion && def.skyfaller.explosionDamage.isExplosive && thing.Position.InHorDistOf(base.Position, def.skyfaller.explosionRadius))
 					{
 						base.Map.terrainGrid.Notify_TerrainDestroyed(thing.Position);
 					}
-				}, null, innerContainer[num].def.defaultPlacingRot);
+					if (moveAside)
+					{
+						GenSpawn.CheckMoveItemsAside(thing.Position, thing.Rotation, thing.def, thing.Map);
+					}
+					if (!contentsCanOverlap)
+					{
+						foreach (IntVec3 item in thing.OccupiedRect())
+						{
+							usedCells.Add(item);
+						}
+					}
+				}, delegate(IntVec3 c)
+				{
+					if (!contentsCanOverlap)
+					{
+						foreach (IntVec3 item2 in GenAdj.OccupiedRect(c, innerContainer[i].def.defaultPlacingRot, innerContainer[i].def.size))
+						{
+							if (usedCells.Contains(item2))
+							{
+								return false;
+							}
+						}
+					}
+					return true;
+				}, innerContainer[i].Rotation);
 			}
 		}
 
 		protected virtual void Impact()
 		{
+			hasImpacted = true;
 			if (def.skyfaller.CausesExplosion)
 			{
-				GenExplosion.DoExplosion(base.Position, base.Map, def.skyfaller.explosionRadius, def.skyfaller.explosionDamage, null, GenMath.RoundRandom((float)def.skyfaller.explosionDamage.defaultDamage * def.skyfaller.explosionDamageFactor), -1f, null, null, null, null, null, 0f, 1, applyDamageToExplosionCellsNeighbors: false, null, 0f, 1, 0f, damageFalloff: false, null, (!def.skyfaller.damageSpawnedThings) ? innerContainer.ToList() : null);
+				IntVec3 position = base.Position;
+				Map map = base.Map;
+				float explosionRadius = def.skyfaller.explosionRadius;
+				DamageDef explosionDamage = def.skyfaller.explosionDamage;
+				int damAmount = GenMath.RoundRandom((float)def.skyfaller.explosionDamage.defaultDamage * def.skyfaller.explosionDamageFactor);
+				List<Thing> ignoredThings = ((!def.skyfaller.damageSpawnedThings) ? innerContainer.ToList() : null);
+				GenExplosion.DoExplosion(position, map, explosionRadius, explosionDamage, null, damAmount, -1f, null, null, null, null, null, 0f, 1, null, null, 255, applyDamageToExplosionCellsNeighbors: false, null, 0f, 1, 0f, damageFalloff: false, null, ignoredThings);
 			}
 			SpawnThings();
 			innerContainer.ClearAndDestroyContents();
 			CellRect cellRect = this.OccupiedRect();
 			for (int i = 0; i < cellRect.Area * def.skyfaller.motesPerCell; i++)
 			{
-				MoteMaker.ThrowDustPuff(cellRect.RandomVector3, base.Map, 2f);
+				FleckMaker.ThrowDustPuff(cellRect.RandomVector3, base.Map, 2f);
 			}
 			if (def.skyfaller.MakesShrapnel)
 			{
@@ -329,11 +507,21 @@ namespace RimWorld
 			{
 				def.skyfaller.impactSound.PlayOneShot(SoundInfo.InMap(new TargetInfo(base.Position, base.Map)));
 			}
+			if (impactLetter != null)
+			{
+				Find.LetterStack.ReceiveLetter(impactLetter);
+			}
+			Map map2 = base.Map;
 			Destroy();
+			if (def.skyfaller.spawnThing != null)
+			{
+				GenSpawn.TrySpawn(def.skyfaller.spawnThing, base.Position, map2, out var _);
+			}
 		}
 
 		protected virtual void LeaveMap()
 		{
+			hasLeftMap = true;
 			Destroy();
 		}
 
@@ -356,7 +544,7 @@ namespace RimWorld
 			return innerContainer[0];
 		}
 
-		protected void DrawDropSpotShadow()
+		protected virtual void DrawDropSpotShadow()
 		{
 			Material shadowMaterial = ShadowMaterial;
 			if (!(shadowMaterial == null))
@@ -367,10 +555,6 @@ namespace RimWorld
 
 		public static void DrawDropSpotShadow(Vector3 center, Rot4 rot, Material material, Vector2 shadowSize, int ticksToImpact)
 		{
-			if (rot.IsHorizontal)
-			{
-				Gen.Swap(ref shadowSize.x, ref shadowSize.y);
-			}
 			ticksToImpact = Mathf.Max(ticksToImpact, 0);
 			Vector3 pos = center;
 			pos.y = AltitudeLayer.Shadows.AltitudeFor();
@@ -385,6 +569,11 @@ namespace RimWorld
 			Matrix4x4 matrix = default(Matrix4x4);
 			matrix.SetTRS(pos, rot.AsQuat, s);
 			Graphics.DrawMesh(MeshPool.plane10Back, matrix, material, 0, null, 0, shadowPropertyBlock);
+		}
+
+		public RoofCollapseResponse Notify_OnBeforeRoofCollapse()
+		{
+			return RoofCollapseResponse.None;
 		}
 	}
 }

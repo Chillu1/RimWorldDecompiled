@@ -6,17 +6,23 @@ namespace RimWorld
 {
 	public static class BuildCopyCommandUtility
 	{
-		private static Dictionary<BuildableDef, Designator_Build> cache = new Dictionary<BuildableDef, Designator_Build>();
+		private static readonly Dictionary<BuildableDef, Designator_Build> cache = new Dictionary<BuildableDef, Designator_Build>();
 
-		private static int lastCacheTick = -1;
-
-		public static Command BuildCopyCommand(BuildableDef buildable, ThingDef stuff)
+		public static Command BuildCopyCommand(BuildableDef buildable, ThingDef stuff, Precept_Building sourcePrecept, ThingStyleDef style, bool styleOverridden, ColorInt? glowerColorOverride = null)
 		{
-			return BuildCommand(buildable, stuff, "CommandBuildCopy".Translate(), "CommandBuildCopyDesc".Translate(), allowHotKey: true);
+			return BuildCommand(buildable, stuff, sourcePrecept, style, styleOverridden, "CommandBuildCopy".Translate(), "CommandBuildCopyDesc".Translate(), allowHotKey: true, glowerColorOverride);
 		}
 
-		public static Command BuildCommand(BuildableDef buildable, ThingDef stuff, string label, string description, bool allowHotKey)
+		public static Command BuildCommand(BuildableDef buildable, ThingDef stuff = null, Precept_Building sourcePrecept = null, ThingStyleDef style = null, bool styleOverridden = false, string label = null, string description = null, bool allowHotKey = false, ColorInt? glowerColorOverride = null)
 		{
+			if (label == null)
+			{
+				label = buildable.label;
+			}
+			if (description == null)
+			{
+				description = buildable.description;
+			}
 			Designator_Build des = FindAllowedDesignator(buildable);
 			if (des == null)
 			{
@@ -30,26 +36,30 @@ namespace RimWorld
 			command_Action.action = delegate
 			{
 				SoundDefOf.Tick_Tiny.PlayOneShotOnCamera();
-				des.SetStuffDef(stuff);
 				Find.DesignatorManager.Select(des);
+				des.glowerColorOverride = glowerColorOverride;
+				des.SetTemporaryVars(stuff, styleOverridden);
 			};
 			command_Action.defaultLabel = label;
 			command_Action.defaultDesc = description;
-			command_Action.icon = des.ResolvedIcon();
+			ThingDef stuffDefRaw = des.StuffDefRaw;
+			des.SetStuffDef(stuff);
+			des.styleDef = style;
+			command_Action.icon = des.ResolvedIcon(style);
 			command_Action.iconProportions = des.iconProportions;
 			command_Action.iconDrawScale = des.iconDrawScale;
 			command_Action.iconTexCoords = des.iconTexCoords;
 			command_Action.iconAngle = des.iconAngle;
 			command_Action.iconOffset = des.iconOffset;
-			command_Action.order = 10f;
-			if (stuff != null)
+			command_Action.Order = 10f;
+			command_Action.SetColorOverride(des.IconDrawColor);
+			des.sourcePrecept = sourcePrecept;
+			des.SetStuffDef(stuffDefRaw);
+			if (buildable.uiIconMaterial != null)
 			{
-				command_Action.defaultIconColor = buildable.GetColorForStuff(stuff);
+				command_Action.overrideMaterial = (des.overrideMaterial = buildable.uiIconMaterial);
 			}
-			else
-			{
-				command_Action.defaultIconColor = buildable.uiIconColor;
-			}
+			command_Action.defaultIconColor = ((stuff != null) ? buildable.GetColorForStuff(stuff) : buildable.uiIconColor);
 			if (allowHotKey)
 			{
 				command_Action.hotKey = KeyBindingDefOf.Misc11;
@@ -59,16 +69,18 @@ namespace RimWorld
 
 		public static Designator_Build FindAllowedDesignator(BuildableDef buildable, bool mustBeVisible = true)
 		{
-			Game game = Current.Game;
-			if (game != null)
+			if (Current.Game != null)
 			{
-				if (lastCacheTick != game.tickManager.TicksGame)
-				{
-					cache.Clear();
-					lastCacheTick = game.tickManager.TicksGame;
-				}
 				if (cache.ContainsKey(buildable))
 				{
+					if (mustBeVisible)
+					{
+						Designator_Build designator_Build = cache[buildable];
+						if (designator_Build == null || !designator_Build.Visible)
+						{
+							return null;
+						}
+					}
 					return cache[buildable];
 				}
 			}
@@ -79,25 +91,37 @@ namespace RimWorld
 			List<DesignationCategoryDef> allDefsListForReading = DefDatabase<DesignationCategoryDef>.AllDefsListForReading;
 			for (int i = 0; i < allDefsListForReading.Count; i++)
 			{
-				List<Designator> allResolvedDesignators = allDefsListForReading[i].AllResolvedDesignators;
-				for (int j = 0; j < allResolvedDesignators.Count; j++)
+				foreach (Designator allResolvedAndIdeoDesignator in allDefsListForReading[i].AllResolvedAndIdeoDesignators)
 				{
-					Designator_Build designator_Build = FindAllowedDesignatorRecursive(allResolvedDesignators[j], buildable, mustBeVisible);
-					if (designator_Build != null)
+					Designator_Build designator_Build2 = FindAllowedDesignatorRecursive(allResolvedAndIdeoDesignator, buildable, mustBeVisible: false);
+					if (designator_Build2 == null)
 					{
-						if (!cache.ContainsKey(buildable))
-						{
-							cache.Add(buildable, designator_Build);
-						}
-						return designator_Build;
+						continue;
 					}
+					cache.TryAdd(buildable, designator_Build2);
+					object result;
+					if (mustBeVisible)
+					{
+						Designator_Build designator_Build3 = cache[buildable];
+						if (designator_Build3 == null || !designator_Build3.Visible)
+						{
+							result = null;
+							goto IL_00aa;
+						}
+					}
+					result = designator_Build2;
+					goto IL_00aa;
+					IL_00aa:
+					return (Designator_Build)result;
 				}
 			}
-			if (!cache.ContainsKey(buildable))
-			{
-				cache.Add(buildable, null);
-			}
+			cache.TryAdd(buildable, null);
 			return null;
+		}
+
+		public static void ClearCache()
+		{
+			cache.Clear();
 		}
 
 		public static Designator FindAllowedDesignatorRoot(BuildableDef buildable, bool mustBeVisible = true)
@@ -123,13 +147,11 @@ namespace RimWorld
 			{
 				return null;
 			}
-			Designator_Build designator_Build = designator as Designator_Build;
-			if (designator_Build != null && designator_Build.PlacingDef == buildable)
+			if (designator is Designator_Build designator_Build && designator_Build.PlacingDef == buildable)
 			{
 				return designator_Build;
 			}
-			Designator_Dropdown designator_Dropdown = designator as Designator_Dropdown;
-			if (designator_Dropdown != null)
+			if (designator is Designator_Dropdown designator_Dropdown)
 			{
 				for (int i = 0; i < designator_Dropdown.Elements.Count; i++)
 				{

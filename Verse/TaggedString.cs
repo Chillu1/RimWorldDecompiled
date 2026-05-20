@@ -4,7 +4,7 @@ namespace Verse
 	{
 		private string rawText;
 
-		private static TaggedString empty;
+		public static readonly TaggedString Empty = new TaggedString("");
 
 		public string RawText => rawText;
 
@@ -13,18 +13,6 @@ namespace Verse
 		public int Length => RawText.Length;
 
 		public int StrippedLength => RawText.StripTags().Length;
-
-		public static TaggedString Empty
-		{
-			get
-			{
-				if ((string)empty == null)
-				{
-					empty = new TaggedString("");
-				}
-				return empty;
-			}
-		}
 
 		public TaggedString(string dat)
 		{
@@ -38,7 +26,12 @@ namespace Verse
 
 		public TaggedString CapitalizeFirst()
 		{
-			if (rawText.NullOrEmpty() || char.IsUpper(rawText[0]))
+			if (rawText.NullOrEmpty())
+			{
+				return this;
+			}
+			int num = FirstLetterBetweenTags();
+			if (char.ToUpper(rawText[num]) == rawText[num])
 			{
 				return this;
 			}
@@ -46,12 +39,24 @@ namespace Verse
 			{
 				return new TaggedString(rawText.ToUpper());
 			}
-			int num = FirstLetterBetweenTags();
 			if (num == 0)
 			{
 				return new TaggedString(char.ToUpper(rawText[num]) + rawText.Substring(num + 1));
 			}
 			return new TaggedString(rawText.Substring(0, num) + char.ToUpper(rawText[num]) + rawText.Substring(num + 1));
+		}
+
+		public TaggedString EndWithPeriod()
+		{
+			if (rawText.NullOrEmpty())
+			{
+				return this;
+			}
+			if (rawText[rawText.Length - 1] == '.')
+			{
+				return this;
+			}
+			return rawText + ".";
 		}
 
 		private int FirstLetterBetweenTags()

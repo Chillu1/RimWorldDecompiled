@@ -64,8 +64,7 @@ namespace RimWorld
 			List<Letter> lettersListForReading = Find.LetterStack.LettersListForReading;
 			for (int k = 0; k < lettersListForReading.Count; k++)
 			{
-				ChoiceLetter_RansomDemand choiceLetter_RansomDemand = lettersListForReading[k] as ChoiceLetter_RansomDemand;
-				if (choiceLetter_RansomDemand != null)
+				if (lettersListForReading[k] is ChoiceLetter_RansomDemand choiceLetter_RansomDemand)
 				{
 					candidates.Remove(choiceLetter_RansomDemand.kidnapped);
 				}

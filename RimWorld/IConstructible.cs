@@ -5,7 +5,11 @@ namespace RimWorld
 {
 	public interface IConstructible
 	{
-		List<ThingDefCountClass> MaterialsNeeded();
+		List<ThingDefCountClass> TotalMaterialCost();
+
+		bool IsCompleted();
+
+		int ThingCountNeeded(ThingDef stuff);
 
 		ThingDef EntityToBuildStuff();
 	}

@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using RimWorld;
 using UnityEngine;
 using Verse.Sound;
 
 namespace Verse
 {
-	public abstract class Zone : IExposable, ISelectable, ILoadReferenceable
+	public abstract class Zone : IExposable, ISelectable, ILoadReferenceable, IRenameable, IHideable
 	{
 		public ZoneManager zoneManager;
 
@@ -24,7 +25,7 @@ namespace Verse
 
 		private Material materialInt;
 
-		public bool hidden;
+		private bool hidden;
 
 		private int lastStaticFireCheckTick = -9999;
 
@@ -35,6 +36,22 @@ namespace Verse
 		private static BoolGrid extantGrid;
 
 		private static BoolGrid foundGrid;
+
+		public string RenamableLabel
+		{
+			get
+			{
+				return label ?? baseLabel;
+			}
+			set
+			{
+				label = value;
+			}
+		}
+
+		public string BaseLabel => baseLabel;
+
+		public string InspectLabel => RenamableLabel;
 
 		public Map Map => zoneManager.map;
 
@@ -50,20 +67,33 @@ namespace Verse
 			}
 		}
 
+		public bool Hidden
+		{
+			get
+			{
+				return hidden;
+			}
+			set
+			{
+				hidden = value;
+				foreach (IntVec3 cell in Cells)
+				{
+					Map.mapDrawer.MapMeshDirty(cell, MapMeshFlagDefOf.Zone);
+				}
+			}
+		}
+
 		public Material Material
 		{
 			get
 			{
-				if (materialInt == null)
+				if ((object)materialInt == null)
 				{
-					materialInt = SolidColorMaterials.SimpleSolidColorMaterial(color);
-					materialInt.renderQueue = 3600;
+					materialInt = CreateMaterial();
 				}
 				return materialInt;
 			}
 		}
-
-		public string BaseLabel => baseLabel;
 
 		public List<IntVec3> Cells
 		{
@@ -75,6 +105,23 @@ namespace Verse
 					cellsShuffled = true;
 				}
 				return cells;
+			}
+		}
+
+		public int CellCount => cells.Count;
+
+		public int HeldThingsCount
+		{
+			get
+			{
+				int num = 0;
+				ThingGrid thingGrid = Map.thingGrid;
+				for (int i = 0; i < cells.Count; i++)
+				{
+					List<Thing> list = thingGrid.ThingsListAt(cells[i]);
+					num += list.Count;
+				}
+				return num;
 			}
 		}
 
@@ -116,9 +163,13 @@ namespace Verse
 
 		public virtual bool IsMultiselectable => false;
 
-		protected abstract Color NextZoneColor
+		protected abstract Color NextZoneColor { get; }
+
+		protected virtual Material CreateMaterial()
 		{
-			get;
+			Material material = SolidColorMaterials.SimpleSolidColorMaterial(color);
+			material.renderQueue = 3600;
+			return material;
 		}
 
 		public IEnumerator<IntVec3> GetEnumerator()
@@ -161,7 +212,8 @@ namespace Verse
 		{
 			if (cells.Contains(c))
 			{
-				Log.Error(string.Concat("Adding cell to zone which already has it. c=", c, ", zone=", this));
+				IntVec3 intVec = c;
+				Log.Error("Adding cell to zone which already has it. c=" + intVec.ToString() + ", zone=" + this);
 				return;
 			}
 			List<Thing> list = Map.thingGrid.ThingsListAt(c);
@@ -176,7 +228,7 @@ namespace Verse
 			}
 			cells.Add(c);
 			zoneManager.AddZoneGridCell(this, c);
-			Map.mapDrawer.MapMeshDirty(c, MapMeshFlag.Zone);
+			Map.mapDrawer.MapMeshDirty(c, MapMeshFlagDefOf.Zone);
 			AutoHomeAreaMaker.Notify_ZoneCellAdded(c, this);
 			cellsShuffled = false;
 		}
@@ -185,12 +237,13 @@ namespace Verse
 		{
 			if (!cells.Contains(c))
 			{
-				Log.Error(string.Concat("Cannot remove cell from zone which doesn't have it. c=", c, ", zone=", this));
+				IntVec3 intVec = c;
+				Log.Error("Cannot remove cell from zone which doesn't have it. c=" + intVec.ToString() + ", zone=" + this);
 				return;
 			}
 			cells.Remove(c);
 			zoneManager.ClearZoneGridCell(c);
-			Map.mapDrawer.MapMeshDirty(c, MapMeshFlag.Zone);
+			Map.mapDrawer.MapMeshDirty(c, MapMeshFlagDefOf.Zone);
 			cellsShuffled = false;
 			if (cells.Count == 0)
 			{
@@ -198,9 +251,17 @@ namespace Verse
 			}
 		}
 
-		public virtual void Delete()
+		public void Delete()
 		{
-			SoundDefOf.Designate_ZoneDelete.PlayOneShotOnCamera(Map);
+			Delete(playSound: true);
+		}
+
+		public virtual void Delete(bool playSound)
+		{
+			if (playSound)
+			{
+				SoundDefOf.Designate_ZoneDelete.PlayOneShotOnCamera(Map);
+			}
 			if (cells.Count == 0)
 			{
 				Deregister();
@@ -227,8 +288,7 @@ namespace Verse
 
 		public virtual void PostDeregister()
 		{
-			IHaulDestination haulDestination = this as IHaulDestination;
-			if (haulDestination != null)
+			if (this is IHaulDestination haulDestination)
 			{
 				Map.haulDestinationManager.RemoveHaulDestination(haulDestination);
 			}
@@ -248,7 +308,7 @@ namespace Verse
 
 		public virtual string GetInspectString()
 		{
-			return "";
+			return string.Format("{0}: {1}", "Size".Translate().CapitalizeFirst(), CellCount);
 		}
 
 		public virtual IEnumerable<InspectTabBase> GetInspectTabs()
@@ -258,57 +318,28 @@ namespace Verse
 
 		public virtual IEnumerable<Gizmo> GetGizmos()
 		{
-			Command_Action command_Action = new Command_Action();
-			command_Action.icon = ContentFinder<Texture2D>.Get("UI/Commands/RenameZone");
-			command_Action.defaultLabel = "CommandRenameZoneLabel".Translate();
-			command_Action.defaultDesc = "CommandRenameZoneDesc".Translate();
-			command_Action.action = delegate
-			{
-				Dialog_RenameZone dialog_RenameZone = new Dialog_RenameZone(this);
-				if (KeyBindingDefOf.Misc1.IsDown)
-				{
-					dialog_RenameZone.WasOpenedByHotkey();
-				}
-				Find.WindowStack.Add(dialog_RenameZone);
-			};
-			command_Action.hotKey = KeyBindingDefOf.Misc1;
-			yield return command_Action;
-			Command_Toggle command_Toggle = new Command_Toggle();
-			command_Toggle.icon = ContentFinder<Texture2D>.Get("UI/Commands/HideZone");
-			command_Toggle.defaultLabel = (hidden ? "CommandUnhideZoneLabel".Translate() : "CommandHideZoneLabel".Translate());
-			command_Toggle.defaultDesc = "CommandHideZoneDesc".Translate();
-			command_Toggle.isActive = () => hidden;
-			command_Toggle.toggleAction = delegate
-			{
-				hidden = !hidden;
-				foreach (IntVec3 cell in Cells)
-				{
-					Map.mapDrawer.MapMeshDirty(cell, MapMeshFlag.Zone);
-				}
-			};
-			command_Toggle.hotKey = KeyBindingDefOf.Misc2;
-			yield return command_Toggle;
 			foreach (Gizmo zoneAddGizmo in GetZoneAddGizmos())
 			{
 				yield return zoneAddGizmo;
 			}
-			Designator designator = DesignatorUtility.FindAllowedDesignator<Designator_ZoneDelete_Shrink>();
-			if (designator != null)
+			Designator_ZoneDelete_Shrink designator_ZoneDelete_Shrink = DesignatorUtility.FindAllowedDesignator<Designator_ZoneDelete_Shrink>();
+			if (designator_ZoneDelete_Shrink != null)
 			{
-				yield return designator;
+				yield return designator_ZoneDelete_Shrink;
 			}
-			Command_Action command_Action2 = new Command_Action();
-			command_Action2.icon = TexButton.DeleteX;
-			command_Action2.defaultLabel = "CommandDeleteZoneLabel".Translate();
-			command_Action2.defaultDesc = "CommandDeleteZoneDesc".Translate();
-			command_Action2.action = Delete;
-			command_Action2.hotKey = KeyBindingDefOf.Designator_Deconstruct;
-			yield return command_Action2;
+			yield return new Command_Action
+			{
+				icon = TexButton.Delete,
+				defaultLabel = "CommandDeleteZoneLabel".Translate(),
+				defaultDesc = "CommandDeleteZoneDesc".Translate(),
+				action = Delete,
+				hotKey = KeyBindingDefOf.Designator_Deconstruct
+			};
 		}
 
 		public virtual IEnumerable<Gizmo> GetZoneAddGizmos()
 		{
-			yield break;
+			return Enumerable.Empty<Gizmo>();
 		}
 
 		public void CheckContiguous()
@@ -343,7 +374,7 @@ namespace Verse
 				{
 					return false;
 				}
-				return (!foundGrid[c]) ? true : false;
+				return !foundGrid[c];
 			};
 			int numFound = 0;
 			Action<IntVec3> processor = delegate(IntVec3 c)
@@ -365,10 +396,14 @@ namespace Verse
 			}
 		}
 
+		public virtual IEnumerable<FloatMenuOption> GetFloatMenuOptions(Pawn selPawn)
+		{
+			yield break;
+		}
+
 		private void CheckAddHaulDestination()
 		{
-			IHaulDestination haulDestination = this as IHaulDestination;
-			if (haulDestination != null)
+			if (this is IHaulDestination haulDestination)
 			{
 				Map.haulDestinationManager.AddHaulDestination(haulDestination);
 			}

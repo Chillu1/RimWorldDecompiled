@@ -19,7 +19,7 @@ namespace RimWorld
 		{
 			if (req.Thing == null)
 			{
-				Log.Error(string.Concat("Getting MeleeDPS stat for ", req.Def, " without concrete pawn. This always returns 0."));
+				Log.Error("Getting MeleeDPS stat for " + req.Def?.ToString() + " without concrete pawn. This always returns 0.");
 			}
 			return GetMeleeDamage(req, applyPostProcess) * GetMeleeHitChance(req, applyPostProcess) / GetMeleeCooldown(req, applyPostProcess);
 		}
@@ -45,8 +45,7 @@ namespace RimWorld
 
 		private float GetMeleeDamage(StatRequest req, bool applyPostProcess = true)
 		{
-			Pawn pawn = req.Thing as Pawn;
-			if (pawn == null)
+			if (!(req.Thing is Pawn pawn))
 			{
 				return 0f;
 			}
@@ -89,8 +88,7 @@ namespace RimWorld
 
 		private float GetMeleeCooldown(StatRequest req, bool applyPostProcess = true)
 		{
-			Pawn pawn = req.Thing as Pawn;
-			if (pawn == null)
+			if (!(req.Thing is Pawn pawn))
 			{
 				return 1f;
 			}
@@ -133,8 +131,7 @@ namespace RimWorld
 
 		public override IEnumerable<Dialog_InfoCard.Hyperlink> GetInfoCardHyperlinks(StatRequest statRequest)
 		{
-			Pawn pawn = statRequest.Thing as Pawn;
-			if (pawn != null && pawn.equipment != null && pawn.equipment.Primary != null)
+			if (statRequest.Thing is Pawn { equipment: not null } pawn && pawn.equipment.Primary != null)
 			{
 				yield return new Dialog_InfoCard.Hyperlink(pawn.equipment.Primary);
 			}

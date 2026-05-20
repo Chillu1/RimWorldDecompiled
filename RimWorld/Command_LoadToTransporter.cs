@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Verse;
 using Verse.AI;
@@ -25,40 +26,38 @@ namespace RimWorld
 			{
 				transporters.Add(transComp);
 			}
-			CompLaunchable launchable = transComp.Launchable;
-			if (launchable != null)
+			if (transComp.Launchable is CompLaunchable_TransportPod compLaunchable_TransportPod)
 			{
-				Building fuelingPortSource = launchable.FuelingPortSource;
-				if (fuelingPortSource != null)
+				ThingWithComps thingWithComps = compLaunchable_TransportPod.FuelingPortSource?.parent;
+				if (thingWithComps != null)
 				{
 					Map map = transComp.Map;
 					tmpFuelingPortGivers.Clear();
-					map.floodFiller.FloodFill(fuelingPortSource.Position, (IntVec3 x) => FuelingPortUtility.AnyFuelingPortGiverAt(x, map), delegate(IntVec3 x)
+					map.floodFiller.FloodFill(thingWithComps.Position, (IntVec3 x) => FuelingPortUtility.AnyFuelingPortGiverAt(x, map), delegate(IntVec3 x)
 					{
 						tmpFuelingPortGivers.Add(FuelingPortUtility.FuelingPortGiverAt(x, map));
 					});
-					for (int i = 0; i < transporters.Count; i++)
+					foreach (CompTransporter transporter in transporters)
 					{
-						Building fuelingPortSource2 = transporters[i].Launchable.FuelingPortSource;
-						if (fuelingPortSource2 != null && !tmpFuelingPortGivers.Contains(fuelingPortSource2))
+						ThingWithComps thingWithComps2 = (transporter.Launchable as CompLaunchable_TransportPod)?.FuelingPortSource?.parent;
+						if (thingWithComps2 != null && !tmpFuelingPortGivers.Contains(thingWithComps2))
 						{
-							Messages.Message("MessageTransportersNotAdjacent".Translate(), fuelingPortSource2, MessageTypeDefOf.RejectInput, historical: false);
+							Messages.Message("MessageTransportersNotAdjacent".Translate(), thingWithComps2, MessageTypeDefOf.RejectInput, historical: false);
 							return;
 						}
 					}
 				}
 			}
-			for (int j = 0; j < transporters.Count; j++)
+			foreach (CompTransporter transporter2 in transporters)
 			{
-				if (transporters[j] != transComp && !transComp.Map.reachability.CanReach(transComp.parent.Position, transporters[j].parent, PathEndMode.Touch, TraverseParms.For(TraverseMode.PassDoors)))
+				if (transporter2 != transComp && !transComp.Map.reachability.CanReach(transComp.parent.Position, transporter2.parent, PathEndMode.Touch, TraverseParms.For(TraverseMode.PassDoors)))
 				{
-					Messages.Message("MessageTransporterUnreachable".Translate(), transporters[j].parent, MessageTypeDefOf.RejectInput, historical: false);
+					Messages.Message("MessageTransporterUnreachable".Translate(), transporter2.parent, MessageTypeDefOf.RejectInput, historical: false);
 					return;
 				}
 			}
-			Dialog_LoadTransporters dialog_LoadTransporters = new Dialog_LoadTransporters(transComp.Map, transporters);
-			dialog_LoadTransporters.autoLoot = transComp.Shuttle != null && transComp.Shuttle.CanAutoLoot;
-			Find.WindowStack.Add(dialog_LoadTransporters);
+			Dialog_LoadTransporters window = new Dialog_LoadTransporters(transComp.Map, transporters);
+			Find.WindowStack.Add(window);
 		}
 
 		public override bool InheritInteractionsFrom(Gizmo other)

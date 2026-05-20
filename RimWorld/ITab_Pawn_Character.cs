@@ -10,17 +10,13 @@ namespace RimWorld
 			get
 			{
 				Pawn pawn = null;
-				if (base.SelPawn != null)
+				if (SelPawn != null)
 				{
-					pawn = base.SelPawn;
+					pawn = SelPawn;
 				}
-				else
+				else if (base.SelThing is Corpse corpse)
 				{
-					Corpse corpse = base.SelThing as Corpse;
-					if (corpse != null)
-					{
-						pawn = corpse.InnerPawn;
-					}
+					pawn = corpse.InnerPawn;
 				}
 				if (pawn == null)
 				{

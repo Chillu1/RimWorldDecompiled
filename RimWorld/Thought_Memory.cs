@@ -6,11 +6,17 @@ namespace RimWorld
 	{
 		public float moodPowerFactor = 1f;
 
+		public int moodOffset;
+
 		public Pawn otherPawn;
+
+		public bool permanent;
 
 		public int age;
 
 		private int forcedStage;
+
+		public int durationTicksOverride = -1;
 
 		private string cachedLabelCap;
 
@@ -30,9 +36,31 @@ namespace RimWorld
 			}
 		}
 
+		public override int DurationTicks
+		{
+			get
+			{
+				if (durationTicksOverride < 0)
+				{
+					return def.DurationTicks;
+				}
+				return durationTicksOverride;
+			}
+		}
+
 		public override int CurStageIndex => forcedStage;
 
-		public virtual bool ShouldDiscard => age > def.DurationTicks;
+		public virtual bool ShouldDiscard
+		{
+			get
+			{
+				if (!permanent)
+				{
+					return age > DurationTicks;
+				}
+				return false;
+			}
+		}
 
 		public override string LabelCap
 		{
@@ -63,13 +91,16 @@ namespace RimWorld
 		{
 			get
 			{
-				if (base.CurStage.labelSocial != null)
+				string text = ((base.CurStage.labelSocial == null) ? base.LabelCapSocial : ((string)base.CurStage.LabelSocialCap.Formatted(pawn.Named("PAWN"), otherPawn.Named("OTHERPAWN"))));
+				if (sourcePrecept != null)
 				{
-					return base.CurStage.LabelSocialCap.Formatted(pawn.Named("PAWN"), otherPawn.Named("OTHERPAWN"));
+					text += " (" + "Ideo".Translate() + ")";
 				}
-				return base.LabelCapSocial;
+				return text;
 			}
 		}
+
+		public virtual bool Save => true;
 
 		public void SetForcedStage(int stageIndex)
 		{
@@ -81,8 +112,11 @@ namespace RimWorld
 			base.ExposeData();
 			Scribe_References.Look(ref otherPawn, "otherPawn", saveDestroyedThings: true);
 			Scribe_Values.Look(ref moodPowerFactor, "moodPowerFactor", 1f);
+			Scribe_Values.Look(ref moodOffset, "moodOffset", 0);
 			Scribe_Values.Look(ref age, "age", 0);
 			Scribe_Values.Look(ref forcedStage, "stageIndex", 0);
+			Scribe_Values.Look(ref durationTicksOverride, "durationTicksOverride", -1);
+			Scribe_Values.Look(ref permanent, "permanent", defaultValue: false);
 		}
 
 		public virtual void ThoughtInterval()
@@ -103,7 +137,7 @@ namespace RimWorld
 				Thought_Memory thought_Memory = thoughts.memories.OldestMemoryInGroup(this);
 				if (thought_Memory != null)
 				{
-					showBubble = thought_Memory.age > thought_Memory.def.DurationTicks / 2;
+					showBubble = thought_Memory.age > thought_Memory.DurationTicks / 2;
 					thought_Memory.Renew();
 					return true;
 				}
@@ -114,8 +148,7 @@ namespace RimWorld
 
 		public override bool GroupsWith(Thought other)
 		{
-			Thought_Memory thought_Memory = other as Thought_Memory;
-			if (thought_Memory == null)
+			if (!(other is Thought_Memory thought_Memory))
 			{
 				return false;
 			}
@@ -136,12 +169,35 @@ namespace RimWorld
 			{
 				return 0f;
 			}
-			return base.MoodOffset() * moodPowerFactor;
+			float num = base.MoodOffset();
+			num *= moodPowerFactor;
+			num += (float)moodOffset;
+			if (def.lerpMoodToZero)
+			{
+				num *= 1f - (float)age / (float)DurationTicks;
+			}
+			return num;
+		}
+
+		public virtual void Notify_NewThoughtInGroupAdded(Thought_Memory memory)
+		{
 		}
 
 		public override string ToString()
 		{
-			return "(" + def.defName + ", moodPowerFactor=" + moodPowerFactor + ", age=" + age + ")";
+			return "(" + def.defName + ", moodPowerFactor=" + moodPowerFactor + ", moodOffset=" + moodOffset + ", age=" + age + ")";
+		}
+
+		public virtual void CopyFrom(Thought_Memory m)
+		{
+			age = m.age;
+			pawn = m.pawn;
+			sourcePrecept = m.sourcePrecept;
+			moodOffset = m.moodOffset;
+			otherPawn = m.otherPawn;
+			durationTicksOverride = m.durationTicksOverride;
+			moodPowerFactor = m.moodPowerFactor;
+			SetForcedStage(m.CurStageIndex);
 		}
 	}
 }

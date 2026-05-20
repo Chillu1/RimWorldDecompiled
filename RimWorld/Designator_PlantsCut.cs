@@ -3,13 +3,16 @@ using Verse;
 
 namespace RimWorld
 {
+	[StaticConstructorOnStartup]
 	public class Designator_PlantsCut : Designator_Plants
 	{
+		public static readonly Texture2D IconTex = ContentFinder<Texture2D>.Get("UI/Designators/CutPlants");
+
 		public Designator_PlantsCut()
 		{
 			defaultLabel = "DesignatorCutPlants".Translate();
 			defaultDesc = "DesignatorCutPlantsDesc".Translate();
-			icon = ContentFinder<Texture2D>.Get("UI/Designators/CutPlants");
+			icon = IconTex;
 			soundDragSustain = SoundDefOf.Designate_DragStandard;
 			soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
 			useMouseIcon = true;
@@ -25,6 +28,10 @@ namespace RimWorld
 			{
 				return result;
 			}
+			if (t.TryGetComp(out CompPlantPreventCutting comp) && comp.PreventCutting)
+			{
+				return "MessageMustPlantCuttingForbidden".Translate();
+			}
 			return AffectsThing(t);
 		}
 
@@ -35,8 +42,7 @@ namespace RimWorld
 
 		private bool AffectsThing(Thing t)
 		{
-			Plant plant;
-			if ((plant = t as Plant) == null)
+			if (!(t is Plant plant))
 			{
 				return false;
 			}
@@ -49,9 +55,10 @@ namespace RimWorld
 
 		public override void DesignateThing(Thing t)
 		{
-			if (t.def == ThingDefOf.Plant_TreeAnima)
+			Designator_PlantsHarvestWood.PossiblyWarnPlayerImportantPlantDesignateCut(t);
+			if (ModsConfig.IdeologyActive && t.def.plant.IsTree && t.def.plant.treeLoversCareIfChopped)
 			{
-				Messages.Message("MessageWarningCutAnimaTree".Translate(), t, MessageTypeDefOf.CautionInput, historical: false);
+				Designator_PlantsHarvestWood.PossiblyWarnPlayerOnDesignatingTreeCut();
 			}
 			base.DesignateThing(t);
 		}

@@ -33,7 +33,7 @@ namespace RimWorld
 
 		private void MakeMatchingStockpile()
 		{
-			Designator des = DesignatorUtility.FindAllowedDesignator<Designator_ZoneAddStockpile_Resources>();
+			Designator_ZoneAddStockpile_Resources des = DesignatorUtility.FindAllowedDesignator<Designator_ZoneAddStockpile_Resources>();
 			des.DesignateMultiCell(TradeableCells.Where((IntVec3 c) => des.CanDesignateCell(c).Accepted));
 		}
 

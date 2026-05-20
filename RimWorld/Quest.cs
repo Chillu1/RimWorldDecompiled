@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using RimWorld.Planet;
+using UnityEngine;
 using Verse;
 using Verse.Sound;
 
@@ -29,9 +30,13 @@ namespace RimWorld
 
 		public bool hidden;
 
+		public Quest parent;
+
 		public int appearanceTick = -1;
 
 		public int acceptanceTick = -1;
+
+		public int acceptanceExpireTick = -1;
 
 		public bool initiallyAccepted;
 
@@ -39,11 +44,13 @@ namespace RimWorld
 
 		public bool hiddenInUI;
 
-		public int ticksUntilAcceptanceExpiry = -1;
-
 		private Pawn accepterPawn;
 
 		private string accepterPawnLabel;
+
+		public bool charity;
+
+		public bool canGenerateInSpace;
 
 		public List<string> signalsReceivedDebug;
 
@@ -87,6 +94,18 @@ namespace RimWorld
 			}
 		}
 
+		public int TicksUntilExpiry
+		{
+			get
+			{
+				if (acceptanceExpireTick == -1)
+				{
+					return -1;
+				}
+				return Mathf.Max(acceptanceExpireTick - Find.TickManager.TicksGame, 0);
+			}
+		}
+
 		public string AccepterPawnLabelCap
 		{
 			get
@@ -99,7 +118,9 @@ namespace RimWorld
 			}
 		}
 
-		public string InitiateSignal => "Quest" + id + ".Initiate";
+		public string AddedSignal => $"Quest{id}.Added";
+
+		public string InitiateSignal => $"Quest{id}.Initiate";
 
 		public bool EverAccepted
 		{
@@ -134,7 +155,7 @@ namespace RimWorld
 		{
 			get
 			{
-				if (ticksUntilAcceptanceExpiry == 0)
+				if (TicksUntilExpiry == 0 && acceptanceTick < 0)
 				{
 					return QuestState.EndedOfferExpired;
 				}
@@ -168,13 +189,32 @@ namespace RimWorld
 
 		public IEnumerable<Faction> InvolvedFactions => parts.SelectMany((QuestPart x) => x.InvolvedFactions).Distinct();
 
-		public IEnumerable<Dialog_InfoCard.Hyperlink> Hyperlinks => parts.SelectMany((QuestPart x) => x.Hyperlinks).Distinct();
+		public IEnumerable<Dialog_InfoCard.Hyperlink> Hyperlinks
+		{
+			get
+			{
+				if (parent != null)
+				{
+					yield return new Dialog_InfoCard.Hyperlink(parent);
+				}
+				foreach (Quest item in from q in this.GetSubquests()
+					orderby q.Historical
+					select q)
+				{
+					yield return new Dialog_InfoCard.Hyperlink(item);
+				}
+				foreach (Dialog_InfoCard.Hyperlink item2 in parts.SelectMany((QuestPart x) => x.Hyperlinks).Distinct())
+				{
+					yield return item2;
+				}
+			}
+		}
 
 		public bool Historical
 		{
 			get
 			{
-				if (State != 0)
+				if (State != QuestState.NotYetAccepted)
 				{
 					return State != QuestState.Ongoing;
 				}
@@ -221,13 +261,9 @@ namespace RimWorld
 				}
 				return;
 			}
-			if (ticksUntilAcceptanceExpiry > 0 && State == QuestState.NotYetAccepted)
+			if (TicksUntilExpiry == 0 && State == QuestState.NotYetAccepted && !cleanedUp)
 			{
-				ticksUntilAcceptanceExpiry--;
-				if (ticksUntilAcceptanceExpiry == 0 && !cleanedUp)
-				{
-					CleanupQuestParts();
-				}
+				CleanupQuestParts();
 			}
 			if (Historical)
 			{
@@ -235,8 +271,7 @@ namespace RimWorld
 			}
 			for (int i = 0; i < parts.Count; i++)
 			{
-				QuestPartActivable questPartActivable = parts[i] as QuestPartActivable;
-				if (questPartActivable != null && questPartActivable.State == QuestPartState.Enabled)
+				if (parts[i] is QuestPartActivable { State: QuestPartState.Enabled } questPartActivable)
 				{
 					try
 					{
@@ -244,7 +279,7 @@ namespace RimWorld
 					}
 					catch (Exception arg)
 					{
-						Log.Error("Exception ticking QuestPart: " + arg);
+						Log.Error($"Exception ticking QuestPart: {arg}");
 					}
 					if (Historical)
 					{
@@ -263,6 +298,36 @@ namespace RimWorld
 			}
 			part.quest = this;
 			parts.Add(part);
+		}
+
+		public T AddPart<T>() where T : QuestPart
+		{
+			T val = Activator.CreateInstance<T>();
+			AddPart(val);
+			return val;
+		}
+
+		public T GetFirstOrAddPart<T>() where T : QuestPart
+		{
+			return GetFirstPartOfType<T>() ?? AddPart<T>();
+		}
+
+		public T GetFirstPartOfType<T>() where T : QuestPart
+		{
+			foreach (QuestPart part in parts)
+			{
+				if (part is T result)
+				{
+					return result;
+				}
+			}
+			return null;
+		}
+
+		public bool TryGetFirstPartOfType<T>(out T part) where T : QuestPart
+		{
+			part = GetFirstPartOfType<T>();
+			return part != null;
 		}
 
 		public void RemovePart(QuestPart part)
@@ -291,44 +356,54 @@ namespace RimWorld
 			}
 		}
 
-		public void End(QuestEndOutcome outcome, bool sendLetter = true)
+		public void End(QuestEndOutcome outcome, bool sendLetter = true, bool playSound = true)
 		{
 			if (Historical)
 			{
-				Log.Error("Tried to resolve a historical quest. id=" + id);
+				Log.Error($"Tried to resolve a historical quest. id={id}");
 				return;
 			}
 			ended = true;
 			endOutcome = outcome;
 			CleanupQuestParts();
-			if ((EverAccepted || State != QuestState.EndedOfferExpired) && sendLetter && !hidden)
+			if ((!EverAccepted && State == QuestState.EndedOfferExpired) || !sendLetter || hidden)
 			{
-				string key = null;
-				string key2 = null;
-				LetterDef textLetterDef = null;
-				switch (State)
-				{
-				case QuestState.EndedFailed:
-					key2 = "LetterQuestFailedLabel";
-					key = "LetterQuestCompletedFail";
-					textLetterDef = LetterDefOf.NegativeEvent;
-					SoundDefOf.Quest_Failed.PlayOneShotOnCamera();
-					break;
-				case QuestState.EndedSuccess:
-					key2 = "LetterQuestCompletedLabel";
-					key = "LetterQuestCompletedSuccess";
-					textLetterDef = LetterDefOf.PositiveEvent;
-					SoundDefOf.Quest_Succeded.PlayOneShotOnCamera();
-					break;
-				case QuestState.EndedUnknownOutcome:
-					key2 = "LetterQuestConcludedLabel";
-					key = "LetterQuestCompletedConcluded";
-					textLetterDef = LetterDefOf.NeutralEvent;
-					SoundDefOf.Quest_Concluded.PlayOneShotOnCamera();
-					break;
-				}
-				Find.LetterStack.ReceiveLetter(key2.Translate(), key.Translate(name.CapitalizeFirst()), textLetterDef, null, null, this);
+				return;
 			}
+			string key = null;
+			string key2 = null;
+			LetterDef textLetterDef = null;
+			switch (State)
+			{
+			case QuestState.EndedFailed:
+				key2 = "LetterQuestFailedLabel";
+				key = "LetterQuestCompletedFail";
+				textLetterDef = LetterDefOf.NegativeEvent;
+				if (playSound)
+				{
+					SoundDefOf.Quest_Failed.PlayOneShotOnCamera();
+				}
+				break;
+			case QuestState.EndedSuccess:
+				key2 = "LetterQuestCompletedLabel";
+				key = "LetterQuestCompletedSuccess";
+				textLetterDef = LetterDefOf.PositiveEvent;
+				if (playSound)
+				{
+					SoundDefOf.Quest_Succeded.PlayOneShotOnCamera();
+				}
+				break;
+			case QuestState.EndedUnknownOutcome:
+				key2 = "LetterQuestConcludedLabel";
+				key = "LetterQuestCompletedConcluded";
+				textLetterDef = LetterDefOf.NeutralEvent;
+				if (playSound)
+				{
+					SoundDefOf.Quest_Concluded.PlayOneShotOnCamera();
+				}
+				break;
+			}
+			Find.LetterStack.ReceiveLetter(key2.Translate(), key.Translate(name.CapitalizeFirst()), textLetterDef, null, null, this, null, null, 0, playSound);
 		}
 
 		public bool QuestReserves(Pawn p)
@@ -337,7 +412,8 @@ namespace RimWorld
 			{
 				return false;
 			}
-			for (int i = 0; i < parts.Count; i++)
+			int count = parts.Count;
+			for (int i = 0; i < count; i++)
 			{
 				if (parts[i].QuestPartReserves(p))
 				{
@@ -363,11 +439,65 @@ namespace RimWorld
 			return false;
 		}
 
+		public bool QuestReserves(TransportShip ship)
+		{
+			if (Historical)
+			{
+				return false;
+			}
+			for (int i = 0; i < parts.Count; i++)
+			{
+				if (parts[i].QuestPartReserves(ship))
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
 		public void SetInitiallyAccepted()
 		{
 			acceptanceTick = Find.TickManager.TicksGame;
-			ticksUntilAcceptanceExpiry = -1;
+			acceptanceExpireTick = -1;
 			initiallyAccepted = true;
+		}
+
+		public void SetNotYetAccepted()
+		{
+			acceptanceTick = -1;
+		}
+
+		public MapParent TryFindNewSuitableMapParentForRetarget()
+		{
+			return TryFindNewSuitablePlayerMapParentForRetarget();
+		}
+
+		public MapParent TryFindNewSuitablePlayerMapParentForRetarget(bool checkQuestScript = true)
+		{
+			if (checkQuestScript)
+			{
+				return root.TryFindNewSuitableMapParentForRetarget();
+			}
+			using (IEnumerator<Map> enumerator = Current.Game.PlayerHomeMaps.GetEnumerator())
+			{
+				if (enumerator.MoveNext())
+				{
+					return enumerator.Current.Parent;
+				}
+			}
+			foreach (Map map in Current.Game.Maps)
+			{
+				if (GravshipUtility.GetPlayerGravEngine_NewTemp(map) != null)
+				{
+					return map.Parent;
+				}
+			}
+			return null;
+		}
+
+		public bool IsParentSuitableForQuest(MapParent mapParent)
+		{
+			return root.IsParentSuitableForQuest(mapParent);
 		}
 
 		public void ExposeData()
@@ -376,7 +506,7 @@ namespace RimWorld
 			Scribe_Values.Look(ref name, "name");
 			Scribe_Values.Look(ref appearanceTick, "appearanceTick", -1);
 			Scribe_Values.Look(ref acceptanceTick, "acceptanceTick", -1);
-			Scribe_Values.Look(ref ticksUntilAcceptanceExpiry, "ticksUntilAcceptanceExpiry", -1);
+			Scribe_Values.Look(ref acceptanceExpireTick, "acceptanceExpireTick", -1);
 			Scribe_References.Look(ref accepterPawn, "acceptedBy");
 			Scribe_Values.Look(ref accepterPawnLabel, "acceptedByLabel");
 			Scribe_Values.Look(ref ended, "ended", defaultValue: false);
@@ -394,17 +524,20 @@ namespace RimWorld
 			Scribe_Collections.Look(ref signalsReceivedDebug, "signalsReceivedDebug", LookMode.Undefined);
 			Scribe_Collections.Look(ref parts, "parts", LookMode.Deep);
 			Scribe_Collections.Look(ref tags, "tags", LookMode.Value);
+			Scribe_Values.Look(ref charity, "charity", defaultValue: false);
+			Scribe_References.Look(ref parent, "parent");
 			if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
 				if (parts.RemoveAll((QuestPart x) => x == null) != 0)
 				{
 					Log.Error("Some quest parts were null after loading.");
 				}
-				for (int i = 0; i < parts.Count; i++)
+				for (int num = 0; num < parts.Count; num++)
 				{
-					parts[i].quest = this;
+					parts[num].quest = this;
 				}
 			}
+			BackCompatibility.PostExposeData(this);
 		}
 
 		public void Notify_PawnDiscarded(Pawn pawn)
@@ -414,11 +547,15 @@ namespace RimWorld
 				accepterPawn = null;
 				accepterPawnLabel = pawn.LabelCap;
 			}
+			foreach (QuestPart item in PartsListForReading)
+			{
+				item.Notify_PawnDiscarded(pawn);
+			}
 		}
 
 		public void Notify_SignalReceived(Signal signal)
 		{
-			if (!signal.tag.StartsWith("Quest" + id + "."))
+			if (!signal.global && !signal.tag.StartsWith($"Quest{id}."))
 			{
 				return;
 			}
@@ -441,9 +578,14 @@ namespace RimWorld
 				}
 				catch (Exception arg)
 				{
-					Log.Error("Error while processing a quest signal: " + arg);
+					Log.Error($"Error while processing a quest signal: {arg}");
 				}
 			}
+		}
+
+		public void PostAdded()
+		{
+			Find.SignalManager.SendSignal(new Signal(AddedSignal));
 		}
 
 		public void Initiate()
@@ -466,7 +608,7 @@ namespace RimWorld
 				}
 				catch (Exception arg)
 				{
-					Log.Error("Error in QuestPart Notify_PreCleanup: " + arg);
+					Log.Error($"Error in QuestPart Notify_PreCleanup: {arg}");
 				}
 			}
 			for (int j = 0; j < parts.Count; j++)
@@ -477,11 +619,16 @@ namespace RimWorld
 				}
 				catch (Exception arg2)
 				{
-					Log.Error("Error in QuestPart cleanup: " + arg2);
+					Log.Error($"Error in QuestPart cleanup: {arg2}");
 				}
 			}
 			cleanedUp = true;
 			Find.FactionManager.Notify_QuestCleanedUp(this);
+			IdeoUtility.Notify_QuestCleanedUp(this, State);
+			if (root.hideOnCleanup)
+			{
+				hiddenInUI = true;
+			}
 		}
 
 		public void Notify_ThingsProduced(Pawn worker, List<Thing> things)
@@ -508,6 +655,14 @@ namespace RimWorld
 			}
 		}
 
+		public void Notify_PawnBorn(Thing baby, Thing birther, Pawn mother, Pawn father)
+		{
+			for (int i = 0; i < parts.Count; i++)
+			{
+				parts[i].Notify_PawnBorn(baby, birther, mother, father);
+			}
+		}
+
 		public void Notify_FactionRemoved(Faction faction)
 		{
 			for (int i = 0; i < parts.Count; i++)
@@ -518,7 +673,7 @@ namespace RimWorld
 
 		public string GetUniqueLoadID()
 		{
-			return "Quest_" + id;
+			return $"Quest_{id}";
 		}
 	}
 }

@@ -54,9 +54,9 @@ namespace RimWorld.Planet
 			timeoutEndTick = -1;
 		}
 
-		public override void CompTick()
+		public override void CompTickInterval(int delta)
 		{
-			base.CompTick();
+			base.CompTickInterval(delta);
 			if (ShouldRemoveWorldObjectNow)
 			{
 				parent.Destroy();

@@ -1,8 +1,11 @@
+using System;
+using System.Linq;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
 {
-	public sealed class IngredientCount
+	public sealed class IngredientCount : IExposable
 	{
 		public ThingFilter filter = new ThingFilter();
 
@@ -24,10 +27,32 @@ namespace Verse
 
 		public string Summary => count + "x " + filter.Summary;
 
-		public int CountRequiredOfFor(ThingDef thingDef, RecipeDef recipe)
+		public string SummaryFilterFirst => filter.Summary.CapitalizeFirst() + " x" + count;
+
+		public string SummaryFor(RecipeDef recipe)
+		{
+			return CountFor(recipe) + "x " + filter.Summary;
+		}
+
+		public float CountFor(RecipeDef recipe)
+		{
+			float num = GetBaseCount();
+			ThingDef thingDef = filter.AllowedThingDefs.FirstOrDefault((ThingDef x) => recipe.fixedIngredientFilter.Allows(x) && !x.smallVolume) ?? filter.AllowedThingDefs.FirstOrDefault((ThingDef x) => recipe.fixedIngredientFilter.Allows(x));
+			if (thingDef != null)
+			{
+				float num2 = recipe.IngredientValueGetter.ValuePerUnitOf(thingDef);
+				if (Math.Abs(num2) > float.Epsilon)
+				{
+					num /= num2;
+				}
+			}
+			return num;
+		}
+
+		public int CountRequiredOfFor(ThingDef thingDef, RecipeDef recipe, Bill bill = null)
 		{
 			float num = recipe.IngredientValueGetter.ValuePerUnitOf(thingDef);
-			return Mathf.CeilToInt(count / num);
+			return Mathf.CeilToInt(((bill == null) ? count : recipe.Worker.GetIngredientCount(this, bill)) / num);
 		}
 
 		public float GetBaseCount()
@@ -48,6 +73,12 @@ namespace Verse
 		public override string ToString()
 		{
 			return "(" + Summary + ")";
+		}
+
+		public void ExposeData()
+		{
+			Scribe_Deep.Look(ref filter, "filter");
+			Scribe_Values.Look(ref count, "count", 0f);
 		}
 	}
 }

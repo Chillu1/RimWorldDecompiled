@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using LudeonTK;
 using RimWorld;
 using RimWorld.Planet;
 
@@ -14,7 +15,7 @@ namespace Verse
 			List<Pawn> list = new List<Pawn>();
 			for (int i = 0; i < 500; i++)
 			{
-				Pawn pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(PawnKindDefOf.SpaceRefugee, Faction.OfAncients, PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: true));
+				Pawn pawn = PawnGenerator.GeneratePawn(new PawnGenerationRequest(PawnKindDefOf.SpaceRefugee, Faction.OfAncients, PawnGenerationContext.NonPlayer, null, forceGenerateNewPawn: true));
 				list.Add(pawn);
 				if (!pawn.IsWorldPawn())
 				{

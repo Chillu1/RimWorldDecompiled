@@ -23,9 +23,11 @@ namespace Verse
 
 		private bool anyInternalException;
 
+		public string CurPath => curPath;
+
 		public void InitSaving(string filePath, string documentElementName)
 		{
-			if (Scribe.mode != 0)
+			if (Scribe.mode != LoadSaveMode.Inactive)
 			{
 				Log.Error("Called InitSaving() but current mode is " + Scribe.mode);
 				Scribe.ForceStop();
@@ -92,9 +94,9 @@ namespace Verse
 				nextListElementTemporaryId = 0;
 				anyInternalException = false;
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Exception in FinalizeLoading(): " + arg);
+				Log.Error("Exception in FinalizeLoading(): " + ex);
 				ForceStop();
 				throw;
 			}
@@ -138,7 +140,7 @@ namespace Verse
 
 		public string DebugOutputFor(IExposable saveable)
 		{
-			if (Scribe.mode != 0)
+			if (Scribe.mode != LoadSaveMode.Inactive)
 			{
 				Log.Error("DebugOutput needs current mode to be Inactive");
 				return "";
@@ -165,9 +167,9 @@ namespace Verse
 					ForceStop();
 				}
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Exception while getting debug output: " + arg);
+				Log.Error("Exception while getting debug output: " + ex);
 				ForceStop();
 				return "";
 			}
@@ -193,17 +195,18 @@ namespace Verse
 
 		public void ExitNode()
 		{
-			if (writer != null)
+			if (writer == null)
 			{
-				try
-				{
-					writer.WriteEndElement();
-				}
-				catch (Exception)
-				{
-					anyInternalException = true;
-					throw;
-				}
+				return;
+			}
+			try
+			{
+				writer.WriteEndElement();
+			}
+			catch (Exception)
+			{
+				anyInternalException = true;
+				throw;
 			}
 		}
 

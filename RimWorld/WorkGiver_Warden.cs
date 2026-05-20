@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using RimWorld.Planet;
 using Verse;
@@ -14,24 +13,43 @@ namespace RimWorld
 
 		public override IEnumerable<Thing> PotentialWorkThingsGlobal(Pawn pawn)
 		{
-			return pawn.Map.mapPawns.PrisonersOfColonySpawned;
+			return pawn.Map.mapPawns.SlavesAndPrisonersOfColonySpawned;
 		}
 
 		public override bool ShouldSkip(Pawn pawn, bool forced = false)
 		{
-			return pawn.Map.mapPawns.PrisonersOfColonySpawnedCount == 0;
+			return pawn.Map.mapPawns.SlavesAndPrisonersOfColonySpawnedCount == 0;
 		}
 
-		[Obsolete("Will be removed in the future")]
-		protected bool ShouldTakeCareOfPrisoner(Pawn warden, Thing prisoner)
+		protected bool ShouldTakeCareOfPrisoner(Pawn warden, Thing prisoner, bool forced = false)
 		{
-			return ShouldTakeCareOfPrisoner_NewTemp(warden, prisoner);
+			if (!(prisoner is Pawn { IsPrisonerOfColony: not false } pawn) || !pawn.guest.PrisonerIsSecure || !pawn.Spawned || pawn.InAggroMentalState || prisoner.IsForbidden(warden) || pawn.IsFormingCaravan() || !warden.CanReserveAndReach(pawn, PathEndMode.OnCell, warden.NormalMaxDanger(), 1, -1, null, forced))
+			{
+				return false;
+			}
+			return true;
 		}
 
-		protected bool ShouldTakeCareOfPrisoner_NewTemp(Pawn warden, Thing prisoner, bool forced = false)
+		protected bool ShouldTakeCareOfSlave(Pawn warden, Thing slave, bool forced = false)
 		{
-			Pawn pawn = prisoner as Pawn;
-			if (pawn == null || !pawn.IsPrisonerOfColony || !pawn.guest.PrisonerIsSecure || !pawn.Spawned || pawn.InAggroMentalState || prisoner.IsForbidden(warden) || pawn.IsFormingCaravan() || !warden.CanReserveAndReach(pawn, PathEndMode.OnCell, warden.NormalMaxDanger(), 1, -1, null, forced))
+			if (!(slave is Pawn { IsSlaveOfColony: not false } pawn) || !pawn.guest.SlaveIsSecure || !pawn.Spawned || pawn.InAggroMentalState || pawn.IsForbidden(warden) || pawn.IsFormingCaravan() || !warden.CanReserveAndReach(pawn, PathEndMode.Touch, warden.NormalMaxDanger(), 1, -1, null, forced))
+			{
+				return false;
+			}
+			return true;
+		}
+
+		protected bool IsExecutionIdeoAllowed(Pawn warden, Pawn victim)
+		{
+			if (!new HistoryEvent(HistoryEventDefOf.ExecutedPrisoner, warden.Named(HistoryEventArgsNames.Doer)).Notify_PawnAboutToDo_Job())
+			{
+				return false;
+			}
+			if (victim.guilt.IsGuilty && !new HistoryEvent(HistoryEventDefOf.ExecutedPrisonerGuilty, warden.Named(HistoryEventArgsNames.Doer)).Notify_PawnAboutToDo_Job())
+			{
+				return false;
+			}
+			if (!victim.guilt.IsGuilty && !new HistoryEvent(HistoryEventDefOf.ExecutedPrisonerInnocent, warden.Named(HistoryEventArgsNames.Doer)).Notify_PawnAboutToDo_Job())
 			{
 				return false;
 			}

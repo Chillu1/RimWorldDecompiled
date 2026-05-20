@@ -35,13 +35,13 @@ namespace Verse
 				lastMaintainTick = Find.TickManager.TicksGame;
 			}
 
-			public void Tick(Pawn pawn)
+			public void Tick(Pawn pawn, int delta)
 			{
 				if (effecter == null)
 				{
-					effecter = def.Spawn();
+					effecter = def.SpawnAttached(pawn, pawn.MapHeld);
 				}
-				effecter.EffectTick(pawn, null);
+				effecter.EffectTick(pawn, pawn);
 			}
 		}
 
@@ -55,27 +55,30 @@ namespace Verse
 			pairs = new List<LiveEffecter>();
 		}
 
-		public void EffectersTick()
+		public void EffectersTick(bool suspended)
 		{
-			List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
-			for (int i = 0; i < hediffs.Count; i++)
+			if (!suspended)
 			{
-				HediffComp_Effecter hediffComp_Effecter = hediffs[i].TryGetComp<HediffComp_Effecter>();
-				if (hediffComp_Effecter != null)
+				List<Hediff> hediffs = pawn.health.hediffSet.hediffs;
+				for (int i = 0; i < hediffs.Count; i++)
 				{
-					EffecterDef effecterDef = hediffComp_Effecter.CurrentStateEffecter();
-					if (effecterDef != null)
+					HediffComp_Effecter hediffComp_Effecter = hediffs[i].TryGetComp<HediffComp_Effecter>();
+					if (hediffComp_Effecter != null)
 					{
-						AddOrMaintain(effecterDef);
+						EffecterDef effecterDef = hediffComp_Effecter.CurrentStateEffecter();
+						if (effecterDef != null)
+						{
+							AddOrMaintain(effecterDef);
+						}
 					}
 				}
-			}
-			if (pawn.mindState.mentalStateHandler.CurState != null)
-			{
-				EffecterDef effecterDef2 = pawn.mindState.mentalStateHandler.CurState.CurrentStateEffecter();
-				if (effecterDef2 != null)
+				if (pawn.mindState?.mentalStateHandler.CurState != null)
 				{
-					AddOrMaintain(effecterDef2);
+					EffecterDef effecterDef2 = pawn.mindState.mentalStateHandler.CurState.CurrentStateEffecter();
+					if (effecterDef2 != null)
+					{
+						AddOrMaintain(effecterDef2);
+					}
 				}
 			}
 			for (int num = pairs.Count - 1; num >= 0; num--)
@@ -87,7 +90,7 @@ namespace Verse
 				}
 				else
 				{
-					pairs[num].Tick(pawn);
+					pairs[num].Tick(pawn, 1);
 				}
 			}
 		}

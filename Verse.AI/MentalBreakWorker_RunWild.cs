@@ -6,7 +6,7 @@ namespace Verse.AI
 	{
 		public override bool BreakCanOccur(Pawn pawn)
 		{
-			if (!pawn.IsColonistPlayerControlled || pawn.Downed || !pawn.Spawned || pawn.IsQuestLodger() || !base.BreakCanOccur(pawn))
+			if (!pawn.IsColonistPlayerControlled || pawn.Downed || !pawn.Spawned || pawn.IsQuestLodger() || (pawn.guest != null && !pawn.guest.Recruitable) || !base.BreakCanOccur(pawn))
 			{
 				return false;
 			}
@@ -14,12 +14,11 @@ namespace Verse.AI
 			{
 				return false;
 			}
-			float seasonalTemp = Find.World.tileTemperatures.GetSeasonalTemp(pawn.Map.Tile);
-			if (seasonalTemp < pawn.def.GetStatValueAbstract(StatDefOf.ComfyTemperatureMin) - 7f || seasonalTemp > pawn.def.GetStatValueAbstract(StatDefOf.ComfyTemperatureMax) + 7f)
+			if (ModsConfig.BiotechActive && pawn.Map.gameConditionManager.ConditionIsActive(GameConditionDefOf.NoxiousHaze))
 			{
 				return false;
 			}
-			return true;
+			return pawn.Map.mapTemperature.SeasonAcceptableFor(pawn.def, 7f);
 		}
 
 		public override bool TryStart(Pawn pawn, string reason, bool causedByMood)

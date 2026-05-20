@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using UnityEngine;
 using Verse;
 
@@ -20,17 +21,19 @@ namespace RimWorld
 		{
 			ThingDef thingDef = RandomPodContentsDef();
 			float num = Rand.Range(150f, 600f);
-			do
+			while (!(num <= thingDef.BaseMarketValue))
 			{
-				Thing thing = ThingMaker.MakeThing(thingDef);
+				ThingDef stuff = GenStuff.RandomStuffByCommonalityFor(thingDef);
+				Thing thing = ThingMaker.MakeThing(thingDef, stuff);
 				int num2 = Rand.Range(20, 40);
 				if (num2 > thing.def.stackLimit)
 				{
 					num2 = thing.def.stackLimit;
 				}
-				if ((float)num2 * thing.def.BaseMarketValue > num)
+				float statValue = thing.GetStatValue(StatDefOf.MarketValue);
+				if ((float)num2 * statValue > num)
 				{
-					num2 = Mathf.FloorToInt(num / thing.def.BaseMarketValue);
+					num2 = Mathf.FloorToInt(num / statValue);
 				}
 				if (num2 == 0)
 				{
@@ -38,14 +41,17 @@ namespace RimWorld
 				}
 				thing.stackCount = num2;
 				outThings.Add(thing);
-				num -= (float)num2 * thingDef.BaseMarketValue;
+				num -= (float)num2 * statValue;
+				if (outThings.Count >= 7 || num <= statValue)
+				{
+					break;
+				}
 			}
-			while (outThings.Count < 7 && !(num <= thingDef.BaseMarketValue));
 		}
 
 		private static IEnumerable<ThingDef> PossiblePodContentsDefs()
 		{
-			return DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.category == ThingCategory.Item && d.tradeability.TraderCanSell() && d.equipmentType == EquipmentType.None && d.BaseMarketValue >= 1f && d.BaseMarketValue < 40f && !d.HasComp(typeof(CompHatcher)));
+			return DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.category == ThingCategory.Item && d.tradeability.TraderCanSell() && d.equipmentType == EquipmentType.None && d.BaseMarketValue >= 1f && d.BaseMarketValue < 40f && !d.preventSpawningInResourcePod && !d.HasComp(typeof(CompHatcher)));
 		}
 
 		public static ThingDef RandomPodContentsDef(bool mustBeResource = false)
@@ -55,9 +61,10 @@ namespace RimWorld
 			{
 				source = source.Where((ThingDef x) => x.stackLimit > 1);
 			}
-			int numMeats = source.Where((ThingDef x) => x.IsMeat).Count();
-			int numLeathers = source.Where((ThingDef x) => x.IsLeather).Count();
-			return source.RandomElementByWeight((ThingDef d) => ThingSetMakerUtility.AdjustedBigCategoriesSelectionWeight(d, numMeats, numLeathers));
+			int numMeats = source.Count((ThingDef x) => x.IsMeat);
+			int numLeathers = source.Count((ThingDef x) => x.IsLeather);
+			int numEggs = source.Count((ThingDef x) => x.IsEgg);
+			return source.RandomElementByWeight((ThingDef d) => ThingSetMakerUtility.AdjustedBigCategoriesSelectionWeight(d, numMeats, numLeathers, numEggs));
 		}
 
 		[DebugOutput("Incidents", false)]

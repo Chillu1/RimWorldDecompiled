@@ -16,15 +16,18 @@ namespace Verse.AI.Group
 			lord.loadID = Find.UniqueIDsManager.GetNextLordID();
 			lord.faction = faction;
 			map.lordManager.AddLord(lord);
+			if (startingPawns != null)
+			{
+				lord.AddPawns(startingPawns, updateDuties: false);
+			}
 			lord.SetJob(lordJob);
 			lord.GotoToil(lord.Graph.StartingToil);
 			if (startingPawns != null)
 			{
-				foreach (Pawn startingPawn in startingPawns)
+				foreach (Pawn ownedPawn in lord.ownedPawns)
 				{
-					lord.AddPawn(startingPawn);
+					lordJob.Notify_PawnAdded(ownedPawn);
 				}
-				return lord;
 			}
 			return lord;
 		}

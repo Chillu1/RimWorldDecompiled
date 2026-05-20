@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -58,9 +59,9 @@ namespace RimWorld
 			return (float)(int)twelfth / 12f;
 		}
 
-		public static Twelfth FindStartingWarmTwelfth(int tile)
+		public static Twelfth FindStartingWarmTwelfth(PlanetTile tile)
 		{
-			Twelfth twelfth = GenTemperature.EarliestTwelfthInAverageTemperatureRange(tile, 16f, 9999f);
+			Twelfth twelfth = GenTemperature.EarliestTwelfthInAverageTemperatureRange(tile, 12f, 9999f);
 			if (twelfth == Twelfth.Undefined)
 			{
 				twelfth = Season.Summer.GetFirstTwelfth(Find.WorldGrid.LongLatOf(tile).y);

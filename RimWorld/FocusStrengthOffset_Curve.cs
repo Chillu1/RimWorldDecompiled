@@ -7,10 +7,7 @@ namespace RimWorld
 	{
 		public SimpleCurve curve;
 
-		protected abstract string ExplanationKey
-		{
-			get;
-		}
+		protected abstract string ExplanationKey { get; }
 
 		protected abstract float SourceValue(Thing parent);
 

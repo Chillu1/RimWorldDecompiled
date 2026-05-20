@@ -1,3 +1,4 @@
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -10,9 +11,19 @@ namespace Verse
 
 		private int lastDrawFrame = -1;
 
+		private int lastDrawTick = -1;
+
+		private int lastOffsetTick = -1;
+
+		private Vector3 lastOffset = Vector3.zero;
+
 		private Vector3 lastTickSpringPos;
 
 		private const float SpringTightness = 0.09f;
+
+		private const float CrawlsPerTile = 3f;
+
+		private const float CrawlingLurchFactor = 3f;
 
 		public Vector3 TweenedPos => tweenedPos;
 
@@ -29,7 +40,12 @@ namespace Verse
 			{
 				return;
 			}
-			if (lastDrawFrame < RealTime.frameCount - 1)
+			if (!pawn.Spawned)
+			{
+				tweenedPos = pawn.Position.ToVector3Shifted();
+				return;
+			}
+			if (lastDrawFrame < RealTime.frameCount - 1 && lastDrawTick < GenTicks.TicksGame - 1)
 			{
 				ResetTweenedPosToRoot();
 			}
@@ -39,26 +55,35 @@ namespace Verse
 				float tickRateMultiplier = Find.TickManager.TickRateMultiplier;
 				if (tickRateMultiplier < 5f)
 				{
-					Vector3 a = TweenedPosRoot() - tweenedPos;
+					Vector3 vector = TweenedPosRoot() - tweenedPos;
 					float num = 0.09f * (RealTime.deltaTime * 60f * tickRateMultiplier);
 					if (RealTime.deltaTime > 0.05f)
 					{
 						num = Mathf.Min(num, 1f);
 					}
-					tweenedPos += a * num;
+					tweenedPos += vector * num;
 				}
 				else
 				{
-					tweenedPos = TweenedPosRoot();
+					ResetTweenedPosToRoot();
 				}
 			}
 			lastDrawFrame = RealTime.frameCount;
+			lastDrawTick = GenTicks.TicksGame;
 		}
 
 		public void ResetTweenedPosToRoot()
 		{
 			tweenedPos = TweenedPosRoot();
 			lastTickSpringPos = tweenedPos;
+			lastDrawFrame = RealTime.frameCount;
+			lastDrawTick = GenTicks.TicksGame;
+		}
+
+		public void Notify_Teleported()
+		{
+			lastDrawFrame = -1;
+			lastDrawTick = -1;
 		}
 
 		private Vector3 TweenedPosRoot()
@@ -67,33 +92,31 @@ namespace Verse
 			{
 				return pawn.Position.ToVector3Shifted();
 			}
-			float num = MovedPercent();
-			return pawn.pather.nextCell.ToVector3Shifted() * num + pawn.Position.ToVector3Shifted() * (1f - num) + PawnCollisionTweenerUtility.PawnCollisionPosOffsetFor(pawn);
-		}
-
-		private float MovedPercent()
-		{
-			if (!pawn.pather.Moving)
+			float z = 0f;
+			if (pawn.Spawned && pawn.ageTracker.CurLifeStage.sittingOffset.HasValue && !pawn.pather.MovingNow && pawn.GetPosture() == PawnPosture.Standing)
 			{
-				return 0f;
+				Building edifice = pawn.Position.GetEdifice(pawn.Map);
+				if (edifice != null && edifice.def.building != null && edifice.def.building.isSittable)
+				{
+					z = pawn.ageTracker.CurLifeStage.sittingOffset.Value;
+				}
 			}
-			if (pawn.stances.FullBodyBusy)
+			float num = pawn.pather.MovePercentage;
+			if (pawn.Crawling)
 			{
-				return 0f;
+				num = num - num % (1f / 3f) + Mathf.Pow(num % (1f / 3f) * 3f, 3f) * (1f / 3f);
 			}
-			if (pawn.pather.BuildingBlockingNextPathCell() != null)
+			Vector3 vector;
+			if (GenTicks.TicksGame == lastOffsetTick)
 			{
-				return 0f;
+				vector = lastOffset;
 			}
-			if (pawn.pather.NextCellDoorToWaitForOrManuallyOpen() != null)
+			else
 			{
-				return 0f;
+				vector = (lastOffset = PawnCollisionTweenerUtility.PawnCollisionPosOffsetFor(pawn));
+				lastOffsetTick = GenTicks.TicksGame;
 			}
-			if (pawn.pather.WillCollideWithPawnOnNextPathCell())
-			{
-				return 0f;
-			}
-			return 1f - pawn.pather.nextCellCostLeft / pawn.pather.nextCellCostTotal;
+			return pawn.pather.nextCell.ToVector3Shifted() * num + pawn.Position.ToVector3Shifted() * (1f - num) + new Vector3(0f, 0f, z) + vector;
 		}
 	}
 }

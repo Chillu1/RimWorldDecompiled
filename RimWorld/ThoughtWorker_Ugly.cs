@@ -10,7 +10,11 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!pawn.health.capacities.CapableOf(PawnCapacityDefOf.Sight))
+			if (PawnUtility.IsBiologicallyOrArtificiallyBlind(pawn))
+			{
+				return false;
+			}
+			if (!pawn.story.CaresAboutOthersAppearance)
 			{
 				return false;
 			}

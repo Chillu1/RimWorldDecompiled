@@ -15,9 +15,17 @@ namespace RimWorld
 
 		protected string defaultExplanation;
 
+		protected bool requireRoyalty;
+
+		protected bool requireIdeology;
+
+		protected bool requireBiotech;
+
+		protected bool requireAnomaly;
+
 		protected float lastBellTime = -1000f;
 
-		private int jumpToTargetCycleIndex;
+		private int jumpToTargetCycleIndex = -1;
 
 		private bool cachedActive;
 
@@ -28,8 +36,6 @@ namespace RimWorld
 		public const float Width = 154f;
 
 		private const float TextWidth = 148f;
-
-		private const float ItemPeekWidth = 30f;
 
 		public const float InfoRectWidth = 330f;
 
@@ -51,7 +57,7 @@ namespace RimWorld
 			{
 				if (!Active)
 				{
-					return "";
+					return string.Empty;
 				}
 				return cachedLabel;
 			}
@@ -65,6 +71,32 @@ namespace RimWorld
 				return Text.CalcHeight(Label, 148f);
 			}
 		}
+
+		public bool EnabledWithActiveExpansions
+		{
+			get
+			{
+				if (requireRoyalty && !ModsConfig.RoyaltyActive)
+				{
+					return false;
+				}
+				if (requireIdeology && !ModsConfig.IdeologyActive)
+				{
+					return false;
+				}
+				if (requireBiotech && !ModsConfig.BiotechActive)
+				{
+					return false;
+				}
+				if (requireAnomaly && !ModsConfig.AnomalyActive)
+				{
+					return false;
+				}
+				return true;
+			}
+		}
+
+		public virtual string GetJumpToTargetsText => "ClickToJumpToProblem".Translate();
 
 		public abstract AlertReport GetReport();
 
@@ -119,10 +151,10 @@ namespace RimWorld
 			GUI.color = BGColor;
 			GUI.DrawTexture(rect, AlertBGTex);
 			GUI.color = Color.white;
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			Text.Anchor = TextAnchor.MiddleRight;
 			Widgets.Label(new Rect(0f, 0f, 148f, Height), Label);
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			if (Mouse.IsOver(rect))
 			{
 				GUI.DrawTexture(rect, AlertBGTexHighlight);
@@ -183,7 +215,7 @@ namespace RimWorld
 				Text.Anchor = TextAnchor.UpperLeft;
 				if (GetReport().AnyCulpritValid)
 				{
-					expString += "\n\n(" + "ClickToJumpToProblem".Translate() + ")";
+					expString += "\n\n(" + GetJumpToTargetsText + ")";
 				}
 				float num = Text.CalcHeight(expString, 310f);
 				num += 20f;
@@ -196,15 +228,15 @@ namespace RimWorld
 				{
 					infoRect.y = 0f;
 				}
-				Find.WindowStack.ImmediateWindow(138956, infoRect, WindowLayer.GameUI, delegate
+				Find.WindowStack.ImmediateWindow(138956, infoRect, WindowLayer.Super, delegate
 				{
 					Text.Font = GameFont.Small;
 					Rect rect = infoRect.AtZero();
 					Widgets.DrawWindowBackground(rect);
-					Rect position = rect.ContractedBy(10f);
-					GUI.BeginGroup(position);
-					Widgets.Label(new Rect(0f, 0f, position.width, position.height), expString);
-					GUI.EndGroup();
+					Rect rect2 = rect.ContractedBy(10f);
+					Widgets.BeginGroup(rect2);
+					Widgets.Label(new Rect(0f, 0f, rect2.width, rect2.height), expString);
+					Widgets.EndGroup();
 				}, doBackground: false);
 			}
 		}

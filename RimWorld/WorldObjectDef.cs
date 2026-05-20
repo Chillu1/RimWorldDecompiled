@@ -16,7 +16,19 @@ namespace RimWorld
 
 		public bool canBePlayerHome;
 
+		public bool treatAsPlayerHome;
+
+		public bool canResizeToGravship;
+
+		public bool requiresSignalJammerToReach;
+
+		public IntVec3? overrideMapSize;
+
 		public List<WorldObjectCompProperties> comps = new List<WorldObjectCompProperties>();
+
+		public bool canHaveMap = true;
+
+		public bool validLaunchTarget = true;
 
 		public bool allowCaravanIncidentsWhichGenerateMap;
 
@@ -42,16 +54,30 @@ namespace RimWorld
 		[NoTranslate]
 		public string expandingIconTexture;
 
+		[NoTranslate]
+		public string expandingIconMaskTexture;
+
 		public float expandingIconPriority;
 
 		[NoTranslate]
 		public string texture;
 
+		[NoTranslate]
+		public string mapEdgeTexture;
+
+		private ShaderTypeDef mapEdgeShader;
+
 		[Unsaved(false)]
 		private Material material;
 
 		[Unsaved(false)]
+		private Material expandingMaterial;
+
+		[Unsaved(false)]
 		private Texture2D expandingIconTextureInt;
+
+		[Unsaved(false)]
+		private Texture2D expandingIconTextureMaskInt;
 
 		public bool expandMore;
 
@@ -61,7 +87,17 @@ namespace RimWorld
 
 		public float expandingIconDrawSize = 1f;
 
+		public bool fullyExpandedInSpace;
+
+		public ShaderTypeDef shader;
+
+		public ShaderTypeDef expandingShader;
+
+		public float drawAltitudeOffset;
+
 		public bool blockExitGridUntilBattleIsWon;
+
+		public RulePackDef nameMaker;
 
 		public Material Material
 		{
@@ -73,7 +109,7 @@ namespace RimWorld
 				}
 				if (material == null)
 				{
-					material = MaterialPool.MatFrom(texture, ShaderDatabase.WorldOverlayTransparentLit, WorldMaterials.WorldObjectRenderQueue);
+					material = MaterialPool.MatFrom(texture, shader?.Shader ?? ShaderDatabase.WorldOverlayTransparentLit, 3550);
 				}
 				return material;
 			}
@@ -92,6 +128,38 @@ namespace RimWorld
 					expandingIconTextureInt = ContentFinder<Texture2D>.Get(expandingIconTexture);
 				}
 				return expandingIconTextureInt;
+			}
+		}
+
+		public Texture2D ExpandingIconTextureMask
+		{
+			get
+			{
+				if (expandingIconTextureMaskInt == null)
+				{
+					if (expandingIconMaskTexture.NullOrEmpty())
+					{
+						return null;
+					}
+					expandingIconTextureMaskInt = ContentFinder<Texture2D>.Get(expandingIconMaskTexture);
+				}
+				return expandingIconTextureMaskInt;
+			}
+		}
+
+		public Material MapEdgeMaterial
+		{
+			get
+			{
+				if (mapEdgeTexture.NullOrEmpty())
+				{
+					return null;
+				}
+				if (material == null)
+				{
+					material = MaterialPool.MatFrom(mapEdgeTexture, ShaderDatabase.MapEdgeTerrain);
+				}
+				return material;
 			}
 		}
 
@@ -114,7 +182,7 @@ namespace RimWorld
 				}
 				catch (Exception ex)
 				{
-					Log.Error(string.Concat("Could not instantiate inspector tab of type ", inspectorTabs[i], ": ", ex));
+					Log.Error("Could not instantiate inspector tab of type " + inspectorTabs[i]?.ToString() + ": " + ex);
 				}
 			}
 		}

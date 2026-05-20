@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 namespace Verse
@@ -10,7 +9,7 @@ namespace Verse
 
 		private const int BattleHistoryLength = 20;
 
-		private HashSet<LogEntry> activeEntries;
+		private HashSet<LogEntry> cachedActiveEntries;
 
 		public List<Battle> Battles => battles;
 
@@ -45,7 +44,7 @@ namespace Verse
 				concern2.records.EnterBattle(battle);
 			}
 			battle.Add(entry);
-			activeEntries = null;
+			cachedActiveEntries = null;
 			ReduceToCapacity();
 		}
 
@@ -59,7 +58,7 @@ namespace Verse
 					num--;
 				}
 				battles.RemoveAt(battles.Count - 1);
-				activeEntries = null;
+				cachedActiveEntries = null;
 			}
 		}
 
@@ -86,19 +85,19 @@ namespace Verse
 
 		public bool IsEntryActive(LogEntry log)
 		{
-			if (activeEntries == null)
+			if (cachedActiveEntries == null)
 			{
-				activeEntries = new HashSet<LogEntry>();
+				cachedActiveEntries = new HashSet<LogEntry>();
 				for (int i = 0; i < battles.Count; i++)
 				{
 					List<LogEntry> entries = battles[i].Entries;
 					for (int j = 0; j < entries.Count; j++)
 					{
-						activeEntries.Add(entries[j]);
+						cachedActiveEntries.Add(entries[j]);
 					}
 				}
 			}
-			return activeEntries.Contains(log);
+			return cachedActiveEntries.Contains(log);
 		}
 
 		public void RemoveEntry(LogEntry log)
@@ -106,6 +105,7 @@ namespace Verse
 			for (int i = 0; i < battles.Count && !battles[i].Entries.Remove(log); i++)
 			{
 			}
+			cachedActiveEntries = null;
 		}
 
 		public void Notify_PawnDiscarded(Pawn p, bool silentlyRemoveReferences)
@@ -114,6 +114,7 @@ namespace Verse
 			{
 				battles[num].Notify_PawnDiscarded(p, silentlyRemoveReferences);
 			}
+			cachedActiveEntries = null;
 		}
 	}
 }

@@ -3,7 +3,7 @@ using Verse;
 
 namespace RimWorld
 {
-	internal class IncidentWorker_Alphabeavers : IncidentWorker
+	public class IncidentWorker_Alphabeavers : IncidentWorker
 	{
 		private static readonly FloatRange CountPerColonistRange = new FloatRange(1f, 1.5f);
 
@@ -18,6 +18,10 @@ namespace RimWorld
 				return false;
 			}
 			Map map = (Map)parms.target;
+			if (!map.mapTemperature.SeasonAndOutdoorTemperatureAcceptableFor(PawnKindDefOf.Alphabeaver.race))
+			{
+				return false;
+			}
 			IntVec3 result;
 			return RCellFinder.TryFindRandomPawnEntryCell(out result, map, CellFinder.EdgeRoadChance_Animal);
 		}

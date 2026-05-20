@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
+using Verse.Steam;
 
 namespace RimWorld
 {
@@ -10,8 +11,6 @@ namespace RimWorld
 		private const int TopAreaHeight = 65;
 
 		private const int ManageAreasButtonHeight = 32;
-
-		protected override GameFont DefaultHeaderFont => GameFont.Tiny;
 
 		public override int GetMinWidth(PawnTable table)
 		{
@@ -30,9 +29,26 @@ namespace RimWorld
 
 		public override void DoCell(Rect rect, Pawn pawn, PawnTable table)
 		{
-			if (pawn.Faction == Faction.OfPlayer)
+			if (pawn.Faction == Faction.OfPlayer && (!pawn.IsMutant || pawn.mutant.Def.respectsAllowedArea) && (!pawn.RaceProps.IsMechanoid || pawn.GetOverseer() != null))
 			{
-				AreaAllowedGUI.DoAllowedAreaSelectors(rect, pawn);
+				if (pawn.playerSettings.SupportsAllowedAreas)
+				{
+					AreaAllowedGUI.DoAllowedAreaSelectors(rect, pawn);
+				}
+				else if (AnimalPenUtility.NeedsToBeManagedByRope(pawn))
+				{
+					AnimalPenGUI.DoAllowedAreaMessage(rect, pawn);
+				}
+				else if (pawn.RaceProps.Dryad)
+				{
+					Text.Anchor = TextAnchor.MiddleCenter;
+					Text.Font = GameFont.Tiny;
+					GUI.color = Color.gray;
+					Widgets.Label(rect, "CannotAssignAllowedAreaToDryad".Translate());
+					GUI.color = Color.white;
+					Text.Font = GameFont.Small;
+					Text.Anchor = TextAnchor.UpperLeft;
+				}
 			}
 		}
 
@@ -52,11 +68,11 @@ namespace RimWorld
 
 		private int GetValueToCompare(Pawn pawn)
 		{
-			if (pawn.Faction != Faction.OfPlayer)
+			if (pawn.Faction != Faction.OfPlayer || !pawn.playerSettings.SupportsAllowedAreas)
 			{
 				return int.MinValue;
 			}
-			return pawn.playerSettings.AreaRestriction?.ID ?? (-2147483647);
+			return pawn.playerSettings.AreaRestrictionInPawnCurrentMap?.ID ?? (-2147483647);
 		}
 
 		protected override void HeaderClicked(Rect headerRect, PawnTable table)
@@ -69,17 +85,16 @@ namespace RimWorld
 			List<Pawn> pawnsListForReading = table.PawnsListForReading;
 			for (int i = 0; i < pawnsListForReading.Count; i++)
 			{
-				if (pawnsListForReading[i].Faction != Faction.OfPlayer)
+				if (pawnsListForReading[i].Faction == Faction.OfPlayer && pawnsListForReading[i].playerSettings.SupportsAllowedAreas)
 				{
-					return;
-				}
-				if (Event.current.button == 0)
-				{
-					pawnsListForReading[i].playerSettings.AreaRestriction = Find.CurrentMap.areaManager.Home;
-				}
-				else if (Event.current.button == 1)
-				{
-					pawnsListForReading[i].playerSettings.AreaRestriction = null;
+					if (Event.current.button == 0)
+					{
+						pawnsListForReading[i].playerSettings.AreaRestrictionInPawnCurrentMap = Find.CurrentMap.areaManager.Home;
+					}
+					else if (Event.current.button == 1)
+					{
+						pawnsListForReading[i].playerSettings.AreaRestrictionInPawnCurrentMap = null;
+					}
 				}
 			}
 			if (Event.current.button == 0)
@@ -94,7 +109,12 @@ namespace RimWorld
 
 		protected override string GetHeaderTip(PawnTable table)
 		{
-			return base.GetHeaderTip(table) + "\n" + "AllowedAreaShiftClickTip".Translate();
+			string text = base.GetHeaderTip(table);
+			if (!SteamDeck.IsSteamDeckInNonKeyboardMode)
+			{
+				text += "\n" + "AllowedAreaShiftClickTip".Translate();
+			}
+			return text;
 		}
 	}
 }

@@ -17,7 +17,7 @@ namespace RimWorld
 			if (req.HasThing && Applies(req.Thing))
 			{
 				float unpoweredWorkTableWorkSpeedFactor = req.Thing.def.building.unpoweredWorkTableWorkSpeedFactor;
-				return "NoPower".Translate() + ": x" + unpoweredWorkTableWorkSpeedFactor.ToStringPercent();
+				return "NoPower".Translate().CapitalizeFirst() + ": x" + unpoweredWorkTableWorkSpeedFactor.ToStringPercent();
 			}
 			return null;
 		}

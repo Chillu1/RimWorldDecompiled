@@ -14,11 +14,13 @@ namespace RimWorld
 
 		private const int RainDisableTicksAfterConditionEnds = 30000;
 
+		private const int AvoidConditionCauserExpandRect = 2;
+
 		public IntVec2 centerLocation = IntVec2.Invalid;
 
-		public IntRange areaRadiusOverride = IntRange.zero;
+		public IntRange areaRadiusOverride = IntRange.Zero;
 
-		public IntRange initialStrikeDelay = IntRange.zero;
+		public IntRange initialStrikeDelay = IntRange.Zero;
 
 		public bool ambientSound;
 
@@ -27,6 +29,8 @@ namespace RimWorld
 		private int nextLightningTicks;
 
 		private Sustainer soundSustainer;
+
+		public bool avoidConditionCauser;
 
 		public int AreaRadius => areaRadius;
 
@@ -39,12 +43,13 @@ namespace RimWorld
 			Scribe_Values.Look(ref nextLightningTicks, "nextLightningTicks", 0);
 			Scribe_Values.Look(ref initialStrikeDelay, "initialStrikeDelay");
 			Scribe_Values.Look(ref ambientSound, "ambientSound", defaultValue: false);
+			Scribe_Values.Look(ref avoidConditionCauser, "avoidConditionCauser", defaultValue: false);
 		}
 
 		public override void Init()
 		{
 			base.Init();
-			areaRadius = ((areaRadiusOverride == IntRange.zero) ? AreaRadiusRange.RandomInRange : areaRadiusOverride.RandomInRange);
+			areaRadius = ((areaRadiusOverride == IntRange.Zero) ? AreaRadiusRange.RandomInRange : areaRadiusOverride.RandomInRange);
 			nextLightningTicks = Find.TickManager.TicksGame + initialStrikeDelay.RandomInRange;
 			if (centerLocation.IsInvalid)
 			{
@@ -101,17 +106,21 @@ namespace RimWorld
 
 		private bool IsGoodLocationForStrike(IntVec3 loc)
 		{
-			if (loc.InBounds(base.SingleMap) && !loc.Roofed(base.SingleMap))
+			if (!loc.InBounds(base.SingleMap) || loc.Roofed(base.SingleMap) || !loc.Standable(base.SingleMap))
 			{
-				return loc.Standable(base.SingleMap);
+				return false;
 			}
-			return false;
+			if (avoidConditionCauser && conditionCauser != null && conditionCauser.OccupiedRect().ExpandedBy(2).Contains(loc))
+			{
+				return false;
+			}
+			return true;
 		}
 
 		private bool IsGoodCenterLocation(IntVec2 loc)
 		{
 			int num = 0;
-			int num2 = (int)((float)Math.PI * (float)areaRadius * (float)areaRadius / 2f);
+			int num2 = (int)(MathF.PI * (float)areaRadius * (float)areaRadius / 2f);
 			foreach (IntVec3 potentiallyAffectedCell in GetPotentiallyAffectedCells(loc))
 			{
 				if (IsGoodLocationForStrike(potentiallyAffectedCell))

@@ -7,7 +7,7 @@ namespace RimWorld
 	{
 		public const string Tag = "Techprint";
 
-		public static IEnumerable<ThingDef> ImpliedTechprintDefs()
+		public static IEnumerable<ThingDef> ImpliedTechprintDefs(bool hotReload = false)
 		{
 			if (!ModLister.RoyaltyInstalled)
 			{
@@ -17,8 +17,10 @@ namespace RimWorld
 			{
 				if (item.TechprintCount > 0)
 				{
-					ThingDef thingDef = new ThingDef();
+					string defName = "Techprint_" + item.defName;
+					ThingDef thingDef = (hotReload ? (DefDatabase<ThingDef>.GetNamed(defName, errorOnFail: false) ?? new ThingDef()) : new ThingDef());
 					thingDef.resourceReadoutPriority = ResourceCountPriority.Middle;
+					thingDef.drawerType = DrawerType.MapMeshOnly;
 					thingDef.category = ThingCategory.Item;
 					thingDef.thingClass = typeof(ThingWithComps);
 					thingDef.thingCategories = new List<ThingCategoryDef>();
@@ -43,7 +45,7 @@ namespace RimWorld
 					thingDef.tickerType = TickerType.Never;
 					thingDef.alwaysHaulable = true;
 					thingDef.rotatable = false;
-					thingDef.pathCost = DefGenerator.StandardItemPathCost;
+					thingDef.pathCost = 14;
 					thingDef.drawGUIOverlay = true;
 					thingDef.modContentPack = item.modContentPack;
 					thingDef.tradeTags = new List<string>();
@@ -56,7 +58,7 @@ namespace RimWorld
 						thingDef.thingCategories = new List<ThingCategoryDef>();
 					}
 					thingDef.graphicData.texPath = "Things/Item/Special/TechprintUltratech";
-					thingDef.defName = "Techprint_" + item.defName;
+					thingDef.defName = defName;
 					thingDef.label = "TechprintLabel".Translate(NamedArgumentUtility.Named(item, "PROJECT"));
 					yield return thingDef;
 				}

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -7,6 +8,23 @@ namespace RimWorld
 	{
 		protected override string NewZoneLabel => "GrowingZone".Translate();
 
+		protected virtual bool ShowRightClickHideOptions => true;
+
+		public override IEnumerable<FloatMenuOption> RightClickFloatMenuOptions
+		{
+			get
+			{
+				if (!ShowRightClickHideOptions)
+				{
+					yield break;
+				}
+				foreach (FloatMenuOption hideOption in Command_Hide_ZoneGrow.GetHideOptions())
+				{
+					yield return hideOption;
+				}
+			}
+		}
+
 		public Designator_ZoneAdd_Growing()
 		{
 			zoneTypeToPlace = typeof(Zone_Growing);
@@ -15,6 +33,7 @@ namespace RimWorld
 			icon = ContentFinder<Texture2D>.Get("UI/Designators/ZoneCreate_Growing");
 			tutorTag = "ZoneAdd_Growing";
 			hotKey = KeyBindingDefOf.Misc2;
+			soundSucceeded = SoundDefOf.Designate_ZoneAdd_Growing;
 		}
 
 		public override AcceptanceReport CanDesignateCell(IntVec3 c)
@@ -23,7 +42,12 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (base.Map.fertilityGrid.FertilityAt(c) < ThingDefOf.Plant_Potato.plant.fertilityMin)
+			float num = (ModsConfig.BiotechActive ? 0.5f : ThingDefOf.Plant_Potato.plant.fertilityMin);
+			if (ModsConfig.IdeologyActive && BuildCopyCommandUtility.FindAllowedDesignator(TerrainDefOf.FungalGravel) != null)
+			{
+				num = Mathf.Min(num, ThingDefOf.Plant_Nutrifungus.plant.fertilityMin);
+			}
+			if (c.GetFertility(base.Map) < num)
 			{
 				return false;
 			}

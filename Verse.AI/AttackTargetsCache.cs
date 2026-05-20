@@ -17,17 +17,19 @@ namespace Verse.AI
 
 		private static List<IAttackTarget> targets = new List<IAttackTarget>();
 
-		private static HashSet<IAttackTarget> emptySet = new HashSet<IAttackTarget>();
+		private static readonly HashSet<IAttackTarget> emptySet = new HashSet<IAttackTarget>();
 
-		private static List<IAttackTarget> tmpTargets = new List<IAttackTarget>();
+		private static readonly List<IAttackTarget> tmpTargets = new List<IAttackTarget>();
 
-		private static List<IAttackTarget> tmpToUpdate = new List<IAttackTarget>();
+		private static readonly List<IAttackTarget> tmpToUpdate = new List<IAttackTarget>();
 
 		public HashSet<IAttackTarget> TargetsHostileToColony => TargetsHostileToFaction(Faction.OfPlayer);
 
 		public AttackTargetsCache(Map map)
 		{
 			this.map = map;
+			map.events.FactionAdded += Notify_FactionAdded;
+			map.events.FactionRemoved += Notify_FactionRemoved;
 		}
 
 		public static void AttackTargetsCacheStaticUpdate()
@@ -90,6 +92,18 @@ namespace Verse.AI
 					}
 				}
 			}
+			if (pawn != null && ModsConfig.IdeologyActive && SlaveRebellionUtility.IsRebelling(pawn))
+			{
+				Faction faction2 = pawn.Faction;
+				List<Pawn> list2 = map.mapPawns.SpawnedPawnsInFaction(faction2);
+				for (int j = 0; j < list2.Count; j++)
+				{
+					if (thing.HostileTo(list2[j]))
+					{
+						targets.Add(list2[j]);
+					}
+				}
+			}
 			return targets;
 		}
 
@@ -100,28 +114,26 @@ namespace Verse.AI
 				Log.Warning("Called TargetsHostileToFaction with null faction.");
 				return emptySet;
 			}
-			if (targetsHostileToFaction.ContainsKey(f))
+			if (targetsHostileToFaction.TryGetValue(f, out var value))
 			{
-				return targetsHostileToFaction[f];
+				return value;
 			}
 			return emptySet;
 		}
 
 		public void Notify_ThingSpawned(Thing th)
 		{
-			IAttackTarget attackTarget = th as IAttackTarget;
-			if (attackTarget != null)
+			if (th is IAttackTarget target)
 			{
-				RegisterTarget(attackTarget);
+				RegisterTarget(target);
 			}
 		}
 
 		public void Notify_ThingDespawned(Thing th)
 		{
-			IAttackTarget attackTarget = th as IAttackTarget;
-			if (attackTarget != null)
+			if (th is IAttackTarget target)
 			{
-				DeregisterTarget(attackTarget);
+				DeregisterTarget(target);
 			}
 		}
 
@@ -175,8 +187,7 @@ namespace Verse.AI
 					targetsHostileToFaction[allFactionsListForReading[i]].Add(target);
 				}
 			}
-			Pawn pawn = target as Pawn;
-			if (pawn != null)
+			if (target is Pawn pawn)
 			{
 				if (pawn.InAggroMentalState)
 				{
@@ -193,19 +204,34 @@ namespace Verse.AI
 		{
 			if (!allTargets.Contains(target))
 			{
-				Log.Warning(string.Concat("Tried to deregister ", target, " but it's not in ", GetType()));
+				Log.Warning("Tried to deregister " + target?.ToString() + " but it's not in " + GetType());
 				return;
 			}
 			allTargets.Remove(target);
-			foreach (KeyValuePair<Faction, HashSet<IAttackTarget>> item in targetsHostileToFaction)
+			foreach (KeyValuePair<Faction, HashSet<IAttackTarget>> item2 in targetsHostileToFaction)
 			{
-				item.Value.Remove(target);
+				item2.Value.Remove(target);
 			}
-			Pawn pawn = target as Pawn;
-			if (pawn != null)
+			if (target is Pawn item)
 			{
-				pawnsInAggroMentalState.Remove(pawn);
-				factionlessHumanlikes.Remove(pawn);
+				pawnsInAggroMentalState.Remove(item);
+				factionlessHumanlikes.Remove(item);
+			}
+		}
+
+		private void Notify_FactionAdded(Faction faction)
+		{
+			if (!targetsHostileToFaction.ContainsKey(faction))
+			{
+				targetsHostileToFaction.Add(faction, new HashSet<IAttackTarget>());
+			}
+		}
+
+		private void Notify_FactionRemoved(Faction faction)
+		{
+			if (targetsHostileToFaction.ContainsKey(faction))
+			{
+				targetsHostileToFaction.Remove(faction);
 			}
 		}
 

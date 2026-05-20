@@ -35,7 +35,16 @@ namespace RimWorld
 
 		private Hive FindClosestHive(Pawn pawn)
 		{
+			if (!pawn.Spawned)
+			{
+				return null;
+			}
 			return (Hive)GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, ThingRequest.ForDef(ThingDefOf.Hive), PathEndMode.Touch, TraverseParms.For(pawn), 30f, (Thing x) => x.Faction == pawn.Faction, null, 0, 30);
+		}
+
+		public override void Notify_PawnAcquiredTarget(Pawn detector, Thing newTarg)
+		{
+			detector.TryGetComp<CompCanBeDormant>()?.WakeUp();
 		}
 	}
 }

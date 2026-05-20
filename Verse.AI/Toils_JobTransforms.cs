@@ -11,7 +11,7 @@ namespace Verse.AI
 
 		public static Toil ExtractNextTargetFromQueue(TargetIndex ind, bool failIfCountFromQueueTooBig = true)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("ExtractNextTargetFromQueue");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;
@@ -40,7 +40,7 @@ namespace Verse.AI
 
 		public static Toil ClearQueue(TargetIndex ind)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("ClearQueue");
 			toil.initAction = delegate
 			{
 				List<LocalTargetInfo> targetQueue = toil.actor.jobs.curJob.GetTargetQueue(ind);
@@ -54,7 +54,7 @@ namespace Verse.AI
 
 		public static Toil ClearDespawnedNullOrForbiddenQueuedTargets(TargetIndex ind, Func<Thing, bool> validator = null)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("ClearDespawnedNullOrForbiddenQueuedTargets");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;
@@ -69,8 +69,7 @@ namespace Verse.AI
 			try
 			{
 				IntVec3 interactCell = destination.Position;
-				IBillGiver billGiver = destination as IBillGiver;
-				if (billGiver != null)
+				if (destination is IBillGiver billGiver)
 				{
 					interactCell = ((Thing)billGiver).InteractionCell;
 					foreach (IntVec3 item in billGiver.IngredientStackCells.OrderBy((IntVec3 c) => (c - interactCell).LengthHorizontalSquared))
@@ -85,7 +84,7 @@ namespace Verse.AI
 					if (!yieldedIngPlaceCells.Contains(intVec))
 					{
 						Building edifice = intVec.GetEdifice(destination.Map);
-						if (edifice == null || edifice.def.passability != Traversability.Impassable || edifice.def.surfaceType != 0)
+						if (edifice == null || edifice.def.passability != Traversability.Impassable || edifice.def.surfaceType != SurfaceType.None)
 						{
 							yield return intVec;
 						}
@@ -100,43 +99,46 @@ namespace Verse.AI
 
 		public static Toil SetTargetToIngredientPlaceCell(TargetIndex facilityInd, TargetIndex carryItemInd, TargetIndex cellTargetInd)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("SetTargetToIngredientPlaceCell");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;
 				Job curJob = actor.jobs.curJob;
 				Thing thing = curJob.GetTarget(carryItemInd).Thing;
-				IntVec3 c = IntVec3.Invalid;
+				IntVec3 intVec = IntVec3.Invalid;
 				foreach (IntVec3 item in IngredientPlaceCellsInOrder(curJob.GetTarget(facilityInd).Thing))
 				{
-					if (!c.IsValid)
+					if (GenSpawn.CanSpawnAt(thing.def, item, actor.Map))
 					{
-						c = item;
-					}
-					bool flag = false;
-					List<Thing> list = actor.Map.thingGrid.ThingsListAt(item);
-					for (int i = 0; i < list.Count; i++)
-					{
-						if (list[i].def.category == ThingCategory.Item && (list[i].def != thing.def || list[i].stackCount == list[i].def.stackLimit))
+						if (!intVec.IsValid)
 						{
-							flag = true;
-							break;
+							intVec = item;
+						}
+						bool flag = false;
+						List<Thing> list = actor.Map.thingGrid.ThingsListAt(item);
+						for (int i = 0; i < list.Count; i++)
+						{
+							if (list[i].def.category == ThingCategory.Item && (!list[i].CanStackWith(thing) || list[i].stackCount == list[i].def.stackLimit))
+							{
+								flag = true;
+								break;
+							}
+						}
+						if (!flag)
+						{
+							curJob.SetTarget(cellTargetInd, item);
+							return;
 						}
 					}
-					if (!flag)
-					{
-						curJob.SetTarget(cellTargetInd, item);
-						return;
-					}
 				}
-				curJob.SetTarget(cellTargetInd, c);
+				curJob.SetTarget(cellTargetInd, intVec);
 			};
 			return toil;
 		}
 
 		public static Toil MoveCurrentTargetIntoQueue(TargetIndex ind)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MoveCurrentTargetIntoQueue");
 			toil.initAction = delegate
 			{
 				Job curJob = toil.actor.CurJob;
@@ -160,7 +162,7 @@ namespace Verse.AI
 
 		public static Toil SucceedOnNoTargetInQueue(TargetIndex ind)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("SucceedOnNoTargetInQueue");
 			toil.EndOnNoTargetInQueue(ind, JobCondition.Succeeded);
 			return toil;
 		}

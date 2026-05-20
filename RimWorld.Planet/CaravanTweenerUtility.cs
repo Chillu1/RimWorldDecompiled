@@ -20,8 +20,8 @@ namespace RimWorld.Planet
 			if (caravan.pather.Moving)
 			{
 				float num = (caravan.pather.IsNextTilePassable() ? (1f - caravan.pather.nextTileCostLeft / caravan.pather.nextTileCostTotal) : 0f);
-				int tileID = ((caravan.pather.nextTile != caravan.Tile || caravan.pather.previousTileForDrawingIfInDoubt == -1) ? caravan.Tile : caravan.pather.previousTileForDrawingIfInDoubt);
-				return worldGrid.GetTileCenter(caravan.pather.nextTile) * num + worldGrid.GetTileCenter(tileID) * (1f - num);
+				PlanetTile tile = ((!(caravan.pather.nextTile == caravan.Tile) || !caravan.pather.previousTileForDrawingIfInDoubt.Valid) ? caravan.Tile : caravan.pather.previousTileForDrawingIfInDoubt);
+				return worldGrid.GetTileCenter(caravan.pather.nextTile) * num + worldGrid.GetTileCenter(tile) * (1f - num);
 			}
 			return worldGrid.GetTileCenter(caravan.Tile);
 		}
@@ -33,18 +33,16 @@ namespace RimWorld.Planet
 				return Vector3.zero;
 			}
 			bool flag = caravan.Spawned && caravan.pather.Moving;
-			float d = 0.15f * Find.WorldGrid.averageTileSize;
+			float num = 0.15f * Find.WorldGrid.AverageTileSize;
 			if (!flag || caravan.pather.nextTile == caravan.pather.Destination)
 			{
-				int num = ((!flag) ? caravan.Tile : caravan.pather.nextTile);
-				int caravansCount = 0;
-				int caravansWithLowerIdCount = 0;
-				GetCaravansStandingAtOrAboutToStandAt(num, out caravansCount, out caravansWithLowerIdCount, caravan);
+				PlanetTile tile = ((!flag) ? caravan.Tile : caravan.pather.nextTile);
+				GetCaravansStandingAtOrAboutToStandAt(tile, out var caravansCount, out var caravansWithLowerIdCount, caravan);
 				if (caravansCount == 0)
 				{
 					return Vector3.zero;
 				}
-				return WorldRendererUtility.ProjectOnQuadTangentialToPlanet(Find.WorldGrid.GetTileCenter(num), GenGeo.RegularPolygonVertexPosition(caravansCount, caravansWithLowerIdCount) * d);
+				return WorldRendererUtility.ProjectOnQuadTangentialToPlanet(Find.WorldGrid.GetTileCenter(tile), GenGeo.RegularPolygonVertexPosition(caravansCount, caravansWithLowerIdCount) * num);
 			}
 			if (DrawPosCollides(caravan))
 			{
@@ -52,13 +50,13 @@ namespace RimWorld.Planet
 				Rand.Seed = caravan.ID;
 				float f = Rand.Range(0f, 360f);
 				Rand.PopState();
-				Vector2 point = new Vector2(Mathf.Cos(f), Mathf.Sin(f)) * d;
+				Vector2 point = new Vector2(Mathf.Cos(f), Mathf.Sin(f)) * num;
 				return WorldRendererUtility.ProjectOnQuadTangentialToPlanet(PatherTweenedPosRoot(caravan), point);
 			}
 			return Vector3.zero;
 		}
 
-		private static void GetCaravansStandingAtOrAboutToStandAt(int tile, out int caravansCount, out int caravansWithLowerIdCount, Caravan forCaravan)
+		private static void GetCaravansStandingAtOrAboutToStandAt(PlanetTile tile, out int caravansCount, out int caravansWithLowerIdCount, Caravan forCaravan)
 		{
 			caravansCount = 0;
 			caravansWithLowerIdCount = 0;
@@ -88,7 +86,7 @@ namespace RimWorld.Planet
 		private static bool DrawPosCollides(Caravan caravan)
 		{
 			Vector3 a = PatherTweenedPosRoot(caravan);
-			float num = Find.WorldGrid.averageTileSize * 0.2f;
+			float num = Find.WorldGrid.AverageTileSize * 0.2f;
 			List<Caravan> caravans = Find.WorldObjects.Caravans;
 			for (int i = 0; i < caravans.Count; i++)
 			{

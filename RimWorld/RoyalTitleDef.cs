@@ -7,141 +7,6 @@ namespace RimWorld
 {
 	public class RoyalTitleDef : Def
 	{
-		public class ApparelRequirement
-		{
-			public List<BodyPartGroupDef> bodyPartGroupsMatchAny;
-
-			public List<string> requiredTags;
-
-			public List<string> allowedTags;
-
-			public IEnumerable<ThingDef> AllAllowedApparelForPawn(Pawn p, bool ignoreGender = false, bool includeWorn = false)
-			{
-				foreach (ThingDef apparel in DefDatabase<ThingDef>.AllDefsListForReading)
-				{
-					if (apparel.IsApparel && apparel.apparel.tags != null && (ignoreGender || apparel.apparel.CorrectGenderForWearing(p.gender)) && apparel.apparel.tags.Any((string t) => requiredTags.Contains(t) || allowedTags.Contains(t)) && apparel.apparel.bodyPartGroups.Any((BodyPartGroupDef b) => bodyPartGroupsMatchAny.Contains(b)) && (includeWorn || !p.apparel.WornApparel.Any((Apparel w) => w.def == apparel)))
-					{
-						yield return apparel;
-					}
-				}
-			}
-
-			public IEnumerable<ThingDef> AllRequiredApparelForPawn(Pawn p, bool ignoreGender = false, bool includeWorn = false)
-			{
-				foreach (ThingDef apparel in DefDatabase<ThingDef>.AllDefsListForReading)
-				{
-					if (apparel.IsApparel && apparel.apparel.tags != null && (ignoreGender || apparel.apparel.CorrectGenderForWearing(p.gender)) && apparel.apparel.tags.Any((string t) => requiredTags.Contains(t)) && apparel.apparel.bodyPartGroups.Any((BodyPartGroupDef b) => bodyPartGroupsMatchAny.Contains(b)) && (includeWorn || !p.apparel.WornApparel.Any((Apparel w) => w.def == apparel)))
-					{
-						yield return apparel;
-					}
-				}
-			}
-
-			public IEnumerable<ThingDef> AllRequiredApparel(Gender gender = Gender.None)
-			{
-				foreach (ThingDef item in DefDatabase<ThingDef>.AllDefsListForReading)
-				{
-					if (item.IsApparel && item.apparel.tags != null && item.apparel.tags.Any((string t) => requiredTags.Contains(t)) && item.apparel.bodyPartGroups.Any((BodyPartGroupDef b) => bodyPartGroupsMatchAny.Contains(b)) && (gender == Gender.None || item.apparel.CorrectGenderForWearing(gender)))
-					{
-						yield return item;
-					}
-				}
-			}
-
-			public bool ApparelMeetsRequirement(ThingDef thingDef, bool allowUnmatched = true)
-			{
-				bool flag = false;
-				for (int i = 0; i < bodyPartGroupsMatchAny.Count; i++)
-				{
-					if (thingDef.apparel.bodyPartGroups.Contains(bodyPartGroupsMatchAny[i]))
-					{
-						flag = true;
-						break;
-					}
-				}
-				if (flag)
-				{
-					for (int j = 0; j < requiredTags.Count; j++)
-					{
-						if (thingDef.apparel.tags.Contains(requiredTags[j]))
-						{
-							return true;
-						}
-					}
-					if (allowedTags != null)
-					{
-						for (int k = 0; k < allowedTags.Count; k++)
-						{
-							if (thingDef.apparel.tags.Contains(allowedTags[k]))
-							{
-								return true;
-							}
-						}
-					}
-					return false;
-				}
-				return allowUnmatched;
-			}
-
-			public bool IsMet(Pawn p)
-			{
-				foreach (Apparel item in p.apparel.WornApparel)
-				{
-					bool flag = false;
-					for (int i = 0; i < bodyPartGroupsMatchAny.Count; i++)
-					{
-						if (item.def.apparel.bodyPartGroups.Contains(bodyPartGroupsMatchAny[i]))
-						{
-							flag = true;
-							break;
-						}
-					}
-					if (!flag)
-					{
-						continue;
-					}
-					for (int j = 0; j < requiredTags.Count; j++)
-					{
-						if (item.def.apparel.tags.Contains(requiredTags[j]))
-						{
-							return true;
-						}
-					}
-					if (allowedTags == null)
-					{
-						continue;
-					}
-					for (int k = 0; k < allowedTags.Count; k++)
-					{
-						if (item.def.apparel.tags.Contains(allowedTags[k]))
-						{
-							return true;
-						}
-					}
-				}
-				return false;
-			}
-
-			public ThingDef RandomRequiredApparelForPawnInGeneration(Pawn p, Func<ThingDef, bool> validator)
-			{
-				ThingDef result = null;
-				if (!DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef a) => a.IsApparel && a.apparel.tags != null && a.apparel.bodyPartGroups.Any((BodyPartGroupDef b) => bodyPartGroupsMatchAny.Contains(b)) && a.apparel.tags.Any((string t) => requiredTags.Contains(t)) && a.apparel.CorrectGenderForWearing(p.gender) && (validator == null || validator(a))).TryRandomElementByWeight((ThingDef a) => a.generateCommonality, out result))
-				{
-					return null;
-				}
-				return result;
-			}
-
-			public override string ToString()
-			{
-				if (allowedTags == null)
-				{
-					return string.Format("({0}) -> {1}", string.Join(",", bodyPartGroupsMatchAny.Select((BodyPartGroupDef a) => a.defName).ToArray()), string.Join(",", requiredTags.ToArray()));
-				}
-				return string.Format("({0}) -> {1}|{2}", string.Join(",", bodyPartGroupsMatchAny.Select((BodyPartGroupDef a) => a.defName).ToArray()), string.Join(",", requiredTags.ToArray()), string.Join(",", allowedTags.ToArray()));
-			}
-		}
-
 		public int seniority;
 
 		public int favorCost;
@@ -180,7 +45,7 @@ namespace RimWorld
 
 		public int permitPointsAwarded;
 
-		public Type awardWorkerClass;
+		public Type awardWorkerClass = typeof(RoyalTitleAwardWorker);
 
 		public ThoughtDef awardThought;
 
@@ -189,10 +54,6 @@ namespace RimWorld
 		public List<RoomRequirement> throneRoomRequirements;
 
 		public List<RoomRequirement> bedroomRequirements;
-
-		public float recruitmentDifficultyOffset;
-
-		public float recruitmentResistanceFactor = 1f;
 
 		public float recruitmentResistanceOffset;
 
@@ -233,7 +94,7 @@ namespace RimWorld
 				List<WorkTypeDef> list = DefDatabase<WorkTypeDef>.AllDefsListForReading;
 				for (int i = 0; i < list.Count; i++)
 				{
-					if ((disabledWorkTags & list[i].workTags) != 0)
+					if ((disabledWorkTags & list[i].workTags) != WorkTags.None)
 					{
 						yield return list[i];
 					}
@@ -327,9 +188,9 @@ namespace RimWorld
 		{
 			if (!string.IsNullOrEmpty(labelFemale))
 			{
-				return base.LabelCap + " / " + labelFemale.CapitalizeFirst();
+				return LabelCap + " / " + labelFemale.CapitalizeFirst();
 			}
-			return base.LabelCap;
+			return LabelCap;
 		}
 
 		public string GetLabelCapFor(Pawn p)
@@ -444,33 +305,32 @@ namespace RimWorld
 			if (!requiredApparel.NullOrEmpty())
 			{
 				TaggedString taggedString3 = "RoyalTitleTooltipRequiredApparel".Translate();
-				TaggedString t2 = "Male".Translate().CapitalizeFirst() + ":\n" + RequiredApparelListForGender(Gender.Male).ToLineList("  - ") + "\n\n" + "Female".Translate().CapitalizeFirst() + ":\n" + RequiredApparelListForGender(Gender.Female).ToLineList("  - ");
-				yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, taggedString3, "", "RoyalTitleRequiredApparelStatDescription".Translate() + ":\n\n" + t2, 99998);
+				TaggedString taggedString4 = "Male".Translate().CapitalizeFirst() + ":\n" + RequiredApparelListForGender(Gender.Male, req.Pawn).ToLineList("  - ") + "\n\n" + "Female".Translate().CapitalizeFirst() + ":\n" + RequiredApparelListForGender(Gender.Female, req.Pawn).ToLineList("  - ");
+				yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, taggedString3, "", "RoyalTitleRequiredApparelStatDescription".Translate() + ":\n\n" + taggedString4, 99998);
 			}
 			if (!bedroomRequirements.NullOrEmpty())
 			{
-				TaggedString taggedString4 = "RoyalTitleTooltipBedroomRequirements".Translate();
+				TaggedString taggedString5 = "RoyalTitleTooltipBedroomRequirements".Translate();
 				string valueString2 = bedroomRequirements.Select((RoomRequirement r) => r.Label()).ToCommaList().CapitalizeFirst();
 				string reportText2 = bedroomRequirements.Select((RoomRequirement r) => r.LabelCap()).ToLineList("  - ");
-				yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, taggedString4, valueString2, reportText2, 99997);
+				yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, taggedString5, valueString2, reportText2, 99997);
 			}
 			if (!throneRoomRequirements.NullOrEmpty())
 			{
-				TaggedString taggedString5 = "RoyalTitleTooltipThroneroomRequirements".Translate();
+				TaggedString taggedString6 = "RoyalTitleTooltipThroneroomRequirements".Translate();
 				string valueString3 = throneRoomRequirements.Select((RoomRequirement r) => r.Label()).ToCommaList().CapitalizeFirst();
 				string reportText3 = throneRoomRequirements.Select((RoomRequirement r) => r.LabelCap()).ToArray().ToLineList("  - ");
-				yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, taggedString5, valueString3, reportText3, 99997);
+				yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, taggedString6, valueString3, reportText3, 99997);
 			}
-			IEnumerable<string> enumerable = from t in disabledWorkTags.GetAllSelectedItems<WorkTags>()
-				where t != WorkTags.None
-				select t into w
+			IEnumerable<string> enumerable = from w in disabledWorkTags.GetAllSelectedItems<WorkTags>()
+				where w != WorkTags.None
 				select w.LabelTranslated();
 			if (enumerable.Any())
 			{
-				TaggedString taggedString6 = "DisabledWorkTypes".Translate();
+				TaggedString taggedString7 = "DisabledWorkTypes".Translate();
 				string valueString4 = enumerable.ToCommaList().CapitalizeFirst();
 				string reportText4 = enumerable.ToLineList(" -  ", capitalizeItems: true);
-				yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, taggedString6, valueString4, reportText4, 99994);
+				yield return new StatDrawEntry(StatCategoryDefOf.BasicsImportant, taggedString7, valueString4, reportText4, 99994);
 			}
 			if (foodRequirement.Defined && SatisfyingMeals().Any())
 			{
@@ -479,21 +339,48 @@ namespace RimWorld
 			}
 		}
 
-		private IEnumerable<string> RequiredApparelListForGender(Gender g)
+		private IEnumerable<string> RequiredApparelListForGender(Gender g, Pawn forPawn = null)
 		{
-			foreach (TaggedString item in from a in requiredApparel.SelectMany((ApparelRequirement r) => r.AllRequiredApparel(g)).Distinct()
-				select a.LabelCap)
+			bool anyRequirementValid = false;
+			foreach (ApparelRequirement item in requiredApparel)
 			{
-				yield return item;
+				string appendDisabledRequirement = null;
+				if (forPawn != null && !ApparelUtility.IsRequirementActive(item, ApparelRequirementSource.Title, forPawn, out var disabledByLabel))
+				{
+					appendDisabledRequirement = " [" + "ApparelRequirementDisabledLabel".Translate() + ": " + disabledByLabel + "]";
+				}
+				else
+				{
+					anyRequirementValid = true;
+				}
+				foreach (TaggedString item2 in from a in item.AllRequiredApparel(g).Distinct()
+					select a.LabelCap)
+				{
+					if (appendDisabledRequirement == null)
+					{
+						yield return item2;
+					}
+					else
+					{
+						yield return item2 + " " + appendDisabledRequirement;
+					}
+				}
 			}
-			yield return "ApparelRequirementAnyPrestigeArmor".Translate();
-			yield return "ApparelRequirementAnyPsycasterApparel".Translate();
+			if (anyRequirementValid)
+			{
+				yield return "ApparelRequirementAnyPrestigeArmor".Translate();
+				yield return "ApparelRequirementAnyPsycasterApparel".Translate();
+				if (ModsConfig.BiotechActive)
+				{
+					yield return "ApparelRequirementAnyMechlordApparel".Translate();
+				}
+			}
 		}
 
 		public IEnumerable<DefHyperlink> GetHyperlinks(Faction faction)
 		{
-			IEnumerable<DefHyperlink> descriptionHyperlinks = base.descriptionHyperlinks;
-			return descriptionHyperlinks ?? (from t in faction.def.RoyalTitlesAllInSeniorityOrderForReading
+			IEnumerable<DefHyperlink> enumerable = descriptionHyperlinks;
+			return enumerable ?? (from t in faction.def.RoyalTitlesAllInSeniorityOrderForReading
 				where t != this
 				select new DefHyperlink(t, faction));
 		}
@@ -504,10 +391,7 @@ namespace RimWorld
 			{
 				yield return item;
 			}
-			if (!ModLister.RoyaltyInstalled)
-			{
-				Log.ErrorOnce("Royal titles are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 1222185);
-			}
+			ModLister.CheckRoyalty("Royal title");
 			if (awardThought != null && !typeof(Thought_MemoryRoyalTitle).IsAssignableFrom(awardThought.thoughtClass))
 			{
 				yield return $"Royal title {defName} has awardThought with thoughtClass {awardThought.thoughtClass.FullName} which is not deriving from Thought_MemoryRoyalTitle!";
@@ -525,6 +409,10 @@ namespace RimWorld
 						yield return $"Royal title {defName} disables joy kind {disabledJoyKind.defName} which requires the title!";
 					}
 				}
+			}
+			if (!typeof(RoyalTitleAwardWorker).IsAssignableFrom(awardWorkerClass))
+			{
+				yield return "awardWorkerClass does not derive from RoyalTitleAwardWorker";
 			}
 			if (Awardable && changeHeirQuestPoints < 0)
 			{

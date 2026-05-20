@@ -18,6 +18,10 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (pawn.story.traits.HasTrait(TraitDefOf.Kind))
+			{
+				return false;
+			}
 			return true;
 		}
 	}

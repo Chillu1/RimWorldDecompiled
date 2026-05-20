@@ -26,19 +26,13 @@ namespace RimWorld.SketchGen
 			return true;
 		}
 
-		[Obsolete("Only used for mod compatibility")]
-		public static bool IsFloorAllowed(TerrainDef floor, bool allowWoodenFloor, bool allowConcrete, Map useOnlyStonesAvailableOnMap, bool onlyBuildableByPlayer)
-		{
-			return IsFloorAllowed_NewTmp(floor, allowWoodenFloor, allowConcrete, useOnlyStonesAvailableOnMap, onlyBuildableByPlayer, onlyStoneFloor: true);
-		}
-
-		public static bool IsFloorAllowed_NewTmp(TerrainDef floor, bool allowWoodenFloor, bool allowConcrete, Map useOnlyStonesAvailableOnMap, bool onlyBuildableByPlayer, bool onlyStoneFloor)
+		public static bool IsFloorAllowed(TerrainDef floor, bool allowWoodenFloor, bool allowConcrete, Map useOnlyStonesAvailableOnMap, bool onlyBuildableByPlayer, bool onlyStoneFloor)
 		{
 			if (!allowWoodenFloor && floor == TerrainDefOf.WoodPlankFloor)
 			{
 				return false;
 			}
-			if (!allowConcrete && floor == TerrainDefOf.Concrete)
+			if (!allowConcrete && (floor == TerrainDefOf.Concrete || floor == TerrainDefOf.AncientConcrete))
 			{
 				return false;
 			}
@@ -175,15 +169,15 @@ namespace RimWorld.SketchGen
 			return result;
 		}
 
-		public static CellRect FindBiggestRect(Sketch sketch, Predicate<IntVec3> canTraverse)
+		public static CellRect FindBiggestRect(Sketch sketch, Predicate<IntVec3> canTraverse, IEnumerable<IntVec3> cells = null, int tries = 3)
 		{
 			try
 			{
 				CellRect result = CellRect.Empty;
-				for (int i = 0; i < 3; i++)
+				for (int i = 0; i < tries; i++)
 				{
 					tmpProcessed.Clear();
-					foreach (IntVec3 item in sketch.OccupiedRect.InRandomOrder())
+					foreach (IntVec3 item in cells ?? sketch.OccupiedRect.InRandomOrder())
 					{
 						CellRect cellRect = FindBiggestRectAt(item, sketch.OccupiedRect, sketch, tmpProcessed, canTraverse);
 						if (cellRect.Area > result.Area)
@@ -207,6 +201,18 @@ namespace RimWorld.SketchGen
 				return buildable.IsResearchFinished;
 			}
 			return false;
+		}
+
+		public static SketchThing GetDoor(this Sketch sketch, IntVec3 position)
+		{
+			foreach (SketchThing item in sketch.ThingsAt(position))
+			{
+				if (item.def.IsDoor)
+				{
+					return item;
+				}
+			}
+			return null;
 		}
 	}
 }

@@ -6,10 +6,7 @@ namespace RimWorld
 {
 	public abstract class PawnColumnWorker_CopyPaste : PawnColumnWorker
 	{
-		protected abstract bool AnythingInClipboard
-		{
-			get;
-		}
+		protected abstract bool AnythingInClipboard { get; }
 
 		public override void DoCell(Rect rect, Pawn pawn, PawnTable table)
 		{

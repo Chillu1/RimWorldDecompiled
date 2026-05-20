@@ -8,9 +8,9 @@ namespace RimWorld
 		{
 			base.Notify_BulletImpactNearby(impactData);
 			Pawn wearer = base.Wearer;
-			if (!wearer.Dead && !impactData.bullet.def.projectile.damageDef.isExplosive && CompProjectileInterceptor.InterceptsProjectile(BroadshieldProjectileInterceptorProperties(), impactData.bullet) && impactData.bullet.Launcher != null && impactData.bullet.Launcher.HostileTo(base.Wearer) && !wearer.IsColonist && wearer.Spawned && !NearbyActiveBroadshield())
+			if (wearer != null && !wearer.Dead && !impactData.bullet.DamageDef.isExplosive && CompProjectileInterceptor.InterceptsProjectile(BroadshieldProjectileInterceptorProperties(), impactData.bullet) && impactData.bullet.Launcher != null && impactData.bullet.Launcher.HostileTo(base.Wearer) && !wearer.IsColonist && wearer.Spawned && !NearbyActiveBroadshield())
 			{
-				Verb_DeployBroadshield.Deploy(this.TryGetComp<CompReloadable>());
+				Verb_DeployBroadshield.Deploy(this.TryGetComp<CompApparelReloadable>());
 			}
 		}
 

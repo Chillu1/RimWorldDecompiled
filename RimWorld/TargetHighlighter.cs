@@ -55,9 +55,8 @@ namespace RimWorld
 			{
 				return;
 			}
-			Pawn pawn = target.Thing as Pawn;
 			float num;
-			if (pawn != null)
+			if (target.Thing is Pawn pawn)
 			{
 				if (pawn.RaceProps.Humanlike)
 				{
@@ -82,14 +81,20 @@ namespace RimWorld
 
 		public static void TargetHighlighterUpdate()
 		{
-			for (int i = 0; i < arrowPositions.Count; i++)
+			if (WorldRendererUtility.DrawingMap)
 			{
-				GenDraw.DrawArrowPointingAt(arrowPositions[i]);
+				for (int i = 0; i < arrowPositions.Count; i++)
+				{
+					GenDraw.DrawArrowPointingAt(arrowPositions[i]);
+				}
 			}
 			arrowPositions.Clear();
-			for (int j = 0; j < circleOverlays.Count; j++)
+			if (WorldRendererUtility.DrawingMap)
 			{
-				GenDraw.DrawCircleOutline(circleOverlays[j].First, circleOverlays[j].Second);
+				for (int j = 0; j < circleOverlays.Count; j++)
+				{
+					GenDraw.DrawCircleOutline(circleOverlays[j].First, circleOverlays[j].Second);
+				}
 			}
 			circleOverlays.Clear();
 		}

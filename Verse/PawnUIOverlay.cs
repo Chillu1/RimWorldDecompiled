@@ -23,40 +23,48 @@ namespace Verse
 
 		public void DrawPawnGUIOverlay()
 		{
-			if (!pawn.Spawned || pawn.Map.fogGrid.IsFogged(pawn.Position))
+			if (!pawn.Spawned || pawn.Map.fogGrid.IsFogged(pawn.Position) || WorldComponent_GravshipController.CutsceneInProgress)
 			{
 				return;
 			}
 			if (!pawn.RaceProps.Humanlike)
 			{
-				switch (Prefs.AnimalNameMode)
+				if (pawn.RaceProps.Animal)
 				{
-				case AnimalNameDisplayMode.None:
-					return;
-				case AnimalNameDisplayMode.TameAll:
-					if (pawn.Name == null)
+					if (!Prefs.AnimalNameMode.ShouldDisplayAnimalName(pawn))
 					{
 						return;
 					}
-					break;
-				case AnimalNameDisplayMode.TameNamed:
-					if (pawn.Name == null || pawn.Name.Numerical)
+				}
+				else
+				{
+					if (!pawn.IsColonyMech)
 					{
 						return;
 					}
-					break;
+					if (pawn.IsSelfShutdown())
+					{
+						pawn.Map.overlayDrawer.DrawOverlay(pawn, OverlayTypes.SelfShutdown);
+					}
+					if (!Prefs.MechNameMode.ShouldDisplayMechName(pawn))
+					{
+						return;
+					}
 				}
 			}
-			Vector2 pos = GenMapUI.LabelDrawPosFor(pawn, -0.6f);
-			GenMapUI.DrawPawnLabel(pawn, pos);
-			if (pawn.CanTradeNow)
+			if (!pawn.IsMutant || !pawn.mutant.Def.hideLabel)
 			{
-				pawn.Map.overlayDrawer.DrawOverlay(pawn, OverlayTypes.QuestionMark);
-			}
-			Lord lord = pawn.GetLord();
-			if (lord != null && lord.CurLordToil != null)
-			{
-				lord.CurLordToil.DrawPawnGUIOverlay(pawn);
+				Vector2 pos = GenMapUI.LabelDrawPosFor(pawn, -0.6f);
+				GenMapUI.DrawPawnLabel(pawn, pos);
+				if (pawn.ShouldShowQuestionMark())
+				{
+					pawn.Map.overlayDrawer.DrawOverlay(pawn, OverlayTypes.QuestionMark);
+				}
+				Lord lord = pawn.GetLord();
+				if (lord != null && lord.CurLordToil != null)
+				{
+					lord.CurLordToil.DrawPawnGUIOverlay(pawn);
+				}
 			}
 		}
 	}

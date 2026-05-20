@@ -10,6 +10,8 @@ namespace RimWorld
 
 		private List<Thought_Memory> memories = new List<Thought_Memory>();
 
+		private List<Thought_Memory> tmpMemories = new List<Thought_Memory>();
+
 		public List<Thought_Memory> Memories => memories;
 
 		public MemoryThoughtHandler(Pawn pawn)
@@ -19,20 +21,54 @@ namespace RimWorld
 
 		public void ExposeData()
 		{
+			if (Scribe.mode == LoadSaveMode.Saving)
+			{
+				tmpMemories.Clear();
+				for (int num = memories.Count - 1; num >= 0; num--)
+				{
+					if (!memories[num].Save)
+					{
+						tmpMemories.Add(memories[num]);
+						memories.Remove(memories[num]);
+					}
+				}
+			}
 			Scribe_Collections.Look(ref memories, "memories", LookMode.Deep);
+			foreach (Thought_Memory tmpMemory in tmpMemories)
+			{
+				memories.Add(tmpMemory);
+			}
+			tmpMemories.Clear();
 			if (Scribe.mode != LoadSaveMode.PostLoadInit)
 			{
 				return;
 			}
-			for (int num = memories.Count - 1; num >= 0; num--)
+			for (int num2 = memories.Count - 1; num2 >= 0; num2--)
 			{
-				if (memories[num].def == null)
+				if (memories[num2].def == null)
 				{
-					memories.RemoveAt(num);
+					memories.RemoveAt(num2);
 				}
 				else
 				{
-					memories[num].pawn = pawn;
+					memories[num2].pawn = pawn;
+					if (memories[num2].permanent)
+					{
+						bool flag = false;
+						foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
+						{
+							HediffComp_ThoughtSetter hediffComp_ThoughtSetter = hediff.TryGetComp<HediffComp_ThoughtSetter>();
+							if (hediffComp_ThoughtSetter != null && hediffComp_ThoughtSetter.Props.thought == memories[num2].def)
+							{
+								flag = true;
+								break;
+							}
+						}
+						if (!flag)
+						{
+							memories[num2].permanent = false;
+						}
+					}
 				}
 			}
 		}
@@ -62,7 +98,7 @@ namespace RimWorld
 			}
 		}
 
-		public void TryGainMemoryFast(ThoughtDef mem)
+		public void TryGainMemoryFast(ThoughtDef mem, Precept sourcePrecept = null)
 		{
 			Thought_Memory firstMemoryOfDef = GetFirstMemoryOfDef(mem);
 			if (firstMemoryOfDef != null)
@@ -71,32 +107,55 @@ namespace RimWorld
 			}
 			else
 			{
-				TryGainMemory(mem);
+				TryGainMemory(mem, null, sourcePrecept);
 			}
 		}
 
-		public void TryGainMemory(ThoughtDef def, Pawn otherPawn = null)
+		public void TryGainMemoryFast(ThoughtDef mem, int stage, Precept sourcePrecept = null)
 		{
-			if (!def.IsMemory)
+			Thought_Memory firstMemoryOfDef = GetFirstMemoryOfDef(mem);
+			if (firstMemoryOfDef != null)
 			{
-				Log.Error(string.Concat(def, " is not a memory thought."));
+				firstMemoryOfDef.Renew();
+				firstMemoryOfDef.SetForcedStage(stage);
 			}
 			else
 			{
-				TryGainMemory((Thought_Memory)ThoughtMaker.MakeThought(def), otherPawn);
+				TryGainMemory(mem, null, sourcePrecept);
+				GetFirstMemoryOfDef(mem)?.SetForcedStage(stage);
+			}
+		}
+
+		public void TryGainMemory(ThoughtDef def, Pawn otherPawn = null, Precept sourcePrecept = null)
+		{
+			if (!def.IsMemory)
+			{
+				Log.Error(def?.ToString() + " is not a memory thought.");
+			}
+			else
+			{
+				TryGainMemory(ThoughtMaker.MakeThought(def, sourcePrecept), otherPawn);
 			}
 		}
 
 		public void TryGainMemory(Thought_Memory newThought, Pawn otherPawn = null)
 		{
-			if (!ThoughtUtility.CanGetThought_NewTemp(pawn, newThought.def))
+			if (!ThoughtUtility.CanGetThought(pawn, newThought.def))
 			{
 				return;
 			}
-			if (newThought is Thought_MemorySocial && newThought.otherPawn == null && otherPawn == null)
+			if (newThought is Thought_MemorySocial)
 			{
-				Log.Error(string.Concat("Can't gain social thought ", newThought.def, " because its otherPawn is null and otherPawn passed to this method is also null. Social thoughts must have otherPawn."));
-				return;
+				if (newThought.otherPawn == null && otherPawn == null)
+				{
+					Log.Error("Can't gain social thought " + newThought.def?.ToString() + " because its otherPawn is null and otherPawn passed to this method is also null. Social thoughts must have otherPawn.");
+					return;
+				}
+				otherPawn = otherPawn ?? newThought.otherPawn;
+				if (!newThought.def.socialTargetDevelopmentalStageFilter.Has(otherPawn.DevelopmentalStage))
+				{
+					return;
+				}
 			}
 			newThought.pawn = pawn;
 			newThought.otherPawn = otherPawn;
@@ -121,6 +180,18 @@ namespace RimWorld
 			if (newThought.def.thoughtToMake != null)
 			{
 				TryGainMemory(newThought.def.thoughtToMake, newThought.otherPawn);
+			}
+			List<Thought_Memory> list = ((newThought.def.replaceThoughts == null) ? memories : new List<Thought_Memory>(memories));
+			for (int i = 0; i < list.Count; i++)
+			{
+				if (list[i] != newThought && list[i].GroupsWith(newThought))
+				{
+					list[i].Notify_NewThoughtInGroupAdded(newThought);
+				}
+				if (newThought.def.replaceThoughts != null && newThought.def.replaceThoughts.Contains(list[i].def))
+				{
+					RemoveMemory(list[i]);
+				}
 			}
 			if (showBubble && newThought.def.showBubble && pawn.Spawned && PawnUtility.ShouldSendNotificationAbout(pawn))
 			{
@@ -208,22 +279,13 @@ namespace RimWorld
 
 		public void RemoveMemoriesOfDefWhereOtherPawnIs(ThoughtDef def, Pawn otherPawn)
 		{
-			while (true)
+			for (int num = memories.Count - 1; num >= 0; num--)
 			{
-				Thought_Memory thought_Memory = memories.Find(delegate(Thought_Memory x)
-				{
-					if (x.def != def)
-					{
-						return false;
-					}
-					return (x.otherPawn == otherPawn) ? true : false;
-				});
-				if (thought_Memory != null)
+				Thought_Memory thought_Memory = memories[num];
+				if (thought_Memory.def == def && thought_Memory.otherPawn == otherPawn)
 				{
 					RemoveMemory(thought_Memory);
-					continue;
 				}
-				break;
 			}
 		}
 
@@ -245,7 +307,7 @@ namespace RimWorld
 		{
 			if (!def.IsMemory)
 			{
-				Log.Warning(string.Concat(def, " is not a memory thought."));
+				Log.Warning(def?.ToString() + " is not a memory thought.");
 				return;
 			}
 			while (true)
@@ -264,7 +326,7 @@ namespace RimWorld
 		{
 			if (!def.IsMemory)
 			{
-				Log.Warning(string.Concat(def, " is not a memory thought."));
+				Log.Warning(def?.ToString() + " is not a memory thought.");
 				return;
 			}
 			while (true)

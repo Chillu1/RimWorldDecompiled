@@ -33,10 +33,10 @@ namespace Verse
 			return (float)indentLevel * nestIndentWidth;
 		}
 
-		protected void LabelLeft(string label, string tipText, int indentLevel, float widthOffset = 0f)
+		protected void LabelLeft(string label, string tipText, int indentLevel, float widthOffset = 0f, Color? textColor = null, float leftOffset = 0f)
 		{
 			Rect rect = new Rect(0f, curY, base.ColumnWidth, lineHeight);
-			rect.xMin = XAtIndentLevel(indentLevel) + 18f;
+			rect.xMin = XAtIndentLevel(indentLevel) + 18f + leftOffset;
 			Widgets.DrawHighlightIfMouseover(rect);
 			if (!tipText.NullOrEmpty())
 			{
@@ -47,11 +47,13 @@ namespace Verse
 				TooltipHandler.TipRegion(rect, tipText);
 			}
 			Text.Anchor = TextAnchor.MiddleLeft;
+			GUI.color = textColor ?? Color.white;
 			rect.width = LabelWidth - rect.xMin + widthOffset;
 			rect.yMax += 5f;
 			rect.yMin -= 5f;
 			Widgets.Label(rect, label.Truncate(rect.width));
 			Text.Anchor = TextAnchor.UpperLeft;
+			GUI.color = Color.white;
 		}
 
 		protected bool OpenCloseWidget(TreeNode node, int indentLevel, int openMask)
@@ -63,10 +65,10 @@ namespace Verse
 			float x = XAtIndentLevel(indentLevel);
 			float y = curY + lineHeight / 2f - 9f;
 			Rect butRect = new Rect(x, y, 18f, 18f);
-			Texture2D tex = (node.IsOpen(openMask) ? TexButton.Collapse : TexButton.Reveal);
+			bool flag = IsOpen(node, openMask);
+			Texture2D tex = (flag ? TexButton.Collapse : TexButton.Reveal);
 			if (Widgets.ButtonImage(butRect, tex))
 			{
-				bool flag = node.IsOpen(openMask);
 				if (flag)
 				{
 					SoundDefOf.TabClose.PlayOneShotOnCamera();
@@ -76,6 +78,15 @@ namespace Verse
 					SoundDefOf.TabOpen.PlayOneShotOnCamera();
 				}
 				node.SetOpen(openMask, !flag);
+				return true;
+			}
+			return false;
+		}
+
+		public virtual bool IsOpen(TreeNode node, int openMask)
+		{
+			if (node.IsOpen(openMask))
+			{
 				return true;
 			}
 			return false;

@@ -44,21 +44,28 @@ namespace RimWorld
 				yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.InteractionCell);
 			}
 			yield return Toils_Interpersonal.WaitToBeAbleToInteract(pawn);
-			Toil toil = new Toil();
-			toil.tickAction = delegate
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
+			toil.tickIntervalAction = delegate(int delta)
 			{
-				Patient.needs.joy.GainJoy(job.def.joyGainRate * 0.000144f, job.def.joyKind);
-				if (pawn.IsHashIntervalTick(320))
+				Patient.needs.joy?.GainJoy(job.def.joyGainRate * 0.000144f * (float)delta, job.def.joyKind);
+				if (pawn.IsHashIntervalTick(320, delta) && pawn.interactions.CanInteractNowWith(Patient))
 				{
 					InteractionDef intDef = ((Rand.Value < 0.8f) ? InteractionDefOf.Chitchat : InteractionDefOf.DeepTalk);
 					pawn.interactions.TryInteractWith(Patient, intDef);
 				}
 				pawn.rotationTracker.FaceCell(Patient.Position);
-				pawn.GainComfortFromCellIfPossible();
-				JoyUtility.JoyTickCheckEnd(pawn, JoyTickFullJoyAction.None);
-				if (pawn.needs.joy.CurLevelPercentage > 0.9999f && Patient.needs.joy.CurLevelPercentage > 0.9999f)
+				pawn.GainComfortFromCellIfPossible(delta);
+				if (pawn.needs.joy == null || !JoyUtility.JoyTickCheckEnd(pawn, delta, JoyTickFullJoyAction.None))
 				{
-					pawn.jobs.EndCurrentJob(JobCondition.Succeeded);
+					Need_Joy joy = pawn.needs.joy;
+					if (joy != null && joy.CurLevelPercentage > 0.9999f)
+					{
+						Need_Joy joy2 = Patient.needs.joy;
+						if (joy2 != null && joy2.CurLevelPercentage > 0.9999f)
+						{
+							EndJobWith(JobCondition.Succeeded);
+						}
+					}
 				}
 			};
 			toil.handlingFacing = true;

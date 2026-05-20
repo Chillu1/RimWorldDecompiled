@@ -22,7 +22,7 @@ namespace RimWorld
 				{
 					return def.label + ": " + gender.GetLabel().CapitalizeFirst();
 				}
-				if (gender != 0)
+				if (gender != Gender.None)
 				{
 					return def.label + ": " + level.GetLabel().CapitalizeFirst() + " (" + gender.GetLabel().ToLower() + ")";
 				}

@@ -27,7 +27,13 @@ namespace RimWorld
 			if (billDoer != null && !CheckSurgeryFail(billDoer, pawn, ingredients, part, bill))
 			{
 				TaleRecorder.RecordTale(TaleDefOf.DidSurgery, billDoer, pawn);
+				Hediff directlyAddedPartFor = pawn.health.hediffSet.GetDirectlyAddedPartFor(part);
 				MedicalRecipesUtility.RestorePartAndSpawnAllPreviousParts(pawn, part, billDoer.Position, billDoer.Map);
+				if (ModsConfig.IdeologyActive)
+				{
+					Find.HistoryEventsManager.RecordEvent(new HistoryEvent(HistoryEventDefOf.InstalledOrgan, billDoer.Named(HistoryEventArgsNames.Doer)));
+				}
+				directlyAddedPartFor?.Notify_SurgicallyReplaced(billDoer);
 			}
 		}
 	}

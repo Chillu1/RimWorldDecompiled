@@ -1,5 +1,5 @@
-using System;
 using System.Collections.Generic;
+using RimWorld;
 using UnityEngine;
 using Verse.Sound;
 
@@ -18,17 +18,39 @@ namespace Verse
 
 		private float lastDragRealTime = -1000f;
 
-		private List<IntVec3> dragCells = new List<IntVec3>();
+		private readonly List<IntVec3> buffer = new List<IntVec3>();
+
+		private readonly List<IntVec3> dragCells = new List<IntVec3>();
 
 		private string failureReasonInt;
 
 		private int lastUpdateFrame = -1;
 
-		private const int MaxSquareWidth = 50;
+		private static readonly Texture2D OutlineTex = SolidColorMaterials.NewSolidColorTexture(new Color32(109, 139, 79, 100));
+
+		private const string TimeSinceDragParam = "TimeSinceDrag";
+
+		private readonly List<IntVec3> tmpHighlightCells = new List<IntVec3>();
+
+		private int numSelectedCells;
+
+		private IntVec3 lastStart;
+
+		private IntVec3 lastEnd;
+
+		private DrawStyleDef lastStyleDef;
+
+		private int lastTick;
+
+		private DrawStyleDef lastStyle;
 
 		public bool Dragging => dragging;
 
 		private Designator SelDes => Find.DesignatorManager.SelectedDesignator;
+
+		private DrawStyleDef SelStyle => Find.DesignatorManager.SelectedStyle;
+
+		public List<IntVec3> CellBuffer => buffer;
 
 		public List<IntVec3> DragCells
 		{
@@ -50,7 +72,7 @@ namespace Verse
 
 		public void StartDrag()
 		{
-			dragging = true;
+			dragging = !SelStyle.DrawStyleWorker.SingleCell;
 			startDragCell = UI.MouseCell();
 		}
 
@@ -68,20 +90,40 @@ namespace Verse
 
 		public void DraggerUpdate()
 		{
-			if (!dragging)
+			if (!dragging && (SelStyle?.DrawStyleWorker == null || !SelStyle.DrawStyleWorker.SingleCell))
 			{
 				return;
 			}
-			List<IntVec3> list = DragCells;
-			SelDes.RenderHighlight(list);
-			if (list.Count != lastFrameDragCellsDrawn)
+			tmpHighlightCells.Clear();
+			numSelectedCells = 0;
+			UpdateCellBuffer();
+			CellRect cellRect = Find.CameraDriver.CurrentViewRect.ExpandedBy(3).ClipInsideMap(SelDes.Map);
+			for (int num = buffer.Count - 1; num >= 0; num--)
 			{
-				lastDragRealTime = Time.realtimeSinceStartup;
-				lastFrameDragCellsDrawn = list.Count;
+				IntVec3 intVec = buffer[num];
+				if (cellRect.Contains(intVec) && (bool)SelDes.CanDesignateCell(intVec))
+				{
+					if (cellRect.Contains(intVec))
+					{
+						tmpHighlightCells.Add(intVec);
+					}
+					numSelectedCells++;
+				}
+			}
+			if (SelDes.DrawHighlight)
+			{
+				SelDes.RenderHighlight(tmpHighlightCells);
+			}
+			if (numSelectedCells != lastFrameDragCellsDrawn)
+			{
 				if (SelDes.soundDragChanged != null)
 				{
-					SelDes.soundDragChanged.PlayOneShotOnCamera();
+					SoundInfo info = SoundInfo.OnCamera();
+					info.SetParameter("TimeSinceDrag", Time.realtimeSinceStartup - lastDragRealTime);
+					SelDes.soundDragChanged.PlayOneShot(info);
 				}
+				lastDragRealTime = Time.realtimeSinceStartup;
+				lastFrameDragCellsDrawn = numSelectedCells;
 			}
 			if (sustainer == null || sustainer.Ended)
 			{
@@ -99,124 +141,112 @@ namespace Verse
 
 		public void DraggerOnGUI()
 		{
-			if (dragging && SelDes != null && SelDes.DragDrawMeasurements)
+			if (!dragging || SelStyle?.DrawStyleWorker == null || SelStyle.DrawStyleWorker.SingleCell)
 			{
-				IntVec3 intVec = startDragCell - UI.MouseCell();
-				intVec.x = Mathf.Abs(intVec.x) + 1;
-				intVec.z = Mathf.Abs(intVec.z) + 1;
-				if (intVec.x >= 3)
+				return;
+			}
+			(IntVec3 start, IntVec3 end) currentBoundary = GetCurrentBoundary();
+			IntVec3 item = currentBoundary.start;
+			IntVec3 item2 = currentBoundary.end;
+			IntVec3 intVec = item - item2;
+			intVec.x = Mathf.Abs(intVec.x) + 1;
+			intVec.z = Mathf.Abs(intVec.z) + 1;
+			if (SelStyle.drawOutline && (intVec.x > 1 || intVec.z > 1))
+			{
+				Vector3 v = new Vector3(Mathf.Min(item.x, item2.x), 0f, Mathf.Min(item.z, item2.z));
+				Vector3 v2 = new Vector3(Mathf.Max(item.x, item2.x) + 1, 0f, Mathf.Max(item.z, item2.z) + 1);
+				Vector2 vector = v.MapToUIPosition();
+				Vector2 vector2 = v2.MapToUIPosition();
+				Widgets.DrawBox(Rect.MinMaxRect(vector.x, vector.y, vector2.x, vector2.y), 1, OutlineTex);
+			}
+			if (SelDes.DragDrawMeasurements)
+			{
+				bool flag = intVec.x >= intVec.z;
+				if (intVec.x >= 5 && (SelStyle.drawShortSideMeasurement || flag))
 				{
-					Vector2 screenPos = (startDragCell.ToUIPosition() + UI.MouseCell().ToUIPosition()) / 2f;
-					screenPos.y = startDragCell.ToUIPosition().y;
+					Vector2 screenPos = (item.ToUIPosition() + item2.ToUIPosition()) / 2f;
+					screenPos.y = item.ToUIPosition().y;
 					Widgets.DrawNumberOnMap(screenPos, intVec.x, Color.white);
 				}
-				if (intVec.z >= 3)
+				if (intVec.z >= 5 && (SelStyle.drawShortSideMeasurement || !flag))
 				{
-					Vector2 screenPos2 = (startDragCell.ToUIPosition() + UI.MouseCell().ToUIPosition()) / 2f;
-					screenPos2.x = startDragCell.ToUIPosition().x;
+					Vector2 screenPos2 = (item.ToUIPosition() + item2.ToUIPosition()) / 2f;
+					screenPos2.x = item.ToUIPosition().x;
 					Widgets.DrawNumberOnMap(screenPos2, intVec.z, Color.white);
+				}
+			}
+			if (intVec.Magnitude >= 3f && intVec.x >= 3 && intVec.z >= 3 && lastFrameDragCellsDrawn > 0 && SelStyle.drawArea)
+			{
+				Widgets.DrawNumberOnMap((item.ToUIPosition() + item2.ToUIPosition()) / 2f, lastFrameDragCellsDrawn, Color.white);
+			}
+		}
+
+		public void UpdateCellBuffer()
+		{
+			var (intVec, intVec2) = GetCurrentBoundary();
+			if (lastStart == intVec && lastEnd == intVec2 && lastStyleDef == SelStyle && lastTick == GenTicks.TicksGame)
+			{
+				return;
+			}
+			buffer.Clear();
+			SelStyle.DrawStyleWorker.Update(intVec, intVec2, buffer);
+			lastStart = intVec;
+			lastEnd = intVec2;
+			lastStyleDef = SelStyle;
+			lastTick = GenTicks.TicksGame;
+			if (!SelStyle.DrawStyleWorker.CanHaveDuplicates)
+			{
+				return;
+			}
+			for (int num = buffer.Count - 1; num >= 0; num--)
+			{
+				for (int i = 0; i < num; i++)
+				{
+					if (buffer[num] == buffer[i])
+					{
+						buffer.RemoveAt(num);
+						break;
+					}
 				}
 			}
 		}
 
-		[Obsolete]
-		private void DrawNumber(Vector2 screenPos, int number)
+		private (IntVec3 start, IntVec3 end) GetCurrentBoundary()
 		{
-			Text.Anchor = TextAnchor.MiddleCenter;
-			Text.Font = GameFont.Medium;
-			Rect rect = new Rect(screenPos.x - 20f, screenPos.y - 15f, 40f, 30f);
-			GUI.DrawTexture(rect, TexUI.GrayBg);
-			rect.y += 3f;
-			Widgets.Label(rect, number.ToStringCached());
+			IntVec3 intVec = startDragCell;
+			IntVec3 intVec2 = UI.MouseCell();
+			if (SelStyle.DrawStyleWorker.SingleCell)
+			{
+				return (start: intVec2, end: intVec2);
+			}
+			if (KeyBindingDefOf.Designator_ShapeSnap.IsDown && SelStyle.canSnap)
+			{
+				IntVec3 intVec3 = intVec2 - intVec;
+				int num = ((Mathf.Abs(intVec3.x) >= Mathf.Abs(intVec3.z)) ? intVec3.x : intVec3.z);
+				intVec2.x = intVec.x + ((!Mathf.Approximately(Mathf.Sign(intVec3.x), Mathf.Sign(num))) ? (-num) : num);
+				intVec2.z = intVec.z + ((!Mathf.Approximately(Mathf.Sign(intVec3.z), Mathf.Sign(num))) ? (-num) : num);
+			}
+			return (start: intVec, end: intVec2);
 		}
 
-		private void UpdateDragCellsIfNeeded()
+		public void UpdateDragCellsIfNeeded()
 		{
-			if (Time.frameCount == lastUpdateFrame)
+			if (Time.frameCount == lastUpdateFrame && lastStyle == SelStyle)
 			{
 				return;
 			}
 			lastUpdateFrame = Time.frameCount;
 			dragCells.Clear();
 			failureReasonInt = null;
-			IntVec3 intVec = startDragCell;
-			IntVec3 intVec2 = UI.MouseCell();
-			if (SelDes.DraggableDimensions == 1)
-			{
-				bool flag = true;
-				if (Mathf.Abs(intVec.x - intVec2.x) < Mathf.Abs(intVec.z - intVec2.z))
-				{
-					flag = false;
-				}
-				if (flag)
-				{
-					int z = intVec.z;
-					if (intVec.x > intVec2.x)
-					{
-						IntVec3 intVec3 = intVec;
-						intVec = intVec2;
-						intVec2 = intVec3;
-					}
-					for (int i = intVec.x; i <= intVec2.x; i++)
-					{
-						TryAddDragCell(new IntVec3(i, intVec.y, z));
-					}
-				}
-				else
-				{
-					int x = intVec.x;
-					if (intVec.z > intVec2.z)
-					{
-						IntVec3 intVec4 = intVec;
-						intVec = intVec2;
-						intVec2 = intVec4;
-					}
-					for (int j = intVec.z; j <= intVec2.z; j++)
-					{
-						TryAddDragCell(new IntVec3(x, intVec.y, j));
-					}
-				}
-			}
-			if (SelDes.DraggableDimensions != 2)
+			lastStyle = SelStyle;
+			if (SelStyle == null)
 			{
 				return;
 			}
-			IntVec3 intVec5 = intVec;
-			IntVec3 intVec6 = intVec2;
-			if (intVec6.x > intVec5.x + 50)
+			UpdateCellBuffer();
+			foreach (IntVec3 item in buffer)
 			{
-				intVec6.x = intVec5.x + 50;
-			}
-			if (intVec6.z > intVec5.z + 50)
-			{
-				intVec6.z = intVec5.z + 50;
-			}
-			if (intVec6.x < intVec5.x)
-			{
-				if (intVec6.x < intVec5.x - 50)
-				{
-					intVec6.x = intVec5.x - 50;
-				}
-				int x2 = intVec5.x;
-				intVec5 = new IntVec3(intVec6.x, intVec5.y, intVec5.z);
-				intVec6 = new IntVec3(x2, intVec6.y, intVec6.z);
-			}
-			if (intVec6.z < intVec5.z)
-			{
-				if (intVec6.z < intVec5.z - 50)
-				{
-					intVec6.z = intVec5.z - 50;
-				}
-				int z2 = intVec5.z;
-				intVec5 = new IntVec3(intVec5.x, intVec5.y, intVec6.z);
-				intVec6 = new IntVec3(intVec6.x, intVec6.y, z2);
-			}
-			for (int k = intVec5.x; k <= intVec6.x; k++)
-			{
-				for (int l = intVec5.z; l <= intVec6.z; l++)
-				{
-					TryAddDragCell(new IntVec3(k, intVec5.y, l));
-				}
+				TryAddDragCell(new IntVec3(item.x, startDragCell.y, item.z));
 			}
 		}
 

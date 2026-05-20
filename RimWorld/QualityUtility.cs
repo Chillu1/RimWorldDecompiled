@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using UnityEngine;
 using Verse;
 
@@ -11,6 +12,8 @@ namespace RimWorld
 	{
 		public static List<QualityCategory> AllQualityCategories;
 
+		public static int QualityCount { get; }
+
 		static QualityUtility()
 		{
 			AllQualityCategories = new List<QualityCategory>();
@@ -18,12 +21,12 @@ namespace RimWorld
 			{
 				AllQualityCategories.Add(value);
 			}
+			QualityCount = Enum.GetValues(typeof(QualityCategory)).Length;
 		}
 
 		public static bool TryGetQuality(this Thing t, out QualityCategory qc)
 		{
-			MinifiedThing minifiedThing = t as MinifiedThing;
-			CompQuality compQuality = ((minifiedThing != null) ? minifiedThing.InnerThing.TryGetComp<CompQuality>() : t.TryGetComp<CompQuality>());
+			CompQuality compQuality = ((!(t is MinifiedThing minifiedThing)) ? (t as ThingWithComps)?.compQuality : (minifiedThing.InnerThing as ThingWithComps)?.compQuality);
 			if (compQuality == null)
 			{
 				qc = QualityCategory.Normal;
@@ -65,10 +68,6 @@ namespace RimWorld
 
 		public static bool FollowQualityThingFilter(this ThingDef def)
 		{
-			if (def.stackLimit == 1)
-			{
-				return true;
-			}
 			if (def.HasComp(typeof(CompQuality)))
 			{
 				return true;
@@ -123,16 +122,30 @@ namespace RimWorld
 			return GenerateFromGaussian(1f, QualityCategory.Excellent);
 		}
 
-		public static QualityCategory GenerateQualityGeneratingPawn(PawnKindDef pawnKind)
+		public static QualityCategory GenerateQualityGeneratingPawn(PawnKindDef pawnKind, ThingDef forThing)
 		{
 			if (pawnKind.forceNormalGearQuality)
 			{
 				return QualityCategory.Normal;
 			}
+			if (forThing.IsWeapon && pawnKind.forceWeaponQuality.HasValue)
+			{
+				return pawnKind.forceWeaponQuality.Value;
+			}
+			if (!forThing.IsWeapon && pawnKind.specificApparelRequirements != null)
+			{
+				for (int i = 0; i < pawnKind.specificApparelRequirements.Count; i++)
+				{
+					if (pawnKind.specificApparelRequirements[i].Quality.HasValue && PawnApparelGenerator.ApparelRequirementHandlesThing(pawnKind.specificApparelRequirements[i], forThing))
+					{
+						return pawnKind.specificApparelRequirements[i].Quality.Value;
+					}
+				}
+			}
 			int itemQuality = (int)pawnKind.itemQuality;
 			float value = Rand.Value;
 			int value2 = ((value < 0.1f) ? (itemQuality - 1) : ((!(value < 0.2f)) ? itemQuality : (itemQuality + 1)));
-			value2 = Mathf.Clamp(value2, 0, 4);
+			value2 = Mathf.Clamp(value2, (int)pawnKind.minApparelQuality, (int)pawnKind.maxApparelQuality);
 			return (QualityCategory)value2;
 		}
 
@@ -220,19 +233,31 @@ namespace RimWorld
 			return qualityCategory;
 		}
 
-		public static QualityCategory GenerateQualityCreatedByPawn(Pawn pawn, SkillDef relevantSkill)
+		public static QualityCategory GenerateQualityCreatedByPawn(Pawn pawn, SkillDef relevantSkill, bool consumeInspiration = true)
 		{
-			int level = pawn.skills.GetSkill(relevantSkill).Level;
-			bool flag = pawn.InspirationDef == InspirationDefOf.Inspired_Creativity;
-			QualityCategory result = GenerateQualityCreatedByPawn(level, flag);
+			int relevantSkillLevel = (pawn.RaceProps.IsMechanoid ? pawn.RaceProps.mechFixedSkillLevel : pawn.skills.GetSkill(relevantSkill).Level);
+			bool flag = consumeInspiration && pawn.InspirationDef == InspirationDefOf.Inspired_Creativity;
+			QualityCategory qualityCategory = GenerateQualityCreatedByPawn(relevantSkillLevel, flag);
+			if (ModsConfig.IdeologyActive && pawn.Ideo != null)
+			{
+				Precept_Role role = pawn.Ideo.GetRole(pawn);
+				if (role != null && role.def.roleEffects != null)
+				{
+					RoleEffect roleEffect = role.def.roleEffects.FirstOrDefault((RoleEffect eff) => eff is RoleEffect_ProductionQualityOffset);
+					if (roleEffect != null)
+					{
+						qualityCategory = AddLevels(qualityCategory, ((RoleEffect_ProductionQualityOffset)roleEffect).offset);
+					}
+				}
+			}
 			if (flag)
 			{
 				pawn.mindState.inspirationHandler.EndInspiration(InspirationDefOf.Inspired_Creativity);
 			}
-			return result;
+			return qualityCategory;
 		}
 
-		private static QualityCategory GenerateFromGaussian(float widthFactor, QualityCategory max = QualityCategory.Legendary, QualityCategory center = QualityCategory.Normal, QualityCategory min = QualityCategory.Awful)
+		public static QualityCategory GenerateFromGaussian(float widthFactor, QualityCategory max = QualityCategory.Legendary, QualityCategory center = QualityCategory.Normal, QualityCategory min = QualityCategory.Awful)
 		{
 			float num = Rand.Gaussian((float)(int)center + 0.5f, widthFactor);
 			if (num < (float)(int)min)
@@ -257,7 +282,7 @@ namespace RimWorld
 			{
 				return;
 			}
-			CompQuality compQuality = thing.TryGetComp<CompQuality>();
+			CompQuality compQuality = (thing as ThingWithComps)?.compQuality;
 			if (compQuality == null)
 			{
 				return;
@@ -267,20 +292,20 @@ namespace RimWorld
 			{
 				if (compQuality.Quality == QualityCategory.Masterwork)
 				{
-					Find.LetterStack.ReceiveLetter("LetterCraftedMasterworkLabel".Translate(), "LetterCraftedMasterworkMessage".Translate(worker.LabelShort, thing.LabelShort, worker.Named("WORKER"), thing.Named("CRAFTED")), LetterDefOf.PositiveEvent, thing);
+					Find.LetterStack.ReceiveLetter("LetterCraftedMasterworkLabel".Translate(), "LetterCraftedMasterworkMessage".Translate().Formatted(worker.LabelShort, thing.LabelShort, worker.Named("WORKER"), thing.Named("CRAFTED")), LetterDefOf.PositiveEvent, thing);
 				}
 				else if (compQuality.Quality == QualityCategory.Legendary)
 				{
-					Find.LetterStack.ReceiveLetter("LetterCraftedLegendaryLabel".Translate(), "LetterCraftedLegendaryMessage".Translate(worker.LabelShort, thing.LabelShort, worker.Named("WORKER"), thing.Named("CRAFTED")), LetterDefOf.PositiveEvent, thing);
+					Find.LetterStack.ReceiveLetter("LetterCraftedLegendaryLabel".Translate(), "LetterCraftedLegendaryMessage".Translate().Formatted(worker.LabelShort, thing.LabelShort, worker.Named("WORKER"), thing.Named("CRAFTED")), LetterDefOf.PositiveEvent, thing);
 				}
 			}
 			else if (compQuality.Quality == QualityCategory.Masterwork)
 			{
-				Find.LetterStack.ReceiveLetter("LetterCraftedMasterworkLabel".Translate(), "LetterCraftedMasterworkMessageArt".Translate(compArt.GenerateImageDescription(), worker.LabelShort, thing.LabelShort, worker.Named("WORKER"), thing.Named("CRAFTED")), LetterDefOf.PositiveEvent, thing);
+				Find.LetterStack.ReceiveLetter("LetterCraftedMasterworkLabel".Translate(), "LetterCraftedMasterworkMessageArt".Translate().Formatted(compArt.GenerateImageDescription(), worker.LabelShort, thing.LabelShort, worker.Named("WORKER"), thing.Named("CRAFTED")), LetterDefOf.PositiveEvent, thing);
 			}
 			else if (compQuality.Quality == QualityCategory.Legendary)
 			{
-				Find.LetterStack.ReceiveLetter("LetterCraftedLegendaryLabel".Translate(), "LetterCraftedLegendaryMessageArt".Translate(compArt.GenerateImageDescription(), worker.LabelShort, thing.LabelShort, worker.Named("WORKER"), thing.Named("CRAFTED")), LetterDefOf.PositiveEvent, thing);
+				Find.LetterStack.ReceiveLetter("LetterCraftedLegendaryLabel".Translate(), "LetterCraftedLegendaryMessageArt".Translate().Formatted(compArt.GenerateImageDescription(), worker.LabelShort, thing.LabelShort, worker.Named("WORKER"), thing.Named("CRAFTED")), LetterDefOf.PositiveEvent, thing);
 			}
 		}
 
@@ -293,10 +318,10 @@ namespace RimWorld
 			list.Add(new TableDataGetter<QualityCategory>("Trader\nitems", (QualityCategory q) => DebugQualitiesStringSingle(q, () => GenerateQualityTraderItem())));
 			list.Add(new TableDataGetter<QualityCategory>("Map generation\nitems and\nbuildings\n(e.g. NPC bases)", (QualityCategory q) => DebugQualitiesStringSingle(q, () => GenerateQualityBaseGen())));
 			list.Add(new TableDataGetter<QualityCategory>("Gifts", (QualityCategory q) => DebugQualitiesStringSingle(q, () => GenerateQualityGift())));
-			for (int i = 0; i <= 20; i++)
+			for (int num = 0; num <= 20; num++)
 			{
-				int localLevel = i;
-				list.Add(new TableDataGetter<QualityCategory>("Made\nat skill\n" + i, (QualityCategory q) => DebugQualitiesStringSingle(q, () => GenerateQualityCreatedByPawn(localLevel, inspired: false))));
+				int localLevel = num;
+				list.Add(new TableDataGetter<QualityCategory>("Made\nat skill\n" + num, (QualityCategory q) => DebugQualitiesStringSingle(q, () => GenerateQualityCreatedByPawn(localLevel, inspired: false))));
 			}
 			foreach (PawnKindDef item in DefDatabase<PawnKindDef>.AllDefs.OrderBy((PawnKindDef k) => k.combatPower))
 			{
@@ -305,7 +330,7 @@ namespace RimWorld
 				{
 					continue;
 				}
-				list.Add(new TableDataGetter<QualityCategory>("Gear for\n" + localPk.defName + "\nPower " + localPk.combatPower.ToString("F0") + "\nitemQuality:\n" + localPk.itemQuality, (QualityCategory q) => DebugQualitiesStringSingle(q, () => GenerateQualityGeneratingPawn(localPk))));
+				list.Add(new TableDataGetter<QualityCategory>("Gear for\n" + localPk.defName + "\nPower " + localPk.combatPower.ToString("F0") + "\nitemQuality:\n" + localPk.itemQuality, (QualityCategory q) => DebugQualitiesStringSingle(q, () => GenerateQualityGeneratingPawn(localPk, null))));
 			}
 			DebugTables.MakeTablesDialog(AllQualityCategories, list.ToArray());
 		}

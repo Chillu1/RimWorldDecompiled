@@ -21,7 +21,7 @@ namespace RimWorld
 					GUI.color = faction.Color;
 					GUI.DrawTexture(r, faction.def.FactionIcon);
 					GUI.color = Color.white;
-				}, () => "GoodwillTip".Translate(faction, amount, -75, 75, faction.PlayerGoodwill, faction.PlayerRelationKind.GetLabel()), delegate
+				}, () => "GoodwillTip".Translate(faction, amount, -75, 75, faction.PlayerGoodwill, faction.PlayerRelationKind.GetLabelCap()).Resolve(), delegate
 				{
 					Find.WindowStack.Add(new Dialog_InfoCard(faction));
 				});
@@ -38,7 +38,11 @@ namespace RimWorld
 			{
 				amount += Mathf.Clamp(-parms.giverFaction.PlayerGoodwill / 2, 0, amount);
 				amount = Mathf.Min(amount, 100 - parms.giverFaction.PlayerGoodwill);
-				amount = Mathf.Max(amount, 1);
+				if (amount < 1)
+				{
+					Log.Warning("Tried to use " + amount + " goodwill in Reward_Goodwill. A different reward type should have been chosen in this case.");
+					amount = 1;
+				}
 			}
 			faction = parms.giverFaction;
 		}

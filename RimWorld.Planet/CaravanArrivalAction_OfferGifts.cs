@@ -20,7 +20,7 @@ namespace RimWorld.Planet
 			this.settlement = settlement;
 		}
 
-		public override FloatMenuAcceptanceReport StillValid(Caravan caravan, int destinationTile)
+		public override FloatMenuAcceptanceReport StillValid(Caravan caravan, PlanetTile destinationTile)
 		{
 			FloatMenuAcceptanceReport floatMenuAcceptanceReport = base.StillValid(caravan, destinationTile);
 			if (!floatMenuAcceptanceReport)

@@ -1,3 +1,4 @@
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -40,9 +41,25 @@ namespace Verse
 
 		private HediffDef weaponHediffInt;
 
+		private Tool tool;
+
+		private QualityCategory weaponQuality;
+
 		private bool instantPermanentInjuryInt;
 
 		private bool allowDamagePropagationInt;
+
+		private bool preventCascadeInt;
+
+		private bool instigatorGuilty;
+
+		private bool spawnFilth;
+
+		private bool checkForJobOverride;
+
+		private bool applyAllDamage;
+
+		private IntRange damagePropagationPartsRange;
 
 		public DamageDef Def
 		{
@@ -90,7 +107,19 @@ namespace Verse
 
 		public HediffDef WeaponLinkedHediff => weaponHediffInt;
 
+		public Tool Tool => tool;
+
 		public bool InstantPermanentInjury => instantPermanentInjuryInt;
+
+		public bool InstigatorGuilty => instigatorGuilty;
+
+		public bool SpawnFilth => spawnFilth;
+
+		public bool CheckForJobOverride => checkForJobOverride;
+
+		public QualityCategory WeaponQuality => weaponQuality;
+
+		public IntRange DamagePropagationPartsRange => damagePropagationPartsRange;
 
 		public bool AllowDamagePropagation
 		{
@@ -104,11 +133,15 @@ namespace Verse
 			}
 		}
 
+		public bool PreventCascade => preventCascadeInt;
+
+		public bool ApplyAllDamage => applyAllDamage;
+
 		public bool IgnoreArmor => ignoreArmorInt;
 
 		public bool IgnoreInstantKillProtection => ignoreInstantKillProtectionInt;
 
-		public DamageInfo(DamageDef def, float amount, float armorPenetration = 0f, float angle = -1f, Thing instigator = null, BodyPartRecord hitPart = null, ThingDef weapon = null, SourceCategory category = SourceCategory.ThingOrUnknown, Thing intendedTarget = null)
+		public DamageInfo(DamageDef def, float amount, float armorPenetration = 0f, float angle = -1f, Thing instigator = null, BodyPartRecord hitPart = null, ThingDef weapon = null, SourceCategory category = SourceCategory.ThingOrUnknown, Thing intendedTarget = null, bool instigatorGuilty = true, bool spawnFilth = true, QualityCategory weaponQuality = QualityCategory.Normal, bool checkForJobOverride = true, bool preventCascade = false)
 		{
 			defInt = def;
 			amountInt = amount;
@@ -129,11 +162,19 @@ namespace Verse
 			weaponInt = weapon;
 			weaponBodyPartGroupInt = null;
 			weaponHediffInt = null;
+			tool = null;
+			this.weaponQuality = weaponQuality;
 			instantPermanentInjuryInt = false;
 			allowDamagePropagationInt = true;
+			preventCascadeInt = preventCascade;
 			ignoreArmorInt = false;
 			ignoreInstantKillProtectionInt = false;
+			this.instigatorGuilty = instigatorGuilty;
 			intendedTargetInt = intendedTarget;
+			this.spawnFilth = spawnFilth;
+			this.checkForJobOverride = checkForJobOverride;
+			damagePropagationPartsRange = new IntRange(2, 4);
+			applyAllDamage = false;
 		}
 
 		public DamageInfo(DamageInfo cloneSource)
@@ -150,11 +191,19 @@ namespace Verse
 			weaponInt = cloneSource.weaponInt;
 			weaponBodyPartGroupInt = cloneSource.weaponBodyPartGroupInt;
 			weaponHediffInt = cloneSource.weaponHediffInt;
+			tool = cloneSource.tool;
+			weaponQuality = cloneSource.weaponQuality;
 			instantPermanentInjuryInt = cloneSource.instantPermanentInjuryInt;
 			allowDamagePropagationInt = cloneSource.allowDamagePropagationInt;
+			preventCascadeInt = cloneSource.preventCascadeInt;
 			intendedTargetInt = cloneSource.intendedTargetInt;
 			ignoreArmorInt = cloneSource.ignoreArmorInt;
 			ignoreInstantKillProtectionInt = cloneSource.ignoreInstantKillProtectionInt;
+			instigatorGuilty = cloneSource.instigatorGuilty;
+			spawnFilth = cloneSource.spawnFilth;
+			checkForJobOverride = cloneSource.checkForJobOverride;
+			damagePropagationPartsRange = cloneSource.damagePropagationPartsRange;
+			applyAllDamage = cloneSource.applyAllDamage;
 		}
 
 		public void SetAmount(float newAmount)
@@ -198,9 +247,31 @@ namespace Verse
 			weaponHediffInt = hd;
 		}
 
+		public void SetTool(Tool tool)
+		{
+			this.tool = tool;
+		}
+
+		public void SetWeaponQuality(QualityCategory weaponQuality)
+		{
+			this.weaponQuality = weaponQuality;
+		}
+
 		public void SetAllowDamagePropagation(bool val)
 		{
 			allowDamagePropagationInt = val;
+		}
+
+		public void SetAllowDamagePropagation(bool val, IntRange partsRange)
+		{
+			allowDamagePropagationInt = val;
+			damagePropagationPartsRange = partsRange;
+		}
+
+		public void SetApplyAllDamage(bool value)
+		{
+			allowDamagePropagationInt = value;
+			applyAllDamage = value;
 		}
 
 		public void SetAngle(Vector3 vec)
@@ -217,7 +288,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return string.Concat("(def=", defInt, ", amount= ", amountInt, ", instigator=", (instigatorInt != null) ? instigatorInt.ToString() : categoryInt.ToString(), ", angle=", angleInt.ToString("F1"), ")");
+			return "(def=" + defInt?.ToString() + ", amount= " + amountInt + ", instigator=" + ((instigatorInt != null) ? instigatorInt.ToString() : categoryInt.ToString()) + ", angle=" + angleInt.ToString("F1") + ")";
 		}
 	}
 }

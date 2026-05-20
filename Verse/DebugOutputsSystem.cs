@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using UnityEngine;
 using UnityEngine.Profiling;
 
@@ -66,11 +67,11 @@ namespace Verse
 				new CurvePoint(30f, 0f)
 			};
 			float num = 0f;
-			for (int i = 0; i < 1000000; i++)
+			for (int num2 = 0; num2 < 1000000; num2++)
 			{
-				float num2 = Rand.ByCurve(curve);
-				num += num2;
-				debugHistogram.Add(num2);
+				float num3 = Rand.ByCurve(curve);
+				num += num3;
+				debugHistogram.Add(num3);
 			}
 			debugHistogram.Display();
 			Log.Message($"Average {num / 1000000f}, calculated as {Rand.ByCurveAverage(curve)}");

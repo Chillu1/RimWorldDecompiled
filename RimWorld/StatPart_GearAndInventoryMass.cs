@@ -25,5 +25,14 @@ namespace RimWorld
 		{
 			return PawnOrCorpseStatUtility.TryGetPawnOrCorpseStat(req, (Pawn x) => MassUtility.GearAndInventoryMass(x), (ThingDef x) => 0f, out value);
 		}
+
+		public override bool ForceShow(StatRequest req)
+		{
+			if (req.Pawn == null)
+			{
+				return req.Thing is Pawn;
+			}
+			return true;
+		}
 	}
 }

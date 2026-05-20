@@ -18,7 +18,7 @@ namespace RimWorld
 				{
 					num += 1.4f;
 				}
-				else if (cell.Walkable(room.Map))
+				else if (cell.WalkableByNormal(room.Map))
 				{
 					num += 0.5f;
 				}

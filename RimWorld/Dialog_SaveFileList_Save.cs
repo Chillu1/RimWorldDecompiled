@@ -9,7 +9,6 @@ namespace RimWorld
 		public Dialog_SaveFileList_Save()
 		{
 			interactButLabel = "OverwriteButton".Translate();
-			bottomAreaHeight = 85f;
 			if (Faction.OfPlayer.HasName)
 			{
 				typingName = Faction.OfPlayer.Name;

@@ -1,24 +1,38 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using LudeonTK;
 using RimWorld;
 using RimWorld.Planet;
+using UnityEngine;
 using Verse.AI;
 using Verse.AI.Group;
 
 namespace Verse
 {
-	public sealed class Map : IIncidentTarget, ILoadReferenceable, IThingHolder, IExposable
+	public sealed class Map : IIncidentTarget, ILoadReferenceable, IThingHolder, IExposable, IDisposable
 	{
 		public MapFileCompressor compressor;
 
 		private List<Thing> loadedFullThings;
 
+		public MapGeneratorDef generatorDef;
+
 		public int uniqueID = -1;
 
 		public int generationTick;
 
+		public bool wasSpawnedViaGravShipLanding;
+
+		private Color? fogOfWarColor;
+
+		private OrbitalDebrisDef orbitalDebris;
+
+		private int generatedId;
+
 		public MapInfo info = new MapInfo();
+
+		public MapEvents events;
 
 		public List<MapComponent> components = new List<MapComponent>();
 
@@ -42,6 +56,8 @@ namespace Verse
 
 		public ReservationManager reservationManager;
 
+		public EnrouteManager enrouteManager;
+
 		public PhysicalInteractionReservationManager physicalInteractionReservationManager;
 
 		public DesignationManager designationManager;
@@ -60,11 +76,13 @@ namespace Verse
 
 		public ZoneManager zoneManager;
 
+		public PlanManager planManager;
+
 		public ResourceCounter resourceCounter;
 
 		public MapTemperature mapTemperature;
 
-		public TemperatureCache temperatureCache;
+		public TemperatureVacuumCache TemperatureVacuumCache;
 
 		public AreaManager areaManager;
 
@@ -73,6 +91,10 @@ namespace Verse
 		public AttackTargetReservationManager attackTargetReservationManager;
 
 		public VoluntarilyJoinableLordsStarter lordsStarter;
+
+		public FleckManager flecks;
+
+		public DeferredSpawner deferredSpawner;
 
 		public ThingGrid thingGrid;
 
@@ -90,7 +112,7 @@ namespace Verse
 
 		public TerrainGrid terrainGrid;
 
-		public PathGrid pathGrid;
+		public Pathing pathing;
 
 		public RoofGrid roofGrid;
 
@@ -104,9 +126,17 @@ namespace Verse
 
 		public AvoidGrid avoidGrid;
 
-		public LinkGrid linkGrid;
+		public GasGrid gasGrid;
 
-		public GlowFlooder glowFlooder;
+		public PollutionGrid pollutionGrid;
+
+		public SubstructureGrid substructureGrid;
+
+		public WaterBodyTracker waterBodyTracker;
+
+		public SandGrid sandGrid;
+
+		public LinkGrid linkGrid;
 
 		public PowerNetManager powerNetManager;
 
@@ -138,6 +168,8 @@ namespace Verse
 
 		public ListerBuldingOfDefInProximity listerBuldingOfDefInProximity;
 
+		public ListerBuildingWithTagInProximity listerBuildingWithTagInProximity;
+
 		public ListerFilthInHomeArea listerFilthInHomeArea;
 
 		public Reachability reachability;
@@ -155,6 +187,10 @@ namespace Verse
 		public WildPlantSpawner wildPlantSpawner;
 
 		public SteadyEnvironmentEffects steadyEnvironmentEffects;
+
+		public TempTerrainManager tempTerrain;
+
+		public FreezeManager freezeManager;
 
 		public SkyManager skyManager;
 
@@ -192,10 +228,34 @@ namespace Verse
 
 		public TemporaryThingDrawer temporaryThingDrawer;
 
+		public AnimalPenManager animalPenManager;
+
+		public MapPlantGrowthRateCalculator plantGrowthRateCalculator;
+
+		public AutoSlaughterManager autoSlaughterManager;
+
+		public TreeDestructionTracker treeDestructionTracker;
+
+		public StorageGroupManager storageGroups;
+
+		public EffecterMaintainer effecterMaintainer;
+
+		public PostTickVisuals postTickVisuals;
+
+		public List<LayoutStructureSketch> layoutStructureSketches = new List<LayoutStructureSketch>();
+
+		public ThingListChangedCallbacks thingListChangedCallbacks = new ThingListChangedCallbacks();
+
+		public List<CellRect> landingBlockers = new List<CellRect>();
+
+		public Tile pocketTileInfo;
+
 		public const string ThingSaveKey = "thing";
 
 		[TweakValue("Graphics_Shadow", 0f, 100f)]
 		private static bool AlwaysRedrawShadows;
+
+		private MixedBiomeMapComponent mixedBiomeComp;
 
 		public int Index => Find.Maps.IndexOf(this);
 
@@ -203,11 +263,76 @@ namespace Verse
 
 		public IntVec3 Center => new IntVec3(Size.x / 2, 0, Size.z / 2);
 
-		public Faction ParentFaction => info.parent.Faction;
+		public Faction ParentFaction => info.parent?.Faction;
 
 		public int Area => Size.x * Size.z;
 
 		public IThingHolder ParentHolder => info.parent;
+
+		public bool DrawMapClippers => !generatorDef.disableMapClippers;
+
+		public bool CanEverExit
+		{
+			get
+			{
+				if (!info.isPocketMap)
+				{
+					return Biome.canExitMap;
+				}
+				return false;
+			}
+		}
+
+		public Color? FogOfWarColor
+		{
+			get
+			{
+				return fogOfWarColor ?? Biome.fogOfWarColor;
+			}
+			set
+			{
+				fogOfWarColor = value;
+			}
+		}
+
+		public OrbitalDebrisDef OrbitalDebris
+		{
+			get
+			{
+				return orbitalDebris ?? Biome.orbitalDebris;
+			}
+			set
+			{
+				orbitalDebris = value;
+			}
+		}
+
+		public Material MapEdgeMaterial
+		{
+			get
+			{
+				if (ModsConfig.AnomalyActive && generatorDef == MapGeneratorDefOf.MetalHell)
+				{
+					return MapEdgeClipDrawer.ClipMatMetalhell;
+				}
+				WorldObject parent = Parent;
+				if (parent != null && parent.def.MapEdgeMaterial != null)
+				{
+					return parent.def.MapEdgeMaterial;
+				}
+				if (generatorDef.mapClipperShader != null)
+				{
+					if (!generatorDef.mapClipperTexturePath.NullOrEmpty())
+					{
+						return MaterialPool.MatFrom(generatorDef.mapClipperTexturePath, generatorDef.mapClipperShader.Shader);
+					}
+					return MaterialPool.MatFrom(generatorDef.mapClipperShader.Shader);
+				}
+				return MapEdgeClipDrawer.ClipMat;
+			}
+		}
+
+		public bool Disposed { get; private set; }
 
 		public IEnumerable<IntVec3> AllCells
 		{
@@ -230,9 +355,25 @@ namespace Verse
 		{
 			get
 			{
-				if (info != null && info.parent.def.canBePlayerHome)
+				if (!wasSpawnedViaGravShipLanding && (info?.parent == null || info.parent.Faction != Faction.OfPlayer || !info.parent.def.canBePlayerHome))
 				{
-					return info.parent.Faction == Faction.OfPlayer;
+					return GravshipUtility.PlayerHasGravEngine(this);
+				}
+				return true;
+			}
+		}
+
+		public bool TreatAsPlayerHomeForThreatPoints
+		{
+			get
+			{
+				if (IsPlayerHome)
+				{
+					return true;
+				}
+				if (info.parent != null && info.parent.def.treatAsPlayerHome)
+				{
+					return true;
 				}
 				return false;
 			}
@@ -240,11 +381,29 @@ namespace Verse
 
 		public bool IsTempIncidentMap => info.parent.def.isTempIncidentMapOwner;
 
-		public int Tile => info.Tile;
+		public PlanetTile Tile => info.Tile;
 
-		public Tile TileInfo => Find.WorldGrid[Tile];
+		public Tile TileInfo
+		{
+			get
+			{
+				if (!IsPocketMap)
+				{
+					return Find.WorldGrid[Tile];
+				}
+				return pocketTileInfo;
+			}
+		}
 
-		public BiomeDef Biome => TileInfo.biome;
+		public BiomeDef Biome => TileInfo.PrimaryBiome;
+
+		public IEnumerable<BiomeDef> Biomes => TileInfo.Biomes;
+
+		public MixedBiomeMapComponent MixedBiomeComp => mixedBiomeComp ?? (mixedBiomeComp = GetComponent<MixedBiomeMapComponent>());
+
+		public bool IsStartingMap => Find.GameInfo.startingTile == Tile;
+
+		public bool IsPocketMap => info.isPocketMap;
 
 		public StoryState StoryState => storyState;
 
@@ -254,11 +413,11 @@ namespace Verse
 		{
 			get
 			{
-				if (IsPlayerHome)
+				if (TreatAsPlayerHomeForThreatPoints)
 				{
-					if (Find.Storyteller.difficultyValues.fixedWealthMode)
+					if (Find.Storyteller.difficulty.fixedWealthMode)
 					{
-						return StorytellerUtility.FixedWealthModeMapWealthFromTimeCurve.Evaluate(AgeInDays * Find.Storyteller.difficultyValues.fixedWealthTimeFactor);
+						return StorytellerUtility.FixedWealthModeMapWealthFromTimeCurve.Evaluate(AgeInDays * Find.Storyteller.difficulty.fixedWealthTimeFactor);
 					}
 					return wealthWatcher.WealthItems + wealthWatcher.WealthBuildings * 0.5f + wealthWatcher.WealthPawns;
 				}
@@ -269,7 +428,7 @@ namespace Verse
 					{
 						num += WealthWatcher.GetEquipmentApparelAndInventoryWealth(item);
 					}
-					if (item.RaceProps.Animal)
+					if (item.IsAnimal)
 					{
 						num += item.MarketValue;
 					}
@@ -284,7 +443,54 @@ namespace Verse
 
 		public MapParent Parent => info.parent;
 
+		public PocketMapParent PocketMapParent
+		{
+			get
+			{
+				if (!IsPocketMap)
+				{
+					return null;
+				}
+				return Parent as PocketMapParent;
+			}
+		}
+
+		public IEnumerable<Map> ChildPocketMaps
+		{
+			get
+			{
+				foreach (PocketMapParent pocketMap in Find.World.pocketMaps)
+				{
+					if (pocketMap.sourceMap == this)
+					{
+						yield return pocketMap.Map;
+					}
+				}
+			}
+		}
+
 		public float AgeInDays => (float)(Find.TickManager.TicksGame - generationTick) / 60000f;
+
+		public bool AnyBuildingBlockingMapRemoval
+		{
+			get
+			{
+				if (ModsConfig.OdysseyActive)
+				{
+					if (listerThings.AnyThingWithDef(ThingDefOf.GravAnchor))
+					{
+						return true;
+					}
+					if (listerThings.AnyThingWithDef(ThingDefOf.GravEngine))
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+		}
+
+		public int NextGenSeed => HashCode.Combine(TileInfo.tile.Valid ? TileInfo.tile.GetHashCode() : uniqueID, generatedId++, Find.World.info.Seed);
 
 		public int ConstantRandSeed => uniqueID ^ 0xFDA252;
 
@@ -298,14 +504,14 @@ namespace Verse
 
 		public IEnumerable<IncidentTargetTagDef> IncidentTargetTags()
 		{
-			return info.parent.IncidentTargetTags();
+			return info.parent?.IncidentTargetTags() ?? Enumerable.Empty<IncidentTargetTagDef>();
 		}
 
 		public void ConstructComponents()
 		{
 			spawnedThings = new ThingOwner<Thing>(this);
 			cellIndices = new CellIndices(this);
-			listerThings = new ListerThings(ListerThingsUse.Global);
+			listerThings = new ListerThings(ListerThingsUse.Global, thingListChangedCallbacks);
 			listerBuildings = new ListerBuildings();
 			mapPawns = new MapPawns(this);
 			dynamicDrawManager = new DynamicDrawManager(this);
@@ -313,6 +519,7 @@ namespace Verse
 			tooltipGiverList = new TooltipGiverList();
 			pawnDestinationReservationManager = new PawnDestinationReservationManager();
 			reservationManager = new ReservationManager(this);
+			enrouteManager = new EnrouteManager(this);
 			physicalInteractionReservationManager = new PhysicalInteractionReservationManager();
 			designationManager = new DesignationManager(this);
 			lordManager = new LordManager(this);
@@ -322,13 +529,16 @@ namespace Verse
 			gameConditionManager = new GameConditionManager(this);
 			weatherManager = new WeatherManager(this);
 			zoneManager = new ZoneManager(this);
+			planManager = new PlanManager(this);
 			resourceCounter = new ResourceCounter(this);
 			mapTemperature = new MapTemperature(this);
-			temperatureCache = new TemperatureCache(this);
+			TemperatureVacuumCache = new TemperatureVacuumCache(this);
 			areaManager = new AreaManager(this);
 			attackTargetsCache = new AttackTargetsCache(this);
 			attackTargetReservationManager = new AttackTargetReservationManager(this);
 			lordsStarter = new VoluntarilyJoinableLordsStarter(this);
+			flecks = new FleckManager(this);
+			deferredSpawner = new DeferredSpawner(this);
 			thingGrid = new ThingGrid(this);
 			coverGrid = new CoverGrid(this);
 			edificeGrid = new EdificeGrid(this);
@@ -337,15 +547,16 @@ namespace Verse
 			glowGrid = new GlowGrid(this);
 			regionGrid = new RegionGrid(this);
 			terrainGrid = new TerrainGrid(this);
-			pathGrid = new PathGrid(this);
+			pathing = new Pathing(this);
 			roofGrid = new RoofGrid(this);
 			fertilityGrid = new FertilityGrid(this);
 			snowGrid = new SnowGrid(this);
+			gasGrid = new GasGrid(this);
+			pollutionGrid = new PollutionGrid(this);
 			deepResourceGrid = new DeepResourceGrid(this);
 			exitMapGrid = new ExitMapGrid(this);
 			avoidGrid = new AvoidGrid(this);
 			linkGrid = new LinkGrid(this);
-			glowFlooder = new GlowFlooder(this);
 			powerNetManager = new PowerNetManager(this);
 			powerNetGrid = new PowerNetGrid(this);
 			regionMaker = new RegionMaker(this);
@@ -362,6 +573,7 @@ namespace Verse
 			listerFilthInHomeArea = new ListerFilthInHomeArea(this);
 			listerArtificialBuildingsForMeditation = new ListerArtificialBuildingsForMeditation(this);
 			listerBuldingOfDefInProximity = new ListerBuldingOfDefInProximity(this);
+			listerBuildingWithTagInProximity = new ListerBuildingWithTagInProximity(this);
 			reachability = new Reachability(this);
 			itemAvailability = new ItemAvailability(this);
 			autoBuildRoofAreaSetter = new AutoBuildRoofAreaSetter(this);
@@ -370,6 +582,7 @@ namespace Verse
 			wildAnimalSpawner = new WildAnimalSpawner(this);
 			wildPlantSpawner = new WildPlantSpawner(this);
 			steadyEnvironmentEffects = new SteadyEnvironmentEffects(this);
+			tempTerrain = new TempTerrainManager(this);
 			skyManager = new SkyManager(this);
 			overlayDrawer = new OverlayDrawer();
 			floodFiller = new FloodFiller(this);
@@ -386,15 +599,41 @@ namespace Verse
 			storyState = new StoryState(this);
 			retainedCaravanData = new RetainedCaravanData(this);
 			temporaryThingDrawer = new TemporaryThingDrawer();
+			animalPenManager = new AnimalPenManager(this);
+			plantGrowthRateCalculator = new MapPlantGrowthRateCalculator();
+			autoSlaughterManager = new AutoSlaughterManager(this);
+			treeDestructionTracker = new TreeDestructionTracker(this);
+			storageGroups = new StorageGroupManager(this);
+			effecterMaintainer = new EffecterMaintainer(this);
+			postTickVisuals = new PostTickVisuals(this);
+			if (ModsConfig.OdysseyActive)
+			{
+				substructureGrid = new SubstructureGrid(this);
+				waterBodyTracker = new WaterBodyTracker(this);
+				freezeManager = new FreezeManager(this);
+				sandGrid = new SandGrid(this);
+			}
 			components.Clear();
 			FillComponents();
 		}
 
 		public void ExposeData()
 		{
+			if (Scribe.mode == LoadSaveMode.LoadingVars)
+			{
+				events = new MapEvents(this);
+			}
 			Scribe_Values.Look(ref uniqueID, "uniqueID", -1);
 			Scribe_Values.Look(ref generationTick, "generationTick", 0);
+			Scribe_Values.Look(ref wasSpawnedViaGravShipLanding, "wasSpawnedViaGravShipLanding", defaultValue: false);
+			Scribe_Values.Look(ref fogOfWarColor, "fogOfWarColor");
+			Scribe_Values.Look(ref generatedId, "generatedId", 0);
+			Scribe_Defs.Look(ref orbitalDebris, "orbitalDebris");
+			Scribe_Defs.Look(ref generatorDef, "generatorDef");
+			Scribe_Deep.Look(ref pocketTileInfo, "pocketTileInfo");
 			Scribe_Deep.Look(ref info, "mapInfo");
+			Scribe_Collections.Look(ref layoutStructureSketches, "layoutStructureSketches", LookMode.Deep);
+			Scribe_Collections.Look(ref landingBlockers, "landingBlockers", LookMode.Undefined);
 			if (Scribe.mode == LoadSaveMode.Saving)
 			{
 				compressor = new MapFileCompressor(this);
@@ -412,7 +651,7 @@ namespace Verse
 							{
 								if (allThing.def.isSaveable && !allThing.IsSaveCompressible())
 								{
-									if (hashSet.Contains(allThing.ThingID))
+									if (!hashSet.Add(allThing.ThingID))
 									{
 										Log.Error("Saving Thing with already-used ID " + allThing.ThingID);
 									}
@@ -428,9 +667,9 @@ namespace Verse
 							{
 								throw;
 							}
-							catch (Exception ex2)
+							catch (Exception arg)
 							{
-								Log.Error(string.Concat("Exception saving ", allThing, ": ", ex2));
+								Log.Error($"Exception saving {allThing}: {arg}");
 							}
 						}
 					}
@@ -453,6 +692,10 @@ namespace Verse
 					regionAndRoomUpdater.Enabled = false;
 					compressor = new MapFileCompressor(this);
 				}
+				else if (Scribe.mode == LoadSaveMode.PostLoadInit && landingBlockers == null)
+				{
+					landingBlockers = new List<CellRect>();
+				}
 				ExposeComponents();
 				DeepProfiler.Start("Load compressed things");
 				compressor.ExposeData();
@@ -461,23 +704,42 @@ namespace Verse
 				Scribe_Collections.Look(ref loadedFullThings, "things", LookMode.Deep);
 				DeepProfiler.End();
 			}
+			BackCompatibility.PostExposeData(this);
 		}
 
 		private void FillComponents()
 		{
 			components.RemoveAll((MapComponent component) => component == null);
-			foreach (Type item2 in typeof(MapComponent).AllSubclassesNonAbstract())
+			foreach (Type item3 in typeof(MapComponent).AllSubclassesNonAbstract())
 			{
-				if (GetComponent(item2) == null)
+				if (!typeof(CustomMapComponent).IsAssignableFrom(item3) && GetComponent(item3) == null)
 				{
 					try
 					{
-						MapComponent item = (MapComponent)Activator.CreateInstance(item2, this);
+						MapComponent item = (MapComponent)Activator.CreateInstance(item3, this);
 						components.Add(item);
 					}
 					catch (Exception ex)
 					{
-						Log.Error(string.Concat("Could not instantiate a MapComponent of type ", item2, ": ", ex));
+						Log.Error("Could not instantiate a MapComponent of type " + item3?.ToString() + ": " + ex);
+					}
+				}
+			}
+			if (generatorDef?.customMapComponents != null)
+			{
+				foreach (Type customMapComponent in generatorDef.customMapComponents)
+				{
+					if (GetComponent(customMapComponent) == null)
+					{
+						try
+						{
+							MapComponent item2 = (MapComponent)Activator.CreateInstance(customMapComponent, this);
+							components.Add(item2);
+						}
+						catch (Exception ex2)
+						{
+							Log.Error("Could not instantiate a MapComponent of type " + customMapComponent?.ToString() + ": " + ex2);
+						}
 					}
 				}
 			}
@@ -487,6 +749,7 @@ namespace Verse
 
 		public void FinalizeLoading()
 		{
+			regionAndRoomUpdater.Enabled = true;
 			List<Thing> list = compressor.ThingsToSpawnAfterLoad().ToList();
 			compressor = null;
 			DeepProfiler.Start("Merge compressed and non-compressed thing lists");
@@ -537,12 +800,18 @@ namespace Verse
 
 		public void FinalizeInit()
 		{
-			pathGrid.RecalculateAllPerceivedPathCosts();
+			DeepProfiler.Start("Finalize geometry");
+			pathing.RecalculateAllPerceivedPathCosts();
 			regionAndRoomUpdater.Enabled = true;
 			regionAndRoomUpdater.RebuildAllRegionsAndRooms();
 			powerNetManager.UpdatePowerNetsAndConnections_First();
-			temperatureCache.temperatureSaveLoad.ApplyLoadedDataToRegions();
+			TemperatureVacuumCache.TemperatureVacuumSaveLoad.ApplyLoadedDataToRegions();
 			avoidGrid.Regenerate();
+			animalPenManager.RebuildAllPens();
+			plantGrowthRateCalculator.BuildFor(this);
+			gasGrid.RecalculateEverHadGas();
+			DeepProfiler.End();
+			DeepProfiler.Start("Thing.PostMapInit()");
 			foreach (Thing item in listerThings.AllThings.ToList())
 			{
 				try
@@ -554,21 +823,45 @@ namespace Verse
 					Log.Error("Error in PostMapInit() for " + item.ToStringSafe() + ": " + ex);
 				}
 			}
+			DeepProfiler.End();
+			DeepProfiler.Start("listerFilthInHomeArea.RebuildAll()");
 			listerFilthInHomeArea.RebuildAll();
+			DeepProfiler.End();
+			if (ModsConfig.OdysseyActive)
+			{
+				GetComponent<VacuumComponent>().SetDrawerDirty();
+			}
 			LongEventHandler.ExecuteWhenFinished(delegate
 			{
 				mapDrawer.RegenerateEverythingNow();
 			});
+			DeepProfiler.Start("resourceCounter.UpdateResourceCounts()");
 			resourceCounter.UpdateResourceCounts();
+			DeepProfiler.End();
+			DeepProfiler.Start("wealthWatcher.ForceRecount()");
 			wealthWatcher.ForceRecount(allowDuringInit: true);
+			DeepProfiler.End();
+			if (ModsConfig.OdysseyActive)
+			{
+				using (new ProfilerBlock("WaterBodyTracker.ConstructBodies()"))
+				{
+					waterBodyTracker?.ConstructBodies();
+				}
+			}
 			MapComponentUtility.FinalizeInit(this);
+			LongEventHandler.ExecuteWhenFinished(delegate
+			{
+				Find.MusicManagerPlay.CheckTransitions();
+			});
 		}
 
 		private void ExposeComponents()
 		{
 			Scribe_Deep.Look(ref weatherManager, "weatherManager", this);
 			Scribe_Deep.Look(ref reservationManager, "reservationManager", this);
+			Scribe_Deep.Look(ref enrouteManager, "enrouteManager", this);
 			Scribe_Deep.Look(ref physicalInteractionReservationManager, "physicalInteractionReservationManager");
+			Scribe_Deep.Look(ref planManager, "planManager", this);
 			Scribe_Deep.Look(ref designationManager, "designationManager", this);
 			Scribe_Deep.Look(ref pawnDestinationReservationManager, "pawnDestinationReservationManager");
 			Scribe_Deep.Look(ref lordManager, "lordManager", this);
@@ -578,8 +871,11 @@ namespace Verse
 			Scribe_Deep.Look(ref roofGrid, "roofGrid", this);
 			Scribe_Deep.Look(ref terrainGrid, "terrainGrid", this);
 			Scribe_Deep.Look(ref zoneManager, "zoneManager", this);
-			Scribe_Deep.Look(ref temperatureCache, "temperatureCache", this);
+			Scribe_Deep.Look(ref TemperatureVacuumCache, "temperatureCache", this);
 			Scribe_Deep.Look(ref snowGrid, "snowGrid", this);
+			Scribe_Deep.Look(ref gasGrid, "gasGrid", this);
+			Scribe_Deep.Look(ref pollutionGrid, "pollutionGrid", this);
+			Scribe_Deep.Look(ref waterBodyTracker, "waterBodyTracker", this);
 			Scribe_Deep.Look(ref areaManager, "areaManager", this);
 			Scribe_Deep.Look(ref lordsStarter, "lordsStarter", this);
 			Scribe_Deep.Look(ref attackTargetReservationManager, "attackTargetReservationManager", this);
@@ -590,9 +886,46 @@ namespace Verse
 			Scribe_Deep.Look(ref mineStrikeManager, "mineStrikeManager");
 			Scribe_Deep.Look(ref retainedCaravanData, "retainedCaravanData", this);
 			Scribe_Deep.Look(ref storyState, "storyState", this);
+			Scribe_Deep.Look(ref tempTerrain, "tempTerrain", this);
 			Scribe_Deep.Look(ref wildPlantSpawner, "wildPlantSpawner", this);
 			Scribe_Deep.Look(ref temporaryThingDrawer, "temporaryThingDrawer");
+			Scribe_Deep.Look(ref flecks, "flecks", this);
+			Scribe_Deep.Look(ref deferredSpawner, "deferredSpawner", this);
+			Scribe_Deep.Look(ref autoSlaughterManager, "autoSlaughterManager", this);
+			Scribe_Deep.Look(ref treeDestructionTracker, "treeDestructionTracker", this);
+			Scribe_Deep.Look(ref storageGroups, "storageGroups", this);
+			Scribe_Deep.Look(ref sandGrid, "sandGrid", this);
 			Scribe_Collections.Look(ref components, "components", LookMode.Deep, this);
+			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			{
+				if (planManager == null)
+				{
+					planManager = new PlanManager(this);
+				}
+				if (ModsConfig.BiotechActive && pollutionGrid == null)
+				{
+					pollutionGrid = new PollutionGrid(this);
+				}
+				if (ModsConfig.OdysseyActive)
+				{
+					if (sandGrid == null)
+					{
+						sandGrid = new SandGrid(this);
+					}
+					if (substructureGrid == null)
+					{
+						substructureGrid = new SubstructureGrid(this);
+					}
+					if (waterBodyTracker == null)
+					{
+						waterBodyTracker = new WaterBodyTracker(this);
+					}
+					if (freezeManager == null)
+					{
+						freezeManager = new FreezeManager(this);
+					}
+				}
+			}
 			FillComponents();
 			BackCompatibility.PostExposeData(this);
 		}
@@ -620,6 +953,14 @@ namespace Verse
 				Log.Error(ex2.ToString());
 			}
 			temporaryThingDrawer.Tick();
+			try
+			{
+				pathFinder.PathFinderTick();
+			}
+			catch (Exception ex3)
+			{
+				Log.Error(ex3.ToString());
+			}
 		}
 
 		public void MapPostTick()
@@ -658,7 +999,7 @@ namespace Verse
 			}
 			try
 			{
-				lordManager.LordManagerTick();
+				tempTerrain.Tick();
 			}
 			catch (Exception ex5)
 			{
@@ -666,23 +1007,26 @@ namespace Verse
 			}
 			try
 			{
-				passingShipManager.PassingShipManagerTick();
+				gasGrid.Tick();
 			}
 			catch (Exception ex6)
 			{
 				Log.Error(ex6.ToString());
 			}
+			if (ModsConfig.BiotechActive)
+			{
+				try
+				{
+					pollutionGrid.PollutionTick();
+				}
+				catch (Exception ex7)
+				{
+					Log.Error(ex7.ToString());
+				}
+			}
 			try
 			{
-				debugDrawer.DebugDrawerTick();
-			}
-			catch (Exception ex7)
-			{
-				Log.Error(ex7.ToString());
-			}
-			try
-			{
-				lordsStarter.VoluntarilyJoinableLordsStarterTick();
+				deferredSpawner.DeferredSpawnerTick();
 			}
 			catch (Exception ex8)
 			{
@@ -690,7 +1034,7 @@ namespace Verse
 			}
 			try
 			{
-				gameConditionManager.GameConditionManagerTick();
+				lordManager.LordManagerTick();
 			}
 			catch (Exception ex9)
 			{
@@ -698,7 +1042,7 @@ namespace Verse
 			}
 			try
 			{
-				weatherManager.WeatherManagerTick();
+				passingShipManager.PassingShipManagerTick();
 			}
 			catch (Exception ex10)
 			{
@@ -706,7 +1050,7 @@ namespace Verse
 			}
 			try
 			{
-				resourceCounter.ResourceCounterTick();
+				debugDrawer.DebugDrawerTick();
 			}
 			catch (Exception ex11)
 			{
@@ -714,7 +1058,7 @@ namespace Verse
 			}
 			try
 			{
-				weatherDecider.WeatherDeciderTick();
+				lordsStarter.VoluntarilyJoinableLordsStarterTick();
 			}
 			catch (Exception ex12)
 			{
@@ -722,33 +1066,110 @@ namespace Verse
 			}
 			try
 			{
-				fireWatcher.FireWatcherTick();
+				gameConditionManager.GameConditionManagerTick();
 			}
 			catch (Exception ex13)
 			{
 				Log.Error(ex13.ToString());
 			}
+			try
+			{
+				weatherManager.WeatherManagerTick();
+			}
+			catch (Exception ex14)
+			{
+				Log.Error(ex14.ToString());
+			}
+			try
+			{
+				resourceCounter.ResourceCounterTick();
+			}
+			catch (Exception ex15)
+			{
+				Log.Error(ex15.ToString());
+			}
+			try
+			{
+				weatherDecider.WeatherDeciderTick();
+			}
+			catch (Exception ex16)
+			{
+				Log.Error(ex16.ToString());
+			}
+			try
+			{
+				fireWatcher.FireWatcherTick();
+			}
+			catch (Exception ex17)
+			{
+				Log.Error(ex17.ToString());
+			}
+			if (ModsConfig.OdysseyActive)
+			{
+				try
+				{
+					waterBodyTracker?.Tick();
+				}
+				catch (Exception ex18)
+				{
+					Log.Error(ex18.ToString());
+				}
+			}
+			try
+			{
+				flecks.FleckManagerTick();
+			}
+			catch (Exception ex19)
+			{
+				Log.Error(ex19.ToString());
+			}
+			try
+			{
+				effecterMaintainer.EffecterMaintainerTick();
+			}
+			catch (Exception ex20)
+			{
+				Log.Error(ex20.ToString());
+			}
 			MapComponentUtility.MapComponentTick(this);
+			try
+			{
+				foreach (TileMutatorDef mutator in TileInfo.Mutators)
+				{
+					mutator.Worker?.Tick(this);
+				}
+			}
+			catch (Exception ex21)
+			{
+				Log.Error(ex21.ToString());
+			}
 		}
 
 		public void MapUpdate()
 		{
-			bool worldRenderedNow = WorldRendererUtility.WorldRenderedNow;
+			if (Disposed)
+			{
+				return;
+			}
+			bool drawingMap = WorldRendererUtility.DrawingMap;
 			skyManager.SkyManagerUpdate();
 			powerNetManager.UpdatePowerNetsAndConnections_First();
 			regionGrid.UpdateClean();
 			regionAndRoomUpdater.TryRebuildDirtyRegionsAndRooms();
 			glowGrid.GlowGridUpdate_First();
 			lordManager.LordManagerUpdate();
-			if (!worldRenderedNow && Find.CurrentMap == this)
+			postTickVisuals.ProcessPostTickVisuals();
+			if (drawingMap && Find.CurrentMap == this)
 			{
 				if (AlwaysRedrawShadows)
 				{
-					mapDrawer.WholeMapChanged(MapMeshFlag.Things);
+					mapDrawer.WholeMapChanged(MapMeshFlagDefOf.Things);
 				}
+				GlobalRendererUtility.UpdateGlobalShadersParams();
 				PlantFallColors.SetFallShaderGlobals(this);
 				waterInfo.SetTextures();
 				avoidGrid.DebugDrawOnMap();
+				BreachingGridDebug.DebugDrawAllOnMap(this);
 				mapDrawer.MapMeshDrawerUpdate_First();
 				powerNetGrid.DrawDebugPowerNetGrid();
 				DoorsDebugDrawer.DrawDebug();
@@ -759,6 +1180,7 @@ namespace Verse
 				designationManager.DrawDesignations();
 				overlayDrawer.DrawAllOverlays();
 				temporaryThingDrawer.Draw();
+				flecks.FleckManagerDraw();
 			}
 			try
 			{
@@ -769,6 +1191,14 @@ namespace Verse
 				Log.Error(ex.ToString());
 			}
 			weatherManager.WeatherManagerUpdate();
+			try
+			{
+				flecks.FleckManagerUpdate();
+			}
+			catch (Exception ex2)
+			{
+				Log.Error(ex2.ToString());
+			}
 			MapComponentUtility.MapComponentUpdate(this);
 		}
 
@@ -776,10 +1206,9 @@ namespace Verse
 		{
 			for (int i = 0; i < components.Count; i++)
 			{
-				T val = components[i] as T;
-				if (val != null)
+				if (components[i] is T result)
 				{
-					return val;
+					return result;
 				}
 			}
 			return null;
@@ -789,12 +1218,113 @@ namespace Verse
 		{
 			for (int i = 0; i < components.Count; i++)
 			{
-				if (type.IsAssignableFrom(components[i].GetType()))
+				if (type.IsInstanceOfType(components[i]))
 				{
 					return components[i];
 				}
 			}
 			return null;
+		}
+
+		public void MapOnGUI()
+		{
+			DevGUISketches();
+			DevRoadPaths();
+			pathFinder.OnGUI();
+		}
+
+		private static void DevRoadPaths()
+		{
+			if (!DebugViewSettings.drawRoadPaths)
+			{
+				return;
+			}
+			for (int i = 0; i < GenStep_Roads.paths.Count; i++)
+			{
+				foreach (IntVec3 item in GenStep_Roads.paths[i])
+				{
+					Vector2 vector = item.ToVector3Shifted().MapToUIPosition();
+					DevGUI.DrawRect(new Rect(vector.x, vector.y, 5f, 5f), (i % 2 == 0) ? Color.yellow : Color.blue);
+				}
+			}
+		}
+
+		private void DevGUISketches()
+		{
+			if ((!DebugViewSettings.drawMapGraphs && !DebugViewSettings.drawMapRooms) || layoutStructureSketches.NullOrEmpty())
+			{
+				return;
+			}
+			foreach (LayoutStructureSketch layoutStructureSketch in layoutStructureSketches)
+			{
+				DebugGUILayoutStructure(layoutStructureSketch);
+			}
+		}
+
+		private void DebugGUILayoutStructure(LayoutStructureSketch layoutStructureSketch)
+		{
+			DevDrawOutline(layoutStructureSketch.structureLayout.container, Color.yellow);
+			Vector2 pos = (layoutStructureSketch.structureLayout.container.Min - IntVec3.South).ToVector3().MapToUIPosition();
+			DevDrawLabel(layoutStructureSketch.layoutDef.defName, pos);
+			if (DebugViewSettings.drawMapGraphs && layoutStructureSketch.structureLayout?.neighbours != null)
+			{
+				foreach (KeyValuePair<Vector2, List<Vector2>> connection in layoutStructureSketch.structureLayout.neighbours.connections)
+				{
+					foreach (Vector2 item in connection.Value)
+					{
+						Vector2 vector = layoutStructureSketch.center.ToVector2();
+						Vector2 vector2 = vector + connection.Key;
+						Vector2 vector3 = vector + item;
+						Vector2 start = new Vector3(vector2.x, 0f, vector2.y).MapToUIPosition();
+						Vector2 end = new Vector3(vector3.x, 0f, vector3.y).MapToUIPosition();
+						DevGUI.DrawLine(start, end, Color.green, 2f);
+					}
+				}
+			}
+			if (!DebugViewSettings.drawMapRooms || layoutStructureSketch.structureLayout?.Rooms == null)
+			{
+				return;
+			}
+			foreach (LayoutRoom room in layoutStructureSketch.structureLayout.Rooms)
+			{
+				string name = "NA";
+				if (!room.defs.NullOrEmpty())
+				{
+					name = room.defs.Select((LayoutRoomDef x) => x.defName).ToCommaList();
+				}
+				DevDrawLabel(name, room.rects[0].CenterVector3.MapToUIPosition());
+				foreach (CellRect rect in room.rects)
+				{
+					DevDrawOutline(rect, Color.blue);
+				}
+			}
+		}
+
+		private static void DevDrawLabel(string name, Vector2 pos)
+		{
+			float widthCached = name.GetWidthCached();
+			DevGUI.Label(new Rect(pos.x - widthCached / 2f, pos.y, widthCached, 20f), name);
+		}
+
+		private static void DevDrawOutline(CellRect r, Color color)
+		{
+			IntVec3 min = r.Min;
+			IntVec3 intVec = r.Max + new IntVec3(1, 0, 1);
+			IntVec3 a = new IntVec3(min.x, 0, min.z);
+			IntVec3 intVec2 = new IntVec3(intVec.x, 0, min.z);
+			IntVec3 intVec3 = new IntVec3(min.x, 0, intVec.z);
+			IntVec3 b = new IntVec3(intVec.x, 0, intVec.z);
+			DevDrawLine(a, intVec2, color);
+			DevDrawLine(a, intVec3, color);
+			DevDrawLine(intVec3, b, color);
+			DevDrawLine(intVec2, b, color);
+		}
+
+		private static void DevDrawLine(IntVec3 a, IntVec3 b, Color color)
+		{
+			Vector2 start = a.ToVector3().MapToUIPosition();
+			Vector2 end = b.ToVector3().MapToUIPosition();
+			DevGUI.DrawLine(start, end, color, 2f);
 		}
 
 		public string GetUniqueLoadID()
@@ -823,20 +1353,53 @@ namespace Verse
 			List<PassingShip> passingShips = passingShipManager.passingShips;
 			for (int i = 0; i < passingShips.Count; i++)
 			{
-				IThingHolder thingHolder = passingShips[i] as IThingHolder;
-				if (thingHolder != null)
+				if (passingShips[i] is IThingHolder item)
 				{
-					outChildren.Add(thingHolder);
+					outChildren.Add(item);
 				}
 			}
 			for (int j = 0; j < components.Count; j++)
 			{
-				IThingHolder thingHolder2 = components[j] as IThingHolder;
-				if (thingHolder2 != null)
+				if (components[j] is IThingHolder item2)
 				{
-					outChildren.Add(thingHolder2);
+					outChildren.Add(item2);
 				}
 			}
+		}
+
+		public void Dispose()
+		{
+			if (Disposed)
+			{
+				return;
+			}
+			Disposed = true;
+			foreach (MapComponent component in components)
+			{
+				if (component is IDisposable disposable)
+				{
+					disposable.Dispose();
+				}
+			}
+			if (regionAndRoomUpdater != null)
+			{
+				regionAndRoomUpdater.Enabled = false;
+			}
+			pathFinder?.Dispose();
+			lordManager?.Dispose();
+			fogGrid?.Dispose();
+			snowGrid?.Dispose();
+			glowGrid?.Dispose();
+			sandGrid?.Dispose();
+			avoidGrid?.Dispose();
+			listerBuildings?.Dispose();
+			listerThings?.Clear();
+			regionDirtyer?.SetAllDirty();
+			regionGrid?.Dispose();
+			pathing?.Dispose();
+			mapDrawer?.Dispose();
+			Resources.UnloadUnusedAssets();
+			MapGenerator.ClearDebugMode();
 		}
 	}
 }

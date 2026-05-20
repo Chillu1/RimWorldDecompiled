@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -38,6 +39,20 @@ namespace RimWorld
 			}
 		}
 
+		public IEnumerable<WeatherCommonalityRecord> WeatherCommonalities => map.Biome.baseWeatherCommonalities;
+
+		public bool ClearWeatherAllowed
+		{
+			get
+			{
+				if (!WeatherCommonalities.EnumerableNullOrEmpty())
+				{
+					return WeatherCommonalities.Any((WeatherCommonalityRecord w) => w.weather == WeatherDefOf.Clear);
+				}
+				return false;
+			}
+		}
+
 		public WeatherDecider(Map map)
 		{
 			this.map = map;
@@ -53,13 +68,13 @@ namespace RimWorld
 		{
 			WeatherDef forcedWeather = ForcedWeather;
 			int num = curWeatherDuration;
-			if (map.fireWatcher.LargeFireDangerPresent || !map.weatherManager.curWeather.temperatureRange.Includes(map.mapTemperature.OutdoorTemp))
+			if (map.fireWatcher.LargeFireDangerPresent || !map.weatherManager.curWeather.temperatureRange.Includes(map.mapTemperature.OutdoorTemp) || (ModsConfig.AnomalyActive && map.gameConditionManager.BrightnessChanging))
 			{
 				num = (int)((float)num * 0.25f);
 			}
 			if (forcedWeather != null && map.weatherManager.curWeather != forcedWeather)
 			{
-				num = 4000;
+				num = ((!ModsConfig.AnomalyActive || forcedWeather.transitionTicksOverride == int.MaxValue) ? 4000 : forcedWeather.transitionTicksOverride);
 			}
 			if (map.weatherManager.curWeatherAge > num)
 			{
@@ -78,23 +93,34 @@ namespace RimWorld
 		{
 			if (Find.GameInitData != null)
 			{
-				map.weatherManager.curWeather = WeatherDefOf.Clear;
+				if (ClearWeatherAllowed)
+				{
+					map.weatherManager.curWeather = WeatherDefOf.Clear;
+				}
+				else
+				{
+					map.weatherManager.curWeather = WeatherCommonalities.RandomElement().weather;
+				}
 				curWeatherDuration = 10000;
+				map.weatherManager.lastWeather = map.weatherManager.curWeather;
 				map.weatherManager.curWeatherAge = 0;
-				return;
 			}
-			map.weatherManager.curWeather = null;
-			WeatherDef weatherDef = ChooseNextWeather();
-			WeatherDef lastWeather = ChooseNextWeather();
-			map.weatherManager.curWeather = weatherDef;
-			map.weatherManager.lastWeather = lastWeather;
-			curWeatherDuration = weatherDef.durationRange.RandomInRange;
-			map.weatherManager.curWeatherAge = Rand.Range(0, curWeatherDuration);
+			else
+			{
+				map.weatherManager.curWeather = null;
+				WeatherDef weatherDef = ChooseNextWeather();
+				WeatherDef lastWeather = ChooseNextWeather();
+				map.weatherManager.curWeather = weatherDef;
+				map.weatherManager.lastWeather = lastWeather;
+				curWeatherDuration = weatherDef.durationRange.RandomInRange;
+				map.weatherManager.curWeatherAge = Rand.Range(0, curWeatherDuration);
+			}
+			map.weatherManager.ResetSkyTargetLerpCache();
 		}
 
 		private WeatherDef ChooseNextWeather()
 		{
-			if (TutorSystem.TutorialMode)
+			if (TutorSystem.TutorialMode && ClearWeatherAllowed)
 			{
 				return WeatherDefOf.Clear;
 			}
@@ -103,9 +129,13 @@ namespace RimWorld
 			{
 				return forcedWeather;
 			}
-			if (!DefDatabase<WeatherDef>.AllDefs.TryRandomElementByWeight((WeatherDef w) => CurrentWeatherCommonality(w), out var result))
+			if (!DefDatabase<WeatherDef>.AllDefs.TryRandomElementByWeight(CurrentWeatherCommonality, out var result))
 			{
 				Log.Warning("All weather commonalities were zero. Defaulting to " + WeatherDefOf.Clear.defName + ".");
+				if (!WeatherCommonalities.EnumerableNullOrEmpty())
+				{
+					return WeatherCommonalities.RandomElement().weather;
+				}
 				return WeatherDefOf.Clear;
 			}
 			return result;
@@ -126,7 +156,7 @@ namespace RimWorld
 			{
 				return 0f;
 			}
-			if ((int)weather.favorability < 2 && GenDate.DaysPassed < 8)
+			if ((int)weather.favorability < 2 && GenDate.DaysPassedSinceSettle < 8)
 			{
 				return 0f;
 			}
@@ -138,25 +168,41 @@ namespace RimWorld
 			{
 				return 0f;
 			}
-			BiomeDef biome = map.Biome;
-			for (int i = 0; i < biome.baseWeatherCommonalities.Count; i++)
+			if (ModsConfig.AnomalyActive && weather.minMonolithLevel > Find.Anomaly.HighestLevelReached && (!weather.canOccurInAmbientHorror || !Find.Anomaly.AmbientHorrorMode))
 			{
-				WeatherCommonalityRecord weatherCommonalityRecord = biome.baseWeatherCommonalities[i];
-				if (weatherCommonalityRecord.weather == weather)
-				{
-					float num = weatherCommonalityRecord.commonality;
-					if (map.fireWatcher.LargeFireDangerPresent && weather.rainRate > 0.1f)
-					{
-						num *= 15f;
-					}
-					if (weatherCommonalityRecord.weather.commonalityRainfallFactor != null)
-					{
-						num *= weatherCommonalityRecord.weather.commonalityRainfallFactor.Evaluate(map.TileInfo.rainfall);
-					}
-					return num;
-				}
+				return 0f;
 			}
-			return 0f;
+			BiomeDef biome = map.Biome;
+			float commonality = 0f;
+			for (int num = 0; num < biome.baseWeatherCommonalities.Count; num++)
+			{
+				WeatherCommonalityRecord weatherCommonalityRecord = biome.baseWeatherCommonalities[num];
+				if (weatherCommonalityRecord.weather != weather)
+				{
+					continue;
+				}
+				float num2 = weatherCommonalityRecord.commonality;
+				if (map.fireWatcher.LargeFireDangerPresent && weather.rainRate > 0.1f)
+				{
+					num2 *= 15f;
+				}
+				if (weatherCommonalityRecord.weather.commonalityRainfallFactor != null)
+				{
+					num2 *= weatherCommonalityRecord.weather.commonalityRainfallFactor.Evaluate(map.TileInfo.rainfall);
+				}
+				foreach (GameCondition activeCondition in map.gameConditionManager.ActiveConditions)
+				{
+					num2 *= activeCondition.WeatherCommonalityFactor(weather, map);
+				}
+				commonality = num2;
+				break;
+			}
+			PlanetTile tile = map.Tile;
+			for (int num3 = 0; num3 < map.TileInfo.Mutators.Count; num3++)
+			{
+				map.TileInfo.Mutators[num3].Worker?.MutateWeatherCommonalityFor(weather, tile, ref commonality);
+			}
+			return commonality;
 		}
 
 		public void LogWeatherChances()

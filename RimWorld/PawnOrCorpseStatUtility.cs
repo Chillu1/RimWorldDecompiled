@@ -9,34 +9,28 @@ namespace RimWorld
 		{
 			if (req.HasThing)
 			{
-				Pawn pawn = req.Thing as Pawn;
-				if (pawn != null)
+				if (req.Thing is Pawn arg)
 				{
-					stat = pawnStatGetter(pawn);
+					stat = pawnStatGetter(arg);
 					return true;
 				}
-				Corpse corpse = req.Thing as Corpse;
-				if (corpse != null)
+				if (req.Thing is Corpse corpse)
 				{
 					stat = pawnStatGetter(corpse.InnerPawn);
 					return true;
 				}
 			}
-			else
+			else if (req.Def is ThingDef thingDef)
 			{
-				ThingDef thingDef = req.Def as ThingDef;
-				if (thingDef != null)
+				if (thingDef.category == ThingCategory.Pawn)
 				{
-					if (thingDef.category == ThingCategory.Pawn)
-					{
-						stat = pawnDefStatGetter(thingDef);
-						return true;
-					}
-					if (thingDef.IsCorpse)
-					{
-						stat = pawnDefStatGetter(thingDef.ingestible.sourceDef);
-						return true;
-					}
+					stat = pawnDefStatGetter(thingDef);
+					return true;
+				}
+				if (thingDef.IsCorpse)
+				{
+					stat = pawnDefStatGetter(thingDef.ingestible.sourceDef);
+					return true;
 				}
 			}
 			stat = 0f;

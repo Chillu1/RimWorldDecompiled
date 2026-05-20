@@ -17,15 +17,11 @@ namespace RimWorld
 
 		public static PawnCapacityDef Talking;
 
-		public static PawnCapacityDef Eating;
-
 		public static PawnCapacityDef Breathing;
 
 		public static PawnCapacityDef BloodFiltration;
 
 		public static PawnCapacityDef BloodPumping;
-
-		public static PawnCapacityDef Metabolism;
 
 		static PawnCapacityDefOf()
 		{

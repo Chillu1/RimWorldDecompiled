@@ -11,24 +11,26 @@ namespace RimWorld
 
 		public ChemicalDef toleranceChemical;
 
-		protected override void DoIngestionOutcomeSpecial(Pawn pawn, Thing ingested)
+		public bool perIngested;
+
+		protected override void DoIngestionOutcomeSpecial(Pawn pawn, Thing ingested, int ingestedCount)
 		{
-			if (pawn.needs != null)
+			if (pawn.needs != null && pawn.needs.TryGetNeed(this.need, out var need))
 			{
-				Need need = pawn.needs.TryGetNeed(this.need);
-				if (need != null)
+				float effect = offset * (float)ingestedCount;
+				AddictionUtility.ModifyChemicalEffectForToleranceAndBodySize(pawn, toleranceChemical, ref effect, applyGeneToleranceFactor: false);
+				if (perIngested)
 				{
-					float effect = offset;
-					AddictionUtility.ModifyChemicalEffectForToleranceAndBodySize(pawn, toleranceChemical, ref effect);
-					need.CurLevel += effect;
+					effect *= (float)ingested.stackCount;
 				}
+				need.CurLevel += effect;
 			}
 		}
 
 		public override IEnumerable<StatDrawEntry> SpecialDisplayStats(ThingDef parentDef)
 		{
-			string str = ((offset >= 0f) ? "+" : string.Empty);
-			yield return new StatDrawEntry(StatCategoryDefOf.Drug, need.LabelCap, str + offset.ToStringPercent(), need.description, need.listPriority);
+			string text = ((offset >= 0f) ? "+" : string.Empty);
+			yield return new StatDrawEntry(StatCategoryDefOf.Drug, need.LabelCap, text + offset.ToStringPercent(), need.description, need.listPriority);
 		}
 	}
 }

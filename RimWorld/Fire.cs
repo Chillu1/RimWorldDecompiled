@@ -15,6 +15,8 @@ namespace RimWorld
 
 		private float flammabilityMax = 0.5f;
 
+		public Thing instigator;
+
 		private int ticksUntilSmoke;
 
 		private Sustainer sustainer;
@@ -35,27 +37,25 @@ namespace RimWorld
 
 		private const float MinTicksBetweenSparks = 75f;
 
-		private const float MinFireSizeToEmitSpark = 1f;
-
 		public const float MaxFireSize = 1.75f;
 
 		private const int TicksToBurnFloor = 7500;
 
 		private const int ComplexCalcsInterval = 150;
 
-		private const float CellIgniteChancePerTickPerSize = 0.01f;
-
 		private const float MinSizeForIgniteMovables = 0.4f;
 
 		private const float FireBaseGrowthPerTick = 0.00055f;
 
-		private static readonly IntRange SmokeIntervalRange = new IntRange(130, 200);
+		private static IntRange SmokeIntervalRange = new IntRange(130, 200);
 
 		private const int SmokeIntervalRandomAddon = 10;
 
 		private const float BaseSkyExtinguishChance = 0.04f;
 
 		private const int BaseSkyExtinguishDamage = 10;
+
+		private const int VacuumExtinguishDamage = 20;
 
 		private const float HeatPerFireSizePerInterval = 160f;
 
@@ -96,11 +96,19 @@ namespace RimWorld
 			}
 		}
 
+		public override int UpdateRateTicks => 15;
+
+		public override bool ShouldBeLitNow()
+		{
+			return true;
+		}
+
 		public override void ExposeData()
 		{
 			base.ExposeData();
 			Scribe_Values.Look(ref ticksSinceSpawn, "ticksSinceSpawn", 0);
 			Scribe_Values.Look(ref fireSize, "fireSize", 0f);
+			Scribe_References.Look(ref instigator, "instigator");
 		}
 
 		public override void SpawnSetup(Map map, bool respawningAfterLoad)
@@ -139,57 +147,66 @@ namespace RimWorld
 				IntVec3 c = base.Position + adjacentCellsAndInside[i];
 				if (c.InBounds(map))
 				{
-					map.pathGrid.RecalculatePerceivedPathCostAt(c);
+					map.pathing.RecalculatePerceivedPathCostAt(c);
 				}
 			}
 		}
 
-		public override void AttachTo(Thing parent)
+		public override void AttachTo(Thing newParent)
 		{
-			base.AttachTo(parent);
-			Pawn pawn = parent as Pawn;
-			if (pawn != null)
+			base.AttachTo(newParent);
+			if (newParent is Pawn pawn)
 			{
 				TaleRecorder.RecordTale(TaleDefOf.WasOnFire, pawn);
 			}
 		}
 
-		public override void Tick()
+		protected override void Tick()
 		{
-			ticksSinceSpawn++;
+			if (sustainer != null && !sustainer.Ended)
+			{
+				sustainer.Maintain();
+			}
+		}
+
+		protected override void TickInterval(int delta)
+		{
+			ticksSinceSpawn += delta;
 			if (lastFireCountUpdateTick != Find.TickManager.TicksGame)
 			{
 				fireCount = base.Map.listerThings.ThingsOfDef(def).Count;
 				lastFireCountUpdateTick = Find.TickManager.TicksGame;
 			}
-			if (sustainer != null)
-			{
-				sustainer.Maintain();
-			}
-			else if (!base.Position.Fogged(base.Map))
+			if ((sustainer == null || sustainer.Ended) && !base.Position.Fogged(base.Map))
 			{
 				SoundInfo info = SoundInfo.InMap(new TargetInfo(base.Position, base.Map), MaintenanceType.PerTick);
 				sustainer = SustainerAggregatorUtility.AggregateOrSpawnSustainerFor(this, SoundDefOf.FireBurning, info);
 			}
-			ticksUntilSmoke--;
-			if (ticksUntilSmoke <= 0)
+			using (ProfilerBlock.Scope("Spawn particles"))
 			{
-				SpawnSmokeParticles();
-			}
-			if (fireCount < 15 && fireSize > 0.7f && Rand.Value < fireSize * 0.01f)
-			{
-				MoteMaker.ThrowMicroSparks(DrawPos, base.Map);
-			}
-			if (fireSize > 1f)
-			{
-				ticksSinceSpread++;
-				if ((float)ticksSinceSpread >= SpreadInterval)
+				ticksUntilSmoke -= delta;
+				if (ticksUntilSmoke <= 0)
 				{
-					TrySpread();
-					ticksSinceSpread = 0;
+					SpawnSmokeParticles();
+				}
+				if (fireCount < 15 && fireSize > 0.7f && Rand.Value < fireSize * 0.01f)
+				{
+					FleckMaker.ThrowMicroSparks(DrawPos, base.Map);
 				}
 			}
-			if (this.IsHashIntervalTick(150))
+			using (ProfilerBlock.Scope("Spread"))
+			{
+				if (fireSize > 1f)
+				{
+					ticksSinceSpread += delta;
+					if ((float)ticksSinceSpread >= SpreadInterval)
+					{
+						TrySpread();
+						ticksSinceSpread = 0;
+					}
+				}
+			}
+			if (this.IsHashIntervalTick(150, delta))
 			{
 				DoComplexCalcs();
 			}
@@ -203,11 +220,11 @@ namespace RimWorld
 		{
 			if (fireCount < 15)
 			{
-				MoteMaker.ThrowSmoke(DrawPos, base.Map, fireSize);
+				FleckMaker.ThrowSmoke(DrawPos, base.Map, fireSize);
 			}
 			if (fireSize > 0.5f && parent == null)
 			{
-				MoteMaker.ThrowFireGlow(base.Position, base.Map, fireSize);
+				FleckMaker.ThrowFireGlow(base.Position.ToVector3Shifted(), base.Map, fireSize);
 			}
 			float num = fireSize / 2f;
 			if (num > 1f)
@@ -229,7 +246,7 @@ namespace RimWorld
 				{
 					if (base.Position.TerrainFlammableNow(base.Map))
 					{
-						flammabilityMax = base.Position.GetTerrain(base.Map).GetStatValueAbstract(StatDefOf.Flammability);
+						flammabilityMax = base.Position.TerrainFlammability(base.Map);
 					}
 					List<Thing> list = base.Map.thingGrid.ThingsListAt(base.Position);
 					for (int i = 0; i < list.Count; i++)
@@ -249,7 +266,7 @@ namespace RimWorld
 							}
 							if (parent == null && fireSize > 0.4f && list[i].def.category == ThingCategory.Pawn && Rand.Chance(FireUtility.ChanceToAttachFireCumulative(list[i], 150f)))
 							{
-								list[i].TryAttachFire(fireSize * 0.2f);
+								list[i].TryAttachFire(fireSize * 0.2f, instigator);
 							}
 						}
 					}
@@ -281,9 +298,10 @@ namespace RimWorld
 				if (Rand.Value < 0.4f)
 				{
 					float radius = fireSize * 3f;
-					SnowUtility.AddSnowRadial(base.Position, base.Map, radius, 0f - fireSize * 0.1f);
+					WeatherBuildupUtility.AddSnowRadial(base.Position, base.Map, radius, 0f - fireSize * 0.1f);
 				}
-				fireSize += 0.00055f * flammabilityMax * 150f;
+				float effectiveVacuumForFire = FireUtility.GetEffectiveVacuumForFire(base.Position, base.Map);
+				fireSize += 0.00055f * flammabilityMax * 150f * (1f - effectiveVacuumForFire);
 				if (fireSize > 1.75f)
 				{
 					fireSize = 1.75f;
@@ -291,6 +309,10 @@ namespace RimWorld
 				if (base.Map.weatherManager.RainRate > 0.01f && VulnerableToRain() && Rand.Value < 6f)
 				{
 					TakeDamage(new DamageInfo(DamageDefOf.Extinguish, 10f));
+				}
+				if (effectiveVacuumForFire > 0f)
+				{
+					TakeDamage(new DamageInfo(DamageDefOf.Extinguish, 20f * effectiveVacuumForFire));
 				}
 			}
 		}
@@ -328,55 +350,54 @@ namespace RimWorld
 			{
 				num = 1;
 			}
-			Pawn pawn = targ as Pawn;
-			if (pawn != null)
+			if (targ is Pawn pawn)
 			{
 				BattleLogEntry_DamageTaken battleLogEntry_DamageTaken = new BattleLogEntry_DamageTaken(pawn, RulePackDefOf.DamageEvent_Fire);
 				Find.BattleLog.Add(battleLogEntry_DamageTaken);
-				DamageInfo dinfo = new DamageInfo(DamageDefOf.Flame, num, 0f, -1f, this);
+				DamageInfo dinfo = new DamageInfo(DamageDefOf.Flame, num, 0f, -1f, instigator ?? this);
 				dinfo.SetBodyRegion(BodyPartHeight.Undefined, BodyPartDepth.Outside);
 				targ.TakeDamage(dinfo).AssociateWithLog(battleLogEntry_DamageTaken);
 				if (pawn.apparel != null && pawn.apparel.WornApparel.TryRandomElement(out var result))
 				{
-					result.TakeDamage(new DamageInfo(DamageDefOf.Flame, num, 0f, -1f, this));
+					result.TakeDamage(new DamageInfo(DamageDefOf.Flame, num, 0f, -1f, instigator ?? this));
 				}
 			}
 			else
 			{
-				targ.TakeDamage(new DamageInfo(DamageDefOf.Flame, num, 0f, -1f, this));
+				targ.TakeDamage(new DamageInfo(DamageDefOf.Flame, num, 0f, -1f, instigator ?? this));
 			}
 		}
 
 		protected void TrySpread()
 		{
-			IntVec3 position = base.Position;
+			IntVec3 intVec;
 			bool flag;
 			if (Rand.Chance(0.8f))
 			{
-				position = base.Position + GenRadial.ManualRadialPattern[Rand.RangeInclusive(1, 8)];
+				intVec = base.Position + GenRadial.ManualRadialPattern[Rand.RangeInclusive(1, 8)];
 				flag = true;
 			}
 			else
 			{
-				position = base.Position + GenRadial.ManualRadialPattern[Rand.RangeInclusive(10, 20)];
+				intVec = base.Position + GenRadial.ManualRadialPattern[Rand.RangeInclusive(10, 20)];
 				flag = false;
 			}
-			if (!position.InBounds(base.Map) || !Rand.Chance(FireUtility.ChanceToStartFireIn(position, base.Map)))
+			if (!intVec.InBounds(base.Map) || !Rand.Chance(FireUtility.ChanceToStartFireIn(intVec, base.Map)))
 			{
 				return;
 			}
 			if (!flag)
 			{
 				CellRect startRect = CellRect.SingleCell(base.Position);
-				CellRect endRect = CellRect.SingleCell(position);
-				if (GenSight.LineOfSight(base.Position, position, base.Map, startRect, endRect))
+				CellRect endRect = CellRect.SingleCell(intVec);
+				if (GenSight.LineOfSight(base.Position, intVec, base.Map, startRect, endRect))
 				{
-					((Spark)GenSpawn.Spawn(ThingDefOf.Spark, base.Position, base.Map)).Launch(this, position, position, ProjectileHitFlags.All);
+					((Spark)GenSpawn.Spawn(ThingDefOf.Spark, base.Position, base.Map)).Launch(this, intVec, intVec, ProjectileHitFlags.All);
 				}
 			}
 			else
 			{
-				FireUtility.TryStartFireIn(position, base.Map, 0.1f);
+				FireUtility.TryStartFireIn(intVec, base.Map, 0.1f, instigator);
 			}
 		}
 	}

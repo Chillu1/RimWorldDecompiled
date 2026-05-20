@@ -22,7 +22,7 @@ namespace RimWorld.Planet
 			tickCreated = Find.TickManager.TicksGame;
 		}
 
-		public override void CompTick()
+		public override void CompTickInterval(int delta)
 		{
 			if (lhs == null || rhs == null)
 			{
@@ -32,9 +32,11 @@ namespace RimWorld.Planet
 			if ((tickFightStarted == 0 && Find.TickManager.TicksGame - tickCreated > 10000) || (tickFightStarted != 0 && Find.TickManager.TicksGame - tickFightStarted > 60000))
 			{
 				Log.Message("Fight timed out");
-				ArenaUtility.ArenaResult obj = default(ArenaUtility.ArenaResult);
-				obj.tickDuration = Find.TickManager.TicksGame - tickCreated;
-				obj.winner = ArenaUtility.ArenaResult.Winner.Other;
+				ArenaUtility.ArenaResult obj = new ArenaUtility.ArenaResult
+				{
+					tickDuration = Find.TickManager.TicksGame - tickCreated,
+					winner = ArenaUtility.ArenaResult.Winner.Other
+				};
 				callback(obj);
 				parent.Destroy();
 				return;
@@ -60,8 +62,10 @@ namespace RimWorld.Planet
 			{
 				return;
 			}
-			ArenaUtility.ArenaResult obj2 = default(ArenaUtility.ArenaResult);
-			obj2.tickDuration = Find.TickManager.TicksGame - tickFightStarted;
+			ArenaUtility.ArenaResult obj2 = new ArenaUtility.ArenaResult
+			{
+				tickDuration = Find.TickManager.TicksGame - tickFightStarted
+			};
 			if (flag && !flag2)
 			{
 				obj2.winner = ArenaUtility.ArenaResult.Winner.Rhs;

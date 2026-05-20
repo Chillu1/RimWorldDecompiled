@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using Verse;
 
 namespace RimWorld
@@ -27,13 +26,9 @@ namespace RimWorld
 
 		private Bill_Production RelevantBill()
 		{
-			if (Find.Selector.SingleSelectedThing != null && Find.Selector.SingleSelectedThing.def == def.thingDef)
+			if (Find.Selector.SingleSelectedThing != null && Find.Selector.SingleSelectedThing.def == def.thingDef && Find.Selector.SingleSelectedThing is IBillGiver billGiver)
 			{
-				IBillGiver billGiver = Find.Selector.SingleSelectedThing as IBillGiver;
-				if (billGiver != null)
-				{
-					return (Bill_Production)billGiver.BillStack.Bills.FirstOrDefault((Bill b) => b.recipe == def.recipeDef);
-				}
+				return (Bill_Production)billGiver.BillStack.Bills.FirstOrDefault((Bill b) => b.recipe == def.recipeDef);
 			}
 			return null;
 		}

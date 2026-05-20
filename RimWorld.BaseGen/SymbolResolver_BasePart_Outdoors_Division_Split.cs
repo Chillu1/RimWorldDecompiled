@@ -24,25 +24,25 @@ namespace RimWorld.BaseGen
 
 		public override void Resolve(ResolveParams rp)
 		{
-			bool @bool = Rand.Bool;
-			bool flag;
-			if (TryFindSplitPoint(@bool, rp.rect, out var splitPoint, out var spaceBetween))
+			bool flag = Rand.Bool;
+			bool flag2;
+			if (TryFindSplitPoint(flag, rp.rect, out var splitPoint, out var spaceBetween))
 			{
-				flag = @bool;
+				flag2 = flag;
 			}
 			else
 			{
-				if (!TryFindSplitPoint(!@bool, rp.rect, out splitPoint, out spaceBetween))
+				if (!TryFindSplitPoint(!flag, rp.rect, out splitPoint, out spaceBetween))
 				{
 					Log.Warning("Could not find split point.");
 					return;
 				}
-				flag = !@bool;
+				flag2 = !flag;
 			}
 			TerrainDef floorDef = rp.pathwayFloorDef ?? BaseGenUtility.RandomBasicFloorDef(rp.faction);
 			ResolveParams resolveParams3;
 			ResolveParams resolveParams5;
-			if (flag)
+			if (flag2)
 			{
 				ResolveParams resolveParams = rp;
 				resolveParams.rect = new CellRect(rp.rect.minX, rp.rect.minZ + splitPoint, rp.rect.Width, spaceBetween);

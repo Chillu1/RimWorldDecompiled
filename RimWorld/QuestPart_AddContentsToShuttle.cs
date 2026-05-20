@@ -29,21 +29,19 @@ namespace RimWorld
 				{
 					return;
 				}
-				foreach (Thing item in value)
+				foreach (Thing item2 in value)
 				{
-					if (item.Destroyed)
+					if (item2.Destroyed)
 					{
-						Log.Error("Tried to add a destroyed thing to QuestPart_AddContentsToShuttle: " + item.ToStringSafe());
-						continue;
+						Log.Error("Tried to add a destroyed thing to QuestPart_AddContentsToShuttle: " + item2.ToStringSafe());
 					}
-					Pawn pawn = item as Pawn;
-					if (pawn != null)
+					else if (item2 is Pawn item)
 					{
-						pawns.Add(pawn);
+						pawns.Add(item);
 					}
 					else
 					{
-						items.Add(item);
+						items.Add(item2);
 					}
 				}
 			}
@@ -89,11 +87,11 @@ namespace RimWorld
 			}
 			pawns.RemoveAll((Pawn x) => x.Destroyed);
 			items.RemoveAll((Thing x) => x.Destroyed);
-			for (int i = 0; i < pawns.Count; i++)
+			for (int num = 0; num < pawns.Count; num++)
 			{
-				if (pawns[i].IsWorldPawn())
+				if (pawns[num].IsWorldPawn())
 				{
-					Find.WorldPawns.RemovePawn(pawns[i]);
+					Find.WorldPawns.RemovePawn(pawns[num]);
 				}
 			}
 			CompTransporter compTransporter = shuttle.TryGetComp<CompTransporter>();

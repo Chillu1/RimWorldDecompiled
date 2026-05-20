@@ -55,20 +55,19 @@ namespace Verse
 				try
 				{
 					SteamScreenshots.TriggerScreenshot();
+					return;
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Warning("Could not take Steam screenshot. Steam offline? Taking normal screenshot. Exception: " + arg);
+					Log.Warning("Could not take Steam screenshot. Steam offline? Taking normal screenshot. Exception: " + ex);
 					TakeNonSteamShot();
+					return;
 				}
 			}
-			else
-			{
-				TakeNonSteamShot();
-			}
+			TakeNonSteamShot();
 		}
 
-		private static void TakeNonSteamShot()
+		public static void TakeNonSteamShot(string fileName = null)
 		{
 			string screenshotFolderPath = GenFilePaths.ScreenshotFolderPath;
 			try
@@ -79,12 +78,25 @@ namespace Verse
 					directoryInfo.Create();
 				}
 				string text;
-				do
+				if (fileName != null)
 				{
-					screenshotCount++;
-					text = screenshotFolderPath + Path.DirectorySeparatorChar.ToString() + "screenshot" + screenshotCount + ".png";
+					text = $"{screenshotFolderPath}{Path.DirectorySeparatorChar}{fileName}.png";
 				}
-				while (File.Exists(text));
+				else
+				{
+					do
+					{
+						screenshotCount++;
+						string[] obj = new string[5] { screenshotFolderPath, null, null, null, null };
+						char directorySeparatorChar = Path.DirectorySeparatorChar;
+						obj[1] = directorySeparatorChar.ToString();
+						obj[2] = "screenshot";
+						obj[3] = screenshotCount.ToString();
+						obj[4] = ".png";
+						text = string.Concat(obj);
+					}
+					while (File.Exists(text));
+				}
 				ScreenCapture.CaptureScreenshot(text);
 				lastShotFrame = Time.frameCount;
 				lastShotFilePath = text;

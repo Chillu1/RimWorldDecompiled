@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
+using Verse.Steam;
 
 namespace RimWorld
 {
@@ -33,12 +34,26 @@ namespace RimWorld
 				break;
 			}
 			soundDef?.PlayOneShotOnCamera();
+			SteamDeck.Vibrate();
+		}
+
+		private static KeyBindingDef GetBindingFor(TimeSpeed speed)
+		{
+			return speed switch
+			{
+				TimeSpeed.Paused => KeyBindingDefOf.TogglePause, 
+				TimeSpeed.Normal => KeyBindingDefOf.TimeSpeed_Normal, 
+				TimeSpeed.Fast => KeyBindingDefOf.TimeSpeed_Fast, 
+				TimeSpeed.Superfast => KeyBindingDefOf.TimeSpeed_Superfast, 
+				TimeSpeed.Ultrafast => KeyBindingDefOf.TimeSpeed_Ultrafast, 
+				_ => null, 
+			};
 		}
 
 		public static void DoTimeControlsGUI(Rect timerRect)
 		{
 			TickManager tickManager = Find.TickManager;
-			GUI.BeginGroup(timerRect);
+			Widgets.BeginGroup(timerRect);
 			Rect rect = new Rect(0f, 0f, TimeButSize.x, TimeButSize.y);
 			for (int i = 0; i < CachedTimeSpeedValues.Length; i++)
 			{
@@ -47,7 +62,9 @@ namespace RimWorld
 				{
 					continue;
 				}
-				if (Widgets.ButtonImage(rect, TexButton.SpeedButtonTextures[(uint)timeSpeed]))
+				string arg = KeyPrefs.KeyPrefsData.GetBoundKeyCode(GetBindingFor(timeSpeed), KeyPrefs.BindingSlot.A).ToStringReadable();
+				string tooltip = string.Format("{0}: {1}", "HotKeyTip".Translate(), arg);
+				if (Widgets.ButtonImage(rect, TexButton.SpeedButtonTextures[(uint)timeSpeed], doMouseoverSound: true, tooltip) && !tickManager.ForcePaused)
 				{
 					if (timeSpeed == TimeSpeed.Paused)
 					{
@@ -61,17 +78,21 @@ namespace RimWorld
 					}
 					PlaySoundOf(tickManager.CurTimeSpeed);
 				}
-				if (tickManager.CurTimeSpeed == timeSpeed)
+				if (((!tickManager.ForcePaused) ? tickManager.CurTimeSpeed : TimeSpeed.Paused) == timeSpeed)
 				{
 					GUI.DrawTexture(rect, TexUI.HighlightTex);
 				}
 				rect.x += rect.width;
 			}
-			if (Find.TickManager.slower.ForcedNormalSpeed)
+			if (tickManager.slower.ForcedNormalSpeed)
 			{
 				Widgets.DrawLineHorizontal(rect.width * 2f, rect.height / 2f, rect.width * 2f);
 			}
-			GUI.EndGroup();
+			if (tickManager.ForcePaused)
+			{
+				Widgets.DrawLineHorizontal(rect.width, rect.height / 2f, rect.width * 3f);
+			}
+			Widgets.EndGroup();
 			GenUI.AbsorbClicksInRect(timerRect);
 			UIHighlighter.HighlightOpportunity(timerRect, "TimeControls");
 			if (Event.current.type != EventType.KeyDown)
@@ -104,6 +125,20 @@ namespace RimWorld
 				if (KeyBindingDefOf.TimeSpeed_Superfast.KeyDownEvent)
 				{
 					Find.TickManager.CurTimeSpeed = TimeSpeed.Superfast;
+					PlaySoundOf(Find.TickManager.CurTimeSpeed);
+					PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.TimeControls, KnowledgeAmount.SpecificInteraction);
+					Event.current.Use();
+				}
+				if (KeyBindingDefOf.TimeSpeed_Slower.KeyDownEvent && Find.TickManager.CurTimeSpeed != TimeSpeed.Paused)
+				{
+					Find.TickManager.CurTimeSpeed--;
+					PlaySoundOf(Find.TickManager.CurTimeSpeed);
+					PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.TimeControls, KnowledgeAmount.SpecificInteraction);
+					Event.current.Use();
+				}
+				if (KeyBindingDefOf.TimeSpeed_Faster.KeyDownEvent && (int)Find.TickManager.CurTimeSpeed < 3)
+				{
+					Find.TickManager.CurTimeSpeed++;
 					PlaySoundOf(Find.TickManager.CurTimeSpeed);
 					PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.TimeControls, KnowledgeAmount.SpecificInteraction);
 					Event.current.Use();

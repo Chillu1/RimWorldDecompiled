@@ -24,6 +24,8 @@ namespace RimWorld
 
 		private const int TicksBetweenMotesBase = 100;
 
+		private const int JobCheckIntervalTicks = 4000;
+
 		public LocalTargetInfo Focus => job.GetTarget(TargetIndex.C);
 
 		private bool FromBed => job.GetTarget(TargetIndex.B).IsValid;
@@ -60,10 +62,8 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			Toil meditate = new Toil
-			{
-				socialMode = RandomSocialMode.Off
-			};
+			Toil meditate = ToilMaker.MakeToil("MakeNewToils");
+			meditate.socialMode = RandomSocialMode.Off;
 			if (FromBed)
 			{
 				this.KeepLyingDown(TargetIndex.B);
@@ -86,7 +86,8 @@ namespace RimWorld
 				};
 				if (Focus != null)
 				{
-					meditate.FailOnDespawnedNullOrForbidden(TargetIndex.C);
+					meditate.FailOnDespawnedOrNull(TargetIndex.C);
+					meditate.FailOnForbidden(TargetIndex.A);
 					if (pawn.HasPsylink && Focus.Thing != null)
 					{
 						meditate.FailOn(() => Focus.Thing.GetStatValueForPawn(StatDefOf.MeditationFocusStrength, pawn) < float.Epsilon);
@@ -103,7 +104,13 @@ namespace RimWorld
 				if (job.ignoreJoyTimeAssignment)
 				{
 					Pawn_PsychicEntropyTracker psychicEntropy = pawn.psychicEntropy;
-					if (!flag && psychicEntropy.TargetPsyfocus < psychicEntropy.CurrentPsyfocus && (psychicEntropy.TargetPsyfocus < job.psyfocusTargetLast || job.wasOnMeditationTimeAssignment))
+					bool flag2 = !flag && job.wasOnMeditationTimeAssignment;
+					if (pawn.IsHashIntervalTick(4000) && psychicEntropy != null && !flag && psychicEntropy.CurrentPsyfocus >= Mathf.Max(psychicEntropy.TargetPsyfocus + 0.05f, 0.99f))
+					{
+						pawn.jobs.CheckForJobOverride();
+						return;
+					}
+					if (flag2 && psychicEntropy.TargetPsyfocus < psychicEntropy.CurrentPsyfocus)
 					{
 						EndJobWith(JobCondition.InterruptForced);
 						return;
@@ -111,12 +118,17 @@ namespace RimWorld
 					job.psyfocusTargetLast = psychicEntropy.TargetPsyfocus;
 					job.wasOnMeditationTimeAssignment = flag;
 				}
+				else if (pawn.needs.joy.CurLevelPercentage >= 1f)
+				{
+					EndJobWith(JobCondition.InterruptForced);
+					return;
+				}
 				if (faceDir.IsValid && !FromBed)
 				{
 					pawn.rotationTracker.FaceCell(pawn.Position + faceDir);
 				}
 				MeditationTick();
-				if (ModLister.RoyaltyInstalled && MeditationFocusDefOf.Natural.CanPawnUse(pawn))
+				if (ModsConfig.RoyaltyActive && MeditationFocusDefOf.Natural.CanPawnUse(pawn))
 				{
 					int num = GenRadial.NumCellsInRadius(MeditationUtility.FocusObjectSearchRadius);
 					for (int i = 0; i < num; i++)
@@ -127,7 +139,7 @@ namespace RimWorld
 							Plant plant = c.GetPlant(pawn.Map);
 							if (plant != null && plant.def == ThingDefOf.Plant_TreeAnima)
 							{
-								plant.TryGetComp<CompSpawnSubplant>()?.AddProgress_NewTmp(AnimaTreeSubplantProgressPerTick);
+								plant.TryGetComp<CompSpawnSubplant>()?.AddProgress(AnimaTreeSubplantProgressPerTick);
 							}
 						}
 					}
@@ -139,31 +151,36 @@ namespace RimWorld
 		public override void Notify_Starting()
 		{
 			base.Notify_Starting();
-			job.psyfocusTargetLast = pawn.psychicEntropy.TargetPsyfocus;
+			if (ModsConfig.RoyaltyActive && pawn.psychicEntropy != null)
+			{
+				job.psyfocusTargetLast = pawn.psychicEntropy.TargetPsyfocus;
+			}
 		}
 
 		protected void MeditationTick()
 		{
-			pawn.skills.Learn(SkillDefOf.Intellectual, 0.0180000011f);
-			pawn.GainComfortFromCellIfPossible();
+			pawn.skills.Learn(SkillDefOf.Intellectual, 0.018000001f);
+			pawn.GainComfortFromCellIfPossible(1);
 			if (pawn.needs.joy != null)
 			{
-				JoyUtility.JoyTickCheckEnd(pawn, JoyTickFullJoyAction.None);
+				JoyUtility.JoyTickCheckEnd(pawn, 1, JoyTickFullJoyAction.None);
 			}
 			if (pawn.IsHashIntervalTick(100))
 			{
-				MoteMaker.ThrowMetaIcon(pawn.Position, pawn.Map, ThingDefOf.Mote_Meditating);
+				FleckMaker.ThrowMetaIcon(pawn.Position, pawn.Map, FleckDefOf.Meditating);
 			}
-			if (!ModsConfig.RoyaltyActive)
+			if (!ModsConfig.RoyaltyActive || pawn.psychicEntropy == null)
 			{
 				return;
 			}
 			pawn.psychicEntropy.Notify_Meditated();
 			if (pawn.HasPsylink && pawn.psychicEntropy.PsychicSensitivity > float.Epsilon)
 			{
+				float yOffset = (float)(pawn.Position.x % 2 + pawn.Position.z % 2) / 10f;
 				if (psyfocusMote == null || psyfocusMote.Destroyed)
 				{
 					psyfocusMote = MoteMaker.MakeAttachedOverlay(pawn, ThingDefOf.Mote_PsyfocusPulse, Vector3.zero);
+					psyfocusMote.yOffset = yOffset;
 				}
 				psyfocusMote.Maintain();
 				if (sustainer == null || sustainer.Ended)
@@ -171,7 +188,7 @@ namespace RimWorld
 					sustainer = SoundDefOf.MeditationGainPsyfocus.TrySpawnSustainer(SoundInfo.InMap(pawn, MaintenanceType.PerTick));
 				}
 				sustainer.Maintain();
-				pawn.psychicEntropy.GainPsyfocus(Focus.Thing);
+				pawn.psychicEntropy.GainPsyfocus_NewTemp(1, Focus.Thing);
 			}
 		}
 

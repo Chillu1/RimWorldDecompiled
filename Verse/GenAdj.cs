@@ -1,4 +1,6 @@
 using System.Collections.Generic;
+using RimWorld;
+using UnityEngine;
 
 namespace Verse
 {
@@ -22,6 +24,8 @@ namespace Verse
 
 		public static IntVec3[] AdjacentCellsAroundBottom;
 
+		public static IntVec3[] AdjacentCellsAndInsideForUV;
+
 		private static List<IntVec3> adjRandomOrderList;
 
 		private static List<IntVec3> validCells;
@@ -37,6 +41,7 @@ namespace Verse
 			AdjacentCellsAndInside = new IntVec3[9];
 			AdjacentCellsAround = new IntVec3[8];
 			AdjacentCellsAroundBottom = new IntVec3[9];
+			AdjacentCellsAndInsideForUV = new IntVec3[9];
 			validCells = new List<IntVec3>();
 			SetupAdjacencyTables();
 		}
@@ -98,6 +103,15 @@ namespace Verse
 			AdjacentCellsAroundBottom[6] = new IntVec3(1, 0, 0);
 			AdjacentCellsAroundBottom[7] = new IntVec3(1, 0, -1);
 			AdjacentCellsAroundBottom[8] = new IntVec3(0, 0, 0);
+			AdjacentCellsAndInsideForUV[0] = new IntVec3(0, 0, -1);
+			AdjacentCellsAndInsideForUV[1] = new IntVec3(-1, 0, -1);
+			AdjacentCellsAndInsideForUV[2] = new IntVec3(-1, 0, 0);
+			AdjacentCellsAndInsideForUV[3] = new IntVec3(-1, 0, 1);
+			AdjacentCellsAndInsideForUV[4] = new IntVec3(0, 0, 1);
+			AdjacentCellsAndInsideForUV[5] = new IntVec3(1, 0, 1);
+			AdjacentCellsAndInsideForUV[6] = new IntVec3(1, 0, 0);
+			AdjacentCellsAndInsideForUV[7] = new IntVec3(1, 0, -1);
+			AdjacentCellsAndInsideForUV[8] = new IntVec3(0, 0, 0);
 		}
 
 		public static List<IntVec3> AdjacentCells8WayRandomized()
@@ -242,39 +256,39 @@ namespace Verse
 			while (cur.z > minZ + 1);
 		}
 
-		public static IEnumerable<IntVec3> CellsAdjacentAlongEdge(IntVec3 thingCent, Rot4 thingRot, IntVec2 thingSize, LinkDirections dir)
+		public static IEnumerable<IntVec3> CellsAdjacentAlongEdge(IntVec3 center, Rot4 rot, IntVec2 size, int dir)
 		{
-			AdjustForRotation(ref thingCent, ref thingSize, thingRot);
-			int minX = thingCent.x - (thingSize.x - 1) / 2 - 1;
-			int minZ = thingCent.z - (thingSize.z - 1) / 2 - 1;
-			int maxX = minX + thingSize.x + 1;
-			int maxZ = minZ + thingSize.z + 1;
-			if (dir == LinkDirections.Down)
+			AdjustForRotation(ref center, ref size, rot);
+			int minX = center.x - (size.x - 1) / 2;
+			int maxX = minX + size.x;
+			int minZ = center.z - (size.z - 1) / 2;
+			int maxZ = minZ + size.z;
+			if (dir == 0)
 			{
-				for (int x4 = minX; x4 <= maxX; x4++)
+				for (int x = minX; x < maxX; x++)
 				{
-					yield return new IntVec3(x4, thingCent.y, minZ - 1);
+					yield return new IntVec3(x, center.y, maxZ + 1);
 				}
 			}
-			if (dir == LinkDirections.Up)
+			if (dir == 1)
 			{
-				for (int x4 = minX; x4 <= maxX; x4++)
+				for (int x = minZ; x < maxZ; x++)
 				{
-					yield return new IntVec3(x4, thingCent.y, maxZ + 1);
+					yield return new IntVec3(maxX + 1, center.y, x);
 				}
 			}
-			if (dir == LinkDirections.Left)
+			if (dir == 2)
 			{
-				for (int x4 = minZ; x4 <= maxZ; x4++)
+				for (int x = minX; x < maxX; x++)
 				{
-					yield return new IntVec3(minX - 1, thingCent.y, x4);
+					yield return new IntVec3(x, center.y, minZ - 1);
 				}
 			}
-			if (dir == LinkDirections.Right)
+			if (dir == 3)
 			{
-				for (int x4 = minZ; x4 <= maxZ; x4++)
+				for (int x = minZ; x < maxZ; x++)
 				{
-					yield return new IntVec3(maxX + 1, thingCent.y, x4);
+					yield return new IntVec3(minX - 1, center.y, x);
 				}
 			}
 		}
@@ -367,18 +381,18 @@ namespace Verse
 			return randomCell;
 		}
 
-		public static bool TryFindRandomAdjacentCell8WayWithRoomGroup(Thing t, out IntVec3 result)
+		public static bool TryFindRandomAdjacentCell8WayWithRoom(Thing t, out IntVec3 result)
 		{
-			return TryFindRandomAdjacentCell8WayWithRoomGroup(t.Position, t.Rotation, t.def.size, t.Map, out result);
+			return TryFindRandomAdjacentCell8WayWithRoom(t.Position, t.Rotation, t.def.size, t.MapHeld, out result);
 		}
 
-		public static bool TryFindRandomAdjacentCell8WayWithRoomGroup(IntVec3 center, Rot4 rot, IntVec2 size, Map map, out IntVec3 result)
+		public static bool TryFindRandomAdjacentCell8WayWithRoom(IntVec3 center, Rot4 rot, IntVec2 size, Map map, out IntVec3 result)
 		{
 			AdjustForRotation(ref center, ref size, rot);
 			validCells.Clear();
 			foreach (IntVec3 item in CellsAdjacent8Way(center, rot, size))
 			{
-				if (item.InBounds(map) && item.GetRoomGroup(map) != null)
+				if (item.InBounds(map) && item.GetRoom(map) != null)
 				{
 					validCells.Add(item);
 				}
@@ -548,9 +562,9 @@ namespace Verse
 			int num2 = center.z - (size.z - 1) / 2;
 			int num3 = num + size.x - 1;
 			int num4 = num2 + size.z - 1;
-			if (root.x >= num && root.x <= num3 && root.z >= num2 && root.z <= num4)
+			if (root.x >= num && root.x <= num3 && root.z >= num2)
 			{
-				return true;
+				return root.z <= num4;
 			}
 			return false;
 		}
@@ -560,50 +574,171 @@ namespace Verse
 			return OccupiedRect(t.Position, t.Rotation, t.def.size);
 		}
 
+		public static CellRect OccupiedDrawRect(this Thing t)
+		{
+			Vector2 drawSize = t.DrawSize;
+			return OccupiedRect(t.Position, t.Rotation, new IntVec2(Mathf.CeilToInt(drawSize.x), Mathf.CeilToInt(drawSize.y)));
+		}
+
+		public static Bounds DrawBounds(this Thing t)
+		{
+			Vector3 center = t.TrueCenter();
+			Vector3 size = t.Rotation.AsQuat * t.def.size.ToVector3();
+			return new Bounds(center, size);
+		}
+
+		public static CellRect OccupiedRect(IntVec3 center, Rot4 rot, int width, int height)
+		{
+			return OccupiedRect(center, rot, new IntVec2(width, height));
+		}
+
 		public static CellRect OccupiedRect(IntVec3 center, Rot4 rot, IntVec2 size)
 		{
 			AdjustForRotation(ref center, ref size, rot);
 			return new CellRect(center.x - (size.x - 1) / 2, center.z - (size.z - 1) / 2, size.x, size.z);
 		}
 
+		public static CellRect RectAbout(this IntVec3 center, int width, int height)
+		{
+			return OccupiedRect(center, Rot4.North, new IntVec2(width, height));
+		}
+
+		public static CellRect RectAbout(this IntVec3 center, int width, int height, Rot4 rot)
+		{
+			return OccupiedRect(center, rot, new IntVec2(width, height));
+		}
+
+		public static CellRect RectAbout(this IntVec3 center, IntVec2 size)
+		{
+			return OccupiedRect(center, Rot4.North, size);
+		}
+
+		public static CellRect RectAbout(this IntVec3 center, IntVec2 size, Rot4 rot)
+		{
+			return OccupiedRect(center, rot, size);
+		}
+
 		public static void AdjustForRotation(ref IntVec3 center, ref IntVec2 size, Rot4 rot)
+		{
+			AdjustForRotation(ref center, ref size, Rot4.North, rot);
+		}
+
+		public static void AdjustForRotation(ref IntVec3 center, ref IntVec2 size, Rot4 reference, Rot4 rot)
 		{
 			if (size.x == 1 && size.z == 1)
 			{
 				return;
 			}
+			int x2;
+			int z2;
 			if (rot.IsHorizontal)
 			{
-				int x = size.x;
-				size.x = size.z;
-				size.z = x;
+				ref int x = ref size.x;
+				ref int z = ref size.z;
+				z2 = size.z;
+				x2 = size.x;
+				x = z2;
+				z = x2;
 			}
-			switch (rot.AsInt)
+			x2 = reference.AsInt;
+			z2 = rot.AsInt;
+			(int, int) tuple;
+			switch (x2)
 			{
-			case 1:
-				if (size.z % 2 == 0)
+			case 0:
+				switch (z2)
 				{
-					center.z--;
+				case 1:
+					break;
+				case 2:
+					goto IL_00dd;
+				case 3:
+					goto IL_00e8;
+				default:
+					goto IL_0156;
 				}
+				tuple = (0, -1);
+				break;
+			case 1:
+				switch (z2)
+				{
+				case 1:
+					break;
+				case 2:
+					goto IL_00fe;
+				case 3:
+					goto IL_0109;
+				default:
+					goto IL_0156;
+				}
+				tuple = (-1, 0);
 				break;
 			case 2:
-				if (size.x % 2 == 0)
+				switch (z2)
 				{
-					center.x--;
+				case 1:
+					break;
+				case 2:
+					goto IL_011f;
+				case 3:
+					goto IL_012a;
+				default:
+					goto IL_0156;
 				}
-				if (size.z % 2 == 0)
-				{
-					center.z--;
-				}
+				tuple = (0, 1);
 				break;
 			case 3:
-				if (size.x % 2 == 0)
+				switch (z2)
 				{
-					center.x--;
+				case 1:
+					break;
+				case 2:
+					goto IL_0140;
+				case 3:
+					goto IL_014b;
+				default:
+					goto IL_0156;
 				}
+				tuple = (1, 0);
 				break;
-			case 0:
+			default:
+				goto IL_0156;
+				IL_014b:
+				tuple = (0, -1);
 				break;
+				IL_0140:
+				tuple = (1, -1);
+				break;
+				IL_0156:
+				tuple = (0, 0);
+				break;
+				IL_012a:
+				tuple = (1, 0);
+				break;
+				IL_011f:
+				tuple = (1, 1);
+				break;
+				IL_00e8:
+				tuple = (-1, 0);
+				break;
+				IL_0109:
+				tuple = (0, 1);
+				break;
+				IL_00fe:
+				tuple = (-1, 1);
+				break;
+				IL_00dd:
+				tuple = (-1, -1);
+				break;
+			}
+			var (num, num2) = tuple;
+			if (size.x % 2 == 0)
+			{
+				center.x += num;
+			}
+			if (size.z % 2 == 0)
+			{
+				center.z += num2;
 			}
 		}
 	}

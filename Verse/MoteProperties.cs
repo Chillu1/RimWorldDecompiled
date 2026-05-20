@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace Verse
@@ -20,6 +21,12 @@ namespace Verse
 
 		public bool collide;
 
+		public float archHeight;
+
+		public float archDuration;
+
+		public float archStartOffset;
+
 		public SoundDef landSound;
 
 		public Vector3 unattachedDrawOffset = Vector3.zero;
@@ -35,6 +42,14 @@ namespace Verse
 		public bool scaleToConnectTargets;
 
 		public bool attachedToHead;
+
+		public bool fadeOutUnmaintained;
+
+		public bool updateOffsetToMatchTargetRotation;
+
+		public float yFightingOffsetScalar01 = 1f;
+
+		public List<CurvedScaler> scalers;
 
 		public float Lifespan => fadeInTime + solidTime + fadeOutTime;
 	}

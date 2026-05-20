@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Verse;
+using Verse.Steam;
 
 namespace RimWorld
 {
@@ -18,6 +19,9 @@ namespace RimWorld
 		[MustTranslate]
 		private string helpText;
 
+		[MustTranslate]
+		private string helpTextController;
+
 		[NoTranslate]
 		public List<string> highlightTags;
 
@@ -25,7 +29,17 @@ namespace RimWorld
 
 		public bool TriggeredDirect => priority <= 0f;
 
-		public string HelpTextAdjusted => helpText.AdjustedForKeys();
+		public string HelpTextAdjusted
+		{
+			get
+			{
+				if (!SteamDeck.IsSteamDeckInNonKeyboardMode || helpTextController.NullOrEmpty())
+				{
+					return helpText.AdjustedForKeys();
+				}
+				return helpTextController.AdjustedForKeys();
+			}
+		}
 
 		public override IEnumerable<string> ConfigErrors()
 		{
@@ -50,6 +64,15 @@ namespace RimWorld
 			for (int i = 0; i < tmpParseErrors.Count; i++)
 			{
 				yield return "helpText error: " + tmpParseErrors[i];
+			}
+			if (!helpTextController.NullOrEmpty())
+			{
+				tmpParseErrors.Clear();
+				helpTextController.AdjustedForKeys(tmpParseErrors, resolveKeys: false);
+				for (int i = 0; i < tmpParseErrors.Count; i++)
+				{
+					yield return "helpText error (controller): " + tmpParseErrors[i];
+				}
 			}
 		}
 

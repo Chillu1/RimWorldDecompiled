@@ -27,11 +27,54 @@ namespace RimWorld
 
 		public static IncidentDef WandererJoin;
 
+		public static IncidentDef GameEndedWanderersJoin;
+
 		public static IncidentDef Infestation;
 
 		public static IncidentDef GiveQuest_Random;
 
+		public static IncidentDef FarmAnimalsWanderIn;
+
+		public static IncidentDef HerdMigration;
+
+		[MayRequireRoyalty]
 		public static IncidentDef MechCluster;
+
+		[MayRequireIdeology]
+		public static IncidentDef WanderersSkylantern;
+
+		[MayRequireIdeology]
+		public static IncidentDef GauranlenPodSpawn;
+
+		[MayRequireIdeology]
+		public static IncidentDef Infestation_Jelly;
+
+		[MayRequireBiotech]
+		public static IncidentDef NoxiousHaze;
+
+		[MayRequireAnomaly]
+		public static IncidentDef HarbingerTreeSpawn;
+
+		[MayRequireAnomaly]
+		public static IncidentDef FrenziedAnimals;
+
+		[MayRequireAnomaly]
+		public static IncidentDef PitGate;
+
+		[MayRequireAnomaly]
+		public static IncidentDef ShamblerSwarm;
+
+		[MayRequireAnomaly]
+		public static IncidentDef PsychicRitualSiege;
+
+		[MayRequireAnomaly]
+		public static IncidentDef VoidCuriosity;
+
+		[MayRequireOdyssey]
+		public static IncidentDef Drought;
+
+		[MayRequireOdyssey]
+		public static IncidentDef LavaFlow;
 
 		static IncidentDefOf()
 		{

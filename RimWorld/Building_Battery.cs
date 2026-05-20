@@ -29,17 +29,19 @@ namespace RimWorld
 			Scribe_Values.Look(ref ticksToExplode, "ticksToExplode", 0);
 		}
 
-		public override void Draw()
+		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
 		{
-			base.Draw();
+			base.DrawAt(drawLoc, flip);
 			CompPowerBattery comp = GetComp<CompPowerBattery>();
-			GenDraw.FillableBarRequest r = default(GenDraw.FillableBarRequest);
-			r.center = DrawPos + Vector3.up * 0.1f;
-			r.size = BarSize;
-			r.fillPercent = comp.StoredEnergy / comp.Props.storedEnergyMax;
-			r.filledMat = BatteryBarFilledMat;
-			r.unfilledMat = BatteryBarUnfilledMat;
-			r.margin = 0.15f;
+			GenDraw.FillableBarRequest r = new GenDraw.FillableBarRequest
+			{
+				center = drawLoc + Vector3.up * 0.1f,
+				size = BarSize,
+				fillPercent = comp.StoredEnergy / comp.Props.storedEnergyMax,
+				filledMat = BatteryBarFilledMat,
+				unfilledMat = BatteryBarUnfilledMat,
+				margin = 0.15f
+			};
 			Rot4 rotation = base.Rotation;
 			rotation.Rotate(RotationDirection.Clockwise);
 			r.rotation = rotation;
@@ -50,7 +52,7 @@ namespace RimWorld
 			}
 		}
 
-		public override void Tick()
+		protected override void Tick()
 		{
 			base.Tick();
 			if (ticksToExplode > 0)
@@ -66,7 +68,7 @@ namespace RimWorld
 				ticksToExplode--;
 				if (ticksToExplode == 0)
 				{
-					GenExplosion.DoExplosion(this.OccupiedRect().RandomCell, radius: Rand.Range(0.5f, 1f) * 3f, map: base.Map, damType: DamageDefOf.Flame, instigator: null);
+					GenExplosion.DoExplosion(base.Spawned ? this.OccupiedRect().RandomCell : base.PositionHeld, radius: Rand.Range(0.5f, 1f) * 3f, map: base.MapHeld, damType: DamageDefOf.Flame, instigator: null);
 					GetComp<CompPowerBattery>().DrawPower(400f);
 				}
 			}
@@ -84,7 +86,7 @@ namespace RimWorld
 
 		private void StartWickSustainer()
 		{
-			SoundInfo info = SoundInfo.InMap(this, MaintenanceType.PerTick);
+			SoundInfo info = SoundInfo.InMap(base.SpawnedParentOrMe, MaintenanceType.PerTick);
 			wickSustainer = SoundDefOf.HissSmall.TrySpawnSustainer(info);
 		}
 	}

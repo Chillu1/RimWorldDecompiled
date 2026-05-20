@@ -25,7 +25,23 @@ namespace RimWorld
 				{
 					return true;
 				}
+				if (Find.TilePicker.Active && !Find.TilePicker.AllowEscape && (!def.validWithoutMap || def == MainButtonDefOf.World))
+				{
+					return true;
+				}
 				return false;
+			}
+		}
+
+		public virtual bool Visible
+		{
+			get
+			{
+				if (ModsConfig.IdeologyActive && !def.validWithClassicIdeo && Find.IdeoManager.classicMode)
+				{
+					return false;
+				}
+				return def.buttonVisible;
 			}
 		}
 
@@ -35,7 +51,14 @@ namespace RimWorld
 		{
 			if (!TutorSystem.TutorialMode || !def.canBeTutorDenied || Find.MainTabsRoot.OpenTab == def || TutorSystem.AllowAction("MainTab-" + def.defName + "-Open"))
 			{
-				Activate();
+				if (def.closesWorldView && Find.TilePicker.Active && !Find.TilePicker.AllowEscape)
+				{
+					Messages.Message("MessagePlayerMustSelectTile".Translate(), MessageTypeDefOf.RejectInput, historical: false);
+				}
+				else
+				{
+					Activate();
+				}
 			}
 		}
 
@@ -82,7 +105,7 @@ namespace RimWorld
 			}
 			if (Mouse.IsOver(rect) && !def.description.NullOrEmpty())
 			{
-				TooltipHandler.TipRegion(rect, def.LabelCap + "\n\n" + def.description);
+				TooltipHandler.TipRegion(rect, def.LabelCap.Colorize(ColorLibrary.Yellow) + "\n\n" + def.description);
 			}
 		}
 	}

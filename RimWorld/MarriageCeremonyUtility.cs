@@ -20,7 +20,7 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (map.dangerWatcher.DangerRating != 0)
+			if (map.dangerWatcher.DangerRating != StoryDanger.None)
 			{
 				return false;
 			}
@@ -118,6 +118,8 @@ namespace RimWorld
 			SpouseRelationUtility.ChangeNameAfterMarriage(firstPawn, secondPawn, firstPawn.relations.nextMarriageNameChange);
 			LovePartnerRelationUtility.TryToShareBed(firstPawn, secondPawn);
 			TaleRecorder.RecordTale(TaleDefOf.Marriage, firstPawn, secondPawn);
+			Find.HistoryEventsManager.RecordEvent(new HistoryEvent(firstPawn.GetHistoryEventForSpouseCount(), firstPawn.Named(HistoryEventArgsNames.Doer)));
+			Find.HistoryEventsManager.RecordEvent(new HistoryEvent(secondPawn.GetHistoryEventForSpouseCount(), secondPawn.Named(HistoryEventArgsNames.Doer)));
 		}
 
 		private static void AddNewlyMarriedThoughts(Pawn pawn, Pawn otherPawn)
@@ -138,8 +140,7 @@ namespace RimWorld
 			List<Lord> lords = p.Map.lordManager.lords;
 			for (int i = 0; i < lords.Count; i++)
 			{
-				LordJob_Joinable_MarriageCeremony lordJob_Joinable_MarriageCeremony = lords[i].LordJob as LordJob_Joinable_MarriageCeremony;
-				if (lordJob_Joinable_MarriageCeremony != null && (lordJob_Joinable_MarriageCeremony.firstPawn == p || lordJob_Joinable_MarriageCeremony.secondPawn == p))
+				if (lords[i].LordJob is LordJob_Joinable_MarriageCeremony lordJob_Joinable_MarriageCeremony && (lordJob_Joinable_MarriageCeremony.firstPawn == p || lordJob_Joinable_MarriageCeremony.secondPawn == p))
 				{
 					return true;
 				}

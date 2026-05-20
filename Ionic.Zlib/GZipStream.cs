@@ -279,11 +279,11 @@ namespace Ionic.Zlib
 			byte b = 0;
 			if (Comment != null)
 			{
-				b = (byte)(b ^ 0x10u);
+				b ^= 0x10;
 			}
 			if (FileName != null)
 			{
-				b = (byte)(b ^ 8u);
+				b ^= 8;
 			}
 			array3[num3++] = b;
 			if (!LastModified.HasValue)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -34,7 +35,7 @@ namespace RimWorld
 
 		public TraderKindDef traderDef;
 
-		public int? tile;
+		public PlanetTile? tile;
 
 		public Dictionary<string, object> custom;
 	}

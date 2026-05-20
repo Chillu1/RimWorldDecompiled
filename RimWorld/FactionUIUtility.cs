@@ -1,5 +1,6 @@
-using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using UnityEngine;
 using Verse;
 
@@ -9,154 +10,278 @@ namespace RimWorld
 	{
 		private static bool showAll;
 
+		private static List<Faction> visibleFactions = new List<Faction>();
+
 		private const float FactionIconRectSize = 42f;
 
 		private const float FactionIconRectGapX = 24f;
 
-		private const float FactionIconRectGapY = 4f;
-
-		private const float RowMinHeight = 80f;
+		private const float RowHeight = 80f;
 
 		private const float LabelRowHeight = 50f;
 
-		private const float NameLeftMargin = 15f;
-
 		private const float FactionIconSpacing = 5f;
 
-		public static void DoWindowContents_NewTemp(Rect fillRect, ref Vector2 scrollPosition, ref float scrollViewHeight, Faction scrollToFaction = null)
+		private const float IdeoIconSpacing = 5f;
+
+		private const float BasicsColumnWidth = 300f;
+
+		private const float InfoColumnWidth = 40f;
+
+		private const float IdeosColumnWidth = 60f;
+
+		private const float RelationsColumnWidth = 70f;
+
+		private const float NaturalGoodwillColumnWidth = 54f;
+
+		private static List<int> tmpTicks = new List<int>();
+
+		private static List<int> tmpCustomGoodwill = new List<int>();
+
+		public static void DoWindowContents(Rect fillRect, ref Vector2 scrollPosition, ref float scrollViewHeight, Faction scrollToFaction = null)
 		{
-			Rect position = new Rect(0f, 0f, fillRect.width, fillRect.height);
-			GUI.BeginGroup(position);
+			Rect rect = new Rect(0f, 0f, fillRect.width, fillRect.height);
+			Widgets.BeginGroup(rect);
 			Text.Font = GameFont.Small;
 			GUI.color = Color.white;
 			if (Prefs.DevMode)
 			{
-				Widgets.CheckboxLabeled(new Rect(position.width - 120f, 0f, 120f, 24f), "Dev: Show all", ref showAll);
+				Widgets.CheckboxLabeled(new Rect(rect.width - 120f, 0f, 120f, 24f), "DEV: Show all", ref showAll);
 			}
 			else
 			{
 				showAll = false;
 			}
-			Rect outRect = new Rect(0f, 50f, position.width, position.height - 50f);
-			Rect rect = new Rect(0f, 0f, position.width - 16f, scrollViewHeight);
-			Widgets.BeginScrollView(outRect, ref scrollPosition, rect);
-			float num = 0f;
+			Rect outRect = new Rect(0f, 50f, rect.width, rect.height - 50f);
+			Rect rect2 = new Rect(0f, 0f, rect.width - 16f, scrollViewHeight);
+			visibleFactions.Clear();
 			foreach (Faction item in Find.FactionManager.AllFactionsInViewOrder)
 			{
 				if ((!item.IsPlayer && !item.Hidden) || showAll)
 				{
-					GUI.color = new Color(1f, 1f, 1f, 0.2f);
-					Widgets.DrawLineHorizontal(0f, num, rect.width);
-					GUI.color = Color.white;
-					if (item == scrollToFaction)
-					{
-						scrollPosition.y = num;
-					}
-					num += DrawFactionRow(item, num, rect);
+					visibleFactions.Add(item);
 				}
 			}
-			if (Event.current.type == EventType.Layout)
+			if (visibleFactions.Count > 0)
 			{
-				scrollViewHeight = num;
+				Widgets.Label(new Rect(614f, 50f, 200f, 100f), "EnemyOf".Translate());
+				outRect.yMin += Text.LineHeight;
+				Widgets.BeginScrollView(outRect, ref scrollPosition, rect2);
+				float num = 0f;
+				int num2 = 0;
+				foreach (Faction visibleFaction in visibleFactions)
+				{
+					if ((!visibleFaction.IsPlayer && !visibleFaction.Hidden) || showAll)
+					{
+						if (visibleFaction == scrollToFaction)
+						{
+							scrollPosition.y = num;
+						}
+						if (num2 % 2 == 1)
+						{
+							Widgets.DrawLightHighlight(new Rect(rect2.x, num, rect2.width, 80f));
+						}
+						num += DrawFactionRow(visibleFaction, num, rect2);
+						num2++;
+					}
+				}
+				if (Event.current.type == EventType.Layout)
+				{
+					scrollViewHeight = num;
+				}
+				Widgets.EndScrollView();
 			}
-			Widgets.EndScrollView();
-			GUI.EndGroup();
-		}
-
-		[Obsolete("Only need this overload to not break mod compatibility.")]
-		public static void DoWindowContents(Rect fillRect, ref Vector2 scrollPosition, ref float scrollViewHeight)
-		{
-			DoWindowContents_NewTemp(fillRect, ref scrollPosition, ref scrollViewHeight);
+			else
+			{
+				Text.Anchor = TextAnchor.MiddleCenter;
+				Widgets.Label(rect, "NoFactions".Translate());
+				Text.Anchor = TextAnchor.UpperLeft;
+			}
+			Widgets.EndGroup();
 		}
 
 		private static float DrawFactionRow(Faction faction, float rowY, Rect fillRect)
 		{
-			float num = fillRect.width - 250f - 40f - 90f - 16f - 120f;
+			float num = fillRect.width - 300f - 40f - 70f - 54f - 16f - 120f;
 			Faction[] array = Find.FactionManager.AllFactionsInViewOrder.Where((Faction f) => f != faction && f.HostileTo(faction) && ((!f.IsPlayer && !f.Hidden) || showAll)).ToArray();
-			Rect rect = new Rect(90f, rowY, 250f, 80f);
-			Rect r = new Rect(24f, rowY + 4f, 42f, 42f);
-			float num2 = 62f;
+			Rect rect = new Rect(90f, rowY, 300f, 80f);
 			Text.Font = GameFont.Small;
-			Text.Anchor = TextAnchor.UpperLeft;
-			DrawFactionIconWithTooltip(r, faction);
+			Text.Anchor = TextAnchor.MiddleLeft;
+			Rect position = new Rect(24f, rowY + (rect.height - 42f) / 2f, 42f, 42f);
+			GUI.color = faction.Color;
+			GUI.DrawTexture(position, faction.def.FactionIcon);
+			GUI.color = Color.white;
 			string label = faction.Name.CapitalizeFirst() + "\n" + faction.def.LabelCap + "\n" + ((faction.leader != null) ? (faction.LeaderTitle.CapitalizeFirst() + ": " + faction.leader.Name.ToStringFull) : "");
 			Widgets.Label(rect, label);
-			Rect rect2 = new Rect(rect.xMax, rowY, 40f, 80f);
-			Widgets.InfoCardButton(rect2.x, rect2.y, faction);
-			Rect rect3 = new Rect(rect2.xMax, rowY, 90f, 80f);
+			Rect rect2 = new Rect(0f, rowY, rect.xMax, 80f);
+			if (Mouse.IsOver(rect2))
+			{
+				TipSignal tip = new TipSignal(() => faction.Name.Colorize(ColoredText.TipSectionTitleColor) + "\n" + faction.def.LabelCap.Resolve() + "\n\n" + faction.def.Description, faction.loadID ^ 0x738AC053);
+				TooltipHandler.TipRegion(rect2, tip);
+				Widgets.DrawHighlight(rect2);
+			}
+			if (Widgets.ButtonInvisible(rect2, doMouseoverSound: false))
+			{
+				Find.WindowStack.Add(new Dialog_InfoCard(faction));
+			}
+			Rect rect3 = new Rect(rect.xMax, rowY, 40f, 80f);
+			Widgets.InfoCardButtonCentered(rect3, faction);
+			Rect rect4 = new Rect(rect3.xMax, rowY, 60f, 80f);
+			if (ModsConfig.IdeologyActive && !Find.IdeoManager.classicMode)
+			{
+				if (faction.ideos != null)
+				{
+					float num2 = rect4.x;
+					float num3 = rect4.y;
+					if (faction.ideos.PrimaryIdeo != null)
+					{
+						if (num2 + 40f > rect4.xMax)
+						{
+							num2 = rect4.x;
+							num3 += 45f;
+						}
+						Rect rect5 = new Rect(num2, num3 + (rect4.height - 40f) / 2f, 40f, 40f);
+						IdeoUIUtility.DoIdeoIcon(rect5, faction.ideos.PrimaryIdeo, doTooltip: true, delegate
+						{
+							IdeoUIUtility.OpenIdeoInfo(faction.ideos.PrimaryIdeo);
+						});
+						num2 += rect5.width + 5f;
+						num2 = rect4.x;
+						num3 += 45f;
+					}
+					List<Ideo> minor = faction.ideos.IdeosMinorListForReading;
+					int i;
+					for (i = 0; i < minor.Count; i++)
+					{
+						if (num2 + 22f > rect4.xMax)
+						{
+							num2 = rect4.x;
+							num3 += 27f;
+						}
+						if (num3 + 22f > rect4.yMax)
+						{
+							break;
+						}
+						Rect rect6 = new Rect(num2, num3 + (rect4.height - 22f) / 2f, 22f, 22f);
+						IdeoUIUtility.DoIdeoIcon(rect6, minor[i], doTooltip: true, delegate
+						{
+							IdeoUIUtility.OpenIdeoInfo(minor[i]);
+						});
+						num2 += rect6.width + 5f;
+					}
+				}
+			}
+			else
+			{
+				rect4.width = 0f;
+			}
+			Rect rect7 = new Rect(rect4.xMax, rowY, 70f, 80f);
 			if (!faction.IsPlayer)
 			{
-				string str = (faction.HasGoodwill ? (faction.PlayerGoodwill.ToStringWithSign() + "\n") : "");
-				str += faction.PlayerRelationKind.GetLabel();
+				string text = faction.PlayerRelationKind.GetLabelCap();
 				if (faction.defeated)
 				{
-					str += "\n(" + "DefeatedLower".Translate() + ")";
+					text = text.Colorize(ColorLibrary.Grey);
 				}
 				GUI.color = faction.PlayerRelationKind.GetColor();
-				Widgets.Label(rect3, str);
-				GUI.color = Color.white;
-				if (Mouse.IsOver(rect3))
+				Text.Anchor = TextAnchor.MiddleCenter;
+				if (faction.HasGoodwill && !faction.def.permanentEnemy)
 				{
-					TaggedString str2 = (faction.HasGoodwill ? "CurrentGoodwillTip".Translate() : "CurrentRelationTip".Translate());
-					if (faction.HasGoodwill && faction.def.permanentEnemy)
+					Widgets.Label(new Rect(rect7.x, rect7.y - 10f, rect7.width, rect7.height), text);
+					Text.Font = GameFont.Medium;
+					Widgets.Label(new Rect(rect7.x, rect7.y + 10f, rect7.width, rect7.height), faction.PlayerGoodwill.ToStringWithSign());
+					Text.Font = GameFont.Small;
+				}
+				else
+				{
+					Widgets.Label(rect7, text);
+				}
+				GenUI.ResetLabelAlign();
+				GUI.color = Color.white;
+				if (Mouse.IsOver(rect7))
+				{
+					TaggedString taggedString = "";
+					if (faction.def.permanentEnemy)
 					{
-						str2 += "\n\n" + "CurrentGoodwillTip_PermanentEnemy".Translate();
+						taggedString = "CurrentGoodwillTip_PermanentEnemy".Translate();
 					}
 					else if (faction.HasGoodwill)
 					{
-						str2 += "\n\n";
+						taggedString = "Goodwill".Translate().Colorize(ColoredText.TipSectionTitleColor) + ": " + (faction.PlayerGoodwill.ToStringWithSign() + ", " + faction.PlayerRelationKind.GetLabel()).Colorize(faction.PlayerRelationKind.GetColor());
+						TaggedString ongoingEvents = GetOngoingEvents(faction);
+						if (!ongoingEvents.NullOrEmpty())
+						{
+							taggedString += "\n\n" + "OngoingEvents".Translate().Colorize(ColoredText.TipSectionTitleColor) + ":\n" + ongoingEvents;
+						}
+						TaggedString recentEvents = GetRecentEvents(faction);
+						if (!recentEvents.NullOrEmpty())
+						{
+							taggedString += "\n\n" + "RecentEvents".Translate().Colorize(ColoredText.TipSectionTitleColor) + ":\n" + recentEvents;
+						}
+						string s = "";
 						switch (faction.PlayerRelationKind)
 						{
 						case FactionRelationKind.Ally:
-							str2 += "CurrentGoodwillTip_Ally".Translate(0.ToString("F0"));
+							s = "CurrentGoodwillTip_Ally".Translate(0.ToString("F0"));
 							break;
 						case FactionRelationKind.Neutral:
-							str2 += "CurrentGoodwillTip_Neutral".Translate((-75).ToString("F0"), 75.ToString("F0"));
+							s = "CurrentGoodwillTip_Neutral".Translate((-75).ToString("F0"), 75.ToString("F0"));
 							break;
 						case FactionRelationKind.Hostile:
-							str2 += "CurrentGoodwillTip_Hostile".Translate(0.ToString("F0"));
+							s = "CurrentGoodwillTip_Hostile".Translate(0.ToString("F0"));
 							break;
 						}
-						if (faction.def.goodwillDailyGain > 0f || faction.def.goodwillDailyFall > 0f)
-						{
-							float num3 = faction.def.goodwillDailyGain * 60f;
-							float num4 = faction.def.goodwillDailyFall * 60f;
-							str2 += "\n\n" + "CurrentGoodwillTip_NaturalGoodwill".Translate(faction.def.naturalColonyGoodwill.min.ToString("F0"), faction.def.naturalColonyGoodwill.max.ToString("F0"));
-							if (faction.def.naturalColonyGoodwill.min > -100)
-							{
-								str2 += " " + "CurrentGoodwillTip_NaturalGoodwillRise".Translate(faction.def.naturalColonyGoodwill.min.ToString("F0"), num3.ToString("F0"));
-							}
-							if (faction.def.naturalColonyGoodwill.max < 100)
-							{
-								str2 += " " + "CurrentGoodwillTip_NaturalGoodwillFall".Translate(faction.def.naturalColonyGoodwill.max.ToString("F0"), num4.ToString("F0"));
-							}
-						}
+						taggedString += "\n\n" + s.Colorize(ColoredText.SubtleGrayColor);
 					}
-					TooltipHandler.TipRegion(rect3, str2);
-				}
-				if (Mouse.IsOver(rect3))
-				{
-					GUI.DrawTexture(rect3, TexUI.HighlightTex);
+					if (taggedString != "")
+					{
+						TooltipHandler.TipRegion(rect7, taggedString);
+					}
+					Widgets.DrawHighlight(rect7);
 				}
 			}
-			float xMax = rect3.xMax;
-			string text = "EnemyOf".Translate();
-			Vector2 vector = Text.CalcSize(text);
-			Rect rect4 = new Rect(xMax, rowY + 4f, vector.x + 10f, 42f);
-			xMax += rect4.width;
-			Widgets.Label(rect4, text);
-			for (int i = 0; i < array.Length; i++)
+			Rect rect8 = new Rect(rect7.xMax, rowY, 54f, 80f);
+			if (!faction.IsPlayer && faction.HasGoodwill && !faction.def.permanentEnemy)
 			{
-				if (xMax >= rect3.xMax + num)
+				FactionRelationKind relationKindForGoodwill = GetRelationKindForGoodwill(faction.NaturalGoodwill);
+				GUI.color = relationKindForGoodwill.GetColor();
+				Rect rect9 = rect8.ContractedBy(7f);
+				rect9.y = rowY + 30f;
+				rect9.height = 20f;
+				Text.Anchor = TextAnchor.UpperCenter;
+				Widgets.DrawRectFast(rect9, Color.black);
+				Widgets.Label(rect9, faction.NaturalGoodwill.ToStringWithSign());
+				GenUI.ResetLabelAlign();
+				GUI.color = Color.white;
+				if (Mouse.IsOver(rect8))
 				{
-					xMax = rect3.xMax + rect4.width;
-					rowY += vector.y + 5f;
-					num2 += vector.y + 5f;
+					TaggedString taggedString2 = "NaturalGoodwill".Translate().Colorize(ColoredText.TipSectionTitleColor) + ": " + faction.NaturalGoodwill.ToStringWithSign().Colorize(relationKindForGoodwill.GetColor());
+					int goodwill = Mathf.Clamp(faction.NaturalGoodwill - 50, -100, 100);
+					int goodwill2 = Mathf.Clamp(faction.NaturalGoodwill + 50, -100, 100);
+					taggedString2 += "\n" + "NaturalGoodwillRange".Translate().Colorize(ColoredText.TipSectionTitleColor) + ": " + goodwill.ToString().Colorize(GetRelationKindForGoodwill(goodwill).GetColor()) + " " + "RangeTo".Translate() + " " + goodwill2.ToString().Colorize(GetRelationKindForGoodwill(goodwill2).GetColor());
+					TaggedString naturalGoodwillExplanation = GetNaturalGoodwillExplanation(faction);
+					if (!naturalGoodwillExplanation.NullOrEmpty())
+					{
+						taggedString2 += "\n\n" + "AffectedBy".Translate().Colorize(ColoredText.TipSectionTitleColor) + "\n" + naturalGoodwillExplanation;
+					}
+					taggedString2 += "\n\n" + "NaturalGoodwillDescription".Translate(1.25f.ToStringPercent()).Colorize(ColoredText.SubtleGrayColor);
+					TooltipHandler.TipRegion(rect8, taggedString2);
+					Widgets.DrawHighlight(rect8);
 				}
-				DrawFactionIconWithTooltip(new Rect(xMax, rowY + 4f, vector.y, vector.y), array[i]);
-				xMax += vector.y + 5f;
 			}
-			return Mathf.Max(80f, num2);
+			float num4 = rect8.xMax + 17f;
+			for (int num5 = 0; num5 < array.Length; num5++)
+			{
+				if (num4 >= rect8.xMax + num)
+				{
+					num4 = rect8.xMax;
+					rowY += 27f;
+				}
+				DrawFactionIconWithTooltip(new Rect(num4, rowY + 29f, 22f, 22f), array[num5]);
+				num4 += 27f;
+			}
+			Text.Anchor = TextAnchor.UpperLeft;
+			return 80f;
 		}
 
 		public static void DrawFactionIconWithTooltip(Rect r, Faction faction)
@@ -166,9 +291,13 @@ namespace RimWorld
 			GUI.color = Color.white;
 			if (Mouse.IsOver(r))
 			{
-				TipSignal tip = new TipSignal(() => faction.Name + "\n\n" + faction.def.description, faction.loadID ^ 0x738AC053);
+				TipSignal tip = new TipSignal(() => faction.Name.Colorize(ColoredText.TipSectionTitleColor) + "\n" + faction.def.LabelCap.Resolve() + "\n\n" + faction.def.Description, faction.loadID ^ 0x738AC053);
 				TooltipHandler.TipRegion(r, tip);
 				Widgets.DrawHighlight(r);
+			}
+			if (Widgets.ButtonInvisible(r, doMouseoverSound: false))
+			{
+				Find.WindowStack.Add(new Dialog_InfoCard(faction));
 			}
 		}
 
@@ -184,10 +313,86 @@ namespace RimWorld
 			curY += rect2.height;
 			GUI.color = playerRelationKind.GetColor();
 			Rect rect3 = new Rect(rect2.x, curY - 7f, rect2.width, 25f);
-			Widgets.Label(rect3, playerRelationKind.GetLabel());
+			Widgets.Label(rect3, playerRelationKind.GetLabelCap());
 			curY += rect3.height;
 			GUI.color = Color.white;
 			GenUI.ResetLabelAlign();
+		}
+
+		private static TaggedString GetRecentEvents(Faction other)
+		{
+			StringBuilder stringBuilder = new StringBuilder();
+			List<HistoryEventDef> allDefsListForReading = DefDatabase<HistoryEventDef>.AllDefsListForReading;
+			for (int i = 0; i < allDefsListForReading.Count; i++)
+			{
+				int recentCountWithinTicks = Find.HistoryEventsManager.GetRecentCountWithinTicks(allDefsListForReading[i], 3600000, other);
+				if (recentCountWithinTicks <= 0)
+				{
+					continue;
+				}
+				Find.HistoryEventsManager.GetRecent(allDefsListForReading[i], 3600000, tmpTicks, tmpCustomGoodwill, other);
+				int num = 0;
+				for (int j = 0; j < tmpTicks.Count; j++)
+				{
+					num += tmpCustomGoodwill[j];
+				}
+				if (num != 0)
+				{
+					string text = "- " + allDefsListForReading[i].LabelCap;
+					if (recentCountWithinTicks != 1)
+					{
+						text = text + " x" + recentCountWithinTicks;
+					}
+					text = text + ": " + num.ToStringWithSign().Colorize((num >= 0) ? FactionRelationKind.Ally.GetColor() : FactionRelationKind.Hostile.GetColor());
+					stringBuilder.AppendInNewLine(text);
+				}
+			}
+			return stringBuilder.ToString();
+		}
+
+		private static FactionRelationKind GetRelationKindForGoodwill(int goodwill)
+		{
+			if (goodwill <= -75)
+			{
+				return FactionRelationKind.Hostile;
+			}
+			if (goodwill >= 75)
+			{
+				return FactionRelationKind.Ally;
+			}
+			return FactionRelationKind.Neutral;
+		}
+
+		private static TaggedString GetOngoingEvents(Faction other)
+		{
+			StringBuilder stringBuilder = new StringBuilder();
+			List<GoodwillSituationManager.CachedSituation> situations = Find.GoodwillSituationManager.GetSituations(other);
+			for (int i = 0; i < situations.Count; i++)
+			{
+				if (situations[i].maxGoodwill < 100)
+				{
+					string text = "- " + situations[i].def.Worker.GetPostProcessedLabelCap(other);
+					text = text + ": " + (situations[i].maxGoodwill.ToStringWithSign() + " " + "max".Translate()).Colorize(FactionRelationKind.Hostile.GetColor());
+					stringBuilder.AppendInNewLine(text);
+				}
+			}
+			return stringBuilder.ToString();
+		}
+
+		private static TaggedString GetNaturalGoodwillExplanation(Faction other)
+		{
+			StringBuilder stringBuilder = new StringBuilder();
+			List<GoodwillSituationManager.CachedSituation> situations = Find.GoodwillSituationManager.GetSituations(other);
+			for (int i = 0; i < situations.Count; i++)
+			{
+				if (situations[i].naturalGoodwillOffset != 0)
+				{
+					string text = "- " + situations[i].def.Worker.GetPostProcessedLabelCap(other);
+					text = text + ": " + situations[i].naturalGoodwillOffset.ToStringWithSign().Colorize((situations[i].naturalGoodwillOffset >= 0) ? FactionRelationKind.Ally.GetColor() : FactionRelationKind.Hostile.GetColor());
+					stringBuilder.AppendInNewLine(text);
+				}
+			}
+			return stringBuilder.ToString();
 		}
 	}
 }

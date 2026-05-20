@@ -14,18 +14,17 @@ namespace RimWorld
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			this.FailOnDespawnedOrNull(TargetIndex.A);
-			this.FailOn(() => (base.Map.designationManager.DesignationOn(base.TargetThingA, DesignationDefOf.Flick) == null) ? true : false);
+			this.FailOn(() => base.Map.designationManager.DesignationOn(base.TargetThingA, DesignationDefOf.Flick) == null);
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
 			yield return Toils_General.Wait(15).FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
-			Toil finalize = new Toil();
+			Toil finalize = ToilMaker.MakeToil("MakeNewToils");
 			finalize.initAction = delegate
 			{
 				Pawn actor = finalize.actor;
 				ThingWithComps thingWithComps = (ThingWithComps)actor.CurJob.targetA.Thing;
 				for (int i = 0; i < thingWithComps.AllComps.Count; i++)
 				{
-					CompFlickable compFlickable = thingWithComps.AllComps[i] as CompFlickable;
-					if (compFlickable != null && compFlickable.WantsFlick())
+					if (thingWithComps.AllComps[i] is CompFlickable compFlickable && compFlickable.WantsFlick())
 					{
 						compFlickable.DoFlick();
 					}

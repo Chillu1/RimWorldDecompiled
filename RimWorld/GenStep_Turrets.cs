@@ -54,20 +54,24 @@ namespace RimWorld
 				value = defaultTurretsCountRange.RandomInRange;
 				value2 = defaultMortarsCountRange.RandomInRange;
 			}
-			ResolveParams resolveParams = default(ResolveParams);
-			resolveParams.rect = rect;
-			resolveParams.faction = faction;
-			resolveParams.edgeDefenseWidth = randomInRange;
-			resolveParams.edgeDefenseTurretsCount = value;
-			resolveParams.edgeDefenseMortarsCount = value2;
-			resolveParams.edgeDefenseGuardsCount = guardsCountRange.RandomInRange;
-			resolveParams.edgeThingMustReachMapEdge = true;
+			ResolveParams resolveParams = new ResolveParams
+			{
+				rect = rect,
+				faction = faction,
+				edgeDefenseWidth = randomInRange,
+				edgeDefenseTurretsCount = value,
+				edgeDefenseMortarsCount = value2,
+				edgeDefenseGuardsCount = guardsCountRange.RandomInRange,
+				edgeThingMustReachMapEdge = true
+			};
 			RimWorld.BaseGen.BaseGen.globalSettings.map = map;
 			RimWorld.BaseGen.BaseGen.symbolStack.Push("edgeDefense", resolveParams);
 			RimWorld.BaseGen.BaseGen.Generate();
-			ResolveParams resolveParams2 = default(ResolveParams);
-			resolveParams2.rect = rect;
-			resolveParams2.faction = faction;
+			ResolveParams resolveParams2 = new ResolveParams
+			{
+				rect = rect,
+				faction = faction
+			};
 			RimWorld.BaseGen.BaseGen.globalSettings.map = map;
 			RimWorld.BaseGen.BaseGen.symbolStack.Push("outdoorLighting", resolveParams2);
 			RimWorld.BaseGen.BaseGen.Generate();

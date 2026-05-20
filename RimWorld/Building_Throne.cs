@@ -15,9 +15,8 @@ namespace RimWorld
 		{
 			get
 			{
-				if (!ModLister.RoyaltyInstalled)
+				if (!ModLister.CheckRoyalty("Throne"))
 				{
-					Log.ErrorOnce("Thrones are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 1222185);
 					return null;
 				}
 				if (CompAssignableToPawn == null || !CompAssignableToPawn.AssignedPawnsForReading.Any())
@@ -45,7 +44,7 @@ namespace RimWorld
 					bool flag = true;
 					for (int i = 0; i < item.throneRoomRequirements.Count; i++)
 					{
-						if (!(item.throneRoomRequirements[i] is RoomRequirement_HasAssignedThroneAnyOf) && !item.throneRoomRequirements[i].Met(room))
+						if (!(item.throneRoomRequirements[i] is RoomRequirement_HasAssignedThroneAnyOf) && !item.throneRoomRequirements[i].MetOrDisabled(room))
 						{
 							flag = false;
 							break;
@@ -56,7 +55,7 @@ namespace RimWorld
 						result = item;
 						continue;
 					}
-					return result;
+					break;
 				}
 				return result;
 			}
@@ -79,9 +78,8 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> GetGizmos()
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (!ModLister.CheckRoyalty("Throne"))
 			{
-				Log.ErrorOnce("Thrones are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it.  See rules on the Ludeon forum for more info.", 1222185);
 				yield break;
 			}
 			foreach (Gizmo gizmo in base.GetGizmos())

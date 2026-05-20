@@ -3,30 +3,55 @@ using Verse.AI;
 
 namespace RimWorld
 {
-	public class JobGiver_PatientGoToBed : ThinkNode
+	public class JobGiver_PatientGoToBed : ThinkNode_JobGiver
 	{
 		public bool respectTimetable = true;
 
-		public override ThinkResult TryIssueJobPackage(Pawn pawn, JobIssueParams jobParams)
+		public bool urgentOnly;
+
+		public override string CrawlingReportStringOverride => base.CrawlingReportStringOverride ?? ((string)"ReportStringCrawlingToBed".Translate());
+
+		protected override Job TryGiveJob(Pawn pawn)
 		{
+			if (urgentOnly && !HealthAIUtility.ShouldSeekMedicalRestUrgent(pawn))
+			{
+				return null;
+			}
 			if (!HealthAIUtility.ShouldSeekMedicalRest(pawn))
 			{
-				return ThinkResult.NoJob;
+				return null;
 			}
 			if (respectTimetable && RestUtility.TimetablePreventsLayDown(pawn) && !HealthAIUtility.ShouldHaveSurgeryDoneNow(pawn) && !HealthAIUtility.ShouldBeTendedNowByPlayer(pawn))
 			{
-				return ThinkResult.NoJob;
+				return null;
 			}
 			if (RestUtility.DisturbancePreventsLyingDown(pawn))
 			{
-				return ThinkResult.NoJob;
+				return null;
 			}
-			Thing thing = RestUtility.FindPatientBedFor(pawn);
+			if (pawn.Downed && !pawn.health.CanCrawl)
+			{
+				return null;
+			}
+			if (pawn.GetPosture().InBed() && pawn.Downed)
+			{
+				return null;
+			}
+			Thing thing = RestUtility.FindBedFor(pawn, pawn, checkSocialProperness: false);
 			if (thing == null)
 			{
-				return ThinkResult.NoJob;
+				return null;
 			}
-			return new ThinkResult(JobMaker.MakeJob(JobDefOf.LayDown, thing), this);
+			Job job = JobMaker.MakeJob(JobDefOf.LayDown, thing);
+			job.checkOverrideOnExpire = true;
+			return job;
+		}
+
+		public override ThinkNode DeepCopy(bool resolve = true)
+		{
+			JobGiver_PatientGoToBed obj = (JobGiver_PatientGoToBed)base.DeepCopy(resolve);
+			obj.respectTimetable = respectTimetable;
+			return obj;
 		}
 	}
 }

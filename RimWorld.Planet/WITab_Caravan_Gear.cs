@@ -25,7 +25,7 @@ namespace RimWorld.Planet
 
 		private float rightPaneWidth;
 
-		private const float PawnRowHeight = 50f;
+		private const float PawnRowHeight = 40f;
 
 		private const float ItemRowHeight = 30f;
 
@@ -74,13 +74,13 @@ namespace RimWorld.Planet
 			Text.Font = GameFont.Small;
 			CheckDraggedItemStillValid();
 			CheckDropDraggedItem();
-			Rect position = new Rect(0f, 0f, leftPaneWidth, size.y);
-			GUI.BeginGroup(position);
+			Rect rect = new Rect(0f, 0f, leftPaneWidth, size.y);
+			Widgets.BeginGroup(rect);
 			DoLeftPane();
-			GUI.EndGroup();
-			GUI.BeginGroup(new Rect(position.xMax, 0f, rightPaneWidth, size.y));
+			Widgets.EndGroup();
+			Widgets.BeginGroup(new Rect(rect.xMax, 0f, rightPaneWidth, size.y));
 			DoRightPane();
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			if (draggedItem != null && droppedDraggedItem)
 			{
 				droppedDraggedItem = false;
@@ -178,18 +178,18 @@ namespace RimWorld.Planet
 
 		private void DoPawnRow(ref float curY, Rect viewRect, Rect scrollOutRect, Pawn p)
 		{
-			float num = leftPaneScrollPosition.y - 50f;
+			float num = leftPaneScrollPosition.y - 40f;
 			float num2 = leftPaneScrollPosition.y + scrollOutRect.height;
 			if (curY > num && curY < num2)
 			{
-				DoPawnRow(new Rect(0f, curY, viewRect.width, 50f), p);
+				DoPawnRow(new Rect(0f, curY, viewRect.width, 40f), p);
 			}
-			curY += 50f;
+			curY += 40f;
 		}
 
 		private void DoPawnRow(Rect rect, Pawn p)
 		{
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			Rect rect2 = rect.AtZero();
 			CaravanThingsTabUtility.DoAbandonButton(rect2, p, base.SelCaravan);
 			rect2.width -= 24f;
@@ -207,7 +207,7 @@ namespace RimWorld.Planet
 			}
 			Rect rect3 = new Rect(4f, (rect.height - 27f) / 2f, 27f, 27f);
 			Widgets.ThingIcon(rect3, p);
-			Rect bgRect = new Rect(rect3.xMax + 4f, 16f, 100f, 18f);
+			Rect bgRect = new Rect(rect3.xMax + 4f, 11f, 100f, 18f);
 			GenMapUI.DrawPawnLabel(p, bgRect, 1f, 100f, null, GameFont.Small, alwaysDrawBg: false, alignCenter: false);
 			float curX = bgRect.xMax;
 			if (p.equipment != null)
@@ -223,18 +223,18 @@ namespace RimWorld.Planet
 				tmpApparel.Clear();
 				tmpApparel.AddRange(p.apparel.WornApparel);
 				tmpApparel.SortBy((Apparel x) => x.def.apparel.LastLayer.drawOrder, (Apparel x) => 0f - x.def.apparel.HumanBodyCoverage);
-				for (int j = 0; j < tmpApparel.Count; j++)
+				for (int num = 0; num < tmpApparel.Count; num++)
 				{
-					DoEquippedGear(tmpApparel[j], p, ref curX);
+					DoEquippedGear(tmpApparel[num], p, ref curX);
 				}
 			}
-			if (p.Downed)
+			if (p.Downed && !p.ageTracker.CurLifeStage.alwaysDowned)
 			{
 				GUI.color = new Color(1f, 0f, 0f, 0.5f);
 				Widgets.DrawLineHorizontal(0f, rect.height / 2f, rect.width);
 				GUI.color = Color.white;
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		private void DoInventoryRows(ref float curY, Rect scrollViewRect, Rect scrollOutRect)
@@ -286,7 +286,7 @@ namespace RimWorld.Planet
 
 		private void DoInventoryRow(Rect rect, Thing t)
 		{
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			Rect rect2 = rect.AtZero();
 			Widgets.InfoCardButton(rect2.width - 24f, (rect.height - 24f) / 2f, t);
 			rect2.width -= 24f;
@@ -313,12 +313,12 @@ namespace RimWorld.Planet
 				Event.current.Use();
 				SoundDefOf.Click.PlayOneShotOnCamera();
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		private void DoEquippedGear(Thing t, Pawn p, ref float curX)
 		{
-			Rect rect = new Rect(curX, 9f, 32f, 32f);
+			Rect rect = new Rect(curX, 4f, 32f, 32f);
 			bool flag = Mouse.IsOver(rect);
 			Widgets.ThingIcon(alpha: (t == draggedItem) ? 0.2f : ((!flag || draggedItem != null) ? 1f : 0.75f), rect: rect, thing: t);
 			curX += 32f;
@@ -381,8 +381,7 @@ namespace RimWorld.Planet
 		private void MoveDraggedItemToInventory()
 		{
 			droppedDraggedItem = false;
-			Apparel apparel;
-			if ((apparel = draggedItem as Apparel) != null && CurrentWearerOf(apparel) != null && CurrentWearerOf(apparel).apparel.IsLocked(apparel))
+			if (draggedItem is Apparel apparel && CurrentWearerOf(apparel) != null && CurrentWearerOf(apparel).apparel.IsLocked(apparel))
 			{
 				Messages.Message("MessageCantUnequipLockedApparel".Translate(), CurrentWearerOf(apparel), MessageTypeDefOf.RejectInput, historical: false);
 				draggedItem = null;
@@ -395,7 +394,7 @@ namespace RimWorld.Planet
 			}
 			else
 			{
-				Log.Warning(string.Concat("Could not find any pawn to move ", draggedItem, " to."));
+				Log.Warning("Could not find any pawn to move " + draggedItem?.ToString() + " to.");
 			}
 			draggedItem = null;
 		}
@@ -403,7 +402,7 @@ namespace RimWorld.Planet
 		private void TryEquipDraggedItem(Pawn p)
 		{
 			droppedDraggedItem = false;
-			if (!EquipmentUtility.CanEquip_NewTmp(draggedItem, p, out var cantReason))
+			if (!EquipmentUtility.CanEquip(draggedItem, p, out var cantReason))
 			{
 				Messages.Message("MessageCantEquipCustom".Translate(cantReason.CapitalizeFirst()), p, MessageTypeDefOf.RejectInput, historical: false);
 				draggedItem = null;
@@ -420,6 +419,12 @@ namespace RimWorld.Planet
 				if (p.WorkTagIsDisabled(WorkTags.Violent))
 				{
 					Messages.Message("MessageCantEquipIncapableOfViolence".Translate(p.LabelShort, p), p, MessageTypeDefOf.RejectInput, historical: false);
+					draggedItem = null;
+					return;
+				}
+				if (p.WorkTagIsDisabled(WorkTags.Shooting) && draggedItem.def.IsRangedWeapon)
+				{
+					Messages.Message("MessageCantEquipIncapableOfShooting".Translate(p.LabelShort, p), p, MessageTypeDefOf.RejectInput, historical: false);
 					draggedItem = null;
 					return;
 				}
@@ -465,7 +470,7 @@ namespace RimWorld.Planet
 							pawn.inventory.innerContainer.TryAdd(tmpExistingApparel[i]);
 							continue;
 						}
-						Log.Warning(string.Concat("Could not find any pawn to move ", tmpExistingApparel[i], " to."));
+						Log.Warning("Could not find any pawn to move " + tmpExistingApparel[i]?.ToString() + " to.");
 						tmpExistingApparel[i].Destroy();
 					}
 				}
@@ -492,7 +497,7 @@ namespace RimWorld.Planet
 			}
 			else
 			{
-				Log.Warning(string.Concat("Could not make ", p, " equip or wear ", draggedItem));
+				Log.Warning("Could not make " + p?.ToString() + " equip or wear " + draggedItem);
 			}
 			draggedItem = null;
 			void AddEquipment()
@@ -509,7 +514,7 @@ namespace RimWorld.Planet
 					}
 					else
 					{
-						Log.Warning(string.Concat("Could not find any pawn to move ", tmpExistingEquipment[j], " to."));
+						Log.Warning("Could not find any pawn to move " + tmpExistingEquipment[j]?.ToString() + " to.");
 						tmpExistingEquipment[j].Destroy();
 					}
 				}

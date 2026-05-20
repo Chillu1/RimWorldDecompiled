@@ -59,11 +59,13 @@ namespace RimWorld.QuestGen
 			num3 = Mathf.Max(num3, 3);
 			num4 = Mathf.Max(num4, 3);
 			IntVec2 value3 = new IntVec2(num3, num4);
-			ResolveParams parms = default(ResolveParams);
-			parms.sketch = new Sketch();
-			parms.monumentSize = value3;
-			parms.useOnlyStonesAvailableOnMap = useOnlyResourcesAvailableOnMap.GetValue(slate);
-			parms.onlyBuildableByPlayer = true;
+			SketchResolveParams parms = new SketchResolveParams
+			{
+				sketch = new Sketch(),
+				monumentSize = value3,
+				useOnlyStonesAvailableOnMap = useOnlyResourcesAvailableOnMap.GetValue(slate),
+				onlyBuildableByPlayer = true
+			};
 			if (useOnlyResourcesAvailableOnMap.GetValue(slate) != null)
 			{
 				parms.allowWood = useOnlyResourcesAvailableOnMap.GetValue(slate).Biome.TreeDensity >= BiomeDefOf.BorealForest.TreeDensity;

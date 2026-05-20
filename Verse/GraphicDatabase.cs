@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Text;
+using LudeonTK;
 using UnityEngine;
 
 namespace Verse
@@ -9,83 +11,83 @@ namespace Verse
 	{
 		private static Dictionary<GraphicRequest, Graphic> allGraphics = new Dictionary<GraphicRequest, Graphic>();
 
+		private static Dictionary<Type, Func<GraphicRequest, Graphic>> cachedGraphicGetters = new Dictionary<Type, Func<GraphicRequest, Graphic>>();
+
 		public static Graphic Get<T>(string path) where T : Graphic, new()
 		{
-			return GetInner<T>(new GraphicRequest(typeof(T), path, ShaderDatabase.Cutout, Vector2.one, Color.white, Color.white, null, 0, null));
+			return GetInner<T>(new GraphicRequest(typeof(T), path, ShaderDatabase.Cutout, Vector2.one, Color.white, Color.white, null, 0, null, null));
 		}
 
 		public static Graphic Get<T>(string path, Shader shader) where T : Graphic, new()
 		{
-			return GetInner<T>(new GraphicRequest(typeof(T), path, shader, Vector2.one, Color.white, Color.white, null, 0, null));
+			return GetInner<T>(new GraphicRequest(typeof(T), path, shader, Vector2.one, Color.white, Color.white, null, 0, null, null));
+		}
+
+		public static Graphic Get<T>(string path, Shader shader, string mask) where T : Graphic, new()
+		{
+			return GetInner<T>(new GraphicRequest(typeof(T), path, shader, Vector2.one, Color.white, Color.white, null, 0, null, mask));
 		}
 
 		public static Graphic Get<T>(string path, Shader shader, Vector2 drawSize, Color color) where T : Graphic, new()
 		{
-			return GetInner<T>(new GraphicRequest(typeof(T), path, shader, drawSize, color, Color.white, null, 0, null));
+			return GetInner<T>(new GraphicRequest(typeof(T), path, shader, drawSize, color, Color.white, null, 0, null, null));
+		}
+
+		public static Graphic Get<T>(string path, Shader shader, string mask, int renderQueue) where T : Graphic, new()
+		{
+			return GetInner<T>(new GraphicRequest(typeof(T), path, shader, Vector2.one, Color.white, Color.white, null, renderQueue, null, mask));
 		}
 
 		public static Graphic Get<T>(string path, Shader shader, Vector2 drawSize, Color color, int renderQueue) where T : Graphic, new()
 		{
-			return GetInner<T>(new GraphicRequest(typeof(T), path, shader, drawSize, color, Color.white, null, renderQueue, null));
+			return GetInner<T>(new GraphicRequest(typeof(T), path, shader, drawSize, color, Color.white, null, renderQueue, null, null));
+		}
+
+		public static Graphic Get<T>(Texture2D texture, Shader shader, Vector2 drawSize, Color color, int renderQueue) where T : Graphic, new()
+		{
+			return GetInner<T>(new GraphicRequest(typeof(T), texture, shader, drawSize, color, Color.white, null, renderQueue, null, null));
 		}
 
 		public static Graphic Get<T>(string path, Shader shader, Vector2 drawSize, Color color, Color colorTwo) where T : Graphic, new()
 		{
-			return GetInner<T>(new GraphicRequest(typeof(T), path, shader, drawSize, color, colorTwo, null, 0, null));
+			return GetInner<T>(new GraphicRequest(typeof(T), path, shader, drawSize, color, colorTwo, null, 0, null, null));
 		}
 
-		public static Graphic Get<T>(string path, Shader shader, Vector2 drawSize, Color color, Color colorTwo, GraphicData data) where T : Graphic, new()
+		public static Graphic Get<T>(string path, Shader shader, Vector2 drawSize, Color color, Color colorTwo, GraphicData data, string maskPath = null) where T : Graphic, new()
 		{
-			return GetInner<T>(new GraphicRequest(typeof(T), path, shader, drawSize, color, colorTwo, data, 0, null));
+			return GetInner<T>(new GraphicRequest(typeof(T), path, shader, drawSize, color, colorTwo, data, 0, null, maskPath));
 		}
 
-		public static Graphic Get(Type graphicClass, string path, Shader shader, Vector2 drawSize, Color color, Color colorTwo)
+		public static Graphic Get(Type graphicClass, string path, Shader shader, Vector2 drawSize, Color color, Color colorTwo, string maskPath = null)
 		{
-			return Get(graphicClass, path, shader, drawSize, color, colorTwo, null, null);
+			return Get(graphicClass, path, shader, drawSize, color, colorTwo, null, null, maskPath);
 		}
 
-		public static Graphic Get(Type graphicClass, string path, Shader shader, Vector2 drawSize, Color color, Color colorTwo, GraphicData data, List<ShaderParameter> shaderParameters)
+		public static Graphic Get(Type graphicClass, Texture2D texture, Shader shader, Vector2 drawSize, Color color, Color colorTwo, GraphicData data, List<ShaderParameter> shaderParameters, string maskPath = null)
 		{
-			GraphicRequest graphicRequest = new GraphicRequest(graphicClass, path, shader, drawSize, color, colorTwo, data, 0, shaderParameters);
-			if (graphicRequest.graphicClass == typeof(Graphic_Single))
-			{
-				return GetInner<Graphic_Single>(graphicRequest);
-			}
-			if (graphicRequest.graphicClass == typeof(Graphic_Terrain))
-			{
-				return GetInner<Graphic_Terrain>(graphicRequest);
-			}
-			if (graphicRequest.graphicClass == typeof(Graphic_Multi))
-			{
-				return GetInner<Graphic_Multi>(graphicRequest);
-			}
-			if (graphicRequest.graphicClass == typeof(Graphic_Mote))
-			{
-				return GetInner<Graphic_Mote>(graphicRequest);
-			}
-			if (graphicRequest.graphicClass == typeof(Graphic_Random))
-			{
-				return GetInner<Graphic_Random>(graphicRequest);
-			}
-			if (graphicRequest.graphicClass == typeof(Graphic_Flicker))
-			{
-				return GetInner<Graphic_Flicker>(graphicRequest);
-			}
-			if (graphicRequest.graphicClass == typeof(Graphic_Appearances))
-			{
-				return GetInner<Graphic_Appearances>(graphicRequest);
-			}
-			if (graphicRequest.graphicClass == typeof(Graphic_StackCount))
-			{
-				return GetInner<Graphic_StackCount>(graphicRequest);
-			}
+			return Get(new GraphicRequest(graphicClass, texture, shader, drawSize, color, colorTwo, data, 0, shaderParameters, maskPath));
+		}
+
+		public static Graphic Get(Type graphicClass, string path, Shader shader, Vector2 drawSize, Color color, Color colorTwo, GraphicData data, List<ShaderParameter> shaderParameters, string maskPath = null)
+		{
+			return Get(new GraphicRequest(graphicClass, path, shader, drawSize, color, colorTwo, data, 0, shaderParameters, maskPath));
+		}
+
+		private static Graphic Get(GraphicRequest req)
+		{
 			try
 			{
-				return (Graphic)GenGeneric.InvokeStaticGenericMethod(typeof(GraphicDatabase), graphicRequest.graphicClass, "GetInner", graphicRequest);
+				if (!cachedGraphicGetters.TryGetValue(req.graphicClass, out var value))
+				{
+					MethodInfo method = typeof(GraphicDatabase).GetMethod("GetInner", BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).MakeGenericMethod(req.graphicClass);
+					value = (Func<GraphicRequest, Graphic>)Delegate.CreateDelegate(typeof(Func<GraphicRequest, Graphic>), method);
+					cachedGraphicGetters.Add(req.graphicClass, value);
+				}
+				return value(req);
 			}
 			catch (Exception ex)
 			{
-				Log.Error(string.Concat("Exception getting ", graphicClass, " at ", path, ": ", ex.ToString()));
+				Log.Error("Exception getting " + req.graphicClass?.ToString() + " at " + req.path + ": " + ex.ToString());
 			}
 			return BaseContent.BadGraphic;
 		}
@@ -94,8 +96,14 @@ namespace Verse
 		{
 			req.color = (Color32)req.color;
 			req.colorTwo = (Color32)req.colorTwo;
+			req.renderQueue = ((req.renderQueue == 0 && req.graphicData != null) ? req.graphicData.renderQueue : req.renderQueue);
 			if (!allGraphics.TryGetValue(req, out var value))
 			{
+				if (!UnityData.IsInMainThread)
+				{
+					Log.ErrorOnce($"Attempted to load a graphic off the main thread: {req}", req.GetHashCode());
+					return null;
+				}
 				value = new T();
 				value.Init(req);
 				allGraphics.Add(req, value);

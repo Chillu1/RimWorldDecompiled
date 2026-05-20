@@ -4,14 +4,14 @@ namespace RimWorld.Planet
 {
 	public class FeatureWorker_Biome : FeatureWorker_FloodFill
 	{
-		protected override bool IsRoot(int tile)
+		protected override bool IsRoot(PlanetTile tile)
 		{
-			return def.rootBiomes.Contains(Find.WorldGrid[tile].biome);
+			return def.rootBiomes.Contains(Find.WorldGrid[tile].PrimaryBiome);
 		}
 
-		protected override bool IsPossiblyAllowed(int tile)
+		protected override bool IsPossiblyAllowed(PlanetTile tile)
 		{
-			return def.acceptableBiomes.Contains(Find.WorldGrid[tile].biome);
+			return def.acceptableBiomes.Contains(Find.WorldGrid[tile].PrimaryBiome);
 		}
 	}
 }

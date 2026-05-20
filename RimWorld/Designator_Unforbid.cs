@@ -6,7 +6,7 @@ namespace RimWorld
 {
 	public class Designator_Unforbid : Designator
 	{
-		public override int DraggableDimensions => 2;
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
 
 		public Designator_Unforbid()
 		{
@@ -16,10 +16,11 @@ namespace RimWorld
 			soundDragSustain = SoundDefOf.Designate_DragStandard;
 			soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
 			useMouseIcon = true;
-			soundSucceeded = SoundDefOf.Designate_Claim;
+			soundSucceeded = SoundDefOf.Checkbox_TurnedOn;
 			hotKey = KeyBindingDefOf.Misc6;
 			hasDesignateAllFloatMenuOption = true;
 			designateAllLabel = "UnforbidAllItems".Translate();
+			tutorTag = "Unforbid";
 		}
 
 		public override AcceptanceReport CanDesignateCell(IntVec3 c)

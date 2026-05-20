@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Verse;
 using Verse.AI;
 
@@ -15,9 +16,24 @@ namespace RimWorld
 			}
 		}
 
+		public override IEnumerable<Gizmo> CompGetGizmosExtra()
+		{
+			if (DebugSettings.ShowDevGizmos)
+			{
+				yield return new Command_Action
+				{
+					defaultLabel = "DEV: Trigger",
+					action = delegate
+					{
+						parent.GetComp<CompExplosive>().StartWick();
+					}
+				};
+			}
+		}
+
 		public override void CompTickRare()
 		{
-			if (GenClosest.ClosestThingReachable(parent.Position, parent.Map, ThingRequest.ForDef(Props.target), PathEndMode.OnCell, TraverseParms.For(TraverseMode.NoPassClosedDoors), Props.radius) != null)
+			if (parent.Spawned && GenClosest.ClosestThingReachable(parent.Position, parent.Map, ThingRequest.ForDef(Props.target), PathEndMode.OnCell, TraverseParms.For(TraverseMode.NoPassClosedDoors), Props.radius) != null)
 			{
 				parent.GetComp<CompExplosive>().StartWick();
 			}

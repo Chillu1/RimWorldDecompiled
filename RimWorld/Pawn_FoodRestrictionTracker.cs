@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Verse;
 
 namespace RimWorld
@@ -6,21 +7,27 @@ namespace RimWorld
 	{
 		public Pawn pawn;
 
-		private FoodRestriction curRestriction;
+		private FoodPolicy curPolicy;
 
-		public FoodRestriction CurrentFoodRestriction
+		private Dictionary<ThingDef, bool> allowedBabyFoodTypes;
+
+		public FoodPolicy CurrentFoodPolicy
 		{
 			get
 			{
-				if (curRestriction == null)
+				if (pawn.IsMutant && pawn.mutant.Def.disablePolicies)
 				{
-					curRestriction = Current.Game.foodRestrictionDatabase.DefaultFoodRestriction();
+					return null;
 				}
-				return curRestriction;
+				if (curPolicy == null)
+				{
+					curPolicy = Current.Game.foodRestrictionDatabase.DefaultFoodRestriction();
+				}
+				return curPolicy;
 			}
 			set
 			{
-				curRestriction = value;
+				curPolicy = value;
 			}
 		}
 
@@ -49,7 +56,7 @@ namespace RimWorld
 		{
 		}
 
-		public FoodRestriction GetCurrentRespectedRestriction(Pawn getter = null)
+		public FoodPolicy GetCurrentRespectedRestriction(Pawn getter = null)
 		{
 			if (!Configurable)
 			{
@@ -63,12 +70,49 @@ namespace RimWorld
 			{
 				return null;
 			}
-			return CurrentFoodRestriction;
+			return CurrentFoodPolicy;
+		}
+
+		public bool BabyFoodAllowed(ThingDef food)
+		{
+			TrySetupAllowedBabyFoodTypes();
+			if (!ITab_Pawn_Feeding.BabyConsumableFoods.Contains(food))
+			{
+				return false;
+			}
+			if (!allowedBabyFoodTypes.ContainsKey(food))
+			{
+				allowedBabyFoodTypes.Add(food, value: true);
+			}
+			return allowedBabyFoodTypes[food];
+		}
+
+		public void SetBabyFoodAllowed(ThingDef food, bool allowed)
+		{
+			TrySetupAllowedBabyFoodTypes();
+			if (ITab_Pawn_Feeding.BabyConsumableFoods.Contains(food))
+			{
+				allowedBabyFoodTypes.SetOrAdd(food, allowed);
+			}
+		}
+
+		private void TrySetupAllowedBabyFoodTypes()
+		{
+			if (allowedBabyFoodTypes != null)
+			{
+				return;
+			}
+			allowedBabyFoodTypes = new Dictionary<ThingDef, bool>();
+			foreach (ThingDef babyConsumableFood in ITab_Pawn_Feeding.BabyConsumableFoods)
+			{
+				allowedBabyFoodTypes.Add(babyConsumableFood, value: true);
+			}
 		}
 
 		public void ExposeData()
 		{
-			Scribe_References.Look(ref curRestriction, "curRestriction");
+			Scribe_References.Look(ref curPolicy, "curRestriction");
+			Scribe_Collections.Look(ref allowedBabyFoodTypes, "allowedBabyFoodTypes", LookMode.Def, LookMode.Value);
 		}
 	}
 }

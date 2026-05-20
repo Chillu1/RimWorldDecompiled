@@ -3,6 +3,7 @@ namespace RimWorld.Planet
 	public enum WorldRenderMode
 	{
 		None,
-		Planet
+		Planet,
+		Background
 	}
 }

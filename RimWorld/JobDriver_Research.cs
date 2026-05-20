@@ -8,28 +8,36 @@ namespace RimWorld
 	{
 		private const int JobEndInterval = 4000;
 
-		private ResearchProjectDef Project => Find.ResearchManager.currentProj;
+		private ResearchProjectDef Project => Find.ResearchManager.GetProject();
 
 		private Building_ResearchBench ResearchBench => (Building_ResearchBench)base.TargetThingA;
 
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
 		{
-			return pawn.Reserve(ResearchBench, job, 1, -1, null, errorOnFailed);
+			if (pawn.Reserve(ResearchBench, job, 1, -1, null, errorOnFailed))
+			{
+				if (ResearchBench.def.hasInteractionCell)
+				{
+					return pawn.ReserveSittableOrSpot(ResearchBench.InteractionCell, job, errorOnFailed);
+				}
+				return true;
+			}
+			return false;
 		}
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.InteractionCell);
-			Toil research = new Toil();
-			research.tickAction = delegate
+			Toil research = ToilMaker.MakeToil("MakeNewToils");
+			research.tickIntervalAction = delegate(int delta)
 			{
 				Pawn actor = research.actor;
 				float statValue = actor.GetStatValue(StatDefOf.ResearchSpeed);
 				statValue *= base.TargetThingA.GetStatValue(StatDefOf.ResearchSpeedFactor);
-				Find.ResearchManager.ResearchPerformed(statValue, actor);
-				actor.skills.Learn(SkillDefOf.Intellectual, 0.1f);
-				actor.GainComfortFromCellIfPossible(chairsOnly: true);
+				Find.ResearchManager.ResearchPerformed(statValue * (float)delta, actor);
+				actor.skills.Learn(SkillDefOf.Intellectual, 0.1f * (float)delta);
+				actor.GainComfortFromCellIfPossible(delta, chairsOnly: true);
 			};
 			research.FailOn(() => Project == null);
 			research.FailOn(() => !Project.CanBeResearchedAt(ResearchBench, ignoreResearchBenchPowerStatus: false));

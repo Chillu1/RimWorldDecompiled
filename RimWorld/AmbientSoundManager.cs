@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Verse;
 using Verse.Sound;
@@ -7,9 +6,9 @@ namespace RimWorld
 {
 	public static class AmbientSoundManager
 	{
-		private static List<Sustainer> biomeAmbientSustainers = new List<Sustainer>();
+		private static readonly List<Sustainer> biomeAmbientSustainers = new List<Sustainer>();
 
-		private static Action recreateMapSustainers = RecreateMapSustainers;
+		private static Sustainer altitudeWindSustainer;
 
 		private static bool WorldAmbientSoundCreated => Find.SoundRoot.sustainerManager.SustainerExists(SoundDefOf.Ambient_Space);
 
@@ -25,14 +24,24 @@ namespace RimWorld
 
 		public static void Notify_SwitchedMap()
 		{
-			LongEventHandler.ExecuteWhenFinished(recreateMapSustainers);
+			LongEventHandler.ExecuteWhenFinished(RecreateMapSustainers);
 		}
 
 		private static void RecreateMapSustainers()
 		{
-			if (!AltitudeWindSoundCreated)
+			if (Find.CurrentMap == null)
 			{
-				SoundDefOf.Ambient_AltitudeWind.TrySpawnSustainer(SoundInfo.OnCamera());
+				return;
+			}
+			BiomeDef biome = Find.CurrentMap.Biome;
+			if (!AltitudeWindSoundCreated && !biome.noAmbientWind)
+			{
+				altitudeWindSustainer = SoundDefOf.Ambient_AltitudeWind.TrySpawnSustainer(SoundInfo.OnCamera());
+			}
+			else if (altitudeWindSustainer != null && biome.noAmbientWind)
+			{
+				altitudeWindSustainer.End();
+				altitudeWindSustainer = null;
 			}
 			SustainerManager sustainerManager = Find.SoundRoot.sustainerManager;
 			for (int i = 0; i < biomeAmbientSustainers.Count; i++)

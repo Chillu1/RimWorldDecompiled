@@ -60,7 +60,7 @@ namespace Verse.Sound
 		{
 		}
 
-		public static SampleSustainer TryMakeAndPlay(SubSustainer subSus, AudioClip clip, float scheduledEndTime)
+		public static SampleSustainer TryMakeAndPlay(SubSustainer subSus, AudioClip clip, float scheduledEndTime, float startTime = 0f)
 		{
 			SampleSustainer sampleSustainer = new SampleSustainer(subSus.subDef);
 			sampleSustainer.subSustainer = subSus;
@@ -94,6 +94,7 @@ namespace Verse.Sound
 				sampleSustainer.source.loop = true;
 			}
 			sampleSustainer.Update();
+			sampleSustainer.source.time = startTime;
 			sampleSustainer.source.Play();
 			sampleSustainer.source.Play();
 			return sampleSustainer;

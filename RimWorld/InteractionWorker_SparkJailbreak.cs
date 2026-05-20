@@ -14,12 +14,13 @@ namespace RimWorld
 				letterLabel = null;
 				letterDef = null;
 				lookTargets = null;
+				return;
 			}
-			else
+			PrisonBreakUtility.StartPrisonBreak(recipient, out letterText, out letterLabel, out letterDef, out var _);
+			lookTargets = new LookTargets(initiator, recipient);
+			if (initiator.MentalState is MentalState_Jailbreaker mentalState_Jailbreaker)
 			{
-				PrisonBreakUtility.StartPrisonBreak(recipient, out letterText, out letterLabel, out letterDef);
-				lookTargets = new LookTargets(initiator, recipient);
-				(initiator.MentalState as MentalState_Jailbreaker)?.Notify_InducedPrisonerToEscape();
+				mentalState_Jailbreaker.Notify_InducedPrisonerToEscape();
 			}
 		}
 	}

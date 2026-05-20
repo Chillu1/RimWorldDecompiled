@@ -3,6 +3,7 @@ using RimWorld;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse.Sound;
+using Verse.Steam;
 
 namespace Verse
 {
@@ -15,13 +16,17 @@ namespace Verse
 
 		private MenuOptionPriority priorityInt = MenuOptionPriority.Default;
 
+		public int orderInPriority;
+
 		public bool autoTakeable;
 
 		public float autoTakeablePriority;
 
-		public Action mouseoverGuiAction;
+		public Action<Rect> mouseoverGuiAction;
 
 		public Thing revalidateClickTarget;
+
+		public bool targetsDespawned;
 
 		public WorldObject revalidateWorldClickTarget;
 
@@ -31,6 +36,18 @@ namespace Verse
 
 		public string tutorTag;
 
+		public ThingStyleDef thingStyle;
+
+		public bool forceBasicStyle;
+
+		public TipSignal? tooltip;
+
+		public bool extraPartRightJustified;
+
+		public int? graphicIndexOverride;
+
+		public bool isGoto;
+
 		private FloatMenuSizeMode sizeMode;
 
 		private float cachedRequiredHeight;
@@ -39,15 +56,23 @@ namespace Verse
 
 		private bool drawPlaceHolderIcon;
 
+		private bool playSelectionSound = true;
+
 		private ThingDef shownItem;
 
-		private Texture2D itemIcon;
+		public Thing iconThing;
 
-		private Color iconColor = Color.white;
+		private Texture2D iconTex;
+
+		public Rect iconTexCoords = new Rect(0f, 0f, 1f, 1f);
+
+		private HorizontalJustification iconJustification;
+
+		public Color iconColor = Color.white;
+
+		public Color? forceThingColor;
 
 		public const float MaxWidth = 300f;
-
-		private const float NormalVerticalMargin = 4f;
 
 		private const float TinyVerticalMargin = 1f;
 
@@ -57,21 +82,25 @@ namespace Verse
 
 		private const float MouseOverLabelShift = 4f;
 
-		private static readonly Color ColorBGActive = new ColorInt(21, 25, 29).ToColor;
+		public static readonly Color ColorBGActive = new ColorInt(21, 25, 29).ToColor;
 
-		private static readonly Color ColorBGActiveMouseover = new ColorInt(29, 45, 50).ToColor;
+		public static readonly Color ColorBGActiveMouseover = new ColorInt(29, 45, 50).ToColor;
 
-		private static readonly Color ColorBGDisabled = new ColorInt(40, 40, 40).ToColor;
+		public static readonly Color ColorBGDisabled = new ColorInt(40, 40, 40).ToColor;
 
-		private static readonly Color ColorTextActive = Color.white;
+		public static readonly Color ColorTextActive = Color.white;
 
-		private static readonly Color ColorTextDisabled = new Color(0.9f, 0.9f, 0.9f);
+		public static readonly Color ColorTextDisabled = new Color(0.9f, 0.9f, 0.9f);
 
 		public const float ExtraPartHeight = 30f;
 
 		private const float ItemIconSize = 27f;
 
+		private const float ItemIconSizeTiny = 16f;
+
 		private const float ItemIconMargin = 4f;
+
+		private static float NormalVerticalMargin => SteamDeck.IsSteamDeck ? 10 : 4;
 
 		public string Label
 		{
@@ -98,7 +127,7 @@ namespace Verse
 				{
 					return 1f;
 				}
-				return 4f;
+				return NormalVerticalMargin;
 			}
 		}
 
@@ -118,11 +147,11 @@ namespace Verse
 		{
 			get
 			{
-				if (shownItem == null && !drawPlaceHolderIcon && !(itemIcon != null))
+				if (shownItem == null && !drawPlaceHolderIcon && !(iconTex != null) && iconThing == null)
 				{
 					return 0f;
 				}
-				return 27f;
+				return CurIconSize;
 			}
 		}
 
@@ -135,6 +164,18 @@ namespace Verse
 					return GameFont.Tiny;
 				}
 				return GameFont.Small;
+			}
+		}
+
+		private float CurIconSize
+		{
+			get
+			{
+				if (sizeMode != FloatMenuSizeMode.Tiny)
+				{
+					return 27f;
+				}
+				return 16f;
 			}
 		}
 
@@ -177,7 +218,7 @@ namespace Verse
 			}
 		}
 
-		public FloatMenuOption(string label, Action action, MenuOptionPriority priority = MenuOptionPriority.Default, Action mouseoverGuiAction = null, Thing revalidateClickTarget = null, float extraPartWidth = 0f, Func<Rect, bool> extraPartOnGUI = null, WorldObject revalidateWorldClickTarget = null)
+		public FloatMenuOption(string label, Action action, MenuOptionPriority priority = MenuOptionPriority.Default, Action<Rect> mouseoverGuiAction = null, Thing revalidateClickTarget = null, float extraPartWidth = 0f, Func<Rect, bool> extraPartOnGUI = null, WorldObject revalidateWorldClickTarget = null, bool playSelectionSound = true, int orderInPriority = 0)
 		{
 			Label = label;
 			this.action = action;
@@ -187,23 +228,56 @@ namespace Verse
 			this.extraPartWidth = extraPartWidth;
 			this.extraPartOnGUI = extraPartOnGUI;
 			this.revalidateWorldClickTarget = revalidateWorldClickTarget;
+			this.playSelectionSound = playSelectionSound;
+			this.orderInPriority = orderInPriority;
 		}
 
-		public FloatMenuOption(string label, Action action, ThingDef shownItemForIcon, MenuOptionPriority priority = MenuOptionPriority.Default, Action mouseoverGuiAction = null, Thing revalidateClickTarget = null, float extraPartWidth = 0f, Func<Rect, bool> extraPartOnGUI = null, WorldObject revalidateWorldClickTarget = null)
-			: this(label, action, priority, mouseoverGuiAction, revalidateClickTarget, extraPartWidth, extraPartOnGUI, revalidateWorldClickTarget)
+		public FloatMenuOption(string label, Action action, ThingDef shownItemForIcon, ThingStyleDef thingStyle = null, bool forceBasicStyle = false, MenuOptionPriority priority = MenuOptionPriority.Default, Action<Rect> mouseoverGuiAction = null, Thing revalidateClickTarget = null, float extraPartWidth = 0f, Func<Rect, bool> extraPartOnGUI = null, WorldObject revalidateWorldClickTarget = null, bool playSelectionSound = true, int orderInPriority = 0, int? graphicIndexOverride = null)
+			: this(label, action, priority, mouseoverGuiAction, revalidateClickTarget, extraPartWidth, extraPartOnGUI, revalidateWorldClickTarget, playSelectionSound, orderInPriority)
 		{
 			shownItem = shownItemForIcon;
+			this.thingStyle = thingStyle;
+			this.forceBasicStyle = forceBasicStyle;
+			this.graphicIndexOverride = graphicIndexOverride;
 			if (shownItemForIcon == null)
 			{
 				drawPlaceHolderIcon = true;
 			}
 		}
 
-		public FloatMenuOption(string label, Action action, Texture2D itemIcon, Color iconColor, MenuOptionPriority priority = MenuOptionPriority.Default, Action mouseoverGuiAction = null, Thing revalidateClickTarget = null, float extraPartWidth = 0f, Func<Rect, bool> extraPartOnGUI = null, WorldObject revalidateWorldClickTarget = null)
-			: this(label, action, priority, mouseoverGuiAction, revalidateClickTarget, extraPartWidth, extraPartOnGUI, revalidateWorldClickTarget)
+		public FloatMenuOption(string label, Action action, ThingDef shownItemForIcon, Texture2D iconTex, ThingStyleDef thingStyle = null, bool forceBasicStyle = false, MenuOptionPriority priority = MenuOptionPriority.Default, Action<Rect> mouseoverGuiAction = null, Thing revalidateClickTarget = null, float extraPartWidth = 0f, Func<Rect, bool> extraPartOnGUI = null, WorldObject revalidateWorldClickTarget = null, bool playSelectionSound = true, int orderInPriority = 0, int? graphicIndexOverride = null)
+			: this(label, action, priority, mouseoverGuiAction, revalidateClickTarget, extraPartWidth, extraPartOnGUI, revalidateWorldClickTarget, playSelectionSound, orderInPriority)
 		{
-			this.itemIcon = itemIcon;
+			this.iconTex = iconTex;
+			shownItem = shownItemForIcon;
+			this.thingStyle = thingStyle;
+			this.forceBasicStyle = forceBasicStyle;
+			this.graphicIndexOverride = graphicIndexOverride;
+			if (shownItemForIcon == null && iconTex == null)
+			{
+				drawPlaceHolderIcon = true;
+			}
+		}
+
+		public FloatMenuOption(string label, Action action, Texture2D iconTex, Color iconColor, MenuOptionPriority priority = MenuOptionPriority.Default, Action<Rect> mouseoverGuiAction = null, Thing revalidateClickTarget = null, float extraPartWidth = 0f, Func<Rect, bool> extraPartOnGUI = null, WorldObject revalidateWorldClickTarget = null, bool playSelectionSound = true, int orderInPriority = 0, HorizontalJustification iconJustification = HorizontalJustification.Left, bool extraPartRightJustified = false)
+			: this(label, action, priority, mouseoverGuiAction, revalidateClickTarget, extraPartWidth, extraPartOnGUI, revalidateWorldClickTarget, playSelectionSound, orderInPriority)
+		{
+			this.iconTex = iconTex;
 			this.iconColor = iconColor;
+			this.iconJustification = iconJustification;
+			this.extraPartRightJustified = extraPartRightJustified;
+		}
+
+		public FloatMenuOption(string label, Action action, Thing iconThing, Color iconColor, MenuOptionPriority priority = MenuOptionPriority.Default, Action<Rect> mouseoverGuiAction = null, Thing revalidateClickTarget = null, float extraPartWidth = 0f, Func<Rect, bool> extraPartOnGUI = null, WorldObject revalidateWorldClickTarget = null, bool playSelectionSound = true, int orderInPriority = 0)
+			: this(label, action, priority, mouseoverGuiAction, revalidateClickTarget, extraPartWidth, extraPartOnGUI, revalidateWorldClickTarget, playSelectionSound, orderInPriority)
+		{
+			this.iconThing = iconThing;
+			this.iconColor = iconColor;
+		}
+
+		public static FloatMenuOption CheckboxLabeled(string label, Action checkboxStateChanged, bool currentState)
+		{
+			return new FloatMenuOption(label, checkboxStateChanged, Widgets.GetCheckboxTexture(currentState), Color.white, MenuOptionPriority.Default, null, null, 0f, null, null, playSelectionSound: true, 0, HorizontalJustification.Right);
 		}
 
 		public void SetSizeMode(FloatMenuSizeMode newSizeMode)
@@ -224,14 +298,14 @@ namespace Verse
 			{
 				if (action != null)
 				{
-					if (colonistOrdering)
+					if (colonistOrdering && playSelectionSound)
 					{
 						SoundDefOf.ColonistOrdered.PlayOneShotOnCamera();
 					}
 					action();
 				}
 			}
-			else
+			else if (playSelectionSound)
 			{
 				SoundDefOf.ClickReject.PlayOneShotOnCamera();
 			}
@@ -244,30 +318,53 @@ namespace Verse
 			bool flag = !Disabled && Mouse.IsOver(rect2);
 			bool flag2 = false;
 			Text.Font = CurrentFont;
-			Rect rect3 = rect;
-			rect3.xMin += 4f;
-			rect3.xMax = rect.x + 27f;
-			rect3.yMin += 4f;
-			rect3.yMax = rect.y + 27f;
-			if (flag)
+			if (tooltip.HasValue)
 			{
-				rect3.x += 4f;
+				TooltipHandler.TipRegion(rect, tooltip.Value);
+			}
+			Rect rect3 = rect;
+			if (iconJustification == HorizontalJustification.Left)
+			{
+				rect3.xMin += 4f;
+				rect3.xMax = rect.x + CurIconSize;
+				rect3.yMin += 4f;
+				rect3.yMax = rect.y + CurIconSize;
+				if (flag)
+				{
+					rect3.x += 4f;
+				}
 			}
 			Rect rect4 = rect;
 			rect4.xMin += HorizontalMargin;
 			rect4.xMax -= HorizontalMargin;
 			rect4.xMax -= 4f;
 			rect4.xMax -= extraPartWidth + IconOffset;
-			rect4.x += IconOffset;
+			if (iconJustification == HorizontalJustification.Left)
+			{
+				rect4.x += IconOffset;
+			}
 			if (flag)
 			{
 				rect4.x += 4f;
 			}
+			float num = Mathf.Min(Text.CalcSize(Label).x, rect4.width - 4f);
+			float num2 = rect4.xMin + num;
+			if (iconJustification == HorizontalJustification.Right)
+			{
+				rect3.x = num2 + 4f;
+				rect3.width = CurIconSize;
+				rect3.yMin += 4f;
+				rect3.yMax = rect.y + CurIconSize;
+				num2 += CurIconSize;
+			}
 			Rect rect5 = default(Rect);
 			if (extraPartWidth != 0f)
 			{
-				float num = Mathf.Min(Text.CalcSize(Label).x, rect4.width - 4f);
-				rect5 = new Rect(rect4.xMin + num, rect4.yMin, extraPartWidth, 30f);
+				if (extraPartRightJustified)
+				{
+					num2 = rect.xMax - extraPartWidth;
+				}
+				rect5 = new Rect(num2, rect4.yMin, extraPartWidth, 30f);
 				flag2 = Mouse.IsOver(rect5);
 			}
 			if (!Disabled)
@@ -297,28 +394,39 @@ namespace Verse
 			Text.Anchor = TextAnchor.MiddleLeft;
 			Widgets.Label(rect4, Label);
 			Text.Anchor = TextAnchor.UpperLeft;
-			GUI.color = iconColor;
+			GUI.color = new Color(iconColor.r, iconColor.g, iconColor.b, iconColor.a * GUI.color.a);
 			if (shownItem != null || drawPlaceHolderIcon)
 			{
-				Widgets.DefIcon(rect3, shownItem, null, 1f, drawPlaceHolderIcon);
+				ThingStyleDef thingStyleDef = thingStyle ?? ((shownItem == null || Find.World == null) ? null : Faction.OfPlayer.ideos?.PrimaryIdeo?.GetStyleFor(shownItem));
+				if (forceBasicStyle)
+				{
+					thingStyleDef = null;
+				}
+				Color value = (forceThingColor.HasValue ? forceThingColor.Value : ((shownItem == null) ? Color.white : (shownItem.MadeFromStuff ? shownItem.GetColorForStuff(GenStuff.DefaultStuffFor(shownItem)) : shownItem.uiIconColor)));
+				value.a *= color.a;
+				Widgets.DefIcon(rect3, shownItem, null, 1f, thingStyleDef, drawPlaceHolderIcon, value, null, graphicIndexOverride);
 			}
-			else if ((bool)itemIcon)
+			else if ((bool)iconTex)
 			{
-				GUI.DrawTexture(rect3, itemIcon);
+				Widgets.DrawTextureFitted(rect3, iconTex, 1f, new Vector2(1f, 1f), iconTexCoords);
+			}
+			else if (iconThing != null)
+			{
+				Widgets.ThingIcon(rect3, iconThing, color.a);
 			}
 			GUI.color = color;
 			if (extraPartOnGUI != null)
 			{
-				bool num2 = extraPartOnGUI(rect5);
+				bool num3 = extraPartOnGUI(rect5);
 				GUI.color = color;
-				if (num2)
+				if (num3)
 				{
 					return true;
 				}
 			}
 			if (flag && mouseoverGuiAction != null)
 			{
-				mouseoverGuiAction();
+				mouseoverGuiAction(rect);
 			}
 			if (tutorTag != null)
 			{

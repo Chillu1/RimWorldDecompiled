@@ -51,26 +51,18 @@ namespace RimWorld
 			}
 		}
 
-		[Obsolete("Only used for mod compatibility.")]
-		public void AddProgress(float progress)
+		public void AddProgress(float progressPerTick, bool ignoreMultiplier = false)
 		{
-			AddProgress_NewTmp(progress);
-		}
-
-		public void AddProgress_NewTmp(float progress, bool ignoreMultiplier = false)
-		{
-			if (!ModLister.RoyaltyInstalled)
+			if (ModLister.CheckRoyalty("Subplant spawning"))
 			{
-				Log.ErrorOnce("Subplant spawners are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 43254);
-				return;
+				if (!ignoreMultiplier)
+				{
+					progressPerTick *= ProgressMultiplier;
+				}
+				progressToNextSubplant += progressPerTick * (1f + parent.GetStatValue(StatDefOf.MeditationPlantGrowthOffset));
+				meditationTicksToday++;
+				TryGrowSubplants();
 			}
-			if (!ignoreMultiplier)
-			{
-				progress *= ProgressMultiplier;
-			}
-			progressToNextSubplant += progress;
-			meditationTicksToday++;
-			TryGrowSubplants();
 		}
 
 		public override void CompTickLong()
@@ -88,7 +80,7 @@ namespace RimWorld
 
 		public override string CompInspectStringExtra()
 		{
-			return (string)("TotalMeditationToday".Translate((meditationTicksToday / 2500).ToString() + "LetterHour".Translate(), ProgressMultiplier.ToStringPercent()) + "\n" + Props.subplant.LabelCap + ": ") + SubplantsForReading.Count + " (" + "ProgressToNextSubplant".Translate(progressToNextSubplant.ToStringPercent()) + ")";
+			return string.Concat("TotalMeditationToday".Translate((meditationTicksToday / 2500).ToString() + "LetterHour".Translate(), ProgressMultiplier.ToStringPercent()) + "\n" + Props.subplant.LabelCap + ": ", SubplantsForReading.Count.ToString(), " (") + "ProgressToNextSubplant".Translate(progressToNextSubplant.ToStringPercent()) + ")";
 		}
 
 		private void TryGrowSubplants()
@@ -119,8 +111,20 @@ namespace RimWorld
 						flag = true;
 						break;
 					}
+					if (Props.plantsToNotOverwrite.NullOrEmpty())
+					{
+						continue;
+					}
+					for (int j = 0; j < Props.plantsToNotOverwrite.Count; j++)
+					{
+						if (item.def == Props.plantsToNotOverwrite[j])
+						{
+							flag = true;
+							break;
+						}
+					}
 				}
-				if (flag || !Props.subplant.CanEverPlantAt_NewTemp(intVec, parent.Map, canWipePlantsExceptTree: true))
+				if (flag || !Props.subplant.CanEverPlantAt(intVec, parent.Map, canWipePlantsExceptTree: true, checkMapTemperature: false))
 				{
 					continue;
 				}
@@ -131,7 +135,12 @@ namespace RimWorld
 						thingList[num].Destroy();
 					}
 				}
-				subplants.Add(GenSpawn.Spawn(Props.subplant, intVec, parent.Map));
+				Plant plant = (Plant)GenSpawn.Spawn(Props.subplant, intVec, parent.Map);
+				subplants.Add(plant);
+				if (Props.initialGrowthRange.HasValue)
+				{
+					plant.Growth = Props.initialGrowthRange.Value.RandomInRange;
+				}
 				if (Props.spawnSound != null)
 				{
 					Props.spawnSound.PlayOneShot(new TargetInfo(parent));
@@ -143,13 +152,13 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (Prefs.DevMode)
+			if (Prefs.DevMode && DebugSettings.godMode)
 			{
 				Command_Action command_Action = new Command_Action();
 				command_Action.defaultLabel = "DEV: Add 100% progress";
 				command_Action.action = delegate
 				{
-					AddProgress_NewTmp(1f, ignoreMultiplier: true);
+					AddProgress(1f, ignoreMultiplier: true);
 				};
 				yield return command_Action;
 			}

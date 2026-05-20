@@ -21,7 +21,7 @@ namespace RimWorld.Planet
 			for (int i = 0; i < 100; i++)
 			{
 				spectrumMats[i] = MatsFromSpectrum.Get(DebugSpectrum, (float)i / 100f, ShaderDatabase.WorldOverlayTransparent);
-				spectrumMats[i].renderQueue = WorldMaterials.DebugTileRenderQueue;
+				spectrumMats[i].renderQueue = 3510;
 			}
 		}
 

@@ -12,7 +12,6 @@ namespace Verse
 				{
 					z.AddCell(cell);
 				}
-				return z;
 			}
 			return z;
 		}

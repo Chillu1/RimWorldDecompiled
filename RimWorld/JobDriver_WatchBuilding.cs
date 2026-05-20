@@ -12,23 +12,13 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (!pawn.Reserve(job.targetB, job, 1, -1, null, errorOnFailed))
+			if (!pawn.ReserveSittableOrSpot(job.targetB.Cell, job, errorOnFailed))
 			{
 				return false;
 			}
-			if (base.TargetC.HasThing)
+			if (base.TargetC.HasThing && base.TargetC.Thing is Building_Bed && !pawn.Reserve(job.targetC, job, ((Building_Bed)base.TargetC.Thing).SleepingSlotsCount, 0, null, errorOnFailed))
 			{
-				if (base.TargetC.Thing is Building_Bed)
-				{
-					if (!pawn.Reserve(job.targetC, job, ((Building_Bed)base.TargetC.Thing).SleepingSlotsCount, 0, null, errorOnFailed))
-					{
-						return false;
-					}
-				}
-				else if (!pawn.Reserve(job.targetC, job, 1, -1, null, errorOnFailed))
-				{
-					return false;
-				}
+				return false;
 			}
 			return true;
 		}
@@ -57,12 +47,9 @@ namespace RimWorld
 			else
 			{
 				yield return Toils_Goto.GotoCell(TargetIndex.B, PathEndMode.OnCell);
-				watch = new Toil();
+				watch = ToilMaker.MakeToil("MakeNewToils");
 			}
-			watch.AddPreTickAction(delegate
-			{
-				WatchTickAction();
-			});
+			watch.AddPreTickIntervalAction(WatchTickAction);
 			watch.AddFinishAction(delegate
 			{
 				JoyUtility.TryGainRecRoomThought(pawn);
@@ -81,11 +68,11 @@ namespace RimWorld
 			}
 		}
 
-		protected virtual void WatchTickAction()
+		protected virtual void WatchTickAction(int delta)
 		{
 			pawn.rotationTracker.FaceCell(base.TargetA.Cell);
-			pawn.GainComfortFromCellIfPossible();
-			JoyUtility.JoyTickCheckEnd(pawn, JoyTickFullJoyAction.EndJob, 1f, (Building)base.TargetThingA);
+			pawn.GainComfortFromCellIfPossible(delta);
+			JoyUtility.JoyTickCheckEnd(pawn, delta, JoyTickFullJoyAction.EndJob, 1f, (Building)base.TargetThingA);
 		}
 
 		public override object[] TaleParameters()

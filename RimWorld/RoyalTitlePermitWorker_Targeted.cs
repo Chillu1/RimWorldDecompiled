@@ -24,6 +24,8 @@ namespace RimWorld
 
 		public bool MultiSelect => false;
 
+		public bool HidePawnTooltips => false;
+
 		public Thing Caster => caller;
 
 		public Pawn CasterPawn => caller;
@@ -35,6 +37,8 @@ namespace RimWorld
 		public TargetingParameters targetParams => targetingParameters;
 
 		public ITargetingSource DestinationSelector => null;
+
+		protected float RangeClamped => Mathf.Min(def.royalAid.targetingRange, map.weatherManager.CurWeatherMaxRangeCap);
 
 		public bool CanHitTarget(LocalTargetInfo target)
 		{
@@ -58,7 +62,7 @@ namespace RimWorld
 			return true;
 		}
 
-		public virtual bool ValidateTarget(LocalTargetInfo target)
+		public virtual bool ValidateTarget(LocalTargetInfo target, bool showMessages = true)
 		{
 			if (!CanHitTarget(target))
 			{
@@ -73,7 +77,7 @@ namespace RimWorld
 
 		public virtual void DrawHighlight(LocalTargetInfo target)
 		{
-			GenDraw.DrawRadiusRing(caller.Position, def.royalAid.targetingRange, Color.white);
+			GenDraw.DrawRadiusRing(caller.Position, RangeClamped, Color.white);
 			if (target.IsValid)
 			{
 				GenDraw.DrawTargetHighlight(target);

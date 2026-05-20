@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Verse;
 using Verse.AI;
 using Verse.AI.Group;
@@ -7,11 +8,13 @@ namespace RimWorld
 {
 	public class Pawn_PlayerSettings : IExposable
 	{
+		public const int UnsetDisplayOrder = -9999999;
+
 		private Pawn pawn;
 
-		private Area areaAllowedInt;
+		private Dictionary<Map, Area> allowedAreas = new Dictionary<Map, Area>();
 
-		public int joinTick = -1;
+		public int joinTick;
 
 		private Pawn master;
 
@@ -27,7 +30,15 @@ namespace RimWorld
 
 		public bool selfTend;
 
-		public int displayOrder;
+		public int displayOrder = -9999999;
+
+		public bool animalForage = true;
+
+		public bool animalDig = true;
+
+		private List<Map> allowedAreasKeys;
+
+		private List<Area> allowedAreasValues;
 
 		public Pawn Master
 		{
@@ -59,38 +70,39 @@ namespace RimWorld
 		{
 			get
 			{
-				if (areaAllowedInt != null && areaAllowedInt.Map != pawn.MapHeld)
-				{
-					return null;
-				}
-				return EffectiveAreaRestriction;
-			}
-		}
-
-		public Area EffectiveAreaRestriction
-		{
-			get
-			{
 				if (!RespectsAllowedArea)
 				{
 					return null;
 				}
-				return areaAllowedInt;
+				if (!allowedAreas.TryGetValue(pawn.MapHeld, out var value))
+				{
+					return null;
+				}
+				return value;
 			}
 		}
 
-		public Area AreaRestriction
+		public Area AreaRestrictionInPawnCurrentMap
 		{
 			get
 			{
-				return areaAllowedInt;
+				if (pawn.MapHeld == null || !allowedAreas.TryGetValue(pawn.MapHeld, out var value))
+				{
+					return null;
+				}
+				return value;
 			}
 			set
 			{
-				if (areaAllowedInt != value)
+				Map map = pawn.MapHeld;
+				if (map == null && pawn.DevelopmentalStage == DevelopmentalStage.Baby)
 				{
-					areaAllowedInt = value;
-					if (pawn.Spawned && !pawn.Drafted && value != null && value == EffectiveAreaRestrictionInPawnCurrentMap && value.TrueCount > 0 && pawn.jobs != null && pawn.jobs.curJob != null && pawn.jobs.curJob.AnyTargetOutsideArea(value))
+					map = pawn.relations.GetFirstDirectRelationPawn(PawnRelationDefOf.Parent)?.MapHeld;
+				}
+				if (map != null)
+				{
+					allowedAreas.SetOrAdd(map, value);
+					if (pawn.Spawned && !pawn.Drafted && value != null && value == EffectiveAreaRestrictionInPawnCurrentMap && value.TrueCount > 0 && pawn.jobs?.curJob != null && pawn.jobs.curJob.AnyTargetOutsideArea(value))
 					{
 						pawn.jobs.EndCurrentJob(JobCondition.InterruptForced);
 					}
@@ -102,6 +114,10 @@ namespace RimWorld
 		{
 			get
 			{
+				if (!SupportsAllowedAreas)
+				{
+					return false;
+				}
 				if (pawn.GetLord() != null)
 				{
 					return false;
@@ -109,6 +125,18 @@ namespace RimWorld
 				if (pawn.Faction == Faction.OfPlayer)
 				{
 					return pawn.HostFaction == null;
+				}
+				return false;
+			}
+		}
+
+		public bool SupportsAllowedAreas
+		{
+			get
+			{
+				if (!pawn.Roamer)
+				{
+					return !pawn.RaceProps.disableAreaControl;
 				}
 				return false;
 			}
@@ -146,7 +174,7 @@ namespace RimWorld
 		{
 			get
 			{
-				if (pawn.IsColonist)
+				if (pawn.IsColonist || (pawn.IsColonySubhuman && !pawn.mutant.Def.disableHostilityResponse))
 				{
 					return pawn.HostFaction == null;
 				}
@@ -173,13 +201,36 @@ namespace RimWorld
 			Scribe_Values.Look(ref joinTick, "joinTick", 0);
 			Scribe_Values.Look(ref animalsReleased, "animalsReleased", defaultValue: false);
 			Scribe_Values.Look(ref medCare, "medCare", MedicalCareCategory.NoCare);
-			Scribe_References.Look(ref areaAllowedInt, "areaAllowed");
+			Scribe_Collections.Look(ref allowedAreas, "allowedAreas", LookMode.Reference, LookMode.Reference, ref allowedAreasKeys, ref allowedAreasValues);
 			Scribe_References.Look(ref master, "master");
 			Scribe_Values.Look(ref followDrafted, "followDrafted", defaultValue: false);
 			Scribe_Values.Look(ref followFieldwork, "followFieldwork", defaultValue: false);
 			Scribe_Values.Look(ref hostilityResponse, "hostilityResponse", HostilityResponseMode.Flee);
 			Scribe_Values.Look(ref selfTend, "selfTend", defaultValue: false);
 			Scribe_Values.Look(ref displayOrder, "displayOrder", 0);
+			Scribe_Values.Look(ref animalForage, "animalForage", defaultValue: true);
+			Scribe_Values.Look(ref animalDig, "animalDig", defaultValue: true);
+			if (Scribe.mode == LoadSaveMode.Saving && allowedAreas != null)
+			{
+				allowedAreas.RemoveAll((KeyValuePair<Map, Area> kvp) => kvp.Key == null || kvp.Value == null);
+			}
+			if (Scribe.mode == LoadSaveMode.PostLoadInit && pawn.Roamer)
+			{
+				allowedAreas.Clear();
+			}
+			if (Scribe.mode == LoadSaveMode.ResolvingCrossRefs && allowedAreas == null)
+			{
+				allowedAreas = new Dictionary<Map, Area>();
+			}
+			if (Scribe.mode == LoadSaveMode.LoadingVars || Scribe.mode == LoadSaveMode.ResolvingCrossRefs || Scribe.mode == LoadSaveMode.PostLoadInit)
+			{
+				Area refee = null;
+				Scribe_References.Look(ref refee, "areaAllowed");
+				if (refee != null && Find.AnyPlayerHomeMap != null)
+				{
+					allowedAreas.Add(Find.AnyPlayerHomeMap, refee);
+				}
+			}
 		}
 
 		public IEnumerable<Gizmo> GetGizmos()
@@ -190,6 +241,7 @@ namespace RimWorld
 			}
 			int num = 0;
 			bool flag = false;
+			int canAttackTargetCount = 0;
 			foreach (Pawn item in PawnUtility.SpawnedMasteredPawns(pawn))
 			{
 				if (item.training.HasLearned(TrainableDefOf.Release))
@@ -200,48 +252,91 @@ namespace RimWorld
 						num++;
 					}
 				}
+				if (ModsConfig.OdysseyActive && item.training.HasLearned(TrainableDefOf.AttackTarget))
+				{
+					canAttackTargetCount++;
+				}
 			}
-			if (!flag)
+			if (flag)
+			{
+				Command_Toggle command_Toggle = new Command_Toggle();
+				command_Toggle.defaultLabel = "CommandReleaseAnimalsLabel".Translate() + ((num != 0) ? (" (" + num + ")") : "");
+				command_Toggle.defaultDesc = "CommandReleaseAnimalsDesc".Translate();
+				command_Toggle.icon = TexCommand.ReleaseAnimals;
+				command_Toggle.hotKey = KeyBindingDefOf.Misc7;
+				command_Toggle.isActive = () => animalsReleased;
+				command_Toggle.toggleAction = delegate
+				{
+					animalsReleased = !animalsReleased;
+					if (animalsReleased)
+					{
+						foreach (Pawn item2 in PawnUtility.SpawnedMasteredPawns(pawn))
+						{
+							if (item2.caller != null)
+							{
+								item2.caller.Notify_Released();
+							}
+							item2.jobs.EndCurrentJob(JobCondition.InterruptForced);
+						}
+					}
+				};
+				if (num == 0)
+				{
+					command_Toggle.Disable("CommandReleaseAnimalsFail_NoAnimals".Translate());
+				}
+				yield return command_Toggle;
+			}
+			if (canAttackTargetCount <= 0)
 			{
 				yield break;
 			}
-			Command_Toggle command_Toggle = new Command_Toggle();
-			command_Toggle.defaultLabel = "CommandReleaseAnimalsLabel".Translate() + ((num != 0) ? (" (" + num + ")") : "");
-			command_Toggle.defaultDesc = "CommandReleaseAnimalsDesc".Translate();
-			command_Toggle.icon = TexCommand.ReleaseAnimals;
-			command_Toggle.hotKey = KeyBindingDefOf.Misc7;
-			command_Toggle.isActive = () => animalsReleased;
-			command_Toggle.toggleAction = delegate
+			yield return new Command_Target
 			{
-				animalsReleased = !animalsReleased;
-				if (animalsReleased)
+				defaultLabel = "AnimalsAttackTarget".Translate() + $" ({canAttackTargetCount})",
+				defaultDesc = "AnimalsAttackTargetDesc".Translate(),
+				targetingParams = TargetingParameters.ForAttackAny(),
+				hotKey = KeyBindingDefOf.Misc8,
+				icon = Pawn_TrainingTracker.AttackTargetTexture,
+				action = delegate(LocalTargetInfo target)
 				{
-					foreach (Pawn item2 in PawnUtility.SpawnedMasteredPawns(pawn))
+					if (!target.Cell.InHorDistOf(pawn.Position, 25.9f))
 					{
-						if (item2.caller != null)
-						{
-							item2.caller.Notify_Released();
-						}
-						item2.jobs.EndCurrentJob(JobCondition.InterruptForced);
+						Messages.Message("MessageNotInRangeOfMaster".Translate(), MessageTypeDefOf.RejectInput, historical: false);
 					}
+					else
+					{
+						string failStr = null;
+						bool flag2 = false;
+						foreach (Pawn item3 in PawnUtility.SpawnedMasteredPawns(pawn))
+						{
+							if (item3.training.HasLearned(TrainableDefOf.AttackTarget))
+							{
+								FloatMenuUtility.GetMeleeAttackAction(item3, target, out failStr, ignoreControlled: true)?.Invoke();
+								if (failStr.NullOrEmpty())
+								{
+									flag2 = true;
+									item3.training.attackTarget = target.Thing;
+									item3.mindState.enemyTarget = target.Thing;
+								}
+							}
+						}
+						if (!flag2)
+						{
+							Messages.Message(failStr, MessageTypeDefOf.RejectInput, historical: false);
+						}
+					}
+				},
+				onUpdate = delegate
+				{
+					GenDraw.DrawRadiusRing(pawn.Position, 25.9f);
 				}
 			};
-			if (num == 0)
-			{
-				command_Toggle.Disable("CommandReleaseAnimalsFail_NoAnimals".Translate());
-			}
-			yield return command_Toggle;
 		}
 
 		public void Notify_FactionChanged()
 		{
 			ResetMedicalCare();
-			areaAllowedInt = null;
-		}
-
-		public void Notify_MadePrisoner()
-		{
-			ResetMedicalCare();
+			allowedAreas.Clear();
 		}
 
 		public void ResetMedicalCare()
@@ -252,29 +347,53 @@ namespace RimWorld
 			}
 			if (pawn.Faction == Faction.OfPlayer)
 			{
-				if (!pawn.RaceProps.Animal)
+				if (ModsConfig.AnomalyActive && pawn.IsGhoul)
 				{
-					if (!pawn.IsPrisoner)
-					{
-						medCare = Find.PlaySettings.defaultCareForColonyHumanlike;
-					}
-					else
-					{
-						medCare = Find.PlaySettings.defaultCareForColonyPrisoner;
-					}
+					medCare = Find.PlaySettings.defaultCareForGhouls;
+				}
+				else if (ModsConfig.AnomalyActive && pawn.IsEntity)
+				{
+					medCare = Find.PlaySettings.defaultCareForEntities;
+				}
+				else if (!pawn.RaceProps.Animal)
+				{
+					medCare = (pawn.IsSlave ? Find.PlaySettings.defaultCareForSlave : Find.PlaySettings.defaultCareForColonist);
 				}
 				else
 				{
-					medCare = Find.PlaySettings.defaultCareForColonyAnimal;
+					medCare = Find.PlaySettings.defaultCareForTamedAnimal;
 				}
+			}
+			else if (ModsConfig.AnomalyActive && pawn.IsEntity)
+			{
+				medCare = Find.PlaySettings.defaultCareForEntities;
+			}
+			else if (pawn.IsPrisoner)
+			{
+				medCare = Find.PlaySettings.defaultCareForPrisoner;
 			}
 			else if (pawn.Faction == null && pawn.RaceProps.Animal)
 			{
-				medCare = Find.PlaySettings.defaultCareForNeutralAnimal;
+				medCare = Find.PlaySettings.defaultCareForWildlife;
 			}
-			else if (pawn.Faction == null || !pawn.Faction.HostileTo(Faction.OfPlayer))
+			else if (pawn.Faction != null)
 			{
-				medCare = Find.PlaySettings.defaultCareForNeutralFaction;
+				switch (pawn.Faction.RelationWith(Faction.OfPlayer).kind)
+				{
+				case FactionRelationKind.Ally:
+					medCare = Find.PlaySettings.defaultCareForFriendlyFaction;
+					break;
+				case FactionRelationKind.Neutral:
+					medCare = Find.PlaySettings.defaultCareForNeutralFaction;
+					break;
+				case FactionRelationKind.Hostile:
+					medCare = Find.PlaySettings.defaultCareForHostileFaction;
+					break;
+				}
+			}
+			else if (!pawn.Faction.HostileTo(Faction.OfPlayer))
+			{
+				medCare = Find.PlaySettings.defaultCareForNoFaction;
 			}
 			else
 			{
@@ -284,9 +403,20 @@ namespace RimWorld
 
 		public void Notify_AreaRemoved(Area area)
 		{
-			if (areaAllowedInt == area)
+			foreach (Map item in allowedAreas.Keys.ToList())
 			{
-				areaAllowedInt = null;
+				if (allowedAreas[item] == area)
+				{
+					allowedAreas.Remove(item);
+				}
+			}
+		}
+
+		public void Notify_MapRemoved(Map map)
+		{
+			if (allowedAreas.ContainsKey(map))
+			{
+				allowedAreas.Remove(map);
 			}
 		}
 	}

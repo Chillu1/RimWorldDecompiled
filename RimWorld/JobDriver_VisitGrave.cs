@@ -7,7 +7,7 @@ namespace RimWorld
 	{
 		private Building_Grave Grave => (Building_Grave)job.GetTarget(TargetIndex.A).Thing;
 
-		protected override void WaitTickAction()
+		protected override void WaitTickAction(int delta)
 		{
 			float num = 1f;
 			Room room = pawn.GetRoom();
@@ -15,8 +15,8 @@ namespace RimWorld
 			{
 				num *= room.GetStat(RoomStatDefOf.GraveVisitingJoyGainFactor);
 			}
-			pawn.GainComfortFromCellIfPossible();
-			JoyUtility.JoyTickCheckEnd(pawn, JoyTickFullJoyAction.EndJob, num, Grave);
+			pawn.GainComfortFromCellIfPossible(delta);
+			JoyUtility.JoyTickCheckEnd(pawn, delta, JoyTickFullJoyAction.EndJob, num, Grave);
 		}
 
 		public override object[] TaleParameters()
@@ -24,7 +24,7 @@ namespace RimWorld
 			return new object[2]
 			{
 				pawn,
-				(Grave.Corpse != null) ? Grave.Corpse.InnerPawn : null
+				Grave.Corpse?.InnerPawn
 			};
 		}
 	}

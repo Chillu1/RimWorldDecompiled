@@ -8,7 +8,13 @@ namespace Verse
 	public class GraphicData
 	{
 		[NoTranslate]
+		public string name;
+
+		[NoTranslate]
 		public string texPath;
+
+		[NoTranslate]
+		public string maskPath;
 
 		public Type graphicClass;
 
@@ -40,6 +46,26 @@ namespace Verse
 
 		public float flipExtraRotation;
 
+		public bool renderInstanced;
+
+		public bool allowAtlasing = true;
+
+		public int renderQueue;
+
+		public float overlayOpacity;
+
+		public List<GraphicData> attachments;
+
+		public List<AttachPoint> attachPoints;
+
+		public bool addTopAltitudeBias;
+
+		public bool ignoreThingDrawColor;
+
+		public Vector2 maxSnS;
+
+		public Vector2 offsetSnS;
+
 		public ShadowData shadowData;
 
 		public DamageGraphicData damageData;
@@ -47,6 +73,11 @@ namespace Verse
 		public LinkDrawerType linkType;
 
 		public LinkFlags linkFlags;
+
+		public AsymmetricLinkData asymmetricLink;
+
+		[NoTranslate]
+		public string cornerOverlayPath;
 
 		[Unsaved(false)]
 		private Graphic cachedGraphic;
@@ -65,9 +96,15 @@ namespace Verse
 			}
 		}
 
+		public void ExplicitlyInitCachedGraphic()
+		{
+			cachedGraphic = Graphic;
+		}
+
 		public void CopyFrom(GraphicData other)
 		{
 			texPath = other.texPath;
+			maskPath = other.maskPath;
 			graphicClass = other.graphicClass;
 			shaderType = other.shaderType;
 			color = other.color;
@@ -77,7 +114,8 @@ namespace Verse
 			drawOffsetNorth = other.drawOffsetNorth;
 			drawOffsetEast = other.drawOffsetEast;
 			drawOffsetSouth = other.drawOffsetSouth;
-			drawOffsetWest = other.drawOffsetSouth;
+			drawOffsetWest = other.drawOffsetWest;
+			attachments = other.attachments;
 			onGroundRandomRotateAngle = other.onGroundRandomRotateAngle;
 			drawRotated = other.drawRotated;
 			allowFlip = other.allowFlip;
@@ -86,6 +124,14 @@ namespace Verse
 			damageData = other.damageData;
 			linkType = other.linkType;
 			linkFlags = other.linkFlags;
+			asymmetricLink = other.asymmetricLink;
+			allowAtlasing = other.allowAtlasing;
+			renderInstanced = other.renderInstanced;
+			renderQueue = other.renderQueue;
+			ignoreThingDrawColor = other.ignoreThingDrawColor;
+			maxSnS = other.maxSnS;
+			offsetSnS = other.offsetSnS;
+			cornerOverlayPath = other.cornerOverlayPath;
 			cachedGraphic = null;
 		}
 
@@ -102,7 +148,7 @@ namespace Verse
 				cutout = ShaderTypeDefOf.Cutout;
 			}
 			Shader shader = cutout.Shader;
-			cachedGraphic = GraphicDatabase.Get(graphicClass, texPath, shader, drawSize, color, colorTwo, this, shaderParameters);
+			cachedGraphic = GraphicDatabase.Get(graphicClass, texPath, shader, drawSize, color, colorTwo, this, shaderParameters, maskPath);
 			if (onGroundRandomRotateAngle > 0.01f)
 			{
 				cachedGraphic = new Graphic_RandomRotated(cachedGraphic, onGroundRandomRotateAngle);
@@ -135,7 +181,7 @@ namespace Verse
 
 		public Graphic GraphicColoredFor(Thing t)
 		{
-			if (t.DrawColor.IndistinguishableFrom(Graphic.Color) && t.DrawColorTwo.IndistinguishableFrom(Graphic.ColorTwo))
+			if (ignoreThingDrawColor || (t.DrawColor.IndistinguishableFrom(Graphic.Color) && t.DrawColorTwo.IndistinguishableFrom(Graphic.ColorTwo)))
 			{
 				return Graphic;
 			}
@@ -166,6 +212,10 @@ namespace Verse
 			if ((shaderType == ShaderTypeDefOf.Cutout || shaderType == ShaderTypeDefOf.CutoutComplex) && thingDef.mote != null && (thingDef.mote.fadeInTime > 0f || thingDef.mote.fadeOutTime > 0f))
 			{
 				yield return "mote fades but uses cutout shader type. It will abruptly disappear when opacity falls under the cutout threshold.";
+			}
+			if (linkType == LinkDrawerType.Asymmetric != (asymmetricLink != null))
+			{
+				yield return "linkType=Asymmetric requires <asymmetricLink> and vice versa";
 			}
 		}
 	}

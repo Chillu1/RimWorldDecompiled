@@ -1,4 +1,3 @@
-using UnityEngine;
 using Verse;
 
 namespace RimWorld
@@ -35,18 +34,12 @@ namespace RimWorld
 				factor = 1f;
 				return false;
 			}
-			Plant plant = req.Thing as Plant;
-			if (plant == null)
+			if (!(req.Thing is Plant plant))
 			{
 				factor = 1f;
 				return false;
 			}
-			if (plant.def.plant.Sowable)
-			{
-				factor = plant.Growth;
-				return true;
-			}
-			factor = Mathf.Lerp(0.5f, 1f, plant.Growth);
+			factor = PlantUtility.NutritionFactorFromGrowth(plant.def, plant.Growth);
 			return true;
 		}
 	}

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld
@@ -9,7 +10,7 @@ namespace RimWorld
 
 		private List<ThingDef> tmpGenerated = new List<ThingDef>();
 
-		public override IEnumerable<Thing> GenerateThings(int forTile, Faction faction = null)
+		public override IEnumerable<Thing> GenerateThings(PlanetTile forTile, Faction faction = null)
 		{
 			tmpGenerated.Clear();
 			int countToGenerate = CountChanceUtility.RandomCount(countChances);
@@ -18,12 +19,12 @@ namespace RimWorld
 			{
 				if (i < countToGenerate)
 				{
-					if (!TechprintUtility.TryGetTechprintDefToGenerate(faction, out var result, tmpGenerated))
+					if (!TechprintUtility.TryGetTechprintDefToGenerate_NewTemp(faction, out var result, tmpGenerated))
 					{
 						break;
 					}
 					tmpGenerated.Add(result);
-					foreach (Thing item in StockGeneratorUtility.TryMakeForStock(result, 1))
+					foreach (Thing item in StockGeneratorUtility.TryMakeForStock(result, 1, faction))
 					{
 						yield return item;
 					}
@@ -37,7 +38,7 @@ namespace RimWorld
 
 		public override bool HandlesThingDef(ThingDef thingDef)
 		{
-			if (thingDef.tradeTags != null && thingDef.tradeability != 0 && (int)thingDef.techLevel <= (int)maxTechLevelBuy)
+			if (thingDef.tradeTags != null && thingDef.tradeability != Tradeability.None && (int)thingDef.techLevel <= (int)maxTechLevelBuy)
 			{
 				return thingDef.tradeTags.Contains("Techprint");
 			}

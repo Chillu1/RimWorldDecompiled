@@ -11,10 +11,7 @@ namespace RimWorld
 
 		public QuestPart_ExitOnShuttle()
 		{
-			if (!ModLister.RoyaltyInstalled)
-			{
-				Log.ErrorOnce("Shuttles are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it.", 657212);
-			}
+			ModLister.CheckRoyaltyOrIdeology("Shuttle");
 		}
 
 		protected override Lord MakeLord()

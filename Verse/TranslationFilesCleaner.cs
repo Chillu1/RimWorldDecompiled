@@ -39,11 +39,6 @@ namespace Verse
 		public static void CleanupTranslationFiles()
 		{
 			LoadedLanguage curLang = LanguageDatabase.activeLanguage;
-			LoadedLanguage english = LanguageDatabase.defaultLanguage;
-			if (curLang == english)
-			{
-				return;
-			}
 			IEnumerable<ModMetaData> activeModsInLoadOrder = ModsConfig.ActiveModsInLoadOrder;
 			if (!activeModsInLoadOrder.Any((ModMetaData x) => x.IsCoreMod) || activeModsInLoadOrder.Any((ModMetaData x) => !x.Official))
 			{
@@ -59,12 +54,11 @@ namespace Verse
 			{
 				if (curLang.anyKeyedReplacementsXmlParseError || curLang.anyDefInjectionsXmlParseError)
 				{
-					string value = curLang.lastKeyedReplacementsXmlParseErrorInFile ?? curLang.lastDefInjectionsXmlParseErrorInFile;
-					Messages.Message("MessageCantCleanupTranslationFilesBeucaseOfXmlError".Translate(value), MessageTypeDefOf.RejectInput, historical: false);
+					string text = curLang.lastKeyedReplacementsXmlParseErrorInFile ?? curLang.lastDefInjectionsXmlParseErrorInFile;
+					Messages.Message("MessageCantCleanupTranslationFilesBeucaseOfXmlError".Translate(text), MessageTypeDefOf.RejectInput, historical: false);
 				}
 				else
 				{
-					english.LoadData();
 					curLang.LoadData();
 					Dialog_MessageBox dialog_MessageBox = Dialog_MessageBox.CreateConfirmation("ConfirmCleanupTranslationFiles".Translate(curLang.FriendlyNameNative), delegate
 					{
@@ -78,42 +72,38 @@ namespace Verse
 
 		private static void DoCleanupTranslationFiles()
 		{
-			if (LanguageDatabase.activeLanguage == LanguageDatabase.defaultLanguage)
-			{
-				return;
-			}
 			try
 			{
 				try
 				{
 					CleanupKeyedTranslations();
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Error("Could not cleanup keyed translations: " + arg);
+					Log.Error("Could not cleanup keyed translations: " + ex);
 				}
 				try
 				{
 					CleanupDefInjections();
 				}
-				catch (Exception arg2)
+				catch (Exception ex2)
 				{
-					Log.Error("Could not cleanup def-injections: " + arg2);
+					Log.Error("Could not cleanup def-injections: " + ex2);
 				}
 				try
 				{
 					CleanupBackstories();
 				}
-				catch (Exception arg3)
+				catch (Exception ex3)
 				{
-					Log.Error("Could not cleanup backstories: " + arg3);
+					Log.Error("Could not cleanup backstories: " + ex3);
 				}
-				string value = string.Join("\n", ModsConfig.ActiveModsInLoadOrder.Select((ModMetaData x) => GetLanguageFolderPath(LanguageDatabase.activeLanguage, x.RootDir.FullName)).ToArray());
-				Messages.Message("MessageTranslationFilesCleanupDone".Translate(value), MessageTypeDefOf.TaskCompletion, historical: false);
+				string text = string.Join("\n", ModsConfig.ActiveModsInLoadOrder.Select((ModMetaData x) => GetLanguageFolderPath(LanguageDatabase.activeLanguage, x.RootDir.FullName)).ToArray());
+				Messages.Message("MessageTranslationFilesCleanupDone".Translate(text), MessageTypeDefOf.TaskCompletion, historical: false);
 			}
-			catch (Exception arg4)
+			catch (Exception ex4)
 			{
-				Log.Error("Could not cleanup translation files: " + arg4);
+				Log.Error("Could not cleanup translation files: " + ex4);
 			}
 		}
 
@@ -160,31 +150,37 @@ namespace Verse
 				{
 					directoryInfo.Create();
 				}
-				FileInfo[] files = directoryInfo.GetFiles("*.xml", SearchOption.AllDirectories);
-				foreach (FileInfo fileInfo in files)
+				FileInfo[] files;
+				if (activeLanguage != english)
 				{
-					try
+					files = directoryInfo.GetFiles("*.xml", SearchOption.AllDirectories);
+					foreach (FileInfo fileInfo in files)
 					{
-						fileInfo.Delete();
+						try
+						{
+							fileInfo.Delete();
+						}
+						catch (Exception ex)
+						{
+							Log.Error("Could not delete " + fileInfo.Name + ": " + ex);
+						}
 					}
-					catch (Exception ex)
+					files = directoryInfo2.GetFiles("*.xml", SearchOption.AllDirectories);
+					foreach (FileInfo fileInfo2 in files)
 					{
-						Log.Error("Could not delete " + fileInfo.Name + ": " + ex);
-					}
-				}
-				files = directoryInfo2.GetFiles("*.xml", SearchOption.AllDirectories);
-				foreach (FileInfo fileInfo2 in files)
-				{
-					try
-					{
-						string path = new Uri(directoryInfo2.FullName + Path.DirectorySeparatorChar).MakeRelativeUri(new Uri(fileInfo2.FullName)).ToString();
-						string text3 = Path.Combine(directoryInfo.FullName, path);
-						Directory.CreateDirectory(Path.GetDirectoryName(text3));
-						fileInfo2.CopyTo(text3);
-					}
-					catch (Exception ex2)
-					{
-						Log.Error("Could not copy " + fileInfo2.Name + ": " + ex2);
+						try
+						{
+							string fullName = directoryInfo2.FullName;
+							char directorySeparatorChar = Path.DirectorySeparatorChar;
+							string path = new Uri(fullName + directorySeparatorChar).MakeRelativeUri(new Uri(fileInfo2.FullName)).ToString();
+							string text3 = Path.Combine(directoryInfo.FullName, path);
+							Directory.CreateDirectory(Path.GetDirectoryName(text3));
+							fileInfo2.CopyTo(text3);
+						}
+						catch (Exception ex2)
+						{
+							Log.Error("Could not copy " + fileInfo2.Name + ": " + ex2);
+						}
 					}
 				}
 				files = directoryInfo.GetFiles("*.xml", SearchOption.AllDirectories);
@@ -203,8 +199,7 @@ namespace Verse
 							XNode[] array = xElement.DescendantNodes().ToArray();
 							foreach (XNode xNode in array)
 							{
-								XElement xElement2 = xNode as XElement;
-								if (xElement2 == null)
+								if (!(xNode is XElement xElement2))
 								{
 									continue;
 								}
@@ -213,8 +208,7 @@ namespace Verse
 								{
 									try
 									{
-										XText xText = xNode2 as XText;
-										if (xText != null && !xText.Value.NullOrEmpty())
+										if (xNode2 is XText xText && !xText.Value.NullOrEmpty())
 										{
 											string comment = " EN: " + xText.Value + " ";
 											xNode.AddBeforeSelf(new XComment(SanitizeXComment(comment)));
@@ -367,7 +361,8 @@ namespace Verse
 
 		private static void CleanupDefInjectionsForDefType(Type defType, string defInjectionsFolderPath, ModMetaData mod)
 		{
-			List<KeyValuePair<string, DefInjectionPackage.DefInjection>> list = (from x in LanguageDatabase.activeLanguage.defInjections.Where((DefInjectionPackage x) => x.defType == defType).SelectMany((DefInjectionPackage x) => x.injections)
+			LoadedLanguage activeLanguage = LanguageDatabase.activeLanguage;
+			List<KeyValuePair<string, DefInjectionPackage.DefInjection>> list = (from x in activeLanguage.defInjections.Where((DefInjectionPackage x) => x.defType == defType).SelectMany((DefInjectionPackage x) => x.injections)
 				where !x.Value.isPlaceholder && x.Value.ModifiesDefFromModOrNullCore(mod, defType)
 				select x).ToList();
 			Dictionary<string, DefInjectionPackage.DefInjection> dictionary = new Dictionary<string, DefInjectionPackage.DefInjection>();
@@ -376,6 +371,16 @@ namespace Verse
 				if (!dictionary.ContainsKey(item2.Value.normalizedPath))
 				{
 					dictionary.Add(item2.Value.normalizedPath, item2.Value);
+				}
+			}
+			if (defType == typeof(BackstoryDef))
+			{
+				foreach (DefInjectionPackage.DefInjection legacyBackstoryTranslation in BackstoryTranslationUtility.GetLegacyBackstoryTranslations(activeLanguage.AllDirectories))
+				{
+					if (!dictionary.ContainsKey(legacyBackstoryTranslation.path))
+					{
+						dictionary.Add(legacyBackstoryTranslation.path, legacyBackstoryTranslation);
+					}
 				}
 			}
 			List<PossibleDefInjection> possibleDefInjections = new List<PossibleDefInjection>();
@@ -457,10 +462,10 @@ namespace Verse
 												{
 													num2++;
 													string text = item3.normalizedPath + "." + num2;
-													string suggestedPath2 = item3.suggestedPath + "." + num2;
+													string text2 = item3.suggestedPath + "." + num2;
 													if (TKeySystem.TrySuggestTKeyPath(text, out var tKeyPath))
 													{
-														suggestedPath2 = tKeyPath;
+														text2 = tKeyPath;
 													}
 													if (!dictionary.TryGetValue(text, out var value))
 													{
@@ -483,7 +488,14 @@ namespace Verse
 													{
 														Log.Error("Could not add comment node in " + fileName + ": " + ex);
 													}
-													xElement.Add(GetDefInjectableFieldNode(suggestedPath2, value));
+													if (LanguageDatabase.activeLanguage == LanguageDatabase.defaultLanguage)
+													{
+														xElement.Add(new XElement(text2, item5));
+													}
+													else
+													{
+														xElement.Add(GetDefInjectableFieldNode(text2, value));
+													}
 												}
 												continue;
 											}
@@ -511,25 +523,32 @@ namespace Verse
 											flag = true;
 											try
 											{
-												string text2 = ListToLiNodesString(englishList);
-												if (!text2.NullOrEmpty())
+												string text3 = ListToLiNodesString(englishList);
+												if (!text3.NullOrEmpty())
 												{
-													xElement.Add(new XComment(SanitizeXComment(" EN:\n" + text2.Indented() + "\n  ")));
+													xElement.Add(new XComment(SanitizeXComment(" EN:\n" + text3.Indented() + "\n  ")));
 												}
 											}
 											catch (Exception ex2)
 											{
 												Log.Error("Could not add comment node in " + fileName + ": " + ex2);
 											}
-											xElement.Add(GetDefInjectableFieldNode(item3.suggestedPath, value2));
+											if (LanguageDatabase.activeLanguage == LanguageDatabase.defaultLanguage)
+											{
+												xElement.Add(ListToXElement(englishList, item3.suggestedPath, value2?.fullListInjectionComments));
+											}
+											else
+											{
+												xElement.Add(GetDefInjectableFieldNode(item3.suggestedPath, value2));
+											}
 											continue;
 										}
 										if (!dictionary.TryGetValue(item3.normalizedPath, out var value3))
 										{
 											value3 = null;
 										}
-										string text3 = ((value3 != null && value3.injected) ? value3.replacedString : item3.curValue);
-										if (value3 == null && !DefInjectionUtility.ShouldCheckMissingInjection(text3, item3.fieldInfo, item3.def))
+										string text4 = ((value3 != null && value3.injected) ? value3.replacedString : item3.curValue);
+										if (value3 == null && !DefInjectionUtility.ShouldCheckMissingInjection(text4, item3.fieldInfo, item3.def))
 										{
 											continue;
 										}
@@ -537,16 +556,23 @@ namespace Verse
 										flag = true;
 										try
 										{
-											if (!text3.NullOrEmpty())
+											if (!text4.NullOrEmpty())
 											{
-												xElement.Add(new XComment(SanitizeXComment(" EN: " + text3.Replace("\n", "\\n") + " ")));
+												xElement.Add(new XComment(SanitizeXComment(" EN: " + text4.Replace("\n", "\\n") + " ")));
 											}
 										}
 										catch (Exception ex3)
 										{
 											Log.Error("Could not add comment node in " + fileName + ": " + ex3);
 										}
-										xElement.Add(GetDefInjectableFieldNode(item3.suggestedPath, value3));
+										if (LanguageDatabase.activeLanguage == LanguageDatabase.defaultLanguage)
+										{
+											xElement.Add(new XElement(item3.suggestedPath, text4));
+										}
+										else
+										{
+											xElement.Add(GetDefInjectableFieldNode(item3.suggestedPath, value3));
+										}
 									}
 									if (flag2)
 									{
@@ -575,9 +601,9 @@ namespace Verse
 					{
 						if (flag)
 						{
-							string text4 = Path.Combine(defInjectionsFolderPath, defType.Name);
-							Directory.CreateDirectory(text4);
-							SaveXMLDocumentWithProcessedNewlineTags(xDocument, Path.Combine(text4, fileName));
+							string text5 = Path.Combine(defInjectionsFolderPath, defType.Name);
+							Directory.CreateDirectory(text5);
+							SaveXMLDocumentWithProcessedNewlineTags(xDocument, Path.Combine(text5, fileName));
 						}
 					}
 				}
@@ -590,51 +616,15 @@ namespace Verse
 
 		private static void CleanupBackstories()
 		{
-			string text = Path.Combine(GetActiveLanguageCoreModFolderPath(), "Backstories");
-			Directory.CreateDirectory(text);
-			string path = Path.Combine(text, "Backstories.xml");
-			File.Delete(path);
-			XDocument xDocument = new XDocument();
-			try
+			string activeLanguageCoreModFolderPath = GetActiveLanguageCoreModFolderPath();
+			string text = Path.Combine(activeLanguageCoreModFolderPath, "Backstories");
+			if (Directory.Exists(text))
 			{
-				XElement xElement = new XElement("BackstoryTranslations");
-				xDocument.Add(xElement);
-				xElement.Add(new XComment("NEWLINE"));
-				foreach (KeyValuePair<string, Backstory> item in BackstoryDatabase.allBackstories.OrderBy((KeyValuePair<string, Backstory> x) => x.Key))
-				{
-					try
-					{
-						XElement xElement2 = new XElement(item.Key);
-						AddBackstoryFieldElement(xElement2, "title", item.Value.title, item.Value.untranslatedTitle, item.Value.titleTranslated);
-						AddBackstoryFieldElement(xElement2, "titleFemale", item.Value.titleFemale, item.Value.untranslatedTitleFemale, item.Value.titleFemaleTranslated);
-						AddBackstoryFieldElement(xElement2, "titleShort", item.Value.titleShort, item.Value.untranslatedTitleShort, item.Value.titleShortTranslated);
-						AddBackstoryFieldElement(xElement2, "titleShortFemale", item.Value.titleShortFemale, item.Value.untranslatedTitleShortFemale, item.Value.titleShortFemaleTranslated);
-						AddBackstoryFieldElement(xElement2, "desc", item.Value.baseDesc, item.Value.untranslatedDesc, item.Value.descTranslated);
-						xElement.Add(xElement2);
-						xElement.Add(new XComment("NEWLINE"));
-					}
-					catch (Exception ex)
-					{
-						Log.Error("Could not process backstory " + item.Key + ": " + ex);
-					}
-				}
-			}
-			finally
-			{
-				SaveXMLDocumentWithProcessedNewlineTags(xDocument, path);
-			}
-		}
-
-		private static void AddBackstoryFieldElement(XElement addTo, string fieldName, string currentValue, string untranslatedValue, bool wasTranslated)
-		{
-			if (wasTranslated || !untranslatedValue.NullOrEmpty())
-			{
-				if (!untranslatedValue.NullOrEmpty())
-				{
-					addTo.Add(new XComment(SanitizeXComment(" EN: " + untranslatedValue.Replace("\n", "\\n") + " ")));
-				}
-				string text = (wasTranslated ? currentValue : "TODO");
-				addTo.Add(new XElement(fieldName, text.NullOrEmpty() ? "" : text.Replace("\n", "\\n")));
+				string text2 = Path.Combine(activeLanguageCoreModFolderPath, "Backstories DELETE_ME");
+				Directory.Move(text, text2);
+				string text3 = Path.Combine(text, "Backstories.xml");
+				string text4 = Path.Combine(text2, "Backstories.xml");
+				Find.WindowStack.Add(new Dialog_MessageBox("RestartAfterImportingLegacyBackstoryTanslations".Translate(text3, text4), null, GenCommandLine.Restart));
 			}
 		}
 
@@ -732,16 +722,6 @@ namespace Verse
 			return "Unknown.xml";
 		}
 
-		private static string TryRemoveLastIndexSymbol(string str)
-		{
-			int num = str.LastIndexOf('.');
-			if (num >= 0 && str.Substring(num + 1).All((char x) => char.IsNumber(x)))
-			{
-				return str.Substring(0, num);
-			}
-			return str;
-		}
-
 		private static IEnumerable<string> GetEnglishList(string normalizedPath, IEnumerable<string> curValue, Dictionary<string, DefInjectionPackage.DefInjection> injectionsByNormalizedPath)
 		{
 			if (injectionsByNormalizedPath.TryGetValue(normalizedPath, out var value) && value.injected)
@@ -753,6 +733,10 @@ namespace Verse
 				return null;
 			}
 			List<string> list = curValue.ToList();
+			if (LanguageDatabase.activeLanguage == LanguageDatabase.defaultLanguage)
+			{
+				return list;
+			}
 			for (int i = 0; i < list.Count; i++)
 			{
 				string key = normalizedPath + "." + i;
@@ -781,18 +765,20 @@ namespace Verse
 				{
 					try
 					{
-						return XElement.Parse("<" + suggestedPath + ">" + existingInjection.injection + "</" + suggestedPath + ">");
+						xElement = XElement.Parse("<" + suggestedPath + ">" + existingInjection.injection + "</" + suggestedPath + ">");
 					}
 					catch (Exception ex)
 					{
 						Log.Warning("Could not parse XML: " + existingInjection.injection + ". Exception: " + ex);
 						xElement = new XElement(suggestedPath);
 						xElement.Add(existingInjection.injection);
-						return xElement;
 					}
 				}
-				xElement = new XElement(suggestedPath);
-				xElement.Add(new XText(existingInjection.injection.Replace("\n", "\\n")));
+				else
+				{
+					xElement = new XElement(suggestedPath);
+					xElement.Add(new XText(existingInjection.injection.Replace("\n", "\\n")));
+				}
 			}
 			else
 			{

@@ -11,11 +11,17 @@ namespace RimWorld
 
 		public string outSignalPawnAccepted;
 
+		public string outSignalPawnRejected;
+
 		public string letterLabel;
 
 		public string letterText;
 
 		public string letterTitle;
+
+		public bool charity;
+
+		public bool sendLetterOnEnable;
 
 		private ChoiceLetter_AcceptVisitors letter;
 
@@ -29,10 +35,19 @@ namespace RimWorld
 
 		private const int CheckInterval = 2500;
 
+		protected override void Enable(SignalArgs receivedArgs)
+		{
+			base.Enable(receivedArgs);
+			if (sendLetterOnEnable)
+			{
+				SendLetter();
+			}
+		}
+
 		public override void QuestPartTick()
 		{
 			base.QuestPartTick();
-			if (!letterSent && pawn != null && pawn.needs != null && pawn.needs.mood != null && pawn.IsHashIntervalTick(2500))
+			if (!sendLetterOnEnable && !letterSent && pawn != null && pawn.needs != null && pawn.needs.mood != null && pawn.IsHashIntervalTick(2500))
 			{
 				float curLevelPercentage = pawn.needs.mood.CurLevelPercentage;
 				if (!(curLevelPercentage < 0.5f) && Rand.MTBEventOccurs(JoinMTBbyMoodCurve.Evaluate(curLevelPercentage), 60000f, 2500f))
@@ -51,9 +66,15 @@ namespace RimWorld
 				letter.pawns.Add(pawn);
 				letter.quest = quest;
 				letter.acceptedSignal = outSignalPawnAccepted;
+				letter.rejectedSignal = outSignalPawnRejected;
 				letter.lookTargets = new LookTargets(pawn);
+				letter.charity = charity;
 				Find.LetterStack.ReceiveLetter(letter);
 				letterSent = true;
+				if (pawn.guest != null)
+				{
+					pawn.guest.Recruitable = true;
+				}
 			}
 		}
 
@@ -94,9 +115,12 @@ namespace RimWorld
 			Scribe_References.Look(ref pawn, "pawn");
 			Scribe_Values.Look(ref letterSent, "letterSent", defaultValue: false);
 			Scribe_Values.Look(ref outSignalPawnAccepted, "outSignalPawnAccepted");
+			Scribe_Values.Look(ref outSignalPawnRejected, "outSignalPawnRejected");
 			Scribe_Values.Look(ref letterLabel, "letterLabel");
 			Scribe_Values.Look(ref letterText, "letterText");
 			Scribe_Values.Look(ref letterTitle, "letterTitle");
+			Scribe_Values.Look(ref charity, "charity", defaultValue: false);
+			Scribe_Values.Look(ref sendLetterOnEnable, "sendLetterOnEnable", defaultValue: false);
 		}
 	}
 }

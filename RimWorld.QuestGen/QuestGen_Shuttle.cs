@@ -7,11 +7,10 @@ namespace RimWorld.QuestGen
 {
 	public static class QuestGen_Shuttle
 	{
-		public static Thing GenerateShuttle(Faction owningFaction = null, IEnumerable<Pawn> requiredPawns = null, IEnumerable<ThingDefCount> requiredItems = null, bool acceptColonists = false, bool onlyAcceptColonists = false, bool onlyAcceptHealthy = false, int requireColonistCount = -1, bool dropEverythingIfUnsatisfied = false, bool leaveImmediatelyWhenSatisfied = false, bool dropEverythingOnArrival = false, bool stayAfterDroppedEverythingOnArrival = false, WorldObject missionShuttleTarget = null, WorldObject missionShuttleHome = null, int maxColonistCount = -1, ThingDef shuttleDef = null, bool permitShuttle = false, bool hideControls = true, List<Thing> sendAwayIfAllDespawned = null)
+		public static Thing GenerateShuttle(Faction owningFaction = null, IEnumerable<Pawn> requiredPawns = null, IEnumerable<ThingDefCount> requiredItems = null, bool acceptColonists = false, bool onlyAcceptColonists = false, bool onlyAcceptHealthy = false, int requireColonistCount = -1, bool dropEverythingIfUnsatisfied = false, bool leaveImmediatelyWhenSatisfied = false, bool dropEverythingOnArrival = false, bool stayAfterDroppedEverythingOnArrival = false, WorldObject missionShuttleTarget = null, WorldObject missionShuttleHome = null, int maxColonistCount = -1, ThingDef shuttleDef = null, bool permitShuttle = false, bool hideControls = true, bool allowSlaves = false, bool requireAllColonistsOnMap = false, bool acceptColonyPrisoners = false)
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (!ModLister.CheckRoyaltyOrIdeology("Shuttle"))
 			{
-				Log.ErrorOnce("Shuttle is a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 8811221);
 				return null;
 			}
 			_ = QuestGen.slate;
@@ -33,19 +32,11 @@ namespace RimWorld.QuestGen
 			compShuttle.onlyAcceptColonists = onlyAcceptColonists;
 			compShuttle.onlyAcceptHealthy = onlyAcceptHealthy;
 			compShuttle.requiredColonistCount = requireColonistCount;
-			compShuttle.dropEverythingIfUnsatisfied = dropEverythingIfUnsatisfied;
-			compShuttle.leaveImmediatelyWhenSatisfied = leaveImmediatelyWhenSatisfied;
-			compShuttle.dropEverythingOnArrival = dropEverythingOnArrival;
-			compShuttle.stayAfterDroppedEverythingOnArrival = stayAfterDroppedEverythingOnArrival;
-			compShuttle.missionShuttleHome = missionShuttleHome;
-			compShuttle.missionShuttleTarget = missionShuttleTarget;
 			compShuttle.maxColonistCount = maxColonistCount;
 			compShuttle.permitShuttle = permitShuttle;
-			compShuttle.hideControls = hideControls;
-			if (sendAwayIfAllDespawned != null)
-			{
-				compShuttle.sendAwayIfAllDespawned = sendAwayIfAllDespawned;
-			}
+			compShuttle.allowSlaves = allowSlaves;
+			compShuttle.requireAllColonistsOnMap = requireAllColonistsOnMap;
+			compShuttle.acceptColonyPrisoners = acceptColonyPrisoners;
 			return thing;
 		}
 
@@ -135,6 +126,43 @@ namespace RimWorld.QuestGen
 			}
 			quest.AddPart(questPart_ShuttleDelay);
 			return questPart_ShuttleDelay;
+		}
+
+		public static QuestPart_RequirePawnsCurrentlyOnShuttle RequirePawnsCurrentlyOnShuttle(this Quest quest, Thing shuttle, int requiredColonistCount = 0, string inSignal = null)
+		{
+			QuestPart_RequirePawnsCurrentlyOnShuttle questPart_RequirePawnsCurrentlyOnShuttle = new QuestPart_RequirePawnsCurrentlyOnShuttle
+			{
+				inSignal = (inSignal ?? QuestGen.slate.Get<string>("inSignal")),
+				shuttle = shuttle,
+				requiredColonistCount = requiredColonistCount
+			};
+			quest.AddPart(questPart_RequirePawnsCurrentlyOnShuttle);
+			return questPart_RequirePawnsCurrentlyOnShuttle;
+		}
+
+		public static QuestPart_RequiredShuttleThings RequiredShuttleThings(this Quest quest, Thing shuttle, MapParent map, string inSignal = null, bool requireAllColonistsOnMap = false, int requiredColonistCount = -1)
+		{
+			QuestPart_RequiredShuttleThings questPart_RequiredShuttleThings = new QuestPart_RequiredShuttleThings();
+			questPart_RequiredShuttleThings.mapParent = map;
+			questPart_RequiredShuttleThings.shuttle = shuttle;
+			questPart_RequiredShuttleThings.inSignal = inSignal ?? QuestGen.slate.Get<string>("inSignal");
+			questPart_RequiredShuttleThings.requireAllColonistsOnMap = requireAllColonistsOnMap;
+			questPart_RequiredShuttleThings.requiredColonistCount = requiredColonistCount;
+			quest.AddPart(questPart_RequiredShuttleThings);
+			return questPart_RequiredShuttleThings;
+		}
+
+		public static QuestPart_PawnsNoLongerRequiredForShuttleOnRescue RemoveFromRequiredPawnsOnRescue(this Quest quest, Thing shuttle, IEnumerable<Pawn> pawns, string inSignal = null)
+		{
+			QuestPart_PawnsNoLongerRequiredForShuttleOnRescue questPart_PawnsNoLongerRequiredForShuttleOnRescue = new QuestPart_PawnsNoLongerRequiredForShuttleOnRescue();
+			questPart_PawnsNoLongerRequiredForShuttleOnRescue.inSignal = inSignal ?? QuestGen.slate.Get<string>("inSignal");
+			questPart_PawnsNoLongerRequiredForShuttleOnRescue.shuttle = shuttle;
+			if (pawns != null)
+			{
+				questPart_PawnsNoLongerRequiredForShuttleOnRescue.pawns.AddRange(pawns);
+			}
+			quest.AddPart(questPart_PawnsNoLongerRequiredForShuttleOnRescue);
+			return questPart_PawnsNoLongerRequiredForShuttleOnRescue;
 		}
 	}
 }

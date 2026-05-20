@@ -72,8 +72,7 @@ namespace RimWorld
 
 		public override bool TryMerge(ScenPart other)
 		{
-			ScenPart_ForcedHediff scenPart_ForcedHediff = other as ScenPart_ForcedHediff;
-			if (scenPart_ForcedHediff != null && hediff == scenPart_ForcedHediff.hediff)
+			if (other is ScenPart_ForcedHediff scenPart_ForcedHediff && hediff == scenPart_ForcedHediff.hediff)
 			{
 				chance = GenMath.ChanceEitherHappens(chance, scenPart_ForcedHediff.chance);
 				return true;
@@ -89,11 +88,11 @@ namespace RimWorld
 			}
 			if (hideOffMap)
 			{
-				if (!req.AllowDead && pawn.health.WouldDieAfterAddingHediff(hediff, null, severityRange.max))
+				if (!req.AllowDead && !req.ForceDead && pawn.health.WouldDieAfterAddingHediff(hediff, null, severityRange.max))
 				{
 					return false;
 				}
-				if (!req.AllowDowned && pawn.health.WouldBeDownedAfterAddingHediff(hediff, null, severityRange.max))
+				if (!req.AllowDowned && !req.ForceDead && pawn.health.WouldBeDownedAfterAddingHediff(hediff, null, severityRange.max))
 				{
 					return false;
 				}
@@ -113,9 +112,26 @@ namespace RimWorld
 
 		private void AddHediff(Pawn p)
 		{
-			Hediff hediff = HediffMaker.MakeHediff(this.hediff, p);
-			hediff.Severity = severityRange.RandomInRange;
-			p.health.AddHediff(hediff);
+			if (Find.GameInitData == null || !Find.GameInitData.QuickStarted || !Prefs.DisableQuickStartCryptoSickness || this.hediff != HediffDefOf.CryptosleepSickness)
+			{
+				Hediff hediff = HediffMaker.MakeHediff(this.hediff, p);
+				hediff.Severity = severityRange.RandomInRange;
+				p.health.AddHediff(hediff);
+			}
+		}
+
+		public override bool HasNullDefs()
+		{
+			if (!base.HasNullDefs())
+			{
+				return hediff == null;
+			}
+			return true;
+		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode() ^ ((hediff != null) ? hediff.GetHashCode() : 0) ^ severityRange.GetHashCode();
 		}
 	}
 }

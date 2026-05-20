@@ -1,19 +1,23 @@
 using System.Collections.Generic;
 using Verse;
+using Verse.AI;
 using Verse.AI.Group;
 
 namespace RimWorld
 {
 	public class IncidentWorker_TraderCaravanArrival : IncidentWorker_NeutralGroup
 	{
+		public const string SlaverTraderKindCategory = "Slaver";
+
 		protected override PawnGroupKindDef PawnGroupKindDef => PawnGroupKindDefOf.Trader;
 
-		protected override bool FactionCanBeGroupSource(Faction f, Map map, bool desperate = false)
+		public override bool FactionCanBeGroupSource(Faction f, IncidentParms parms, bool desperate = false)
 		{
-			if (!base.FactionCanBeGroupSource(f, map, desperate) || f.def.caravanTraderKinds.Count == 0)
+			if (!base.FactionCanBeGroupSource(f, parms, desperate) || f.def.caravanTraderKinds.Count == 0)
 			{
 				return false;
 			}
+			Map map = (Map)parms.target;
 			return f.def.caravanTraderKinds.Any((TraderKindDef t) => TraderKindCommonality(t, map, f) > 0f);
 		}
 
@@ -50,17 +54,23 @@ namespace RimWorld
 
 		protected virtual float TraderKindCommonality(TraderKindDef traderKind, Map map, Faction faction)
 		{
-			if (traderKind.faction != null)
+			if (traderKind.faction != null && faction.def != traderKind.faction)
 			{
-				if (faction.def != traderKind.faction)
+				return 0f;
+			}
+			if (ModsConfig.IdeologyActive && faction.ideos != null && traderKind.category == "Slaver")
+			{
+				foreach (Ideo allIdeo in faction.ideos.AllIdeos)
 				{
-					return 0f;
+					if (!allIdeo.IdeoApprovesOfSlavery())
+					{
+						return 0f;
+					}
 				}
-				if (traderKind.permitRequiredForTrading != null && !map.mapPawns.FreeColonists.Any((Pawn p) => p.royalty != null && p.royalty.HasPermit(traderKind.permitRequiredForTrading, faction)))
-				{
-					return 0f;
-				}
-				return traderKind.CalculatedCommonality;
+			}
+			if (traderKind.permitRequiredForTrading != null && !map.mapPawns.FreeColonists.Any((Pawn p) => p.royalty != null && p.royalty.HasPermit(traderKind.permitRequiredForTrading, faction)))
+			{
+				return 0f;
 			}
 			return traderKind.CalculatedCommonality;
 		}
@@ -76,32 +86,45 @@ namespace RimWorld
 			{
 				return false;
 			}
-			List<Pawn> list = SpawnPawns(parms);
-			if (list.Count == 0)
+			List<Pawn> pawns = SpawnPawns(parms);
+			if (pawns.Count == 0)
 			{
 				return false;
 			}
-			for (int i = 0; i < list.Count; i++)
+			for (int i = 0; i < pawns.Count; i++)
 			{
-				if (list[i].needs != null && list[i].needs.food != null)
+				if (pawns[i].needs != null && pawns[i].needs.food != null)
 				{
-					list[i].needs.food.CurLevel = list[i].needs.food.MaxLevel;
+					pawns[i].needs.food.CurLevel = pawns[i].needs.food.MaxLevel;
 				}
 			}
 			TraderKindDef traderKind = null;
-			for (int j = 0; j < list.Count; j++)
+			for (int j = 0; j < pawns.Count; j++)
 			{
-				Pawn pawn = list[j];
+				Pawn pawn = pawns[j];
 				if (pawn.TraderKind != null)
 				{
 					traderKind = pawn.TraderKind;
 					break;
 				}
 			}
-			SendLetter(parms, list, traderKind);
-			RCellFinder.TryFindRandomSpotJustOutsideColony(list[0], out var result);
+			SendLetter(parms, pawns, traderKind);
+			if (!RCellFinder.TryFindRandomSpotJustOutsideColony(pawns[0].Position, pawns[0].MapHeld, pawns[0], out var result, delegate(IntVec3 c)
+			{
+				for (int k = 0; k < pawns.Count; k++)
+				{
+					if (!pawns[k].CanReach(c, PathEndMode.OnCell, Danger.Deadly))
+					{
+						return false;
+					}
+				}
+				return true;
+			}))
+			{
+				return false;
+			}
 			LordJob_TradeWithColony lordJob = new LordJob_TradeWithColony(parms.faction, result);
-			LordMaker.MakeNewLord(parms.faction, lordJob, map, list);
+			LordMaker.MakeNewLord(parms.faction, lordJob, map, pawns);
 			return true;
 		}
 

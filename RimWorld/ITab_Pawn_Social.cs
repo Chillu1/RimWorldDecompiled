@@ -8,18 +8,31 @@ namespace RimWorld
 	{
 		public const float Width = 540f;
 
-		public override bool IsVisible => SelPawnForSocialInfo.RaceProps.IsFlesh;
+		public override bool IsVisible
+		{
+			get
+			{
+				if (SelPawnForSocialInfo.RaceProps.IsFlesh)
+				{
+					if (ModsConfig.AnomalyActive)
+					{
+						return !SelPawnForSocialInfo.RaceProps.IsAnomalyEntity;
+					}
+					return true;
+				}
+				return false;
+			}
+		}
 
 		private Pawn SelPawnForSocialInfo
 		{
 			get
 			{
-				if (base.SelPawn != null)
+				if (SelPawn != null)
 				{
-					return base.SelPawn;
+					return SelPawn;
 				}
-				Corpse corpse = base.SelThing as Corpse;
-				if (corpse != null)
+				if (base.SelThing is Corpse corpse)
 				{
 					return corpse.InnerPawn;
 				}

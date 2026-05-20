@@ -11,15 +11,7 @@ namespace RimWorld
 			new CurvePoint(3f, 0.45f)
 		};
 
-		public const float RecentQuestSelectionWeightFactor0 = 0.01f;
-
-		public const float RecentQuestSelectionWeightFactor1 = 0.3f;
-
-		public const float RecentQuestSelectionWeightFactor2 = 0.5f;
-
-		public const float RecentQuestSelectionWeightFactor3 = 0.7f;
-
-		public const float RecentQuestSelectionWeightFactor4 = 0.9f;
+		public static readonly float[] RecentStoryWeightFactors = new float[5] { 0.01f, 0.3f, 0.5f, 0.7f, 0.9f };
 
 		public static readonly SimpleCurve NonFavorQuestSelectionWeightFactorByDaysSinceFavorQuestCurve = new SimpleCurve
 		{

@@ -1,4 +1,5 @@
 using Verse;
+using Verse.AI.Group;
 
 namespace RimWorld
 {
@@ -8,7 +9,7 @@ namespace RimWorld
 
 		public override bool DangerousInMelee => true;
 
-		public override void PawnDied(Corpse corpse)
+		public override void PawnDied(Corpse corpse, Lord prevLord)
 		{
 			GenExplosion.DoExplosion(corpse.Position, corpse.Map, 1.9f, DamageDefOf.Flame, corpse.InnerPawn);
 		}

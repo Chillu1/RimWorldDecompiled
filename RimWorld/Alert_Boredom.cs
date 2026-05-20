@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Text;
 using Verse;
@@ -7,20 +6,43 @@ namespace RimWorld
 {
 	public class Alert_Boredom : Alert
 	{
-		private const float JoyNeedThreshold = 426f / (565f * (float)Math.PI);
+		private const float JoyNeedThreshold = 0.24000001f;
 
 		private List<Pawn> boredPawnsResult = new List<Pawn>();
+
+		private StringBuilder sb = new StringBuilder();
 
 		private List<Pawn> BoredPawns
 		{
 			get
 			{
 				boredPawnsResult.Clear();
-				foreach (Pawn item in PawnsFinder.AllMaps_FreeColonistsSpawned)
+				List<Map> maps = Find.Maps;
+				for (int i = 0; i < maps.Count; i++)
 				{
-					if ((item.needs.joy.CurLevelPercentage < 426f / (565f * (float)Math.PI) || item.GetTimeAssignment() == TimeAssignmentDefOf.Joy) && item.needs.joy.tolerances.BoredOfAllAvailableJoyKinds(item))
+					if (!maps[i].IsPlayerHome)
 					{
-						boredPawnsResult.Add(item);
+						continue;
+					}
+					List<Pawn> freeColonistsSpawned = maps[i].mapPawns.FreeColonistsSpawned;
+					if (!freeColonistsSpawned.Any())
+					{
+						continue;
+					}
+					List<JoyKindDef> list = JoyUtility.JoyKindsOnMapTempList(maps[i]);
+					try
+					{
+						foreach (Pawn item in freeColonistsSpawned)
+						{
+							if (item.needs.joy != null && (item.needs.joy.CurLevelPercentage < 0.24000001f || item.GetTimeAssignment() == TimeAssignmentDefOf.Joy) && item.needs.joy.tolerances.BoredOfKinds(list))
+							{
+								boredPawnsResult.Add(item);
+							}
+						}
+					}
+					finally
+					{
+						list.Clear();
 					}
 				}
 				return boredPawnsResult;
@@ -40,18 +62,18 @@ namespace RimWorld
 
 		public override TaggedString GetExplanation()
 		{
-			StringBuilder stringBuilder = new StringBuilder();
+			sb.Length = 0;
 			Pawn pawn = null;
-			foreach (Pawn boredPawn in BoredPawns)
+			foreach (Pawn item in boredPawnsResult)
 			{
-				stringBuilder.AppendLine("   " + boredPawn.Label);
+				sb.AppendLine("  - " + item.NameShortColored.Resolve());
 				if (pawn == null)
 				{
-					pawn = boredPawn;
+					pawn = item;
 				}
 			}
-			string value = ((pawn != null) ? JoyUtility.JoyKindsOnMapString(pawn.Map) : "");
-			return "BoredomDesc".Translate(stringBuilder.ToString().TrimEndNewlines(), pawn.LabelShort, value, pawn.Named("PAWN"));
+			string text = ((pawn != null) ? JoyUtility.JoyKindsOnMapString(pawn.Map) : string.Empty);
+			return "BoredomDesc".Translate(sb.ToString().TrimEndNewlines(), pawn.LabelShort, text, pawn.Named("PAWN"));
 		}
 	}
 }

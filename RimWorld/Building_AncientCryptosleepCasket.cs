@@ -43,9 +43,9 @@ namespace RimWorld
 
 		public override void EjectContents()
 		{
-			bool contentsKnown = base.contentsKnown;
+			bool num = contentsKnown;
 			List<Thing> list = null;
-			if (!contentsKnown)
+			if (!num)
 			{
 				list = new List<Thing>();
 				list.AddRange(innerContainer);
@@ -53,13 +53,16 @@ namespace RimWorld
 				list.RemoveDuplicates();
 			}
 			base.EjectContents();
-			if (contentsKnown)
+			if ((bool)ClaimableBy(Faction.OfPlayer))
+			{
+				SetFaction(null);
+			}
+			if (num)
 			{
 				return;
 			}
 			ThingDef filth_Slime = ThingDefOf.Filth_Slime;
 			FilthMaker.TryMakeFilth(base.Position, base.Map, filth_Slime, Rand.Range(8, 12));
-			SetFaction(null);
 			foreach (Building_AncientCryptosleepCasket item in UnopenedCasketsInGroup())
 			{
 				item.contentsKnown = true;

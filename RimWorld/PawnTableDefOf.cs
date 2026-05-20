@@ -13,6 +13,9 @@ namespace RimWorld
 
 		public static PawnTableDef Wildlife;
 
+		[MayRequireBiotech]
+		public static PawnTableDef Mechs;
+
 		static PawnTableDefOf()
 		{
 			DefOfHelper.EnsureInitializedInCtor(typeof(PawnTableDefOf));

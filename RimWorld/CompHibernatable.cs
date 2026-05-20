@@ -42,9 +42,9 @@ namespace RimWorld
 			}
 		}
 
-		public override void PostDeSpawn(Map map)
+		public override void PostDeSpawn(Map map, DestroyMode mode = DestroyMode.Vanish)
 		{
-			base.PostDeSpawn(map);
+			base.PostDeSpawn(map, mode);
 			map.info.parent.Notify_HibernatableChanged();
 			if (sustainer != null && !sustainer.Ended)
 			{
@@ -82,8 +82,8 @@ namespace RimWorld
 			{
 				State = HibernatableStateDefOf.Running;
 				endStartupTick = 0;
-				string str = ((parent.Map.Parent.GetComponent<EscapeShipComp>() == null) ? ((string)"LetterHibernateCompleteStandalone".Translate()) : ((string)"LetterHibernateComplete".Translate()));
-				Find.LetterStack.ReceiveLetter("LetterLabelHibernateComplete".Translate(), str, LetterDefOf.PositiveEvent, new GlobalTargetInfo(parent));
+				string text = ((parent.Map.Parent.GetComponent<EscapeShipComp>() == null) ? ((string)"LetterHibernateCompleteStandalone".Translate()) : ((string)"LetterHibernateComplete".Translate()));
+				Find.LetterStack.ReceiveLetter("LetterLabelHibernateComplete".Translate(), text, LetterDefOf.PositiveEvent, new GlobalTargetInfo(parent));
 			}
 			if (State != HibernatableStateDefOf.Hibernating)
 			{

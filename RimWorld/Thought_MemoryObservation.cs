@@ -5,9 +5,9 @@ namespace RimWorld
 {
 	public class Thought_MemoryObservation : Thought_Memory
 	{
-		private int targetThingID;
+		protected int targetThingID;
 
-		public Thing Target
+		public virtual Thing Target
 		{
 			set
 			{
@@ -28,15 +28,14 @@ namespace RimWorld
 			List<Thought_Memory> memories = thoughts.memories.Memories;
 			for (int i = 0; i < memories.Count; i++)
 			{
-				Thought_MemoryObservation thought_MemoryObservation2 = memories[i] as Thought_MemoryObservation;
-				if (thought_MemoryObservation2 != null && thought_MemoryObservation2.def == def && thought_MemoryObservation2.targetThingID == targetThingID && (thought_MemoryObservation == null || thought_MemoryObservation2.age > thought_MemoryObservation.age))
+				if (memories[i] is Thought_MemoryObservation thought_MemoryObservation2 && thought_MemoryObservation2.def == def && thought_MemoryObservation2.targetThingID == targetThingID && (thought_MemoryObservation == null || thought_MemoryObservation2.age > thought_MemoryObservation.age))
 				{
 					thought_MemoryObservation = thought_MemoryObservation2;
 				}
 			}
 			if (thought_MemoryObservation != null)
 			{
-				showBubble = thought_MemoryObservation.age > thought_MemoryObservation.def.DurationTicks / 2;
+				showBubble = thought_MemoryObservation.age > thought_MemoryObservation.DurationTicks / 2;
 				thought_MemoryObservation.Renew();
 				return true;
 			}

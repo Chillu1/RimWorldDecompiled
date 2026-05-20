@@ -1,5 +1,6 @@
 using Verse;
 using Verse.AI;
+using Verse.AI.Group;
 
 namespace RimWorld
 {
@@ -29,15 +30,20 @@ namespace RimWorld
 			{
 				return false;
 			}
-			Room room = pawn.GetRoom();
-			if (room.TouchesMapEdge)
+			Lord lord = pawn.GetLord();
+			if (lord != null && lord.PrisonerSecure(pawn))
+			{
+				return false;
+			}
+			District district = pawn.GetDistrict();
+			if (district.TouchesMapEdge)
 			{
 				return true;
 			}
 			bool found = false;
-			RegionTraverser.BreadthFirstTraverse(room.Regions[0], (Region from, Region reg) => (reg.door == null || reg.door.FreePassage) ? true : false, delegate(Region reg)
+			RegionTraverser.BreadthFirstTraverse(district.Regions[0], (Region from, Region reg) => (reg.door == null || reg.door.FreePassage) ? true : false, delegate(Region reg)
 			{
-				if (reg.Room.TouchesMapEdge)
+				if (reg.District.TouchesMapEdge)
 				{
 					found = true;
 					return true;

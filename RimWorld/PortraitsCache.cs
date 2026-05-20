@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -11,23 +12,11 @@ namespace RimWorld
 		{
 			private const float CacheDuration = 1f;
 
-			public RenderTexture RenderTexture
-			{
-				get;
-				private set;
-			}
+			public RenderTexture RenderTexture { get; private set; }
 
-			public bool Dirty
-			{
-				get;
-				private set;
-			}
+			public bool Dirty { get; private set; }
 
-			public float LastUseTime
-			{
-				get;
-				private set;
-			}
+			public float LastUseTime { get; private set; }
 
 			public bool Expired => Time.time - LastUseTime > 1f;
 
@@ -40,45 +29,103 @@ namespace RimWorld
 			}
 		}
 
-		private struct CachedPortraitsWithParams
+		private class PortraitParamsEqualityComparer : IEqualityComparer<PortraitParams>
 		{
-			public Dictionary<Pawn, CachedPortrait> CachedPortraits
+			public bool Equals(PortraitParams x, PortraitParams y)
 			{
-				get;
-				private set;
+				return x.Equals(y);
 			}
 
-			public Vector2 Size
+			public int GetHashCode(PortraitParams obj)
 			{
-				get;
-				private set;
+				return obj.GetHashCode();
+			}
+		}
+
+		private readonly struct PortraitParams : IEquatable<PortraitParams>
+		{
+			public readonly Vector2 size;
+
+			public readonly Vector3 cameraOffset;
+
+			public readonly float cameraZoom;
+
+			public readonly Rot4 rotation;
+
+			public readonly bool renderHeadgear;
+
+			public readonly bool renderClothes;
+
+			public readonly bool stylingStation;
+
+			public readonly IReadOnlyDictionary<Apparel, Color> overrideApparelColors;
+
+			public readonly Color? overrideHairColor;
+
+			public readonly PawnHealthState? overrideHealthState;
+
+			private readonly int cachedHashCode;
+
+			public PortraitParams(Vector2 size, Vector3 cameraOffset, float cameraZoom, Rot4 rotation, bool renderHeadgear = true, bool renderClothes = true, IReadOnlyDictionary<Apparel, Color> overrideApparelColors = null, Color? overrideHairColor = null, bool stylingStation = false, PawnHealthState? overrideHealthState = null)
+			{
+				this.size = size;
+				this.cameraOffset = cameraOffset;
+				this.cameraZoom = cameraZoom;
+				this.rotation = rotation;
+				this.renderHeadgear = renderHeadgear;
+				this.renderClothes = renderClothes;
+				this.overrideApparelColors = overrideApparelColors;
+				this.overrideHairColor = overrideHairColor;
+				this.stylingStation = stylingStation;
+				this.overrideHealthState = overrideHealthState;
+				cachedHashCode = size.GetHashCode() ^ cameraOffset.GetHashCode() ^ cameraZoom.GetHashCode() ^ rotation.GetHashCode() ^ renderHeadgear.GetHashCode() ^ renderClothes.GetHashCode() ^ stylingStation.GetHashCode() ^ (overrideHairColor?.GetHashCode() ?? 0) ^ (overrideHealthState?.GetHashCode() ?? 0) ^ GenCollection.DictHashCode(overrideApparelColors);
 			}
 
-			public Vector3 CameraOffset
+			public override bool Equals(object obj)
 			{
-				get;
-				private set;
+				if (obj is PortraitParams other)
+				{
+					return Equals(other);
+				}
+				return false;
 			}
 
-			public float CameraZoom
+			public bool Equals(PortraitParams other)
 			{
-				get;
-				private set;
+				if (other.size == size && other.cameraOffset == cameraOffset && other.cameraZoom == cameraZoom && other.rotation == rotation && other.renderHeadgear == renderHeadgear && other.renderClothes == renderClothes && other.stylingStation == stylingStation)
+				{
+					Color? color = other.overrideHairColor;
+					Color? color2 = overrideHairColor;
+					if (color.HasValue == color2.HasValue && (!color.HasValue || color.GetValueOrDefault() == color2.GetValueOrDefault()) && other.overrideHealthState == overrideHealthState)
+					{
+						return GenCollection.DictsEqual(other.overrideApparelColors, overrideApparelColors);
+					}
+				}
+				return false;
 			}
 
-			public CachedPortraitsWithParams(Vector2 size, Vector3 cameraOffset, float cameraZoom)
+			public override int GetHashCode()
 			{
-				this = default(CachedPortraitsWithParams);
-				CachedPortraits = new Dictionary<Pawn, CachedPortrait>();
-				Size = size;
-				CameraOffset = cameraOffset;
-				CameraZoom = cameraZoom;
+				return cachedHashCode;
+			}
+
+			public void RenderPortrait(Pawn pawn, RenderTexture renderTexture)
+			{
+				float angle = 0f;
+				Vector3 positionOffset = default(Vector3);
+				if ((overrideHealthState ?? pawn.health.State) != PawnHealthState.Mobile && !pawn.ageTracker.CurLifeStage.alwaysDowned)
+				{
+					angle = 85f;
+					positionOffset.x -= 0.18f;
+					positionOffset.z -= 0.18f;
+				}
+				Find.PawnCacheRenderer.RenderPawn(pawn, renderTexture, cameraOffset, cameraZoom, angle, rotation, pawn.health.hediffSet.HasHead, renderHeadgear, renderClothes, portrait: true, positionOffset, overrideApparelColors, overrideHairColor, stylingStation);
 			}
 		}
 
 		private static List<RenderTexture> renderTexturesPool = new List<RenderTexture>();
 
-		private static List<CachedPortraitsWithParams> cachedPortraits = new List<CachedPortraitsWithParams>();
+		private static Dictionary<PortraitParams, Dictionary<Pawn, CachedPortrait>> cachedPortraits = new Dictionary<PortraitParams, Dictionary<Pawn, CachedPortrait>>(new PortraitParamsEqualityComparer());
 
 		private const float SupersampleScale = 1.25f;
 
@@ -86,7 +133,7 @@ namespace RimWorld
 
 		private static List<Pawn> toSetDirty = new List<Pawn>();
 
-		public static RenderTexture Get(Pawn pawn, Vector2 size, Vector3 cameraOffset = default(Vector3), float cameraZoom = 1f, bool supersample = true, bool compensateForUIScale = true)
+		public static RenderTexture Get(Pawn pawn, Vector2 size, Rot4 rotation, Vector3 cameraOffset = default(Vector3), float cameraZoom = 1f, bool supersample = true, bool compensateForUIScale = true, bool renderHeadgear = true, bool renderClothes = true, IReadOnlyDictionary<Apparel, Color> overrideApparelColors = null, Color? overrideHairColor = null, bool stylingStation = false, PawnHealthState? healthStateOverride = null)
 		{
 			if (supersample)
 			{
@@ -96,37 +143,37 @@ namespace RimWorld
 			{
 				size *= Prefs.UIScale;
 			}
-			Dictionary<Pawn, CachedPortrait> dictionary = GetOrCreateCachedPortraitsWithParams(size, cameraOffset, cameraZoom).CachedPortraits;
-			if (dictionary.TryGetValue(pawn, out var value))
+			PortraitParams portraitParams = new PortraitParams(size, cameraOffset, cameraZoom, rotation, renderHeadgear, renderClothes, overrideApparelColors, overrideHairColor, stylingStation, healthStateOverride);
+			Dictionary<Pawn, CachedPortrait> orCreateCachedPortraitsWithParams = GetOrCreateCachedPortraitsWithParams(portraitParams);
+			if (orCreateCachedPortraitsWithParams.TryGetValue(pawn, out var value))
 			{
 				if (!value.RenderTexture.IsCreated())
 				{
 					value.RenderTexture.Create();
-					RenderPortrait(pawn, value.RenderTexture, cameraOffset, cameraZoom);
+					portraitParams.RenderPortrait(pawn, value.RenderTexture);
 				}
 				else if (value.Dirty)
 				{
-					RenderPortrait(pawn, value.RenderTexture, cameraOffset, cameraZoom);
+					portraitParams.RenderPortrait(pawn, value.RenderTexture);
 				}
-				dictionary.Remove(pawn);
-				dictionary.Add(pawn, new CachedPortrait(value.RenderTexture, dirty: false, Time.time));
+				orCreateCachedPortraitsWithParams.Remove(pawn);
+				orCreateCachedPortraitsWithParams.Add(pawn, new CachedPortrait(value.RenderTexture, dirty: false, Time.time));
 				return value.RenderTexture;
 			}
 			RenderTexture renderTexture = NewRenderTexture(size);
-			RenderPortrait(pawn, renderTexture, cameraOffset, cameraZoom);
-			dictionary.Add(pawn, new CachedPortrait(renderTexture, dirty: false, Time.time));
+			portraitParams.RenderPortrait(pawn, renderTexture);
+			orCreateCachedPortraitsWithParams.Add(pawn, new CachedPortrait(renderTexture, dirty: false, Time.time));
 			return renderTexture;
 		}
 
 		public static void SetDirty(Pawn pawn)
 		{
-			for (int i = 0; i < cachedPortraits.Count; i++)
+			foreach (var (_, dictionary2) in cachedPortraits)
 			{
-				Dictionary<Pawn, CachedPortrait> dictionary = cachedPortraits[i].CachedPortraits;
-				if (dictionary.TryGetValue(pawn, out var value) && !value.Dirty)
+				if (dictionary2.TryGetValue(pawn, out var value) && !value.Dirty)
 				{
-					dictionary.Remove(pawn);
-					dictionary.Add(pawn, new CachedPortrait(value.RenderTexture, dirty: true, value.LastUseTime));
+					dictionary2.Remove(pawn);
+					dictionary2.Add(pawn, new CachedPortrait(value.RenderTexture, dirty: true, value.LastUseTime));
 				}
 			}
 		}
@@ -139,48 +186,44 @@ namespace RimWorld
 
 		public static void Clear()
 		{
-			for (int i = 0; i < cachedPortraits.Count; i++)
+			foreach (KeyValuePair<PortraitParams, Dictionary<Pawn, CachedPortrait>> cachedPortrait in cachedPortraits)
 			{
-				foreach (KeyValuePair<Pawn, CachedPortrait> cachedPortrait in cachedPortraits[i].CachedPortraits)
+				cachedPortrait.Deconstruct(out var _, out var value);
+				foreach (KeyValuePair<Pawn, CachedPortrait> item in value)
 				{
-					DestroyRenderTexture(cachedPortrait.Value.RenderTexture);
+					DestroyRenderTexture(item.Value.RenderTexture);
 				}
 			}
 			cachedPortraits.Clear();
-			for (int j = 0; j < renderTexturesPool.Count; j++)
+			for (int i = 0; i < renderTexturesPool.Count; i++)
 			{
-				DestroyRenderTexture(renderTexturesPool[j]);
+				DestroyRenderTexture(renderTexturesPool[i]);
 			}
 			renderTexturesPool.Clear();
 		}
 
-		private static CachedPortraitsWithParams GetOrCreateCachedPortraitsWithParams(Vector2 size, Vector3 cameraOffset, float cameraZoom)
+		private static Dictionary<Pawn, CachedPortrait> GetOrCreateCachedPortraitsWithParams(PortraitParams portraitParams)
 		{
-			for (int i = 0; i < cachedPortraits.Count; i++)
+			if (!cachedPortraits.TryGetValue(portraitParams, out var value))
 			{
-				if (cachedPortraits[i].Size == size && cachedPortraits[i].CameraOffset == cameraOffset && cachedPortraits[i].CameraZoom == cameraZoom)
-				{
-					return cachedPortraits[i];
-				}
+				value = new Dictionary<Pawn, CachedPortrait>(new PawnEqualityComparer());
+				cachedPortraits.Add(portraitParams, value);
 			}
-			CachedPortraitsWithParams cachedPortraitsWithParams = new CachedPortraitsWithParams(size, cameraOffset, cameraZoom);
-			cachedPortraits.Add(cachedPortraitsWithParams);
-			return cachedPortraitsWithParams;
+			return value;
 		}
 
 		private static void DestroyRenderTexture(RenderTexture rt)
 		{
 			rt.DiscardContents();
-			Object.Destroy(rt);
+			UnityEngine.Object.Destroy(rt);
 		}
 
 		private static void RemoveExpiredCachedPortraits()
 		{
-			for (int i = 0; i < cachedPortraits.Count; i++)
+			foreach (var (_, dictionary2) in cachedPortraits)
 			{
-				Dictionary<Pawn, CachedPortrait> dictionary = cachedPortraits[i].CachedPortraits;
 				toRemove.Clear();
-				foreach (KeyValuePair<Pawn, CachedPortrait> item in dictionary)
+				foreach (KeyValuePair<Pawn, CachedPortrait> item in dictionary2)
 				{
 					if (item.Value.Expired)
 					{
@@ -188,9 +231,9 @@ namespace RimWorld
 						renderTexturesPool.Add(item.Value.RenderTexture);
 					}
 				}
-				for (int j = 0; j < toRemove.Count; j++)
+				for (int i = 0; i < toRemove.Count; i++)
 				{
-					dictionary.Remove(toRemove[j]);
+					dictionary2.Remove(toRemove[i]);
 				}
 				toRemove.Clear();
 			}
@@ -198,22 +241,21 @@ namespace RimWorld
 
 		private static void SetAnimatedPortraitsDirty()
 		{
-			for (int i = 0; i < cachedPortraits.Count; i++)
+			foreach (var (_, dictionary2) in cachedPortraits)
 			{
-				Dictionary<Pawn, CachedPortrait> dictionary = cachedPortraits[i].CachedPortraits;
 				toSetDirty.Clear();
-				foreach (KeyValuePair<Pawn, CachedPortrait> item in dictionary)
+				foreach (KeyValuePair<Pawn, CachedPortrait> item in dictionary2)
 				{
 					if (IsAnimated(item.Key) && !item.Value.Dirty)
 					{
 						toSetDirty.Add(item.Key);
 					}
 				}
-				for (int j = 0; j < toSetDirty.Count; j++)
+				for (int i = 0; i < toSetDirty.Count; i++)
 				{
-					CachedPortrait cachedPortrait = dictionary[toSetDirty[j]];
-					dictionary.Remove(toSetDirty[j]);
-					dictionary.Add(toSetDirty[j], new CachedPortrait(cachedPortrait.RenderTexture, dirty: true, cachedPortrait.LastUseTime));
+					CachedPortrait cachedPortrait = dictionary2[toSetDirty[i]];
+					dictionary2.Remove(toSetDirty[i]);
+					dictionary2.Add(toSetDirty[i], new CachedPortrait(cachedPortrait.RenderTexture, dirty: true, cachedPortrait.LastUseTime));
 				}
 				toSetDirty.Clear();
 			}
@@ -230,20 +272,17 @@ namespace RimWorld
 			}
 			return new RenderTexture((int)size.x, (int)size.y, 24)
 			{
+				name = "Portrait",
+				useMipMap = false,
 				filterMode = FilterMode.Bilinear
 			};
 		}
 
-		private static void RenderPortrait(Pawn pawn, RenderTexture renderTexture, Vector3 cameraOffset, float cameraZoom)
-		{
-			Find.PortraitRenderer.RenderPortrait(pawn, renderTexture, cameraOffset, cameraZoom);
-		}
-
 		private static bool IsAnimated(Pawn pawn)
 		{
-			if (Current.ProgramState == ProgramState.Playing && pawn.Drawer.renderer.graphics.flasher.FlashingNowOrRecently)
+			if (Current.ProgramState == ProgramState.Playing)
 			{
-				return true;
+				return pawn.Drawer.renderer.flasher.FlashingNowOrRecently;
 			}
 			return false;
 		}

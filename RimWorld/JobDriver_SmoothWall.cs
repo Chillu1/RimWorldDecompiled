@@ -26,18 +26,18 @@ namespace RimWorld
 			this.FailOn(() => (!job.ignoreDesignations && base.Map.designationManager.DesignationAt(base.TargetLocA, DesDef) == null) ? true : false);
 			this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
 			yield return Toils_Goto.GotoCell(TargetIndex.A, PathEndMode.Touch);
-			Toil doWork = new Toil();
+			Toil doWork = ToilMaker.MakeToil("MakeNewToils");
 			doWork.initAction = delegate
 			{
 				workLeft = BaseWorkAmount;
 			};
-			doWork.tickAction = delegate
+			doWork.tickIntervalAction = delegate(int delta)
 			{
-				float num = doWork.actor.GetStatValue(StatDefOf.SmoothingSpeed) * 1.7f;
+				float num = doWork.actor.GetStatValue(StatDefOf.SmoothingSpeed) * 1.7f * (float)delta;
 				workLeft -= num;
 				if (doWork.actor.skills != null)
 				{
-					doWork.actor.skills.Learn(SkillDefOf.Construction, 0.1f);
+					doWork.actor.skills.Learn(SkillDefOf.Construction, 0.1f * (float)delta);
 				}
 				if (workLeft <= 0f)
 				{

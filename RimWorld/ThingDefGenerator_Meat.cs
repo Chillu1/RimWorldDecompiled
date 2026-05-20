@@ -6,11 +6,11 @@ namespace RimWorld
 {
 	public static class ThingDefGenerator_Meat
 	{
-		public static IEnumerable<ThingDef> ImpliedMeatDefs()
+		public static IEnumerable<ThingDef> ImpliedMeatDefs(bool hotReload = false)
 		{
 			foreach (ThingDef item in DefDatabase<ThingDef>.AllDefs.ToList())
 			{
-				if (item.category != ThingCategory.Pawn || item.race.useMeatFrom != null)
+				if (item.category != ThingCategory.Pawn || !item.race.hasMeat || !item.race.hasCorpse || item.race.useMeatFrom != null || item.race.specificMeatDef != null)
 				{
 					continue;
 				}
@@ -19,7 +19,9 @@ namespace RimWorld
 					DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(item.race, "meatDef", "Steel");
 					continue;
 				}
-				ThingDef thingDef = new ThingDef();
+				string defName = "Meat_" + item.defName;
+				ThingDef thingDef = (hotReload ? (DefDatabase<ThingDef>.GetNamed(defName, errorOnFail: false) ?? new ThingDef()) : new ThingDef());
+				thingDef.drawerType = DrawerType.MapMeshOnly;
 				thingDef.resourceReadoutPriority = ResourceCountPriority.Middle;
 				thingDef.category = ThingCategory.Item;
 				thingDef.thingClass = typeof(ThingWithComps);
@@ -39,7 +41,7 @@ namespace RimWorld
 				thingDef.SetStatBaseValue(StatDefOf.Beauty, -4f);
 				thingDef.alwaysHaulable = true;
 				thingDef.rotatable = false;
-				thingDef.pathCost = DefGenerator.StandardItemPathCost;
+				thingDef.pathCost = 14;
 				thingDef.drawGUIOverlay = true;
 				thingDef.socialPropernessMatters = true;
 				thingDef.modContentPack = item.modContentPack;
@@ -79,10 +81,22 @@ namespace RimWorld
 				thingDef.ingestible.ingestSound = SoundDefOf.RawMeat_Eat;
 				thingDef.ingestible.specialThoughtDirect = item.race.FleshType.ateDirect;
 				thingDef.ingestible.specialThoughtAsIngredient = item.race.FleshType.ateAsIngredient;
+				if (ModsConfig.AnomalyActive)
+				{
+					CompProperties compProperties = new CompProperties();
+					compProperties.compClass = typeof(CompHarbingerTreeConsumable);
+					thingDef.comps.Add(compProperties);
+				}
+				if (item.ingredient != null)
+				{
+					thingDef.ingredient = new IngredientProperties();
+					thingDef.ingredient.mergeCompatibilityTags.AddRange(item.ingredient.mergeCompatibilityTags);
+				}
 				thingDef.graphicData.color = item.race.meatColor;
 				if (item.race.Humanlike)
 				{
 					thingDef.graphicData.texPath = "Things/Item/Resource/MeatFoodRaw/Meat_Human";
+					thingDef.possessionCount = 5;
 				}
 				else if (item.race.FleshType == FleshTypeDefOf.Insectoid)
 				{
@@ -96,7 +110,7 @@ namespace RimWorld
 				{
 					thingDef.graphicData.texPath = "Things/Item/Resource/MeatFoodRaw/Meat_Big";
 				}
-				thingDef.defName = "Meat_" + item.defName;
+				thingDef.defName = defName;
 				if (item.race.meatLabel.NullOrEmpty())
 				{
 					thingDef.label = "MeatLabel".Translate(item.label);

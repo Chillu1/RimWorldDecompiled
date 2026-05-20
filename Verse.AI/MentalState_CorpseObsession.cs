@@ -15,15 +15,15 @@ namespace Verse.AI
 			Scribe_Values.Look(ref alreadyHauledCorpse, "alreadyHauledCorpse", defaultValue: false);
 		}
 
-		public override void MentalStateTick()
+		public override void MentalStateTick(int delta)
 		{
 			if (alreadyHauledCorpse)
 			{
-				base.MentalStateTick();
+				base.MentalStateTick(delta);
 				return;
 			}
 			bool flag = false;
-			if (pawn.IsHashIntervalTick(500) && !CorpseObsessionMentalStateUtility.IsCorpseValid(corpse, pawn))
+			if (pawn.IsHashIntervalTick(500, delta) && !CorpseObsessionMentalStateUtility.IsCorpseValid(corpse, pawn))
 			{
 				corpse = CorpseObsessionMentalStateUtility.GetClosestCorpseToDigUp(pawn);
 				if (corpse == null)
@@ -34,7 +34,7 @@ namespace Verse.AI
 			}
 			if (!flag)
 			{
-				base.MentalStateTick();
+				base.MentalStateTick(delta);
 			}
 		}
 

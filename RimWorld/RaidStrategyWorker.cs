@@ -8,6 +8,22 @@ namespace RimWorld
 	{
 		public RaidStrategyDef def;
 
+		public float SelectionWeightForFaction(Map map, Faction faction, float basePoints)
+		{
+			if (faction != null && def.selectionWeightCurvesPerFaction != null)
+			{
+				List<FactionCurve> selectionWeightCurvesPerFaction = def.selectionWeightCurvesPerFaction;
+				for (int i = 0; i < selectionWeightCurvesPerFaction.Count; i++)
+				{
+					if (selectionWeightCurvesPerFaction[i].faction == faction.def)
+					{
+						return selectionWeightCurvesPerFaction[i].Evaluate(basePoints);
+					}
+				}
+			}
+			return SelectionWeight(map, basePoints);
+		}
+
 		public virtual float SelectionWeight(Map map, float basePoints)
 		{
 			return def.selectionWeightPerPointsCurve.Evaluate(basePoints);
@@ -19,11 +35,11 @@ namespace RimWorld
 		{
 			Map map = (Map)parms.target;
 			List<List<Pawn>> list = IncidentParmsUtility.SplitIntoGroups(pawns, parms.pawnGroups);
-			int @int = Rand.Int;
+			int raidSeed = Rand.Int;
 			for (int i = 0; i < list.Count; i++)
 			{
 				List<Pawn> list2 = list[i];
-				Lord lord = LordMaker.MakeNewLord(parms.faction, MakeLordJob(parms, map, list2, @int), map, list2);
+				Lord lord = LordMaker.MakeNewLord(parms.faction, MakeLordJob(parms, map, list2, raidSeed), map, list2);
 				lord.inSignalLeave = parms.inSignalEnd;
 				QuestUtility.AddQuestTag(lord, parms.questTag);
 				if (DebugViewSettings.drawStealDebug && parms.faction.HostileTo(Faction.OfPlayer))
@@ -35,9 +51,38 @@ namespace RimWorld
 
 		public virtual bool CanUseWith(IncidentParms parms, PawnGroupKindDef groupKind)
 		{
-			if (parms.points < MinimumPoints(parms.faction, groupKind))
+			if (parms.faction != null && parms.faction.def.disallowedRaidStrategies.NotNullAndContains(def))
 			{
 				return false;
+			}
+			if (SelectionWeightForFaction(parms.target as Map, parms.faction, parms.points) <= 0f)
+			{
+				return false;
+			}
+			if (groupKind != null && parms.points < MinimumPoints(parms.faction, groupKind))
+			{
+				return false;
+			}
+			if (parms.target is Map map)
+			{
+				foreach (TileMutatorDef mutator in map.TileInfo.Mutators)
+				{
+					if (mutator.blacklistedRaidStrategies.NotNullAndContains(def))
+					{
+						return false;
+					}
+				}
+				if (map.Tile.Valid)
+				{
+					if (!def.layerWhitelist.NullOrEmpty() && !def.layerWhitelist.Contains(map.Tile.LayerDef))
+					{
+						return false;
+					}
+					if (!def.layerBlacklist.NullOrEmpty() && def.layerBlacklist.Contains(map.Tile.LayerDef))
+					{
+						return false;
+					}
+				}
 			}
 			return true;
 		}
@@ -52,12 +97,16 @@ namespace RimWorld
 			return 0f;
 		}
 
-		public virtual bool CanUsePawnGenOption(PawnGenOption g, List<PawnGenOption> chosenGroups)
+		public virtual bool CanUsePawnGenOption(float pointsTotal, PawnGenOption g, List<PawnGenOptionWithXenotype> chosenGroups, Faction faction = null)
 		{
+			if (faction != null && faction.def.humanlikeFaction && g.kind.RaceProps.Animal && chosenGroups != null && !chosenGroups.Any((PawnGenOptionWithXenotype x) => x.Option.kind.RaceProps.Humanlike))
+			{
+				return false;
+			}
 			return true;
 		}
 
-		public virtual bool CanUsePawn(Pawn p, List<Pawn> otherPawns)
+		public virtual bool CanUsePawn(float pointsTotal, Pawn p, List<Pawn> otherPawns)
 		{
 			return true;
 		}
@@ -73,7 +122,12 @@ namespace RimWorld
 				List<Pawn> list = new List<Pawn>();
 				for (int i = 0; i < parms.pawnCount; i++)
 				{
-					PawnGenerationRequest request = new PawnGenerationRequest(parms.pawnKind, parms.faction, PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: false, newborn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: true, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, biocodeWeaponChance: parms.biocodeWeaponsChance, allowFood: def.pawnsCanBringFood);
+					PawnKindDef pawnKind = parms.pawnKind;
+					Faction faction = parms.faction;
+					float biocodeWeaponsChance = parms.biocodeWeaponsChance;
+					float biocodeApparelChance = parms.biocodeApparelChance;
+					bool pawnsCanBringFood = def.pawnsCanBringFood;
+					PawnGenerationRequest request = new PawnGenerationRequest(pawnKind, faction, PawnGenerationContext.NonPlayer, null, forceGenerateNewPawn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: true, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowPregnant: false, pawnsCanBringFood, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, biocodeWeaponsChance, biocodeApparelChance);
 					request.BiocodeApparelChance = 1f;
 					Pawn pawn = PawnGenerator.GeneratePawn(request);
 					if (pawn != null)

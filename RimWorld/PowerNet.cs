@@ -99,7 +99,7 @@ namespace RimWorld
 			{
 				return true;
 			}
-			if (cp is CompPowerTrader && cp.Props.basePowerConsumption < 0f)
+			if (cp is CompPowerTrader && cp.Props.PowerConsumption < 0f)
 			{
 				return true;
 			}
@@ -108,13 +108,11 @@ namespace RimWorld
 
 		private bool IsActivePowerSource(CompPower cp)
 		{
-			CompPowerBattery compPowerBattery = cp as CompPowerBattery;
-			if (compPowerBattery != null && compPowerBattery.StoredEnergy > 0f)
+			if (cp is CompPowerBattery { StoredEnergy: >0f, StunnedByEMP: false })
 			{
 				return true;
 			}
-			CompPowerTrader compPowerTrader = cp as CompPowerTrader;
-			if (compPowerTrader != null && compPowerTrader.PowerOutput > 0f)
+			if (cp is CompPowerTrader { PowerOutput: >0f })
 			{
 				return true;
 			}
@@ -145,7 +143,7 @@ namespace RimWorld
 			{
 				if (powerComps.Contains(comp))
 				{
-					Log.Error(string.Concat("PowerNet adding powerComp ", comp, " which it already has."));
+					Log.Error("PowerNet adding powerComp " + comp?.ToString() + " which it already has.");
 				}
 				else
 				{
@@ -157,7 +155,7 @@ namespace RimWorld
 			{
 				if (batteryComps.Contains(comp2))
 				{
-					Log.Error(string.Concat("PowerNet adding batteryComp ", comp2, " which it already has."));
+					Log.Error("PowerNet adding batteryComp " + comp2?.ToString() + " which it already has.");
 				}
 				else
 				{
@@ -202,7 +200,7 @@ namespace RimWorld
 			float num = 0f;
 			for (int i = 0; i < batteryComps.Count; i++)
 			{
-				num += batteryComps[i].StoredEnergy;
+				num += (batteryComps[i].StunnedByEMP ? 0f : batteryComps[i].StoredEnergy);
 			}
 			return num;
 		}
@@ -211,7 +209,7 @@ namespace RimWorld
 		{
 			float num = CurrentEnergyGainRate();
 			float num2 = CurrentStoredEnergy();
-			if (num2 + num >= -1E-07f && !Map.gameConditionManager.ElectricityDisabled)
+			if (num2 + num >= -1E-07f && !Map.gameConditionManager.ElectricityDisabled(Map))
 			{
 				float num3 = ((batteryComps.Count <= 0 || !(num2 >= 0.1f)) ? num2 : (num2 - 5f));
 				if (num3 + num >= 0f)
@@ -271,6 +269,13 @@ namespace RimWorld
 					}
 				}
 			}
+		}
+
+		public bool CanPowerNow(CompPowerTrader powerTrader)
+		{
+			float num = CurrentEnergyGainRate();
+			float num2 = CurrentStoredEnergy();
+			return num + num2 >= 0f - (powerTrader.EnergyOutputPerTick + 1E-07f);
 		}
 
 		private void ChangeStoredEnergy(float extra)

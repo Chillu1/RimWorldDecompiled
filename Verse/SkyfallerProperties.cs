@@ -8,7 +8,11 @@ namespace Verse
 
 		public IntRange ticksToImpactRange = new IntRange(120, 200);
 
+		public IntRange ticksToDiscardInReverse = IntRange.Zero;
+
 		public bool reversed;
+
+		public bool flightFlippedHorizontally;
 
 		public float explosionRadius = 3f;
 
@@ -18,11 +22,15 @@ namespace Verse
 
 		public float explosionDamageFactor = 1f;
 
-		public IntRange metalShrapnelCountRange = IntRange.zero;
+		public IntRange metalShrapnelCountRange = IntRange.Zero;
 
-		public IntRange rubbleShrapnelCountRange = IntRange.zero;
+		public IntRange rubbleShrapnelCountRange = IntRange.Zero;
 
 		public float shrapnelDistanceFactor = 1f;
+
+		public ThingDef spawnThing;
+
+		public bool minimalRoofDestruction;
 
 		public SkyfallerMovementType movementType;
 
@@ -40,6 +48,8 @@ namespace Verse
 
 		public SoundDef anticipationSound;
 
+		public SoundDef floatingSound;
+
 		public int anticipationSoundTicks = 100;
 
 		public int motesPerCell = 3;
@@ -55,6 +65,10 @@ namespace Verse
 		public SimpleCurve rotationCurve;
 
 		public SimpleCurve speedCurve;
+
+		public int fadeInTicks;
+
+		public int fadeOutTicks;
 
 		public bool MakesShrapnel
 		{

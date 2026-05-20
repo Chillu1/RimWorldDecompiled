@@ -7,9 +7,9 @@ namespace Verse
 		{
 		}
 
-		public override void SubTrigger(TargetInfo A, TargetInfo B)
+		public override void SubTrigger(TargetInfo A, TargetInfo B, int overrideSpawnTick = -1, bool force = false)
 		{
-			MakeMote(A);
+			MakeMote(A, overrideSpawnTick);
 		}
 	}
 }

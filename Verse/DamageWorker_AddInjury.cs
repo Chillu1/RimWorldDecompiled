@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using RimWorld;
 using UnityEngine;
@@ -9,8 +8,7 @@ namespace Verse
 	{
 		public override DamageResult Apply(DamageInfo dinfo, Thing thing)
 		{
-			Pawn pawn = thing as Pawn;
-			if (pawn == null)
+			if (!(thing is Pawn pawn))
 			{
 				return base.Apply(dinfo, thing);
 			}
@@ -30,14 +28,28 @@ namespace Verse
 			}
 			Map mapHeld = pawn.MapHeld;
 			bool spawnedOrAnyParentSpawned = pawn.SpawnedOrAnyParentSpawned;
-			if (dinfo.AllowDamagePropagation && dinfo.Amount >= (float)dinfo.Def.minDamageToFragment)
+			if (dinfo.ApplyAllDamage)
 			{
-				int num = Rand.RangeInclusive(2, 4);
-				for (int i = 0; i < num; i++)
+				float num = dinfo.Amount;
+				int num2 = 25;
+				float b = num / (float)dinfo.DamagePropagationPartsRange.RandomInRange;
+				do
 				{
 					DamageInfo dinfo2 = dinfo;
-					dinfo2.SetAmount(dinfo.Amount / (float)num);
+					dinfo2.SetAmount(Mathf.Min(num, b));
 					ApplyDamageToPart(dinfo2, pawn, damageResult);
+					num -= damageResult.totalDamageDealt;
+				}
+				while (num2-- > 0 && num > 0f);
+			}
+			else if (dinfo.AllowDamagePropagation && dinfo.Amount >= (float)dinfo.Def.minDamageToFragment)
+			{
+				int randomInRange = dinfo.DamagePropagationPartsRange.RandomInRange;
+				for (int i = 0; i < randomInRange; i++)
+				{
+					DamageInfo dinfo3 = dinfo;
+					dinfo3.SetAmount(dinfo.Amount / (float)randomInRange);
+					ApplyDamageToPart(dinfo3, pawn, damageResult);
 				}
 			}
 			else
@@ -69,9 +81,9 @@ namespace Verse
 			if (damageResult.headshot && pawn.Spawned)
 			{
 				MoteMaker.ThrowText(new Vector3((float)pawn.Position.x + 1f, pawn.Position.y, (float)pawn.Position.z + 1f), pawn.Map, "Headshot".Translate(), Color.white);
-				if (dinfo.Instigator != null)
+				if (dinfo.Instigator != null && dinfo.Instigator is Pawn pawn2)
 				{
-					(dinfo.Instigator as Pawn)?.records.Increment(RecordDefOf.Headshots);
+					pawn2.records.Increment(RecordDefOf.Headshots);
 				}
 			}
 			if ((damageResult.deflected || damageResult.diminished) && spawnedOrAnyParentSpawned)
@@ -86,7 +98,10 @@ namespace Verse
 					}
 					pawn.health.deflectionEffecter = effecterDef.Spawn();
 				}
-				pawn.health.deflectionEffecter.Trigger(pawn, dinfo.Instigator ?? pawn);
+				TargetInfo targetInfo = new TargetInfo(pawn.Position, mapHeld);
+				Effecter deflectionEffecter = pawn.health.deflectionEffecter;
+				Thing instigator = dinfo.Instigator;
+				deflectionEffecter.Trigger(targetInfo, (instigator != null) ? ((TargetInfo)instigator) : targetInfo);
 				if (damageResult.deflected)
 				{
 					pawn.Drawer.Notify_DamageDeflected(dinfo);
@@ -97,16 +112,6 @@ namespace Verse
 				ImpactSoundUtility.PlayImpactSound(pawn, dinfo.Def.impactSoundType, mapHeld);
 			}
 			return damageResult;
-		}
-
-		[Obsolete]
-		private void CheckApplySpreadDamage(DamageInfo dinfo, Thing t)
-		{
-			if ((dinfo.Def != DamageDefOf.Flame || t.FlammableNow) && Rand.Chance(0.5f))
-			{
-				dinfo.SetAmount(Mathf.CeilToInt(dinfo.Amount * Rand.Range(0.35f, 0.7f)));
-				t.TakeDamage(dinfo);
-			}
 		}
 
 		private void ApplySmallPawnDamagePropagation(DamageInfo dinfo, Pawn pawn, DamageResult result)
@@ -182,13 +187,27 @@ namespace Verse
 			{
 				return 0f;
 			}
+			Pawn pawn2 = dinfo.Instigator as Pawn;
 			HediffDef hediffDefFromDamage = HealthUtility.GetHediffDefFromDamage(dinfo.Def, pawn, dinfo.HitPart);
 			Hediff_Injury hediff_Injury = (Hediff_Injury)HediffMaker.MakeHediff(hediffDefFromDamage, pawn);
 			hediff_Injury.Part = dinfo.HitPart;
-			hediff_Injury.source = dinfo.Weapon;
+			hediff_Injury.sourceDef = dinfo.Weapon;
+			if (pawn2 != null && pawn2.IsMutant && dinfo.Weapon == ThingDefOf.Human)
+			{
+				hediff_Injury.sourceLabel = pawn2.mutant.Def.label;
+			}
+			else
+			{
+				hediff_Injury.sourceLabel = dinfo.Weapon?.label ?? "";
+			}
 			hediff_Injury.sourceBodyPartGroup = dinfo.WeaponBodyPartGroup;
 			hediff_Injury.sourceHediffDef = dinfo.WeaponLinkedHediff;
+			hediff_Injury.sourceToolLabel = dinfo.Tool?.labelNoLocation ?? dinfo.Tool?.label;
 			hediff_Injury.Severity = totalDamage;
+			if (pawn2 != null && pawn2.CurJobDef == JobDefOf.SocialFight)
+			{
+				hediff_Injury.destroysBodyParts = false;
+			}
 			if (dinfo.InstantPermanentInjury)
 			{
 				HediffComp_GetsPermanent hediffComp_GetsPermanent = hediff_Injury.TryGetComp<HediffComp_GetsPermanent>();
@@ -198,7 +217,7 @@ namespace Verse
 				}
 				else
 				{
-					Log.Error(string.Concat("Tried to create instant permanent injury on Hediff without a GetsPermanent comp: ", hediffDefFromDamage, " on ", pawn));
+					Log.Error("Tried to create instant permanent injury on Hediff without a GetsPermanent comp: " + hediffDefFromDamage?.ToString() + " on " + pawn);
 				}
 			}
 			return FinalizeAndAddInjury(pawn, hediff_Injury, dinfo, result);
@@ -208,9 +227,9 @@ namespace Verse
 		{
 			injury.TryGetComp<HediffComp_GetsPermanent>()?.PreFinalizeInjury();
 			float partHealth = pawn.health.hediffSet.GetPartHealth(injury.Part);
-			if (pawn.IsColonist && !dinfo.IgnoreInstantKillProtection && dinfo.Def.ExternalViolenceFor(pawn) && !Rand.Chance(Find.Storyteller.difficultyValues.allowInstantKillChance))
+			if (pawn.IsColonist && !dinfo.IgnoreInstantKillProtection && dinfo.Def.ExternalViolenceFor(pawn) && !Rand.Chance(Find.Storyteller.difficulty.allowInstantKillChance))
 			{
-				float num = ((injury.def.lethalSeverity > 0f) ? (injury.def.lethalSeverity * 1.1f) : 1f);
+				float num = (injury.IsLethal ? (injury.def.lethalSeverity * 1.1f) : 1f);
 				float min = 1f;
 				float max = Mathf.Min(injury.Severity, partHealth);
 				for (int i = 0; i < 7; i++)
@@ -235,6 +254,15 @@ namespace Verse
 			result.wounded = true;
 			result.AddPart(pawn, injury.Part);
 			result.AddHediff(injury);
+			if (!def.additionalHediffsThisPart.NullOrEmpty() && !pawn.health.hediffSet.PartIsMissing(injury.Part))
+			{
+				foreach (HediffDef item in def.additionalHediffsThisPart)
+				{
+					Hediff hediff = HediffMaker.MakeHediff(item, pawn, injury.Part);
+					pawn.health.AddHediff(hediff, null, dinfo, result);
+					result.AddHediff(hediff);
+				}
+			}
 			return num3;
 		}
 
@@ -249,9 +277,18 @@ namespace Verse
 			{
 				if (pawn.health.hediffSet.GetPartHealth(parent) != 0f && parent.coverageAbs > 0f)
 				{
+					Pawn pawn2 = dinfo.Instigator as Pawn;
 					Hediff_Injury hediff_Injury = (Hediff_Injury)HediffMaker.MakeHediff(HealthUtility.GetHediffDefFromDamage(dinfo.Def, pawn, parent), pawn);
 					hediff_Injury.Part = parent;
-					hediff_Injury.source = dinfo.Weapon;
+					hediff_Injury.sourceDef = dinfo.Weapon;
+					if (pawn2 != null && pawn2.IsMutant && dinfo.Weapon == ThingDefOf.Human)
+					{
+						hediff_Injury.sourceLabel = pawn2.mutant.Def.label;
+					}
+					else
+					{
+						hediff_Injury.sourceLabel = dinfo.Weapon?.label ?? "";
+					}
 					hediff_Injury.sourceBodyPartGroup = dinfo.WeaponBodyPartGroup;
 					hediff_Injury.Severity = totalDamage;
 					if (hediff_Injury.Severity <= 0f)
@@ -278,7 +315,7 @@ namespace Verse
 			}
 			if (dinfo.HitPart.groups.Contains(BodyPartGroupDefOf.FullHead))
 			{
-				return dinfo.Def == DamageDefOf.Bullet;
+				return dinfo.Def.isRanged;
 			}
 			return false;
 		}
@@ -310,7 +347,7 @@ namespace Verse
 		{
 			if (!pawn.Dead && !dinfo.InstantPermanentInjury && pawn.SpawnedOrAnyParentSpawned && dinfo.Def.ExternalViolenceFor(pawn))
 			{
-				LifeStageUtility.PlayNearestLifestageSound(pawn, (LifeStageAge ls) => ls.soundWounded);
+				LifeStageUtility.PlayNearestLifestageSound(pawn, (LifeStageAge lifeStage) => lifeStage.soundWounded, (GeneDef gene) => gene.soundWounded, (MutantDef mutantDef) => mutantDef.soundWounded);
 			}
 		}
 

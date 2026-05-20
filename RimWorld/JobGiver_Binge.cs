@@ -34,7 +34,7 @@ namespace RimWorld
 			}
 			ThingDef finalIngestibleDef = FoodUtility.GetFinalIngestibleDef(thing);
 			Job job = JobMaker.MakeJob(JobDefOf.Ingest, thing);
-			job.count = finalIngestibleDef.ingestible.maxNumToIngestAtOnce;
+			job.count = finalIngestibleDef.ingestible.defaultNumToIngestAtOnce;
 			job.ignoreForbidden = IgnoreForbid(pawn);
 			job.overeat = true;
 			return job;

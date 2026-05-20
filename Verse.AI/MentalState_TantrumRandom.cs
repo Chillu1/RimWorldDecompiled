@@ -34,17 +34,17 @@ namespace Verse.AI
 			ChooseNextTarget();
 		}
 
-		public override void MentalStateTick()
+		public override void MentalStateTick(int delta)
 		{
 			if (target != null && (!target.Spawned || !pawn.CanReach(target, PathEndMode.Touch, Danger.Deadly) || (target is Pawn && ((Pawn)target).Downed)))
 			{
 				ChooseNextTarget();
 			}
-			if (pawn.IsHashIntervalTick(500) && (target == null || hitTargetAtLeastOnce))
+			if (pawn.IsHashIntervalTick(500, delta) && (target == null || hitTargetAtLeastOnce))
 			{
 				ChooseNextTarget();
 			}
-			base.MentalStateTick();
+			base.MentalStateTick(delta);
 		}
 
 		private void ChooseNextTarget()

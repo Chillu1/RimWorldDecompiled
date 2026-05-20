@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 using Verse.AI;
 
@@ -16,7 +17,7 @@ namespace RimWorld
 
 		public const float BaseRestGainPerTick = 3.809524E-05f;
 
-		private const float BaseRestFallPerTick = 1.58333332E-05f;
+		private const float BaseRestFallPerTick = 1.5833333E-05f;
 
 		public const float ThreshTired = 0.28f;
 
@@ -52,10 +53,10 @@ namespace RimWorld
 
 		public float RestFallPerTick => CurCategory switch
 		{
-			RestCategory.Rested => 1.58333332E-05f * RestFallFactor, 
-			RestCategory.Tired => 1.58333332E-05f * RestFallFactor * 0.7f, 
-			RestCategory.VeryTired => 1.58333332E-05f * RestFallFactor * 0.3f, 
-			RestCategory.Exhausted => 1.58333332E-05f * RestFallFactor * 0.6f, 
+			RestCategory.Rested => 1.5833333E-05f * RestFallFactor, 
+			RestCategory.Tired => 1.5833333E-05f * RestFallFactor * 0.7f, 
+			RestCategory.VeryTired => 1.5833333E-05f * RestFallFactor * 0.3f, 
+			RestCategory.Exhausted => 1.5833333E-05f * RestFallFactor * 0.6f, 
 			_ => 999f, 
 		};
 
@@ -65,17 +66,17 @@ namespace RimWorld
 		{
 			get
 			{
-				if (Resting)
+				if (!Resting)
 				{
-					return 1;
+					return -1;
 				}
-				return -1;
+				return 1;
 			}
 		}
 
 		public int TicksAtZero => ticksAtZero;
 
-		private bool Resting => Find.TickManager.TicksGame < lastRestTick + 2;
+		public bool Resting => Find.TickManager.TicksGame < lastRestTick + pawn.UpdateRateTicks;
 
 		public Need_Rest(Pawn pawn)
 			: base(pawn)
@@ -111,7 +112,8 @@ namespace RimWorld
 				}
 				else
 				{
-					CurLevel -= RestFallPerTick * 150f;
+					float num2 = RestFallPerTick * 150f * pawn.GetStatValue(StatDefOf.RestFallRateFactor);
+					CurLevel -= num2;
 				}
 			}
 			if (CurLevel < 0.0001f)
@@ -122,18 +124,31 @@ namespace RimWorld
 			{
 				ticksAtZero = 0;
 			}
-			if (ticksAtZero <= 1000 || !pawn.Spawned)
+			if (!CanInvoluntarilySleep(pawn) || !ShouldInvoluntarySleepFromMTB())
 			{
 				return;
 			}
-			float mtb = ((ticksAtZero < 15000) ? 0.25f : ((ticksAtZero < 30000) ? 0.125f : ((ticksAtZero >= 45000) ? 0.0625f : 0.0833333358f)));
-			if (Rand.MTBEventOccurs(mtb, 60000f, 150f) && (pawn.CurJob == null || pawn.CurJob.def != JobDefOf.LayDown))
+			Building_Bed building_Bed = pawn.CurrentBed();
+			LocalTargetInfo targetA;
+			if (building_Bed != null)
 			{
-				pawn.jobs.StartJob(JobMaker.MakeJob(JobDefOf.LayDown, pawn.Position), JobCondition.InterruptForced, null, resumeCurJobAfterwards: false, cancelBusyStances: true, null, JobTag.SatisfyingNeeds);
-				if (pawn.InMentalState && pawn.MentalStateDef.recoverFromCollapsingExhausted)
-				{
-					pawn.mindState.mentalStateHandler.CurState.RecoverFromState();
-				}
+				targetA = building_Bed;
+			}
+			else
+			{
+				Thing spawnedParentOrMe = pawn.SpawnedParentOrMe;
+				targetA = ((spawnedParentOrMe == null || spawnedParentOrMe == pawn) ? ((LocalTargetInfo)pawn.Position) : ((LocalTargetInfo)spawnedParentOrMe));
+			}
+			Job job = JobMaker.MakeJob(JobDefOf.LayDown, targetA);
+			job.startInvoluntarySleep = true;
+			pawn.jobs.StartJob(job, JobCondition.InterruptForced, null, resumeCurJobAfterwards: false, cancelBusyStances: true, null, JobTag.SatisfyingNeeds, fromQueue: false, canReturnCurJobToPool: false, null, continueSleeping: false, addToJobsThisTick: true, preToilReservationsCanFail: true);
+			if (pawn.InMentalState && pawn.MentalStateDef.recoverFromCollapsingExhausted)
+			{
+				pawn.mindState.mentalStateHandler.CurState.RecoverFromState();
+			}
+			LifeStageDef curLifeStage = pawn.ageTracker.CurLifeStage;
+			if (curLifeStage == null || curLifeStage.involuntarySleepIsNegativeEvent)
+			{
 				if (PawnUtility.ShouldSendNotificationAbout(pawn))
 				{
 					Messages.Message("MessageInvoluntarySleep".Translate(pawn.LabelShort, pawn), pawn, MessageTypeDefOf.NegativeEvent);
@@ -149,6 +164,58 @@ namespace RimWorld
 				lastRestTick = Find.TickManager.TicksGame;
 				lastRestEffectiveness = restEffectiveness;
 			}
+		}
+
+		private bool ShouldInvoluntarySleepFromMTB()
+		{
+			float num = float.PositiveInfinity;
+			if (ticksAtZero > 1000)
+			{
+				num = ((ticksAtZero < 15000) ? 0.25f : ((ticksAtZero < 30000) ? 0.125f : ((ticksAtZero >= 45000) ? 0.0625f : (1f / 12f))));
+			}
+			SimpleCurve simpleCurve = pawn.ageTracker.CurLifeStage?.involuntarySleepMTBDaysFromRest;
+			if (simpleCurve != null)
+			{
+				num = Rand.CombineMTBs(num, simpleCurve.Evaluate(base.CurLevelPercentage));
+			}
+			return Rand.MTBEventOccurs(num, 60000f, 150f);
+		}
+
+		private static bool CanInvoluntarilySleep(Pawn pawn)
+		{
+			Pawn_JobTracker jobs = pawn.jobs;
+			if (jobs != null && jobs.curDriver?.asleep == true)
+			{
+				return false;
+			}
+			if (!RestUtility.CanFallAsleep(pawn))
+			{
+				return false;
+			}
+			if (!pawn.Spawned)
+			{
+				if (!pawn.ageTracker.CurLifeStage.canSleepWhileHeld)
+				{
+					return false;
+				}
+				if (!(pawn.SpawnedParentOrMe is Pawn))
+				{
+					return false;
+				}
+				if (pawn.IsWorldPawn())
+				{
+					return false;
+				}
+				if (pawn.IsCaravanMember())
+				{
+					return false;
+				}
+			}
+			if (pawn.ageTracker.CurLifeStage.canVoluntarilySleep && pawn.CurJobDef == JobDefOf.LayDown)
+			{
+				return false;
+			}
+			return true;
 		}
 	}
 }

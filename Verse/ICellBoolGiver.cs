@@ -4,10 +4,7 @@ namespace Verse
 {
 	public interface ICellBoolGiver
 	{
-		Color Color
-		{
-			get;
-		}
+		Color Color { get; }
 
 		bool GetCellBool(int index);
 

@@ -12,8 +12,7 @@ namespace RimWorld
 				Log.ErrorOnce("Attempted to apply melee hediff without a tool", 38381735);
 				return damageResult;
 			}
-			Pawn pawn = target.Thing as Pawn;
-			if (pawn == null)
+			if (!(target.Thing is Pawn pawn))
 			{
 				Log.ErrorOnce("Attempted to apply melee hediff without pawn target", 78330053);
 				return damageResult;

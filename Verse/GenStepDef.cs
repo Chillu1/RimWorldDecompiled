@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using RimWorld;
 
 namespace Verse
@@ -9,6 +10,8 @@ namespace Verse
 		public float order;
 
 		public GenStep genStep;
+
+		public List<GenStepDef> preventsGenSteps;
 
 		public override void PostLoad()
 		{

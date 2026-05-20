@@ -30,7 +30,7 @@ namespace RimWorld
 
 		public static Pawn GetPawnToFollow(Pawn forPawn)
 		{
-			if (!forPawn.RaceProps.packAnimal || forPawn.inventory.UnloadEverything || MassUtility.IsOverEncumbered(forPawn))
+			if (!forPawn.RaceProps.packAnimal || forPawn.inventory.UnloadEverything || AnimalPenUtility.NeedsToBeManagedByRope(forPawn) || MassUtility.IsOverEncumbered(forPawn))
 			{
 				return null;
 			}

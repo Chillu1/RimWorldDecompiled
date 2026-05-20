@@ -2,12 +2,30 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using RimWorld;
 
 namespace Verse
 {
 	public static class DebugOutputsGeneral
 	{
+		[DebugOutput]
+		public static void WeaponClasses()
+		{
+			List<TableDataGetter<ThingDef>> list = new List<TableDataGetter<ThingDef>>
+			{
+				new TableDataGetter<ThingDef>("defName", (ThingDef t) => t.defName)
+			};
+			foreach (WeaponClassDef w in DefDatabase<WeaponClassDef>.AllDefs)
+			{
+				list.Add(new TableDataGetter<ThingDef>(w.defName, (ThingDef t) => (!t.weaponClasses.NullOrEmpty()) ? t.weaponClasses.Contains(w).ToStringCheckBlank() : ""));
+			}
+			DebugTables.MakeTablesDialog(from x in DefDatabase<ThingDef>.AllDefs
+				where x.IsWeapon
+				orderby x.defName
+				select x, list.ToArray());
+		}
+
 		private static float damage(ThingDef d)
 		{
 			return (d.Verbs[0].defaultProjectile != null) ? d.Verbs[0].defaultProjectile.projectile.GetDamageAmount(null) : 0;
@@ -19,7 +37,7 @@ namespace Verse
 			{
 				return 0f;
 			}
-			return d.Verbs[0].defaultProjectile.projectile.GetArmorPenetration(null);
+			return d.Verbs[0].defaultProjectile.projectile.GetArmorPenetration();
 		}
 
 		private static float stoppingPower(ThingDef d)
@@ -92,13 +110,13 @@ namespace Verse
 		[DebugOutput]
 		public static void WeaponsRanged()
 		{
-			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.IsRangedWeapon).OrderByDescending(dpsAvg), new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("damage", (ThingDef d) => damage(d).ToString()), new TableDataGetter<ThingDef>("AP", (ThingDef d) => armorPenetration(d).ToStringPercent()), new TableDataGetter<ThingDef>("stop\npower", (ThingDef d) => (!(stoppingPower(d) > 0f)) ? "" : stoppingPower(d).ToString("F1")), new TableDataGetter<ThingDef>("warmup", (ThingDef d) => warmup(d).ToString("F2")), new TableDataGetter<ThingDef>("burst\nshots", (ThingDef d) => burstShots(d).ToString()), new TableDataGetter<ThingDef>("cooldown", (ThingDef d) => cooldown(d).ToString("F2")), new TableDataGetter<ThingDef>("full\ncycle", (ThingDef d) => fullcycle(d).ToString("F2")), new TableDataGetter<ThingDef>("range", (ThingDef d) => d.Verbs[0].range.ToString("F1")), new TableDataGetter<ThingDef>("projectile\nspeed", (ThingDef d) => (d.projectile == null) ? "" : d.projectile.speed.ToString("F0")), new TableDataGetter<ThingDef>("dps\nmissless", (ThingDef d) => dpsMissless(d).ToString("F2")), new TableDataGetter<ThingDef>("accuracy\ntouch (" + 3f + ")", (ThingDef d) => accTouch(d).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\nshort (" + 12f + ")", (ThingDef d) => accShort(d).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\nmed (" + 25f + ")", (ThingDef d) => accMed(d).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\nlong (" + 40f + ")", (ThingDef d) => accLong(d).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\navg", (ThingDef d) => accAvg(d).ToString("F2")), new TableDataGetter<ThingDef>("forced\nmiss\nradius", (ThingDef d) => (!(d.Verbs[0].forcedMissRadius > 0f)) ? "" : d.Verbs[0].forcedMissRadius.ToString()), new TableDataGetter<ThingDef>("dps\ntouch", (ThingDef d) => (dpsMissless(d) * accTouch(d)).ToString("F2")), new TableDataGetter<ThingDef>("dps\nshort", (ThingDef d) => (dpsMissless(d) * accShort(d)).ToString("F2")), new TableDataGetter<ThingDef>("dps\nmed", (ThingDef d) => (dpsMissless(d) * accMed(d)).ToString("F2")), new TableDataGetter<ThingDef>("dps\nlong", (ThingDef d) => (dpsMissless(d) * accLong(d)).ToString("F2")), new TableDataGetter<ThingDef>("dps\navg", (ThingDef d) => dpsAvg(d).ToString("F2")), new TableDataGetter<ThingDef>("market\nvalue", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.MarketValue).ToString("F0")), new TableDataGetter<ThingDef>("work", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.WorkToMake).ToString("F0")), new TableDataGetter<ThingDef>("dpsAvg*100 / market value", (ThingDef d) => (dpsAvg(d) * 100f / d.GetStatValueAbstract(StatDefOf.MarketValue)).ToString("F3")));
+			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.IsRangedWeapon).OrderByDescending(dpsAvg), new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("damage", (ThingDef d) => damage(d).ToString()), new TableDataGetter<ThingDef>("AP", (ThingDef d) => armorPenetration(d).ToStringPercent()), new TableDataGetter<ThingDef>("stop\npower", (ThingDef d) => (!(stoppingPower(d) > 0f)) ? "" : stoppingPower(d).ToString("F1")), new TableDataGetter<ThingDef>("warmup", (ThingDef d) => warmup(d).ToString("F2")), new TableDataGetter<ThingDef>("burst\nshots", (ThingDef d) => burstShots(d).ToString()), new TableDataGetter<ThingDef>("cooldown", (ThingDef d) => cooldown(d).ToString("F2")), new TableDataGetter<ThingDef>("full\ncycle", (ThingDef d) => fullcycle(d).ToString("F2")), new TableDataGetter<ThingDef>("range", (ThingDef d) => d.Verbs[0].range.ToString("F1")), new TableDataGetter<ThingDef>("projectile\nspeed", (ThingDef d) => (d.projectile == null) ? "" : d.projectile.speed.ToString("F0")), new TableDataGetter<ThingDef>("dps\nmissless", (ThingDef d) => dpsMissless(d).ToString("F2")), new TableDataGetter<ThingDef>("accuracy\ntouch (" + 3f + ")", (ThingDef d) => accTouch(d).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\nshort (" + 12f + ")", (ThingDef d) => accShort(d).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\nmed (" + 25f + ")", (ThingDef d) => accMed(d).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\nlong (" + 40f + ")", (ThingDef d) => accLong(d).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\navg", (ThingDef d) => accAvg(d).ToString("F2")), new TableDataGetter<ThingDef>("forced\nmiss\nradius", (ThingDef d) => (!(d.Verbs[0].ForcedMissRadius > 0f)) ? "" : d.Verbs[0].ForcedMissRadius.ToString()), new TableDataGetter<ThingDef>("dps\ntouch", (ThingDef d) => (dpsMissless(d) * accTouch(d)).ToString("F2")), new TableDataGetter<ThingDef>("dps\nshort", (ThingDef d) => (dpsMissless(d) * accShort(d)).ToString("F2")), new TableDataGetter<ThingDef>("dps\nmed", (ThingDef d) => (dpsMissless(d) * accMed(d)).ToString("F2")), new TableDataGetter<ThingDef>("dps\nlong", (ThingDef d) => (dpsMissless(d) * accLong(d)).ToString("F2")), new TableDataGetter<ThingDef>("dps\navg", (ThingDef d) => dpsAvg(d).ToString("F2")), new TableDataGetter<ThingDef>("market\nvalue", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.MarketValue).ToString("F0")), new TableDataGetter<ThingDef>("work", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.WorkToMake).ToString("F0")), new TableDataGetter<ThingDef>("dpsAvg*100 / market value", (ThingDef d) => (dpsAvg(d) * 100f / d.GetStatValueAbstract(StatDefOf.MarketValue)).ToString("F3")), new TableDataGetter<ThingDef>("smeltable", (ThingDef d) => d.smeltable.ToStringCheckBlank()));
 		}
 
 		[DebugOutput]
 		public static void Turrets()
 		{
-			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.category == ThingCategory.Building && d.building.IsTurret), new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("market\nvalue", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.MarketValue).ToString("F0")), new TableDataGetter<ThingDef>("cost\nlist", (ThingDef d) => (!d.costList.NullOrEmpty()) ? d.costList.Select((ThingDefCountClass x) => x.Summary).ToCommaList() : ""), new TableDataGetter<ThingDef>("cost\nstuff\ncount", (ThingDef d) => (!d.MadeFromStuff) ? "" : d.costStuffCount.ToString()), new TableDataGetter<ThingDef>("work", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.WorkToBuild).ToString("F0")), new TableDataGetter<ThingDef>("hp", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.MaxHitPoints).ToString("F0")), new TableDataGetter<ThingDef>("damage", (ThingDef d) => damage(d.building.turretGunDef).ToString()), new TableDataGetter<ThingDef>("AP", (ThingDef d) => armorPenetration(d.building.turretGunDef).ToStringPercent()), new TableDataGetter<ThingDef>("stop\npower", (ThingDef d) => (!(stoppingPower(d.building.turretGunDef) > 0f)) ? "" : stoppingPower(d.building.turretGunDef).ToString("F1")), new TableDataGetter<ThingDef>("warmup", (ThingDef d) => warmup(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("burst\nshots", (ThingDef d) => burstShots(d.building.turretGunDef).ToString()), new TableDataGetter<ThingDef>("cooldown", (ThingDef d) => cooldown(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("full\ncycle", (ThingDef d) => fullcycle(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("range", (ThingDef d) => d.building.turretGunDef.Verbs[0].range.ToString("F1")), new TableDataGetter<ThingDef>("projectile\nspeed", (ThingDef d) => (d.building.turretGunDef.projectile == null) ? "" : d.building.turretGunDef.projectile.speed.ToString("F0")), new TableDataGetter<ThingDef>("dps\nmissless", (ThingDef d) => dpsMissless(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("accuracy\ntouch (" + 3f + ")", (ThingDef d) => accTouch(d.building.turretGunDef).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\nshort (" + 12f + ")", (ThingDef d) => accShort(d.building.turretGunDef).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\nmed (" + 25f + ")", (ThingDef d) => accMed(d.building.turretGunDef).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\nlong (" + 40f + ")", (ThingDef d) => accLong(d.building.turretGunDef).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\navg", (ThingDef d) => accAvg(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("forced\nmiss\nradius", (ThingDef d) => (!(d.building.turretGunDef.Verbs[0].forcedMissRadius > 0f)) ? "" : d.building.turretGunDef.Verbs[0].forcedMissRadius.ToString()), new TableDataGetter<ThingDef>("dps\ntouch", (ThingDef d) => (dpsMissless(d.building.turretGunDef) * accTouch(d.building.turretGunDef)).ToString("F2")), new TableDataGetter<ThingDef>("dps\nshort", (ThingDef d) => (dpsMissless(d.building.turretGunDef) * accShort(d.building.turretGunDef)).ToString("F2")), new TableDataGetter<ThingDef>("dps\nmed", (ThingDef d) => (dpsMissless(d.building.turretGunDef) * accMed(d.building.turretGunDef)).ToString("F2")), new TableDataGetter<ThingDef>("dps\nlong", (ThingDef d) => (dpsMissless(d.building.turretGunDef) * accLong(d.building.turretGunDef)).ToString("F2")), new TableDataGetter<ThingDef>("dps\navg", (ThingDef d) => dpsAvg(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("dpsAvg / $100", (ThingDef d) => (dpsAvg(d.building.turretGunDef) / (d.GetStatValueAbstract(StatDefOf.MarketValue) / 100f)).ToString("F3")), new TableDataGetter<ThingDef>("fuel\nshot capacity", (ThingDef d) => fuelCapacity(d).ToString()), new TableDataGetter<ThingDef>("fuel\ntype", (ThingDef d) => fuelType(d)), new TableDataGetter<ThingDef>("fuel to\nreload", (ThingDef d) => fuelToReload(d).ToString()));
+			DebugTables.MakeTablesDialog(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.category == ThingCategory.Building && d.building.IsTurret), new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("market\nvalue", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.MarketValue).ToString("F0")), new TableDataGetter<ThingDef>("cost\nlist", (ThingDef d) => (!d.CostList.NullOrEmpty()) ? d.CostList.Select((ThingDefCountClass x) => x.Summary).ToCommaList() : ""), new TableDataGetter<ThingDef>("cost\nstuff\ncount", (ThingDef d) => (!d.MadeFromStuff) ? "" : d.CostStuffCount.ToString()), new TableDataGetter<ThingDef>("work", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.WorkToBuild).ToString("F0")), new TableDataGetter<ThingDef>("hp", (ThingDef d) => d.GetStatValueAbstract(StatDefOf.MaxHitPoints).ToString("F0")), new TableDataGetter<ThingDef>("damage", (ThingDef d) => damage(d.building.turretGunDef).ToString()), new TableDataGetter<ThingDef>("AP", (ThingDef d) => armorPenetration(d.building.turretGunDef).ToStringPercent()), new TableDataGetter<ThingDef>("stop\npower", (ThingDef d) => (!(stoppingPower(d.building.turretGunDef) > 0f)) ? "" : stoppingPower(d.building.turretGunDef).ToString("F1")), new TableDataGetter<ThingDef>("warmup", (ThingDef d) => warmup(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("burst\nshots", (ThingDef d) => burstShots(d.building.turretGunDef).ToString()), new TableDataGetter<ThingDef>("cooldown", (ThingDef d) => cooldown(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("full\ncycle", (ThingDef d) => fullcycle(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("range", (ThingDef d) => d.building.turretGunDef.Verbs[0].range.ToString("F1")), new TableDataGetter<ThingDef>("projectile\nspeed", (ThingDef d) => (d.building.turretGunDef.projectile == null) ? "" : d.building.turretGunDef.projectile.speed.ToString("F0")), new TableDataGetter<ThingDef>("dps\nmissless", (ThingDef d) => dpsMissless(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("accuracy\ntouch (" + 3f + ")", (ThingDef d) => accTouch(d.building.turretGunDef).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\nshort (" + 12f + ")", (ThingDef d) => accShort(d.building.turretGunDef).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\nmed (" + 25f + ")", (ThingDef d) => accMed(d.building.turretGunDef).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\nlong (" + 40f + ")", (ThingDef d) => accLong(d.building.turretGunDef).ToStringPercent()), new TableDataGetter<ThingDef>("accuracy\navg", (ThingDef d) => accAvg(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("forced\nmiss\nradius", (ThingDef d) => (!(d.building.turretGunDef.Verbs[0].ForcedMissRadius > 0f)) ? "" : d.building.turretGunDef.Verbs[0].ForcedMissRadius.ToString()), new TableDataGetter<ThingDef>("dps\ntouch", (ThingDef d) => (dpsMissless(d.building.turretGunDef) * accTouch(d.building.turretGunDef)).ToString("F2")), new TableDataGetter<ThingDef>("dps\nshort", (ThingDef d) => (dpsMissless(d.building.turretGunDef) * accShort(d.building.turretGunDef)).ToString("F2")), new TableDataGetter<ThingDef>("dps\nmed", (ThingDef d) => (dpsMissless(d.building.turretGunDef) * accMed(d.building.turretGunDef)).ToString("F2")), new TableDataGetter<ThingDef>("dps\nlong", (ThingDef d) => (dpsMissless(d.building.turretGunDef) * accLong(d.building.turretGunDef)).ToString("F2")), new TableDataGetter<ThingDef>("dps\navg", (ThingDef d) => dpsAvg(d.building.turretGunDef).ToString("F2")), new TableDataGetter<ThingDef>("dpsAvg / $100", (ThingDef d) => (dpsAvg(d.building.turretGunDef) / (d.GetStatValueAbstract(StatDefOf.MarketValue) / 100f)).ToString("F3")), new TableDataGetter<ThingDef>("fuel\nshot capacity", (ThingDef d) => fuelCapacity(d).ToString()), new TableDataGetter<ThingDef>("fuel\ntype", (ThingDef d) => fuelType(d)), new TableDataGetter<ThingDef>("fuel to\nreload", (ThingDef d) => fuelToReload(d).ToString()));
 			static string fuelCapacity(ThingDef d)
 			{
 				if (!d.HasComp(typeof(CompRefuelable)))
@@ -128,15 +146,18 @@ namespace Verse
 		[DebugOutput]
 		public static void WeaponsMelee()
 		{
+			if (Current.ProgramState != ProgramState.Playing)
+			{
+				return;
+			}
 			List<FloatMenuOption> list = new List<FloatMenuOption>();
 			list.Add(new FloatMenuOption("Stuffless", delegate
 			{
 				DoTablesInternalMelee(null);
 			}));
-			foreach (ThingDef item in from st in DefDatabase<ThingDef>.AllDefs
-				where st.IsStuff
-				where DefDatabase<ThingDef>.AllDefs.Any((ThingDef wd) => wd.IsMeleeWeapon && st.stuffProps.CanMake(wd))
-				select st into td
+			foreach (ThingDef item in from td in DefDatabase<ThingDef>.AllDefs
+				where td.IsStuff
+				where DefDatabase<ThingDef>.AllDefs.Any((ThingDef wd) => wd.IsMeleeWeapon && td.stuffProps.CanMake(wd))
 				orderby td.GetStatValueAbstract(StatDefOf.SharpDamageMultiplier) descending
 				select td)
 			{
@@ -160,28 +181,21 @@ namespace Verse
 				enumerable = enumerable.Concat(DefDatabase<ThingDef>.AllDefs.Where((ThingDef d) => d.race != null).Cast<Def>());
 			}
 			enumerable = enumerable.OrderByDescending((Def h) => meleeDpsGetter(h));
-			DebugTables.MakeTablesDialog(enumerable, new TableDataGetter<Def>("defName", (Def d) => d.defName), new TableDataGetter<Def>("melee\nDPS", (Def d) => meleeDpsGetter(d).ToString("F2")), new TableDataGetter<Def>("melee\ndamage\naverage", (Def d) => meleeDamageGetter(d).ToString("F2")), new TableDataGetter<Def>("melee\ncooldown\naverage", (Def d) => meleeCooldownGetter(d).ToString("F2")), new TableDataGetter<Def>("melee\nAP", (Def d) => meleeAPGetter(d).ToString("F2")), new TableDataGetter<Def>("ranged\ndamage", (Def d) => rangedDamageGetter(d).ToString()), new TableDataGetter<Def>("ranged\nwarmup", (Def d) => rangedWarmupGetter(d).ToString("F2")), new TableDataGetter<Def>("ranged\ncooldown", (Def d) => rangedCooldownGetter(d).ToString("F2")), new TableDataGetter<Def>("market value", (Def d) => marketValueGetter(d).ToStringMoney()), new TableDataGetter<Def>("work to make", delegate(Def d)
-			{
-				ThingDef thingDef3 = d as ThingDef;
-				return (thingDef3 == null) ? "-" : thingDef3.GetStatValueAbstract(StatDefOf.WorkToMake, stuff).ToString("F0");
-			}), new TableDataGetter<Def>((stuff != null) ? (stuff.defName + " CanMake") : "CanMake", delegate(Def d)
+			DebugTables.MakeTablesDialog(enumerable, new TableDataGetter<Def>("defName", (Def d) => d.defName), new TableDataGetter<Def>("melee\nDPS", (Def d) => meleeDpsGetter(d).ToString("F2")), new TableDataGetter<Def>("melee\ndamage\naverage", (Def d) => meleeDamageGetter(d).ToString("F2")), new TableDataGetter<Def>("melee\ncooldown\naverage", (Def d) => meleeCooldownGetter(d).ToString("F2")), new TableDataGetter<Def>("melee\nAP", (Def d) => meleeAPGetter(d).ToString("F2")), new TableDataGetter<Def>("ranged\ndamage", (Def d) => rangedDamageGetter(d).ToString()), new TableDataGetter<Def>("ranged\nwarmup", (Def d) => rangedWarmupGetter(d).ToString("F2")), new TableDataGetter<Def>("ranged\ncooldown", (Def d) => rangedCooldownGetter(d).ToString("F2")), new TableDataGetter<Def>("market value", (Def d) => marketValueGetter(d).ToStringMoney()), new TableDataGetter<Def>("work to make", (Def d) => (!(d is ThingDef def)) ? "-" : def.GetStatValueAbstract(StatDefOf.WorkToMake, stuff).ToString("F0")), new TableDataGetter<Def>((stuff != null) ? (stuff.defName + " CanMake") : "CanMake", delegate(Def d)
 			{
 				if (stuff == null)
 				{
 					return "n/a";
 				}
-				ThingDef thingDef2 = d as ThingDef;
-				return (thingDef2 == null) ? "-" : stuff.stuffProps.CanMake(thingDef2).ToStringCheckBlank();
-			}), new TableDataGetter<Def>("assumed\nmelee\nhit chance", (Def d) => 0.82f.ToStringPercent()));
+				return (!(d is ThingDef t)) ? "-" : stuff.stuffProps.CanMake(t).ToStringCheckBlank();
+			}), new TableDataGetter<Def>("assumed\nmelee\nhit chance", (Def d) => 0.82f.ToStringPercent()), new TableDataGetter<Def>("smeltable", (Def d) => (d is ThingDef thingDef) ? thingDef.smeltable.ToStringCheckBlank() : string.Empty));
 			float marketValueGetter(Def d)
 			{
-				ThingDef thingDef = d as ThingDef;
-				if (thingDef != null)
+				if (d is ThingDef def)
 				{
-					return thingDef.GetStatValueAbstract(StatDefOf.MarketValue, stuff);
+					return def.GetStatValueAbstract(StatDefOf.MarketValue, stuff);
 				}
-				HediffDef hediffDef = d as HediffDef;
-				if (hediffDef != null)
+				if (d is HediffDef hediffDef)
 				{
 					if (hediffDef.spawnThingOnRemoved == null)
 					{
@@ -202,19 +216,19 @@ namespace Verse
 			}
 			float meleeCooldownGetter(Def d)
 			{
-				List<Verb> concreteExampleVerbs2 = VerbUtility.GetConcreteExampleVerbs(d, stuff);
-				if (concreteExampleVerbs2.OfType<Verb_MeleeAttack>().Any())
+				List<Verb> concreteExampleVerbs = VerbUtility.GetConcreteExampleVerbs(d, stuff);
+				if (concreteExampleVerbs.OfType<Verb_MeleeAttack>().Any())
 				{
-					return concreteExampleVerbs2.OfType<Verb_MeleeAttack>().AverageWeighted((Verb_MeleeAttack v) => v.verbProps.AdjustedMeleeSelectionWeight(v, null), (Verb_MeleeAttack v) => v.verbProps.AdjustedCooldown(v, null));
+					return concreteExampleVerbs.OfType<Verb_MeleeAttack>().AverageWeighted((Verb_MeleeAttack v) => v.verbProps.AdjustedMeleeSelectionWeight(v, null), (Verb_MeleeAttack v) => v.verbProps.AdjustedCooldown(v, null));
 				}
 				return -1f;
 			}
 			float meleeDamageGetter(Def d)
 			{
-				List<Verb> concreteExampleVerbs3 = VerbUtility.GetConcreteExampleVerbs(d, stuff);
-				if (concreteExampleVerbs3.OfType<Verb_MeleeAttack>().Any())
+				List<Verb> concreteExampleVerbs = VerbUtility.GetConcreteExampleVerbs(d, stuff);
+				if (concreteExampleVerbs.OfType<Verb_MeleeAttack>().Any())
 				{
-					return concreteExampleVerbs3.OfType<Verb_MeleeAttack>().AverageWeighted((Verb_MeleeAttack v) => v.verbProps.AdjustedMeleeSelectionWeight(v, null), (Verb_MeleeAttack v) => v.verbProps.AdjustedMeleeDamageAmount(v, null));
+					return concreteExampleVerbs.OfType<Verb_MeleeAttack>().AverageWeighted((Verb_MeleeAttack v) => v.verbProps.AdjustedMeleeSelectionWeight(v, null), (Verb_MeleeAttack v) => v.verbProps.AdjustedMeleeDamageAmount(v, null));
 				}
 				return -1f;
 			}
@@ -276,7 +290,7 @@ namespace Verse
 		[DebugOutput]
 		public static void ResearchProjects()
 		{
-			DebugTables.MakeTablesDialog(DefDatabase<ResearchProjectDef>.AllDefs, new TableDataGetter<ResearchProjectDef>("defName", (ResearchProjectDef d) => d.defName), new TableDataGetter<ResearchProjectDef>("label", (ResearchProjectDef d) => d.label), new TableDataGetter<ResearchProjectDef>("baseCost", (ResearchProjectDef d) => d.baseCost), new TableDataGetter<ResearchProjectDef>("techLevel", (ResearchProjectDef d) => d.techLevel.ToString()), new TableDataGetter<ResearchProjectDef>("prerequisites", (ResearchProjectDef d) => (d.prerequisites != null && d.prerequisites.Count != 0) ? string.Join(",", d.prerequisites.Select((ResearchProjectDef p) => d.defName).ToArray()) : "NONE"), new TableDataGetter<ResearchProjectDef>("hiddenPrerequisites", (ResearchProjectDef d) => (d.hiddenPrerequisites != null && d.hiddenPrerequisites.Count != 0) ? string.Join(",", d.hiddenPrerequisites.Select((ResearchProjectDef p) => d.defName).ToArray()) : "NONE"), new TableDataGetter<ResearchProjectDef>("requiredResearchBuilding", (ResearchProjectDef d) => d.requiredResearchBuilding), new TableDataGetter<ResearchProjectDef>("techprintCount", (ResearchProjectDef d) => d.TechprintCount), new TableDataGetter<ResearchProjectDef>("heldByFactionCategoryTags", (ResearchProjectDef d) => (d.heldByFactionCategoryTags != null) ? string.Join(",", d.heldByFactionCategoryTags.Select((string fc) => fc).ToArray()) : "NONE"));
+			DebugTables.MakeTablesDialog(DefDatabase<ResearchProjectDef>.AllDefs, new TableDataGetter<ResearchProjectDef>("defName", (ResearchProjectDef d) => d.defName), new TableDataGetter<ResearchProjectDef>("label", (ResearchProjectDef d) => d.label), new TableDataGetter<ResearchProjectDef>("baseCost", (ResearchProjectDef d) => d.baseCost), new TableDataGetter<ResearchProjectDef>("knowledgeCost", (ResearchProjectDef d) => d.knowledgeCost), new TableDataGetter<ResearchProjectDef>("knowledgeCategory", (ResearchProjectDef d) => (d.knowledgeCategory != null) ? d.knowledgeCategory.label : "NONE"), new TableDataGetter<ResearchProjectDef>("techLevel", (ResearchProjectDef d) => d.techLevel.ToString()), new TableDataGetter<ResearchProjectDef>("prerequisites", (ResearchProjectDef d) => (d.prerequisites != null && d.prerequisites.Count != 0) ? string.Join(",", d.prerequisites.Select((ResearchProjectDef p) => d.defName).ToArray()) : "NONE"), new TableDataGetter<ResearchProjectDef>("hiddenPrerequisites", (ResearchProjectDef d) => (d.hiddenPrerequisites != null && d.hiddenPrerequisites.Count != 0) ? string.Join(",", d.hiddenPrerequisites.Select((ResearchProjectDef p) => d.defName).ToArray()) : "NONE"), new TableDataGetter<ResearchProjectDef>("requiredResearchBuilding", (ResearchProjectDef d) => d.requiredResearchBuilding), new TableDataGetter<ResearchProjectDef>("techprintCount", (ResearchProjectDef d) => d.TechprintCount), new TableDataGetter<ResearchProjectDef>("heldByFactionCategoryTags", (ResearchProjectDef d) => (d.heldByFactionCategoryTags != null) ? string.Join(",", d.heldByFactionCategoryTags.Select((string fc) => fc).ToArray()) : "NONE"));
 		}
 
 		[DebugOutput]
@@ -290,7 +304,7 @@ namespace Verse
 				{
 					StringBuilder stringBuilder = new StringBuilder();
 					List<Thing> list2 = Find.CurrentMap.listerThings.ThingsInGroup(localRg);
-					stringBuilder.AppendLine(string.Concat("Global things in group ", localRg, " (count ", list2.Count, ")"));
+					stringBuilder.AppendLine("Global things in group " + localRg.ToString() + " (count " + list2.Count + ")");
 					Log.Message(DebugLogsUtility.ThingListToUniqueCountString(list2));
 				});
 				list.Add(item);
@@ -299,34 +313,38 @@ namespace Verse
 		}
 
 		[DebugOutput]
+		public static void TickRates()
+		{
+			DebugTables.MakeTablesDialog(Find.CurrentMap.listerThings.AllThings.Where((Thing thing) => thing.def.tickerType == TickerType.Normal), new TableDataGetter<Thing>("label", (Thing d) => d.LabelCap), new TableDataGetter<Thing>("rate", (Thing d) => d.UpdateRateTicks));
+		}
+
+		[DebugOutput]
 		public static void ThingFillageAndPassability()
 		{
-			StringBuilder stringBuilder = new StringBuilder();
-			foreach (ThingDef allDef in DefDatabase<ThingDef>.AllDefs)
+			DebugTables.MakeTablesDialog(from d in DefDatabase<ThingDef>.AllDefs
+				where d.passability != Traversability.Standable || d.fillPercent > 0f
+				orderby d.category, d.defName
+				select d, new TableDataGetter<ThingDef>("defName", (ThingDef def) => def.defName), new TableDataGetter<ThingDef>("category", (ThingDef def) => def.category.ToString()), new TableDataGetter<ThingDef>("fillPercent", (ThingDef def) => def.fillPercent), new TableDataGetter<ThingDef>("fillage", (ThingDef def) => def.Fillage), new TableDataGetter<ThingDef>("passability", (ThingDef def) => def.passability.ToString()), new TableDataGetter<ThingDef>("door", (ThingDef def) => def.IsDoor), new TableDataGetter<ThingDef>("ALERT", (Func<ThingDef, string>)GetAlerts));
+			static string GetAlerts(ThingDef def)
 			{
-				if (allDef.passability != 0 || allDef.fillPercent > 0f)
+				StringBuilder stringBuilder = new StringBuilder();
+				if (def.passability == Traversability.Impassable && def.fillPercent < 0.1f)
 				{
-					stringBuilder.Append(allDef.defName + " - pass=" + allDef.passability.ToString() + ", fill=" + allDef.fillPercent.ToStringPercent());
-					if (allDef.passability == Traversability.Impassable && allDef.fillPercent < 0.1f)
-					{
-						stringBuilder.Append("   ALERT, impassable with low fill");
-					}
-					if (allDef.passability != Traversability.Impassable && allDef.fillPercent > 0.8f)
-					{
-						stringBuilder.Append("    ALERT, passabile with very high fill");
-					}
-					stringBuilder.AppendLine();
+					stringBuilder.Append("Impassable with low fill! ");
 				}
+				if (def.passability != Traversability.Impassable && def.fillPercent > 0.8f)
+				{
+					stringBuilder.Append("Passabile with very high fill! ");
+				}
+				return stringBuilder.ToString();
 			}
-			Log.Message(stringBuilder.ToString());
 		}
 
 		[DebugOutput]
 		public static void ThingPathCosts()
 		{
-			DebugTables.MakeTablesDialog(from x in DefDatabase<ThingDef>.AllDefs
-				where x.passability != Traversability.Impassable && x.pathCost > 0
-				select x into d
+			DebugTables.MakeTablesDialog(from d in DefDatabase<ThingDef>.AllDefs
+				where d.passability != Traversability.Impassable && d.pathCost > 0
 				orderby d.category, d.pathCost, d.defName
 				select d, new TableDataGetter<ThingDef>("defName", (ThingDef d) => d.defName), new TableDataGetter<ThingDef>("category", (ThingDef d) => d.category.ToString()), new TableDataGetter<ThingDef>("path cost", (ThingDef d) => d.pathCost), new TableDataGetter<ThingDef>("passability", (ThingDef d) => d.passability.ToString()));
 		}

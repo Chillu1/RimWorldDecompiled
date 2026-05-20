@@ -1,41 +1,9 @@
-using System.Linq;
-using System.Text;
-using RimWorld.Planet;
-using UnityEngine;
 using Verse;
 
 namespace RimWorld
 {
 	public class Command_Psycast : Command_Ability
 	{
-		public override string Label
-		{
-			get
-			{
-				if (ability.pawn.IsCaravanMember())
-				{
-					Pawn pawn = ability.pawn;
-					Pawn_PsychicEntropyTracker psychicEntropy = pawn.psychicEntropy;
-					StringBuilder stringBuilder = new StringBuilder(base.Label + " (" + pawn.LabelShort);
-					if (ability.def.PsyfocusCost > float.Epsilon)
-					{
-						stringBuilder.Append(", " + "PsyfocusLetter".Translate() + ":" + psychicEntropy.CurrentPsyfocus.ToStringPercent("0"));
-					}
-					if (ability.def.EntropyGain > float.Epsilon)
-					{
-						if (ability.def.PsyfocusCost > float.Epsilon)
-						{
-							stringBuilder.Append(",");
-						}
-						stringBuilder.Append((string)(" " + "NeuralHeatLetter".Translate() + ":") + Mathf.Round(psychicEntropy.EntropyValue));
-					}
-					stringBuilder.Append(")");
-					return stringBuilder.ToString();
-				}
-				return base.Label;
-			}
-		}
-
 		public override string TopRightLabel
 		{
 			get
@@ -56,10 +24,9 @@ namespace RimWorld
 			}
 		}
 
-		public Command_Psycast(Psycast ability)
-			: base(ability)
+		public Command_Psycast(Psycast ability, Pawn pawn)
+			: base(ability, pawn)
 		{
-			shrinkable = true;
 		}
 
 		protected override void DisabledCheck()
@@ -69,8 +36,7 @@ namespace RimWorld
 			disabled = false;
 			if (def.EntropyGain > float.Epsilon)
 			{
-				Hediff hediff = pawn.health.hediffSet.hediffs.FirstOrDefault((Hediff h) => h.def == HediffDefOf.PsychicAmplifier);
-				if (hediff == null || hediff.Severity < (float)def.level)
+				if (pawn.GetPsylinkLevel() < def.level)
 				{
 					DisableWithReason("CommandPsycastHigherLevelPsylinkRequired".Translate(def.level));
 				}

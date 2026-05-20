@@ -11,7 +11,8 @@ namespace RimWorld
 
 		public bool drawUnownedAssignmentOverlay = true;
 
-		public string singleton;
+		[MustTranslate]
+		public string noAssignablePawnsDesc;
 
 		public CompProperties_AssignableToPawn()
 		{

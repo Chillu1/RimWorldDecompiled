@@ -24,19 +24,19 @@ namespace RimWorld
 
 		private List<SketchEntity> entities = new List<SketchEntity>();
 
-		private List<SketchThing> cachedThings = new List<SketchThing>();
+		private readonly List<SketchThing> cachedThings = new List<SketchThing>();
 
-		private List<SketchTerrain> cachedTerrain = new List<SketchTerrain>();
+		private readonly List<SketchTerrain> cachedTerrain = new List<SketchTerrain>();
 
-		private List<SketchBuildable> cachedBuildables = new List<SketchBuildable>();
+		private readonly List<SketchBuildable> cachedBuildables = new List<SketchBuildable>();
 
-		private Dictionary<IntVec3, SketchTerrain> terrainAt = new Dictionary<IntVec3, SketchTerrain>();
+		private readonly Dictionary<IntVec3, SketchTerrain> terrainAt = new Dictionary<IntVec3, SketchTerrain>();
 
-		private Dictionary<IntVec3, SketchThing> edificeAt = new Dictionary<IntVec3, SketchThing>();
+		private readonly Dictionary<IntVec3, SketchThing> edificeAt = new Dictionary<IntVec3, SketchThing>();
 
-		private Dictionary<IntVec3, SketchThing> thingsAt_single = new Dictionary<IntVec3, SketchThing>();
+		private readonly Dictionary<IntVec3, SketchThing> thingsAt_single = new Dictionary<IntVec3, SketchThing>();
 
-		private Dictionary<IntVec3, List<SketchThing>> thingsAt_multiple = new Dictionary<IntVec3, List<SketchThing>>();
+		private readonly Dictionary<IntVec3, List<SketchThing>> thingsAt_multiple = new Dictionary<IntVec3, List<SketchThing>>();
 
 		private bool occupiedRectDirty = true;
 
@@ -50,6 +50,8 @@ namespace RimWorld
 
 		private Dictionary<IntVec3, int> floodFillTraversalDistance;
 
+		public const float SpawnOrder_BeforeTerrain = 0.5f;
+
 		public const float SpawnOrder_Terrain = 1f;
 
 		public const float SpawnOrder_Thing = 2f;
@@ -60,15 +62,15 @@ namespace RimWorld
 
 		private static readonly Color BlockedColor = new Color(0.8f, 0.2f, 0.2f, 0.35f);
 
-		private static List<Thing> tmpSketchThings = new List<Thing>();
+		private static readonly List<Thing> tmpSketchThings = new List<Thing>();
 
-		private static HashSet<IntVec3> tmpSuggestedRoofCellsVisited = new HashSet<IntVec3>();
+		private static readonly HashSet<IntVec3> tmpSuggestedRoofCellsVisited = new HashSet<IntVec3>();
 
-		private static List<IntVec3> tmpSuggestedRoofCells = new List<IntVec3>();
+		private static readonly List<IntVec3> tmpSuggestedRoofCells = new List<IntVec3>();
 
-		private static HashSet<IntVec3> tmpYieldedSuggestedRoofCells = new HashSet<IntVec3>();
+		private static readonly HashSet<IntVec3> tmpYieldedSuggestedRoofCells = new HashSet<IntVec3>();
 
-		private static List<SketchThing> tmpToRemove = new List<SketchThing>();
+		private static readonly List<SketchThing> tmpToRemove = new List<SketchThing>();
 
 		public List<SketchEntity> Entities => entities;
 
@@ -129,13 +131,11 @@ namespace RimWorld
 			{
 				return false;
 			}
-			SketchTerrain sketchTerrain = entity as SketchTerrain;
-			if (sketchTerrain != null && terrainAt.TryGetValue(sketchTerrain.pos, out var value))
+			if (entity is SketchTerrain sketchTerrain && terrainAt.TryGetValue(sketchTerrain.pos, out var value))
 			{
 				Remove(value);
 			}
-			SketchBuildable sketchBuildable = entity as SketchBuildable;
-			if (sketchBuildable != null)
+			if (entity is SketchBuildable sketchBuildable)
 			{
 				for (int num = cachedBuildables.Count - 1; num >= 0; num--)
 				{
@@ -150,17 +150,20 @@ namespace RimWorld
 			return true;
 		}
 
-		public bool AddThing(ThingDef def, IntVec3 pos, Rot4 rot, ThingDef stuff = null, int stackCount = 1, QualityCategory? quality = null, int? hitPoints = null, bool wipeIfCollides = true)
+		public bool AddThing(ThingDef def, IntVec3 pos, Rot4 rot, ThingDef stuff = null, int stackCount = 1, QualityCategory? quality = null, int? hitPoints = null, bool wipeIfCollides = true, float spawnOrder = 2f)
 		{
-			SketchThing sketchThing = new SketchThing();
-			sketchThing.def = def;
-			sketchThing.stuff = stuff;
-			sketchThing.pos = pos;
-			sketchThing.rot = rot;
-			sketchThing.stackCount = stackCount;
-			sketchThing.quality = quality;
-			sketchThing.hitPoints = hitPoints;
-			return Add(sketchThing, wipeIfCollides);
+			SketchThing entity = new SketchThing
+			{
+				def = def,
+				stuff = stuff,
+				pos = pos,
+				rot = rot,
+				stackCount = stackCount,
+				quality = quality,
+				hitPoints = hitPoints,
+				spawnOrder = spawnOrder
+			};
+			return Add(entity, wipeIfCollides);
 		}
 
 		public bool AddTerrain(TerrainDef def, IntVec3 pos, bool wipeIfCollides = true)
@@ -238,6 +241,20 @@ namespace RimWorld
 			return EmptySketchThingList;
 		}
 
+		public bool AnyThingAt(IntVec3 pos)
+		{
+			if (edificeAt.TryGetValue(pos, out var value) && value != null)
+			{
+				return true;
+			}
+			if (thingsAt_single.TryGetValue(pos, out var _))
+			{
+				return true;
+			}
+			List<SketchThing> value3;
+			return thingsAt_multiple.TryGetValue(pos, out value3);
+		}
+
 		public void ThingsAt(IntVec3 pos, out SketchThing singleResult, out List<SketchThing> multipleResults)
 		{
 			List<SketchThing> value2;
@@ -273,13 +290,11 @@ namespace RimWorld
 			{
 				return false;
 			}
-			SketchThing sketchThing = entity as SketchThing;
-			if (sketchThing != null)
+			if (entity is SketchThing sketchThing)
 			{
 				return WouldCollide(sketchThing.def, sketchThing.pos, sketchThing.rot);
 			}
-			SketchTerrain sketchTerrain = entity as SketchTerrain;
-			if (sketchTerrain != null)
+			if (entity is SketchTerrain sketchTerrain)
 			{
 				return WouldCollide(sketchTerrain.def, sketchTerrain.pos);
 			}
@@ -339,20 +354,16 @@ namespace RimWorld
 
 		public void WipeColliding(SketchEntity entity)
 		{
-			if (!WouldCollide(entity))
+			if (WouldCollide(entity))
 			{
-				return;
-			}
-			SketchThing sketchThing = entity as SketchThing;
-			if (sketchThing != null)
-			{
-				WipeColliding(sketchThing.def, sketchThing.pos, sketchThing.rot);
-				return;
-			}
-			SketchTerrain sketchTerrain = entity as SketchTerrain;
-			if (sketchTerrain != null)
-			{
-				WipeColliding(sketchTerrain.def, sketchTerrain.pos);
+				if (entity is SketchThing sketchThing)
+				{
+					WipeColliding(sketchThing.def, sketchThing.pos, sketchThing.rot);
+				}
+				else if (entity is SketchTerrain sketchTerrain)
+				{
+					WipeColliding(sketchTerrain.def, sketchTerrain.pos);
+				}
 			}
 		}
 
@@ -420,8 +431,7 @@ namespace RimWorld
 			IntVec3 offset = GetOffset(pos, posType);
 			for (int i = 0; i < entities.Count; i++)
 			{
-				SketchThing sketchThing = entities[i] as SketchThing;
-				if (sketchThing == null)
+				if (!(entities[i] is SketchThing sketchThing))
 				{
 					continue;
 				}
@@ -444,7 +454,7 @@ namespace RimWorld
 			return false;
 		}
 
-		public void Spawn(Map map, IntVec3 pos, Faction faction, SpawnPosType posType = SpawnPosType.Unchanged, SpawnMode spawnMode = SpawnMode.Normal, bool wipeIfCollides = false, bool clearEdificeWhereFloor = false, List<Thing> spawnedThings = null, bool dormant = false, bool buildRoofsInstantly = false, Func<SketchEntity, IntVec3, bool> canSpawnThing = null, Action<IntVec3, SketchEntity> onFailedToSpawnThing = null)
+		public void Spawn(Map map, IntVec3 pos, Faction faction, SpawnPosType posType = SpawnPosType.Unchanged, SpawnMode spawnMode = SpawnMode.Normal, bool wipeIfCollides = false, bool forceTerrainAffordance = false, bool clearEdificeWhereFloor = false, List<Thing> spawnedThings = null, bool dormant = false, bool buildRoofsInstantly = false, Func<SketchEntity, IntVec3, bool> canSpawnThing = null, Action<IntVec3, SketchEntity> onFailedToSpawnThing = null, TerrainDef defaultAffordanceTerrain = null)
 		{
 			IntVec3 offset = GetOffset(pos, posType);
 			if (clearEdificeWhereFloor)
@@ -460,7 +470,7 @@ namespace RimWorld
 			foreach (SketchEntity item in entities.OrderBy((SketchEntity x) => x.SpawnOrder))
 			{
 				IntVec3 intVec = item.pos + offset;
-				if ((canSpawnThing != null && !canSpawnThing(item, intVec)) || !item.Spawn(intVec, map, faction, spawnMode, wipeIfCollides, spawnedThings, dormant))
+				if ((canSpawnThing != null && !canSpawnThing(item, intVec)) || !item.Spawn(intVec, map, faction, spawnMode, wipeIfCollides, forceTerrainAffordance, spawnedThings, dormant, defaultAffordanceTerrain))
 				{
 					onFailedToSpawnThing?.Invoke(intVec, item);
 				}
@@ -468,13 +478,13 @@ namespace RimWorld
 			if (spawnedThings != null && spawnMode == SpawnMode.TransportPod && !wipeIfCollides)
 			{
 				bool flag = false;
-				for (int j = 0; j < spawnedThings.Count; j++)
+				for (int num = 0; num < spawnedThings.Count; num++)
 				{
-					for (int k = j + 1; k < spawnedThings.Count; k++)
+					for (int num2 = num + 1; num2 < spawnedThings.Count; num2++)
 					{
-						CellRect cellRect = GenAdj.OccupiedRect(spawnedThings[j].Position, spawnedThings[j].Rotation, spawnedThings[j].def.size);
-						CellRect other = GenAdj.OccupiedRect(spawnedThings[k].Position, spawnedThings[k].Rotation, spawnedThings[k].def.size);
-						if (cellRect.Overlaps(other) && (GenSpawn.SpawningWipes(spawnedThings[j].def, spawnedThings[k].def) || GenSpawn.SpawningWipes(spawnedThings[k].def, spawnedThings[j].def)))
+						CellRect cellRect = GenAdj.OccupiedRect(spawnedThings[num].Position, spawnedThings[num].Rotation, spawnedThings[num].def.size);
+						CellRect other = GenAdj.OccupiedRect(spawnedThings[num2].Position, spawnedThings[num2].Rotation, spawnedThings[num2].def.size);
+						if (cellRect.Overlaps(other) && (GenSpawn.SpawningWipes(spawnedThings[num].def, spawnedThings[num2].def) || GenSpawn.SpawningWipes(spawnedThings[num2].def, spawnedThings[num].def)))
 						{
 							flag = true;
 							break;
@@ -487,12 +497,11 @@ namespace RimWorld
 				}
 				if (flag)
 				{
-					for (int l = 0; l < spawnedThings.Count; l++)
+					for (int num3 = 0; num3 < spawnedThings.Count; num3++)
 					{
-						ActiveDropPodInfo activeDropPodInfo;
-						if ((activeDropPodInfo = spawnedThings[l].ParentHolder as ActiveDropPodInfo) != null)
+						if (spawnedThings[num3].ParentHolder is ActiveTransporterInfo activeTransporterInfo)
 						{
-							activeDropPodInfo.spawnWipeMode = null;
+							activeTransporterInfo.spawnWipeMode = null;
 						}
 					}
 				}
@@ -574,92 +583,82 @@ namespace RimWorld
 		private void AddToCache(SketchEntity entity)
 		{
 			occupiedRectDirty = true;
-			SketchBuildable sketchBuildable = entity as SketchBuildable;
-			if (sketchBuildable != null)
+			if (entity is SketchBuildable item)
 			{
-				cachedBuildables.Add(sketchBuildable);
+				cachedBuildables.Add(item);
 			}
-			SketchThing sketchThing = entity as SketchThing;
-			if (sketchThing != null)
+			if (entity is SketchThing sketchThing)
 			{
 				if (sketchThing.def.building != null && sketchThing.def.building.isEdifice)
 				{
-					foreach (IntVec3 item in sketchThing.OccupiedRect)
+					foreach (IntVec3 item2 in sketchThing.OccupiedRect)
 					{
-						edificeAt[item] = sketchThing;
+						edificeAt[item2] = sketchThing;
 					}
 				}
-				foreach (IntVec3 item2 in sketchThing.OccupiedRect)
+				foreach (IntVec3 item3 in sketchThing.OccupiedRect)
 				{
 					SketchThing value2;
-					if (thingsAt_multiple.TryGetValue(item2, out var value))
+					if (thingsAt_multiple.TryGetValue(item3, out var value))
 					{
 						value.Add(sketchThing);
 					}
-					else if (thingsAt_single.TryGetValue(item2, out value2))
+					else if (thingsAt_single.TryGetValue(item3, out value2))
 					{
-						thingsAt_single.Remove(item2);
+						thingsAt_single.Remove(item3);
 						List<SketchThing> list = new List<SketchThing>();
 						list.Add(value2);
 						list.Add(sketchThing);
-						thingsAt_multiple.Add(item2, list);
+						thingsAt_multiple.Add(item3, list);
 					}
 					else
 					{
-						thingsAt_single.Add(item2, sketchThing);
+						thingsAt_single.Add(item3, sketchThing);
 					}
 				}
 				cachedThings.Add(sketchThing);
 			}
-			else
+			else if (entity is SketchTerrain sketchTerrain)
 			{
-				SketchTerrain sketchTerrain = entity as SketchTerrain;
-				if (sketchTerrain != null)
-				{
-					terrainAt[sketchTerrain.pos] = sketchTerrain;
-					cachedTerrain.Add(sketchTerrain);
-				}
+				terrainAt[sketchTerrain.pos] = sketchTerrain;
+				cachedTerrain.Add(sketchTerrain);
 			}
 		}
 
 		private void RemoveFromCache(SketchEntity entity)
 		{
 			occupiedRectDirty = true;
-			SketchBuildable sketchBuildable = entity as SketchBuildable;
-			if (sketchBuildable != null)
+			if (entity is SketchBuildable item)
 			{
-				cachedBuildables.Remove(sketchBuildable);
+				cachedBuildables.Remove(item);
 			}
-			SketchThing sketchThing = entity as SketchThing;
-			if (sketchThing != null)
+			if (entity is SketchThing sketchThing)
 			{
 				if (sketchThing.def.building != null && sketchThing.def.building.isEdifice)
 				{
-					foreach (IntVec3 item in sketchThing.OccupiedRect)
+					foreach (IntVec3 item2 in sketchThing.OccupiedRect)
 					{
-						if (edificeAt.TryGetValue(item, out var value) && value == sketchThing)
+						if (edificeAt.TryGetValue(item2, out var value) && value == sketchThing)
 						{
-							edificeAt.Remove(item);
+							edificeAt.Remove(item2);
 						}
 					}
 				}
-				foreach (IntVec3 item2 in sketchThing.OccupiedRect)
+				foreach (IntVec3 item3 in sketchThing.OccupiedRect)
 				{
 					SketchThing value3;
-					if (thingsAt_multiple.TryGetValue(item2, out var value2))
+					if (thingsAt_multiple.TryGetValue(item3, out var value2))
 					{
 						value2.Remove(sketchThing);
 					}
-					else if (thingsAt_single.TryGetValue(item2, out value3) && value3 == sketchThing)
+					else if (thingsAt_single.TryGetValue(item3, out value3) && value3 == sketchThing)
 					{
-						thingsAt_single.Remove(item2);
+						thingsAt_single.Remove(item3);
 					}
 				}
 				cachedThings.Remove(sketchThing);
-				return;
 			}
-			SketchTerrain sketchTerrain = entity as SketchTerrain;
-			if (sketchTerrain != null)
+			else if (entity is SketchTerrain sketchTerrain)
 			{
 				if (terrainAt.TryGetValue(sketchTerrain.pos, out var value4) && value4 == sketchTerrain)
 				{
@@ -768,13 +767,7 @@ namespace RimWorld
 			return true;
 		}
 
-		[Obsolete]
-		public void DrawGhost(IntVec3 pos, SpawnPosType posType = SpawnPosType.Unchanged, bool placingMode = false, Thing thingToIgnore = null)
-		{
-			DrawGhost_NewTmp(pos, posType, placingMode, thingToIgnore);
-		}
-
-		public void DrawGhost_NewTmp(IntVec3 pos, SpawnPosType posType = SpawnPosType.Unchanged, bool placingMode = false, Thing thingToIgnore = null, Func<SketchEntity, IntVec3, List<Thing>, Map, bool> validator = null)
+		public void DrawGhost(IntVec3 pos, SpawnPosType posType = SpawnPosType.Unchanged, bool placingMode = false, Thing thingToIgnore = null, Func<SketchEntity, IntVec3, List<Thing>, Map, bool> validator = null)
 		{
 			IntVec3 offset = GetOffset(pos, posType);
 			Map currentMap = Find.CurrentMap;
@@ -790,12 +783,11 @@ namespace RimWorld
 			foreach (SketchBuildable buildable in Buildables)
 			{
 				Thing spawnedBlueprintOrFrame = buildable.GetSpawnedBlueprintOrFrame(buildable.pos + offset, currentMap);
-				SketchThing sketchThing;
 				if (spawnedBlueprintOrFrame != null)
 				{
 					tmpSketchThings.Add(spawnedBlueprintOrFrame);
 				}
-				else if ((sketchThing = buildable as SketchThing) != null)
+				else if (buildable is SketchThing sketchThing)
 				{
 					Thing sameSpawned = sketchThing.GetSameSpawned(sketchThing.pos + offset, currentMap);
 					if (sameSpawned != null)
@@ -856,8 +848,7 @@ namespace RimWorld
 			}
 			if (extraRoots != null)
 			{
-				IList<IntVec3> list = extraRoots as IList<IntVec3>;
-				if (list != null)
+				if (extraRoots is IList<IntVec3> list)
 				{
 					for (int i = 0; i < list.Count; i++)
 					{
@@ -906,7 +897,7 @@ namespace RimWorld
 			floodFillWorking = false;
 		}
 
-		private IEnumerable<IntVec3> GetSuggestedRoofCells()
+		public IEnumerable<IntVec3> GetSuggestedRoofCells()
 		{
 			if (Empty)
 			{
@@ -929,9 +920,9 @@ namespace RimWorld
 					return false;
 				});
 				bool flag = false;
-				for (int k = 0; k < tmpSuggestedRoofCells.Count; k++)
+				for (int num = 0; num < tmpSuggestedRoofCells.Count; num++)
 				{
-					if (occupiedRect.IsOnEdge(tmpSuggestedRoofCells[k]))
+					if (occupiedRect.IsOnEdge(tmpSuggestedRoofCells[num]))
 					{
 						flag = true;
 						break;
@@ -979,50 +970,28 @@ namespace RimWorld
 			{
 				return;
 			}
-			int num = rot.AsInt - rotation.AsInt;
-			if (num < 0)
-			{
-				num += 4;
-			}
-			Rot4 rot2 = new Rot4(num);
+			RotationDirection relativeRotation = Rot4.GetRelativeRotation(rotation, rot);
 			rotation = rot;
 			foreach (SketchEntity entity in Entities)
 			{
-				entity.pos = entity.pos.RotatedBy(rot2);
-				SketchThing sketchThing;
-				if ((sketchThing = entity as SketchThing) == null)
+				entity.pos = entity.pos.RotatedBy(relativeRotation);
+				if (!(entity is SketchThing sketchThing))
 				{
 					continue;
 				}
-				int asInt = rot2.AsInt;
 				if (sketchThing.def.rotatable)
 				{
-					RotationDirection rotDir = RotationDirection.None;
-					int num2 = 1;
-					switch (asInt)
-					{
-					case 1:
-						rotDir = RotationDirection.Clockwise;
-						break;
-					case 2:
-						rotDir = RotationDirection.Clockwise;
-						num2 = 2;
-						break;
-					case 3:
-						rotDir = RotationDirection.Counterclockwise;
-						break;
-					}
-					for (int i = 0; i < num2; i++)
-					{
-						sketchThing.rot.Rotate(rotDir);
-					}
+					sketchThing.rot.Rotate(relativeRotation);
+					continue;
 				}
-				else if (asInt == 1 && sketchThing.def.size.z % 2 == 0)
+				if (relativeRotation == RotationDirection.Clockwise && sketchThing.def.size.z % 2 == 0)
 				{
 					entity.pos.z--;
+					continue;
 				}
-				else if (rot2.AsInt == 2)
+				switch (relativeRotation)
 				{
+				case RotationDirection.Opposite:
 					if (sketchThing.def.size.x % 2 == 0)
 					{
 						entity.pos.x--;
@@ -1031,16 +1000,19 @@ namespace RimWorld
 					{
 						entity.pos.z--;
 					}
-				}
-				else if (asInt == 3 && sketchThing.def.size.x % 2 == 0)
-				{
-					entity.pos.x--;
+					break;
+				case RotationDirection.Counterclockwise:
+					if (sketchThing.def.size.x % 2 == 0)
+					{
+						entity.pos.x--;
+					}
+					break;
 				}
 			}
 			RecacheAll();
 		}
 
-		public void ExposeData()
+		public virtual void ExposeData()
 		{
 			Scribe_Collections.Look(ref entities, "entities", LookMode.Deep);
 			Scribe_Values.Look(ref rotation, "rotation", Rot4.North);
@@ -1058,26 +1030,56 @@ namespace RimWorld
 			}
 			RecacheAll();
 			tmpToRemove.Clear();
-			for (int i = 0; i < cachedThings.Count; i++)
+			for (int num = 0; num < cachedThings.Count; num++)
 			{
-				if (!cachedThings[i].def.IsDoor)
+				if (!cachedThings[num].def.IsDoor)
 				{
 					continue;
 				}
-				for (int j = 0; j < cachedThings.Count; j++)
+				for (int num2 = 0; num2 < cachedThings.Count; num2++)
 				{
-					if (cachedThings[j].def == ThingDefOf.Wall && cachedThings[j].pos == cachedThings[i].pos)
+					if (cachedThings[num2].def == ThingDefOf.Wall && cachedThings[num2].pos == cachedThings[num].pos)
 					{
-						tmpToRemove.Add(cachedThings[j]);
+						tmpToRemove.Add(cachedThings[num2]);
 					}
 				}
 			}
-			for (int k = 0; k < tmpToRemove.Count; k++)
+			for (int num3 = 0; num3 < tmpToRemove.Count; num3++)
 			{
 				Log.Error("Sketch has a wall and a door in the same cell. Fixing.");
-				Remove(tmpToRemove[k]);
+				Remove(tmpToRemove[num3]);
 			}
 			tmpToRemove.Clear();
+		}
+
+		public void AddPrefab(PrefabDef prefab, IntVec3 pos, Rot4 rot)
+		{
+			rot = PrefabUtility.ValidateRotation(prefab, rot);
+			IntVec3 root = PrefabUtility.GetRoot(prefab, pos, rot);
+			foreach (var (prefabTerrainData, local) in prefab.GetTerrain())
+			{
+				if (Rand.Chance(prefabTerrainData.chance))
+				{
+					IntVec3 adjustedLocalPosition = PrefabUtility.GetAdjustedLocalPosition(local, rot);
+					AddTerrain(prefabTerrainData.def, root + adjustedLocalPosition);
+				}
+			}
+			foreach (var (prefabThingData, cell) in prefab.GetThings())
+			{
+				if (Rand.Chance(prefabThingData.chance))
+				{
+					IntVec3 adjustedThingLocalPosition = PrefabUtility.GetAdjustedThingLocalPosition(prefabThingData, rot, cell);
+					AddThing(prefabThingData.def, root + adjustedThingLocalPosition, rot.Rotated(prefabThingData.relativeRotation), prefabThingData.stuff, prefabThingData.stackCountRange.RandomInRange);
+				}
+			}
+			foreach (var (subPrefabData, cell2) in prefab.GetPrefabs())
+			{
+				if (Rand.Chance(subPrefabData.chance))
+				{
+					IntVec3 adjustedPrefabLocalPosition = PrefabUtility.GetAdjustedPrefabLocalPosition(subPrefabData, rot, cell2);
+					AddPrefab(subPrefabData.def, root + adjustedPrefabLocalPosition, rot.Rotated(subPrefabData.relativeRotation));
+				}
+			}
 		}
 	}
 }

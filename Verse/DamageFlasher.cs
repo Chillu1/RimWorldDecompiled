@@ -12,6 +12,8 @@ namespace Verse
 
 		public bool FlashingNowOrRecently => DamageFlashTicksLeft >= -1;
 
+		public Color CurColor => Color.Lerp(Color.white, DamagedMatPool.DamagedMatStartingColor, (float)DamageFlashTicksLeft / 16f);
+
 		public DamageFlasher(Pawn pawn)
 		{
 		}

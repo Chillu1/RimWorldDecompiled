@@ -36,9 +36,9 @@ namespace Verse.AI
 				}
 				matchedTrees = matchedTrees.OrderByDescending((ThinkTreeDef tDef) => tDef.insertPriority).ToList();
 			}
-			for (int i = 0; i < matchedTrees.Count; i++)
+			for (int num = 0; num < matchedTrees.Count; num++)
 			{
-				ThinkResult result = matchedTrees[i].thinkRoot.TryIssueJobPackage(pawn, jobParams);
+				ThinkResult result = matchedTrees[num].thinkRoot.TryIssueJobPackage(pawn, jobParams);
 				if (result.IsValid)
 				{
 					return result;

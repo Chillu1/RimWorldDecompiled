@@ -39,7 +39,7 @@ namespace RimWorld.Planet
 				Find.WindowStack.Add(new Dialog_AssignCaravanDrugPolicies(base.SelCaravan));
 			}
 			rect.yMin += 37f;
-			GUI.BeginGroup(rect.ContractedBy(10f));
+			Widgets.BeginGroup(rect.ContractedBy(10f));
 			TransferableUIUtility.DoTransferableSorters(sorter1, sorter2, delegate(TransferableSorterDef x)
 			{
 				sorter1 = x;
@@ -49,12 +49,12 @@ namespace RimWorld.Planet
 				sorter2 = x;
 				CacheItems();
 			});
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			rect.yMin += 25f;
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			CheckCacheItems();
 			CaravanItemsTabUtility.DoRows(rect.size, cachedItems, base.SelCaravan, ref scrollPosition, ref scrollViewHeight);
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		protected override void UpdateSize()
@@ -72,7 +72,7 @@ namespace RimWorld.Planet
 				CacheItems();
 				return;
 			}
-			int num = 0;
+			int num = base.SelCaravan.GetHashCode();
 			for (int i = 0; i < list.Count; i++)
 			{
 				num = Gen.HashCombineInt(num, list[i].GetHashCode());

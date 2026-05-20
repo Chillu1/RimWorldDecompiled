@@ -19,7 +19,15 @@ namespace RimWorld
 		{
 			if (base.Map.terrainGrid.CanRemoveTopLayerAt(c))
 			{
-				base.Map.terrainGrid.RemoveTopLayer(base.TargetLocA);
+				TerrainDef terrainDef = base.Map.terrainGrid.TempTerrainAt(c);
+				if (terrainDef != null && terrainDef.Removable)
+				{
+					base.Map.terrainGrid.RemoveTempTerrain(c);
+				}
+				else
+				{
+					base.Map.terrainGrid.RemoveTopLayer(base.TargetLocA);
+				}
 				FilthMaker.RemoveAllFilth(c, base.Map);
 			}
 		}

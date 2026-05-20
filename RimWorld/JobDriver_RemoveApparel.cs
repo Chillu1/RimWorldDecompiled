@@ -32,41 +32,39 @@ namespace RimWorld
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			this.FailOnDestroyedOrNull(TargetIndex.A);
-			yield return Toils_General.Wait(duration).WithProgressBarToilDelay(TargetIndex.A);
+			yield return Toils_General.Wait(duration).PlaySustainerOrSound(Apparel.def.apparel.soundRemove).WithProgressBarToilDelay(TargetIndex.A);
 			yield return Toils_General.Do(delegate
 			{
-				if (pawn.apparel.WornApparel.Contains(Apparel))
+				Apparel resultingAp;
+				if (!pawn.apparel.WornApparel.Contains(Apparel))
 				{
-					if (pawn.apparel.TryDrop(Apparel, out var resultingAp))
+					EndJobWith(JobCondition.Incompletable);
+				}
+				else if (!pawn.apparel.TryDrop(Apparel, out resultingAp))
+				{
+					EndJobWith(JobCondition.Incompletable);
+				}
+				else
+				{
+					job.targetA = resultingAp;
+					if (job.haulDroppedApparel)
 					{
-						job.targetA = resultingAp;
-						if (job.haulDroppedApparel)
+						resultingAp.SetForbidden(value: false, warnOnFail: false);
+						StoragePriority currentPriority = StoreUtility.CurrentStoragePriorityOf(resultingAp);
+						if (StoreUtility.TryFindBestBetterStoreCellFor(resultingAp, pawn, base.Map, currentPriority, pawn.Faction, out var foundCell))
 						{
-							resultingAp.SetForbidden(value: false, warnOnFail: false);
-							StoragePriority currentPriority = StoreUtility.CurrentStoragePriorityOf(resultingAp);
-							if (StoreUtility.TryFindBestBetterStoreCellFor(resultingAp, pawn, base.Map, currentPriority, pawn.Faction, out var foundCell))
-							{
-								job.count = resultingAp.stackCount;
-								job.targetB = foundCell;
-							}
-							else
-							{
-								EndJobWith(JobCondition.Incompletable);
-							}
+							job.count = resultingAp.stackCount;
+							job.targetB = foundCell;
 						}
 						else
 						{
-							EndJobWith(JobCondition.Succeeded);
+							EndJobWith(JobCondition.Incompletable);
 						}
 					}
 					else
 					{
-						EndJobWith(JobCondition.Incompletable);
+						EndJobWith(JobCondition.Succeeded);
 					}
-				}
-				else
-				{
-					EndJobWith(JobCondition.Incompletable);
 				}
 			});
 			if (job.haulDroppedApparel)

@@ -11,9 +11,15 @@ namespace RimWorld
 
 		public static RecordDef KillsMechanoids;
 
+		[MayRequireAnomaly]
+		public static RecordDef KillsEntities;
+
 		public static RecordDef PawnsDowned;
 
 		public static RecordDef PawnsDownedHumanlikes;
+
+		[MayRequireAnomaly]
+		public static RecordDef PawnsDownedEntities;
 
 		public static RecordDef PawnsDownedAnimals;
 
@@ -94,6 +100,9 @@ namespace RimWorld
 		public static RecordDef TimeAsPrisoner;
 
 		public static RecordDef TimeAsQuestLodger;
+
+		[MayRequireBiotech]
+		public static RecordDef TimeAsChildInColony;
 
 		static RecordDefOf()
 		{

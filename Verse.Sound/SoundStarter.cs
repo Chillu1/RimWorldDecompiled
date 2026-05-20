@@ -1,3 +1,4 @@
+using LudeonTK;
 using RimWorld.Planet;
 
 namespace Verse.Sound
@@ -6,7 +7,7 @@ namespace Verse.Sound
 	{
 		public static void PlayOneShotOnCamera(this SoundDef soundDef, Map onlyThisMap = null)
 		{
-			if (!UnityData.IsInMainThread || (onlyThisMap != null && (Find.CurrentMap != onlyThisMap || WorldRendererUtility.WorldRenderedNow)) || soundDef == null)
+			if (!UnityData.IsInMainThread || (onlyThisMap != null && (Find.CurrentMap != onlyThisMap || !WorldRendererUtility.DrawingMap)) || soundDef == null)
 			{
 				return;
 			}
@@ -23,7 +24,7 @@ namespace Verse.Sound
 				}
 				if (!flag)
 				{
-					Log.Error(string.Concat("Tried to play ", soundDef, " on camera but it has no on-camera subSounds."));
+					Log.Error("Tried to play " + soundDef?.ToString() + " on camera but it has no on-camera subSounds.");
 				}
 			}
 			soundDef.PlayOneShot(SoundInfo.OnCamera());
@@ -37,14 +38,11 @@ namespace Verse.Sound
 			}
 			if (soundDef == null)
 			{
-				Log.Error("Tried to PlayOneShot with null SoundDef. Info=" + info);
+				SoundInfo soundInfo = info;
+				Log.Error("Tried to PlayOneShot with null SoundDef. Info=" + soundInfo.ToString());
 				return;
 			}
 			DebugSoundEventsLog.Notify_SoundEvent(soundDef, info);
-			if (soundDef == null)
-			{
-				return;
-			}
 			if (soundDef.isUndefined)
 			{
 				if (Prefs.DevMode && Find.WindowStack.IsOpen(typeof(EditWindow_DefEditor)))
@@ -60,7 +58,7 @@ namespace Verse.Sound
 			}
 			else if (soundDef.sustain)
 			{
-				Log.Error(string.Concat("Tried to play sustainer SoundDef ", soundDef, " as a one-shot sound."));
+				Log.Error("Tried to play sustainer SoundDef " + soundDef?.ToString() + " as a one-shot sound.");
 			}
 			else if (SoundSlotManager.CanPlayNow(soundDef.slot))
 			{
@@ -94,7 +92,7 @@ namespace Verse.Sound
 			}
 			if (!soundDef.sustain)
 			{
-				Log.Error(string.Concat("Tried to spawn a sustainer from non-sustainer sound ", soundDef, "."));
+				Log.Error("Tried to spawn a sustainer from non-sustainer sound " + soundDef?.ToString() + ".");
 				return null;
 			}
 			if (!info.IsOnCamera && info.Maker.Thing != null && info.Maker.Thing.Destroyed)

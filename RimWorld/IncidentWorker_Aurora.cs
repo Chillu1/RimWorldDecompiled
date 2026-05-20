@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Verse;
 
 namespace RimWorld
@@ -13,10 +12,9 @@ namespace RimWorld
 			{
 				return false;
 			}
-			List<Map> maps = Find.Maps;
-			for (int i = 0; i < maps.Count; i++)
+			foreach (Map map in Find.Maps)
 			{
-				if (maps[i].IsPlayerHome && !AuroraWillEndSoon(maps[i]))
+				if (map.IsPlayerHome && !map.GameConditionManager.IsAlwaysDarkOutside && !AuroraWillEndSoon(map))
 				{
 					return true;
 				}

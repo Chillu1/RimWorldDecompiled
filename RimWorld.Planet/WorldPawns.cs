@@ -8,6 +8,14 @@ namespace RimWorld.Planet
 {
 	public class WorldPawns : IExposable
 	{
+		private static readonly HashSet<WorldPawnSituation> lowPrioritySituations = new HashSet<WorldPawnSituation>
+		{
+			WorldPawnSituation.Free,
+			WorldPawnSituation.ForSaleBySettlement,
+			WorldPawnSituation.FactionLeader,
+			WorldPawnSituation.Kidnapped
+		};
+
 		private HashSet<Pawn> pawnsAlive = new HashSet<Pawn>();
 
 		private HashSet<Pawn> pawnsMothballed = new HashSet<Pawn>();
@@ -19,6 +27,10 @@ namespace RimWorld.Planet
 		public WorldPawnGC gc = new WorldPawnGC();
 
 		private Stack<Pawn> pawnsBeingDiscarded = new Stack<Pawn>();
+
+		private Dictionary<Pawn, List<CompHasPawnSources>> sourcedPawns = new Dictionary<Pawn, List<CompHasPawnSources>>();
+
+		private Dictionary<Pawn, List<Hediff>> hediffPawns = new Dictionary<Pawn, List<Hediff>>();
 
 		private const int TendIntervalTicks = 7500;
 
@@ -60,61 +72,74 @@ namespace RimWorld.Planet
 
 		public void WorldPawnsTick()
 		{
-			tmpPawnsToTick.Clear();
-			tmpPawnsToTick.AddRange(pawnsAlive);
-			for (int i = 0; i < tmpPawnsToTick.Count; i++)
+			using (new ProfilerBlock("AlivePawnsTick"))
 			{
-				try
+				tmpPawnsToTick.Clear();
+				tmpPawnsToTick.AddRange(pawnsAlive);
+				for (int i = 0; i < tmpPawnsToTick.Count; i++)
 				{
-					tmpPawnsToTick[i].Tick();
-				}
-				catch (Exception ex)
-				{
-					Log.ErrorOnce("Exception ticking world pawn " + tmpPawnsToTick[i].ToStringSafe() + ". Suppressing further errors. " + ex, tmpPawnsToTick[i].thingIDNumber ^ 0x4475CF1F);
-				}
-				try
-				{
-					if (ShouldAutoTendTo(tmpPawnsToTick[i]))
+					try
 					{
-						TendUtility.DoTend(null, tmpPawnsToTick[i], null);
+						tmpPawnsToTick[i].DoTick();
+					}
+					catch (Exception ex)
+					{
+						Log.ErrorOnce("Exception ticking world pawn " + tmpPawnsToTick[i].ToStringSafe() + ". Suppressing further errors. " + ex, tmpPawnsToTick[i].thingIDNumber ^ 0x4475CF1F);
+					}
+					try
+					{
+						if (ShouldAutoTendTo(tmpPawnsToTick[i]))
+						{
+							TendUtility.DoTend(null, tmpPawnsToTick[i], null);
+							GeneUtility.SatisfyChemicalGenes(tmpPawnsToTick[i]);
+						}
+					}
+					catch (Exception ex2)
+					{
+						Log.ErrorOnce("Exception tending to a world pawn " + tmpPawnsToTick[i].ToStringSafe() + ". Suppressing further errors. " + ex2, tmpPawnsToTick[i].thingIDNumber ^ 0x85C154);
 					}
 				}
-				catch (Exception ex2)
+				tmpPawnsToTick.Clear();
+			}
+			using (new ProfilerBlock("MothballUpdate"))
+			{
+				if (Find.TickManager.TicksGame % 15000 == 0)
 				{
-					Log.ErrorOnce("Exception tending to a world pawn " + tmpPawnsToTick[i].ToStringSafe() + ". Suppressing further errors. " + ex2, tmpPawnsToTick[i].thingIDNumber ^ 0x85C154);
+					DoMothballProcessing();
 				}
 			}
-			tmpPawnsToTick.Clear();
-			if (Find.TickManager.TicksGame % 15000 == 0)
+			using (new ProfilerBlock("Discard"))
 			{
-				DoMothballProcessing();
-			}
-			tmpPawnsToRemove.Clear();
-			foreach (Pawn item in pawnsDead)
-			{
-				if (item == null)
+				tmpPawnsToRemove.Clear();
+				foreach (Pawn item in pawnsDead)
 				{
-					Log.ErrorOnce("Dead null world pawn detected, discarding.", 94424128);
-					tmpPawnsToRemove.Add(item);
+					if (item == null)
+					{
+						Log.ErrorOnce("Dead null world pawn detected, discarding.", 94424128);
+						tmpPawnsToRemove.Add(item);
+					}
+					else if (item.Discarded)
+					{
+						Log.Error("World pawn " + item?.ToString() + " has been discarded while still being a world pawn. This should never happen, because discard destroy mode means that the pawn is no longer managed by anything. Pawn should have been removed from the world first.");
+						tmpPawnsToRemove.Add(item);
+					}
 				}
-				else if (item.Discarded)
+				for (int j = 0; j < tmpPawnsToRemove.Count; j++)
 				{
-					Log.Error(string.Concat("World pawn ", item, " has been discarded while still being a world pawn. This should never happen, because discard destroy mode means that the pawn is no longer managed by anything. Pawn should have been removed from the world first."));
-					tmpPawnsToRemove.Add(item);
+					pawnsDead.Remove(tmpPawnsToRemove[j]);
 				}
+				tmpPawnsToRemove.Clear();
 			}
-			for (int j = 0; j < tmpPawnsToRemove.Count; j++)
+			using (new ProfilerBlock("WorldPawnGCTick"))
 			{
-				pawnsDead.Remove(tmpPawnsToRemove[j]);
-			}
-			tmpPawnsToRemove.Clear();
-			try
-			{
-				gc.WorldPawnGCTick();
-			}
-			catch (Exception arg)
-			{
-				Log.Error("Error in WorldPawnGCTick(): " + arg);
+				try
+				{
+					gc.WorldPawnGCTick();
+				}
+				catch (Exception ex3)
+				{
+					Log.Error("Error in WorldPawnGCTick(): " + ex3);
+				}
 			}
 		}
 
@@ -176,17 +201,17 @@ namespace RimWorld.Planet
 		{
 			if (pawn.Spawned)
 			{
-				Log.Error(string.Concat("Tried to call PassToWorld with spawned pawn: ", pawn, ". Despawn him first."));
+				Log.Error("Tried to call PassToWorld with spawned pawn: " + pawn?.ToString() + ". Despawn him first.");
 				return;
 			}
 			if (Contains(pawn))
 			{
-				Log.Error(string.Concat("Tried to pass pawn ", pawn, " to world, but it's already here."));
+				Log.Error("Tried to pass pawn " + pawn?.ToString() + " to world, but it's already here.");
 				return;
 			}
 			if (discardMode == PawnDiscardDecideMode.KeepForever && pawn.Discarded)
 			{
-				Log.Error(string.Concat("Tried to pass a discarded pawn ", pawn, " to world with discardMode=Keep. Discarded pawns should never be stored in WorldPawns."));
+				Log.Error("Tried to pass a discarded pawn " + pawn?.ToString() + " to world with discardMode=Keep. Discarded pawns should never be stored in WorldPawns.");
 				discardMode = PawnDiscardDecideMode.Decide;
 			}
 			if (PawnComponentsUtility.HasSpawnedComponents(pawn))
@@ -212,7 +237,7 @@ namespace RimWorld.Planet
 		{
 			if (!Contains(p))
 			{
-				Log.Error(string.Concat("Tried to remove pawn ", p, " from ", GetType(), ", but it's not here."));
+				Log.Error("Tried to remove pawn " + p?.ToString() + " from " + GetType()?.ToString() + ", but it's not here.");
 			}
 			gc.CancelGCPass();
 			if (pawnsMothballed.Contains(p) && Find.TickManager.TicksGame % 15000 != 0)
@@ -221,9 +246,9 @@ namespace RimWorld.Planet
 				{
 					p.TickMothballed(Find.TickManager.TicksGame % 15000);
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Error("Exception ticking mothballed world pawn (just before removing): " + arg);
+					Log.Error("Exception ticking mothballed world pawn (just before removing): " + ex);
 				}
 			}
 			pawnsAlive.Remove(p);
@@ -253,17 +278,25 @@ namespace RimWorld.Planet
 			{
 				return WorldPawnSituation.FactionLeader;
 			}
+			if (p.wasLeftBehindStartingPawn)
+			{
+				return WorldPawnSituation.StartingPawnLeftBehind;
+			}
 			if (PawnUtility.IsKidnappedPawn(p))
 			{
 				return WorldPawnSituation.Kidnapped;
 			}
-			if (p.IsBorrowedByAnyFaction())
-			{
-				return WorldPawnSituation.Borrowed;
-			}
 			if (p.IsCaravanMember())
 			{
 				return WorldPawnSituation.CaravanMember;
+			}
+			if (QuestUtility.IsReservedByQuestOrQuestBeingGenerated(p))
+			{
+				return WorldPawnSituation.ReservedByQuest;
+			}
+			if (p.IsBorrowedByAnyFaction())
+			{
+				return WorldPawnSituation.Borrowed;
 			}
 			if (PawnUtility.IsTravelingInTransportPodWorldObject(p))
 			{
@@ -272,10 +305,6 @@ namespace RimWorld.Planet
 			if (PawnUtility.ForSaleBySettlement(p))
 			{
 				return WorldPawnSituation.ForSaleBySettlement;
-			}
-			if (QuestUtility.IsReservedByQuestOrQuestBeingGenerated(p))
-			{
-				return WorldPawnSituation.ReservedByQuest;
 			}
 			if (p.teleporting)
 			{
@@ -345,9 +374,10 @@ namespace RimWorld.Planet
 		private HediffDef DefPreventingMothball(Pawn p)
 		{
 			List<Hediff> hediffs = p.health.hediffSet.hediffs;
+			WorldPawnSituation situation = GetSituation(p);
 			for (int i = 0; i < hediffs.Count; i++)
 			{
-				if (!hediffs[i].def.AlwaysAllowMothball && !hediffs[i].IsPermanent())
+				if (!hediffs[i].def.AlwaysAllowMothball && !hediffs[i].IsPermanent() && !(hediffs[i] is Hediff_MissingPart { Bleeding: false }) && (!hediffs[i].def.allowMothballIfLowPriorityWorldPawn || !lowPrioritySituations.Contains(situation)))
 				{
 					return hediffs[i].def;
 				}
@@ -411,9 +441,9 @@ namespace RimWorld.Planet
 				{
 					tmpPawnsToTick[i].TickMothballed(15000);
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.ErrorOnce("Exception ticking mothballed world pawn. Suppressing further errors. " + arg, tmpPawnsToTick[i].thingIDNumber ^ 0x5B84EC45);
+					Log.ErrorOnce("Exception ticking mothballed world pawn. Suppressing further errors. " + ex, tmpPawnsToTick[i].thingIDNumber ^ 0x5B84EC45);
 				}
 			}
 			tmpPawnsToTick.Clear();
@@ -441,36 +471,100 @@ namespace RimWorld.Planet
 			pawnsForcefullyKeptAsWorldPawns.Clear();
 		}
 
+		public bool PawnSourced(Pawn pawn)
+		{
+			if (!sourcedPawns.ContainsKey(pawn))
+			{
+				return hediffPawns.ContainsKey(pawn);
+			}
+			return true;
+		}
+
+		public void AddPawnSource(Pawn pawn, CompHasPawnSources source)
+		{
+			if (!sourcedPawns.ContainsKey(pawn))
+			{
+				sourcedPawns[pawn] = new List<CompHasPawnSources>();
+			}
+			sourcedPawns[pawn].Add(source);
+		}
+
+		public void RemovePawnSources(List<Pawn> pawns, CompHasPawnSources source)
+		{
+			foreach (Pawn pawn in pawns)
+			{
+				sourcedPawns[pawn].Remove(source);
+				if (sourcedPawns[pawn].NullOrEmpty())
+				{
+					sourcedPawns.Remove(pawn);
+				}
+			}
+		}
+
+		public void AddPreservedPawnHediff(Pawn pawn, Hediff hediff)
+		{
+			if (pawn != null && hediff != null)
+			{
+				if (!hediffPawns.ContainsKey(pawn))
+				{
+					hediffPawns[pawn] = new List<Hediff>();
+				}
+				if (!hediffPawns[pawn].Contains(hediff))
+				{
+					hediffPawns[pawn].Add(hediff);
+				}
+			}
+		}
+
+		public void RemovePreservedPawnHediff(Pawn pawn, Hediff hediff)
+		{
+			if (pawn != null && hediff != null)
+			{
+				if (hediffPawns[pawn].Contains(hediff))
+				{
+					hediffPawns[pawn].Remove(hediff);
+				}
+				if (hediffPawns[pawn].NullOrEmpty())
+				{
+					hediffPawns.Remove(pawn);
+				}
+			}
+		}
+
 		public void LogWorldPawns()
 		{
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.AppendLine("======= World Pawns =======");
 			stringBuilder.AppendLine("Count: " + AllPawnsAliveOrDead.Count());
 			stringBuilder.AppendLine($"(Live: {pawnsAlive.Count} - Mothballed: {pawnsMothballed.Count} - Dead: {pawnsDead.Count}; {pawnsForcefullyKeptAsWorldPawns.Count} forcefully kept)");
+			Dictionary<Pawn, string> dictionary = gc.AccumulatePawnGCDataImmediate();
 			WorldPawnSituation[] array = (WorldPawnSituation[])Enum.GetValues(typeof(WorldPawnSituation));
-			foreach (WorldPawnSituation worldPawnSituation in array)
+			for (int i = 0; i < array.Length; i++)
 			{
+				WorldPawnSituation worldPawnSituation = array[i];
 				if (worldPawnSituation == WorldPawnSituation.None)
 				{
 					continue;
 				}
 				stringBuilder.AppendLine();
-				stringBuilder.AppendLine(string.Concat("== ", worldPawnSituation, " =="));
+				stringBuilder.AppendLine("== " + worldPawnSituation.ToString() + " ==");
 				foreach (Pawn item in from x in GetPawnsBySituation(worldPawnSituation)
 					orderby (x.Faction != null) ? x.Faction.loadID : (-1)
 					select x)
 				{
-					string str = ((item.Name != null) ? item.Name.ToStringFull : item.LabelCap);
-					str = str + ", " + item.KindLabel;
+					string text = ((item.Name != null) ? item.Name.ToStringFull : item.LabelCap);
+					text = text + ", " + item.KindLabel;
 					if (item.royalty != null && item.royalty.AllTitlesForReading.Count > 0)
 					{
 						foreach (RoyalTitle item2 in item.royalty.AllTitlesForReading)
 						{
-							str = str + ", " + item2.def.GetLabelFor(item);
+							text = text + ", " + item2.def.GetLabelFor(item);
 						}
 					}
-					str = str + ", " + item.Faction;
-					stringBuilder.AppendLine(str);
+					text = text + ", " + item.Faction;
+					text = text + " (" + item.ageTracker.AgeBiologicalYearsFloat + ")";
+					text = text + " - " + dictionary.GetValueOrDefault(item, "[will be discarded on next GC pass]");
+					stringBuilder.AppendLine(text);
 				}
 			}
 			stringBuilder.AppendLine("===========================");
@@ -496,7 +590,9 @@ namespace RimWorld.Planet
 				{
 					dictionary[hediffDef] = 0;
 				}
-				dictionary[hediffDef]++;
+				HediffDef key = hediffDef;
+				int value = dictionary[key] + 1;
+				dictionary[key] = value;
 			}
 			stringBuilder.AppendLine($"Will be mothballed: {num}");
 			stringBuilder.AppendLine();

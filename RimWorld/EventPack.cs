@@ -47,7 +47,7 @@ namespace RimWorld
 		{
 			if (Cell.IsValid)
 			{
-				return Tag + "-" + Cell;
+				return Tag + "-" + Cell.ToString();
 			}
 			return Tag;
 		}

@@ -12,11 +12,11 @@ namespace Ionic.Zlib
 		[Flags]
 		private enum TraceBits : uint
 		{
-			None = 0x0u,
-			NotUsed1 = 0x1u,
-			EmitLock = 0x2u,
-			EmitEnter = 0x4u,
-			EmitBegin = 0x8u,
+			None = 0u,
+			NotUsed1 = 1u,
+			EmitLock = 2u,
+			EmitEnter = 4u,
+			EmitBegin = 8u,
 			EmitDone = 0x10u,
 			EmitSkip = 0x20u,
 			EmitAll = 0x3Au,
@@ -86,11 +86,7 @@ namespace Ionic.Zlib
 
 		private TraceBits _DesiredTrace = TraceBits.EmitAll | TraceBits.EmitEnter | TraceBits.Session | TraceBits.Compress | TraceBits.WriteEnter | TraceBits.WriteTake;
 
-		public CompressionStrategy Strategy
-		{
-			get;
-			private set;
-		}
+		public CompressionStrategy Strategy { get; private set; }
 
 		public int MaxBufferPairs
 		{
@@ -522,7 +518,7 @@ namespace Ionic.Zlib
 		[Conditional("Trace")]
 		private void TraceOutput(TraceBits bits, string format, params object[] varParams)
 		{
-			if ((bits & _DesiredTrace) != 0)
+			if ((bits & _DesiredTrace) != TraceBits.None)
 			{
 				lock (_outputLock)
 				{

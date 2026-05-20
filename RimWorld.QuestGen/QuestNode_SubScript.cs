@@ -67,7 +67,9 @@ namespace RimWorld.QuestGen
 
 		public override string ToString()
 		{
-			return string.Concat(base.ToString(), " (", def, ")");
+			string text = base.ToString();
+			SlateRef<QuestScriptDef> slateRef = def;
+			return text + " (" + slateRef.ToString() + ")";
 		}
 	}
 }

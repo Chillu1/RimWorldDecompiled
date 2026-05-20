@@ -6,7 +6,7 @@ namespace Verse
 {
 	public static class EnvironmentStatsDrawer
 	{
-		private const float StatLabelColumnWidth = 100f;
+		private const float StatLabelColumnWidth = 110f;
 
 		private const float StatGutterColumnWidth = 10f;
 
@@ -68,11 +68,15 @@ namespace Verse
 			{
 				return false;
 			}
+			if (Find.CurrentMap == null)
+			{
+				return false;
+			}
 			if (!UI.MouseCell().InBounds(Find.CurrentMap) || UI.MouseCell().Fogged(Find.CurrentMap))
 			{
 				return false;
 			}
-			Room room = UI.MouseCell().GetRoom(Find.CurrentMap, RegionType.Set_All);
+			Room room = UI.MouseCell().GetRoom(Find.CurrentMap);
 			if (room != null)
 			{
 				return room.Role != RoomRoleDefOf.None;
@@ -105,7 +109,7 @@ namespace Verse
 		{
 			Text.Font = GameFont.Small;
 			Rect windowRect = GetWindowRect(ShouldShowBeauty(), ShouldShowRoomStats());
-			Find.WindowStack.ImmediateWindow(74975, windowRect, WindowLayer.Super, delegate
+			Find.WindowStack.ImmediateWindow(74975, windowRect, WindowLayer.GameUI, delegate
 			{
 				FillWindow(windowRect);
 			});
@@ -113,7 +117,7 @@ namespace Verse
 
 		public static Rect GetWindowRect(bool shouldShowBeauty, bool shouldShowRoomStats)
 		{
-			Rect result = new Rect(Event.current.mousePosition.x, Event.current.mousePosition.y, 414f, 24f);
+			Rect result = new Rect(Event.current.mousePosition.x, Event.current.mousePosition.y, 424f, 24f);
 			int num = 0;
 			if (shouldShowBeauty)
 			{
@@ -142,7 +146,6 @@ namespace Verse
 
 		private static void FillWindow(Rect windowRect)
 		{
-			PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.InspectRoomStats, KnowledgeAmount.FrameDisplayed);
 			Text.Font = GameFont.Small;
 			float curY = 12f;
 			int dividingLinesSeen = 0;
@@ -158,7 +161,7 @@ namespace Verse
 			if (ShouldShowRoomStats())
 			{
 				DrawDividingLineIfNecessary();
-				DoRoomInfo(UI.MouseCell().GetRoom(Find.CurrentMap, RegionType.Set_All), ref curY, windowRect);
+				DoRoomInfo(UI.MouseCell().GetRoom(Find.CurrentMap), ref curY, windowRect);
 			}
 			GUI.color = Color.white;
 			void DrawDividingLineIfNecessary()
@@ -183,7 +186,7 @@ namespace Verse
 			}
 			if (ShouldShowWindowNow() && ShouldShowRoomStats())
 			{
-				Room room = UI.MouseCell().GetRoom(Find.CurrentMap, RegionType.Set_All);
+				Room room = UI.MouseCell().GetRoom(Find.CurrentMap);
 				if (room != null && room.Role != RoomRoleDefOf.None)
 				{
 					room.DrawFieldEdges();
@@ -196,7 +199,7 @@ namespace Verse
 			Rect rect = new Rect(12f, curY, windowRect.width - 24f, 100f);
 			GUI.color = Color.white;
 			Text.Font = GameFont.Medium;
-			Widgets.Label(new Rect(rect.x + 10f, curY, rect.width - 10f, rect.height), GetRoomRoleLabel(room));
+			Widgets.Label(new Rect(rect.x + 10f, curY, rect.width - 10f, rect.height), room.GetRoomRoleLabel().CapitalizeFirst());
 			curY += 30f;
 			Text.Font = GameFont.Small;
 			Text.WordWrap = false;
@@ -226,7 +229,7 @@ namespace Verse
 					{
 						GUI.color = UnrelatedStatColor;
 					}
-					Rect rect4 = new Rect(rect3.xMax, curY, 100f, 23f);
+					Rect rect4 = new Rect(rect3.xMax, curY, 110f, 23f);
 					Widgets.Label(rect4, roomStatDef.LabelCap);
 					Rect rect5 = new Rect(rect4.xMax + 35f, curY, 50f, 23f);
 					string label = roomStatDef.ScoreToString(stat);
@@ -245,25 +248,6 @@ namespace Verse
 				Text.Font = GameFont.Small;
 			}
 			Text.WordWrap = true;
-		}
-
-		private static string GetRoomRoleLabel(Room room)
-		{
-			Pawn pawn = null;
-			Pawn pawn2 = null;
-			foreach (Pawn owner in room.Owners)
-			{
-				if (pawn == null)
-				{
-					pawn = owner;
-				}
-				else
-				{
-					pawn2 = owner;
-				}
-			}
-			TaggedString taggedString = ((pawn == null) ? room.Role.LabelCap : ((pawn2 != null) ? "CouplesRoom".Translate(pawn.LabelShort, pawn2.LabelShort, room.Role.label, pawn.Named("PAWN1"), pawn2.Named("PAWN2")) : "SomeonesRoom".Translate(pawn.LabelShort, room.Role.label, pawn.Named("PAWN"))));
-			return taggedString;
 		}
 	}
 }

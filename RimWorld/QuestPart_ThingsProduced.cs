@@ -13,7 +13,7 @@ namespace RimWorld
 
 		private int produced;
 
-		public override string DescriptionPart => (string)("ThingsProduced".Translate().CapitalizeFirst() + ": ") + produced + " / " + count;
+		public override string DescriptionPart => string.Concat("ThingsProduced".Translate().CapitalizeFirst() + ": ", produced.ToString(), " / ", count.ToString());
 
 		public override IEnumerable<Dialog_InfoCard.Hyperlink> Hyperlinks
 		{

@@ -30,13 +30,9 @@ namespace RimWorld
 		private void CheckLeaveCurrentVoluntarilyJoinableLord(Pawn pawn)
 		{
 			Lord lord = pawn.GetLord();
-			if (lord != null)
+			if (lord != null && lord.LordJob is LordJob_VoluntarilyJoinable lordJob_VoluntarilyJoinable && lordJob_VoluntarilyJoinable.VoluntaryJoinPriorityFor(pawn) <= 0f)
 			{
-				LordJob_VoluntarilyJoinable lordJob_VoluntarilyJoinable = lord.LordJob as LordJob_VoluntarilyJoinable;
-				if (lordJob_VoluntarilyJoinable != null && lordJob_VoluntarilyJoinable.VoluntaryJoinPriorityFor(pawn) <= 0f)
-				{
-					lord.Notify_PawnLost(pawn, PawnLostCondition.LeftVoluntarily);
-				}
+				lord.Notify_PawnLost(pawn, PawnLostCondition.LeftVoluntarily);
 			}
 		}
 
@@ -47,8 +43,7 @@ namespace RimWorld
 			float num = 0f;
 			if (lord != null)
 			{
-				LordJob_VoluntarilyJoinable lordJob_VoluntarilyJoinable = lord.LordJob as LordJob_VoluntarilyJoinable;
-				if (lordJob_VoluntarilyJoinable == null)
+				if (!(lord.LordJob is LordJob_VoluntarilyJoinable lordJob_VoluntarilyJoinable))
 				{
 					return;
 				}
@@ -58,8 +53,7 @@ namespace RimWorld
 			List<Lord> lords = pawn.Map.lordManager.lords;
 			for (int i = 0; i < lords.Count; i++)
 			{
-				LordJob_VoluntarilyJoinable lordJob_VoluntarilyJoinable2 = lords[i].LordJob as LordJob_VoluntarilyJoinable;
-				if (lordJob_VoluntarilyJoinable2 != null && lords[i].CurLordToil.VoluntaryJoinDutyHookFor(pawn) == dutyHook)
+				if (lords[i].LordJob is LordJob_VoluntarilyJoinable lordJob_VoluntarilyJoinable2 && lords[i].CurLordToil.VoluntaryJoinDutyHookFor(pawn) == dutyHook)
 				{
 					float num2 = lordJob_VoluntarilyJoinable2.VoluntaryJoinPriorityFor(pawn);
 					if (!(num2 <= 0f) && (lord2 == null || num2 > num))

@@ -37,6 +37,10 @@ namespace RimWorld
 
 		public static KeyBindingDef TimeSpeed_Ultrafast;
 
+		public static KeyBindingDef TimeSpeed_Slower;
+
+		public static KeyBindingDef TimeSpeed_Faster;
+
 		public static KeyBindingDef PreviousColonist;
 
 		public static KeyBindingDef NextColonist;
@@ -45,7 +49,13 @@ namespace RimWorld
 
 		public static KeyBindingDef ToggleRoomStatsDisplay;
 
+		public static KeyBindingDef ShowCellInspector;
+
+		public static KeyBindingDef ShowEyedropper;
+
 		public static KeyBindingDef QueueOrder;
+
+		public static KeyBindingDef OpenMapSearch;
 
 		public static KeyBindingDef Misc1;
 
@@ -89,6 +99,12 @@ namespace RimWorld
 
 		public static KeyBindingDef Designator_RotateRight;
 
+		public static KeyBindingDef Designator_PreviousDrawStyle;
+
+		public static KeyBindingDef Designator_NextDrawStyle;
+
+		public static KeyBindingDef Designator_ShapeSnap;
+
 		public static KeyBindingDef Dev_TickOnce;
 
 		public static KeyBindingDef Dev_ToggleGodMode;
@@ -104,6 +120,8 @@ namespace RimWorld
 		public static KeyBindingDef Dev_ToggleDebugInspector;
 
 		public static KeyBindingDef Dev_ToggleDebugSettingsMenu;
+
+		public static KeyBindingDef Dev_ToggleDevPalette;
 
 		static KeyBindingDefOf()
 		{

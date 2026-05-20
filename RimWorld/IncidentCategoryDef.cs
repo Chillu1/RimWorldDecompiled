@@ -7,5 +7,7 @@ namespace RimWorld
 		public bool needsParmsPoints;
 
 		public TaleDef tale;
+
+		public bool canUseAnomalyChance;
 	}
 }

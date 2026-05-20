@@ -43,12 +43,13 @@ namespace Verse
 
 		public static void OpenSteamWorkshopPage()
 		{
-			OpenUrl("http://steamcommunity.com/workshop/browse/?appid=" + SteamUtils.GetAppID());
+			OpenUrl("http://steamcommunity.com/workshop/browse/?appid=" + SteamUtils.GetAppID().ToString());
 		}
 
 		public static string SteamWorkshopPageUrl(PublishedFileId_t pfid)
 		{
-			return "steam://url/CommunityFilePage/" + pfid;
+			PublishedFileId_t publishedFileId_t = pfid;
+			return "steam://url/CommunityFilePage/" + publishedFileId_t.ToString();
 		}
 	}
 }

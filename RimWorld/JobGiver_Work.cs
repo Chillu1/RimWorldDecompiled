@@ -48,20 +48,29 @@ namespace RimWorld
 
 		public override ThinkResult TryIssueJobPackage(Pawn pawn, JobIssueParams jobParams)
 		{
+			if (pawn.RaceProps.Humanlike && pawn.health.hediffSet.InLabor())
+			{
+				return ThinkResult.NoJob;
+			}
 			if (emergency && pawn.mindState.priorityWork.IsPrioritized)
 			{
 				List<WorkGiverDef> workGiversByPriority = pawn.mindState.priorityWork.WorkGiver.workType.workGiversByPriority;
 				for (int i = 0; i < workGiversByPriority.Count; i++)
 				{
 					WorkGiver worker = workGiversByPriority[i].Worker;
-					if (WorkGiversRelated(pawn.mindState.priorityWork.WorkGiver, worker.def))
+					if (!WorkGiversRelated(pawn.mindState.priorityWork.WorkGiver, worker.def))
 					{
-						Job job = GiverTryGiveJobPrioritized(pawn, worker, pawn.mindState.priorityWork.Cell);
-						if (job != null)
+						continue;
+					}
+					Job job = GiverTryGiveJobPrioritized(pawn, worker, pawn.mindState.priorityWork.Cell);
+					if (job != null)
+					{
+						job.playerForced = true;
+						if (pawn.jobs.debugLog)
 						{
-							job.playerForced = true;
-							return new ThinkResult(job, this, workGiversByPriority[i].tagToGive);
+							pawn.jobs.DebugLogEvent($"JobGiver_Work produced emergency Job {job.ToStringSafe()} from {worker}");
 						}
+						return new ThinkResult(job, this, workGiversByPriority[i].tagToGive);
 					}
 				}
 				pawn.mindState.priorityWork.Clear();
@@ -70,13 +79,6 @@ namespace RimWorld
 			int num = -999;
 			TargetInfo bestTargetOfLastPriority = TargetInfo.Invalid;
 			WorkGiver_Scanner scannerWhoProvidedTarget = null;
-			WorkGiver_Scanner scanner;
-			IntVec3 pawnPosition;
-			float closestDistSquared;
-			float bestPriority;
-			bool prioritized;
-			bool allowUnreachable;
-			Danger maxPathDanger;
 			for (int j = 0; j < list.Count; j++)
 			{
 				WorkGiver workGiver = list[j];
@@ -93,37 +95,59 @@ namespace RimWorld
 					Job job2 = workGiver.NonScanJob(pawn);
 					if (job2 != null)
 					{
+						if (pawn.jobs.debugLog)
+						{
+							pawn.jobs.DebugLogEvent($"JobGiver_Work produced non-scan Job {job2.ToStringSafe()} from {workGiver}");
+						}
 						return new ThinkResult(job2, this, list[j].def.tagToGive);
 					}
-					scanner = workGiver as WorkGiver_Scanner;
+					WorkGiver_Scanner scanner = workGiver as WorkGiver_Scanner;
+					IntVec3 pawnPosition;
+					float closestDistSquared;
+					float bestPriority;
+					bool prioritized;
+					bool allowUnreachable;
+					Danger maxPathDanger;
 					if (scanner != null)
 					{
 						if (scanner.def.scanThings)
 						{
-							Predicate<Thing> validator = (Thing t) => !t.IsForbidden(pawn) && scanner.HasJobOnThing(pawn, t);
 							IEnumerable<Thing> enumerable = scanner.PotentialWorkThingsGlobal(pawn);
+							bool flag = pawn.carryTracker?.CarriedThing != null && scanner.PotentialWorkThingRequest.Accepts(pawn.carryTracker.CarriedThing) && Validator(pawn.carryTracker.CarriedThing);
 							Thing thing;
 							if (scanner.Prioritized)
 							{
-								IEnumerable<Thing> enumerable2 = enumerable;
-								if (enumerable2 == null)
+								IEnumerable<Thing> searchSet = enumerable ?? pawn.Map.listerThings.ThingsMatching(scanner.PotentialWorkThingRequest);
+								thing = ((!scanner.AllowUnreachable) ? GenClosest.ClosestThing_Global_Reachable(pawn.Position, pawn.Map, searchSet, scanner.PathEndMode, TraverseParms.For(pawn, scanner.MaxPathDanger(pawn)), 9999f, Validator, (Thing x) => scanner.GetPriority(pawn, x)) : GenClosest.ClosestThing_Global(pawn.Position, searchSet, 99999f, Validator, (Thing x) => scanner.GetPriority(pawn, x)));
+								if (flag)
 								{
-									enumerable2 = pawn.Map.listerThings.ThingsMatching(scanner.PotentialWorkThingRequest);
+									if (thing != null)
+									{
+										float num2 = scanner.GetPriority(pawn, pawn.carryTracker.CarriedThing);
+										float num3 = scanner.GetPriority(pawn, thing);
+										if (num2 >= num3)
+										{
+											thing = pawn.carryTracker.CarriedThing;
+										}
+									}
+									else
+									{
+										thing = pawn.carryTracker.CarriedThing;
+									}
 								}
-								thing = ((!scanner.AllowUnreachable) ? GenClosest.ClosestThing_Global_Reachable(pawn.Position, pawn.Map, enumerable2, scanner.PathEndMode, TraverseParms.For(pawn, scanner.MaxPathDanger(pawn)), 9999f, validator, (Thing x) => scanner.GetPriority(pawn, x)) : GenClosest.ClosestThing_Global(pawn.Position, enumerable2, 99999f, validator, (Thing x) => scanner.GetPriority(pawn, x)));
+							}
+							else if (flag)
+							{
+								thing = pawn.carryTracker.CarriedThing;
 							}
 							else if (scanner.AllowUnreachable)
 							{
-								IEnumerable<Thing> enumerable3 = enumerable;
-								if (enumerable3 == null)
-								{
-									enumerable3 = pawn.Map.listerThings.ThingsMatching(scanner.PotentialWorkThingRequest);
-								}
-								thing = GenClosest.ClosestThing_Global(pawn.Position, enumerable3, 99999f, validator);
+								IEnumerable<Thing> searchSet2 = enumerable ?? pawn.Map.listerThings.ThingsMatching(scanner.PotentialWorkThingRequest);
+								thing = GenClosest.ClosestThing_Global(pawn.Position, searchSet2, 99999f, Validator);
 							}
 							else
 							{
-								thing = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, scanner.PotentialWorkThingRequest, scanner.PathEndMode, TraverseParms.For(pawn, scanner.MaxPathDanger(pawn)), 9999f, validator, enumerable, 0, scanner.MaxRegionsToScanBeforeGlobalSearch, enumerable != null);
+								thing = GenClosest.ClosestThingReachable(pawn.Position, pawn.Map, scanner.PotentialWorkThingRequest, scanner.PathEndMode, TraverseParms.For(pawn, scanner.MaxPathDanger(pawn)), 9999f, Validator, enumerable, 0, scanner.MaxRegionsToScanBeforeGlobalSearch, enumerable != null);
 							}
 							if (thing != null)
 							{
@@ -139,18 +163,17 @@ namespace RimWorld
 							prioritized = scanner.Prioritized;
 							allowUnreachable = scanner.AllowUnreachable;
 							maxPathDanger = scanner.MaxPathDanger(pawn);
-							IEnumerable<IntVec3> enumerable4 = scanner.PotentialWorkCellsGlobal(pawn);
-							IList<IntVec3> list2;
-							if ((list2 = enumerable4 as IList<IntVec3>) != null)
+							IEnumerable<IntVec3> enumerable2 = scanner.PotentialWorkCellsGlobal(pawn);
+							if (enumerable2 is IList<IntVec3> list2)
 							{
-								for (int k = 0; k < list2.Count; k++)
+								for (int num4 = 0; num4 < list2.Count; num4++)
 								{
-									ProcessCell(list2[k]);
+									ProcessCell(list2[num4]);
 								}
 							}
 							else
 							{
-								foreach (IntVec3 item in enumerable4)
+								foreach (IntVec3 item in enumerable2)
 								{
 									ProcessCell(item);
 								}
@@ -159,9 +182,9 @@ namespace RimWorld
 					}
 					void ProcessCell(IntVec3 c)
 					{
-						bool flag = false;
-						float num2 = (c - pawnPosition).LengthHorizontalSquared;
-						float num3 = 0f;
+						bool flag2 = false;
+						float num5 = (c - pawnPosition).LengthHorizontalSquared;
+						float num6 = 0f;
 						if (prioritized)
 						{
 							if (!c.IsForbidden(pawn) && scanner.HasJobOnCell(pawn, c))
@@ -170,33 +193,41 @@ namespace RimWorld
 								{
 									return;
 								}
-								num3 = scanner.GetPriority(pawn, c);
-								if (num3 > bestPriority || (num3 == bestPriority && num2 < closestDistSquared))
+								num6 = scanner.GetPriority(pawn, c);
+								if (num6 > bestPriority || (num6 == bestPriority && num5 < closestDistSquared))
 								{
-									flag = true;
+									flag2 = true;
 								}
 							}
 						}
-						else if (num2 < closestDistSquared && !c.IsForbidden(pawn) && scanner.HasJobOnCell(pawn, c))
+						else if (num5 < closestDistSquared && !c.IsForbidden(pawn) && scanner.HasJobOnCell(pawn, c))
 						{
 							if (!allowUnreachable && !pawn.CanReach(c, scanner.PathEndMode, maxPathDanger))
 							{
 								return;
 							}
-							flag = true;
+							flag2 = true;
 						}
-						if (flag)
+						if (flag2)
 						{
 							bestTargetOfLastPriority = new TargetInfo(c, pawn.Map);
 							scannerWhoProvidedTarget = scanner;
-							closestDistSquared = num2;
-							bestPriority = num3;
+							closestDistSquared = num5;
+							bestPriority = num6;
 						}
+					}
+					bool Validator(Thing t)
+					{
+						if (!t.IsForbidden(pawn))
+						{
+							return scanner.HasJobOnThing(pawn, t);
+						}
+						return false;
 					}
 				}
 				catch (Exception ex)
 				{
-					Log.Error(string.Concat(pawn, " threw exception in WorkGiver ", workGiver.def.defName, ": ", ex.ToString()));
+					Log.Error(pawn?.ToString() + " threw exception in WorkGiver " + workGiver.def.defName + ": " + ex.ToString());
 				}
 				finally
 				{
@@ -207,9 +238,27 @@ namespace RimWorld
 					if (job3 != null)
 					{
 						job3.workGiverDef = scannerWhoProvidedTarget.def;
+						if (pawn.jobs.debugLog)
+						{
+							pawn.jobs.DebugLogEvent($"JobGiver_Work produced scan Job {job3.ToStringSafe()} from {scannerWhoProvidedTarget}");
+						}
 						return new ThinkResult(job3, this, list[j].def.tagToGive);
 					}
-					Log.ErrorOnce(string.Concat(scannerWhoProvidedTarget, " provided target ", bestTargetOfLastPriority, " but yielded no actual job for pawn ", pawn, ". The CanGiveJob and JobOnX methods may not be synchronized."), 6112651);
+					string[] obj = new string[6]
+					{
+						scannerWhoProvidedTarget?.ToString(),
+						" provided target ",
+						null,
+						null,
+						null,
+						null
+					};
+					TargetInfo targetInfo = bestTargetOfLastPriority;
+					obj[2] = targetInfo.ToString();
+					obj[3] = " but yielded no actual job for pawn ";
+					obj[4] = pawn?.ToString();
+					obj[5] = ". The CanGiveJob and JobOnX methods may not be synchronized.";
+					Log.ErrorOnce(string.Concat(obj), 6112651);
 				}
 				num = workGiver.def.priorityInType;
 			}
@@ -218,11 +267,15 @@ namespace RimWorld
 
 		private bool PawnCanUseWorkGiver(Pawn pawn, WorkGiver giver)
 		{
-			if (!giver.def.nonColonistsCanDo && !pawn.IsColonist)
+			if (!giver.def.nonColonistsCanDo && !pawn.IsColonist && !pawn.IsColonyMech && !pawn.IsColonySubhuman)
 			{
 				return false;
 			}
 			if (pawn.WorkTagIsDisabled(giver.def.workTags))
+			{
+				return false;
+			}
+			if (giver.def.workType != null && pawn.WorkTypeIsDisabled(giver.def.workType))
 			{
 				return false;
 			}
@@ -234,16 +287,20 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (pawn.RaceProps.IsMechanoid && !giver.def.canBeDoneByMechs)
+			{
+				return false;
+			}
 			return true;
 		}
 
 		private bool WorkGiversRelated(WorkGiverDef current, WorkGiverDef next)
 		{
-			if (next == WorkGiverDefOf.Repair)
+			if (next != WorkGiverDefOf.Repair || current == WorkGiverDefOf.Repair)
 			{
-				return current == WorkGiverDefOf.Repair;
+				return next.doesSmoothing == current.doesSmoothing;
 			}
-			return true;
+			return false;
 		}
 
 		private Job GiverTryGiveJobPrioritized(Pawn pawn, WorkGiver giver, IntVec3 cell)
@@ -266,9 +323,9 @@ namespace RimWorld
 					{
 						Predicate<Thing> predicate = (Thing t) => !t.IsForbidden(pawn) && scanner.HasJobOnThing(pawn, t);
 						List<Thing> thingList = cell.GetThingList(pawn.Map);
-						for (int i = 0; i < thingList.Count; i++)
+						for (int num = 0; num < thingList.Count; num++)
 						{
-							Thing thing = thingList[i];
+							Thing thing = thingList[num];
 							if (scanner.PotentialWorkThingRequest.Accepts(thing) && predicate(thing))
 							{
 								Job job2 = scanner.JobOnThing(pawn, thing);
@@ -293,7 +350,7 @@ namespace RimWorld
 			}
 			catch (Exception ex)
 			{
-				Log.Error(string.Concat(pawn, " threw exception in GiverTryGiveJobTargeted on WorkGiver ", giver.def.defName, ": ", ex.ToString()));
+				Log.Error(pawn?.ToString() + " threw exception in GiverTryGiveJobTargeted on WorkGiver " + giver.def.defName + ": " + ex.ToString());
 			}
 			return null;
 		}

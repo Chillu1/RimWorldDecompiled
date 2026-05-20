@@ -50,13 +50,13 @@ namespace RimWorld
 
 		private static void PeturbVerticesRandomly()
 		{
-			Perlin perlin = new Perlin(0.0070000002160668373, 2.0, 0.5, 6, Rand.Range(0, int.MaxValue), QualityMode.High);
+			Perlin perlin = new Perlin(0.007000000216066837, 2.0, 0.5, 6, Rand.Range(0, int.MaxValue), QualityMode.High);
 			List<Vector2> list = verts2D.ListFullCopy();
 			verts2D.Clear();
 			for (int i = 0; i < list.Count; i++)
 			{
-				float d = 12f * (float)perlin.GetValue(i, 0.0, 0.0);
-				Vector2 item = list[i] + d * Vector2.right;
+				float num = 12f * (float)perlin.GetValue(i, 0.0, 0.0);
+				Vector2 item = list[i] + num * Vector2.right;
 				verts2D.Add(item);
 			}
 		}
@@ -65,18 +65,18 @@ namespace RimWorld
 		{
 			List<Vector2> list = verts2D.ListFullCopy();
 			Vector3 vector = default(Vector3);
-			Vector2 a = default(Vector2);
+			Vector2 vector2 = default(Vector2);
 			verts2D.Clear();
 			for (int i = 0; i < list.Count; i++)
 			{
 				if (i <= list.Count - 2)
 				{
 					vector = Quaternion.AngleAxis(90f, Vector3.up) * (list[i] - list[i + 1]);
-					a = new Vector2(vector.y, vector.z);
-					a.Normalize();
+					vector2 = new Vector2(vector.y, vector.z);
+					vector2.Normalize();
 				}
-				Vector2 item = list[i] - 1f * a;
-				Vector2 item2 = list[i] + 1f * a;
+				Vector2 item = list[i] - 1f * vector2;
+				Vector2 item2 = list[i] + 1f * vector2;
 				verts2D.Add(item);
 				verts2D.Add(item2);
 			}

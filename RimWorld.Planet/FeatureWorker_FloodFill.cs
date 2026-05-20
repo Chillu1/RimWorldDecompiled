@@ -6,19 +6,19 @@ namespace RimWorld.Planet
 {
 	public abstract class FeatureWorker_FloodFill : FeatureWorker
 	{
-		private List<int> roots = new List<int>();
+		private readonly List<PlanetTile> roots = new List<PlanetTile>();
 
-		private HashSet<int> rootsSet = new HashSet<int>();
+		private readonly HashSet<PlanetTile> rootsSet = new HashSet<PlanetTile>();
 
-		private List<int> possiblyAllowed = new List<int>();
+		private readonly List<PlanetTile> possiblyAllowed = new List<PlanetTile>();
 
-		private HashSet<int> possiblyAllowedSet = new HashSet<int>();
+		private readonly HashSet<PlanetTile> possiblyAllowedSet = new HashSet<PlanetTile>();
 
-		private List<int> currentGroup = new List<int>();
+		private readonly List<PlanetTile> currentGroup = new List<PlanetTile>();
 
-		private List<int> currentGroupMembers = new List<int>();
+		private readonly List<PlanetTile> currentGroupMembers = new List<PlanetTile>();
 
-		private static List<int> tmpGroup = new List<int>();
+		private static readonly List<PlanetTile> TmpGroup = new List<PlanetTile>();
 
 		protected virtual int MinSize => def.minSize;
 
@@ -28,38 +28,39 @@ namespace RimWorld.Planet
 
 		protected virtual float MaxPossiblyAllowedSizePctOfMeToTake => def.maxPossiblyAllowedSizePctOfMeToTake;
 
-		protected abstract bool IsRoot(int tile);
+		protected abstract bool IsRoot(PlanetTile tile);
 
-		protected virtual bool IsPossiblyAllowed(int tile)
+		protected virtual bool IsPossiblyAllowed(PlanetTile tile)
 		{
 			return false;
 		}
 
-		protected virtual bool IsMember(int tile)
+		protected virtual bool IsMember(PlanetTile tile)
 		{
 			return Find.WorldGrid[tile].feature == null;
 		}
 
-		public override void GenerateWhereAppropriate()
+		public override void GenerateWhereAppropriate(PlanetLayer layer)
 		{
-			CalculateRootsAndPossiblyAllowedTiles();
-			CalculateContiguousGroups();
+			CalculateRootsAndPossiblyAllowedTiles(layer);
+			CalculateContiguousGroups(layer);
 		}
 
-		private void CalculateRootsAndPossiblyAllowedTiles()
+		private void CalculateRootsAndPossiblyAllowedTiles(PlanetLayer layer)
 		{
 			roots.Clear();
 			possiblyAllowed.Clear();
-			int tilesCount = Find.WorldGrid.TilesCount;
+			int tilesCount = layer.TilesCount;
 			for (int i = 0; i < tilesCount; i++)
 			{
-				if (IsRoot(i))
+				PlanetTile tile = layer[i].tile;
+				if (IsRoot(tile))
 				{
-					roots.Add(i);
+					roots.Add(tile);
 				}
-				if (IsPossiblyAllowed(i))
+				if (IsPossiblyAllowed(tile))
 				{
-					possiblyAllowed.Add(i);
+					possiblyAllowed.Add(tile);
 				}
 			}
 			rootsSet.Clear();
@@ -68,45 +69,43 @@ namespace RimWorld.Planet
 			possiblyAllowedSet.AddRange(possiblyAllowed);
 		}
 
-		private void CalculateContiguousGroups()
+		private void CalculateContiguousGroups(PlanetLayer layer)
 		{
-			WorldFloodFiller worldFloodFiller = Find.WorldFloodFiller;
-			WorldGrid worldGrid = Find.WorldGrid;
-			_ = worldGrid.TilesCount;
+			WorldFloodFiller filler = layer.Filler;
 			int minSize = MinSize;
 			int maxSize = MaxSize;
 			int maxPossiblyAllowedSizeToTake = MaxPossiblyAllowedSizeToTake;
 			float maxPossiblyAllowedSizePctOfMeToTake = MaxPossiblyAllowedSizePctOfMeToTake;
-			FeatureWorker.ClearVisited();
-			FeatureWorker.ClearGroupSizes();
+			FeatureWorker.ClearVisited(layer);
+			FeatureWorker.ClearGroupSizes(layer);
 			for (int i = 0; i < possiblyAllowed.Count; i++)
 			{
-				int num = possiblyAllowed[i];
-				if (!FeatureWorker.visited[num] && !rootsSet.Contains(num))
+				PlanetTile planetTile = possiblyAllowed[i];
+				if (!FeatureWorker.visited[planetTile.tileId] && !rootsSet.Contains(planetTile))
 				{
-					tmpGroup.Clear();
-					worldFloodFiller.FloodFill(num, (int x) => possiblyAllowedSet.Contains(x) && !rootsSet.Contains(x), delegate(int x)
+					TmpGroup.Clear();
+					filler.FloodFill(planetTile, (PlanetTile x) => possiblyAllowedSet.Contains(x) && !rootsSet.Contains(x), delegate(PlanetTile x)
 					{
-						FeatureWorker.visited[x] = true;
-						tmpGroup.Add(x);
+						FeatureWorker.visited[x.tileId] = true;
+						TmpGroup.Add(x);
 					});
-					for (int j = 0; j < tmpGroup.Count; j++)
+					for (int num = 0; num < TmpGroup.Count; num++)
 					{
-						FeatureWorker.groupSize[tmpGroup[j]] = tmpGroup.Count;
+						FeatureWorker.groupSize[TmpGroup[num].tileId] = TmpGroup.Count;
 					}
 				}
 			}
-			for (int k = 0; k < roots.Count; k++)
+			for (int num2 = 0; num2 < roots.Count; num2++)
 			{
-				int num2 = roots[k];
-				if (FeatureWorker.visited[num2])
+				PlanetTile rootTile = roots[num2];
+				if (FeatureWorker.visited[rootTile.tileId])
 				{
 					continue;
 				}
 				int initialMembersCountClamped = 0;
-				worldFloodFiller.FloodFill(num2, (int x) => (rootsSet.Contains(x) || possiblyAllowedSet.Contains(x)) && IsMember(x), delegate(int x)
+				filler.FloodFill(rootTile, (PlanetTile x) => (rootsSet.Contains(x) || possiblyAllowedSet.Contains(x)) && IsMember(x), delegate(PlanetTile x)
 				{
-					FeatureWorker.visited[x] = true;
+					FeatureWorker.visited[x.tileId] = true;
 					initialMembersCountClamped++;
 					return initialMembersCountClamped >= minSize;
 				});
@@ -115,9 +114,9 @@ namespace RimWorld.Planet
 					continue;
 				}
 				int initialRootsCount = 0;
-				worldFloodFiller.FloodFill(num2, (int x) => rootsSet.Contains(x), delegate(int x)
+				filler.FloodFill(rootTile, (PlanetTile x) => rootsSet.Contains(x), delegate(PlanetTile x)
 				{
-					FeatureWorker.visited[x] = true;
+					FeatureWorker.visited[x.tileId] = true;
 					initialRootsCount++;
 				});
 				if (initialRootsCount < minSize || initialRootsCount > maxSize)
@@ -126,36 +125,36 @@ namespace RimWorld.Planet
 				}
 				int traversedRootsCount = 0;
 				currentGroup.Clear();
-				worldFloodFiller.FloodFill(num2, (int x) => rootsSet.Contains(x) || (possiblyAllowedSet.Contains(x) && FeatureWorker.groupSize[x] <= maxPossiblyAllowedSizeToTake && (float)FeatureWorker.groupSize[x] <= maxPossiblyAllowedSizePctOfMeToTake * (float)Mathf.Max(traversedRootsCount, initialRootsCount) && FeatureWorker.groupSize[x] < maxSize), delegate(int x)
+				filler.FloodFill(rootTile, (PlanetTile x) => rootsSet.Contains(x) || (possiblyAllowedSet.Contains(x) && FeatureWorker.groupSize[x.tileId] <= maxPossiblyAllowedSizeToTake && (float)FeatureWorker.groupSize[x.tileId] <= maxPossiblyAllowedSizePctOfMeToTake * (float)Mathf.Max(traversedRootsCount, initialRootsCount) && FeatureWorker.groupSize[x.tileId] < maxSize), delegate(PlanetTile x)
 				{
-					FeatureWorker.visited[x] = true;
+					FeatureWorker.visited[x.tileId] = true;
 					if (rootsSet.Contains(x))
 					{
 						traversedRootsCount++;
 					}
 					currentGroup.Add(x);
 				});
-				if (currentGroup.Count < minSize || currentGroup.Count > maxSize || (!def.canTouchWorldEdge && currentGroup.Any((int x) => worldGrid.IsOnEdge(x))))
+				if (currentGroup.Count < minSize || currentGroup.Count > maxSize || (!def.canTouchWorldEdge && currentGroup.Any((PlanetTile x) => Find.WorldGrid.IsOnEdge(x))))
 				{
 					continue;
 				}
 				currentGroupMembers.Clear();
-				for (int l = 0; l < currentGroup.Count; l++)
+				for (int num3 = 0; num3 < currentGroup.Count; num3++)
 				{
-					if (IsMember(currentGroup[l]))
+					if (IsMember(currentGroup[num3]))
 					{
-						currentGroupMembers.Add(currentGroup[l]);
+						currentGroupMembers.Add(currentGroup[num3]);
 					}
 				}
 				if (currentGroupMembers.Count < minSize)
 				{
 					continue;
 				}
-				if (currentGroup.Any((int x) => worldGrid[x].feature == null))
+				if (currentGroup.Any((PlanetTile x) => layer[x].feature == null))
 				{
-					currentGroup.RemoveAll((int x) => worldGrid[x].feature != null);
+					currentGroup.RemoveAll((PlanetTile x) => layer[x].feature != null);
 				}
-				AddFeature(currentGroupMembers, currentGroup);
+				AddFeature(layer, currentGroupMembers, currentGroup);
 			}
 		}
 	}

@@ -44,45 +44,7 @@ namespace Verse.Grammar
 					constantConstraintsValid = true;
 					if (rule.constantConstraints != null)
 					{
-						for (int i = 0; i < rule.constantConstraints.Count; i++)
-						{
-							Rule.ConstantConstraint constantConstraint = rule.constantConstraints[i];
-							string text = ((constraints != null) ? constraints.TryGetValue(constantConstraint.key, "") : "");
-							float result = 0f;
-							float result2 = 0f;
-							bool flag = !text.NullOrEmpty() && !constantConstraint.value.NullOrEmpty() && float.TryParse(text, out result) && float.TryParse(constantConstraint.value, out result2);
-							bool flag2;
-							switch (constantConstraint.type)
-							{
-							case Rule.ConstantConstraint.Type.Equal:
-								flag2 = text.EqualsIgnoreCase(constantConstraint.value);
-								break;
-							case Rule.ConstantConstraint.Type.NotEqual:
-								flag2 = !text.EqualsIgnoreCase(constantConstraint.value);
-								break;
-							case Rule.ConstantConstraint.Type.Less:
-								flag2 = flag && result < result2;
-								break;
-							case Rule.ConstantConstraint.Type.Greater:
-								flag2 = flag && result > result2;
-								break;
-							case Rule.ConstantConstraint.Type.LessOrEqual:
-								flag2 = flag && result <= result2;
-								break;
-							case Rule.ConstantConstraint.Type.GreaterOrEqual:
-								flag2 = flag && result >= result2;
-								break;
-							default:
-								Log.Error("Unknown ConstantConstraint type: " + constantConstraint.type);
-								flag2 = false;
-								break;
-							}
-							if (!flag2)
-							{
-								constantConstraintsValid = false;
-								break;
-							}
-						}
+						constantConstraintsValid = rule.ValidateConstraints(constraints);
 					}
 					constantConstraintsChecked = true;
 				}
@@ -100,6 +62,15 @@ namespace Verse.Grammar
 					return true;
 				}
 				return resolvedTags.Contains(rule.requiredTag);
+			}
+
+			public bool ValidateTimesUsed()
+			{
+				if (!rule.usesLimit.HasValue)
+				{
+					return true;
+				}
+				return uses < rule.usesLimit.Value;
 			}
 
 			public override string ToString()
@@ -126,17 +97,15 @@ namespace Verse.Grammar
 
 		private static Regex Spaces = new Regex(" +([,.])");
 
+		private static Regex FunctionCall = new Regex("{\\s*(\\w+)\\s*\\:\\s*([^}]* ?)\\s*}");
+
+		private static Regex GenderCall = new Regex("{\\s*(\\w+)_gender\\s*\\?\\s*([^}]* ?)\\s*}");
+
 		public const char SymbolStartChar = '[';
 
 		public const char SymbolEndChar = ']';
 
-		private static readonly char[] SpecialChars = new char[4]
-		{
-			'[',
-			']',
-			'{',
-			'}'
-		};
+		private static readonly char[] SpecialChars = new char[4] { '[', ']', '{', '}' };
 
 		public static string Resolve(string rootKeyword, GrammarRequest request, string debugLabel = null, bool forceLog = false, string untranslatedRootKeyword = null, List<string> extraTags = null, List<string> outTags = null, bool capitalizeFirstSentence = true)
 		{
@@ -297,7 +266,7 @@ namespace Verse.Grammar
 			string output = "err";
 			bool flag2 = false;
 			List<string> list5 = new List<string>();
-			if (TryResolveRecursive(new RuleEntry(new Rule_String("", "[" + rootKeyword + "]")), 0, constantsAllowNull, out output, flag, extraTags, list5))
+			if (TryResolveRecursive(new RuleEntry(new Rule_String("", "[" + rootKeyword + "]")), 0, constantsAllowNull, out output, flag, extraTags, list5, request.customizer))
 			{
 				if (outTags != null)
 				{
@@ -318,6 +287,7 @@ namespace Verse.Grammar
 					ResolveUnsafe(rootKeyword, request, debugLabel, forceLog: true, useUntranslatedRules, extraTags);
 				}
 			}
+			output = ResolveAllFunctions(output, constantsAllowNull);
 			output = GenText.CapitalizeSentences(Find.ActiveLanguageWorker.PostProcessed(output), capitalizeFirstSentence);
 			output = Spaces.Replace(output, (Match match) => match.Groups[1].Value);
 			output = output.Trim();
@@ -354,6 +324,57 @@ namespace Verse.Grammar
 			return output;
 		}
 
+		public static string ResolveAllFunctions(string input, Dictionary<string, string> constants)
+		{
+			if (input.Contains("%%"))
+			{
+				return input;
+			}
+			string text = input;
+			MatchCollection matchCollection = FunctionCall.Matches(text);
+			for (int num = matchCollection.Count - 1; num >= 0; num--)
+			{
+				Match match = matchCollection[num];
+				string value = match.Groups[1].Value;
+				string args = match.Groups[2].Value.Trim();
+				if (value == "lookup" || value == "replace")
+				{
+					string value2 = GrammarResolverSimple.ResolveFunction(value, args, match.Value);
+					text = text.Remove(match.Index, match.Length);
+					text = text.Insert(match.Index, value2);
+				}
+				else
+				{
+					Log.Warning("Unknown grammar function name: " + value + ". Supported functions: lookup, replace.");
+				}
+			}
+			MatchCollection matchCollection2 = GenderCall.Matches(text);
+			for (int num2 = matchCollection2.Count - 1; num2 >= 0; num2--)
+			{
+				Match match2 = matchCollection2[num2];
+				string value3 = match2.Groups[1].Value;
+				string args2 = match2.Groups[2].Value.Trim();
+				if (constants.TryGetValue(value3 + "_gender", out var value4))
+				{
+					if (Enum.TryParse<Gender>(value4, out var result))
+					{
+						string value5 = GrammarResolverSimple.ResolveGenderSymbol(result, animal: false, args2, match2.Value);
+						text = text.Remove(match2.Index, match2.Length);
+						text = text.Insert(match2.Index, value5);
+					}
+					else
+					{
+						Log.Warning("Unknown gender: " + value4 + ".");
+					}
+				}
+				else
+				{
+					Log.Warning("Cannot find rules for pawn symbol " + value3 + ".");
+				}
+			}
+			return text;
+		}
+
 		private static void AddRule(Rule rule)
 		{
 			List<RuleEntry> value = null;
@@ -366,7 +387,7 @@ namespace Verse.Grammar
 			value.Add(new RuleEntry(rule));
 		}
 
-		private static bool TryResolveRecursive(RuleEntry entry, int depth, Dictionary<string, string> constants, out string output, bool log, List<string> extraTags, List<string> resolvedTags)
+		private static bool TryResolveRecursive(RuleEntry entry, int depth, Dictionary<string, string> constants, out string output, bool log, List<string> extraTags, List<string> resolvedTags, GrammarRequest.ICustomizer customizer)
 		{
 			string text = "";
 			for (int i = 0; i < depth; i++)
@@ -429,7 +450,7 @@ namespace Verse.Grammar
 				string text3 = text2.Substring(num + 1, j - num - 1);
 				while (true)
 				{
-					RuleEntry ruleEntry = RandomPossiblyResolvableEntry(text3, constants, extraTags, resolvedTags);
+					RuleEntry ruleEntry = RandomPossiblyResolvableEntry(text3, constants, extraTags, resolvedTags, customizer);
 					if (ruleEntry == null)
 					{
 						entry.MarkKnownUnresolvable();
@@ -443,7 +464,7 @@ namespace Verse.Grammar
 					}
 					ruleEntry.uses++;
 					List<string> list = resolvedTags.ToList();
-					if (TryResolveRecursive(ruleEntry, depth + 1, constants, out var output2, log, extraTags, list))
+					if (TryResolveRecursive(ruleEntry, depth + 1, constants, out var output2, log, extraTags, list, customizer))
 					{
 						text2 = text2.Substring(0, num) + output2 + text2.Substring(j + 1);
 						j = num;
@@ -453,6 +474,7 @@ namespace Verse.Grammar
 						{
 							resolvedTags.Add(ruleEntry.rule.tag);
 						}
+						customizer?.Notify_RuleUsed(ruleEntry.rule);
 						break;
 					}
 					ruleEntry.MarkKnownUnresolvable();
@@ -462,7 +484,7 @@ namespace Verse.Grammar
 			return !flag;
 		}
 
-		private static RuleEntry RandomPossiblyResolvableEntry(string keyword, Dictionary<string, string> constants, List<string> extraTags, List<string> resolvedTags)
+		private static RuleEntry RandomPossiblyResolvableEntry(string keyword, Dictionary<string, string> constants, List<string> extraTags, List<string> resolvedTags, GrammarRequest.ICustomizer customizer)
 		{
 			List<RuleEntry> list = rules.TryGetValue(keyword);
 			if (list == null)
@@ -470,15 +492,29 @@ namespace Verse.Grammar
 				return null;
 			}
 			float maxPriority = float.MinValue;
+			int maxBucket = 0;
 			for (int i = 0; i < list.Count; i++)
 			{
 				RuleEntry ruleEntry = list[i];
-				if (!ruleEntry.knownUnresolvable && ruleEntry.ValidateConstantConstraints(constants) && ruleEntry.ValidateRequiredTag(extraTags, resolvedTags) && ruleEntry.SelectionWeight != 0f)
+				if (ValidateRule(constants, extraTags, resolvedTags, ruleEntry, customizer) && ruleEntry.SelectionWeight != 0f)
 				{
 					maxPriority = Mathf.Max(maxPriority, ruleEntry.Priority);
+					if (customizer != null)
+					{
+						maxBucket = Mathf.Max(maxBucket, customizer.PriorityBucket(ruleEntry.rule));
+					}
 				}
 			}
-			return list.RandomElementByWeightWithFallback((RuleEntry rule) => (rule.knownUnresolvable || !rule.ValidateConstantConstraints(constants) || !rule.ValidateRequiredTag(extraTags, resolvedTags) || rule.Priority != maxPriority) ? 0f : rule.SelectionWeight);
+			return list.RandomElementByWeightWithFallback((RuleEntry rule) => (!ValidateRule(constants, extraTags, resolvedTags, rule, customizer) || rule.Priority != maxPriority || (customizer?.PriorityBucket(rule.rule) ?? 0) != maxBucket) ? 0f : rule.SelectionWeight);
+		}
+
+		private static bool ValidateRule(Dictionary<string, string> constants, List<string> extraTags, List<string> resolvedTags, RuleEntry rule, GrammarRequest.ICustomizer customizer)
+		{
+			if (!rule.knownUnresolvable && rule.ValidateConstantConstraints(constants) && rule.ValidateRequiredTag(extraTags, resolvedTags) && rule.ValidateTimesUsed())
+			{
+				return customizer?.ValidateRule(rule.rule) ?? true;
+			}
+			return false;
 		}
 
 		public static bool ContainsSpecialChars(string str)

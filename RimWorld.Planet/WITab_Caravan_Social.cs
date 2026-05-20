@@ -156,7 +156,7 @@ namespace RimWorld.Planet
 
 		private void DoRow(Rect rect, Pawn p)
 		{
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			Rect rect2 = rect.AtZero();
 			CaravanThingsTabUtility.DoAbandonButton(rect2, p, base.SelCaravan);
 			rect2.width -= 24f;
@@ -164,6 +164,7 @@ namespace RimWorld.Planet
 			rect2.width -= 24f;
 			CaravanThingsTabUtility.DoOpenSpecificTabButton(rect2, p, ref specificSocialTabForPawn);
 			rect2.width -= 24f;
+			CaravanThingsTabUtility.DoOpenSpecificTabButtonInvisible(rect2, p, ref specificSocialTabForPawn);
 			if (Mouse.IsOver(rect2))
 			{
 				Widgets.DrawHighlight(rect2);
@@ -172,13 +173,13 @@ namespace RimWorld.Planet
 			Widgets.ThingIcon(rect3, p);
 			Rect bgRect = new Rect(rect3.xMax + 4f, 8f, 100f, 18f);
 			GenMapUI.DrawPawnLabel(p, bgRect, 1f, 100f, null, GameFont.Small, alwaysDrawBg: false, alignCenter: false);
-			if (p.Downed)
+			if (p.Downed && !p.ageTracker.CurLifeStage.alwaysDowned)
 			{
 				GUI.color = new Color(1f, 0f, 0f, 0.5f);
 				Widgets.DrawLineHorizontal(0f, rect.height / 2f, rect.width);
 				GUI.color = Color.white;
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		public override void Notify_ClearingAllMapsMemory()

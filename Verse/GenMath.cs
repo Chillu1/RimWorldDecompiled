@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using UnityEngine;
 
 namespace Verse
@@ -22,7 +23,7 @@ namespace Verse
 
 		public const float BigEpsilon = 1E-07f;
 
-		public const float Sqrt2 = 1.41421354f;
+		public const float Sqrt2 = 1.4142135f;
 
 		private static List<float> tmpElements = new List<float>();
 
@@ -106,10 +107,10 @@ namespace Verse
 			}
 			tmpPairs.SortBy((Pair<float, float> x) => x.First);
 			float num2 = 0f;
-			for (int j = 0; j < tmpPairs.Count; j++)
+			for (int num3 = 0; num3 < tmpPairs.Count; num3++)
 			{
-				float first = tmpPairs[j].First;
-				float second2 = tmpPairs[j].Second;
+				float first = tmpPairs[num3].First;
+				float second2 = tmpPairs[num3].Second;
 				num2 += second2 / num;
 				if (num2 >= center)
 				{
@@ -225,40 +226,40 @@ namespace Verse
 		{
 			IntVec3 intVec = new IntVec3(72, 0, 65);
 			StringBuilder stringBuilder = new StringBuilder();
-			stringBuilder.AppendLine("Math perf tests (" + 1E+07f + " tests each)");
+			stringBuilder.AppendLine("Math perf tests (" + 10000000f + " tests each)");
 			float num = 0f;
 			Stopwatch stopwatch = Stopwatch.StartNew();
-			for (int i = 0; (float)i < 1E+07f; i++)
+			for (int i = 0; (float)i < 10000000f; i++)
 			{
 				num += (float)Math.Sqrt(101.20999908447266);
 			}
 			stringBuilder.AppendLine("(float)System.Math.Sqrt(" + 101.21f + "): " + stopwatch.ElapsedTicks);
 			Stopwatch stopwatch2 = Stopwatch.StartNew();
-			for (int j = 0; (float)j < 1E+07f; j++)
+			for (int j = 0; (float)j < 10000000f; j++)
 			{
 				num += Mathf.Sqrt(101.21f);
 			}
 			stringBuilder.AppendLine("UnityEngine.Mathf.Sqrt(" + 101.21f + "): " + stopwatch2.ElapsedTicks);
 			Stopwatch stopwatch3 = Stopwatch.StartNew();
-			for (int k = 0; (float)k < 1E+07f; k++)
+			for (int k = 0; (float)k < 10000000f; k++)
 			{
 				num += Sqrt(101.21f);
 			}
 			stringBuilder.AppendLine("Verse.GenMath.Sqrt(" + 101.21f + "): " + stopwatch3.ElapsedTicks);
 			Stopwatch stopwatch4 = Stopwatch.StartNew();
-			for (int l = 0; (float)l < 1E+07f; l++)
+			for (int l = 0; (float)l < 10000000f; l++)
 			{
 				num += (float)intVec.LengthManhattan;
 			}
 			stringBuilder.AppendLine("Verse.IntVec3.LengthManhattan: " + stopwatch4.ElapsedTicks);
 			Stopwatch stopwatch5 = Stopwatch.StartNew();
-			for (int m = 0; (float)m < 1E+07f; m++)
+			for (int m = 0; (float)m < 10000000f; m++)
 			{
 				num += intVec.LengthHorizontal;
 			}
 			stringBuilder.AppendLine("Verse.IntVec3.LengthHorizontal: " + stopwatch5.ElapsedTicks);
 			Stopwatch stopwatch6 = Stopwatch.StartNew();
-			for (int n = 0; (float)n < 1E+07f; n++)
+			for (int n = 0; (float)n < 10000000f; n++)
 			{
 				num += (float)intVec.LengthHorizontalSquared;
 			}
@@ -360,10 +361,10 @@ namespace Verse
 
 		public static Vector3 BezierCubicEvaluate(float t, Vector3 w0, Vector3 w1, Vector3 w2, Vector3 w3)
 		{
-			float d = t * t;
-			float num = 1f - t;
-			float d2 = num * num;
-			return w0 * d2 * num + 3f * w1 * d2 * t + 3f * w2 * num * d + w3 * d * t;
+			float num = t * t;
+			float num2 = 1f - t;
+			float num3 = num2 * num2;
+			return w0 * num3 * num2 + 3f * w1 * num3 * t + 3f * w2 * num2 * num + w3 * num * t;
 		}
 
 		public static float CirclesOverlapArea(float x1, float y1, float r1, float x2, float y2, float r2)
@@ -379,11 +380,11 @@ namespace Verse
 			}
 			if (num2 <= num5 && r1 >= r2)
 			{
-				return (float)Math.PI * num4;
+				return MathF.PI * num4;
 			}
 			if (num2 <= num5 && r2 >= r1)
 			{
-				return (float)Math.PI * num3;
+				return MathF.PI * num3;
 			}
 			float num6 = Mathf.Acos((num3 - num4 + num) / (2f * r1 * num2)) * 2f;
 			float num7 = Mathf.Acos((num4 - num3 + num) / (2f * r2 * num2)) * 2f;
@@ -619,6 +620,83 @@ namespace Verse
 		{
 			x = Mathf.Clamp01(x);
 			return -4f * x * (x - 1f);
+		}
+
+		public static float ExponentialWarpInterpolation(float min, float max, float fraction, Vector2 setPoint)
+		{
+			float p = Mathf.Log(Mathf.InverseLerp(min, max, setPoint.y), setPoint.x);
+			float t = Mathf.Pow(fraction, p);
+			return Mathf.Lerp(min, max, t);
+		}
+
+		public static float InverseExponentialWarpInterpolation(float min, float max, float value, Vector2 setPoint)
+		{
+			float num = Mathf.Log(Mathf.InverseLerp(min, max, setPoint.y), setPoint.x);
+			return Mathf.Exp(Mathf.Log(Mathf.InverseLerp(min, max, value)) / num);
+		}
+
+		public static float Sign(float val)
+		{
+			if (!(val < 0f))
+			{
+				return 1f;
+			}
+			return -1f;
+		}
+
+		public static float Remap(this float value, float from1, float to1, float from2, float to2)
+		{
+			return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
+		}
+
+		public static float RemapClamped(this float value, float from1, float to1, float from2, float to2)
+		{
+			return (Mathf.Clamp(value, from1, to1) - from1) / (to1 - from1) * (to2 - from2) + from2;
+		}
+
+		public static Vector3 Position(this Matrix4x4 matrix)
+		{
+			return matrix.GetColumn(3);
+		}
+
+		public static float MeanAngle(List<float> angles)
+		{
+			float x = angles.Sum((float a) => Mathf.Cos(a * MathF.PI / 180f)) / (float)angles.Count;
+			return Mathf.Atan2(angles.Sum((float a) => Mathf.Sin(a * MathF.PI / 180f)) / (float)angles.Count, x) * 180f / MathF.PI;
+		}
+
+		public static float SmoothMin(float a, float b, float k)
+		{
+			if (k == 0f)
+			{
+				return Mathf.Min(a, b);
+			}
+			float num = Mathf.Max(0f, Mathf.Min(1f, (b - a) / k + 0.5f));
+			return a * num + b * (1f - num) - k * num * (1f - num);
+		}
+
+		public static double SmoothMin(double a, double b, double k)
+		{
+			if (k == 0.0)
+			{
+				return Math.Min(a, b);
+			}
+			double num = Math.Max(0.0, Math.Min(1.0, (b - a) / k + 0.5));
+			return a * num + b * (1.0 - num) - k * num * (1.0 - num);
+		}
+
+		public static Vector3 RotateScale(this Vector3 vec, RotationDirection rotation)
+		{
+			if (rotation == RotationDirection.Clockwise || rotation == RotationDirection.Counterclockwise)
+			{
+				return new Vector3(vec.z, vec.y, vec.x);
+			}
+			return vec;
+		}
+
+		public static Vector3 RotateScale(this Vector3 vec, Rot4 orientation)
+		{
+			return vec.RotateScale((RotationDirection)orientation.AsInt);
 		}
 	}
 }

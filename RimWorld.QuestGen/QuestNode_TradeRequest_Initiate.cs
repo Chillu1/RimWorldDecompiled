@@ -16,14 +16,16 @@ namespace RimWorld.QuestGen
 		protected override void RunInt()
 		{
 			Slate slate = QuestGen.slate;
-			QuestPart_InitiateTradeRequest questPart_InitiateTradeRequest = new QuestPart_InitiateTradeRequest();
-			questPart_InitiateTradeRequest.settlement = settlement.GetValue(slate);
-			questPart_InitiateTradeRequest.requestedThingDef = requestedThingDef.GetValue(slate);
-			questPart_InitiateTradeRequest.requestedCount = requestedThingCount.GetValue(slate);
-			questPart_InitiateTradeRequest.requestDuration = duration.GetValue(slate);
-			questPart_InitiateTradeRequest.keepAfterQuestEnds = false;
-			questPart_InitiateTradeRequest.inSignal = slate.Get<string>("inSignal");
-			QuestGen.quest.AddPart(questPart_InitiateTradeRequest);
+			QuestPart_InitiateTradeRequest part = new QuestPart_InitiateTradeRequest
+			{
+				settlement = settlement.GetValue(slate),
+				requestedThingDef = requestedThingDef.GetValue(slate),
+				requestedCount = requestedThingCount.GetValue(slate),
+				requestDuration = duration.GetValue(slate),
+				keepAfterQuestEnds = false,
+				inSignal = slate.Get<string>("inSignal")
+			};
+			QuestGen.quest.AddPart(part);
 		}
 
 		protected override bool TestRunInt(Slate slate)

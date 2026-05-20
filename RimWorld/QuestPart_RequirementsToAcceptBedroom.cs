@@ -27,7 +27,7 @@ namespace RimWorld
 			if (num > 0)
 			{
 				return ((num > 1) ? "QuestBedroomRequirementsUnsatisfied" : "QuestBedroomRequirementsUnsatisfiedSingle").Translate() + " " + (from p in CulpritsAre()
-					select p.royalty.MainTitle().GetLabelFor(p).CapitalizeFirst() + " " + p.LabelShort).ToCommaList(useAnd: true) + ".";
+					select p.royalty.MainTitle().GetLabelFor(p).CapitalizeFirst() + " " + p.LabelShort).ToCommaList(useAnd: true);
 			}
 			return true;
 		}
@@ -37,13 +37,17 @@ namespace RimWorld
 			culpritsResult.Clear();
 			if (targetPawns.Any())
 			{
-				foreach (Pawn allMapsCaravansAndTravelingTransportPods_Alive_Colonist in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_Colonists)
+				foreach (Pawn allMapsCaravansAndTravellingTransporters_Alive_Colonist in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_Colonists)
 				{
-					if (allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty != null && allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty.HighestTitleWithBedroomRequirements() != null && !allMapsCaravansAndTravelingTransportPods_Alive_Colonist.Suspended && (!allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty.HasPersonalBedroom() || allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty.GetUnmetBedroomRequirements().Any()))
+					if (allMapsCaravansAndTravellingTransporters_Alive_Colonist.royalty?.HighestTitleWithBedroomRequirements() != null && !allMapsCaravansAndTravellingTransporters_Alive_Colonist.Suspended && (!allMapsCaravansAndTravellingTransporters_Alive_Colonist.royalty.HasPersonalBedroom() || allMapsCaravansAndTravellingTransporters_Alive_Colonist.royalty.AnyUnmetBedroomRequirements()))
 					{
-						culpritsResult.Add(allMapsCaravansAndTravelingTransportPods_Alive_Colonist);
+						culpritsResult.Add(allMapsCaravansAndTravellingTransporters_Alive_Colonist);
 					}
 				}
+			}
+			if (mapParent == null || !mapParent.HasMap)
+			{
+				return culpritsResult;
 			}
 			tmpOccupiedBeds.Clear();
 			List<Thing> list = mapParent.Map.listerThings.ThingsInGroup(ThingRequestGroup.Bed);

@@ -27,7 +27,7 @@ namespace RimWorld
 					break;
 				}
 			}
-			if ((quest == null) ? ((!generateSkipped) ? (IntervalsPassed == (int)(Props.minDaysPassed * 60f) + 1) : ((float)GenTicks.TicksGame >= Props.minDaysPassed * 60000f)) : (Props.refireEveryDays >= 0f && ((quest.State != QuestState.EndedSuccess && quest.State != QuestState.Ongoing && quest.State != 0 && quest.cleanupTick >= 0 && IntervalsPassed == (int)((float)quest.cleanupTick + Props.refireEveryDays * 60000f) / 1000) ? true : false)))
+			if ((quest == null) ? ((Props.minColonyWealth <= 0 || !(WealthUtility.PlayerWealth < (float)Props.minColonyWealth)) && ((!generateSkipped) ? (IntervalsPassed == (int)(Props.minDaysPassed * 60f) + 1) : ((float)GenTicks.TicksGame >= Props.minDaysPassed * 60000f))) : (Props.refireEveryDays >= 0f && ((quest.State != QuestState.EndedSuccess && quest.State != QuestState.Ongoing && quest.State != QuestState.NotYetAccepted && quest.cleanupTick >= 0 && IntervalsPassed == (int)((float)quest.cleanupTick + Props.refireEveryDays * 60000f) / 1000) ? true : false)))
 			{
 				IncidentParms parms = GenerateParms(Props.incident.category, target);
 				if (Props.incident.Worker.CanFireNow(parms))

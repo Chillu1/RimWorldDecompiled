@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using RimWorld.Planet;
@@ -9,21 +10,26 @@ namespace RimWorld
 	{
 		private const float DeathChanceForCaravanPawnBanishedToDie = 0.8f;
 
-		private static List<Hediff> tmpHediffs = new List<Hediff>();
+		private static readonly List<Hediff> tmpHediffs = new List<Hediff>();
 
-		public static void Banish(Pawn pawn, int tile = -1)
+		public static void Banish(Pawn pawn, bool giveThoughts = true)
+		{
+			Banish(pawn, PlanetTile.Invalid, giveThoughts);
+		}
+
+		public static void Banish(Pawn pawn, PlanetTile tile, bool giveThoughts = true)
 		{
 			if (pawn.Faction != Faction.OfPlayer && pawn.HostFaction != Faction.OfPlayer)
 			{
-				Log.Warning(string.Concat("Tried to banish ", pawn, " but he's neither a colonist, tame animal, nor prisoner."));
+				Log.Warning("Tried to banish " + pawn?.ToString() + " but he's neither a colonist, tame animal, nor prisoner.");
 				return;
 			}
-			if (tile == -1)
+			if (!tile.Valid)
 			{
 				tile = pawn.Tile;
 			}
 			bool flag = WouldBeLeftToDie(pawn, tile);
-			if (!pawn.IsQuestLodger())
+			if (!pawn.IsQuestLodger() && giveThoughts)
 			{
 				PawnDiedOrDownedThoughtsUtility.TryGiveThoughts(pawn, null, (!flag) ? PawnDiedOrDownedThoughtsKind.Banished : PawnDiedOrDownedThoughtsKind.BanishedToDie);
 			}
@@ -50,7 +56,7 @@ namespace RimWorld
 			}
 			if (pawn.Faction == Faction.OfPlayer)
 			{
-				if (!pawn.Spawned && Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction_NewTemp(out var faction, pawn.Faction != null && (int)pawn.Faction.def.techLevel >= 3))
+				if (!pawn.Spawned && Find.FactionManager.TryGetRandomNonColonyHumanlikeFaction(out var faction, pawn.Faction != null && (int)pawn.Faction.def.techLevel >= 3))
 				{
 					if (pawn.Faction != faction)
 					{
@@ -61,11 +67,12 @@ namespace RimWorld
 				{
 					pawn.SetFaction(null);
 				}
+				Faction.OfPlayer.ideos?.RecalculateIdeosBasedOnPlayerPawns();
 			}
 			QuestUtility.SendQuestTargetSignals(pawn.questTags, "Banished", pawn.Named("SUBJECT"));
 		}
 
-		public static bool WouldBeLeftToDie(Pawn p, int tile)
+		public static bool WouldBeLeftToDie(Pawn p, PlanetTile tile)
 		{
 			if (p.Downed)
 			{
@@ -75,7 +82,7 @@ namespace RimWorld
 			{
 				return true;
 			}
-			if (tile != -1)
+			if (tile.Valid)
 			{
 				float f = GenTemperature.AverageTemperatureAtTileForTwelfth(tile, GenLocalDate.Twelfth(p));
 				if (!p.SafeTemperatureRange().Includes(f))
@@ -86,8 +93,7 @@ namespace RimWorld
 			List<Hediff> hediffs = p.health.hediffSet.hediffs;
 			for (int i = 0; i < hediffs.Count; i++)
 			{
-				HediffStage curStage = hediffs[i].CurStage;
-				if (curStage != null && curStage.lifeThreatening)
+				if (hediffs[i].IsCurrentlyLifeThreatening)
 				{
 					return true;
 				}
@@ -141,18 +147,19 @@ namespace RimWorld
 					}
 				}
 			}
-			if (!banishedPawn.IsQuestLodger())
+			if (!banishedPawn.IsQuestLodger() && (banishedPawn.guilt == null || !banishedPawn.guilt.IsGuilty))
 			{
 				PawnDiedOrDownedThoughtsUtility.BuildMoodThoughtsListString(banishedPawn, null, (!flag) ? PawnDiedOrDownedThoughtsKind.Banished : PawnDiedOrDownedThoughtsKind.BanishedToDie, stringBuilder, "\n\n" + "ConfirmBanishPawnDialog_IndividualThoughts".Translate(banishedPawn.LabelShort, banishedPawn), "\n\n" + "ConfirmBanishPawnDialog_AllColonistsThoughts".Translate());
 			}
 			return stringBuilder.ToString();
 		}
 
-		public static void ShowBanishPawnConfirmationDialog(Pawn pawn)
+		public static void ShowBanishPawnConfirmationDialog(Pawn pawn, Action onConfirm = null)
 		{
 			Dialog_MessageBox window = Dialog_MessageBox.CreateConfirmation(GetBanishPawnDialogText(pawn), delegate
 			{
 				Banish(pawn);
+				onConfirm?.Invoke();
 			}, destructive: true);
 			Find.WindowStack.Add(window);
 		}
@@ -172,8 +179,7 @@ namespace RimWorld
 			tmpHediffs.AddRange(p.health.hediffSet.hediffs);
 			for (int i = 0; i < tmpHediffs.Count; i++)
 			{
-				Hediff_Injury hediff_Injury = tmpHediffs[i] as Hediff_Injury;
-				if (hediff_Injury != null && !hediff_Injury.IsPermanent())
+				if (tmpHediffs[i] is Hediff_Injury hediff_Injury && !hediff_Injury.IsPermanent())
 				{
 					p.health.RemoveHediff(hediff_Injury);
 					continue;

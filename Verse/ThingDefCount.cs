@@ -21,7 +21,7 @@ namespace Verse
 		{
 			if (count < 0)
 			{
-				Log.Warning("Tried to set ThingDefCount count to " + count + ". thingDef=" + thingDef);
+				Log.Warning(string.Format("Tried to set {0} count to {1}. thingDef={2}", "ThingDefCount", count, thingDef));
 				count = 0;
 			}
 			this.thingDef = thingDef;
@@ -74,7 +74,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "(" + count + "x " + ((thingDef != null) ? thingDef.defName : "null") + ")";
+			return string.Format("({0}x {1})", count, (thingDef != null) ? thingDef.defName : "null");
 		}
 
 		public static implicit operator ThingDefCount(ThingDefCountClass t)

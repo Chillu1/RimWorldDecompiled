@@ -7,11 +7,13 @@ namespace RimWorld
 	{
 		private Map map;
 
-		private List<IHaulDestination> allHaulDestinationsInOrder = new List<IHaulDestination>();
+		private readonly List<IHaulDestination> allHaulDestinationsInOrder = new List<IHaulDestination>();
 
-		private List<SlotGroup> allGroupsInOrder = new List<SlotGroup>();
+		private readonly List<IHaulSource> allHaulSourcesInOrder = new List<IHaulSource>();
 
-		private SlotGroup[,,] groupGrid;
+		private readonly List<SlotGroup> allGroupsInOrder = new List<SlotGroup>();
+
+		private readonly SlotGroup[,,] groupGrid;
 
 		public IEnumerable<IHaulDestination> AllHaulDestinations => allHaulDestinationsInOrder;
 
@@ -19,9 +21,13 @@ namespace RimWorld
 
 		public List<IHaulDestination> AllHaulDestinationsListInPriorityOrder => allHaulDestinationsInOrder;
 
+		public List<IHaulSource> AllHaulSourcesListInPriorityOrder => allHaulSourcesInOrder;
+
 		public IEnumerable<SlotGroup> AllGroups => allGroupsInOrder;
 
 		public List<SlotGroup> AllGroupsListForReading => allGroupsInOrder;
+
+		public List<IHaulSource> AllHaulSourcesListForReading => allHaulSourcesInOrder;
 
 		public List<SlotGroup> AllGroupsListInPriorityOrder => allGroupsInOrder;
 
@@ -57,8 +63,7 @@ namespace RimWorld
 			}
 			allHaulDestinationsInOrder.Add(haulDestination);
 			allHaulDestinationsInOrder.InsertionSort(CompareHaulDestinationPrioritiesDescending);
-			ISlotGroupParent slotGroupParent = haulDestination as ISlotGroupParent;
-			if (slotGroupParent == null)
+			if (!(haulDestination is ISlotGroupParent slotGroupParent))
 			{
 				return;
 			}
@@ -87,8 +92,7 @@ namespace RimWorld
 				return;
 			}
 			allHaulDestinationsInOrder.Remove(haulDestination);
-			ISlotGroupParent slotGroupParent = haulDestination as ISlotGroupParent;
-			if (slotGroupParent == null)
+			if (!(haulDestination is ISlotGroupParent slotGroupParent))
 			{
 				return;
 			}
@@ -109,13 +113,39 @@ namespace RimWorld
 			map.listerMergeables.Notify_SlotGroupChanged(slotGroup);
 		}
 
+		public void AddHaulSource(IHaulSource source)
+		{
+			if (allHaulSourcesInOrder.Contains(source))
+			{
+				Log.Error("Double-added haul destination " + source.ToStringSafe());
+				return;
+			}
+			allHaulSourcesInOrder.Add(source);
+			allHaulSourcesInOrder.InsertionSort(CompareHaulSourcePrioritiesDescending);
+			map.listerHaulables.Notify_HaulSourceChanged(source);
+		}
+
+		public void RemoveHaulSource(IHaulSource source)
+		{
+			if (!allHaulSourcesInOrder.Remove(source))
+			{
+				Log.Error("Removing haul source that isn't registered " + source.ToStringSafe());
+			}
+		}
+
 		public void Notify_HaulDestinationChangedPriority()
 		{
 			allHaulDestinationsInOrder.InsertionSort(CompareHaulDestinationPrioritiesDescending);
 			allGroupsInOrder.InsertionSort(CompareSlotGroupPrioritiesDescending);
+			allHaulSourcesInOrder.InsertionSort(CompareHaulSourcePrioritiesDescending);
 		}
 
 		private static int CompareHaulDestinationPrioritiesDescending(IHaulDestination a, IHaulDestination b)
+		{
+			return ((int)b.GetStoreSettings().Priority).CompareTo((int)a.GetStoreSettings().Priority);
+		}
+
+		private static int CompareHaulSourcePrioritiesDescending(IHaulSource a, IHaulSource b)
 		{
 			return ((int)b.GetStoreSettings().Priority).CompareTo((int)a.GetStoreSettings().Priority);
 		}
@@ -139,7 +169,19 @@ namespace RimWorld
 		{
 			if (SlotGroupAt(c) != null)
 			{
-				Log.Error(string.Concat(group, " overwriting slot group square ", c, " of ", SlotGroupAt(c)));
+				string[] obj = new string[5]
+				{
+					group?.ToString(),
+					" overwriting slot group square ",
+					null,
+					null,
+					null
+				};
+				IntVec3 intVec = c;
+				obj[2] = intVec.ToString();
+				obj[3] = " of ";
+				obj[4] = SlotGroupAt(c)?.ToString();
+				Log.Error(string.Concat(obj));
 			}
 			groupGrid[c.x, c.y, c.z] = group;
 		}
@@ -148,7 +190,19 @@ namespace RimWorld
 		{
 			if (SlotGroupAt(c) != group)
 			{
-				Log.Error(string.Concat(group, " clearing group grid square ", c, " containing ", SlotGroupAt(c)));
+				string[] obj = new string[5]
+				{
+					group?.ToString(),
+					" clearing group grid square ",
+					null,
+					null,
+					null
+				};
+				IntVec3 intVec = c;
+				obj[2] = intVec.ToString();
+				obj[3] = " containing ";
+				obj[4] = SlotGroupAt(c)?.ToString();
+				Log.Error(string.Concat(obj));
 			}
 			groupGrid[c.x, c.y, c.z] = null;
 		}

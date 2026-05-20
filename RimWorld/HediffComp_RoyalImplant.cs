@@ -8,7 +8,11 @@ namespace RimWorld
 
 		public static int GetImplantLevel(Hediff implant)
 		{
-			return (implant as Hediff_ImplantWithLevel)?.level ?? 0;
+			if (implant is Hediff_Level hediff_Level)
+			{
+				return hediff_Level.level;
+			}
+			return 0;
 		}
 
 		public bool IsViolatingRulesOf(Faction faction, int violationSourceLevel = -1)

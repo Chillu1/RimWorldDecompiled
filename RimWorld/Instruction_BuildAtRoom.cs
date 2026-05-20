@@ -4,10 +4,7 @@ namespace RimWorld
 {
 	public abstract class Instruction_BuildAtRoom : Lesson_Instruction
 	{
-		protected abstract CellRect BuildableRect
-		{
-			get;
-		}
+		protected abstract CellRect BuildableRect { get; }
 
 		protected override float ProgressPercent
 		{

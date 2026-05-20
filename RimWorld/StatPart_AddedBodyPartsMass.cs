@@ -29,14 +29,13 @@ namespace RimWorld
 			return PawnOrCorpseStatUtility.TryGetPawnOrCorpseStat(req, (Pawn x) => GetAddedBodyPartsMass(x), (ThingDef x) => 0f, out value);
 		}
 
-		private float GetAddedBodyPartsMass(Pawn p)
+		private static float GetAddedBodyPartsMass(Pawn p)
 		{
 			float num = 0f;
 			List<Hediff> hediffs = p.health.hediffSet.hediffs;
 			for (int i = 0; i < hediffs.Count; i++)
 			{
-				Hediff_AddedPart hediff_AddedPart = hediffs[i] as Hediff_AddedPart;
-				if (hediff_AddedPart != null && hediff_AddedPart.def.spawnThingOnRemoved != null)
+				if (hediffs[i] is Hediff_AddedPart hediff_AddedPart && hediff_AddedPart.def.spawnThingOnRemoved != null)
 				{
 					num += hediff_AddedPart.def.spawnThingOnRemoved.GetStatValueAbstract(StatDefOf.Mass) * 0.9f;
 				}

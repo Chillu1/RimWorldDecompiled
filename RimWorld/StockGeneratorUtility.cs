@@ -6,13 +6,13 @@ namespace RimWorld
 {
 	public class StockGeneratorUtility
 	{
-		public static IEnumerable<Thing> TryMakeForStock(ThingDef thingDef, int count)
+		public static IEnumerable<Thing> TryMakeForStock(ThingDef thingDef, int count, Faction faction)
 		{
-			if (thingDef.MadeFromStuff)
+			if (thingDef.MadeFromStuff || thingDef.tradeNeverStack || thingDef.tradeNeverGenerateStacked)
 			{
 				for (int i = 0; i < count; i++)
 				{
-					Thing thing = TryMakeForStockSingle(thingDef, 1);
+					Thing thing = TryMakeForStockSingle(thingDef, 1, faction);
 					if (thing != null)
 					{
 						yield return thing;
@@ -21,7 +21,7 @@ namespace RimWorld
 			}
 			else
 			{
-				Thing thing2 = TryMakeForStockSingle(thingDef, count);
+				Thing thing2 = TryMakeForStockSingle(thingDef, count, faction);
 				if (thing2 != null)
 				{
 					yield return thing2;
@@ -29,7 +29,7 @@ namespace RimWorld
 			}
 		}
 
-		public static Thing TryMakeForStockSingle(ThingDef thingDef, int stackCount)
+		public static Thing TryMakeForStockSingle(ThingDef thingDef, int stackCount, Faction faction)
 		{
 			if (stackCount <= 0)
 			{
@@ -41,7 +41,7 @@ namespace RimWorld
 				return null;
 			}
 			ThingDef result = null;
-			if (thingDef.MadeFromStuff && !(from x in GenStuff.AllowedStuffsFor(thingDef)
+			if (thingDef.MadeFromStuff && !(from x in GenStuff.AllowedStuffsFor(thingDef, TechLevel.Undefined, checkAllowedInStuffGeneration: true)
 				where !PawnWeaponGenerator.IsDerpWeapon(thingDef, x)
 				select x).TryRandomElementByWeight((ThingDef x) => x.stuffProps.commonality, out result))
 			{

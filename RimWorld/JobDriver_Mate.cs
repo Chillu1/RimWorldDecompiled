@@ -10,7 +10,7 @@ namespace RimWorld
 
 		private const TargetIndex FemInd = TargetIndex.A;
 
-		private const int TicksBetweenHeartMotes = 100;
+		public const int TicksBetweenHeartMotes = 100;
 
 		private Pawn Female => (Pawn)job.GetTarget(TargetIndex.A).Thing;
 
@@ -26,15 +26,15 @@ namespace RimWorld
 			this.FailOnNotCasualInterruptible(TargetIndex.A);
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
 			Toil toil = Toils_General.WaitWith(TargetIndex.A, 500);
-			toil.tickAction = delegate
+			toil.tickIntervalAction = delegate(int delta)
 			{
-				if (pawn.IsHashIntervalTick(100))
+				if (pawn.IsHashIntervalTick(100, delta))
 				{
-					MoteMaker.ThrowMetaIcon(pawn.Position, pawn.Map, ThingDefOf.Mote_Heart);
+					FleckMaker.ThrowMetaIcon(pawn.Position, pawn.Map, FleckDefOf.Heart);
 				}
-				if (Female.IsHashIntervalTick(100))
+				if (Female.IsHashIntervalTick(100, delta))
 				{
-					MoteMaker.ThrowMetaIcon(Female.Position, pawn.Map, ThingDefOf.Mote_Heart);
+					FleckMaker.ThrowMetaIcon(Female.Position, pawn.Map, FleckDefOf.Heart);
 				}
 			};
 			yield return toil;

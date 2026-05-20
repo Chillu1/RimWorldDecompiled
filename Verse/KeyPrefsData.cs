@@ -66,7 +66,7 @@ namespace Verse
 		{
 			foreach (KeyBindingDef def in DefDatabase<KeyBindingDef>.AllDefs)
 			{
-				if (def != keyDef && ((def.category == keyDef.category && def.category.selfConflicting) || keyDef.category.checkForConflicts.Contains(def.category) || (keyDef.extraConflictTags != null && def.extraConflictTags != null && keyDef.extraConflictTags.Any((string tag) => def.extraConflictTags.Contains(tag)))) && keyPrefs.TryGetValue(def, out var value) && (value.keyBindingA == code || value.keyBindingB == code))
+				if (def != keyDef && (keyDef.ignoreConflictsWith == null || !keyDef.ignoreConflictsWith.Contains(def)) && ((def.category == keyDef.category && def.category.selfConflicting) || keyDef.category.checkForConflicts.Contains(def.category) || (keyDef.extraConflictTags != null && def.extraConflictTags != null && keyDef.extraConflictTags.Any((string tag) => def.extraConflictTags.Contains(tag)))) && keyPrefs.TryGetValue(def, out var value) && (value.keyBindingA == code || value.keyBindingB == code))
 				{
 					yield return def;
 				}
@@ -93,7 +93,7 @@ namespace Verse
 		public void CheckConflictsFor(KeyBindingDef keyDef, KeyPrefs.BindingSlot slot)
 		{
 			KeyCode boundKeyCode = GetBoundKeyCode(keyDef, slot);
-			if (boundKeyCode != 0)
+			if (boundKeyCode != KeyCode.None)
 			{
 				EraseConflictingBindingsForKeyCode(keyDef, boundKeyCode);
 				SetBinding(keyDef, slot, boundKeyCode);
@@ -129,7 +129,7 @@ namespace Verse
 			foreach (KeyBindingDef item in ConflictingBindings(keyDef, boundKeyCode))
 			{
 				bool flag = boundKeyCode != keyDef.GetDefaultKeyCode(slot);
-				Log.Warning(string.Concat("Key binding conflict: ", item, " and ", keyDef, " are both bound to ", boundKeyCode, ".", flag ? " Fixed automatically." : ""));
+				Log.Warning("Key binding conflict: " + item?.ToString() + " and " + keyDef?.ToString() + " are both bound to " + boundKeyCode.ToString() + "." + (flag ? " Fixed automatically." : ""));
 				if (flag)
 				{
 					if (slot == KeyPrefs.BindingSlot.A)

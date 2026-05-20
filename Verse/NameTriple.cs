@@ -1,4 +1,4 @@
-using System.Linq;
+using System;
 
 namespace Verse
 {
@@ -17,9 +17,31 @@ namespace Verse
 
 		public string First => firstInt;
 
-		public string Nick => nickInt;
-
 		public string Last => lastInt;
+
+		public string Nick
+		{
+			get
+			{
+				if (!nickInt.NullOrEmpty())
+				{
+					return nickInt;
+				}
+				if (Last == "")
+				{
+					return First;
+				}
+				if (First == "")
+				{
+					return Last;
+				}
+				if ((Gen.HashCombine(First.GetHashCode(), Last.GetHashCode()) & 1) == 1)
+				{
+					return First;
+				}
+				return Last;
+			}
+		}
 
 		public override string ToStringFull
 		{
@@ -33,7 +55,7 @@ namespace Verse
 			}
 		}
 
-		public override string ToStringShort => nickInt;
+		public override string ToStringShort => Nick;
 
 		public override bool IsValid
 		{
@@ -49,7 +71,17 @@ namespace Verse
 
 		public override bool Numerical => false;
 
+		public bool NickSet => !nickInt.NullOrEmpty();
+
 		public static NameTriple Invalid => invalidInt;
+
+		public string this[int index] => index switch
+		{
+			0 => First, 
+			1 => Nick, 
+			2 => Last, 
+			_ => throw new ArgumentOutOfRangeException(), 
+		};
 
 		public NameTriple()
 		{
@@ -58,7 +90,7 @@ namespace Verse
 		public NameTriple(string first, string nick, string last)
 		{
 			firstInt = first.Trim();
-			nickInt = nick.Trim();
+			nickInt = nick?.Trim();
 			lastInt = last.Trim();
 		}
 
@@ -71,25 +103,16 @@ namespace Verse
 
 		public void PostLoad()
 		{
-			if (firstInt != null)
-			{
-				firstInt = firstInt.Trim();
-			}
-			if (nickInt != null)
-			{
-				nickInt = nickInt.Trim();
-			}
-			if (lastInt != null)
-			{
-				lastInt = lastInt.Trim();
-			}
+			firstInt = firstInt?.Trim();
+			nickInt = nickInt?.Trim();
+			lastInt = lastInt?.Trim();
 		}
 
 		public void ResolveMissingPieces(string overrideLastName = null)
 		{
 			if (First.NullOrEmpty() && Nick.NullOrEmpty() && Last.NullOrEmpty())
 			{
-				Log.Error("Cannot resolve misssing pieces in PawnName: No name data.");
+				Log.Error("Cannot resolve missing pieces in PawnName: No name data.");
 				firstInt = (nickInt = (lastInt = "Empty"));
 				return;
 			}
@@ -105,30 +128,11 @@ namespace Verse
 			{
 				lastInt = overrideLastName;
 			}
-			if (!Nick.NullOrEmpty())
-			{
-				return;
-			}
-			if (Last == "")
-			{
-				nickInt = First;
-				return;
-			}
-			if (Rand.ValueSeeded(Gen.HashCombine(First.GetHashCode(), Last)) < 0.5f)
-			{
-				nickInt = First;
-			}
-			else
-			{
-				nickInt = Last;
-			}
-			CapitalizeNick();
 		}
 
 		public override bool ConfusinglySimilarTo(Name other)
 		{
-			NameTriple nameTriple = other as NameTriple;
-			if (nameTriple != null)
+			if (other is NameTriple nameTriple)
 			{
 				if (Nick != null && Nick == nameTriple.Nick)
 				{
@@ -139,15 +143,14 @@ namespace Verse
 					return true;
 				}
 			}
-			NameSingle nameSingle = other as NameSingle;
-			if (nameSingle != null && nameSingle.Name == Nick)
+			if (other is NameSingle nameSingle && nameSingle.Name == Nick)
 			{
 				return true;
 			}
 			return false;
 		}
 
-		public static NameTriple FromString(string rawName)
+		public static NameTriple FromString(string rawName, bool forceNoNick = false)
 		{
 			if (rawName.Trim().Length == 0)
 			{
@@ -204,18 +207,14 @@ namespace Verse
 			else
 			{
 				nameTriple.firstInt = rawName.Substring(0, num).Trim();
-				nameTriple.nickInt = rawName.Substring(num + 2, num2 - num - 2).Trim();
+				if (!forceNoNick)
+				{
+					nameTriple.nickInt = rawName.Substring(num + 2, num2 - num - 2).Trim();
+				}
 				nameTriple.lastInt = ((num2 < rawName.Length - 2) ? rawName.Substring(num2 + 2).Trim() : "");
 			}
+			nameTriple.ResolveMissingPieces();
 			return nameTriple;
-		}
-
-		public void CapitalizeNick()
-		{
-			if (!nickInt.NullOrEmpty())
-			{
-				nickInt = char.ToUpper(Nick[0]) + Nick.Substring(1);
-			}
 		}
 
 		public override string ToString()
@@ -239,6 +238,11 @@ namespace Verse
 				return Nick == nameTriple.Nick;
 			}
 			return false;
+		}
+
+		public NameTriple WithoutNick()
+		{
+			return new NameTriple(firstInt, null, lastInt);
 		}
 
 		public override int GetHashCode()

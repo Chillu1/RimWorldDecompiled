@@ -22,6 +22,8 @@ namespace RimWorld
 
 		internal ScenPart_PlayerFaction playerFaction;
 
+		internal ScenPart_PlanetLayer surfaceLayer;
+
 		internal List<ScenPart> parts = new List<ScenPart>();
 
 		private PublishedFileId_t publishedFileIdInt = PublishedFileId_t.Invalid;
@@ -39,6 +41,10 @@ namespace RimWorld
 		public bool enabled = true;
 
 		public bool showInUI = true;
+
+		public bool valid = true;
+
+		public bool standardAnomalyPlaystyleOnly;
 
 		public const int NameMaxLength = 55;
 
@@ -61,6 +67,7 @@ namespace RimWorld
 			get
 			{
 				yield return playerFaction;
+				yield return surfaceLayer;
 				for (int i = 0; i < parts.Count; i++)
 				{
 					yield return parts[i];
@@ -84,6 +91,21 @@ namespace RimWorld
 			}
 		}
 
+		public bool OverrideDangerMusic
+		{
+			get
+			{
+				foreach (ScenPart allPart in AllParts)
+				{
+					if (allPart.OverrideDangerMusic)
+					{
+						return true;
+					}
+				}
+				return false;
+			}
+		}
+
 		public void ExposeData()
 		{
 			Scribe_Values.Look(ref name, "name");
@@ -91,18 +113,49 @@ namespace RimWorld
 			Scribe_Values.Look(ref description, "description");
 			Scribe_Values.Look(ref publishedFileIdInt, "publishedFileId", PublishedFileId_t.Invalid);
 			Scribe_Deep.Look(ref playerFaction, "playerFaction");
+			Scribe_Deep.Look(ref surfaceLayer, "surfaceLayer");
 			Scribe_Collections.Look(ref parts, "parts", LookMode.Deep);
-			if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
-				if (parts.RemoveAll((ScenPart x) => x == null) != 0)
+				if (surfaceLayer == null)
 				{
-					Log.Warning("Some ScenParts were null after loading.");
+					surfaceLayer = new ScenPart_PlanetLayer
+					{
+						def = ScenPartDefOf.PlanetLayerFixed,
+						layer = PlanetLayerDefOf.Surface,
+						settingsDef = PlanetLayerSettingsDefOf.Surface,
+						hide = true,
+						tag = "Surface"
+					};
 				}
-				if (parts.RemoveAll((ScenPart x) => x.HasNullDefs()) != 0)
+				if (ModsConfig.OdysseyActive && !parts.Any((ScenPart p) => p is ScenPart_PlanetLayer scenPart_PlanetLayer2 && scenPart_PlanetLayer2.tag == "Orbit"))
 				{
-					Log.Warning("Some ScenParts had null defs.");
+					ScenPart_PlanetLayer scenPart_PlanetLayer = new ScenPart_PlanetLayer
+					{
+						def = ScenPartDefOf.PlanetLayerFixed,
+						layer = PlanetLayerDefOf.Orbit,
+						settingsDef = PlanetLayerSettingsDefOf.Orbit,
+						hide = true,
+						tag = "Orbit"
+					};
+					parts.Add(scenPart_PlanetLayer);
+					surfaceLayer.connections.Add(new LayerConnection
+					{
+						tag = scenPart_PlanetLayer.tag,
+						zoomMode = LayerConnection.ZoomMode.ZoomOut
+					});
+					scenPart_PlanetLayer.connections.Add(new LayerConnection
+					{
+						tag = surfaceLayer.tag,
+						zoomMode = LayerConnection.ZoomMode.ZoomIn
+					});
 				}
 			}
+			if (Scribe.mode == LoadSaveMode.PostLoadInit && parts.RemoveAll((ScenPart p) => p == null || !p.Valid()) != 0)
+			{
+				Log.Warning("Some scenario parts were null or invalid after loading");
+			}
+			BackCompatibility.PostExposeData(this);
 		}
 
 		public IEnumerable<string> ConfigErrors()
@@ -119,8 +172,21 @@ namespace RimWorld
 			{
 				yield return "no playerFaction";
 			}
+			if (surfaceLayer == null)
+			{
+				yield return "no surfaceLayer";
+			}
+			else if (!surfaceLayer.layer.layerType.SameOrSubclassOf<SurfaceLayer>())
+			{
+				yield return "surfaceLayer layer type " + surfaceLayer.layer.layerType.Name + " is not the same or a subclass of SurfaceLayer";
+			}
 			foreach (ScenPart allPart in AllParts)
 			{
+				if (allPart == null)
+				{
+					yield return "scenario has null part";
+					continue;
+				}
 				foreach (string item in allPart.ConfigErrors())
 				{
 					yield return item;
@@ -171,6 +237,7 @@ namespace RimWorld
 			scenario.summary = summary;
 			scenario.description = description;
 			scenario.playerFaction = (ScenPart_PlayerFaction)playerFaction.CopyForEditing();
+			scenario.surfaceLayer = (ScenPart_PlanetLayer)surfaceLayer.CopyForEditing();
 			scenario.parts.AddRange(parts.Select((ScenPart p) => p.CopyForEditing()));
 			scenario.categoryInt = ScenarioCategory.CustomLocal;
 			return scenario;
@@ -184,12 +251,19 @@ namespace RimWorld
 			}
 		}
 
-		public Page GetFirstConfigPage()
+		public virtual Page GetFirstConfigPage()
 		{
 			List<Page> list = new List<Page>();
 			list.Add(new Page_SelectStoryteller());
 			list.Add(new Page_CreateWorldParams());
-			list.Add(new Page_SelectStartingSite());
+			if (!parts.Any((ScenPart p) => p is ScenPart_ForcedMap))
+			{
+				list.Add(new Page_SelectStartingSite());
+			}
+			if (ModsConfig.IdeologyActive)
+			{
+				list.Add(new Page_ChooseIdeoPreset());
+			}
 			foreach (Page item in parts.SelectMany((ScenPart p) => p.GetConfigPages()))
 			{
 				list.Add(item);
@@ -202,10 +276,7 @@ namespace RimWorld
 				{
 					page2 = page2.next;
 				}
-				page2.nextAct = delegate
-				{
-					PageUtility.InitGameStart();
-				};
+				page2.nextAct = PageUtility.InitGameStart;
 			}
 			return page;
 		}
@@ -254,6 +325,14 @@ namespace RimWorld
 			}
 		}
 
+		public void PostIdeoChosen()
+		{
+			foreach (ScenPart allPart in AllParts)
+			{
+				allPart.PostIdeoChosen();
+			}
+		}
+
 		public void PreMapGenerate()
 		{
 			foreach (ScenPart allPart in AllParts)
@@ -278,6 +357,22 @@ namespace RimWorld
 			}
 		}
 
+		public void PostGravshipLanded(Map map)
+		{
+			foreach (ScenPart allPart in AllParts)
+			{
+				allPart.PostGravshipLanded(map);
+			}
+		}
+
+		public void MapRemoved(Map map)
+		{
+			foreach (ScenPart allPart in AllParts)
+			{
+				allPart.MapRemoved(map);
+			}
+		}
+
 		public void PostGameStart()
 		{
 			foreach (ScenPart allPart in AllParts)
@@ -291,8 +386,7 @@ namespace RimWorld
 			float num = 1f;
 			for (int i = 0; i < parts.Count; i++)
 			{
-				ScenPart_StatFactor scenPart_StatFactor = parts[i] as ScenPart_StatFactor;
-				if (scenPart_StatFactor != null)
+				if (parts[i] is ScenPart_StatFactor scenPart_StatFactor)
 				{
 					num *= scenPart_StatFactor.GetStatFactor(stat);
 				}
@@ -384,9 +478,9 @@ namespace RimWorld
 				directoryInfo.Delete();
 			}
 			directoryInfo.Create();
-			string str = Path.Combine(tempUploadDir, name);
-			str += ".rsc";
-			GameDataSaveLoader.SaveScenario(this, str);
+			string text = Path.Combine(tempUploadDir, name);
+			text += ".rsc";
+			GameDataSaveLoader.SaveScenario(this, text);
 		}
 
 		public AcceptanceReport TryUploadReport()
@@ -429,10 +523,7 @@ namespace RimWorld
 
 		public IList<string> GetWorkshopTags()
 		{
-			return new List<string>
-			{
-				"Scenario"
-			};
+			return new List<string> { "Scenario" };
 		}
 
 		public DirectoryInfo GetWorkshopUploadDirectory()
@@ -473,7 +564,15 @@ namespace RimWorld
 			{
 				num ^= description.GetHashCode();
 			}
-			return num ^ publishedFileIdInt.GetHashCode();
+			num ^= publishedFileIdInt.GetHashCode();
+			for (int i = 0; i < parts.Count; i++)
+			{
+				if (parts[i] != null)
+				{
+					num ^= parts[i].GetHashCode() + i;
+				}
+			}
+			return num;
 		}
 	}
 }

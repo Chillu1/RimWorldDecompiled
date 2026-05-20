@@ -5,7 +5,7 @@ using Verse.AI.Group;
 
 namespace RimWorld
 {
-	public class Hive : ThingWithComps, IAttackTarget, ILoadReferenceable
+	public class Hive : Building, IAttackTarget, ILoadReferenceable
 	{
 		public const int PawnSpawnRadius = 2;
 
@@ -53,6 +53,10 @@ namespace RimWorld
 			spawnablePawnKinds.Add(PawnKindDefOf.Megascarab);
 			spawnablePawnKinds.Add(PawnKindDefOf.Spelopede);
 			spawnablePawnKinds.Add(PawnKindDefOf.Megaspider);
+			if (ModsConfig.OdysseyActive)
+			{
+				spawnablePawnKinds.Add(PawnKindDefOf.Locust);
+			}
 		}
 
 		public override void SpawnSetup(Map map, bool respawningAfterLoad)
@@ -64,9 +68,9 @@ namespace RimWorld
 			}
 		}
 
-		public override void Tick()
+		protected override void TickInterval(int delta)
 		{
-			base.Tick();
+			base.TickInterval(delta);
 			if (base.Spawned && !CompDormant.Awake && !base.Position.Fogged(base.Map))
 			{
 				CompDormant.WakeUp();
@@ -77,10 +81,20 @@ namespace RimWorld
 		{
 			Map map = base.Map;
 			base.DeSpawn(mode);
-			List<Lord> lords = map.lordManager.lords;
-			for (int i = 0; i < lords.Count; i++)
+			if (HiveUtility.TotalSpawnedHivesCount(map, filterFogged: true) == 0)
 			{
-				lords[i].ReceiveMemo(MemoDeSpawned);
+				foreach (Pawn item in map.mapPawns.FreeColonistsSpawned)
+				{
+					item.needs?.mood?.thoughts?.memories?.TryGainMemory(ThoughtDefOf.DefeatedInsectHive);
+				}
+			}
+			if (map.generatorDef != MapGeneratorDefOf.InsectLair)
+			{
+				List<Lord> lords = map.lordManager.lords;
+				for (int i = 0; i < lords.Count; i++)
+				{
+					lords[i].ReceiveMemo(MemoDeSpawned);
+				}
 			}
 			HiveUtility.Notify_HiveDespawned(this, map);
 		}
@@ -93,8 +107,7 @@ namespace RimWorld
 				List<Thing> list = base.Map.listerThings.ThingsOfDef(def);
 				for (int i = 0; i < list.Count; i++)
 				{
-					Hive hive;
-					if ((hive = list[i] as Hive) != null && hive != this && hive.CompDormant.Awake && !hive.questTags.NullOrEmpty() && QuestUtility.AnyMatchingTags(hive.questTags, questTags))
+					if (list[i] is Hive hive && hive != this && hive.CompDormant.Awake && !hive.questTags.NullOrEmpty() && QuestUtility.AnyMatchingTags(hive.questTags, questTags))
 					{
 						flag = true;
 						break;

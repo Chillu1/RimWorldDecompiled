@@ -11,7 +11,7 @@ namespace RimWorld
 		public override void Initialize(CompProperties props)
 		{
 			base.Initialize(props);
-			gender = Gender.Male;
+			gender = (Rand.Bool ? Gender.Male : Gender.Female);
 		}
 
 		public override void PostExposeData()
@@ -22,7 +22,7 @@ namespace RimWorld
 
 		public override IEnumerable<Gizmo> CompGetGizmosExtra()
 		{
-			if (!Prefs.DevMode)
+			if (!Prefs.DevMode || !DebugSettings.godMode)
 			{
 				yield break;
 			}
@@ -47,7 +47,7 @@ namespace RimWorld
 		public override void CompTick()
 		{
 			base.CompTick();
-			if (!base.Active || base.MyTile == -1)
+			if (!Active || !base.MyTile.Valid)
 			{
 				return;
 			}
@@ -80,7 +80,7 @@ namespace RimWorld
 			return text + ("AffectedGender".Translate() + ": " + gender.GetLabel().CapitalizeFirst());
 		}
 
-		public override void RandomizeSettings_NewTemp_NewTemp(Site site)
+		public override void RandomizeSettings(Site site)
 		{
 			gender = (Rand.Bool ? Gender.Male : Gender.Female);
 		}

@@ -18,6 +18,8 @@ namespace RimWorld
 
 		public const float FallRateFactorWhenVeryLow = 0.4f;
 
+		public const float FallRateFactorWhenFormingCaravan = 0.5f;
+
 		public const float ToleranceGainPerJoy = 0.65f;
 
 		public const float BoredStartToleranceThreshold = 0.5f;

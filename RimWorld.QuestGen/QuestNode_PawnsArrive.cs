@@ -25,6 +25,8 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<RulePack> customLetterTextRules;
 
+		public SlateRef<LetterDef> customLetterDef;
+
 		public SlateRef<bool> isSingleReward;
 
 		public SlateRef<bool> rewardDetailsHidden;
@@ -50,6 +52,7 @@ namespace RimWorld.QuestGen
 			pawnsArrive.arrivalMode = pawnsArrivalModeDef;
 			pawnsArrive.joinPlayer = joinPlayer.GetValue(slate);
 			pawnsArrive.mapParent = QuestGen.slate.Get<Map>("map").Parent;
+			pawnsArrive.customLetterDef = customLetterDef.GetValue(slate);
 			if (pawnsArrivalModeDef.walkIn)
 			{
 				pawnsArrive.spawnNear = walkInSpot.GetValue(slate) ?? QuestGen.slate.Get<IntVec3?>("walkInSpot") ?? IntVec3.Invalid;

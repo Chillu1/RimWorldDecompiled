@@ -85,8 +85,8 @@ namespace RimWorld
 
 		public void NotifyDrawersForWireUpdate(IntVec3 root)
 		{
-			map.mapDrawer.MapMeshDirty(root, MapMeshFlag.Things, regenAdjacentCells: true, regenAdjacentSections: false);
-			map.mapDrawer.MapMeshDirty(root, MapMeshFlag.PowerGrid, regenAdjacentCells: true, regenAdjacentSections: false);
+			map.mapDrawer.MapMeshDirty(root, MapMeshFlagDefOf.Things, regenAdjacentCells: true, regenAdjacentSections: false);
+			map.mapDrawer.MapMeshDirty(root, MapMeshFlagDefOf.PowerGrid, regenAdjacentCells: true, regenAdjacentSections: true);
 		}
 
 		public void RegisterPowerNet(PowerNet newNet)
@@ -128,7 +128,7 @@ namespace RimWorld
 					ThingWithComps parent = delayedAction.compPower.parent;
 					if (map.powerNetGrid.TransmittedPowerNetAt(parent.Position) != null)
 					{
-						Log.Warning(string.Concat("Tried to register trasmitter ", parent, " at ", parent.Position, ", but there is already a power net here. There can't be two transmitters on the same cell."));
+						Log.Warning("Tried to register trasmitter " + parent?.ToString() + " at " + parent.Position.ToString() + ", but there is already a power net here. There can't be two transmitters on the same cell.");
 					}
 					delayedAction.compPower.SetUpPowerVars();
 					foreach (IntVec3 item in GenAdj.CellsAdjacentCardinal(parent))
@@ -147,7 +147,7 @@ namespace RimWorld
 			for (int j = 0; j < count; j++)
 			{
 				DelayedAction delayedAction2 = delayedActions[j];
-				if ((delayedAction2.type != 0 || !(delayedAction2.position == delayedAction2.compPower.parent.Position)) && delayedAction2.type != DelayedActionType.DeregisterTransmitter)
+				if ((delayedAction2.type != DelayedActionType.RegisterTransmitter || !(delayedAction2.position == delayedAction2.compPower.parent.Position)) && delayedAction2.type != DelayedActionType.DeregisterTransmitter)
 				{
 					continue;
 				}

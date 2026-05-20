@@ -12,13 +12,25 @@ namespace RimWorld
 
 		public override IEnumerable<FiringIncident> MakeIntervalIncidents(IIncidentTarget target)
 		{
-			if (!DebugSettings.enableRandomDiseases || target is World || Find.Storyteller.difficultyValues.diseaseIntervalFactor >= 100f)
+			if (!DebugSettings.enableRandomDiseases || target is World || Find.Storyteller.difficulty.diseaseIntervalFactor >= 100f)
 			{
 				yield break;
 			}
-			BiomeDef biome = Find.WorldGrid[target.Tile].biome;
+			BiomeDef biome;
+			if (target is Map map)
+			{
+				biome = map.Biome;
+			}
+			else
+			{
+				biome = Find.WorldGrid[target.Tile]?.PrimaryBiome;
+			}
+			if (biome == null)
+			{
+				yield break;
+			}
 			float diseaseMtbDays = biome.diseaseMtbDays;
-			diseaseMtbDays *= Find.Storyteller.difficultyValues.diseaseIntervalFactor;
+			diseaseMtbDays *= Find.Storyteller.difficulty.diseaseIntervalFactor;
 			if (target is Caravan)
 			{
 				diseaseMtbDays *= CaravanDiseaseMTBFactor;

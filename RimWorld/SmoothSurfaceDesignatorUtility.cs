@@ -40,5 +40,38 @@ namespace RimWorld
 				}
 			}
 		}
+
+		public static bool DesignateSmoothWall(Map map, IntVec3 c)
+		{
+			Building edifice = c.GetEdifice(map);
+			if (edifice != null && edifice.def.IsSmoothable)
+			{
+				if (DebugSettings.godMode)
+				{
+					SmoothableWallUtility.Notify_SmoothedByPawn(SmoothableWallUtility.SmoothWall(edifice, null), null);
+				}
+				else
+				{
+					map.designationManager.AddDesignation(new Designation(c, DesignationDefOf.SmoothWall));
+					map.designationManager.TryRemoveDesignation(c, DesignationDefOf.Mine);
+				}
+				return true;
+			}
+			return false;
+		}
+
+		public static void DesignateSmoothFloor(Map map, IntVec3 c)
+		{
+			if (DebugSettings.godMode)
+			{
+				TerrainDef smoothedTerrain = c.GetTerrain(map).smoothedTerrain;
+				map.terrainGrid.SetTerrain(c, smoothedTerrain);
+				FilthMaker.RemoveAllFilth(c, map);
+			}
+			else
+			{
+				map.designationManager.AddDesignation(new Designation(c, DesignationDefOf.SmoothFloor));
+			}
+		}
 	}
 }

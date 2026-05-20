@@ -13,7 +13,7 @@ namespace Verse
 
 		public static bool CorrectContextNow(SoundDef def, Map sourceMap)
 		{
-			if (sourceMap != null && (Find.CurrentMap != sourceMap || WorldRendererUtility.WorldRenderedNow))
+			if (sourceMap != null && (Find.CurrentMap != sourceMap || WorldRendererUtility.WorldSelected))
 			{
 				return false;
 			}
@@ -24,11 +24,11 @@ namespace Verse
 			case SoundContext.MapOnly:
 				if (Current.ProgramState == ProgramState.Playing)
 				{
-					return !WorldRendererUtility.WorldRenderedNow;
+					return WorldRendererUtility.DrawingMap;
 				}
 				return false;
 			case SoundContext.WorldOnly:
-				return WorldRendererUtility.WorldRenderedNow;
+				return WorldRendererUtility.WorldSelected;
 			default:
 				throw new NotImplementedException();
 			}

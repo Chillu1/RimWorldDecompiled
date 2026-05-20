@@ -1,7 +1,12 @@
+using System;
+using System.Text.RegularExpressions;
+
 namespace Verse
 {
 	public class LanguageWorker_German : LanguageWorker
 	{
+		private static readonly LanguageWorker_English englishWorker = new LanguageWorker_English();
+
 		public override string WithIndefiniteArticle(string str, Gender gender, bool plural = false, bool name = false)
 		{
 			if (name)
@@ -10,9 +15,9 @@ namespace Verse
 			}
 			return gender switch
 			{
+				Gender.None => "ein " + str, 
 				Gender.Male => "ein " + str, 
 				Gender.Female => "eine " + str, 
-				Gender.None => "ein " + str, 
 				_ => str, 
 			};
 		}
@@ -25,11 +30,37 @@ namespace Verse
 			}
 			return gender switch
 			{
+				Gender.None => "das " + str, 
 				Gender.Male => "der " + str, 
 				Gender.Female => "die " + str, 
-				Gender.None => "das " + str, 
 				_ => str, 
 			};
+		}
+
+		public override string PostProcessed(string str)
+		{
+			str = base.PostProcessed(str);
+			return Regex.Replace(str, "(.)(.)(\\(/Name\\)|</color>)?'s(?=\\s|$)", delegate(Match m)
+			{
+				string value = m.Groups[1].Value;
+				string value2 = m.Groups[2].Value;
+				string value3 = m.Groups[3].Value;
+				switch (value2)
+				{
+				default:
+					if (!(value == "c") || !(value2 == "e"))
+					{
+						break;
+					}
+					goto case "s";
+				case "s":
+				case "ß":
+				case "z":
+				case "x":
+					return value + value2 + value3 + "'";
+				}
+				return value + value2 + value3 + "s";
+			}, RegexOptions.Compiled);
 		}
 
 		public override string OrdinalNumber(int number, Gender gender = Gender.None)
@@ -39,92 +70,32 @@ namespace Verse
 
 		public override string Pluralize(string str, Gender gender, int count = -1)
 		{
-			if (str.NullOrEmpty())
+			return englishWorker.Pluralize(str, gender, count);
+		}
+
+		public override string PostProcessThingLabelForRelic(string thingLabel)
+		{
+			char[] anyOf = new char[2] { ' ', '-' };
+			int num = thingLabel.LastIndexOfAny(anyOf);
+			if (num != -1)
 			{
-				return str;
+				thingLabel = thingLabel.Substring(num + 1);
 			}
-			char c = str[str.Length - 1];
-			char c2 = ((str.Length >= 2) ? str[str.Length - 2] : '\0');
-			switch (gender)
+			string[] array = new string[26]
 			{
-			case Gender.Male:
-				if (c == 'r' && c2 == 'e')
+				"Horn", "Lanze", "Pulser", "Werfer", "Axt", "Flinte", "Bogen", "Revolver", "Gewehr", "Stoßzahn",
+				"Stab", "Hammer", "Schwert", "Pistole", "Dolch", "Büchse", "Kanone", "Granaten", "Granate", "Keule",
+				"Säbel", "Messer", "Rapier", "Klinge", "Sense", "Speer"
+			};
+			foreach (string text in array)
+			{
+				if (thingLabel.EndsWith(text, StringComparison.OrdinalIgnoreCase))
 				{
-					return str;
-				}
-				if (c == 'l' && c2 == 'e')
-				{
-					return str;
-				}
-				if (c == 'R' && c2 == 'E')
-				{
-					return str;
-				}
-				if (c == 'L' && c2 == 'E')
-				{
-					return str;
-				}
-				if (char.IsUpper(c))
-				{
-					return str + "E";
-				}
-				return str + "e";
-			case Gender.Female:
-				switch (c)
-				{
-				case 'e':
-					return str + "n";
-				case 'E':
-					return str + "N";
-				case 'n':
-					if (c2 == 'i')
-					{
-						return str + "nen";
-					}
+					thingLabel = text;
 					break;
 				}
-				if (c == 'N' && c2 == 'I')
-				{
-					return str + "NEN";
-				}
-				if (char.IsUpper(c))
-				{
-					return str + "EN";
-				}
-				return str + "en";
-			case Gender.None:
-				if (c == 'r' && c2 == 'e')
-				{
-					return str;
-				}
-				if (c == 'l' && c2 == 'e')
-				{
-					return str;
-				}
-				if (c == 'n' && c2 == 'e')
-				{
-					return str;
-				}
-				if (c == 'R' && c2 == 'E')
-				{
-					return str;
-				}
-				if (c == 'L' && c2 == 'E')
-				{
-					return str;
-				}
-				if (c == 'N' && c2 == 'E')
-				{
-					return str;
-				}
-				if (char.IsUpper(c))
-				{
-					return str + "EN";
-				}
-				return str + "en";
-			default:
-				return str;
 			}
+			return thingLabel;
 		}
 	}
 }

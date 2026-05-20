@@ -7,8 +7,6 @@ namespace Verse
 	{
 		private const int BaseTicksPerFrameChange = 15;
 
-		private const int ExtraTicksPerFrameChange = 10;
-
 		private const float MaxOffset = 0.05f;
 
 		public override Material MatSingle => subGraphics[Rand.Range(0, subGraphics.Length)].MatSingle;
@@ -17,7 +15,8 @@ namespace Verse
 		{
 			if (thingDef == null)
 			{
-				Log.ErrorOnce("Fire DrawWorker with null thingDef: " + loc, 3427324);
+				Vector3 vector = loc;
+				Log.ErrorOnce("Fire DrawWorker with null thingDef: " + vector.ToString(), 3427324);
 				return;
 			}
 			if (subGraphics == null)
@@ -33,19 +32,32 @@ namespace Verse
 			int num2 = num / 15;
 			int num3 = Mathf.Abs(num2 ^ ((thing?.thingIDNumber ?? 0) * 391)) % subGraphics.Length;
 			float num4 = 1f;
-			CompProperties_FireOverlay compProperties_FireOverlay = null;
+			CompFireOverlayBase compFireOverlayBase = null;
 			Fire fire = thing as Fire;
+			CompProperties_FireOverlay compProperties = thingDef.GetCompProperties<CompProperties_FireOverlay>();
 			if (fire != null)
 			{
 				num4 = fire.fireSize;
 			}
-			else if (thingDef != null)
+			else if (thing != null)
 			{
-				compProperties_FireOverlay = thingDef.GetCompProperties<CompProperties_FireOverlay>();
-				if (compProperties_FireOverlay != null)
+				compFireOverlayBase = thing.TryGetComp<CompFireOverlayBase>();
+				if (compFireOverlayBase != null)
 				{
-					num4 = compProperties_FireOverlay.fireSize;
+					num4 = compFireOverlayBase.FireSize;
 				}
+				else
+				{
+					compFireOverlayBase = thing.TryGetComp<CompDarklightOverlay>();
+					if (compFireOverlayBase != null)
+					{
+						num4 = compFireOverlayBase.FireSize;
+					}
+				}
+			}
+			else if (compProperties != null)
+			{
+				num4 = compProperties.fireSize;
 			}
 			if (num3 < 0 || num3 >= subGraphics.Length)
 			{
@@ -53,13 +65,17 @@ namespace Verse
 				num3 = 0;
 			}
 			Graphic graphic = subGraphics[num3];
-			float num5 = Mathf.Min(num4 / 1.2f, 1.2f);
-			Vector3 a = GenRadial.RadialPattern[num2 % GenRadial.RadialPattern.Length].ToVector3() / GenRadial.MaxRadialPatternRadius;
-			a *= 0.05f;
-			Vector3 pos = loc + a * num4;
-			if (compProperties_FireOverlay != null)
+			float num5 = ((compFireOverlayBase == null) ? Mathf.Min(num4 / 1.2f, 1.2f) : num4);
+			Vector3 vector2 = GenRadial.RadialPattern[num2 % GenRadial.RadialPattern.Length].ToVector3() / GenRadial.MaxRadialPatternRadius;
+			vector2 *= 0.05f;
+			Vector3 pos = loc + vector2 * num4;
+			if (thing?.Graphic?.data != null)
 			{
-				pos += compProperties_FireOverlay.offset;
+				pos += thing.Graphic.data.DrawOffsetForRot(rot);
+			}
+			if (compFireOverlayBase != null)
+			{
+				pos += compFireOverlayBase.Props.DrawOffsetForRot(rot);
 			}
 			Vector3 s = new Vector3(num5, 1f, num5);
 			Matrix4x4 matrix = default(Matrix4x4);
@@ -69,7 +85,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "Flicker(subGraphic[0]=" + subGraphics[0].ToString() + ", count=" + subGraphics.Length + ")";
+			return "Flicker(subGraphic[0]=" + subGraphics[0]?.ToString() + ", count=" + subGraphics.Length + ")";
 		}
 	}
 }

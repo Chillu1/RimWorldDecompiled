@@ -73,7 +73,8 @@ namespace Verse
 				name = "NewShadowMesh()",
 				vertices = vertsList.ToArray(),
 				colors32 = colorsList.ToArray(),
-				triangles = trianglesList.ToArray()
+				triangles = trianglesList.ToArray(),
+				bounds = new Bounds(Vector3.zero, new Vector3(1000f, 1000f, 1000f))
 			};
 		}
 	}

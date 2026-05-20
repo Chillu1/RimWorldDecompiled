@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 using Verse;
 
@@ -27,11 +28,20 @@ namespace RimWorld
 			Rect mainRect = GetMainRect(rect);
 			Storyteller storyteller = Current.Game.storyteller;
 			StorytellerDef def = Current.Game.storyteller.def;
-			StorytellerUI.DrawStorytellerSelectionInterface_NewTemp(mainRect, ref storyteller.def, ref storyteller.difficulty, ref storyteller.difficultyValues, selectedStorytellerInfoListing);
+			StorytellerUI.DrawStorytellerSelectionInterface(mainRect, ref storyteller.def, ref storyteller.difficultyDef, ref storyteller.difficulty, selectedStorytellerInfoListing);
 			if (storyteller.def != def)
 			{
 				storyteller.Notify_DefChanged();
 			}
+		}
+
+		public override void PreClose()
+		{
+			foreach (ThingDef item in DefDatabase<ThingDef>.AllDefs.Where((ThingDef x) => x.costListForDifficulty != null))
+			{
+				item.costListForDifficulty.RecacheApplies();
+			}
+			RecipeDefGenerator.ResetRecipeIngredientsForDifficulty();
 		}
 	}
 }

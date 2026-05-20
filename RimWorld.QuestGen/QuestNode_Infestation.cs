@@ -24,11 +24,15 @@ namespace RimWorld.QuestGen
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			if (!Find.Storyteller.difficultyValues.allowViolentQuests)
+			if (!Find.Storyteller.difficulty.allowViolentQuests)
 			{
 				return false;
 			}
 			if (!slate.Exists("map"))
+			{
+				return false;
+			}
+			if (Faction.OfInsects == null)
 			{
 				return false;
 			}

@@ -51,37 +51,41 @@ namespace RimWorld
 		public static void CancelCountdown()
 		{
 			timeLeft = -1000f;
+			ScreenFader.SetColor(Color.clear);
 		}
 
 		private static void CountdownEnded()
 		{
 			if (shipRoot != null)
 			{
+				TaggedString taggedString = "GameOverShipLaunchedEnding".Translate();
 				List<Building> list = ShipUtility.ShipBuildingsAttachedTo(shipRoot).ToList();
 				StringBuilder stringBuilder = new StringBuilder();
 				foreach (Building item in list)
 				{
-					Building_CryptosleepCasket building_CryptosleepCasket = item as Building_CryptosleepCasket;
-					if (building_CryptosleepCasket != null && building_CryptosleepCasket.HasAnyContents)
+					if (item is Building_CryptosleepCasket { HasAnyContents: not false } building_CryptosleepCasket)
 					{
 						stringBuilder.AppendLine("   " + building_CryptosleepCasket.ContainedThing.LabelCap);
 						Find.StoryWatcher.statsRecord.colonistsLaunched++;
 						TaleRecorder.RecordTale(TaleDefOf.LaunchedShip, building_CryptosleepCasket.ContainedThing);
 					}
 				}
-				GameVictoryUtility.ShowCredits(GameVictoryUtility.MakeEndCredits("GameOverShipLaunchedIntro".Translate(), "GameOverShipLaunchedEnding".Translate(), stringBuilder.ToString()));
-				foreach (Building item2 in list)
+				GameVictoryUtility.ShowCredits(GameVictoryUtility.MakeEndCredits("GameOverShipLaunchedIntro".Translate(), taggedString, stringBuilder.ToString()), SongDefOf.EndCreditsSong);
 				{
-					item2.Destroy();
+					foreach (Building item2 in list)
+					{
+						item2.Destroy();
+					}
+					return;
 				}
 			}
-			else if (!customLaunchString.NullOrEmpty())
+			if (!customLaunchString.NullOrEmpty())
 			{
-				GameVictoryUtility.ShowCredits(customLaunchString);
+				GameVictoryUtility.ShowCredits(customLaunchString, SongDefOf.EndCreditsSong);
 			}
 			else
 			{
-				GameVictoryUtility.ShowCredits(GameVictoryUtility.MakeEndCredits("GameOverShipLaunchedIntro".Translate(), "GameOverShipLaunchedEnding".Translate(), null));
+				GameVictoryUtility.ShowCredits(GameVictoryUtility.MakeEndCredits("GameOverShipLaunchedIntro".Translate(), "GameOverShipLaunchedEnding".Translate(), null), SongDefOf.EndCreditsSong);
 			}
 		}
 	}

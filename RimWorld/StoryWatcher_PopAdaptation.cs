@@ -16,7 +16,7 @@ namespace RimWorld
 			{
 				if (DebugViewSettings.writeStoryteller)
 				{
-					Log.Message(string.Concat("PopAdaptation event: ", ev, " - ", p));
+					Log.Message("PopAdaptation event: " + ev.ToString() + " - " + p);
 				}
 				if (ev == PopAdaptationEvent.GainedColonist)
 				{
@@ -42,6 +42,11 @@ namespace RimWorld
 		public void Debug_OffsetAdaptDays(float days)
 		{
 			adaptDays += days;
+		}
+
+		public void ResetAdaptDays()
+		{
+			adaptDays = 0f;
 		}
 	}
 }

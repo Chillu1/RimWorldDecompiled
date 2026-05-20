@@ -11,10 +11,13 @@ namespace RimWorld
 			List<Trait> allTraits = pawn.story.traits.allTraits;
 			for (int i = 0; i < allTraits.Count; i++)
 			{
-				ThinkTreeDef thinkTree = allTraits[i].CurrentData.thinkTree;
-				if (thinkTree != null)
+				if (!allTraits[i].Suppressed)
 				{
-					return thinkTree.thinkRoot.TryIssueJobPackage(pawn, jobParams);
+					ThinkTreeDef thinkTree = allTraits[i].CurrentData.thinkTree;
+					if (thinkTree != null)
+					{
+						return thinkTree.thinkRoot.TryIssueJobPackage(pawn, jobParams);
+					}
 				}
 			}
 			return ThinkResult.NoJob;

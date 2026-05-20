@@ -3,6 +3,7 @@ namespace RimWorld
 	public enum PlayerPawnsArriveMethod
 	{
 		Standing,
-		DropPods
+		DropPods,
+		Gravship
 	}
 }

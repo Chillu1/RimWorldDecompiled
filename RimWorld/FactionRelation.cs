@@ -7,30 +7,41 @@ namespace RimWorld
 	{
 		public Faction other;
 
-		public int goodwill = 100;
+		public int baseGoodwill = 100;
 
 		public FactionRelationKind kind = FactionRelationKind.Neutral;
 
+		public FactionRelation()
+		{
+		}
+
+		public FactionRelation(Faction other, FactionRelationKind kind)
+		{
+			this.other = other;
+			this.kind = kind;
+		}
+
 		public void CheckKindThresholds(Faction faction, bool canSendLetter, string reason, GlobalTargetInfo lookTarget, out bool sentLetter)
 		{
+			int num = faction.GoodwillWith(other);
 			FactionRelationKind previousKind = kind;
 			sentLetter = false;
-			if (kind != 0 && goodwill <= -75)
+			if (kind != FactionRelationKind.Hostile && num <= -75)
 			{
 				kind = FactionRelationKind.Hostile;
 				faction.Notify_RelationKindChanged(other, previousKind, canSendLetter, reason, lookTarget, out sentLetter);
 			}
-			if (kind != FactionRelationKind.Ally && goodwill >= 75)
+			if (kind != FactionRelationKind.Ally && num >= 75)
 			{
 				kind = FactionRelationKind.Ally;
 				faction.Notify_RelationKindChanged(other, previousKind, canSendLetter, reason, lookTarget, out sentLetter);
 			}
-			if (kind == FactionRelationKind.Hostile && goodwill >= 0)
+			if (kind == FactionRelationKind.Hostile && num >= 0)
 			{
 				kind = FactionRelationKind.Neutral;
 				faction.Notify_RelationKindChanged(other, previousKind, canSendLetter, reason, lookTarget, out sentLetter);
 			}
-			if (kind == FactionRelationKind.Ally && goodwill <= 0)
+			if (kind == FactionRelationKind.Ally && num <= 0)
 			{
 				kind = FactionRelationKind.Neutral;
 				faction.Notify_RelationKindChanged(other, previousKind, canSendLetter, reason, lookTarget, out sentLetter);
@@ -40,14 +51,14 @@ namespace RimWorld
 		public void ExposeData()
 		{
 			Scribe_References.Look(ref other, "other");
-			Scribe_Values.Look(ref goodwill, "goodwill", 0);
 			Scribe_Values.Look(ref kind, "kind", FactionRelationKind.Neutral);
+			Scribe_Values.Look(ref baseGoodwill, "goodwill", 0);
 			BackCompatibility.PostExposeData(this);
 		}
 
 		public override string ToString()
 		{
-			return string.Concat("(", other, ", goodwill=", goodwill.ToString("F1"), ", kind=", kind, ")");
+			return "(" + other?.ToString() + ", kind=" + kind.ToString() + ")";
 		}
 	}
 }

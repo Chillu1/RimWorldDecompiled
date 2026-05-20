@@ -6,6 +6,8 @@ namespace Verse.AI.Group
 
 		private float? wanderRadius;
 
+		private float? defendRadius;
+
 		private bool isCaravanSendable;
 
 		private bool addFleeToil;
@@ -18,10 +20,11 @@ namespace Verse.AI.Group
 		{
 		}
 
-		public LordJob_DefendPoint(IntVec3 point, float? wanderRadius = null, bool isCaravanSendable = false, bool addFleeToil = true)
+		public LordJob_DefendPoint(IntVec3 point, float? wanderRadius = null, float? defendRadius = null, bool isCaravanSendable = false, bool addFleeToil = true)
 		{
 			this.point = point;
 			this.wanderRadius = wanderRadius;
+			this.defendRadius = defendRadius;
 			this.isCaravanSendable = isCaravanSendable;
 			this.addFleeToil = addFleeToil;
 		}
@@ -29,7 +32,7 @@ namespace Verse.AI.Group
 		public override StateGraph CreateGraph()
 		{
 			StateGraph stateGraph = new StateGraph();
-			stateGraph.AddToil(new LordToil_DefendPoint(point, 28f, wanderRadius));
+			stateGraph.AddToil(new LordToil_DefendPoint(point, wanderRadius: wanderRadius, defendRadius: defendRadius));
 			return stateGraph;
 		}
 
@@ -37,6 +40,7 @@ namespace Verse.AI.Group
 		{
 			Scribe_Values.Look(ref point, "point");
 			Scribe_Values.Look(ref wanderRadius, "wanderRadius");
+			Scribe_Values.Look(ref defendRadius, "defendRadius");
 			Scribe_Values.Look(ref isCaravanSendable, "isCaravanSendable", defaultValue: false);
 			Scribe_Values.Look(ref addFleeToil, "addFleeToil", defaultValue: false);
 		}

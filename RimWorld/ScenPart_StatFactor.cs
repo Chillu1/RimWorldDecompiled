@@ -61,8 +61,7 @@ namespace RimWorld
 
 		public override bool TryMerge(ScenPart other)
 		{
-			ScenPart_StatFactor scenPart_StatFactor = other as ScenPart_StatFactor;
-			if (scenPart_StatFactor != null && scenPart_StatFactor.stat == stat)
+			if (other is ScenPart_StatFactor scenPart_StatFactor && scenPart_StatFactor.stat == stat)
 			{
 				factor *= scenPart_StatFactor.factor;
 				return true;
@@ -77,6 +76,20 @@ namespace RimWorld
 				return factor;
 			}
 			return 1f;
+		}
+
+		public override bool HasNullDefs()
+		{
+			if (!base.HasNullDefs())
+			{
+				return stat == null;
+			}
+			return true;
+		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode() ^ ((stat != null) ? stat.GetHashCode() : 0) ^ factor.GetHashCode();
 		}
 	}
 }

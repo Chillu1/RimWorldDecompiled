@@ -7,7 +7,6 @@ namespace Verse
 			zoomSpeed = 0.043f;
 			zoomPreserveFactor = 1f;
 			smoothZoom = true;
-			minSize = 8.2f;
 		}
 	}
 }

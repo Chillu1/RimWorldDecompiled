@@ -8,6 +8,8 @@ namespace Verse
 {
 	public static class ThingUtility
 	{
+		private static List<IntVec3> tmpInteractionCells = new List<IntVec3>();
+
 		public static bool DestroyedOrNull(this Thing t)
 		{
 			return t?.Destroyed ?? true;
@@ -15,8 +17,7 @@ namespace Verse
 
 		public static void DestroyOrPassToWorld(this Thing t, DestroyMode mode = DestroyMode.Vanish)
 		{
-			Pawn pawn = t as Pawn;
-			if (pawn != null)
+			if (t is Pawn pawn)
 			{
 				if (!Find.WorldPawns.Contains(pawn))
 				{
@@ -51,12 +52,39 @@ namespace Verse
 			return stackCount;
 		}
 
+		public static IntVec3 InteractionCell(IntVec3 interactionOffset, IntVec3 thingCenter, Rot4 rot)
+		{
+			return interactionOffset.RotatedBy(rot) + thingCenter;
+		}
+
+		public static List<IntVec3> InteractionCellsWhenAt(ThingDef def, IntVec3 center, Rot4 rot, Map map, bool allowFallbackCell = false)
+		{
+			InteractionCellsWhenAt(tmpInteractionCells, def, center, rot, map, allowFallbackCell);
+			return tmpInteractionCells;
+		}
+
+		public static void InteractionCellsWhenAt(List<IntVec3> listToPopulate, ThingDef def, IntVec3 center, Rot4 rot, Map map, bool allowFallbackCell = false)
+		{
+			listToPopulate.Clear();
+			if (!def.multipleInteractionCellOffsets.NullOrEmpty())
+			{
+				foreach (IntVec3 multipleInteractionCellOffset in def.multipleInteractionCellOffsets)
+				{
+					listToPopulate.Add(InteractionCell(multipleInteractionCellOffset, center, rot));
+				}
+				return;
+			}
+			if (def.hasInteractionCell || allowFallbackCell)
+			{
+				listToPopulate.Add(InteractionCellWhenAt(def, center, rot, map));
+			}
+		}
+
 		public static IntVec3 InteractionCellWhenAt(ThingDef def, IntVec3 center, Rot4 rot, Map map)
 		{
 			if (def.hasInteractionCell)
 			{
-				IntVec3 b = def.interactionCellOffset.RotatedBy(rot);
-				return center + b;
+				return InteractionCell(def.interactionCellOffset, center, rot);
 			}
 			if (def.Size.x == 1 && def.Size.z == 1)
 			{
@@ -126,12 +154,13 @@ namespace Verse
 			return tools.MaxBy((Tool tool) => tool.power).Maneuvers.FirstOrDefault()?.verb.meleeDamageDef;
 		}
 
-		public static void CheckAutoRebuildOnDestroyed(Thing thing, DestroyMode mode, Map map, BuildableDef buildingDef)
+		public static Blueprint_Build CheckAutoRebuildOnDestroyed(Thing thing, DestroyMode mode, Map map, BuildableDef buildingDef)
 		{
 			if (Find.PlaySettings.autoRebuild && mode == DestroyMode.KillFinalize && thing.Faction == Faction.OfPlayer && buildingDef.blueprintDef != null && buildingDef.IsResearchFinished && map.areaManager.Home[thing.Position] && GenConstruct.CanPlaceBlueprintAt(buildingDef, thing.Position, thing.Rotation, map, godMode: false, null, null, thing.Stuff).Accepted)
 			{
-				GenConstruct.PlaceBlueprintForBuild(buildingDef, thing.Position, map, thing.Rotation, Faction.OfPlayer, thing.Stuff);
+				return GenConstruct.PlaceBlueprintForBuild(buildingDef, thing.Position, map, thing.Rotation, Faction.OfPlayer, thing.Stuff, thing.StyleSourcePrecept, thing.StyleDef);
 			}
+			return null;
 		}
 
 		public static void CheckAutoRebuildTerrainOnDestroyed(TerrainDef terrainDef, IntVec3 pos, Map map)
@@ -146,13 +175,11 @@ namespace Verse
 		{
 			for (int i = 0; i < things.Count; i++)
 			{
-				Pawn pawn = things[i] as Pawn;
-				if (pawn != null)
+				if (things[i] is Pawn result)
 				{
-					return pawn;
+					return result;
 				}
-				Corpse corpse = things[i] as Corpse;
-				if (corpse != null)
+				if (things[i] is Corpse corpse)
 				{
 					return corpse.InnerPawn;
 				}
@@ -168,6 +195,62 @@ namespace Verse
 				terrainAffordanceNeeded = stuffDef.terrainAffordanceNeeded;
 			}
 			return terrainAffordanceNeeded;
+		}
+
+		public static bool HasThingCategory(this Thing thing, ThingCategoryDef thingCategory)
+		{
+			if (thing.def.thingCategories.NullOrEmpty())
+			{
+				return false;
+			}
+			return thing.def.thingCategories.Contains(thingCategory);
+		}
+
+		public static int GetStackCountFromThingList(IEnumerable<Thing> things)
+		{
+			int num = 0;
+			foreach (Thing thing in things)
+			{
+				num += thing.stackCount;
+			}
+			return num;
+		}
+
+		public static void FindAllOfType<T>(ThingRequest request, List<T> list) where T : Thing
+		{
+			list.Clear();
+			List<Thing> list2 = Find.CurrentMap.listerThings.ThingsMatching(request);
+			for (int i = 0; i < list2.Count; i++)
+			{
+				if (list2[i] is T item)
+				{
+					list.Add(item);
+				}
+			}
+			List<Pawn> freeColonists = Find.CurrentMap.mapPawns.FreeColonists;
+			for (int j = 0; j < freeColonists.Count; j++)
+			{
+				if (freeColonists[j].carryTracker.CarriedThing is T item2)
+				{
+					list.Add(item2);
+				}
+				freeColonists[j].inventory.innerContainer.GetThingsOfType(list);
+			}
+		}
+
+		public static void FindAllOfType<T>(List<T> list) where T : Thing
+		{
+			list.Clear();
+			Find.CurrentMap.listerThings.GetThingsOfType(list);
+			List<Pawn> freeColonists = Find.CurrentMap.mapPawns.FreeColonists;
+			for (int i = 0; i < freeColonists.Count; i++)
+			{
+				if (freeColonists[i].carryTracker.CarriedThing is T item)
+				{
+					list.Add(item);
+				}
+				freeColonists[i].inventory.innerContainer.GetThingsOfType(list);
+			}
 		}
 	}
 }

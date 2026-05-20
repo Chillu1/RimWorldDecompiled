@@ -24,7 +24,7 @@ namespace RimWorld
 
 		public static bool CanGenerate(ThingDef thingDef)
 		{
-			if ((thingDef.category != ThingCategory.Item && !thingDef.Minifiable) || (thingDef.category == ThingCategory.Item && !thingDef.EverHaulable) || thingDef.isUnfinishedThing || thingDef.IsCorpse || !thingDef.PlayerAcquirable || thingDef.graphicData == null || typeof(MinifiedThing).IsAssignableFrom(thingDef.thingClass))
+			if ((thingDef.category != ThingCategory.Item && !thingDef.Minifiable) || (thingDef.category == ThingCategory.Item && !thingDef.EverHaulable) || thingDef.isUnfinishedThing || thingDef.IsCorpse || thingDef.destroyOnDrop || thingDef.graphicData == null || typeof(MinifiedThing).IsAssignableFrom(thingDef.thingClass))
 			{
 				return false;
 			}
@@ -33,18 +33,18 @@ namespace RimWorld
 
 		public static IEnumerable<ThingDef> GetAllowedThingDefs(ThingSetMakerParams parms)
 		{
-			TechLevel techLevel = parms.techLevel ?? TechLevel.Undefined;
+			TechLevel techLevel = parms.techLevel.GetValueOrDefault();
 			IEnumerable<ThingDef> source = parms.filter.AllowedThingDefs;
-			if (techLevel != 0)
+			if (techLevel != TechLevel.Undefined)
 			{
 				source = source.Where((ThingDef x) => (int)x.techLevel <= (int)techLevel);
 			}
 			RoyalTitleDef highestTitle = null;
 			if (parms.makingFaction != null && parms.makingFaction.def.HasRoyalTitles)
 			{
-				foreach (Pawn allMapsCaravansAndTravelingTransportPods_Alive_Colonist in PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_Colonists)
+				foreach (Pawn allMapsCaravansAndTravellingTransporters_Alive_Colonist in PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_Colonists)
 				{
-					RoyalTitleDef royalTitleDef = ((allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty != null) ? allMapsCaravansAndTravelingTransportPods_Alive_Colonist.royalty.GetCurrentTitle(parms.makingFaction) : null);
+					RoyalTitleDef royalTitleDef = ((allMapsCaravansAndTravellingTransporters_Alive_Colonist.royalty != null) ? allMapsCaravansAndTravellingTransporters_Alive_Colonist.royalty.GetCurrentTitle(parms.makingFaction) : null);
 					if (royalTitleDef != null && (highestTitle == null || royalTitleDef.seniority > highestTitle.seniority))
 					{
 						highestTitle = royalTitleDef;
@@ -53,6 +53,10 @@ namespace RimWorld
 			}
 			source = source.Where(delegate(ThingDef x)
 			{
+				if (!x.PlayerAcquirable)
+				{
+					return false;
+				}
 				CompProperties_Techprint compProperties = x.GetCompProperties<CompProperties_Techprint>();
 				if (compProperties != null)
 				{
@@ -73,7 +77,7 @@ namespace RimWorld
 						return false;
 					}
 				}
-				return true;
+				return (!ModsConfig.AnomalyActive || x != ThingDefOf.Tome || Find.Storyteller.difficulty.AnomalyPlaystyleDef.enableAnomalyContent) ? true : false;
 			});
 			return source.Where((ThingDef x) => CanGenerate(x) && (!parms.maxThingMarketValue.HasValue || x.BaseMarketValue <= parms.maxThingMarketValue) && (parms.validator == null || parms.validator(x)));
 		}
@@ -83,7 +87,7 @@ namespace RimWorld
 			CompQuality compQuality = thing.TryGetComp<CompQuality>();
 			if (compQuality != null)
 			{
-				QualityCategory q = QualityUtility.GenerateQuality(qualityGenerator ?? QualityGenerator.BaseGen);
+				QualityCategory q = QualityUtility.GenerateQuality(qualityGenerator.GetValueOrDefault());
 				compQuality.SetQuality(q, ArtGenerationContext.Outsider);
 			}
 		}
@@ -101,7 +105,7 @@ namespace RimWorld
 			return false;
 		}
 
-		public static float AdjustedBigCategoriesSelectionWeight(ThingDef d, int numMeats, int numLeathers)
+		public static float AdjustedBigCategoriesSelectionWeight(ThingDef d, int numMeats, int numLeathers, int numEggs)
 		{
 			float num = 1f;
 			if (d.IsMeat)
@@ -111,6 +115,10 @@ namespace RimWorld
 			if (d.IsLeather)
 			{
 				num *= Mathf.Min(5f / (float)numLeathers, 1f);
+			}
+			if (d.IsEgg)
+			{
+				num *= Mathf.Min(5f / (float)numEggs, 1f);
 			}
 			return num;
 		}
@@ -195,9 +203,12 @@ namespace RimWorld
 						num = Mathf.Min(num, thingDef.GetStatValueAbstract(StatDefOf.Mass, item));
 					}
 				}
-				return num;
 			}
-			return Mathf.Min(num, thingDef.GetStatValueAbstract(StatDefOf.Mass));
+			else
+			{
+				num = Mathf.Min(num, thingDef.GetStatValueAbstract(StatDefOf.Mass));
+			}
+			return num;
 		}
 
 		public static float GetMinMarketValue(ThingDef thingDef, TechLevel stuffTechLevel)
@@ -212,9 +223,12 @@ namespace RimWorld
 						num = Mathf.Min(num, StatDefOf.MarketValue.Worker.GetValue(StatRequest.For(thingDef, item, QualityCategory.Awful)));
 					}
 				}
-				return num;
 			}
-			return Mathf.Min(num, StatDefOf.MarketValue.Worker.GetValue(StatRequest.For(thingDef, null, QualityCategory.Awful)));
+			else
+			{
+				num = Mathf.Min(num, StatDefOf.MarketValue.Worker.GetValue(StatRequest.For(thingDef, null, QualityCategory.Awful)));
+			}
+			return num;
 		}
 	}
 }

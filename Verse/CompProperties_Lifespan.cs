@@ -6,6 +6,8 @@ namespace Verse
 
 		public EffecterDef expireEffect;
 
+		public ThingDef plantDefToSpawn;
+
 		public CompProperties_Lifespan()
 		{
 			compClass = typeof(CompLifespan);

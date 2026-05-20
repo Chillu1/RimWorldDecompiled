@@ -52,13 +52,13 @@ namespace Verse
 			this.pawn = pawn;
 		}
 
-		public void CallTrackerTick()
+		public void CallTrackerTickInterval(int delta)
 		{
 			if (ticksToNextCall < 0)
 			{
 				ResetTicksToNextCall();
 			}
-			ticksToNextCall--;
+			ticksToNextCall -= delta;
 			if (ticksToNextCall <= 0)
 			{
 				TryDoCall();
@@ -68,35 +68,38 @@ namespace Verse
 
 		private void ResetTicksToNextCall()
 		{
+			if (pawn.IsMutant)
+			{
+				ticksToNextCall = MutantUtility.CallIntervalRange.RandomInRange;
+				return;
+			}
 			ticksToNextCall = pawn.def.race.soundCallIntervalRange.RandomInRange;
 			if (PawnAggressive)
 			{
-				ticksToNextCall /= 4;
+				ticksToNextCall = (int)((float)ticksToNextCall * pawn.def.race.soundCallIntervalAggressiveFactor);
+			}
+			else if (pawn.Faction != null && pawn.Faction.IsPlayer)
+			{
+				ticksToNextCall = (int)((float)ticksToNextCall * pawn.def.race.soundCallIntervalFriendlyFactor);
 			}
 		}
 
 		private void TryDoCall()
 		{
-			if (Find.CameraDriver.CurrentViewRect.ExpandedBy(10).Contains(pawn.Position) && !pawn.Downed && pawn.Awake() && !pawn.Position.Fogged(pawn.Map))
+			if (pawn.Spawned && Find.CameraDriver.CurrentViewRect.ExpandedBy(10).Contains(pawn.Position) && !pawn.Downed && pawn.Awake() && !pawn.IsPsychologicallyInvisible() && !pawn.Position.Fogged(pawn.MapHeld) && (!pawn.IsColonyMech || !pawn.IsCharging()))
 			{
 				DoCall();
 			}
 		}
 
-		public void DoCall()
+		public void DoCall(bool forceAggressive = false)
 		{
-			if (!pawn.Spawned)
+			if (PawnAggressive || forceAggressive)
 			{
+				LifeStageUtility.PlayNearestLifestageSound(pawn, (LifeStageAge lifeStage) => lifeStage.soundAngry, null, (MutantDef mutant) => mutant.soundAngry);
 				return;
 			}
-			if (PawnAggressive)
-			{
-				LifeStageUtility.PlayNearestLifestageSound(pawn, (LifeStageAge ls) => ls.soundAngry);
-			}
-			else
-			{
-				LifeStageUtility.PlayNearestLifestageSound(pawn, (LifeStageAge ls) => ls.soundCall, IdleCallVolumeFactor);
-			}
+			LifeStageUtility.PlayNearestLifestageSound(pawn, (LifeStageAge lifeStage) => lifeStage.soundCall, (GeneDef gene) => gene.soundCall, (MutantDef mutant) => mutant.soundCall, IdleCallVolumeFactor);
 		}
 
 		public void Notify_InAggroMentalState()

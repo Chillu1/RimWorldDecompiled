@@ -24,18 +24,18 @@ namespace RimWorld
 			Scribe_Values.Look(ref intervalFactor, "intervalFactor", 0f);
 		}
 
-		public override void Tick()
+		public override void TickInterval(int delta)
 		{
-			base.Tick();
-			if (pawn.IsHashIntervalTick((int)(5000f * intervalFactor)))
+			base.TickInterval(delta);
+			if (pawn.IsHashIntervalTick((int)(5000f * intervalFactor), delta))
 			{
 				Severity += Rand.Range(-0.4f, 0.6f);
 			}
 		}
 
-		public override void Tended_NewTemp(float quality, float maxQuality, int batchPosition = 0)
+		public override void Tended(float quality, float maxQuality, int batchPosition = 0)
 		{
-			base.Tended_NewTemp(quality, maxQuality, 0);
+			base.Tended(quality, maxQuality, 0);
 			float num = 0.65f * quality;
 			if (Rand.Value < num)
 			{

@@ -23,10 +23,10 @@ namespace RimWorld
 			}
 			else
 			{
-				soundDef = ((hitThing.Stuff == null) ? hitThing.def.soundImpactDefault : hitThing.Stuff.stuffProps.soundImpactStuff);
+				soundDef = ((hitThing.Stuff == null) ? hitThing.def.soundImpactDefault : ((ist != ImpactSoundTypeDefOf.Bullet) ? hitThing.Stuff.stuffProps.soundImpactMelee : hitThing.Stuff.stuffProps.soundImpactBullet));
 				if (soundDef.NullOrUndefined())
 				{
-					soundDef = SoundDefOf.BulletImpact_Ground;
+					soundDef = SoundDefOf.Pawn_Melee_Punch_HitBuilding_Generic;
 				}
 			}
 			if (!soundDef.NullOrUndefined())

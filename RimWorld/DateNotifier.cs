@@ -18,11 +18,11 @@ namespace RimWorld
 			float latitude = ((map != null) ? Find.WorldGrid.LongLatOf(map.Tile).y : 0f);
 			float longitude = ((map != null) ? Find.WorldGrid.LongLatOf(map.Tile).x : 0f);
 			Season season = GenDate.Season(Find.TickManager.TicksAbs, latitude, longitude);
-			if (season == lastSeason || (lastSeason != 0 && season == lastSeason.GetPreviousSeason()))
+			if (season == lastSeason || (lastSeason != Season.Undefined && season == lastSeason.GetPreviousSeason()))
 			{
 				return;
 			}
-			if (lastSeason != 0 && AnyPlayerHomeSeasonsAreMeaningful())
+			if (lastSeason != Season.Undefined && AnyPlayerHomeSeasonsAreMeaningful())
 			{
 				if (GenDate.YearsPassed == 0 && season == Season.Summer && AnyPlayerHomeAvgTempIsLowInWinter())
 				{
@@ -61,7 +61,7 @@ namespace RimWorld
 			List<Map> maps = Find.Maps;
 			for (int i = 0; i < maps.Count; i++)
 			{
-				if (maps[i].IsPlayerHome && maps[i].mapTemperature.LocalSeasonsAreMeaningful())
+				if (maps[i].IsPlayerHome && maps[i].mapTemperature.LocalSeasonsAreMeaningful() && maps[i].Tile.Valid && !maps[i].Tile.LayerDef.isSpace)
 				{
 					return true;
 				}

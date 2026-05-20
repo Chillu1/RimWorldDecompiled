@@ -15,14 +15,14 @@ namespace RimWorld
 				List<Map> maps = Find.Maps;
 				for (int i = 0; i < maps.Count; i++)
 				{
-					foreach (Pawn freeColonist in maps[i].mapPawns.FreeColonists)
+					foreach (Pawn item in maps[i].mapPawns.FreeColonistsSpawned)
 					{
-						if (freeColonist.royalty == null || freeColonist.Suspended || !freeColonist.royalty.CanRequireThroneroom())
+						if (item.royalty == null || item.Suspended || !item.royalty.CanRequireThroneroom())
 						{
 							continue;
 						}
 						bool flag = false;
-						List<RoyalTitle> allTitlesForReading = freeColonist.royalty.AllTitlesForReading;
+						List<RoyalTitle> allTitlesForReading = item.royalty.AllTitlesForReading;
 						for (int j = 0; j < allTitlesForReading.Count; j++)
 						{
 							if (!allTitlesForReading[j].def.throneRoomRequirements.NullOrEmpty())
@@ -31,9 +31,9 @@ namespace RimWorld
 								break;
 							}
 						}
-						if (flag && freeColonist.ownership.AssignedThrone == null)
+						if (flag && item.ownership.AssignedThrone == null)
 						{
-							targetsResult.Add(freeColonist);
+							targetsResult.Add(item);
 						}
 					}
 				}
@@ -45,11 +45,22 @@ namespace RimWorld
 		{
 			defaultLabel = "NeedThroneAssigned".Translate();
 			defaultExplanation = "NeedThroneAssignedDesc".Translate();
+			requireRoyalty = true;
 		}
 
 		public override AlertReport GetReport()
 		{
 			return AlertReport.CulpritsAre(Targets);
+		}
+
+		public override TaggedString GetExplanation()
+		{
+			string text = defaultExplanation;
+			if (MoveColonyUtility.TitleAndRoleRequirementsGracePeriodActive)
+			{
+				text += "\n\n" + "RoomRequirementGracePeriodDesc".Translate(MoveColonyUtility.TitleAndRoleRequirementGracePeriodTicksLeft.TicksToDays().ToString("0.0"));
+			}
+			return text;
 		}
 	}
 }

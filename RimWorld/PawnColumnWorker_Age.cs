@@ -1,10 +1,16 @@
+using UnityEngine;
 using Verse;
 
 namespace RimWorld
 {
 	public class PawnColumnWorker_Age : PawnColumnWorker_Text
 	{
-		protected override GameFont DefaultHeaderFont => GameFont.Tiny;
+		protected override TextAnchor Anchor => TextAnchor.MiddleCenter;
+
+		public override int GetMinWidth(PawnTable table)
+		{
+			return Mathf.Max(base.GetMinWidth(table), 50);
+		}
 
 		public override int Compare(Pawn a, Pawn b)
 		{

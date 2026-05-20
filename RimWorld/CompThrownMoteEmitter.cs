@@ -33,13 +33,16 @@ namespace RimWorld
 				{
 					return false;
 				}
-				Building_MusicalInstrument building_MusicalInstrument = parent as Building_MusicalInstrument;
-				if (building_MusicalInstrument != null && !building_MusicalInstrument.IsBeingPlayed)
+				if (parent is Building_MusicalInstrument { IsBeingPlayed: false })
 				{
 					return false;
 				}
 				CompInitiatable comp3 = parent.GetComp<CompInitiatable>();
 				if (comp3 != null && !comp3.Initiated)
+				{
+					return false;
+				}
+				if (parent is Skyfaller { FadingOut: not false })
 				{
 					return false;
 				}
@@ -82,7 +85,10 @@ namespace RimWorld
 				moteThrown.exactPosition = parent.DrawPos + EmissionOffset;
 				moteThrown.instanceColor = EmissionColor;
 				moteThrown.SetVelocity(Props.velocityX.RandomInRange, Props.velocityY.RandomInRange);
-				GenSpawn.Spawn(moteThrown, moteThrown.exactPosition.ToIntVec3(), parent.Map);
+				if (moteThrown.exactPosition.ToIntVec3().InBounds(parent.Map))
+				{
+					GenSpawn.Spawn(moteThrown, moteThrown.exactPosition.ToIntVec3(), parent.Map);
+				}
 			}
 		}
 

@@ -15,9 +15,9 @@ namespace RimWorld
 		{
 			base.DoHeader(rect, table);
 			MouseoverSounds.DoRegion(rect);
-			if (Widgets.ButtonText(new Rect(rect.x, rect.y + (rect.height - 65f), Mathf.Min(rect.width, 360f), 32f), "ManageFoodRestrictions".Translate()))
+			if (Widgets.ButtonText(new Rect(rect.x, rect.y + (rect.height - 65f), Mathf.Min(rect.width, 360f), 32f), "ManageFoodPolicies".Translate()))
 			{
-				Find.WindowStack.Add(new Dialog_ManageFoodRestrictions(null));
+				Find.WindowStack.Add(new Dialog_ManageFoodPolicies(null));
 			}
 		}
 
@@ -29,19 +29,26 @@ namespace RimWorld
 			}
 		}
 
-		private IEnumerable<Widgets.DropdownMenuElement<FoodRestriction>> Button_GenerateMenu(Pawn pawn)
+		private IEnumerable<Widgets.DropdownMenuElement<FoodPolicy>> Button_GenerateMenu(Pawn pawn)
 		{
-			foreach (FoodRestriction foodRestriction in Current.Game.foodRestrictionDatabase.AllFoodRestrictions)
+			foreach (FoodPolicy foodRestriction in Current.Game.foodRestrictionDatabase.AllFoodRestrictions)
 			{
-				yield return new Widgets.DropdownMenuElement<FoodRestriction>
+				yield return new Widgets.DropdownMenuElement<FoodPolicy>
 				{
 					option = new FloatMenuOption(foodRestriction.label, delegate
 					{
-						pawn.foodRestriction.CurrentFoodRestriction = foodRestriction;
+						pawn.foodRestriction.CurrentFoodPolicy = foodRestriction;
 					}),
 					payload = foodRestriction
 				};
 			}
+			yield return new Widgets.DropdownMenuElement<FoodPolicy>
+			{
+				option = new FloatMenuOption(string.Format("{0}...", "AssignTabEdit".Translate()), delegate
+				{
+					Find.WindowStack.Add(new Dialog_ManageFoodPolicies(pawn.foodRestriction.CurrentFoodPolicy));
+				})
+			};
 		}
 
 		public override int GetMinWidth(PawnTable table)
@@ -66,27 +73,17 @@ namespace RimWorld
 
 		private int GetValueToCompare(Pawn pawn)
 		{
-			if (pawn.foodRestriction != null && pawn.foodRestriction.CurrentFoodRestriction != null)
+			if (pawn.foodRestriction != null && pawn.foodRestriction.CurrentFoodPolicy != null)
 			{
-				return pawn.foodRestriction.CurrentFoodRestriction.id;
+				return pawn.foodRestriction.CurrentFoodPolicy.id;
 			}
 			return int.MinValue;
 		}
 
 		private void DoAssignFoodRestrictionButtons(Rect rect, Pawn pawn)
 		{
-			int num = Mathf.FloorToInt((rect.width - 4f) * 0.714285731f);
-			int num2 = Mathf.FloorToInt((rect.width - 4f) * 0.2857143f);
-			float x = rect.x;
-			Rect rect2 = new Rect(x, rect.y + 2f, num, rect.height - 4f);
-			Widgets.Dropdown(rect2, pawn, (Pawn p) => p.foodRestriction.CurrentFoodRestriction, Button_GenerateMenu, pawn.foodRestriction.CurrentFoodRestriction.label.Truncate(rect2.width), null, pawn.foodRestriction.CurrentFoodRestriction.label, null, null, paintable: true);
-			x += (float)num;
-			x += 4f;
-			if (Widgets.ButtonText(new Rect(x, rect.y + 2f, num2, rect.height - 4f), "AssignTabEdit".Translate()))
-			{
-				Find.WindowStack.Add(new Dialog_ManageFoodRestrictions(pawn.foodRestriction.CurrentFoodRestriction));
-			}
-			x += (float)num2;
+			Rect rect2 = rect.ContractedBy(0f, 2f);
+			Widgets.Dropdown(rect2, pawn, (Pawn p) => p.foodRestriction.CurrentFoodPolicy, Button_GenerateMenu, pawn.foodRestriction.CurrentFoodPolicy.label.Truncate(rect2.width), null, pawn.foodRestriction.CurrentFoodPolicy.label, null, null, paintable: true);
 		}
 	}
 }

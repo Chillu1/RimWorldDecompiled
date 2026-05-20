@@ -18,6 +18,8 @@ namespace RimWorld
 
 		public bool getLookTargetsFromSignal = true;
 
+		public bool addQuestLookTargets = true;
+
 		public override IEnumerable<GlobalTargetInfo> QuestLookTargets
 		{
 			get
@@ -26,10 +28,13 @@ namespace RimWorld
 				{
 					yield return questLookTarget;
 				}
-				GlobalTargetInfo globalTargetInfo = lookTargets.TryGetPrimaryTarget();
-				if (globalTargetInfo.IsValid)
+				if (addQuestLookTargets)
 				{
-					yield return globalTargetInfo;
+					GlobalTargetInfo globalTargetInfo = lookTargets.TryGetPrimaryTarget();
+					if (globalTargetInfo.IsValid)
+					{
+						yield return globalTargetInfo;
+					}
 				}
 			}
 		}
@@ -47,7 +52,7 @@ namespace RimWorld
 				TaggedString formattedText = signal.args.GetFormattedText(message);
 				if (!formattedText.NullOrEmpty())
 				{
-					Messages.Message(formattedText, lookTargets, messageType ?? MessageTypeDefOf.NeutralEvent, quest, historical);
+					Messages.Message(formattedText, lookTargets, messageType ?? MessageTypeDefOf.NeutralEvent, quest.hidden ? null : quest, historical);
 				}
 			}
 		}
@@ -61,13 +66,14 @@ namespace RimWorld
 			Scribe_Deep.Look(ref lookTargets, "lookTargets");
 			Scribe_Values.Look(ref historical, "historical", defaultValue: true);
 			Scribe_Values.Look(ref getLookTargetsFromSignal, "getLookTargetsFromSignal", defaultValue: true);
+			Scribe_Values.Look(ref addQuestLookTargets, "addQuestLookTargets", defaultValue: true);
 		}
 
 		public override void AssignDebugData()
 		{
 			base.AssignDebugData();
 			inSignal = "DebugSignal" + Rand.Int;
-			message = "Dev: Test";
+			message = "DEV: Test";
 			messageType = MessageTypeDefOf.PositiveEvent;
 		}
 	}

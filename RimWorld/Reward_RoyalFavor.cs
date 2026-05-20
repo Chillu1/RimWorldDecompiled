@@ -18,7 +18,7 @@ namespace RimWorld
 		{
 			get
 			{
-				yield return QuestPartUtility.GetStandardRewardStackElement(faction.def.royalFavorLabel.CapitalizeFirst() + " " + amount.ToStringWithSign(), faction.def.RoyalFavorIcon, () => "RoyalFavorTip".Translate(Faction.OfPlayer.def.pawnsPlural, amount, faction.def.royalFavorLabel, faction) + "\n\n" + "ClickForMoreInfo".Translate(), delegate
+				yield return QuestPartUtility.GetStandardRewardStackElement(faction.def.royalFavorLabel.CapitalizeFirst() + " " + amount.ToStringWithSign(), faction.def.RoyalFavorIcon, () => ("RoyalFavorTip".Translate(Faction.OfPlayer.def.pawnsPlural, amount, faction.def.royalFavorLabel, faction) + "\n\n" + "ClickForMoreInfo".Translate().Colorize(ColoredText.SubtleGrayColor)).Resolve(), delegate
 				{
 					Find.WindowStack.Add(new Dialog_InfoCard(faction));
 				});

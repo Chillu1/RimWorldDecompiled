@@ -15,7 +15,7 @@ namespace RimWorld
 
 		public List<VerbProperties> VerbProperties => null;
 
-		public List<Tool> Tools => def.tools;
+		public List<Tool> Tools => def?.tools;
 
 		Thing IVerbOwner.ConstantCaster => parent.Pawn;
 

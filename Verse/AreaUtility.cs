@@ -43,7 +43,7 @@ namespace Verse
 		{
 			if (pawn.playerSettings != null)
 			{
-				return AreaAllowedLabel_Area(pawn.playerSettings.EffectiveAreaRestriction);
+				return AreaAllowedLabel_Area(pawn.playerSettings.AreaRestrictionInPawnCurrentMap);
 			}
 			return AreaAllowedLabel_Area(null);
 		}

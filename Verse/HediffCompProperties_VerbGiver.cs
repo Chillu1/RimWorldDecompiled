@@ -9,6 +9,8 @@ namespace Verse
 
 		public List<Tool> tools;
 
+		public ImplementOwnerTypeDef ownerTypeOverride;
+
 		public HediffCompProperties_VerbGiver()
 		{
 			compClass = typeof(HediffComp_VerbGiver);

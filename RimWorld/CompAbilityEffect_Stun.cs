@@ -9,8 +9,10 @@ namespace RimWorld
 			if (target.HasThing)
 			{
 				base.Apply(target, dest);
-				Pawn pawn = target.Thing as Pawn;
-				pawn?.stances.stunner.StunFor_NewTmp(GetDurationSeconds(pawn).SecondsToTicks(), parent.pawn, addBattleLog: false);
+				if (target.Thing is Pawn pawn)
+				{
+					pawn.stances.stunner.StunFor(GetDurationSeconds(pawn).SecondsToTicks(), parent.pawn, addBattleLog: false);
+				}
 			}
 		}
 	}

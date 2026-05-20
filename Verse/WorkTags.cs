@@ -5,10 +5,10 @@ namespace Verse
 	[Flags]
 	public enum WorkTags
 	{
-		None = 0x0,
-		ManualDumb = 0x2,
-		ManualSkilled = 0x4,
-		Violent = 0x8,
+		None = 0,
+		ManualDumb = 2,
+		ManualSkilled = 4,
+		Violent = 8,
 		Caring = 0x10,
 		Social = 0x20,
 		Commoner = 0x40,
@@ -23,6 +23,8 @@ namespace Verse
 		PlantWork = 0x8000,
 		Mining = 0x10000,
 		Hunting = 0x20000,
-		AllWork = 0x40000
+		Constructing = 0x40000,
+		Shooting = 0x80000,
+		AllWork = 0x100000
 	}
 }

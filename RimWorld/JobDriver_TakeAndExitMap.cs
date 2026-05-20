@@ -25,16 +25,16 @@ namespace RimWorld
 			yield return Toils_Construct.UninstallIfMinifiable(TargetIndex.A).FailOnSomeonePhysicallyInteracting(TargetIndex.A);
 			yield return Toils_Haul.StartCarryThing(TargetIndex.A);
 			Toil toil = Toils_Goto.GotoCell(TargetIndex.B, PathEndMode.OnCell);
-			toil.AddPreTickAction(delegate
+			toil.tickAction = delegate
 			{
 				if (base.Map.exitMapGrid.IsExitCell(pawn.Position))
 				{
 					pawn.ExitMap(allowedToJoinOrCreateCaravan: true, CellRect.WholeMap(base.Map).GetClosestEdge(pawn.Position));
 				}
-			});
+			};
 			toil.FailOn(() => job.failIfCantJoinOrCreateCaravan && !CaravanExitMapUtility.CanExitMapAndJoinOrCreateCaravanNow(pawn));
 			yield return toil;
-			Toil toil2 = new Toil();
+			Toil toil2 = ToilMaker.MakeToil("MakeNewToils");
 			toil2.initAction = delegate
 			{
 				if (pawn.Position.OnEdge(pawn.Map) || pawn.Map.exitMapGrid.IsExitCell(pawn.Position))

@@ -10,10 +10,26 @@ namespace Verse.AI
 		{
 		}
 
+		public QueuedJob(QueuedJob other)
+			: this(other.job, other.tag)
+		{
+		}
+
 		public QueuedJob(Job job, JobTag? tag)
 		{
 			this.job = job;
 			this.tag = tag;
+		}
+
+		public void Cleanup(Pawn pawn, bool canReturnToPool)
+		{
+			pawn?.ClearReservationsForJob(job);
+			if (canReturnToPool)
+			{
+				JobMaker.ReturnToPool(job);
+			}
+			job = null;
+			tag = null;
 		}
 
 		public void ExposeData()

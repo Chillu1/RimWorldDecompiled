@@ -39,8 +39,7 @@ namespace RimWorld
 						List<Thing> thingList = item3.GetThingList(item2.Map);
 						for (int i = 0; i < thingList.Count; i++)
 						{
-							Building building = thingList[i] as Building;
-							if (building != null && building.TransmitsPowerNow && !openSet.Contains(building) && !currentSet.Contains(building) && !closedSet.Contains(building))
+							if (thingList[i] is Building { TransmitsPowerNow: not false } building && !openSet.Contains(building) && !currentSet.Contains(building) && !closedSet.Contains(building))
 							{
 								openSet.Add(building);
 								break;

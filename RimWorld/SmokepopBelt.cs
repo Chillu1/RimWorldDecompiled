@@ -10,19 +10,15 @@ namespace RimWorld
 		{
 			base.Notify_BulletImpactNearby(impactData);
 			Pawn wearer = base.Wearer;
-			if (!wearer.Dead && !impactData.bullet.def.projectile.damageDef.isExplosive && impactData.bullet.Launcher is Building_Turret && impactData.bullet.Launcher != null && impactData.bullet.Launcher.HostileTo(base.Wearer) && !wearer.IsColonist && wearer.Spawned)
+			if (wearer != null && !wearer.Dead && !impactData.bullet.DamageDef.isExplosive && impactData.bullet.Launcher is Building_Turret && impactData.bullet.Launcher != null && impactData.bullet.Launcher.HostileTo(base.Wearer) && !wearer.IsColonist && wearer.Spawned && !wearer.Position.AnyGas(wearer.Map, GasType.BlindSmoke))
 			{
-				Gas gas = wearer.Position.GetGas(wearer.Map);
-				if (gas == null || !gas.def.gas.blockTurretTracking)
-				{
-					Verb_SmokePop.Pop(this.TryGetComp<CompReloadable>());
-				}
+				Verb_SmokePop.Pop(this.TryGetComp<CompApparelReloadable>());
 			}
 		}
 
 		public override float GetSpecialApparelScoreOffset()
 		{
-			return this.GetStatValue(StatDefOf.SmokepopBeltRadius) * ApparelScorePerBeltRadius;
+			return this.GetStatValue(StatDefOf.PackRadius) * ApparelScorePerBeltRadius;
 		}
 	}
 }

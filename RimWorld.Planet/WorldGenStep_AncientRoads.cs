@@ -9,95 +9,93 @@ namespace RimWorld.Planet
 	{
 		public float maximumSiteCurve;
 
-		public float minimumChain;
-
 		public float maximumSegmentCurviness;
 
 		public override int SeedPart => 773428712;
 
-		public override void GenerateFresh(string seed)
+		public override void GenerateFresh(string seed, PlanetLayer layer)
 		{
-			GenerateAncientRoads();
+			GenerateAncientRoads(layer);
 		}
 
-		private void GenerateAncientRoads()
+		private void GenerateAncientRoads(PlanetLayer layer)
 		{
-			Find.WorldPathGrid.RecalculateAllPerceivedPathCosts(0);
-			List<List<int>> list = GenerateProspectiveRoads();
-			list.Sort((List<int> lhs, List<int> rhs) => -lhs.Count.CompareTo(rhs.Count));
-			HashSet<int> used = new HashSet<int>();
-			for (int i = 0; i < list.Count; i++)
+			Find.WorldPathGrid.RecalculateLayerPerceivedPathCosts(layer, 0);
+			List<List<PlanetTile>> list = GenerateProspectiveRoads(layer);
+			list.Sort((List<PlanetTile> lhs, List<PlanetTile> rhs) => -lhs.Count.CompareTo(rhs.Count));
+			HashSet<PlanetTile> used = new HashSet<PlanetTile>();
+			for (int num = 0; num < list.Count; num++)
 			{
-				if (list[i].Any((int elem) => used.Contains(elem)))
+				if (list[num].Any((PlanetTile elem) => used.Contains(elem)))
 				{
 					continue;
 				}
-				if (list[i].Count < 4)
+				if (list[num].Count < 4)
 				{
 					break;
 				}
-				foreach (int item in list[i])
+				foreach (PlanetTile item in list[num])
 				{
 					used.Add(item);
 				}
-				for (int j = 0; j < list[i].Count - 1; j++)
+				for (int num2 = 0; num2 < list[num].Count - 1; num2++)
 				{
-					float num = Find.WorldGrid.ApproxDistanceInTiles(list[i][j], list[i][j + 1]) * maximumSegmentCurviness;
-					float costCutoff = num * 12000f;
-					using WorldPath worldPath = Find.WorldPathFinder.FindPath(list[i][j], list[i][j + 1], null, (float cost) => cost > costCutoff);
+					float num3 = Find.WorldGrid.ApproxDistanceInTiles(list[num][num2], list[num][num2 + 1]) * maximumSegmentCurviness;
+					float costCutoff = num3 * 12000f;
+					using WorldPath worldPath = layer.Pather.FindPath(list[num][num2], list[num][num2 + 1], null, (float cost) => cost > costCutoff);
 					if (worldPath == null || worldPath == WorldPath.NotFound)
 					{
 						continue;
 					}
-					List<int> nodesReversed = worldPath.NodesReversed;
-					if ((float)nodesReversed.Count > Find.WorldGrid.ApproxDistanceInTiles(list[i][j], list[i][j + 1]) * maximumSegmentCurviness)
+					List<PlanetTile> nodesReversed = worldPath.NodesReversed;
+					if ((float)nodesReversed.Count > Find.WorldGrid.ApproxDistanceInTiles(list[num][num2], list[num][num2 + 1]) * maximumSegmentCurviness)
 					{
 						continue;
 					}
-					for (int k = 0; k < nodesReversed.Count - 1; k++)
+					for (int num4 = 0; num4 < nodesReversed.Count - 1; num4++)
 					{
-						if (Find.WorldGrid.GetRoadDef(nodesReversed[k], nodesReversed[k + 1], visibleOnly: false) != null)
+						if (Find.WorldGrid.GetRoadDef(nodesReversed[num4], nodesReversed[num4 + 1], visibleOnly: false) != null)
 						{
-							Find.WorldGrid.OverlayRoad(nodesReversed[k], nodesReversed[k + 1], RoadDefOf.AncientAsphaltHighway);
+							Find.WorldGrid.OverlayRoad(nodesReversed[num4], nodesReversed[num4 + 1], RoadDefOf.AncientAsphaltHighway);
 						}
 						else
 						{
-							Find.WorldGrid.OverlayRoad(nodesReversed[k], nodesReversed[k + 1], RoadDefOf.AncientAsphaltRoad);
+							Find.WorldGrid.OverlayRoad(nodesReversed[num4], nodesReversed[num4 + 1], RoadDefOf.AncientAsphaltRoad);
 						}
 					}
 				}
 			}
 		}
 
-		private List<List<int>> GenerateProspectiveRoads()
+		private List<List<PlanetTile>> GenerateProspectiveRoads(PlanetLayer layer)
 		{
-			List<int> ancientSites = Find.World.genData.ancientSites;
-			List<List<int>> list = new List<List<int>>();
-			for (int i = 0; i < ancientSites.Count; i++)
+			List<PlanetTile> list = Find.World.genData.ancientSites[layer];
+			List<List<PlanetTile>> list2 = new List<List<PlanetTile>>();
+			for (int i = 0; i < list.Count; i++)
 			{
-				for (int j = 0; j < ancientSites.Count; j++)
+				for (int j = 0; j < list.Count; j++)
 				{
-					List<int> list2 = new List<int>();
-					list2.Add(ancientSites[i]);
-					List<int> list3 = ancientSites;
-					float ang = Find.World.grid.GetHeadingFromTo(i, j);
-					int current = ancientSites[i];
+					List<PlanetTile> list3 = new List<PlanetTile>();
+					list3.Add(list[i]);
+					List<PlanetTile> list4 = list;
+					float ang = Find.World.grid.GetHeadingFromTo(list[i], list[j]);
+					PlanetTile current = list[i];
 					while (true)
 					{
-						list3 = list3.Where((int idx) => idx != current && Math.Abs(Find.World.grid.GetHeadingFromTo(current, idx) - ang) < maximumSiteCurve).ToList();
-						if (list3.Count == 0)
+						list4 = list4.Where((PlanetTile idx) => idx != current && Math.Abs(Find.World.grid.GetHeadingFromTo(current, idx) - ang) < maximumSiteCurve).ToList();
+						if (list4.Count == 0)
 						{
 							break;
 						}
-						int num = list3.MinBy((int idx) => Find.World.grid.ApproxDistanceInTiles(current, idx));
-						ang = Find.World.grid.GetHeadingFromTo(current, num);
-						current = num;
-						list2.Add(current);
+						PlanetTile planetTile = list4.MinBy((PlanetTile idx) => Find.World.grid.ApproxDistanceInTiles(current, idx));
+						ang = Find.World.grid.GetHeadingFromTo(current, planetTile);
+						current = planetTile;
+						list3.Add(current);
 					}
-					list.Add(list2);
+					list2.Add(list3);
 				}
 			}
-			return list;
+			return list2;
 		}
 	}
 }

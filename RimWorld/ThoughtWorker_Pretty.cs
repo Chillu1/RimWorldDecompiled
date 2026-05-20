@@ -10,11 +10,11 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (RelationsUtility.IsDisfigured(other))
+			if (RelationsUtility.IsDisfigured(other, pawn))
 			{
 				return false;
 			}
-			if (!pawn.health.capacities.CapableOf(PawnCapacityDefOf.Sight))
+			if (PawnUtility.IsBiologicallyOrArtificiallyBlind(pawn))
 			{
 				return false;
 			}

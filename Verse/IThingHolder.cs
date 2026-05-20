@@ -4,10 +4,7 @@ namespace Verse
 {
 	public interface IThingHolder
 	{
-		IThingHolder ParentHolder
-		{
-			get;
-		}
+		IThingHolder ParentHolder { get; }
 
 		void GetChildHolders(List<IThingHolder> outChildren);
 

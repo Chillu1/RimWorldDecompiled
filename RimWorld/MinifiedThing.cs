@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Verse;
@@ -7,13 +8,13 @@ namespace RimWorld
 {
 	public class MinifiedThing : ThingWithComps, IThingHolder
 	{
-		private const float MaxMinifiedGraphicSize = 1.1f;
+		public const float MaxMinifiedGraphicSize = 1.1f;
 
-		private const float CrateToGraphicScale = 1.16f;
+		public const float CrateToGraphicScale = 1.16f;
 
 		private ThingOwner innerContainer;
 
-		private Graphic cachedGraphic;
+		protected Graphic cachedGraphic;
 
 		private Graphic crateFrontGraphic;
 
@@ -58,7 +59,11 @@ namespace RimWorld
 					{
 						Vector2 minifiedDrawSize = GetMinifiedDrawSize(InnerThing.def.size.ToVector2(), 1.1f);
 						Vector2 newDrawSize = new Vector2(minifiedDrawSize.x / (float)InnerThing.def.size.x * cachedGraphic.drawSize.x, minifiedDrawSize.y / (float)InnerThing.def.size.z * cachedGraphic.drawSize.y);
-						cachedGraphic = cachedGraphic.GetCopy(newDrawSize);
+						cachedGraphic = cachedGraphic.GetCopy(newDrawSize, null);
+					}
+					if (Math.Abs(InnerThing.def.minifiedDrawScale - 1f) > float.Epsilon)
+					{
+						cachedGraphic = cachedGraphic.GetCopy(new Vector2(InnerThing.def.minifiedDrawScale * cachedGraphic.drawSize.x, InnerThing.def.minifiedDrawScale * cachedGraphic.drawSize.y), null);
 					}
 				}
 				return cachedGraphic;
@@ -71,23 +76,59 @@ namespace RimWorld
 
 		public override string DescriptionFlavor => InnerThing.DescriptionFlavor;
 
+		public override ModContentPack ContentSource => InnerThing.ContentSource;
+
+		private Graphic CrateFrontGraphic
+		{
+			get
+			{
+				if (crateFrontGraphic == null)
+				{
+					crateFrontGraphic = LoadCrateFrontGraphic();
+				}
+				return crateFrontGraphic;
+			}
+		}
+
+		public static void TryInsertIntoAtlas()
+		{
+			GlobalTextureAtlasManager.TryInsertStatic(TextureAtlasGroup.Item, ContentFinder<Texture2D>.Get("Things/Item/Minified/CrateFront"));
+			GlobalTextureAtlasManager.TryInsertStatic(TextureAtlasGroup.Item, ContentFinder<Texture2D>.Get("Things/Item/Minified/BurlapBag"));
+		}
+
 		public MinifiedThing()
 		{
 			innerContainer = new ThingOwner<Thing>(this, oneStackOnly: true);
 		}
 
-		public override void Tick()
+		protected virtual Graphic LoadCrateFrontGraphic()
+		{
+			return GraphicDatabase.Get<Graphic_Single>("Things/Item/Minified/CrateFront", ShaderDatabase.Cutout, GetMinifiedDrawSize(InnerThing.def.size.ToVector2(), 1.1f) * 1.16f, Color.white);
+		}
+
+		protected override void Tick()
 		{
 			if (InnerThing == null)
 			{
 				Log.Error("MinifiedThing with null InnerThing. Destroying.");
 				Destroy();
-				return;
 			}
-			base.Tick();
-			if (InnerThing is Building_Battery)
+			else
 			{
-				innerContainer.ThingOwnerTick();
+				base.Tick();
+			}
+		}
+
+		protected override void TickInterval(int delta)
+		{
+			if (InnerThing == null && !base.Destroyed)
+			{
+				Log.Error("MinifiedThing with null InnerThing. Destroying.");
+				Destroy();
+			}
+			else
+			{
+				base.TickInterval(delta);
 			}
 		}
 
@@ -107,8 +148,7 @@ namespace RimWorld
 			if (minifiedThing != this)
 			{
 				minifiedThing.InnerThing = ThingMaker.MakeThing(InnerThing.def, InnerThing.Stuff);
-				ThingWithComps thingWithComps = InnerThing as ThingWithComps;
-				if (thingWithComps != null)
+				if (InnerThing is ThingWithComps thingWithComps)
 				{
 					for (int i = 0; i < thingWithComps.AllComps.Count; i++)
 					{
@@ -121,8 +161,7 @@ namespace RimWorld
 
 		public override bool CanStackWith(Thing other)
 		{
-			MinifiedThing minifiedThing = other as MinifiedThing;
-			if (minifiedThing == null)
+			if (!(other is MinifiedThing minifiedThing))
 			{
 				return false;
 			}
@@ -149,27 +188,49 @@ namespace RimWorld
 			}
 		}
 
-		public override void DrawAt(Vector3 drawLoc, bool flip = false)
+		protected override void DrawAt(Vector3 drawLoc, bool flip = false)
 		{
-			if (crateFrontGraphic == null)
+			if (InnerThing.def.minifiedManualDraw)
 			{
-				crateFrontGraphic = GraphicDatabase.Get<Graphic_Single>("Things/Item/Minified/CrateFront", ShaderDatabase.Cutout, GetMinifiedDrawSize(InnerThing.def.size.ToVector2(), 1.1f) * 1.16f, Color.white);
+				InnerThing.DrawNowAt(drawLoc, flip);
+				CrateFrontGraphic.DrawFromDef(drawLoc + Altitudes.AltIncVect * 0.1f, Rot4.North, null);
+				return;
 			}
-			crateFrontGraphic.DrawFromDef(drawLoc + Altitudes.AltIncVect * 0.1f, Rot4.North, null);
+			CrateFrontGraphic.DrawFromDef(drawLoc + Altitudes.AltIncVect * 0.1f, Rot4.North, null);
+			Rot4 rot = ((Graphic is Graphic_Single) ? Rot4.North : Rot4.South);
+			if (InnerThing.def.overrideMinifiedRot != Rot4.Invalid)
+			{
+				rot = InnerThing.def.overrideMinifiedRot;
+			}
+			Vector3 vector = InnerThing.def.minifiedDrawOffset - Graphic.DrawOffset(rot);
+			Graphic.Draw(drawLoc + vector, rot, this);
+		}
+
+		public override void Print(SectionLayer layer)
+		{
+			Vector3 drawPos = DrawPos;
+			Material material = CrateFrontGraphic.MatSingle;
+			Graphic.TryGetTextureAtlasReplacementInfo(material, TextureAtlasGroup.Item, flipUv: false, vertexColors: false, out material, out var uvs, out var vertexColor);
+			Printer_Plane.PrintPlane(layer, drawPos + Altitudes.AltIncVect * 0.1f, CrateFrontGraphic.drawSize, material, 0f, flipUv: false, uvs);
+			Rot4 rot = Rot4.South;
 			if (Graphic is Graphic_Single)
 			{
-				Graphic.Draw(drawLoc, Rot4.North, this);
+				rot = Rot4.North;
 			}
-			else
+			if (InnerThing.def.overrideMinifiedRot != Rot4.Invalid)
 			{
-				Graphic.Draw(drawLoc, Rot4.South, this);
+				rot = InnerThing.def.overrideMinifiedRot;
 			}
+			Material material2 = Graphic.MatAt(rot, this);
+			Graphic.TryGetTextureAtlasReplacementInfo(material2, InnerThing.def.category.ToAtlasGroup(), flipUv: false, vertexColors: false, out material2, out uvs, out vertexColor);
+			Printer_Plane.PrintPlane(layer, drawPos + InnerThing.def.minifiedDrawOffset, Graphic.drawSize, material2, 0f, flipUv: false, uvs);
 		}
 
 		public override void Destroy(DestroyMode mode = DestroyMode.Vanish)
 		{
 			bool spawned = base.Spawned;
 			Map map = base.Map;
+			InnerThing?.Notify_MinifiedThingAboutToBeDestroyed(mode);
 			base.Destroy(mode);
 			if (InnerThing == null)
 			{
@@ -189,10 +250,7 @@ namespace RimWorld
 					break;
 				}
 			}
-			if (InnerThing is MonumentMarker)
-			{
-				InnerThing.Destroy();
-			}
+			innerContainer.ClearAndDestroyContents(mode);
 		}
 
 		public override void PreTraded(TradeAction action, Pawn playerNegotiator, ITrader trader)
@@ -222,7 +280,7 @@ namespace RimWorld
 			return text;
 		}
 
-		private Vector2 GetMinifiedDrawSize(Vector2 drawSize, float maxSideLength)
+		protected Vector2 GetMinifiedDrawSize(Vector2 drawSize, float maxSideLength)
 		{
 			float num = maxSideLength / Mathf.Max(drawSize.x, drawSize.y);
 			if (num >= 1f)

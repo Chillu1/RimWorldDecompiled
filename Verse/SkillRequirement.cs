@@ -23,6 +23,10 @@ namespace Verse
 
 		public bool PawnSatisfies(Pawn pawn)
 		{
+			if (pawn.IsColonyMechPlayerControlled && pawn.RaceProps.mechFixedSkillLevel >= minLevel && pawn.RaceProps.mechEnabledWorkTypes.Any((WorkTypeDef w) => w.relevantSkills.NotNullAndContains(skill)))
+			{
+				return true;
+			}
 			if (pawn.skills == null)
 			{
 				return false;

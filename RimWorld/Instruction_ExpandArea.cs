@@ -6,10 +6,7 @@ namespace RimWorld
 	{
 		private int startingAreaCount = -1;
 
-		protected abstract Area MyArea
-		{
-			get;
-		}
+		protected abstract Area MyArea { get; }
 
 		protected override float ProgressPercent => (float)(MyArea.TrueCount - startingAreaCount) / (float)def.targetCount;
 

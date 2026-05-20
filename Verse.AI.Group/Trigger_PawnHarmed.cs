@@ -10,11 +10,28 @@ namespace Verse.AI.Group
 
 		public Faction requireInstigatorWithSpecificFaction;
 
-		public Trigger_PawnHarmed(float chance = 1f, bool requireInstigatorWithFaction = false, Faction requireInstigatorWithSpecificFaction = null)
+		public DutyDef skipDuty;
+
+		public int? minTicks;
+
+		private int? minTick;
+
+		public Trigger_PawnHarmed(float chance = 1f, bool requireInstigatorWithFaction = false, Faction requireInstigatorWithSpecificFaction = null, DutyDef skipDuty = null, int? minTicks = null)
 		{
 			this.chance = chance;
 			this.requireInstigatorWithFaction = requireInstigatorWithFaction;
 			this.requireInstigatorWithSpecificFaction = requireInstigatorWithSpecificFaction;
+			this.skipDuty = skipDuty;
+			this.minTicks = minTicks;
+		}
+
+		public override void SourceToilBecameActive(Transition transition, LordToil previousToil)
+		{
+			base.SourceToilBecameActive(transition, previousToil);
+			if (minTicks.HasValue)
+			{
+				minTick = GenTicks.TicksGame + minTicks.Value;
+			}
 		}
 
 		public override bool ActivateOn(Lord lord, TriggerSignal signal)
@@ -31,6 +48,14 @@ namespace Verse.AI.Group
 			{
 				return false;
 			}
+			if (signal.dinfo.IntendedTarget is Pawn pawn && pawn.mindState?.duty?.def == skipDuty)
+			{
+				return false;
+			}
+			if (minTick.HasValue && GenTicks.TicksGame < minTick.Value)
+			{
+				return false;
+			}
 			return Rand.Value < chance;
 		}
 
@@ -42,9 +67,9 @@ namespace Verse.AI.Group
 			}
 			if (signal.type == TriggerSignalType.PawnLost)
 			{
-				if (signal.condition != PawnLostCondition.MadePrisoner)
+				if (signal.condition != PawnLostCondition.MadePrisoner && signal.condition != PawnLostCondition.Incapped)
 				{
-					return signal.condition == PawnLostCondition.IncappedOrKilled;
+					return signal.condition == PawnLostCondition.Killed;
 				}
 				return true;
 			}

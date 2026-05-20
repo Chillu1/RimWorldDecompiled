@@ -11,8 +11,20 @@ namespace RimWorld
 
 		public string Name => name;
 
+		public static string GenerateName(CompProperties_GeneratedName props)
+		{
+			return GenText.CapitalizeAsTitle(GrammarResolver.Resolve("r_weapon_name", new GrammarRequest
+			{
+				Includes = { props.nameMaker }
+			}));
+		}
+
 		public override string TransformLabel(string label)
 		{
+			if (parent.StyleSourcePrecept != null)
+			{
+				return label;
+			}
 			if (parent.GetComp<CompBladelinkWeapon>() != null)
 			{
 				return name + ", " + label;
@@ -23,9 +35,7 @@ namespace RimWorld
 		public override void Initialize(CompProperties props)
 		{
 			base.Initialize(props);
-			GrammarRequest request = default(GrammarRequest);
-			request.Includes.Add(Props.nameMaker);
-			name = GenText.CapitalizeAsTitle(GrammarResolver.Resolve("r_weapon_name", request));
+			name = GenerateName(Props);
 		}
 
 		public override void PostExposeData()

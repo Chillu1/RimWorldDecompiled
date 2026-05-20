@@ -12,6 +12,8 @@ namespace RimWorld
 
 		public List<JobDef> measuredTimeJobs;
 
+		public int displayOrder = 99999;
+
 		[Unsaved(false)]
 		private RecordWorker workerInt;
 

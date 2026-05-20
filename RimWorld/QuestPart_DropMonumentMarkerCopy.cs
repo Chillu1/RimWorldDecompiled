@@ -44,6 +44,10 @@ namespace RimWorld
 			}
 			copy = null;
 			MonumentMarker arg = signal.args.GetArg<MonumentMarker>("SUBJECT");
+			if (mapParent == null || !mapParent.HasMap || !quest.IsParentSuitableForQuest(mapParent))
+			{
+				mapParent = quest.TryFindNewSuitableMapParentForRetarget();
+			}
 			if (arg != null && mapParent != null && mapParent.HasMap)
 			{
 				Map map = mapParent.Map;

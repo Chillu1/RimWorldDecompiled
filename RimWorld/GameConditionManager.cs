@@ -8,9 +8,67 @@ namespace RimWorld
 {
 	public sealed class GameConditionManager : IExposable
 	{
+		private class MapBrightnessTracker : IExposable
+		{
+			private float brightness = 1f;
+
+			private float targetBrightness = 1f;
+
+			private float lerp = 1f;
+
+			private float lerpSeconds;
+
+			public float CurBrightness => Mathf.Lerp(brightness, targetBrightness, lerp);
+
+			public bool Changing => lerp < 1f;
+
+			public bool DarknessVisible
+			{
+				get
+				{
+					if (!Changing)
+					{
+						return CurBrightness < 1f;
+					}
+					return true;
+				}
+			}
+
+			public void Change(float newBrightness, float lerpSeconds = 5f)
+			{
+				if (ModLister.CheckAnomaly("Map brightness"))
+				{
+					brightness = CurBrightness;
+					targetBrightness = newBrightness;
+					lerp = 0f;
+					this.lerpSeconds = lerpSeconds;
+				}
+			}
+
+			public void Tick()
+			{
+				if (ModsConfig.AnomalyActive && lerp < 1f)
+				{
+					lerp += lerpSeconds / 60f * Time.deltaTime;
+				}
+			}
+
+			public void ExposeData()
+			{
+				Scribe_Values.Look(ref brightness, "brightness", 1f);
+				Scribe_Values.Look(ref targetBrightness, "targetBrightness", 1f);
+				Scribe_Values.Look(ref lerp, "lerp", 1f);
+				Scribe_Values.Look(ref lerpSeconds, "lerpSeconds", 5f);
+			}
+		}
+
 		public Map ownerMap;
 
 		private List<GameCondition> activeConditions = new List<GameCondition>();
+
+		private MapBrightnessTracker mapBrightnessTracker;
+
+		private bool cachedAlwaysDark;
 
 		private const float TextPadding = 6f;
 
@@ -28,32 +86,82 @@ namespace RimWorld
 			}
 		}
 
-		public bool ElectricityDisabled
+		public float MapBrightness
 		{
 			get
 			{
-				foreach (GameCondition activeCondition in activeConditions)
+				if (!ModsConfig.AnomalyActive)
 				{
-					if (activeCondition.ElectricityDisabled)
-					{
-						return true;
-					}
+					return 1f;
 				}
-				if (Parent != null)
+				return mapBrightnessTracker?.CurBrightness ?? 1f;
+			}
+		}
+
+		public bool BrightnessChanging
+		{
+			get
+			{
+				if (ModsConfig.AnomalyActive)
 				{
-					return Parent.ElectricityDisabled;
+					return mapBrightnessTracker?.Changing ?? false;
 				}
 				return false;
 			}
 		}
 
+		public bool DarknessVisible
+		{
+			get
+			{
+				if (ModsConfig.AnomalyActive && DebugViewSettings.drawDarknessOverlay)
+				{
+					return mapBrightnessTracker?.DarknessVisible ?? false;
+				}
+				return false;
+			}
+		}
+
+		public bool IsAlwaysDarkOutside => cachedAlwaysDark;
+
 		public GameConditionManager(Map map)
 		{
 			ownerMap = map;
+			mapBrightnessTracker = new MapBrightnessTracker();
 		}
 
 		public GameConditionManager(World world)
 		{
+		}
+
+		public bool ElectricityDisabled(Map map)
+		{
+			foreach (GameCondition activeCondition in activeConditions)
+			{
+				if (activeCondition.ElectricityDisabled && activeCondition.CanApplyOnMap(map) && !activeCondition.HiddenByOtherCondition(map))
+				{
+					return true;
+				}
+			}
+			return Parent?.ElectricityDisabled(map) ?? false;
+		}
+
+		public float FishPopulationOffsetFactorPerDay(Map map, out GameCondition culprit)
+		{
+			culprit = null;
+			if (!ModsConfig.OdysseyActive)
+			{
+				return 0f;
+			}
+			foreach (GameCondition activeCondition in activeConditions)
+			{
+				if (activeCondition is GameCondition_GillRot gameCondition_GillRot && activeCondition.CanApplyOnMap(map) && !activeCondition.HiddenByOtherCondition(map))
+				{
+					culprit = activeCondition;
+					return gameCondition_GillRot.fishPopulationOffsetFactorPerDay;
+				}
+			}
+			return 0.025f;
 		}
 
 		public void RegisterCondition(GameCondition cond)
@@ -62,17 +170,47 @@ namespace RimWorld
 			cond.startTick = Mathf.Max(cond.startTick, Find.TickManager.TicksGame);
 			cond.gameConditionManager = this;
 			cond.Init();
+			if (!cachedAlwaysDark)
+			{
+				cachedAlwaysDark = cond.Permanent && cond is GameCondition_NoSunlight;
+			}
+			foreach (Map map in Find.Maps)
+			{
+				map.events.Notify_GameConditionAdded(cond);
+			}
+		}
+
+		public void OnConditionEnd(GameCondition cond)
+		{
+			activeConditions.Remove(cond);
+			if (cachedAlwaysDark && cond.Permanent && cond is GameCondition_NoSunlight)
+			{
+				RecalcAlwaysDark();
+			}
+			foreach (Map map in Find.Maps)
+			{
+				map.events.Notify_GameConditionRemoved(cond);
+			}
 		}
 
 		public void ExposeData()
 		{
 			Scribe_Collections.Look(ref activeConditions, "activeConditions", LookMode.Deep);
+			Scribe_Deep.Look(ref mapBrightnessTracker, "mapBrightnessTracker");
 			if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
 				for (int i = 0; i < activeConditions.Count; i++)
 				{
 					activeConditions[i].gameConditionManager = this;
 				}
+			}
+			else if (Scribe.mode == LoadSaveMode.PostLoadInit)
+			{
+				if (mapBrightnessTracker == null && ownerMap != null)
+				{
+					mapBrightnessTracker = new MapBrightnessTracker();
+				}
+				RecalcAlwaysDark();
 			}
 		}
 
@@ -90,6 +228,13 @@ namespace RimWorld
 					gameCondition.GameConditionTick();
 				}
 			}
+			mapBrightnessTracker?.Tick();
+		}
+
+		public void SetTargetBrightness(float target, float lerpSeconds = 5f)
+		{
+			mapBrightnessTracker?.Change(target, lerpSeconds);
+			ownerMap?.mapDrawer.WholeMapChanged(MapMeshFlagDefOf.GroundGlow);
 		}
 
 		public void GameConditionManagerDraw(Map map)
@@ -98,10 +243,7 @@ namespace RimWorld
 			{
 				activeConditions[num].GameConditionDraw(map);
 			}
-			if (Parent != null)
-			{
-				Parent.GameConditionManagerDraw(map);
-			}
+			Parent?.GameConditionManagerDraw(map);
 		}
 
 		public void DoSteadyEffects(IntVec3 c, Map map)
@@ -110,9 +252,19 @@ namespace RimWorld
 			{
 				activeConditions[i].DoCellSteadyEffects(c, map);
 			}
-			if (Parent != null)
+			Parent?.DoSteadyEffects(c, map);
+		}
+
+		private void RecalcAlwaysDark()
+		{
+			cachedAlwaysDark = false;
+			for (int i = 0; i < activeConditions.Count; i++)
 			{
-				Parent.DoSteadyEffects(c, map);
+				if (activeConditions[i].Permanent && activeConditions[i] is GameCondition_NoSunlight)
+				{
+					cachedAlwaysDark = true;
+					break;
+				}
 			}
 		}
 
@@ -130,37 +282,32 @@ namespace RimWorld
 					return activeConditions[i];
 				}
 			}
-			if (Parent != null)
-			{
-				return Parent.GetActiveCondition(def);
-			}
-			return null;
+			return Parent?.GetActiveCondition(def);
 		}
 
 		public T GetActiveCondition<T>() where T : GameCondition
 		{
 			for (int i = 0; i < activeConditions.Count; i++)
 			{
-				T val = activeConditions[i] as T;
-				if (val != null)
+				if (activeConditions[i] is T result)
 				{
-					return val;
+					return result;
 				}
 			}
-			if (Parent != null)
+			GameConditionManager parent = Parent;
+			if (parent == null)
 			{
-				return Parent.GetActiveCondition<T>();
+				return null;
 			}
-			return null;
+			return parent.GetActiveCondition<T>();
 		}
 
-		public PsychicDroneLevel GetHighestPsychicDroneLevelFor(Gender gender)
+		public PsychicDroneLevel GetHighestPsychicDroneLevelFor(Gender gender, Map map)
 		{
 			PsychicDroneLevel psychicDroneLevel = PsychicDroneLevel.None;
 			for (int i = 0; i < ActiveConditions.Count; i++)
 			{
-				GameCondition_PsychicEmanation gameCondition_PsychicEmanation = activeConditions[i] as GameCondition_PsychicEmanation;
-				if (gameCondition_PsychicEmanation != null && gameCondition_PsychicEmanation.gender == gender && (int)gameCondition_PsychicEmanation.level > (int)psychicDroneLevel)
+				if (activeConditions[i].CanApplyOnMap(map) && activeConditions[i] is GameCondition_PsychicEmanation gameCondition_PsychicEmanation && gameCondition_PsychicEmanation.gender == gender && (int)gameCondition_PsychicEmanation.level > (int)psychicDroneLevel)
 				{
 					psychicDroneLevel = gameCondition_PsychicEmanation.level;
 				}
@@ -185,7 +332,10 @@ namespace RimWorld
 			float num = 0f;
 			for (int i = 0; i < activeConditions.Count; i++)
 			{
-				num += Text.CalcHeight(activeConditions[i].LabelCap, width - 6f);
+				if ((ownerMap == null || !activeConditions[i].HiddenByOtherCondition(ownerMap)) && activeConditions[i].def.displayOnUI)
+				{
+					num += Text.CalcHeight(activeConditions[i].LabelCap, width - 6f);
+				}
 			}
 			if (Parent != null)
 			{
@@ -196,10 +346,14 @@ namespace RimWorld
 
 		public void DoConditionsUI(Rect rect)
 		{
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			float num = 0f;
 			for (int i = 0; i < activeConditions.Count; i++)
 			{
+				if (!activeConditions[i].def.displayOnUI || (ownerMap != null && (!activeConditions[i].CanApplyOnMap(ownerMap) || activeConditions[i].HiddenByOtherCondition(ownerMap))))
+				{
+					continue;
+				}
 				string labelCap = activeConditions[i].LabelCap;
 				Rect rect2 = new Rect(0f, num, rect.width, Text.CalcHeight(labelCap, rect.width - 6f));
 				Text.Font = GameFont.Small;
@@ -214,7 +368,7 @@ namespace RimWorld
 				}
 				if (Widgets.ButtonInvisible(rect2))
 				{
-					if (activeConditions[i].conditionCauser != null && CameraJumper.CanJump(activeConditions[i].conditionCauser))
+					if (activeConditions[i].conditionCauser != null && !activeConditions[i].hideSource && CameraJumper.CanJump(activeConditions[i].conditionCauser))
 					{
 						CameraJumper.TryJumpAndSelect(activeConditions[i].conditionCauser);
 					}
@@ -229,17 +383,17 @@ namespace RimWorld
 			rect.yMin += num;
 			GUI.EndGroup();
 			Text.Anchor = TextAnchor.UpperLeft;
-			if (Parent != null)
-			{
-				Parent.DoConditionsUI(rect);
-			}
+			Parent?.DoConditionsUI(rect);
 		}
 
 		public void GetAllGameConditionsAffectingMap(Map map, List<GameCondition> listToFill)
 		{
 			for (int i = 0; i < activeConditions.Count; i++)
 			{
-				listToFill.Add(activeConditions[i]);
+				if (activeConditions[i].CanApplyOnMap(map))
+				{
+					listToFill.Add(activeConditions[i]);
+				}
 			}
 			if (Parent != null)
 			{
@@ -252,7 +406,10 @@ namespace RimWorld
 			float num = 0f;
 			for (int i = 0; i < activeConditions.Count; i++)
 			{
-				num += activeConditions[i].TemperatureOffset();
+				if (activeConditions[i].CanApplyOnMap(ownerMap))
+				{
+					num += activeConditions[i].TemperatureOffset();
+				}
 			}
 			if (Parent != null)
 			{
@@ -266,7 +423,10 @@ namespace RimWorld
 			float num = 1f;
 			for (int i = 0; i < activeConditions.Count; i++)
 			{
-				num *= activeConditions[i].AnimalDensityFactor(map);
+				if (activeConditions[i].CanApplyOnMap(ownerMap))
+				{
+					num *= activeConditions[i].AnimalDensityFactor(map);
+				}
 			}
 			if (Parent != null)
 			{
@@ -280,7 +440,10 @@ namespace RimWorld
 			float num = 1f;
 			for (int i = 0; i < activeConditions.Count; i++)
 			{
-				num *= activeConditions[i].PlantDensityFactor(map);
+				if (activeConditions[i].CanApplyOnMap(ownerMap))
+				{
+					num *= activeConditions[i].PlantDensityFactor(map);
+				}
 			}
 			if (Parent != null)
 			{
@@ -294,7 +457,10 @@ namespace RimWorld
 			float num = 1f;
 			for (int i = 0; i < activeConditions.Count; i++)
 			{
-				num *= activeConditions[i].SkyGazeJoyGainFactor(map);
+				if (activeConditions[i].CanApplyOnMap(ownerMap))
+				{
+					num *= activeConditions[i].SkyGazeJoyGainFactor(map);
+				}
 			}
 			if (Parent != null)
 			{
@@ -308,7 +474,10 @@ namespace RimWorld
 			float num = 1f;
 			for (int i = 0; i < activeConditions.Count; i++)
 			{
-				num *= activeConditions[i].SkyGazeChanceFactor(map);
+				if (activeConditions[i].CanApplyOnMap(ownerMap))
+				{
+					num *= activeConditions[i].SkyGazeChanceFactor(map);
+				}
 			}
 			if (Parent != null)
 			{
@@ -328,7 +497,7 @@ namespace RimWorld
 			for (int i = 0; i < activeConditions.Count; i++)
 			{
 				GameCondition gameCondition = activeConditions[i];
-				if (!gameCondition.AllowEnjoyableOutsideNow(map))
+				if (activeConditions[i].CanApplyOnMap(ownerMap) && !gameCondition.AllowEnjoyableOutsideNow(map))
 				{
 					reason = gameCondition.def;
 					return false;

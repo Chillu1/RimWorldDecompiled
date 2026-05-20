@@ -45,9 +45,8 @@ namespace RimWorld.QuestGen
 
 		protected override void RunInt()
 		{
-			if (!ModLister.RoyaltyInstalled)
+			if (!ModLister.CheckRoyalty("Bestowing ceremony"))
 			{
-				Log.ErrorOnce("Bestowing ceremony is a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 3454535);
 				return;
 			}
 			Quest quest = QuestGen.quest;
@@ -61,14 +60,18 @@ namespace RimWorld.QuestGen
 			string text2 = QuestGenUtility.QuestTagSignal(text, "CeremonyExpired");
 			string inSignal = QuestGenUtility.QuestTagSignal(text, "CeremonyFailed");
 			string inSignal2 = QuestGenUtility.QuestTagSignal(text, "CeremonyDone");
-			string inSignal3 = QuestGenUtility.QuestTagSignal(text, "TitleAwardedWhenUpdatingChanged");
-			Thing thing = QuestGen_Shuttle.GenerateShuttle(bestowingFaction, null, null, acceptColonists: false, onlyAcceptColonists: false, onlyAcceptHealthy: false, 0, dropEverythingIfUnsatisfied: false, leaveImmediatelyWhenSatisfied: true, dropEverythingOnArrival: true, stayAfterDroppedEverythingOnArrival: true);
+			string inSignal3 = QuestGenUtility.QuestTagSignal(text, "BeingAttacked");
+			string inSignal4 = QuestGenUtility.QuestTagSignal(text, "Fleeing");
+			string inSignal5 = QuestGenUtility.QuestTagSignal(text, "TitleAwardedWhenUpdatingChanged");
+			Thing thing = QuestGen_Shuttle.GenerateShuttle(bestowingFaction);
 			Pawn pawn2 = quest.GetPawn(new QuestGen_Pawns.GetPawnParms
 			{
 				mustBeOfKind = PawnKindDefOf.Empire_Royal_Bestower,
 				canGeneratePawn = true,
 				mustBeOfFaction = bestowingFaction,
-				mustBeWorldPawn = true
+				mustBeWorldPawn = true,
+				ifWorldPawnThenMustBeFree = true,
+				redressPawn = true
 			});
 			QuestUtility.AddQuestTag(ref thing.questTags, text);
 			QuestUtility.AddQuestTag(ref pawn.questTags, text);
@@ -82,8 +85,7 @@ namespace RimWorld.QuestGen
 					thing2.Destroy();
 				}
 			}
-			int num2 = titleAwardedWhenUpdating.maxPsylinkLevel - pawn.GetPsylinkLevel();
-			for (int i = 0; i < num2 + 1; i++)
+			for (int i = 0; i < 2; i++)
 			{
 				innerContainer.TryAdd(ThingMaker.MakeThing(ThingDefOf.PsychicAmplifier), 1);
 			}
@@ -92,6 +94,7 @@ namespace RimWorld.QuestGen
 			slate.Set("shuttleContents", list);
 			slate.Set("shuttle", thing);
 			slate.Set("target", pawn);
+			slate.Set("bestower", pawn2);
 			slate.Set("bestowingFaction", bestowingFaction);
 			List<Pawn> list2 = new List<Pawn>();
 			for (int j = 0; j < 6; j++)
@@ -100,14 +103,18 @@ namespace RimWorld.QuestGen
 				list.Add(item);
 				list2.Add(item);
 			}
+			quest.EnsureNotDowned(list);
 			slate.Set("defenders", list2);
-			CompShuttle compShuttle = thing.TryGetComp<CompShuttle>();
-			compShuttle.requiredPawns = list;
-			compShuttle.sendAwayIfAllDespawned = list.Cast<Thing>().ToList();
-			compShuttle.sendAwayIfAllPawnsLeftToLoadAreNotOfFaction = bestowingFaction;
-			quest.AddContentsToShuttle(thing, list);
-			quest.SpawnSkyfaller(null, ThingDefOf.ShuttleIncoming, Gen.YieldSingle(thing), Faction.OfPlayer, null, null, lookForSafeSpot: true, tryLandInShipLandingZone: true, null, pawn);
-			quest.FactionGoodwillChange(bestowingFaction, -5, QuestGenUtility.HardcodedSignalWithQuestID("defenders.Killed"), canSendMessage: true, canSendHostilityLetter: true, "GoodwillChangeReason_AttackedFaction".Translate(bestowingFaction));
+			thing.TryGetComp<CompShuttle>().requiredPawns = list;
+			TransportShip transportShip = quest.GenerateTransportShip(TransportShipDefOf.Ship_Shuttle, list, thing).transportShip;
+			Quest quest2 = quest;
+			Pawn mapOfPawn = pawn;
+			Faction ofEmpire = Faction.OfEmpire;
+			quest2.AddShipJob_Arrive(transportShip, null, mapOfPawn, null, ShipJobStartMode.Instant, ofEmpire);
+			quest.AddShipJob(transportShip, ShipJobDefOf.Unload);
+			quest.AddShipJob_WaitForever(transportShip, leaveImmediatelyWhenSatisfied: true, showGizmos: false, list.Cast<Thing>().ToList()).sendAwayIfAnyDespawnedDownedOrDead = new List<Thing> { pawn2 };
+			QuestUtility.AddQuestTag(ref transportShip.questTags, text);
+			quest.FactionGoodwillChange(bestowingFaction, -5, QuestGenUtility.HardcodedSignalWithQuestID("defenders.Killed"), canSendMessage: true, canSendHostilityLetter: true, getLookTargetFromSignal: true, HistoryEventDefOf.QuestPawnLost);
 			QuestPart_BestowingCeremony questPart_BestowingCeremony = new QuestPart_BestowingCeremony();
 			questPart_BestowingCeremony.inSignal = QuestGen.slate.Get<string>("inSignal");
 			questPart_BestowingCeremony.pawns.Add(pawn2);
@@ -125,10 +132,12 @@ namespace RimWorld.QuestGen
 			questPart_EscortPawn.mapOfPawn = pawn;
 			questPart_EscortPawn.faction = pawn2.Faction;
 			questPart_EscortPawn.shuttle = thing;
+			questPart_EscortPawn.questTag = text;
+			questPart_EscortPawn.leavingDangerMessage = "MessageBestowingDanger".Translate();
 			quest.AddPart(questPart_EscortPawn);
-			string inSignal4 = QuestGenUtility.HardcodedSignalWithQuestID("shuttle.Killed");
-			quest.SetFactionRelations(bestowingFaction, FactionRelationKind.Hostile, inSignal4);
-			quest.End(QuestEndOutcome.Fail, 0, null, inSignal4, QuestPart.SignalListenMode.OngoingOnly, sendStandardLetter: true);
+			string inSignal6 = QuestGenUtility.HardcodedSignalWithQuestID("shuttle.Killed");
+			quest.FactionGoodwillChange(bestowingFaction, 0, inSignal6, canSendMessage: true, canSendHostilityLetter: true, getLookTargetFromSignal: true, HistoryEventDefOf.ShuttleDestroyed, QuestPart.SignalListenMode.OngoingOnly, ensureMakesHostile: true);
+			quest.End(QuestEndOutcome.Fail, 0, null, inSignal6, QuestPart.SignalListenMode.OngoingOnly, sendStandardLetter: true);
 			QuestPart_RequirementsToAcceptThroneRoom questPart_RequirementsToAcceptThroneRoom = new QuestPart_RequirementsToAcceptThroneRoom();
 			questPart_RequirementsToAcceptThroneRoom.faction = bestowingFaction;
 			questPart_RequirementsToAcceptThroneRoom.forPawn = pawn;
@@ -138,36 +147,39 @@ namespace RimWorld.QuestGen
 			questPart_RequirementsToAcceptPawnOnColonyMap.pawn = pawn;
 			quest.AddPart(questPart_RequirementsToAcceptPawnOnColonyMap);
 			QuestPart_RequirementsToAcceptNoDanger questPart_RequirementsToAcceptNoDanger = new QuestPart_RequirementsToAcceptNoDanger();
-			questPart_RequirementsToAcceptNoDanger.map = pawn.Map;
+			questPart_RequirementsToAcceptNoDanger.mapPawn = pawn;
 			questPart_RequirementsToAcceptNoDanger.dangerTo = bestowingFaction;
 			quest.AddPart(questPart_RequirementsToAcceptNoDanger);
-			string inSignal5 = QuestGenUtility.HardcodedSignalWithQuestID("shuttleContents.Recruited");
-			string inSignal6 = QuestGenUtility.HardcodedSignalWithQuestID("bestowingFaction.BecameHostileToPlayer");
-			quest.Signal(inSignal5, delegate
+			quest.AddPart(new QuestPart_RequirementsToAcceptNoOngoingBestowingCeremony());
+			string inSignal7 = QuestGenUtility.HardcodedSignalWithQuestID("shuttleContents.Recruited");
+			string inSignal8 = QuestGenUtility.HardcodedSignalWithQuestID("bestowingFaction.BecameHostileToPlayer");
+			quest.Signal(inSignal7, delegate
 			{
 				quest.End(QuestEndOutcome.Fail, 0, null, null, QuestPart.SignalListenMode.OngoingOnly, sendStandardLetter: true);
 			});
-			quest.End(QuestEndOutcome.Fail, 0, null, QuestGenUtility.HardcodedSignalWithQuestID("target.Killed"), QuestPart.SignalListenMode.OngoingOrNotYetAccepted, sendStandardLetter: true);
+			quest.Bestowing_TargetChangedTitle(pawn, pawn2, titleAwardedWhenUpdating, inSignal5);
 			quest.Letter(LetterDefOf.NegativeEvent, text2, null, null, null, useColonistsFromCaravanArg: false, QuestPart.SignalListenMode.OngoingOnly, null, filterDeadPawnsFromLookTargets: false, label: "LetterLabelBestowingCeremonyExpired".Translate(), text: "LetterTextBestowingCeremonyExpired".Translate(pawn.Named("TARGET")));
+			quest.End(QuestEndOutcome.Fail, 0, null, QuestGenUtility.HardcodedSignalWithQuestID("target.Killed"), QuestPart.SignalListenMode.OngoingOrNotYetAccepted, sendStandardLetter: true);
+			quest.End(QuestEndOutcome.Fail, 0, null, QuestGenUtility.HardcodedSignalWithQuestID("bestower.Killed"), QuestPart.SignalListenMode.OngoingOrNotYetAccepted, sendStandardLetter: true);
+			quest.End(QuestEndOutcome.Fail, 0, null, QuestGenUtility.HardcodedSignalWithQuestID("bestower.LeftBehind"), QuestPart.SignalListenMode.OngoingOrNotYetAccepted, sendStandardLetter: true);
+			quest.End(QuestEndOutcome.Fail, 0, null, QuestGenUtility.HardcodedSignalWithQuestID("shuttle.LeftBehind"), QuestPart.SignalListenMode.OngoingOrNotYetAccepted, sendStandardLetter: true);
 			quest.End(QuestEndOutcome.Fail, 0, null, text2);
-			quest.End(QuestEndOutcome.Fail, 0, null, inSignal6, QuestPart.SignalListenMode.OngoingOrNotYetAccepted, sendStandardLetter: true);
+			quest.End(QuestEndOutcome.Fail, 0, null, inSignal8, QuestPart.SignalListenMode.OngoingOrNotYetAccepted, sendStandardLetter: true);
 			quest.End(QuestEndOutcome.Fail, 0, null, inSignal, QuestPart.SignalListenMode.OngoingOnly, sendStandardLetter: true);
-			quest.End(QuestEndOutcome.Fail, 0, null, inSignal3, QuestPart.SignalListenMode.OngoingOrNotYetAccepted, sendStandardLetter: true);
+			quest.End(QuestEndOutcome.Fail, 0, null, inSignal3, QuestPart.SignalListenMode.OngoingOnly, sendStandardLetter: true);
+			quest.End(QuestEndOutcome.Fail, 0, null, inSignal4, QuestPart.SignalListenMode.OngoingOnly, sendStandardLetter: true);
 			quest.End(QuestEndOutcome.Success, 0, null, inSignal2);
 			QuestPart_Choice questPart_Choice = quest.RewardChoice();
 			QuestPart_Choice.Choice item2 = new QuestPart_Choice.Choice
 			{
-				rewards = 
+				rewards = { (Reward)new Reward_BestowingCeremony
 				{
-					(Reward)new Reward_BestowingCeremony
-					{
-						targetPawnName = pawn.NameShortColored.Resolve(),
-						titleName = titleAwardedWhenUpdating.GetLabelCapFor(pawn),
-						awardingFaction = bestowingFaction,
-						givePsylink = (titleAwardedWhenUpdating.maxPsylinkLevel > pawn.GetPsylinkLevel()),
-						royalTitle = titleAwardedWhenUpdating
-					}
-				}
+					targetPawnName = pawn.NameShortColored.Resolve(),
+					titleName = titleAwardedWhenUpdating.GetLabelCapFor(pawn),
+					awardingFaction = bestowingFaction,
+					givePsylink = (titleAwardedWhenUpdating.maxPsylinkLevel > pawn.GetPsylinkLevel()),
+					royalTitle = titleAwardedWhenUpdating
+				} }
 			};
 			questPart_Choice.choices.Add(item2);
 			List<Rule> list3 = new List<Rule>();
@@ -184,15 +196,16 @@ namespace RimWorld.QuestGen
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			if (!TryGetCeremonyTarget(slate, out var _, out var bestowingFaction) || bestowingFaction.HostileTo(Faction.OfPlayer))
+			if (!TryGetCeremonyTarget(slate, out var pawn, out var bestowingFaction) || bestowingFaction.HostileTo(Faction.OfPlayer))
 			{
 				return false;
 			}
-			QuestGen_Pawns.GetPawnParms parms = default(QuestGen_Pawns.GetPawnParms);
-			parms.mustBeOfKind = PawnKindDefOf.Empire_Royal_Bestower;
-			parms.canGeneratePawn = true;
-			parms.mustBeOfFaction = bestowingFaction;
-			if (!QuestGen_Pawns.GetPawnTest(parms, out var _))
+			if (!QuestGen_Pawns.GetPawnTest(new QuestGen_Pawns.GetPawnParms
+			{
+				mustBeOfKind = PawnKindDefOf.Empire_Royal_Bestower,
+				canGeneratePawn = true,
+				mustBeOfFaction = bestowingFaction
+			}, out pawn))
 			{
 				return false;
 			}

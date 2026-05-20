@@ -17,9 +17,9 @@ namespace RimWorld
 		{
 			get
 			{
-				float x2 = (float)Find.TickManager.TicksGame / 3600000f;
-				float timePassedFactor = Mathf.Clamp(GenMath.LerpDouble(0f, 1.2f, 1f, 0.1f, x2), 0.1f, 1f);
-				return CountChance.RandomElementByWeight((Pair<int, float> x) => (x.First == 1) ? x.Second : (x.Second * timePassedFactor)).First;
+				float x = (float)Find.TickManager.TicksGame / 3600000f;
+				float timePassedFactor = Mathf.Clamp(GenMath.LerpDouble(0f, 1.2f, 1f, 0.1f, x), 0.1f, 1f);
+				return CountChance.RandomElementByWeight((Pair<int, float> pair) => (pair.First == 1) ? pair.Second : (pair.Second * timePassedFactor)).First;
 			}
 		}
 
@@ -65,7 +65,7 @@ namespace RimWorld
 
 		private bool TryFindShipChunkDropCell(IntVec3 nearLoc, Map map, int maxDist, out IntVec3 pos)
 		{
-			return CellFinderLoose.TryFindSkyfallerCell(ThingDefOf.ShipChunkIncoming, map, out pos, 10, nearLoc, maxDist);
+			return CellFinderLoose.TryFindSkyfallerCell(ThingDefOf.ShipChunkIncoming, map, ThingDefOf.ShipChunk.terrainAffordanceNeeded, out pos, 10, nearLoc, maxDist);
 		}
 	}
 }

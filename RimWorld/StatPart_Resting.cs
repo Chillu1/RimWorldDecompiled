@@ -9,32 +9,24 @@ namespace RimWorld
 
 		public override void TransformValue(StatRequest req, ref float val)
 		{
-			if (req.HasThing)
+			if (req.HasThing && req.Thing is Pawn pawn)
 			{
-				Pawn pawn = req.Thing as Pawn;
-				if (pawn != null)
-				{
-					val *= RestingMultiplier(pawn);
-				}
+				val *= RestingMultiplier(pawn);
 			}
 		}
 
 		public override string ExplanationPart(StatRequest req)
 		{
-			if (req.HasThing)
+			if (req.HasThing && req.Thing is Pawn pawn)
 			{
-				Pawn pawn = req.Thing as Pawn;
-				if (pawn != null)
-				{
-					return "StatsReport_Resting".Translate() + ": x" + RestingMultiplier(pawn).ToStringPercent();
-				}
+				return "StatsReport_Resting".Translate() + ": x" + RestingMultiplier(pawn).ToStringPercent();
 			}
 			return null;
 		}
 
 		private float RestingMultiplier(Pawn pawn)
 		{
-			if (pawn.InBed() || (pawn.GetPosture() != 0 && !pawn.Downed) || (pawn.IsCaravanMember() && !pawn.GetCaravan().pather.MovingNow) || pawn.InCaravanBed() || pawn.CarriedByCaravan())
+			if (pawn.InBed() || (pawn.GetPosture() != PawnPosture.Standing && !pawn.Downed) || (pawn.IsCaravanMember() && !pawn.GetCaravan().pather.MovingNow) || pawn.InCaravanBed() || pawn.CarriedByCaravan())
 			{
 				return factor;
 			}

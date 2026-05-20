@@ -6,7 +6,40 @@ namespace RimWorld
 {
 	public class WeaponTraitDef : Def
 	{
+		public Type workerClass = typeof(WeaponTraitWorker);
+
+		public WeaponCategoryDef weaponCategory;
+
+		public List<string> exclusionTags;
+
+		public float commonality;
+
+		public bool canGenerateAlone = true;
+
+		public DamageDef damageDefOverride;
+
+		public List<ExtraDamage> extraDamages;
+
+		public List<StatModifier> statOffsets;
+
+		public List<StatModifier> statFactors;
+
 		public List<StatModifier> equippedStatOffsets;
+
+		public float marketValueOffset;
+
+		public float burstShotSpeedMultiplier = 1f;
+
+		public float burstShotCountMultiplier = 1f;
+
+		public float additionalStoppingPower;
+
+		public bool ignoresAccuracyMaluses;
+
+		public ColorDef forcedColor;
+
+		[MustTranslate]
+		public List<string> traitAdjectives = new List<string>();
 
 		public List<HediffDef> equippedHediffs;
 
@@ -16,15 +49,9 @@ namespace RimWorld
 
 		public ThoughtDef killThought;
 
-		public Type workerClass = typeof(WeaponTraitWorker);
-
-		public List<string> exclusionTags;
-
-		public float commonality;
-
-		public float marketValueOffset;
-
 		public bool neverBond;
+
+		public CompProperties_EquippableAbilityReloadable abilityProps;
 
 		private WeaponTraitWorker worker;
 
@@ -32,6 +59,10 @@ namespace RimWorld
 		{
 			get
 			{
+				if (!ModLister.CheckRoyaltyOrOdyssey("Weapon traits"))
+				{
+					return null;
+				}
 				if (worker == null)
 				{
 					worker = (WeaponTraitWorker)Activator.CreateInstance(workerClass);

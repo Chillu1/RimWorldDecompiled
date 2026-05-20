@@ -28,7 +28,7 @@ namespace RimWorld
 
 		private static float SecondsSinceLesson => timeSinceLastLesson;
 
-		private static float RelaxDesire => 100f - SecondsSinceLesson * 0.111111112f;
+		private static float RelaxDesire => 100f - SecondsSinceLesson * (1f / 9f);
 
 		public static void Reset()
 		{

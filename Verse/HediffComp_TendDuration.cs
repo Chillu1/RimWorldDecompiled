@@ -5,7 +5,7 @@ using UnityEngine;
 namespace Verse
 {
 	[StaticConstructorOnStartup]
-	public class HediffComp_TendDuration : HediffComp_SeverityPerDay
+	public class HediffComp_TendDuration : HediffComp_SeverityModifierBase
 	{
 		public int tendTicksLeft = -1;
 
@@ -89,11 +89,15 @@ namespace Verse
 						text = ((parent.Part != null && parent.Part.def.IsSolid(parent.Part, base.Pawn.health.hediffSet.hediffs)) ? TProps.labelSolidTendedWell : ((parent.Part == null || parent.Part.depth != BodyPartDepth.Inside) ? TProps.labelTendedWell : TProps.labelTendedWellInner));
 						if (text != null)
 						{
-							stringBuilder.AppendLine(text.CapitalizeFirst() + " (" + "Quality".Translate().ToLower() + " " + tendQuality.ToStringPercent("F0") + ")");
+							stringBuilder.AppendLine(text.CapitalizeFirst() + " (" + "quality".Translate() + " " + tendQuality.ToStringPercent("F0") + ")");
 						}
 						else
 						{
 							stringBuilder.AppendLine(string.Format("{0}: {1}", "TendQuality".Translate(), tendQuality.ToStringPercent()));
+						}
+						if (TProps.disappearsAtTotalTendQuality >= 0)
+						{
+							stringBuilder.AppendLine("DisappearsAtTotalTendQuality".Translate() + ": " + totalTendQuality.ToStringPercent() + " / " + GenText.ToStringPercent(TProps.disappearsAtTotalTendQuality));
 						}
 					}
 					if (!base.Pawn.Dead && !TProps.TendIsPermanent && parent.TendableNow(ignoreTimer: true))
@@ -150,7 +154,7 @@ namespace Verse
 			Scribe_Values.Look(ref totalTendQuality, "totalTendQuality", 0f);
 		}
 
-		protected override float SeverityChangePerDay()
+		public override float SeverityChangePerDay()
 		{
 			if (IsTended)
 			{
@@ -168,7 +172,7 @@ namespace Verse
 			}
 		}
 
-		public override void CompTended_NewTemp(float quality, float maxQuality, int batchPosition = 0)
+		public override void CompTended(float quality, float maxQuality, int batchPosition = 0)
 		{
 			tendQuality = Mathf.Clamp(quality + Rand.Range(-0.25f, 0.25f), 0f, maxQuality);
 			totalTendQuality += tendQuality;

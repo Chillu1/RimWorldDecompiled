@@ -1,4 +1,3 @@
-using System;
 using System.Linq;
 using UnityEngine;
 using Verse;
@@ -33,18 +32,13 @@ namespace RimWorld
 		public override void DoWindowContents(Rect rect)
 		{
 			DrawPageTitle(rect);
-			StorytellerUI.DrawStorytellerSelectionInterface_NewTemp(GetMainRect(rect), ref storyteller, ref difficulty, ref difficultyValues, selectedStorytellerInfoListing);
+			StorytellerUI.DrawStorytellerSelectionInterface(GetMainRect(rect), ref storyteller, ref difficulty, ref difficultyValues, selectedStorytellerInfoListing);
 			DoBottomButtons(rect);
 			Rect rect2 = new Rect(rect.xMax - Page.BottomButSize.x - 200f - 6f, rect.yMax - Page.BottomButSize.y, 200f, Page.BottomButSize.y);
 			Text.Font = GameFont.Tiny;
 			Text.Anchor = TextAnchor.MiddleRight;
 			Widgets.Label(rect2, "CanChangeStorytellerSettingsDuringPlay".Translate());
 			Text.Anchor = TextAnchor.UpperLeft;
-		}
-
-		[Obsolete]
-		private void OpenDifficultyUnlockConfirmation()
-		{
 		}
 
 		protected override bool CanDoNext()

@@ -6,22 +6,21 @@ namespace RimWorld.Planet
 {
 	public class WorldGenStep_Features : WorldGenStep
 	{
-		public override int SeedPart => 711240483;
+		public override int SeedPart => 26611132;
 
-		public override void GenerateFresh(string seed)
+		public override void GenerateFresh(string seed, PlanetLayer layer)
 		{
-			Find.World.features = new WorldFeatures();
 			foreach (FeatureDef item in from x in DefDatabase<FeatureDef>.AllDefsListForReading
 				orderby x.order, x.index
 				select x)
 			{
 				try
 				{
-					item.Worker.GenerateWhereAppropriate();
+					item.Worker.GenerateWhereAppropriate(layer);
 				}
-				catch (Exception ex)
+				catch (Exception arg)
 				{
-					Log.Error(string.Concat("Could not generate world features of def ", item, ": ", ex));
+					Log.Error($"Could not generate world features of def {item}: {arg}");
 				}
 			}
 		}

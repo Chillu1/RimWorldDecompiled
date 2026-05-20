@@ -12,13 +12,26 @@ namespace Verse
 			Fire fire = victim as Fire;
 			if (fire == null || fire.Destroyed)
 			{
-				return result;
+				Thing thing = victim?.GetAttachment(ThingDefOf.Fire);
+				if (thing != null)
+				{
+					fire = (Fire)thing;
+				}
 			}
-			base.Apply(dinfo, victim);
-			fire.fireSize -= dinfo.Amount * 0.01f;
-			if (fire.fireSize <= 0.1f)
+			if (fire != null && !fire.Destroyed)
 			{
-				fire.Destroy();
+				base.Apply(dinfo, victim);
+				fire.fireSize -= dinfo.Amount * 0.01f;
+				if (fire.fireSize < 0.1f)
+				{
+					fire.Destroy();
+				}
+			}
+			if (victim is Pawn pawn)
+			{
+				Hediff hediff = HediffMaker.MakeHediff(dinfo.Def.hediff, pawn);
+				hediff.Severity = dinfo.Amount;
+				pawn.health.AddHediff(hediff, null, dinfo);
 			}
 			return result;
 		}

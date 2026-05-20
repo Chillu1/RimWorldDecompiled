@@ -39,35 +39,33 @@ namespace RimWorld.QuestGen
 				return;
 			}
 			Dictionary<ThingDef, int> dictionary = new Dictionary<ThingDef, int>();
-			List<Pair<List<StuffCategoryDef>, int>> list2 = new List<Pair<List<StuffCategoryDef>, int>>();
-			List<List<Pair<ThingDef, int>>> list3 = new List<List<Pair<ThingDef, int>>>();
-			SketchTerrain sketchTerrain;
-			int num = value.sketch.Entities.Where((SketchEntity x) => (sketchTerrain = x as SketchTerrain) != null && sketchTerrain.treatSimilarAsSame).Count();
+			List<Pair<List<StuffCategoryDef>, int>> list = new List<Pair<List<StuffCategoryDef>, int>>();
+			List<List<Pair<ThingDef, int>>> list2 = new List<List<Pair<ThingDef, int>>>();
+			int num = value.sketch.Entities.Where((SketchEntity x) => x is SketchTerrain sketchTerrain && sketchTerrain.treatSimilarAsSame).Count();
 			foreach (SketchEntity entity in value.sketch.Entities)
 			{
-				SketchBuildable sketchBuildable = entity as SketchBuildable;
-				if (sketchBuildable == null)
+				if (!(entity is SketchBuildable sketchBuildable))
 				{
 					continue;
 				}
 				if (sketchBuildable.Buildable.MadeFromStuff && sketchBuildable.Stuff == null)
 				{
-					int num2 = FindStuffsIndexFor(sketchBuildable.Buildable, list2);
+					int num2 = FindStuffsIndexFor(sketchBuildable.Buildable, list);
 					if (num2 < 0)
 					{
-						list2.Add(new Pair<List<StuffCategoryDef>, int>(sketchBuildable.Buildable.stuffCategories, sketchBuildable.Buildable.costStuffCount));
+						list.Add(new Pair<List<StuffCategoryDef>, int>(sketchBuildable.Buildable.stuffCategories, sketchBuildable.Buildable.CostStuffCount));
 					}
 					else
 					{
-						list2[num2] = new Pair<List<StuffCategoryDef>, int>(list2[num2].First, list2[num2].Second + sketchBuildable.Buildable.costStuffCount);
+						list[num2] = new Pair<List<StuffCategoryDef>, int>(list[num2].First, list[num2].Second + sketchBuildable.Buildable.CostStuffCount);
 					}
-					if (sketchBuildable.Buildable.costList == null)
+					if (sketchBuildable.Buildable.CostList == null)
 					{
 						continue;
 					}
-					for (int i = 0; i < sketchBuildable.Buildable.costList.Count; i++)
+					for (int num3 = 0; num3 < sketchBuildable.Buildable.CostList.Count; num3++)
 					{
-						ThingDefCountClass thingDefCountClass = sketchBuildable.Buildable.costList[i];
+						ThingDefCountClass thingDefCountClass = sketchBuildable.Buildable.CostList[num3];
 						if (!dictionary.TryGetValue(thingDefCountClass.thingDef, out var value2))
 						{
 							value2 = 0;
@@ -76,47 +74,47 @@ namespace RimWorld.QuestGen
 					}
 					continue;
 				}
-				SketchTerrain st;
-				if ((st = sketchBuildable as SketchTerrain) != null && st.treatSimilarAsSame)
+				SketchTerrain st = sketchBuildable as SketchTerrain;
+				if (st != null && st.treatSimilarAsSame)
 				{
 					foreach (TerrainDef item in DefDatabase<TerrainDef>.AllDefs.Where((TerrainDef x) => st.IsSameOrSimilar(x)))
 					{
-						if (item.costList.NullOrEmpty())
+						if (item.CostList.NullOrEmpty())
 						{
 							continue;
 						}
-						List<Pair<ThingDef, int>> list = new List<Pair<ThingDef, int>>();
-						foreach (ThingDefCountClass cost in item.costList)
+						List<Pair<ThingDef, int>> list3 = new List<Pair<ThingDef, int>>();
+						foreach (ThingDefCountClass cost in item.CostList)
 						{
-							list.Add(new Pair<ThingDef, int>(cost.thingDef, cost.count * num));
+							list3.Add(new Pair<ThingDef, int>(cost.thingDef, cost.count * num));
 						}
-						if (!list3.Any((List<Pair<ThingDef, int>> x) => x.ListsEqualIgnoreOrder(list)))
+						if (!list2.Any((List<Pair<ThingDef, int>> x) => x.SetsEqual(list3)))
 						{
-							list3.Add(list);
+							list2.Add(list3);
 						}
 					}
 					continue;
 				}
 				List<ThingDefCountClass> list4 = sketchBuildable.Buildable.CostListAdjusted(sketchBuildable.Stuff);
-				for (int j = 0; j < list4.Count; j++)
+				for (int num4 = 0; num4 < list4.Count; num4++)
 				{
-					if (!dictionary.TryGetValue(list4[j].thingDef, out var value3))
+					if (!dictionary.TryGetValue(list4[num4].thingDef, out var value3))
 					{
 						value3 = 0;
 					}
-					dictionary[list4[j].thingDef] = value3 + list4[j].count;
+					dictionary[list4[num4].thingDef] = value3 + list4[num4].count;
 				}
 			}
-			float num3 = 0f;
+			float num5 = 0f;
 			StringBuilder stringBuilder = new StringBuilder();
-			foreach (Pair<List<StuffCategoryDef>, int> item2 in list2)
+			foreach (Pair<List<StuffCategoryDef>, int> item2 in list)
 			{
 				if (stringBuilder.Length != 0)
 				{
 					stringBuilder.AppendLine();
 				}
-				stringBuilder.Append((string)("  - " + "AnyOf".Translate() + ": " + item2.First.Select((StuffCategoryDef x) => x.label).ToCommaList() + " x") + item2.Second);
-				num3 += GetCheapestStuffMarketValue(item2.First, item2.Second);
+				stringBuilder.Append(string.Concat("  - " + "AnyOf".Translate() + ": " + item2.First.Select((StuffCategoryDef x) => x.label).ToCommaList() + " x", item2.Second.ToString()));
+				num5 += GetCheapestStuffMarketValue(item2.First, item2.Second);
 			}
 			foreach (KeyValuePair<ThingDef, int> item3 in dictionary)
 			{
@@ -125,26 +123,26 @@ namespace RimWorld.QuestGen
 					stringBuilder.AppendLine();
 				}
 				stringBuilder.Append("  - " + GenLabel.ThingLabel(item3.Key, null, item3.Value).CapitalizeFirst());
-				num3 += item3.Key.BaseMarketValue * (float)item3.Value;
+				num5 += item3.Key.BaseMarketValue * (float)item3.Value;
 			}
-			if (list3.Any())
+			if (list2.Any())
 			{
 				if (stringBuilder.Length != 0)
 				{
 					stringBuilder.AppendLine();
 				}
 				stringBuilder.Append("  - " + "AnyOf".Translate() + ":");
-				foreach (List<Pair<ThingDef, int>> item4 in list3)
+				foreach (List<Pair<ThingDef, int>> item4 in list2)
 				{
 					stringBuilder.AppendLine();
 					stringBuilder.Append("    - " + item4.Select((Pair<ThingDef, int> x) => x.First.label + " x" + x.Second).ToCommaList());
 				}
-				num3 += GetCheapestThingMarketValue(list3);
+				num5 += GetCheapestThingMarketValue(list2);
 			}
 			slate.Set(storeAs.GetValue(slate), stringBuilder.ToString());
 			if (!storeMarketValueAs.GetValue(slate).NullOrEmpty())
 			{
-				slate.Set(storeMarketValueAs.GetValue(slate), num3);
+				slate.Set(storeMarketValueAs.GetValue(slate), num5);
 			}
 		}
 
@@ -152,7 +150,7 @@ namespace RimWorld.QuestGen
 		{
 			for (int i = 0; i < anyOf.Count; i++)
 			{
-				if (anyOf[i].First.ListsEqualIgnoreOrder(buildable.stuffCategories))
+				if (anyOf[i].First.SetsEqual(buildable.stuffCategories))
 				{
 					return i;
 				}

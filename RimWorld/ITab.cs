@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using Verse;
 using Verse.Sound;
@@ -8,9 +9,11 @@ namespace RimWorld
 	{
 		protected object SelObject => Find.Selector.SingleSelectedObject;
 
+		protected List<object> AllSelObjects => Find.Selector.SelectedObjects;
+
 		protected Thing SelThing => Find.Selector.SingleSelectedThing;
 
-		protected Pawn SelPawn => SelThing as Pawn;
+		protected virtual Pawn SelPawn => SelThing as Pawn;
 
 		private MainTabWindow_Inspect InspectPane => (MainTabWindow_Inspect)MainButtonDefOf.Inspect.TabWindow;
 

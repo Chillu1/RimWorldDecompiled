@@ -21,13 +21,14 @@ namespace Verse
 					Scribe_Values.Look(ref value, "body");
 					int value2 = part.Index;
 					Scribe_Values.Look(ref value2, "index", 0, forceSave: true);
+					return;
 				}
 				finally
 				{
 					Scribe.ExitNode();
 				}
 			}
-			else if (Scribe.mode == LoadSaveMode.LoadingVars)
+			if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
 				part = ScribeExtractor.BodyPartFromNode(Scribe.loader.curXmlParent[label], label, defaultValue);
 			}

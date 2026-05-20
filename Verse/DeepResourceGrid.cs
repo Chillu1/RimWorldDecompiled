@@ -89,7 +89,7 @@ namespace Verse
 
 		public void MarkForDraw()
 		{
-			if (map == Find.CurrentMap)
+			if (map == Find.CurrentMap && !Find.ScreenshotModeHandler.Active)
 			{
 				drawer.MarkForDraw();
 			}
@@ -97,8 +97,7 @@ namespace Verse
 
 		public void DrawPlacingMouseAttachments(BuildableDef placingDef)
 		{
-			ThingDef thingDef;
-			if ((thingDef = placingDef as ThingDef) != null && thingDef.CompDefFor<CompDeepDrill>() != null && AnyActiveDeepScannersOnMap())
+			if (placingDef is ThingDef thingDef && thingDef.CompDefFor<CompDeepDrill>() != null && AnyActiveDeepScannersOnMap())
 			{
 				RenderMouseAttachments();
 			}

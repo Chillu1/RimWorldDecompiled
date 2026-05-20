@@ -9,6 +9,8 @@ namespace Verse
 
 		private RulePack rulePack;
 
+		public bool directTestable;
+
 		[Unsaved(false)]
 		private List<Rule> cachedRules;
 
@@ -61,29 +63,9 @@ namespace Verse
 			}
 		}
 
-		public List<Rule> RulesImmediate
-		{
-			get
-			{
-				if (rulePack == null)
-				{
-					return null;
-				}
-				return rulePack.Rules;
-			}
-		}
+		public List<Rule> RulesImmediate => rulePack?.Rules;
 
-		public List<Rule> UntranslatedRulesImmediate
-		{
-			get
-			{
-				if (rulePack == null)
-				{
-					return null;
-				}
-				return rulePack.UntranslatedRules;
-			}
-		}
+		public List<Rule> UntranslatedRulesImmediate => rulePack?.UntranslatedRules;
 
 		public string FirstRuleKeyword
 		{

@@ -10,6 +10,8 @@ namespace RimWorld
 	{
 		public override IList<Thing> container => Transporter.innerContainer;
 
+		public override bool UseDiscardMessage => false;
+
 		public CompTransporter Transporter => base.SelThing.TryGetComp<CompTransporter>();
 
 		public override bool IsVisible
@@ -28,6 +30,18 @@ namespace RimWorld
 			}
 		}
 
+		public override IntVec3 DropOffset
+		{
+			get
+			{
+				if (Transporter.Shuttle != null)
+				{
+					return base.SelThing.def.interactionCellOffset.RotatedBy(base.SelThing.Rotation);
+				}
+				return base.DropOffset;
+			}
+		}
+
 		public ITab_ContentsTransporter()
 		{
 			labelKey = "TabTransporterContents";
@@ -37,12 +51,12 @@ namespace RimWorld
 		protected override void DoItemsLists(Rect inRect, ref float curY)
 		{
 			CompTransporter transporter = Transporter;
-			Rect position = new Rect(0f, curY, (inRect.width - 10f) / 2f, inRect.height);
+			Rect rect = new Rect(0f, curY, (inRect.width - 10f) / 2f, inRect.height);
 			Text.Font = GameFont.Small;
 			bool flag = false;
 			float curY2 = 0f;
-			GUI.BeginGroup(position);
-			Widgets.ListSeparator(ref curY2, position.width, "ItemsToLoad".Translate());
+			Widgets.BeginGroup(rect);
+			Widgets.ListSeparator(ref curY2, rect.width, "ItemsToLoad".Translate());
 			if (transporter.leftToLoad != null)
 			{
 				for (int i = 0; i < transporter.leftToLoad.Count; i++)
@@ -51,7 +65,7 @@ namespace RimWorld
 					if (t.CountToTransfer > 0 && t.HasAnyThing)
 					{
 						flag = true;
-						DoThingRow(t.ThingDef, t.CountToTransfer, t.things, position.width, ref curY2, delegate(int x)
+						DoThingRow(t.ThingDef, t.CountToTransfer, t.things, rect.width, ref curY2, delegate(int x)
 						{
 							OnDropToLoadThing(t, x);
 						});
@@ -60,9 +74,9 @@ namespace RimWorld
 			}
 			if (!flag)
 			{
-				Widgets.NoneLabel(ref curY2, position.width);
+				Widgets.NoneLabel(ref curY2, rect.width);
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			Rect inRect2 = new Rect((inRect.width + 10f) / 2f, curY, (inRect.width - 10f) / 2f, inRect.height);
 			float curY3 = 0f;
 			base.DoItemsLists(inRect2, ref curY3);
@@ -72,11 +86,11 @@ namespace RimWorld
 		protected override void OnDropThing(Thing t, int count)
 		{
 			base.OnDropThing(t, count);
-			Pawn pawn = t as Pawn;
-			if (pawn != null)
+			if (t is Pawn pawn)
 			{
 				RemovePawnFromLoadLord(pawn);
 			}
+			Transporter.Notify_ThingRemoved(t);
 		}
 
 		private void RemovePawnFromLoadLord(Pawn pawn)
@@ -94,8 +108,7 @@ namespace RimWorld
 			EndJobForEveryoneHauling(t);
 			foreach (Thing thing in t.things)
 			{
-				Pawn pawn = thing as Pawn;
-				if (pawn != null)
+				if (thing is Pawn pawn)
 				{
 					RemovePawnFromLoadLord(pawn);
 				}
@@ -104,7 +117,7 @@ namespace RimWorld
 
 		private void EndJobForEveryoneHauling(TransferableOneWay t)
 		{
-			List<Pawn> allPawnsSpawned = base.SelThing.Map.mapPawns.AllPawnsSpawned;
+			IReadOnlyList<Pawn> allPawnsSpawned = base.SelThing.Map.mapPawns.AllPawnsSpawned;
 			for (int i = 0; i < allPawnsSpawned.Count; i++)
 			{
 				if (allPawnsSpawned[i].CurJobDef == JobDefOf.HaulToTransporter)

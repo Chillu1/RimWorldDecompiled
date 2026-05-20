@@ -56,8 +56,7 @@ namespace RimWorld
 
 		public override bool CanCoexistWith(ScenPart other)
 		{
-			ScenPart_ForcedTrait scenPart_ForcedTrait = other as ScenPart_ForcedTrait;
-			if (scenPart_ForcedTrait != null && trait == scenPart_ForcedTrait.trait && context.OverlapsWith(scenPart_ForcedTrait.context))
+			if (other is ScenPart_ForcedTrait scenPart_ForcedTrait && trait == scenPart_ForcedTrait.trait && context.OverlapsWith(scenPart_ForcedTrait.context))
 			{
 				return false;
 			}
@@ -66,7 +65,7 @@ namespace RimWorld
 
 		protected override void ModifyPawnPostGenerate(Pawn pawn, bool redressed)
 		{
-			if (pawn.story == null || pawn.story.traits == null || (pawn.story.traits.HasTrait(this.trait) && pawn.story.traits.DegreeOfTrait(this.trait) == degree))
+			if (pawn.story == null || pawn.story.traits == null || this.trait == null || (pawn.story.traits.HasTrait(this.trait) && pawn.story.traits.DegreeOfTrait(this.trait) == degree))
 			{
 				return;
 			}
@@ -90,20 +89,36 @@ namespace RimWorld
 					}
 				}
 			}
-			pawn.story.traits.GainTrait(new Trait(this.trait, degree, forced: true));
+			Trait trait2 = new Trait(this.trait, degree, forced: true);
+			pawn.story.traits.GainTrait(trait2);
+			TraitUtility.ApplySkillGainFromTrait(pawn, trait2);
 		}
 
 		private static bool PawnHasTraitForcedByBackstory(Pawn pawn, TraitDef trait)
 		{
-			if (pawn.story.childhood != null && pawn.story.childhood.forcedTraits != null && pawn.story.childhood.forcedTraits.Any((TraitEntry te) => te.def == trait))
+			if (pawn.story.Childhood != null && pawn.story.Childhood.forcedTraits != null && pawn.story.Childhood.forcedTraits.Any((BackstoryTrait te) => te.def == trait))
 			{
 				return true;
 			}
-			if (pawn.story.adulthood != null && pawn.story.adulthood.forcedTraits != null && pawn.story.adulthood.forcedTraits.Any((TraitEntry te) => te.def == trait))
+			if (pawn.story.Adulthood != null && pawn.story.Adulthood.forcedTraits != null && pawn.story.Adulthood.forcedTraits.Any((BackstoryTrait te) => te.def == trait))
 			{
 				return true;
 			}
 			return false;
+		}
+
+		public override bool HasNullDefs()
+		{
+			if (!base.HasNullDefs())
+			{
+				return trait == null;
+			}
+			return true;
+		}
+
+		public override int GetHashCode()
+		{
+			return base.GetHashCode() ^ ((trait != null) ? trait.GetHashCode() : 0) ^ degree;
 		}
 	}
 }

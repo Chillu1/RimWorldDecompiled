@@ -28,7 +28,7 @@ namespace Verse
 			{
 				if (labelShort.NullOrEmpty())
 				{
-					return base.LabelCap;
+					return LabelCap;
 				}
 				if (cachedLabelShortCap == null)
 				{

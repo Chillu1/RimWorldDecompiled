@@ -10,10 +10,10 @@ namespace RimWorld
 		{
 		}
 
-		public override void TravelingTransportPodsArrived(List<ActiveDropPodInfo> dropPods, Map map)
+		public override void TravellingTransportersArrived(List<ActiveTransporterInfo> transporters, Map map)
 		{
-			IntVec3 near = DropCellFinder.FindRaidDropCenterDistant_NewTemp(map);
-			TransportPodsArrivalActionUtility.DropTravelingTransportPods(dropPods, near, map);
+			IntVec3 near = DropCellFinder.FindRaidDropCenterDistant(map);
+			TransportersArrivalActionUtility.DropTravellingDropPods(transporters, near, map);
 		}
 
 		public override bool TryResolveRaidSpawnCenter(IncidentParms parms)

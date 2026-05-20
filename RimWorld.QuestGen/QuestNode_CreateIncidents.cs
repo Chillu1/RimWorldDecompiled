@@ -27,7 +27,7 @@ namespace RimWorld.QuestGen
 
 		protected override bool TestRunInt(Slate slate)
 		{
-			if (incidentDef.GetValue(slate) == null || points.GetValue(slate) < incidentDef.GetValue(slate).minThreatPoints)
+			if (incidentDef.GetValue(slate) == null || points.GetValue(slate) < incidentDef.GetValue(slate).minThreatPoints || points.GetValue(slate) > incidentDef.GetValue(slate).maxThreatPoints)
 			{
 				return false;
 			}

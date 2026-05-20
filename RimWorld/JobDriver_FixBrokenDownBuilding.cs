@@ -38,7 +38,7 @@ namespace RimWorld
 			toil.WithProgressBarToilDelay(TargetIndex.A);
 			toil.activeSkill = () => SkillDefOf.Construction;
 			yield return toil;
-			Toil toil2 = new Toil();
+			Toil toil2 = ToilMaker.MakeToil("MakeNewToils");
 			toil2.initAction = delegate
 			{
 				Components.Destroy();

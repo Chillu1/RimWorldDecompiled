@@ -6,7 +6,7 @@ namespace RimWorld
 	{
 		private const float BaseSelectionWeight = 0.075f;
 
-		private SimpleCurve CompatibilityFactorCurve = new SimpleCurve
+		private static readonly SimpleCurve CompatibilityFactorCurve = new SimpleCurve
 		{
 			new CurvePoint(-1.5f, 0f),
 			new CurvePoint(-0.5f, 0.1f),
@@ -17,6 +17,10 @@ namespace RimWorld
 
 		public override float RandomSelectionWeight(Pawn initiator, Pawn recipient)
 		{
+			if (initiator.Inhumanized())
+			{
+				return 0f;
+			}
 			return 0.075f * CompatibilityFactorCurve.Evaluate(initiator.relations.CompatibilityWith(recipient));
 		}
 	}

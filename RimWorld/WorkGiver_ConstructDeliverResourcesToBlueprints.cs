@@ -13,8 +13,11 @@ namespace RimWorld
 			{
 				return null;
 			}
-			Blueprint blueprint = t as Blueprint;
-			if (blueprint == null)
+			if (!(t is Blueprint blueprint) || blueprint.def.entityDefToBuild is ThingDef { plant: not null })
+			{
+				return null;
+			}
+			if (!GenConstruct.CanTouchTargetFromValidCell(blueprint, pawn))
 			{
 				return null;
 			}
@@ -22,12 +25,11 @@ namespace RimWorld
 			{
 				return GenConstruct.HandleBlockingThingJob(blueprint, pawn, forced);
 			}
-			bool flag = def.workType == WorkTypeDefOf.Construction;
-			if (!GenConstruct.CanConstruct(blueprint, pawn, flag, forced))
+			if (!GenConstruct.CanConstruct(blueprint, pawn, def.workType, forced, JobDefOf.HaulToContainer))
 			{
 				return null;
 			}
-			if (!flag && WorkGiver_ConstructDeliverResources.ShouldRemoveExistingFloorFirst(pawn, blueprint))
+			if (def.workType != WorkTypeDefOf.Construction && WorkGiver_ConstructDeliverResources.ShouldRemoveExistingFloorFirst(pawn, blueprint))
 			{
 				return null;
 			}
@@ -36,14 +38,14 @@ namespace RimWorld
 			{
 				return job;
 			}
-			Job job2 = ResourceDeliverJobFor(pawn, blueprint);
+			Job job2 = ResourceDeliverJobFor(pawn, blueprint, canRemoveExistingFloorUnderNearbyNeeders: true, forced);
 			if (job2 != null)
 			{
 				return job2;
 			}
 			if (def.workType != WorkTypeDefOf.Hauling)
 			{
-				Job job3 = NoCostFrameMakeJobFor(pawn, blueprint);
+				Job job3 = NoCostFrameMakeJobFor(blueprint);
 				if (job3 != null)
 				{
 					return job3;
@@ -52,13 +54,13 @@ namespace RimWorld
 			return null;
 		}
 
-		private Job NoCostFrameMakeJobFor(Pawn pawn, IConstructible c)
+		private Job NoCostFrameMakeJobFor(IConstructible c)
 		{
 			if (c is Blueprint_Install)
 			{
 				return null;
 			}
-			if (c is Blueprint && c.MaterialsNeeded().Count == 0)
+			if (c is Blueprint && c.TotalMaterialCost().Count == 0)
 			{
 				Job job = JobMaker.MakeJob(JobDefOf.PlaceNoCostFrame);
 				job.targetA = (Thing)c;

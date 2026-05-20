@@ -1,4 +1,5 @@
 using RimWorld;
+using RimWorld.Planet;
 
 namespace Verse.AI
 {
@@ -8,15 +9,35 @@ namespace Verse.AI
 
 		public virtual bool StateCanOccur(Pawn pawn)
 		{
-			if (!def.unspawnedCanDo && !pawn.Spawned)
+			if (!def.inCaravanCanDo && !pawn.Spawned && pawn.IsCaravanMember())
 			{
 				return false;
 			}
-			if (!def.prisonersCanDo && pawn.HostFaction != null)
+			if (!def.unspawnedNotInCaravanCanDo && !pawn.Spawned && !pawn.IsCaravanMember())
+			{
+				return false;
+			}
+			if (!def.prisonersCanDo && pawn.IsPrisoner)
+			{
+				return false;
+			}
+			if (!def.slavesCanDo && pawn.IsSlave)
 			{
 				return false;
 			}
 			if (def.colonistsOnly && pawn.Faction != Faction.OfPlayer)
+			{
+				return false;
+			}
+			if (def.slavesOnly && !pawn.IsSlave)
+			{
+				return false;
+			}
+			if (!def.downedCanDo && pawn.Downed)
+			{
+				return false;
+			}
+			if (pawn.IsWorldPawn())
 			{
 				return false;
 			}

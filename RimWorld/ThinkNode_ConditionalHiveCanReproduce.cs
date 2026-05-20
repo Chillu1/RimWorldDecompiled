@@ -7,7 +7,11 @@ namespace RimWorld
 	{
 		protected override bool Satisfied(Pawn pawn)
 		{
-			return (pawn.mindState.duty.focus.Thing as Hive)?.GetComp<CompSpawnerHives>().canSpawnHives ?? false;
+			if (pawn.mindState.duty.focus.Thing is Hive hive)
+			{
+				return hive.GetComp<CompSpawnerHives>().canSpawnHives;
+			}
+			return false;
 		}
 	}
 }

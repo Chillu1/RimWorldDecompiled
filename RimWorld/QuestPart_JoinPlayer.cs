@@ -49,30 +49,32 @@ namespace RimWorld
 			pawns.RemoveAll((Pawn x) => x.Destroyed);
 			if (joinPlayer)
 			{
-				for (int i = 0; i < pawns.Count; i++)
+				foreach (Pawn pawn in pawns)
 				{
-					if (pawns[i].Faction != Faction.OfPlayer)
+					if (pawn.IsColonist || pawn.IsPrisonerOfColony || pawn.IsSlaveOfColony)
 					{
-						pawns[i].SetFaction(Faction.OfPlayer);
+						RecruitUtility.Recruit(pawn, Faction.OfPlayer);
+					}
+					else if (pawn.Faction != Faction.OfPlayer)
+					{
+						pawn.SetFaction(Faction.OfPlayer);
 					}
 				}
+				return;
 			}
-			else
+			if (!makePrisoners)
 			{
-				if (!makePrisoners)
+				return;
+			}
+			for (int num = 0; num < pawns.Count; num++)
+			{
+				if (pawns[num].RaceProps.Humanlike)
 				{
-					return;
-				}
-				for (int j = 0; j < pawns.Count; j++)
-				{
-					if (pawns[j].RaceProps.Humanlike)
+					if (!pawns[num].IsPrisonerOfColony)
 					{
-						if (!pawns[j].IsPrisonerOfColony)
-						{
-							pawns[j].guest.SetGuestStatus(Faction.OfPlayer, prisoner: true);
-						}
-						HealthUtility.TryAnesthetize(pawns[j]);
+						pawns[num].guest.SetGuestStatus(Faction.OfPlayer, GuestStatus.Prisoner);
 					}
+					HealthUtility.TryAnesthetize(pawns[num]);
 				}
 			}
 		}

@@ -61,6 +61,17 @@ namespace Verse
 			};
 		}
 
+		public static string GetGenderNoun(this Gender gender)
+		{
+			return gender switch
+			{
+				Gender.None => "ProItNoun".Translate(), 
+				Gender.Male => "ProHeNoun".Translate(), 
+				Gender.Female => "ProSheNoun".Translate(), 
+				_ => throw new ArgumentException(), 
+			};
+		}
+
 		public static Texture2D GetIcon(this Gender gender)
 		{
 			return gender switch

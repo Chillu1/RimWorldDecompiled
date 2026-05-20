@@ -25,6 +25,10 @@ namespace RimWorld
 			{
 				return null;
 			}
+			if (pawn.health.hediffSet.InLabor())
+			{
+				return null;
+			}
 			if (pawn.needs.joy.CurLevel > 0.5f)
 			{
 				return null;

@@ -17,6 +17,7 @@ namespace Verse.AI
 		{
 			Job job = JobMaker.MakeJob(JobDefOf.Wait);
 			job.expiryInterval = ticks;
+			job.overrideFacing = pawn.mindState?.duty?.overrideFacing ?? Rot4.Invalid;
 			return job;
 		}
 	}

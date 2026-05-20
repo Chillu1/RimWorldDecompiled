@@ -7,11 +7,15 @@ namespace Verse
 {
 	public class PrefsData
 	{
-		public float volumeGame = 0.8f;
+		public float volumeMaster = 0.8f;
+
+		public float volumeGame = 1f;
 
 		public float volumeMusic = 0.4f;
 
 		public float volumeAmbient = 1f;
+
+		public float volumeUI = 1f;
 
 		public int screenWidth;
 
@@ -27,14 +31,35 @@ namespace Verse
 
 		public bool plantWindSway = true;
 
+		public float screenShakeIntensity = 1f;
+
+		public bool textureCompression = true;
+
 		public bool showRealtimeClock;
+
+		public bool disableTinyText;
 
 		public AnimalNameDisplayMode animalNameMode;
 
-		[Obsolete]
-		public bool extremeDifficultyUnlocked;
+		public MechNameDisplayMode mechNameMode = MechNameDisplayMode.WhileDrafted;
+
+		public string backgroundExpansionId;
+
+		public bool randomBackground;
+
+		public ShowWeaponsUnderPortraitMode showWeaponsUnderPortraitMode = ShowWeaponsUnderPortraitMode.WhileDrafted;
+
+		public DotHighlightDisplayMode dotHighlightDisplayMode = DotHighlightDisplayMode.HighlightAll;
+
+		public HighlightStyleMode highlightStyleMode = HighlightStyleMode.Silhouettes;
+
+		public bool visibleMood = true;
+
+		public bool twelveHourClock;
 
 		public bool adaptiveTrainingEnabled = true;
+
+		public bool steamDeckKeyboardMode;
 
 		public List<string> preferredNames = new List<string>();
 
@@ -43,6 +68,12 @@ namespace Verse
 		public bool runInBackground;
 
 		public bool edgeScreenScroll = true;
+
+		public bool rememberDrawStyles;
+
+		public bool zoomSwitchWorldLayer = true;
+
+		public bool zoomToMouse;
 
 		public TemperatureDisplayMode temperatureMode;
 
@@ -59,20 +90,52 @@ namespace Verse
 
 		public float mapDragSensitivity = 1.3f;
 
+		public bool smoothCameraJumps = true;
+
+		public bool gravshipCutscenes = true;
+
+		public int autosavesCount = 5;
+
 		[Unsaved(true)]
 		public bool? pauseOnUrgentLetter;
 
+		[Obsolete]
+		public bool extremeDifficultyUnlocked;
+
+		[Obsolete]
+		public bool pauseOnError;
+
 		public bool devMode;
+
+		public List<string> debugActionPalette = new List<string>();
+
+		public Vector2 devPalettePosition;
 
 		public string langFolderName = "unknown";
 
 		public bool logVerbose;
 
-		public bool pauseOnError;
+		public bool openLogOnWarnings;
+
+		public bool closeLogWindowOnEscape = true;
+
+		public bool disableQuickStartCryptoSickness = true;
+
+		public bool quickStartDevPaletteOn;
 
 		public bool resetModsConfigOnCrash = true;
 
+		[Obsolete]
 		public bool simulateNotOwningRoyalty;
+
+		[Obsolete]
+		public bool simulateNotOwningIdeology;
+
+		[Obsolete]
+		public bool simulateNotOwningBiotech;
+
+		[Obsolete]
+		public bool simulateNotOwningAnomaly;
 
 		public void Apply()
 		{
@@ -86,7 +149,7 @@ namespace Verse
 				{
 					CustomCursor.Deactivate();
 				}
-				AudioListener.volume = volumeGame;
+				AudioListener.volume = volumeMaster;
 				Application.runInBackground = runInBackground;
 				if (screenWidth == 0 || screenHeight == 0)
 				{
@@ -94,7 +157,7 @@ namespace Verse
 				}
 				else
 				{
-					ResolutionUtility.SetResolutionRaw(screenWidth, screenHeight, fullscreen);
+					ResolutionUtility.SetResolutionRaw(screenWidth, screenHeight, !ResolutionUtility.BorderlessFullscreen && fullscreen);
 				}
 			}
 		}

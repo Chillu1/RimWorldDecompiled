@@ -10,15 +10,15 @@ namespace RimWorld
 
 		private static readonly MaterialPropertyBlock MatPropertyBlock = new MaterialPropertyBlock();
 
-		private const float TextureActualRingSizeFactor = 1.16015625f;
+		private const float TextureActualRingSizeFactor = 1.1601562f;
 
 		private CompProperties_RadialPulse Props => (CompProperties_RadialPulse)props;
 
 		private float RingLerpFactor => (float)(Find.TickManager.TicksGame % Props.ticksBetweenPulses) / (float)Props.ticksPerPulse;
 
-		private float RingScale => Props.radius * Mathf.Lerp(0f, 2f, RingLerpFactor) * 1.16015625f;
+		private float RingScale => Props.radius * Mathf.Lerp(0f, 2f, RingLerpFactor) * 1.1601562f;
 
-		private bool ParentIsActive => parent.GetComp<CompSendSignalOnPawnProximity>()?.Sent ?? false;
+		private bool ParentIsActive => parent.GetComp<CompSendSignalOnMotion>()?.Sent ?? false;
 
 		public override void PostDraw()
 		{

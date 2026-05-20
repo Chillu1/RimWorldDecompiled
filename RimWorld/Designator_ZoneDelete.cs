@@ -6,7 +6,9 @@ namespace RimWorld
 {
 	public class Designator_ZoneDelete : Designator_Zone
 	{
-		private List<Zone> justDesignated = new List<Zone>();
+		private readonly List<Zone> justDesignated = new List<Zone>();
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.RemoveZones;
 
 		public Designator_ZoneDelete()
 		{

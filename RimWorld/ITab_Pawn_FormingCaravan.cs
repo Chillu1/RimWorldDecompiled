@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
+using Verse.AI;
 using Verse.AI.Group;
 
 namespace RimWorld
@@ -36,7 +37,7 @@ namespace RimWorld
 
 		private static List<Thing> tmpPawns = new List<Thing>();
 
-		public override bool IsVisible => base.SelPawn.IsFormingCaravan();
+		public override bool IsVisible => SelPawn.IsFormingCaravan();
 
 		public ITab_Pawn_FormingCaravan()
 		{
@@ -52,7 +53,7 @@ namespace RimWorld
 			Rect rect = new Rect(0f, 0f, outRect.width - 16f, Mathf.Max(lastDrawnHeight, outRect.height));
 			Widgets.BeginScrollView(outRect, ref scrollPosition, rect);
 			float num = 0f;
-			string status = ((LordJob_FormAndSendCaravan)base.SelPawn.GetLord().LordJob).Status;
+			string status = ((LordJob_FormAndSendCaravan)SelPawn.GetLord().LordJob).Status;
 			Widgets.Label(new Rect(0f, num, rect.width, 100f), status);
 			num += 22f;
 			num += 4f;
@@ -71,9 +72,9 @@ namespace RimWorld
 		public override void TabUpdate()
 		{
 			base.TabUpdate();
-			if (base.SelPawn != null && base.SelPawn.GetLord() != null)
+			if (SelPawn != null && SelPawn.GetLord() != null)
 			{
-				Lord lord = base.SelPawn.GetLord();
+				Lord lord = SelPawn.GetLord();
 				for (int i = 0; i < lord.ownedPawns.Count; i++)
 				{
 					TargetHighlighter.Highlight(lord.ownedPawns[i], arrow: false, colonistBar: false, circleOverlay: true);
@@ -91,7 +92,7 @@ namespace RimWorld
 			int num5 = 0;
 			int num6 = 0;
 			int num7 = 0;
-			Lord lord = base.SelPawn.GetLord();
+			Lord lord = SelPawn.GetLord();
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
 				Pawn pawn = lord.ownedPawns[i];
@@ -178,11 +179,11 @@ namespace RimWorld
 
 		private void DoItemsLists(Rect inRect, ref float curY)
 		{
-			LordJob_FormAndSendCaravan lordJob_FormAndSendCaravan = (LordJob_FormAndSendCaravan)base.SelPawn.GetLord().LordJob;
-			Rect position = new Rect(0f, curY, (inRect.width - 10f) / 2f, inRect.height);
+			LordJob_FormAndSendCaravan lordJob_FormAndSendCaravan = (LordJob_FormAndSendCaravan)SelPawn.GetLord().LordJob;
+			Rect rect = new Rect(0f, curY, (inRect.width - 10f) / 2f, inRect.height);
 			float curY2 = 0f;
-			GUI.BeginGroup(position);
-			Widgets.ListSeparator(ref curY2, position.width, "ItemsToLoad".Translate());
+			Widgets.BeginGroup(rect);
+			Widgets.ListSeparator(ref curY2, rect.width, "ItemsToLoad".Translate());
 			bool flag = false;
 			for (int i = 0; i < lordJob_FormAndSendCaravan.transferables.Count; i++)
 			{
@@ -190,18 +191,18 @@ namespace RimWorld
 				if (transferableOneWay.CountToTransfer > 0 && transferableOneWay.HasAnyThing)
 				{
 					flag = true;
-					DoThingRow(transferableOneWay.ThingDef, transferableOneWay.CountToTransfer, transferableOneWay.things, position.width, ref curY2);
+					DoThingRow(transferableOneWay.AnyThing.GetInnerIfMinified().def, transferableOneWay.CountToTransfer, transferableOneWay.things, rect.width, ref curY2);
 				}
 			}
 			if (!flag)
 			{
-				Widgets.NoneLabel(ref curY2, position.width);
+				Widgets.NoneLabel(ref curY2, rect.width);
 			}
-			GUI.EndGroup();
-			Rect position2 = new Rect((inRect.width + 10f) / 2f, curY, (inRect.width - 10f) / 2f, inRect.height);
+			Widgets.EndGroup();
+			Rect rect2 = new Rect((inRect.width + 10f) / 2f, curY, (inRect.width - 10f) / 2f, inRect.height);
 			float curY3 = 0f;
-			GUI.BeginGroup(position2);
-			Widgets.ListSeparator(ref curY3, position2.width, "LoadedItems".Translate());
+			Widgets.BeginGroup(rect2);
+			Widgets.ListSeparator(ref curY3, rect2.width, "LoadedItems".Translate());
 			bool flag2 = false;
 			for (int j = 0; j < lordJob_FormAndSendCaravan.lord.ownedPawns.Count; j++)
 			{
@@ -214,22 +215,22 @@ namespace RimWorld
 						flag2 = true;
 						tmpSingleThing.Clear();
 						tmpSingleThing.Add(thing);
-						DoThingRow(thing.def, thing.stackCount, tmpSingleThing, position2.width, ref curY3);
+						DoThingRow(thing.def, thing.stackCount, tmpSingleThing, rect2.width, ref curY3);
 						tmpSingleThing.Clear();
 					}
 				}
 			}
 			if (!flag2)
 			{
-				Widgets.NoneLabel(ref curY3, position.width);
+				Widgets.NoneLabel(ref curY3, rect.width);
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			curY += Mathf.Max(curY2, curY3);
 		}
 
 		private void SelectColonistsLater()
 		{
-			Lord lord = base.SelPawn.GetLord();
+			Lord lord = SelPawn.GetLord();
 			tmpPawns.Clear();
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
@@ -244,7 +245,7 @@ namespace RimWorld
 
 		private void HighlightColonists()
 		{
-			Lord lord = base.SelPawn.GetLord();
+			Lord lord = SelPawn.GetLord();
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
 				if (lord.ownedPawns[i].IsFreeColonist)
@@ -256,7 +257,7 @@ namespace RimWorld
 
 		private void SelectPrisonersLater()
 		{
-			Lord lord = base.SelPawn.GetLord();
+			Lord lord = SelPawn.GetLord();
 			tmpPawns.Clear();
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
@@ -271,7 +272,7 @@ namespace RimWorld
 
 		private void HighlightPrisoners()
 		{
-			Lord lord = base.SelPawn.GetLord();
+			Lord lord = SelPawn.GetLord();
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
 				if (lord.ownedPawns[i].IsPrisoner)
@@ -283,7 +284,7 @@ namespace RimWorld
 
 		private void SelectAnimalsLater()
 		{
-			Lord lord = base.SelPawn.GetLord();
+			Lord lord = SelPawn.GetLord();
 			tmpPawns.Clear();
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
@@ -298,7 +299,7 @@ namespace RimWorld
 
 		private void HighlightAnimals()
 		{
-			Lord lord = base.SelPawn.GetLord();
+			Lord lord = SelPawn.GetLord();
 			for (int i = 0; i < lord.ownedPawns.Count; i++)
 			{
 				if (lord.ownedPawns[i].RaceProps.Animal)
@@ -324,7 +325,7 @@ namespace RimWorld
 			bool flag = false;
 			for (int i = 0; i < things.Count; i++)
 			{
-				if (things[i].Spawned)
+				if (things[i].SpawnedOrAnyParentSpawned)
 				{
 					if (!flag)
 					{
@@ -365,9 +366,46 @@ namespace RimWorld
 			return text;
 		}
 
+		private void EndJobForEveryoneHauling(TransferableOneWay t, LordJob_FormAndSendCaravan lordJob)
+		{
+			List<Pawn> freeColonistsSpawned = base.SelThing.Map.mapPawns.FreeColonistsSpawned;
+			for (int i = 0; i < freeColonistsSpawned.Count; i++)
+			{
+				if (freeColonistsSpawned[i].CurJobDef == JobDefOf.PrepareCaravan_GatherItems && freeColonistsSpawned[i].jobs.curDriver is JobDriver_PrepareCaravan_GatherItems jobDriver_PrepareCaravan_GatherItems && jobDriver_PrepareCaravan_GatherItems.job.lord == lordJob.lord && jobDriver_PrepareCaravan_GatherItems.ToHaul != null && jobDriver_PrepareCaravan_GatherItems.ToHaul.def == t.ThingDef)
+				{
+					freeColonistsSpawned[i].jobs.EndCurrentJob(JobCondition.InterruptForced);
+				}
+			}
+		}
+
+		private void DropThingToLoad(TransferableOneWay t, int count)
+		{
+			t.ForceTo(t.CountToTransfer - count);
+			EndJobForEveryoneHauling(t, (LordJob_FormAndSendCaravan)SelPawn.GetLord().LordJob);
+		}
+
 		private void DoThingRow(ThingDef thingDef, int count, List<Thing> things, float width, ref float curY)
 		{
 			Rect rect = new Rect(0f, curY, width, 28f);
+			Thing singleThingForClosure = ((things.Count == 1) ? things[0] : null);
+			if (count != 1 && Widgets.ButtonImage(new Rect(rect.x + rect.width - 24f, rect.y + (rect.height - 24f) / 2f, 24f, 24f), CaravanThingsTabUtility.AbandonSpecificCountButtonTex))
+			{
+				Find.WindowStack.Add(new Dialog_Slider("RemoveSliderText".Translate(thingDef.label), 1, count, DoDropThing));
+			}
+			rect.width -= 24f;
+			if (Widgets.ButtonImage(new Rect(rect.x + rect.width - 24f, rect.y + (rect.height - 24f) / 2f, 24f, 24f), CaravanThingsTabUtility.AbandonButtonTex))
+			{
+				string text = thingDef.label;
+				if (things.Count == 1 && things[0] is Pawn)
+				{
+					text = ((Pawn)things[0]).LabelShortCap;
+				}
+				Find.WindowStack.Add(Dialog_MessageBox.CreateConfirmation("ConfirmRemoveItemDialog".Translate(text), delegate
+				{
+					DoDropThing(count);
+				}));
+			}
+			rect.width -= 24f;
 			if (things.Count == 1)
 			{
 				Widgets.InfoCardButton(rect.width - 24f, curY, things[0]);
@@ -397,24 +435,54 @@ namespace RimWorld
 			Text.Anchor = TextAnchor.MiddleLeft;
 			GUI.color = ThingLabelColor;
 			Rect rect3 = new Rect(36f, curY, rect.width - 36f, rect.height);
-			string str = ((things.Count != 1) ? GenLabel.ThingLabel(thingDef, null, count).CapitalizeFirst() : things[0].LabelCap);
+			string text2 = ((things.Count == 1 && count == things[0].stackCount) ? things[0].LabelCap : ((thingDef != ThingDefOf.MinifiedThing) ? GenLabel.ThingLabel(thingDef, null, count).CapitalizeFirst() : GenLabel.ThingLabel(things[0].GetInnerIfMinified(), count).CapitalizeFirst()));
 			Text.WordWrap = false;
-			Widgets.Label(rect3, str.Truncate(rect3.width));
+			Widgets.Label(rect3, text2.Truncate(rect3.width));
 			Text.WordWrap = true;
 			Text.Anchor = TextAnchor.UpperLeft;
-			TooltipHandler.TipRegion(rect, str);
+			TooltipHandler.TipRegion(rect, text2);
 			if (Widgets.ButtonInvisible(rect))
 			{
 				SelectLater(things);
 			}
 			if (Mouse.IsOver(rect))
 			{
-				for (int i = 0; i < things.Count; i++)
+				for (int num = 0; num < things.Count; num++)
 				{
-					TargetHighlighter.Highlight(things[i]);
+					TargetHighlighter.Highlight(things[num]);
 				}
 			}
 			curY += 28f;
+			void DoDropThing(int count2)
+			{
+				LordJob_FormAndSendCaravan lordJob_FormAndSendCaravan = (LordJob_FormAndSendCaravan)SelPawn.GetLord().LordJob;
+				Thing resultingThing;
+				if (singleThingForClosure != null && singleThingForClosure.ParentHolder is Pawn_CarryTracker pawn_CarryTracker)
+				{
+					pawn_CarryTracker.TryDropCarriedThing(pawn_CarryTracker.pawn.PositionHeld, count2, ThingPlaceMode.Near, out resultingThing);
+				}
+				else if (singleThingForClosure != null && singleThingForClosure.ParentHolder is Pawn_InventoryTracker pawn_InventoryTracker)
+				{
+					pawn_InventoryTracker.innerContainer.TryDrop(singleThingForClosure, pawn_InventoryTracker.pawn.PositionHeld, pawn_InventoryTracker.pawn.MapHeld, ThingPlaceMode.Near, count2, out resultingThing);
+				}
+				else
+				{
+					List<TransferableOneWay> transferables = lordJob_FormAndSendCaravan.transferables;
+					TransferableOneWay transferableOneWay = null;
+					for (int i = 0; i < transferables.Count; i++)
+					{
+						if (transferables[i].CountToTransfer > 0 && transferables[i].AnyThing.def == thingDef)
+						{
+							transferableOneWay = transferables[i];
+							break;
+						}
+					}
+					if (transferableOneWay != null)
+					{
+						DropThingToLoad(transferableOneWay, count2);
+					}
+				}
+			}
 		}
 	}
 }

@@ -8,25 +8,26 @@ namespace RimWorld
 {
 	public static class PlantUtility
 	{
-		public static bool GrowthSeasonNow(IntVec3 c, Map map, bool forSowing = false)
+		public static bool GrowthSeasonNow(Map map, ThingDef plantDef)
 		{
-			Room roomOrAdjacent = c.GetRoomOrAdjacent(map, RegionType.Set_All);
-			if (roomOrAdjacent == null)
+			float outdoorTemp = map.mapTemperature.OutdoorTemp;
+			if (outdoorTemp > plantDef.plant.minGrowthTemperature)
+			{
+				return outdoorTemp < plantDef.plant.maxGrowthTemperature;
+			}
+			return false;
+		}
+
+		public static bool GrowthSeasonNow(IntVec3 c, Map map, ThingDef plantDef)
+		{
+			if (c.GetRoomOrAdjacent(map, RegionType.Set_All) == null)
 			{
 				return false;
 			}
-			if (roomOrAdjacent.UsesOutdoorTemperature)
-			{
-				if (forSowing)
-				{
-					return map.weatherManager.growthSeasonMemory.GrowthSeasonOutdoorsNowForSowing;
-				}
-				return map.weatherManager.growthSeasonMemory.GrowthSeasonOutdoorsNow;
-			}
 			float temperature = c.GetTemperature(map);
-			if (temperature > 0f)
+			if (temperature > plantDef.plant.minGrowthTemperature)
 			{
-				return temperature < 58f;
+				return temperature < plantDef.plant.maxGrowthTemperature;
 			}
 			return false;
 		}
@@ -36,67 +37,192 @@ namespace RimWorld
 			return c.GetSnowDepth(map) < 0.2f;
 		}
 
-		public static bool CanEverPlantAt(this ThingDef plantDef, IntVec3 c, Map map)
+		public static bool SandAllowsPlanting(IntVec3 c, Map map)
 		{
-			return plantDef.CanEverPlantAt_NewTemp(c, map);
+			return c.GetSandDepth(map) < 0.2f;
 		}
 
-		public static bool CanEverPlantAt_NewTemp(this ThingDef plantDef, IntVec3 c, Map map, bool canWipePlantsExceptTree = false)
+		public static bool CanNowPlantAt(this ThingDef plantDef, IntVec3 c, Map map, bool canWipePlantsExceptTree = false)
 		{
-			if (plantDef.category != ThingCategory.Plant)
-			{
-				Log.Error(string.Concat("Checking CanGrowAt with ", plantDef, " which is not a plant."));
-			}
-			if (!c.InBounds(map))
+			if (!plantDef.CanEverPlantAt(c, map, canWipePlantsExceptTree, checkMapTemperature: false))
 			{
 				return false;
 			}
-			if (map.fertilityGrid.FertilityAt(c) < plantDef.plant.fertilityMin)
+			foreach (Thing thing in c.GetThingList(map))
 			{
-				return false;
-			}
-			List<Thing> list = map.thingGrid.ThingsListAt(c);
-			for (int i = 0; i < list.Count; i++)
-			{
-				Thing thing = list[i];
-				if (thing.def.BlocksPlanting(canWipePlantsExceptTree))
+				if (map.designationManager.DesignationOn(thing, DesignationDefOf.Uninstall) != null)
 				{
 					return false;
 				}
-				if (plantDef.passability == Traversability.Impassable)
+				if (map.designationManager.DesignationOn(thing, DesignationDefOf.Deconstruct) != null)
 				{
-					if (thing.def.category == ThingCategory.Pawn || thing.def.category == ThingCategory.Item || thing.def.category == ThingCategory.Building)
+					return false;
+				}
+				if (thing is Building building && map.listerBuildings.TryGetReinstallBlueprint(building, out var _))
+				{
+					return false;
+				}
+			}
+			return true;
+		}
+
+		public static AcceptanceReport CanEverPlantAt(this ThingDef plantDef, IntVec3 c, Map map, out Thing blockingThing, bool canWipePlantsExceptTree = false, bool checkMapTemperature = true, bool writeNoReason = false)
+		{
+			blockingThing = null;
+			if (plantDef.category != ThingCategory.Plant)
+			{
+				Log.Error("Checking CanGrowAt with " + plantDef?.ToString() + " which is not a plant.");
+			}
+			if (!c.InBounds(map))
+			{
+				if (!writeNoReason)
+				{
+					return "OutOfBounds".Translate();
+				}
+				return false;
+			}
+			TerrainDef terrain = c.GetTerrain(map);
+			if (!plantDef.plant.completelyIgnoreFertility && map.fertilityGrid.FertilityAt(c) < plantDef.plant.fertilityMin)
+			{
+				if (!writeNoReason)
+				{
+					return "MessageWarningNotEnoughFertility".Translate();
+				}
+				return false;
+			}
+			if (checkMapTemperature && (map.TileInfo.MinTemperature > plantDef.plant.maxGrowthTemperature || map.TileInfo.MaxTemperature < plantDef.plant.minGrowthTemperature))
+			{
+				if (!writeNoReason)
+				{
+					return "CannotPlantExtremeTemp".Translate();
+				}
+				return false;
+			}
+			if (c.IsPolluted(map))
+			{
+				if (plantDef.plant.pollution == Pollution.CleanOnly)
+				{
+					if (!writeNoReason)
 					{
-						return false;
+						return "MessageWarningPollutedCell".Translate();
 					}
-					if (thing.def.category == ThingCategory.Plant && canWipePlantsExceptTree && thing.def.plant.IsTree)
+					return false;
+				}
+			}
+			else if (plantDef.plant.pollution == Pollution.PollutedOnly)
+			{
+				if (!writeNoReason)
+				{
+					return "MessageWarningNotPollutedCell".Translate();
+				}
+				return false;
+			}
+			if (plantDef.plant.terraformable && !CompTerraformer.CanEverConvertCell(c, map))
+			{
+				if (!writeNoReason)
+				{
+					return "MessageCannotBePlacedOn".Translate(terrain);
+				}
+				return false;
+			}
+			List<Thing> list = map.thingGrid.ThingsListAt(c);
+			bool flag = false;
+			for (int i = 0; i < list.Count; i++)
+			{
+				if (list[i] is Building_PlantGrower)
+				{
+					flag = true;
+					break;
+				}
+			}
+			if (!flag)
+			{
+				if (plantDef.plant.WildTerrainTags.Count > 0 && !plantDef.plant.WildTerrainTags.Overlaps(terrain.tags.OrElseEmptyEnumerable()))
+				{
+					if (!writeNoReason)
 					{
-						return false;
+						return "CannotPlantMissingTerrainTag".Translate();
 					}
+					return false;
+				}
+				if (plantDef.plant.terrainBlacklist != null && plantDef.plant.terrainBlacklist.Contains(terrain))
+				{
+					if (!writeNoReason)
+					{
+						return "CannotPlantMissingTerrainTag".Translate(terrain);
+					}
+					return false;
+				}
+			}
+			for (int j = 0; j < list.Count; j++)
+			{
+				Thing thing = list[j];
+				if (!flag && thing.def.BlocksPlanting(canWipePlantsExceptTree))
+				{
+					blockingThing = thing;
+					if (!writeNoReason)
+					{
+						return "BlockedBy".Translate(thing);
+					}
+					return false;
+				}
+				if (plantDef.passability != Traversability.Impassable)
+				{
+					continue;
+				}
+				if (thing.def.category == ThingCategory.Pawn || thing.def.category == ThingCategory.Item || thing.def.category == ThingCategory.Building)
+				{
+					blockingThing = thing;
+					if (!writeNoReason)
+					{
+						return "BlockedBy".Translate(thing);
+					}
+					return false;
+				}
+				if (thing.def.category == ThingCategory.Plant && canWipePlantsExceptTree && thing.def.plant.IsTree)
+				{
+					blockingThing = thing;
+					if (!writeNoReason)
+					{
+						return "BlockedBy".Translate(thing);
+					}
+					return false;
 				}
 			}
 			if (plantDef.passability == Traversability.Impassable)
 			{
-				for (int j = 0; j < 4; j++)
+				for (int k = 0; k < 4; k++)
 				{
-					IntVec3 c2 = c + GenAdj.CardinalDirections[j];
-					if (c2.InBounds(map))
+					IntVec3 c2 = c + GenAdj.CardinalDirections[k];
+					if (!c2.InBounds(map))
 					{
-						Building edifice = c2.GetEdifice(map);
-						if (edifice != null && edifice.def.IsDoor)
+						continue;
+					}
+					Building edifice = c2.GetEdifice(map);
+					if (edifice != null && edifice.def.IsDoor)
+					{
+						blockingThing = edifice;
+						if (!writeNoReason)
 						{
-							return false;
+							return "BlockedBy".Translate(edifice);
 						}
+						return false;
 					}
 				}
 			}
 			return true;
 		}
 
+		public static bool CanEverPlantAt(this ThingDef plantDef, IntVec3 c, Map map, bool canWipePlantsExceptTree = false, bool checkMapTemperature = true)
+		{
+			Thing blockingThing;
+			return plantDef.CanEverPlantAt(c, map, out blockingThing, canWipePlantsExceptTree, checkMapTemperature, writeNoReason: true).Accepted;
+		}
+
 		public static void LogPlantProportions()
 		{
 			Dictionary<ThingDef, float> dictionary = new Dictionary<ThingDef, float>();
-			foreach (ThingDef allWildPlant in Find.CurrentMap.Biome.AllWildPlants)
+			foreach (ThingDef allWildPlant in Find.CurrentMap.wildPlantSpawner.AllWildPlants)
 			{
 				dictionary.Add(allWildPlant, 0f);
 			}
@@ -110,14 +236,14 @@ namespace RimWorld
 					num += 1f;
 				}
 			}
-			foreach (ThingDef allWildPlant2 in Find.CurrentMap.Biome.AllWildPlants)
+			foreach (ThingDef allWildPlant2 in Find.CurrentMap.wildPlantSpawner.AllWildPlants)
 			{
 				dictionary[allWildPlant2] /= num;
 			}
 			Dictionary<ThingDef, float> dictionary2 = CalculateDesiredPlantProportions(Find.CurrentMap.Biome);
 			StringBuilder stringBuilder = new StringBuilder();
 			stringBuilder.AppendLine("PLANT           EXPECTED             FOUND");
-			foreach (ThingDef allWildPlant3 in Find.CurrentMap.Biome.AllWildPlants)
+			foreach (ThingDef allWildPlant3 in Find.CurrentMap.wildPlantSpawner.AllWildPlants)
 			{
 				stringBuilder.AppendLine(allWildPlant3.LabelCap + "       " + dictionary2[allWildPlant3].ToStringPercent() + "        " + dictionary[allWildPlant3].ToStringPercent());
 			}
@@ -157,12 +283,15 @@ namespace RimWorld
 
 		public static bool CanSowOnGrower(ThingDef plantDef, object obj)
 		{
+			if (obj is IPlantToGrowSettable settable && !PollutionUtility.CanPlantAt(plantDef, settable))
+			{
+				return false;
+			}
 			if (obj is Zone)
 			{
 				return plantDef.plant.sowTags.Contains("Ground");
 			}
-			Thing thing = obj as Thing;
-			if (thing != null && thing.def.building != null)
+			if (obj is Thing thing && thing.def.building != null)
 			{
 				return plantDef.plant.sowTags.Contains(thing.def.building.sowTag);
 			}
@@ -218,6 +347,64 @@ namespace RimWorld
 				stringBuilder.AppendLine();
 			}
 			Log.Message(stringBuilder.ToString());
+		}
+
+		public static float GrowthRateFactorFor_Fertility(ThingDef def, float fertilityAtCell)
+		{
+			if (def.plant.completelyIgnoreFertility)
+			{
+				return 1f;
+			}
+			return fertilityAtCell * def.plant.fertilitySensitivity + (1f - def.plant.fertilitySensitivity);
+		}
+
+		public static float GrowthRateFactorFor_Light(ThingDef def, float glow)
+		{
+			if (def.plant.growMinGlow == def.plant.growOptimalGlow && glow == def.plant.growOptimalGlow)
+			{
+				return 1f;
+			}
+			return GenMath.InverseLerp(def.plant.growMinGlow, def.plant.growOptimalGlow, glow);
+		}
+
+		public static float GrowthRateFactorFor_Temperature(ThingDef plant, float cellTemp)
+		{
+			if (cellTemp < plant.plant.minOptimalGrowthTemperature)
+			{
+				return Mathf.InverseLerp(plant.plant.minGrowthTemperature, plant.plant.minOptimalGrowthTemperature, cellTemp);
+			}
+			if (cellTemp > plant.plant.maxOptimalGrowthTemperature)
+			{
+				return Mathf.InverseLerp(plant.plant.maxGrowthTemperature, plant.plant.maxOptimalGrowthTemperature, cellTemp);
+			}
+			return 1f;
+		}
+
+		public static float NutritionFactorFromGrowth(ThingDef def, float plantGrowth)
+		{
+			if (def.plant.Sowable)
+			{
+				return plantGrowth;
+			}
+			return Mathf.Lerp(0.5f, 1f, plantGrowth);
+		}
+
+		public static bool PawnWillingToCutPlant_Job(Thing plant, Pawn pawn)
+		{
+			if (plant.def.plant.IsTree && plant.def.plant.treeLoversCareIfChopped)
+			{
+				return new HistoryEvent(HistoryEventDefOf.CutTree, pawn.Named(HistoryEventArgsNames.Doer)).Notify_PawnAboutToDo_Job();
+			}
+			return true;
+		}
+
+		public static bool TreeMarkedForExtraction(Thing plant)
+		{
+			if (plant.def.plant.IsTree)
+			{
+				return plant.MapHeld.designationManager.DesignationOn(plant, DesignationDefOf.ExtractTree) != null;
+			}
+			return false;
 		}
 	}
 }

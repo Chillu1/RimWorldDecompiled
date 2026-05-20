@@ -8,6 +8,8 @@ namespace RimWorld.Planet
 
 		public bool WonBattle => wonBattle;
 
+		public override bool CanReformFoggedEnemies => true;
+
 		public override void ExposeData()
 		{
 			base.ExposeData();
@@ -16,18 +18,22 @@ namespace RimWorld.Planet
 
 		public override bool ShouldRemoveMapNow(out bool alsoRemoveWorldObject)
 		{
-			if (!base.Map.mapPawns.AnyPawnBlockingMapRemoval)
-			{
-				alsoRemoveWorldObject = true;
-				return true;
-			}
 			alsoRemoveWorldObject = false;
-			return false;
+			if (base.Map.mapPawns.AnyPawnBlockingMapRemoval)
+			{
+				return false;
+			}
+			if (TransporterUtility.IncomingTransporterPreventingMapRemoval(base.Map))
+			{
+				return false;
+			}
+			alsoRemoveWorldObject = true;
+			return true;
 		}
 
-		public override void Tick()
+		protected override void TickInterval(int delta)
 		{
-			base.Tick();
+			base.TickInterval(delta);
 			if (base.HasMap)
 			{
 				CheckWonBattle();

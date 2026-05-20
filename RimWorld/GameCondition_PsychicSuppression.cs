@@ -35,9 +35,10 @@ namespace RimWorld
 		{
 			foreach (Map affectedMap in base.AffectedMaps)
 			{
-				foreach (Pawn allPawn in affectedMap.mapPawns.AllPawns)
+				List<Pawn> allPawns = affectedMap.mapPawns.AllPawns;
+				for (int i = 0; i < allPawns.Count; i++)
 				{
-					CheckPawn(allPawn, gender);
+					CheckPawn(allPawns[i], gender);
 				}
 			}
 		}

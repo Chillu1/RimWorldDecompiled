@@ -16,6 +16,10 @@ namespace Verse.Noise
 
 		private int seed;
 
+		private bool normalized;
+
+		private bool invert;
+
 		public double Frequency
 		{
 			get
@@ -88,6 +92,30 @@ namespace Verse.Noise
 			}
 		}
 
+		public bool Invert
+		{
+			get
+			{
+				return invert;
+			}
+			set
+			{
+				invert = value;
+			}
+		}
+
+		public bool Normalized
+		{
+			get
+			{
+				return normalized;
+			}
+			set
+			{
+				normalized = value;
+			}
+		}
+
 		public Perlin()
 			: base(0)
 		{
@@ -104,7 +132,20 @@ namespace Verse.Noise
 			Quality = quality;
 		}
 
-		public override double GetValue(double x, double y, double z)
+		public Perlin(double frequency, double lacunarity, double persistence, int octaves, bool normalized, bool invert, int seed, QualityMode quality)
+			: base(0)
+		{
+			Frequency = frequency;
+			Lacunarity = lacunarity;
+			OctaveCount = octaves;
+			Persistence = persistence;
+			Seed = seed;
+			Normalized = normalized;
+			Invert = invert;
+			Quality = quality;
+		}
+
+		public static double GetValue(double x, double y, double z, double frequency, int seed, double lacunarity = 2.0, double persistence = 0.5, int octaveCount = 6, bool normalized = false, bool invert = false, QualityMode quality = QualityMode.Medium)
 		{
 			double num = 0.0;
 			double num2 = 0.0;
@@ -125,7 +166,28 @@ namespace Verse.Noise
 				z *= lacunarity;
 				num3 *= persistence;
 			}
+			if (normalized)
+			{
+				num = num * 0.5 + 0.5;
+				if (num < 0.0)
+				{
+					num = 0.0;
+				}
+				if (num > 1.0)
+				{
+					num = 1.0;
+				}
+			}
+			if (invert)
+			{
+				num = 1.0 - num;
+			}
 			return num;
+		}
+
+		public override double GetValue(double x, double y, double z)
+		{
+			return GetValue(x, y, z, frequency, seed, lacunarity, persistence, octaveCount, normalized, invert, quality);
 		}
 	}
 }

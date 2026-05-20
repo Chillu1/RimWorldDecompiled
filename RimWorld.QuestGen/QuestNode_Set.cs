@@ -1,3 +1,4 @@
+using System;
 using Verse;
 
 namespace RimWorld.QuestGen
@@ -9,16 +10,27 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<object> value;
 
+		public SlateRef<Type> convertTo;
+
 		protected override bool TestRunInt(Slate slate)
 		{
-			slate.Set(name.GetValue(slate), value.GetValue(slate));
+			SetVars(slate);
 			return true;
 		}
 
 		protected override void RunInt()
 		{
-			Slate slate = QuestGen.slate;
-			QuestGen.slate.Set(name.GetValue(slate), value.GetValue(slate));
+			SetVars(QuestGen.slate);
+		}
+
+		private void SetVars(Slate slate)
+		{
+			object obj = value.GetValue(slate);
+			if (convertTo.GetValue(slate) != null)
+			{
+				obj = ConvertHelper.Convert(obj, convertTo.GetValue(slate));
+			}
+			slate.Set(name.GetValue(slate), obj);
 		}
 	}
 }

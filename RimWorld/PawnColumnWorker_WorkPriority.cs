@@ -3,6 +3,7 @@ using System.Text;
 using UnityEngine;
 using Verse;
 using Verse.Sound;
+using Verse.Steam;
 
 namespace RimWorld
 {
@@ -11,6 +12,8 @@ namespace RimWorld
 		private const int LabelRowHeight = 50;
 
 		private Vector2 cachedWorkLabelSize;
+
+		public override bool VisibleCurrently => def.workType.VisibleCurrently;
 
 		public override void DoCell(Rect rect, Pawn pawn, PawnTable table)
 		{
@@ -37,12 +40,12 @@ namespace RimWorld
 			Text.Font = GameFont.Small;
 			if (cachedWorkLabelSize == default(Vector2))
 			{
-				cachedWorkLabelSize = Text.CalcSize(def.workType.labelShort);
+				cachedWorkLabelSize = Text.CalcSize(def.workType.labelShort.CapitalizeFirst());
 			}
 			Rect labelRect = GetLabelRect(rect);
 			MouseoverSounds.DoRegion(labelRect);
 			Text.Anchor = TextAnchor.MiddleCenter;
-			Widgets.Label(labelRect, def.workType.labelShort);
+			Widgets.Label(labelRect, def.workType.labelShort.CapitalizeFirst());
 			GUI.color = new Color(1f, 1f, 1f, 0.3f);
 			Widgets.DrawLineVertical(labelRect.center.x, labelRect.yMax - 3f, rect.y + 50f - labelRect.yMax + 3f);
 			Widgets.DrawLineVertical(labelRect.center.x + 1f, labelRect.yMax - 3f, rect.y + 50f - labelRect.yMax + 3f);
@@ -128,17 +131,24 @@ namespace RimWorld
 
 		protected override string GetHeaderTip(PawnTable table)
 		{
-			string str = def.workType.gerundLabel.CapitalizeFirst() + "\n\n" + def.workType.description + "\n\n" + SpecificWorkListString(def.workType);
-			str += "\n";
+			TaggedString taggedString = def.workType.gerundLabel.CapitalizeFirst().Colorize(ColoredText.TipSectionTitleColor) + "\n\n" + def.workType.description + "\n\n" + SpecificWorkListString(def.workType);
+			taggedString += "\n";
 			if (def.sortable)
 			{
-				str += "\n" + "ClickToSortByThisColumn".Translate();
+				taggedString += "\n" + "ClickToSortByThisColumn".Translate().Colorize(ColoredText.SubtleGrayColor);
 			}
-			if (Find.PlaySettings.useWorkPriorities)
+			if (!SteamDeck.IsSteamDeckInNonKeyboardMode)
 			{
-				return str + ("\n" + "WorkPriorityShiftClickTip".Translate());
+				if (Find.PlaySettings.useWorkPriorities)
+				{
+					taggedString += "\n" + "WorkPriorityShiftClickTip".Translate().Colorize(ColoredText.SubtleGrayColor);
+				}
+				else
+				{
+					taggedString += "\n" + "WorkPriorityShiftClickEnableDisableTip".Translate().Colorize(ColoredText.SubtleGrayColor);
+				}
 			}
-			return str + ("\n" + "WorkPriorityShiftClickEnableDisableTip".Translate());
+			return taggedString.Resolve();
 		}
 
 		private static string SpecificWorkListString(WorkTypeDef def)
@@ -146,7 +156,7 @@ namespace RimWorld
 			StringBuilder stringBuilder = new StringBuilder();
 			for (int i = 0; i < def.workGiversByPriority.Count; i++)
 			{
-				stringBuilder.Append(def.workGiversByPriority[i].LabelCap);
+				stringBuilder.Append(" - " + def.workGiversByPriority[i].LabelCap);
 				if (def.workGiversByPriority[i].emergency)
 				{
 					stringBuilder.Append(" (" + "EmergencyWorkMarker".Translate() + ")");

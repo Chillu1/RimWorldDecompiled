@@ -14,15 +14,11 @@ namespace RimWorld
 
 		protected Building Building => (Building)Target.GetInnerIfMinified();
 
-		protected abstract DesignationDef Designation
-		{
-			get;
-		}
+		protected abstract DesignationDef Designation { get; }
 
-		protected abstract float TotalNeededWork
-		{
-			get;
-		}
+		protected abstract float TotalNeededWork { get; }
+
+		protected abstract EffecterDef WorkEffecter { get; }
 
 		public override void ExposeData()
 		{
@@ -38,31 +34,43 @@ namespace RimWorld
 
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
-			this.FailOnThingMissingDesignation(TargetIndex.A, Designation);
+			if (Designation != null)
+			{
+				this.FailOnThingMissingDesignation(TargetIndex.A, Designation);
+			}
 			this.FailOnForbidden(TargetIndex.A);
+			this.FailOn(() => Building.TryGetComp<CompExplosive>(out var comp) && comp.wickStarted);
 			yield return Toils_Goto.GotoThing(TargetIndex.A, (Target is Building_Trap) ? PathEndMode.OnCell : PathEndMode.Touch);
-			Toil doWork = new Toil().FailOnDestroyedNullOrForbidden(TargetIndex.A).FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
+			Toil doWork = ToilMaker.MakeToil("MakeNewToils").FailOnDestroyedNullOrForbidden(TargetIndex.A).FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
 			doWork.initAction = delegate
 			{
 				totalNeededWork = TotalNeededWork;
 				workLeft = totalNeededWork;
 			};
-			doWork.tickAction = delegate
+			doWork.tickIntervalAction = delegate(int delta)
 			{
-				workLeft -= pawn.GetStatValue(StatDefOf.ConstructionSpeed) * 1.7f;
-				TickAction();
+				workLeft -= pawn.GetStatValue(StatDefOf.ConstructionSpeed) * 1.7f * (float)delta;
+				TickActionInterval(delta);
 				if (workLeft <= 0f)
 				{
 					doWork.actor.jobs.curDriver.ReadyForNextToil();
 				}
 			};
 			doWork.defaultCompleteMode = ToilCompleteMode.Never;
+			if (WorkEffecter != null)
+			{
+				doWork.WithEffect(WorkEffecter, TargetIndex.A);
+			}
 			doWork.WithProgressBar(TargetIndex.A, () => 1f - workLeft / totalNeededWork);
 			doWork.activeSkill = () => SkillDefOf.Construction;
 			yield return doWork;
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
+				if (Target.Faction != null)
+				{
+					Target.Faction.Notify_BuildingRemoved(Building, pawn);
+				}
 				FinishedRemoving();
 				base.Map.designationManager.RemoveAllDesignationsOn(Target);
 			};
@@ -74,7 +82,7 @@ namespace RimWorld
 		{
 		}
 
-		protected virtual void TickAction()
+		protected virtual void TickActionInterval(int delta)
 		{
 		}
 	}

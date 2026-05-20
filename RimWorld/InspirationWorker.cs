@@ -136,11 +136,19 @@ namespace RimWorld
 				for (int num = 0; num < pawn.story.traits.allTraits.Count; num++)
 				{
 					Trait trait = pawn.story.traits.allTraits[num];
-					if (trait.CurrentData.disallowedInspirations != null && trait.CurrentData.disallowedInspirations.Contains(def))
+					if (!trait.Suppressed && trait.CurrentData.disallowedInspirations != null && trait.CurrentData.disallowedInspirations.Contains(def))
 					{
 						return false;
 					}
 				}
+			}
+			if (def.requiredNonDisabledWorkTags != WorkTags.None && (pawn.CombinedDisabledWorkTags & def.requiredNonDisabledWorkTags) != WorkTags.None)
+			{
+				return false;
+			}
+			if (pawn.ageTracker.AgeBiologicalYearsFloat < def.minAge)
+			{
+				return false;
 			}
 			return true;
 		}

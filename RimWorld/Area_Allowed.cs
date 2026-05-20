@@ -17,6 +17,20 @@ namespace RimWorld
 
 		public override int ListPriority => 500;
 
+		public override string RenamableLabel
+		{
+			get
+			{
+				return labelInt ?? BaseLabel;
+			}
+			set
+			{
+				labelInt = value;
+			}
+		}
+
+		public override string BaseLabel => "Area";
+
 		public Area_Allowed()
 		{
 		}
@@ -58,9 +72,15 @@ namespace RimWorld
 			return true;
 		}
 
-		public override void SetLabel(string label)
+		public void SetColor(Color newColor)
 		{
-			labelInt = label;
+			colorInt = newColor;
+			InvalidateColorTexture();
+		}
+
+		public void SetLabel(string newLabel)
+		{
+			labelInt = newLabel;
 		}
 
 		public override string GetUniqueLoadID()

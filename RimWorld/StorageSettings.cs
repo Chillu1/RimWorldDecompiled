@@ -5,6 +5,8 @@ namespace RimWorld
 {
 	public class StorageSettings : IExposable
 	{
+		private static StorageSettings cachedEverStorableFixedSettings;
+
 		public IStoreSettingsParent owner;
 
 		public ThingFilter filter;
@@ -13,6 +15,8 @@ namespace RimWorld
 		private StoragePriority priorityInt = StoragePriority.Normal;
 
 		private IHaulDestination HaulDestinationOwner => owner as IHaulDestination;
+
+		private IHaulSource HaulSourceOwner => owner as IHaulSource;
 
 		private ISlotGroupParent SlotGroupParentOwner => owner as ISlotGroupParent;
 
@@ -25,11 +29,27 @@ namespace RimWorld
 			set
 			{
 				priorityInt = value;
-				if (Current.ProgramState == ProgramState.Playing && HaulDestinationOwner != null && HaulDestinationOwner.Map != null)
+				if (Current.ProgramState != ProgramState.Playing)
+				{
+					return;
+				}
+				if (owner is StorageGroup storageGroup)
+				{
+					storageGroup.Map?.haulDestinationManager.Notify_HaulDestinationChangedPriority();
+					storageGroup.Map?.listerHaulables.RecalcAllInCells(storageGroup.CellsList);
+					storageGroup.Map?.listerHaulables.RecalculateAllInHaulSources(storageGroup.HaulSourcesList);
+					return;
+				}
+				if (HaulDestinationOwner != null && HaulDestinationOwner.Map != null)
 				{
 					HaulDestinationOwner.Map.haulDestinationManager.Notify_HaulDestinationChangedPriority();
 				}
-				if (Current.ProgramState == ProgramState.Playing && SlotGroupParentOwner != null && SlotGroupParentOwner.Map != null)
+				if (HaulSourceOwner != null && HaulSourceOwner.Map != null)
+				{
+					HaulSourceOwner.Map.haulDestinationManager.Notify_HaulDestinationChangedPriority();
+					HaulSourceOwner.Map.listerHaulables.RecalculateAllInHaulSource(HaulSourceOwner);
+				}
+				if (SlotGroupParentOwner != null && SlotGroupParentOwner.Map != null)
 				{
 					SlotGroupParentOwner.Map.listerHaulables.RecalcAllInCells(SlotGroupParentOwner.AllSlotCells());
 				}
@@ -110,10 +130,24 @@ namespace RimWorld
 
 		private void TryNotifyChanged()
 		{
-			if (owner != null && SlotGroupParentOwner != null && SlotGroupParentOwner.GetSlotGroup() != null && SlotGroupParentOwner.Map != null)
+			owner?.Notify_SettingsChanged();
+		}
+
+		public static StorageSettings EverStorableFixedSettings()
+		{
+			if (cachedEverStorableFixedSettings == null)
 			{
-				SlotGroupParentOwner.Map.listerHaulables.Notify_SlotGroupChanged(SlotGroupParentOwner.GetSlotGroup());
+				cachedEverStorableFixedSettings = new StorageSettings(null)
+				{
+					filter = ThingFilter.CreateOnlyEverStorableThingFilter()
+				};
 			}
+			return cachedEverStorableFixedSettings;
+		}
+
+		public static void ResetStaticData()
+		{
+			cachedEverStorableFixedSettings = null;
 		}
 	}
 }

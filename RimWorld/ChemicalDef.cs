@@ -11,6 +11,18 @@ namespace RimWorld
 
 		public bool canBinge = true;
 
+		public bool canBeAddicted = true;
+
+		public bool generateAddictionGenes = true;
+
+		public float geneOverdoseChanceFactorResist = 1f;
+
+		public float geneOverdoseChanceFactorImmune = 1f;
+
+		public float geneToleranceBuildupFactorResist = 1f;
+
+		public float geneToleranceBuildupFactorImmune = 1f;
+
 		public float onGeneratedAddictedToleranceChance;
 
 		public List<HediffGiver_Event> onGeneratedAddictedEvents;
@@ -21,7 +33,7 @@ namespace RimWorld
 			{
 				yield return item;
 			}
-			if (addictionHediff == null)
+			if (canBeAddicted && addictionHediff == null)
 			{
 				yield return "addictionHediff is null";
 			}

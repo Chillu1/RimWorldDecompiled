@@ -14,7 +14,7 @@ namespace Verse.AI
 				return null;
 			}
 			tmpPrisoners.Clear();
-			List<Pawn> allPawnsSpawned = pawn.Map.mapPawns.AllPawnsSpawned;
+			IReadOnlyList<Pawn> allPawnsSpawned = pawn.Map.mapPawns.AllPawnsSpawned;
 			for (int i = 0; i < allPawnsSpawned.Count; i++)
 			{
 				Pawn pawn2 = allPawnsSpawned[i];

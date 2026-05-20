@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using RimWorld.Planet;
 using Verse;
 
 namespace RimWorld.QuestGen
@@ -33,8 +34,8 @@ namespace RimWorld.QuestGen
 				slate.Set(storeAs.GetValue(slate), mapHeld);
 				return;
 			}
-			int tile = mapOf.GetValue(slate).Tile;
-			if (tile == -1)
+			PlanetTile tile = mapOf.GetValue(slate).Tile;
+			if (!tile.Valid)
 			{
 				return;
 			}

@@ -16,9 +16,17 @@ namespace RimWorld
 
 		public bool ignorePlayerFactionPawns;
 
+		public MutantDef mutantFilter;
+
 		public ThingDef moteOnTarget;
 
 		public ThingDef moteConnecting;
+
+		public FleckDef fleckOnTarget;
+
+		public FleckDef fleckConnecting;
+
+		public HediffDef cannotHaveHediff;
 
 		public CompProperties_Targetable()
 		{

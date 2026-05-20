@@ -35,7 +35,7 @@ namespace RimWorld
 				num++;
 				if (num > 500)
 				{
-					Log.Error("AbstractShapeGenerator could not generate a valid shape after " + 500 + " tries. width=" + width + " height=" + height + " preferOutlines=" + preferOutlines.ToString());
+					Log.Error("AbstractShapeGenerator could not generate a valid shape after " + 500 + " tries. width=" + width + " height=" + height + " preferOutlines=" + preferOutlines);
 					break;
 				}
 			}
@@ -122,12 +122,12 @@ namespace RimWorld
 				float num11 = Rand.Range(0.7f, 1f);
 				IntVec2 intVec2 = new IntVec2(Rand.RangeInclusive(0, length - 1), Rand.RangeInclusive(0, length2 - 1));
 				int num12 = Mathf.Max(Mathf.RoundToInt((float)(Mathf.Max(length, length2) / 2) * num10 * num11), 1);
-				bool @bool = Rand.Bool;
+				bool flag = Rand.Bool;
 				tmpCircleCells.Clear();
 				tmpCircleCells.AddRange(GenRadial.RadialPatternInRadius(num12));
 				foreach (IntVec3 tmpCircleCell in tmpCircleCells)
 				{
-					if ((allowEnclosedFalses || ((!@bool || tmpCircleCell.x >= 0) && (@bool || tmpCircleCell.z >= 0))) && (!tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x - 1, 0, tmpCircleCell.z - 1)) || !tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x - 1, 0, tmpCircleCell.z)) || !tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x - 1, 0, tmpCircleCell.z + 1)) || !tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x, 0, tmpCircleCell.z - 1)) || !tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x, 0, tmpCircleCell.z)) || !tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x, 0, tmpCircleCell.z + 1)) || !tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x + 1, 0, tmpCircleCell.z - 1)) || !tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x + 1, 0, tmpCircleCell.z)) || !tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x + 1, 0, tmpCircleCell.z + 1))))
+					if ((allowEnclosedFalses || ((!flag || tmpCircleCell.x >= 0) && (flag || tmpCircleCell.z >= 0))) && (!tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x - 1, 0, tmpCircleCell.z - 1)) || !tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x - 1, 0, tmpCircleCell.z)) || !tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x - 1, 0, tmpCircleCell.z + 1)) || !tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x, 0, tmpCircleCell.z - 1)) || !tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x, 0, tmpCircleCell.z)) || !tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x, 0, tmpCircleCell.z + 1)) || !tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x + 1, 0, tmpCircleCell.z - 1)) || !tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x + 1, 0, tmpCircleCell.z)) || !tmpCircleCells.Contains(new IntVec3(tmpCircleCell.x + 1, 0, tmpCircleCell.z + 1))))
 					{
 						IntVec3 intVec3 = tmpCircleCell;
 						intVec3.x += intVec2.x;
@@ -141,8 +141,8 @@ namespace RimWorld
 			}
 			for (int num13 = 0; num13 < num4; num13++)
 			{
-				bool bool2 = Rand.Bool;
-				foreach (IntVec3 item3 in CellRect.CenteredOn(new IntVec3(Rand.RangeInclusive(0, length - 1), 0, Rand.RangeInclusive(0, length2 - 1)), (!bool2) ? 1 : Mathf.RoundToInt(Rand.RangeInclusive(1, length)), bool2 ? 1 : Mathf.RoundToInt(Rand.RangeInclusive(1, length2))))
+				bool flag2 = Rand.Bool;
+				foreach (IntVec3 item3 in CellRect.CenteredOn(new IntVec3(Rand.RangeInclusive(0, length - 1), 0, Rand.RangeInclusive(0, length2 - 1)), (!flag2) ? 1 : Mathf.RoundToInt(Rand.RangeInclusive(1, length)), flag2 ? 1 : Mathf.RoundToInt(Rand.RangeInclusive(1, length2))))
 				{
 					if (item3.x >= 0 && item3.x < length && item3.z >= 0 && item3.z < length2)
 					{
@@ -152,12 +152,12 @@ namespace RimWorld
 			}
 			for (int num14 = 0; num14 < num5; num14++)
 			{
-				bool bool3 = Rand.Bool;
+				bool flag3 = Rand.Bool;
 				CellRect cellRect2 = CellRect.CenteredOn(new IntVec3(Rand.RangeInclusive(0, length - 1), 0, Rand.RangeInclusive(0, length2 - 1)), Mathf.RoundToInt(Rand.RangeInclusive(1, length)), 1);
 				foreach (IntVec3 item4 in cellRect2)
 				{
 					int num15 = item4.x - cellRect2.minX - cellRect2.Width / 2;
-					if (bool3)
+					if (flag3)
 					{
 						num15 = -num15;
 					}
@@ -254,7 +254,7 @@ namespace RimWorld
 				if (wipedCircleRadiusPct > 0f)
 				{
 					int num3 = Mathf.FloorToInt((float)Mathf.Min(grid.GetLength(0), grid.GetLength(1)) * wipedCircleRadiusPct);
-					float num4 = (float)Math.PI * (float)num3 * (float)num3;
+					float num4 = MathF.PI * (float)num3 * (float)num3;
 					num2 = 1f - Mathf.Clamp01(num4 / (float)(grid.GetLength(0) * grid.GetLength(1)));
 				}
 				int num5 = grid.GetLength(0) * grid.GetLength(1);

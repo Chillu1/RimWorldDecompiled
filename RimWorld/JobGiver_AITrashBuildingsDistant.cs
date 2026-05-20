@@ -8,6 +8,8 @@ namespace RimWorld
 	{
 		public bool attackAllInert;
 
+		private static readonly List<Building> tmpTrashableBuildingCandidates = new List<Building>();
+
 		public override ThinkNode DeepCopy(bool resolve = true)
 		{
 			JobGiver_AITrashBuildingsDistant obj = (JobGiver_AITrashBuildingsDistant)base.DeepCopy(resolve);
@@ -22,9 +24,18 @@ namespace RimWorld
 			{
 				return null;
 			}
+			tmpTrashableBuildingCandidates.Clear();
+			foreach (Building item in allBuildingsColonist)
+			{
+				tmpTrashableBuildingCandidates.Add(item);
+			}
+			if (tmpTrashableBuildingCandidates.Count == 0)
+			{
+				return null;
+			}
 			for (int i = 0; i < 75; i++)
 			{
-				Building building = allBuildingsColonist.RandomElement();
+				Building building = tmpTrashableBuildingCandidates.RandomElement();
 				if (TrashUtility.ShouldTrashBuilding(pawn, building, attackAllInert))
 				{
 					Job job = TrashUtility.TrashJob(pawn, building, attackAllInert);

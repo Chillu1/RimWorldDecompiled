@@ -83,7 +83,7 @@ namespace Verse
 		{
 			Scribe_Values.Look(ref mapSizeX, "mapSizeX", 0);
 			Scribe_Values.Look(ref mapSizeZ, "mapSizeZ", 0);
-			DataExposeUtility.ByteArray(ref grid, "grid");
+			DataExposeUtility.LookByteArray(ref grid, "grid");
 		}
 
 		public void Clear(byte value = 0)

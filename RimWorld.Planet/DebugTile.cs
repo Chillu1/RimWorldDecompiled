@@ -6,7 +6,7 @@ namespace RimWorld.Planet
 {
 	public class DebugTile
 	{
-		public int tile;
+		public PlanetTile tile;
 
 		public string displayString;
 
@@ -46,8 +46,8 @@ namespace RimWorld.Planet
 				Find.WorldGrid.GetTileVertices(tile, tmpVerts);
 				for (int i = 0; i < tmpVerts.Count; i++)
 				{
-					Vector3 a = tmpVerts[i];
-					tmpVerts[i] = a + a.normalized * 0.012f;
+					Vector3 vector = tmpVerts[i];
+					tmpVerts[i] = vector + vector.normalized * 0.02f;
 				}
 				mesh = new Mesh();
 				mesh.name = "DebugTile";

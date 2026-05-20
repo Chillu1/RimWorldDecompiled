@@ -5,14 +5,14 @@ using RimWorld;
 
 namespace Verse
 {
-	public class Hediff_Psylink : Hediff_ImplantWithLevel
+	public class Hediff_Psylink : Hediff_Level
 	{
 		public bool suppressPostAddLetter;
 
 		public override void PostAdd(DamageInfo? dinfo)
 		{
 			base.PostAdd(dinfo);
-			TryGiveAbilityOfLevel_NewTemp(level, !suppressPostAddLetter);
+			TryGiveAbilityOfLevel(level, !suppressPostAddLetter);
 			pawn.psychicEntropy?.Notify_GainedPsylink();
 		}
 
@@ -24,7 +24,7 @@ namespace Verse
 				for (int i = 0; (float)i < num; i++)
 				{
 					int abilityLevel = level + 1 + i;
-					TryGiveAbilityOfLevel_NewTemp(abilityLevel, sendLetter);
+					TryGiveAbilityOfLevel(abilityLevel, sendLetter);
 					pawn.psychicEntropy?.Notify_GainedPsylink();
 				}
 			}
@@ -46,30 +46,34 @@ namespace Verse
 			return text;
 		}
 
-		public void TryGiveAbilityOfLevel_NewTemp(int abilityLevel, bool sendLetter = true)
+		public void TryGiveAbilityOfLevel(int abilityLevel, bool sendLetter = true)
 		{
-			string str = "LetterLabelPsylinkLevelGained".Translate() + ": " + pawn.LabelShortCap;
-			string text = null;
-			if (!pawn.abilities.abilities.Any((Ability a) => a.def.level == abilityLevel))
+			string text = "LetterLabelPsylinkLevelGained".Translate() + ": " + pawn.LabelShortCap;
+			string text2 = null;
+			if (!pawn.abilities.abilities.Any((Ability a) => a.def.IsPsycast && a.def.level == abilityLevel))
 			{
-				AbilityDef abilityDef = DefDatabase<AbilityDef>.AllDefs.Where((AbilityDef a) => a.level == abilityLevel).RandomElement();
-				pawn.abilities.GainAbility(abilityDef);
-				text = MakeLetterTextNewPsylinkLevel(pawn, abilityLevel, Gen.YieldSingle(abilityDef));
+				AbilityDef val = DefDatabase<AbilityDef>.AllDefs.Where((AbilityDef a) => a.IsPsycast && a.level == abilityLevel).RandomElement();
+				pawn.abilities.GainAbility(val);
+				text2 = MakeLetterTextNewPsylinkLevel(pawn, abilityLevel, Gen.YieldSingle(val));
 			}
 			else
 			{
-				text = MakeLetterTextNewPsylinkLevel(pawn, abilityLevel);
+				text2 = MakeLetterTextNewPsylinkLevel(pawn, abilityLevel);
 			}
-			if (sendLetter && PawnUtility.ShouldSendNotificationAbout(pawn))
+			if (sendLetter && PawnUtility.ShouldSendNotificationAbout(pawn) && !pawn.IsDuplicate)
 			{
-				Find.LetterStack.ReceiveLetter(str, text, LetterDefOf.PositiveEvent, pawn);
+				Find.LetterStack.ReceiveLetter(text, text2, LetterDefOf.PositiveEvent, pawn);
 			}
 		}
 
-		[Obsolete("Will be removed in a future version")]
-		public void TryGiveAbilityOfLevel(int abilityLevel)
+		public override void CopyFrom(Hediff other)
 		{
-			TryGiveAbilityOfLevel_NewTemp(abilityLevel);
+			base.CopyFrom(other);
+			if (other is Hediff_Psylink hediff_Psylink)
+			{
+				level = hediff_Psylink.level;
+				suppressPostAddLetter = true;
+			}
 		}
 
 		public override void PostRemoved()

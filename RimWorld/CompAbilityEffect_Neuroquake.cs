@@ -10,6 +10,12 @@ namespace RimWorld
 
 		private List<Pawn> giveMentalStateTo = new List<Pawn>();
 
+		private static List<IntVec3> cachedRadiusCells = new List<IntVec3>();
+
+		private static IntVec3? cachedRadiusCellsTarget = null;
+
+		private static Map cachedRadiusCellsMap = null;
+
 		public new CompProperties_AbilityNeuroquake Props => (CompProperties_AbilityNeuroquake)props;
 
 		public override void Apply(LocalTargetInfo target, LocalTargetInfo dest)
@@ -27,8 +33,8 @@ namespace RimWorld
 			{
 				if (CanApplyEffects(item) && !item.Fogged())
 				{
-					bool flag = !item.Spawned || item.Position.InHorDistOf(parent.pawn.Position, parent.def.EffectRadius);
-					AffectGoodwill(item.FactionOrExtraMiniOrHomeFaction, !flag, item);
+					bool flag = !item.Spawned || item.Position.InHorDistOf(parent.pawn.Position, parent.def.EffectRadius) || !item.Position.InHorDistOf(parent.pawn.Position, Props.mentalStateRadius);
+					AffectGoodwill(item.HomeFaction, !flag, item);
 					if (!flag)
 					{
 						giveMentalStateTo.Add(item);
@@ -71,7 +77,7 @@ namespace RimWorld
 			{
 				MentalStateDef mentalStateDef = null;
 				mentalStateDef = (item2.RaceProps.IsMechanoid ? MentalStateDefOf.BerserkMechanoid : MentalStateDefOf.Berserk);
-				CompAbilityEffect_GiveMentalState.TryGiveMentalStateWithDuration(mentalStateDef, item2, parent.def, StatDefOf.PsychicSensitivity);
+				CompAbilityEffect_GiveMentalState.TryGiveMentalState(mentalStateDef, item2, parent.def, StatDefOf.PsychicSensitivity, parent.pawn);
 				RestUtility.WakeUp(item2);
 			}
 			foreach (Faction allFaction in Find.FactionManager.AllFactions)
@@ -81,12 +87,16 @@ namespace RimWorld
 					AffectGoodwill(allFaction, gaveMentalBreak: false);
 				}
 			}
-			foreach (KeyValuePair<Faction, Pair<bool, Pawn>> affectedFaction in affectedFactions)
+			if (parent.pawn.Faction == Faction.OfPlayer)
 			{
-				Faction key = affectedFaction.Key;
-				bool first = affectedFaction.Value.First;
-				Pawn second = affectedFaction.Value.Second;
-				key.TryAffectGoodwillWith(parent.pawn.Faction, first ? Props.goodwillImpactForBerserk : Props.goodwillImpactForNeuroquake, canSendMessage: true, canSendHostilityLetter: true, (first ? "GoodwillChangedReason_CausedBerserk" : "GoodwillChangedReason_CausedNeuroquakeEcho").Translate(second.Named("PAWN")), second);
+				foreach (KeyValuePair<Faction, Pair<bool, Pawn>> affectedFaction in affectedFactions)
+				{
+					Faction key = affectedFaction.Key;
+					bool first = affectedFaction.Value.First;
+					_ = affectedFaction.Value.Second;
+					int goodwillChange = (first ? Props.goodwillImpactForBerserk : Props.goodwillImpactForNeuroquake);
+					Faction.OfPlayer.TryAffectGoodwillWith(key, goodwillChange, canSendMessage: true, canSendHostilityLetter: true, HistoryEventDefOf.UsedHarmfulAbility);
+				}
 			}
 			base.Apply(target, dest);
 			affectedFactions.Clear();
@@ -95,7 +105,7 @@ namespace RimWorld
 
 		private void AffectGoodwill(Faction faction, bool gaveMentalBreak, Pawn p = null)
 		{
-			if (faction != null && !faction.IsPlayer && !faction.HostileTo(Faction.OfPlayer) && (!affectedFactions.TryGetValue(faction, out var value) || (!value.First && gaveMentalBreak)))
+			if (faction != null && !faction.IsPlayer && !faction.HostileTo(Faction.OfPlayer) && (p == null || !p.IsSlaveOfColony) && (!affectedFactions.TryGetValue(faction, out var value) || (!value.First && gaveMentalBreak)))
 			{
 				affectedFactions[faction] = new Pair<bool, Pawn>(gaveMentalBreak, p);
 			}
@@ -108,11 +118,32 @@ namespace RimWorld
 
 		private bool CanApplyEffects(Pawn p)
 		{
-			if (!p.Dead && !p.Downed && !p.Suspended)
+			if (p.kindDef.isBoss)
+			{
+				return false;
+			}
+			if (!p.Dead && !p.Suspended)
 			{
 				return p.GetStatValue(StatDefOf.PsychicSensitivity) > float.Epsilon;
 			}
 			return false;
+		}
+
+		public override void OnGizmoUpdate()
+		{
+			if (!cachedRadiusCellsTarget.HasValue || cachedRadiusCellsTarget.Value == parent.pawn.Position || cachedRadiusCellsMap != parent.pawn.Map)
+			{
+				cachedRadiusCells.Clear();
+				foreach (IntVec3 allCell in parent.pawn.Map.AllCells)
+				{
+					if (allCell.InHorDistOf(parent.pawn.Position, Props.mentalStateRadius))
+					{
+						cachedRadiusCells.Add(allCell);
+					}
+				}
+				cachedRadiusCellsTarget = parent.pawn.Position;
+			}
+			GenDraw.DrawFieldEdges(cachedRadiusCells);
 		}
 	}
 }

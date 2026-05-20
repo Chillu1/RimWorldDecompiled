@@ -18,7 +18,7 @@ namespace RimWorld
 
 		private IEnumerable<Pawn> GetPawnsThatCanPsylink(int level = -1)
 		{
-			return PawnsFinder.AllMapsCaravansAndTravelingTransportPods_Alive_Colonists.Where((Pawn p) => Props.requiredFocus.CanPawnUse(p) && GetRequiredPlantCount(p) <= CompSubplant.SubplantsForReading.Count && (level == -1 || p.GetPsylinkLevel() == level));
+			return PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_Colonists.Where((Pawn p) => Props.requiredFocus.CanPawnUse(p) && GetRequiredPlantCount(p) <= CompSubplant.SubplantsForReading.Count && (level == -1 || p.GetPsylinkLevel() == level));
 		}
 
 		public override void PostSpawnSetup(bool respawningAfterLoad)
@@ -47,7 +47,7 @@ namespace RimWorld
 						select p.LabelShort;
 					if (enumerable.Count() > 0)
 					{
-						text = text + (string)("- " + "Level".Translate() + " ") + (i + 1) + ": " + Props.requiredSubplantCountPerPsylinkLevel[i] + " " + compSpawnSubplant.Props.subplant.label + " (" + enumerable.ToCommaList() + ")\n";
+						text = string.Concat(text, "- " + "Level".Translate().CapitalizeFirst() + " ", (i + 1).ToString(), ": ", Props.requiredSubplantCountPerPsylinkLevel[i].ToString(), " ", compSpawnSubplant.Props.subplant.label, " (", enumerable.ToCommaList(), ")\n");
 					}
 				}
 				Find.LetterStack.ReceiveLetter(Props.enoughPlantsLetterLabel, Props.enoughPlantsLetterText.Formatted(compSpawnSubplant.SubplantsForReading.Count, text.TrimEndNewlines()), LetterDefOf.NeutralEvent, new LookTargets(GetPawnsThatCanPsylink()));
@@ -56,7 +56,7 @@ namespace RimWorld
 			pawnsThatCanPsylinkLastGrassGrow.AddRange(GetPawnsThatCanPsylink());
 		}
 
-		private int GetRequiredPlantCount(Pawn pawn)
+		public int GetRequiredPlantCount(Pawn pawn)
 		{
 			int psylinkLevel = pawn.GetPsylinkLevel();
 			if (parent.TryGetComp<CompSpawnSubplant>() == null)
@@ -71,7 +71,7 @@ namespace RimWorld
 			return Props.requiredSubplantCountPerPsylinkLevel[psylinkLevel];
 		}
 
-		public AcceptanceReport CanPsylink(Pawn pawn, LocalTargetInfo? knownSpot = null)
+		public AcceptanceReport CanPsylink(Pawn pawn, LocalTargetInfo? knownSpot = null, bool checkSpot = true)
 		{
 			if (pawn.Dead || pawn.Faction != Faction.OfPlayer)
 			{
@@ -89,7 +89,7 @@ namespace RimWorld
 			}
 			if (pawn.GetPsylinkLevel() >= pawn.GetMaxPsylinkLevel())
 			{
-				return new AcceptanceReport("InstallImplantAlreadyMaxLevel".Translate());
+				return new AcceptanceReport("BeginLinkingRitualMaxPsylinkLevel".Translate());
 			}
 			if (!pawn.Map.reservationManager.CanReserve(pawn, parent))
 			{
@@ -100,17 +100,20 @@ namespace RimWorld
 			{
 				return new AcceptanceReport("BeginLinkingRitualNeedSubplants".Translate(requiredPlantCount.ToString(), compSpawnSubplant.Props.subplant.label, compSpawnSubplant.SubplantsForReading.Count.ToString()));
 			}
-			LocalTargetInfo spot;
-			if (knownSpot.HasValue)
+			if (checkSpot)
 			{
-				if (!CanUseSpot(pawn, knownSpot.Value))
+				LocalTargetInfo spot;
+				if (knownSpot.HasValue)
+				{
+					if (!CanUseSpot(pawn, knownSpot.Value))
+					{
+						return new AcceptanceReport("BeginLinkingRitualNeedLinkSpot".Translate());
+					}
+				}
+				else if (!TryFindLinkSpot(pawn, out spot))
 				{
 					return new AcceptanceReport("BeginLinkingRitualNeedLinkSpot".Translate());
 				}
-			}
-			else if (!TryFindLinkSpot(pawn, out spot))
-			{
-				return new AcceptanceReport("BeginLinkingRitualNeedLinkSpot".Translate());
 			}
 			return AcceptanceReport.WasAccepted;
 		}
@@ -126,10 +129,10 @@ namespace RimWorld
 			int num2 = GenRadial.NumCellsInRadius(3.9f);
 			for (int i = num; i < num2; i++)
 			{
-				IntVec3 c = parent.Position + GenRadial.RadialPattern[i];
-				if (CanUseSpot(pawn, c))
+				IntVec3 intVec = parent.Position + GenRadial.RadialPattern[i];
+				if (CanUseSpot(pawn, intVec))
 				{
-					spot = c;
+					spot = intVec;
 					return true;
 				}
 			}
@@ -173,52 +176,41 @@ namespace RimWorld
 			}
 			FloatMenuOption floatMenuOption = new FloatMenuOption(text, delegate
 			{
-				TaggedString psylinkAffectedByTraitsNegativelyWarning = RoyalTitleUtility.GetPsylinkAffectedByTraitsNegativelyWarning(pawn);
-				if ((string)psylinkAffectedByTraitsNegativelyWarning != null)
+				Precept_Ritual precept_Ritual = null;
+				for (int i = 0; i < pawn.Ideo.PreceptsListForReading.Count; i++)
 				{
-					Find.WindowStack.Add(new Dialog_MessageBox(psylinkAffectedByTraitsNegativelyWarning, "Confirm".Translate(), delegate
+					if (pawn.Ideo.PreceptsListForReading[i].def == PreceptDefOf.AnimaTreeLinking)
 					{
-						BeginLinkingRitual(pawn);
-					}, "GoBack".Translate()));
+						precept_Ritual = (Precept_Ritual)pawn.Ideo.PreceptsListForReading[i];
+						break;
+					}
 				}
-				else
+				if (precept_Ritual != null)
 				{
-					BeginLinkingRitual(pawn);
+					Find.WindowStack.Add(precept_Ritual.GetRitualBeginWindow(parent, null, null, null, null, pawn));
 				}
 			});
 			floatMenuOption.Disabled = !acceptanceReport.Accepted;
 			yield return floatMenuOption;
 		}
 
-		private void BeginLinkingRitual(Pawn pawn)
+		public void FinishLinkingRitual(Pawn pawn, int plantsToKeep)
 		{
-			if (TryFindLinkSpot(pawn, out var spot) && CanPsylink(pawn, spot).Accepted)
+			if (ModLister.CheckRoyalty("Psylinkable"))
 			{
-				Job job = JobMaker.MakeJob(JobDefOf.LinkPsylinkable, parent, spot);
-				pawn.jobs.TryTakeOrderedJob(job);
+				FleckMaker.Static(parent.Position, pawn.Map, FleckDefOf.PsycastAreaEffect, 10f);
+				SoundDefOf.PsycastPsychicPulse.PlayOneShot(new TargetInfo(parent));
+				CompSpawnSubplant compSpawnSubplant = parent.TryGetComp<CompSpawnSubplant>();
+				int num = GetRequiredPlantCount(pawn) - plantsToKeep;
+				List<Thing> list = compSpawnSubplant.SubplantsForReading.OrderByDescending((Thing p) => p.Position.DistanceTo(parent.Position)).ToList();
+				for (int num2 = 0; num2 < num && num2 < list.Count; num2++)
+				{
+					list[num2].Destroy();
+				}
+				compSpawnSubplant.Cleanup();
+				pawn.ChangePsylinkLevel(1);
+				Find.History.Notify_PsylinkAvailable();
 			}
-		}
-
-		public void FinishLinkingRitual(Pawn pawn)
-		{
-			if (!ModLister.RoyaltyInstalled)
-			{
-				Log.ErrorOnce("Psylinkables are a Royalty-specific game system. If you want to use this code please check ModLister.RoyaltyInstalled before calling it. See rules on the Ludeon forum for more info.", 5464564);
-				return;
-			}
-			MoteMaker.MakeStaticMote(parent.Position, pawn.Map, ThingDefOf.Mote_PsycastAreaEffect, 10f);
-			SoundDefOf.PsycastPsychicPulse.PlayOneShot(new TargetInfo(parent));
-			CompSpawnSubplant compSpawnSubplant = parent.TryGetComp<CompSpawnSubplant>();
-			int requiredPlantCount = GetRequiredPlantCount(pawn);
-			List<Thing> list = compSpawnSubplant.SubplantsForReading.OrderByDescending((Thing p) => p.Position.DistanceTo(parent.Position)).ToList();
-			for (int i = 0; i < requiredPlantCount && i < list.Count; i++)
-			{
-				list[i].Destroy();
-			}
-			compSpawnSubplant.Cleanup();
-			pawn.ChangePsylinkLevel(1);
-			string str = "LetterTextLinkingRitualCompleted".Translate(pawn.Named("PAWN"), parent.Named("LINKABLE"));
-			Find.LetterStack.ReceiveLetter("LetterLabelLinkingRitualCompleted".Translate(), str, LetterDefOf.PositiveEvent, new LookTargets(pawn, parent));
 		}
 
 		public override void PostExposeData()

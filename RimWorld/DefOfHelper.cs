@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using System.Threading.Tasks;
 using Verse;
 
 namespace RimWorld
@@ -16,10 +17,7 @@ namespace RimWorld
 			bindingNow = true;
 			try
 			{
-				foreach (Type item in GenTypes.AllTypesWithAttribute<DefOf>())
-				{
-					BindDefsFor(item);
-				}
+				Parallel.ForEach(GenTypes.AllTypesWithAttribute<DefOf>(), BindDefsFor);
 			}
 			finally
 			{
@@ -33,13 +31,35 @@ namespace RimWorld
 			foreach (FieldInfo fieldInfo in fields)
 			{
 				Type fieldType = fieldInfo.FieldType;
-				if (!typeof(Def).IsAssignableFrom(fieldType))
+				if (!GenTypes.IsDefThreaded(fieldType))
 				{
-					Log.Error(string.Concat(fieldType, " is not a Def."));
+					Log.Error(fieldType?.ToString() + " is not a Def.");
 					continue;
 				}
+				bool flag = !earlyTry;
 				MayRequireAttribute mayRequireAttribute = fieldInfo.TryGetAttribute<MayRequireAttribute>();
-				bool flag = (mayRequireAttribute == null || ModsConfig.IsActive(mayRequireAttribute.modId)) && !earlyTry;
+				if (mayRequireAttribute != null && !ModsConfig.IsActive(mayRequireAttribute.modId))
+				{
+					flag = false;
+				}
+				MayRequireAnyOfAttribute mayRequireAnyOfAttribute = fieldInfo.TryGetAttribute<MayRequireAnyOfAttribute>();
+				if (mayRequireAnyOfAttribute != null)
+				{
+					bool flag2 = false;
+					string[] modIds = mayRequireAnyOfAttribute.modIds;
+					for (int j = 0; j < modIds.Length; j++)
+					{
+						if (ModsConfig.IsActive(modIds[j]))
+						{
+							flag2 = true;
+							break;
+						}
+					}
+					if (!flag2)
+					{
+						flag = false;
+					}
+				}
 				string text = fieldInfo.Name;
 				DefAliasAttribute defAliasAttribute = fieldInfo.TryGetAttribute<DefAliasAttribute>();
 				if (defAliasAttribute != null)
@@ -70,7 +90,7 @@ namespace RimWorld
 				string text = (DirectXmlToObject.currentlyInstantiatingObjectOfType.Any() ? ("DirectXmlToObject is currently instantiating an object of type " + DirectXmlToObject.currentlyInstantiatingObjectOfType.Peek()) : ((Scribe.mode != LoadSaveMode.LoadingVars) ? "" : ("curParent=" + Scribe.loader.curParent.ToStringSafe() + " curPathRelToParent=" + Scribe.loader.curPathRelToParent)));
 				Log.Warning("Tried to use an uninitialized DefOf of type " + defOf.Name + ". DefOfs are initialized right after all defs all loaded. Uninitialized DefOfs will return only nulls. (hint: don't use DefOfs as default field values in Defs, try to resolve them in ResolveReferences() instead)" + (text.NullOrEmpty() ? "" : (" Debug info: " + text)));
 			}
-			if (typeof(Def).IsAssignableFrom(defOf))
+			if (GenTypes.IsDefThreaded(defOf))
 			{
 				Log.Warning("Possible typo: " + defOf.Name + ". Using def type name not preceded by \"Of\"");
 			}

@@ -18,7 +18,7 @@ namespace Verse
 			age++;
 			if (age > def.ticksBeforeSustainerStart)
 			{
-				if (sustainer == null)
+				if (sustainer == null || sustainer.Ended)
 				{
 					SoundInfo info = SoundInfo.InMap(A, MaintenanceType.PerTick);
 					sustainer = def.soundDef.TrySpawnSustainer(info);

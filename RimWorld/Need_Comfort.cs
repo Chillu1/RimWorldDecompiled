@@ -20,13 +20,13 @@ namespace RimWorld
 
 		private const float MinLuxuriantlyComfortable = 0.9f;
 
-		public const int ComfortUseInterval = 10;
+		public const int ComfortUseInterval = 15;
 
 		public override float CurInstantLevel
 		{
 			get
 			{
-				if (lastComfortUseTick >= Find.TickManager.TicksGame - 10)
+				if (lastComfortUseTick >= Find.TickManager.TicksGame - 15)
 				{
 					return Mathf.Clamp01(lastComfortUsed);
 				}

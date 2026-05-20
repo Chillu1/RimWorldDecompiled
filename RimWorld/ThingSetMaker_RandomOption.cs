@@ -16,6 +16,10 @@ namespace RimWorld
 			public float? weightIfPlayerHasNoItem;
 
 			public ThingDef weightIfPlayerHasNoItemItem;
+
+			public float? weightIfPlayerHasXenotype;
+
+			public XenotypeDef weightIfPlayerHasXenotypeXenotype;
 		}
 
 		public List<Option> options;
@@ -46,6 +50,10 @@ namespace RimWorld
 			{
 				return option.weightIfPlayerHasNoItem.Value * option.thingSetMaker.ExtraSelectionWeightFactor(parms);
 			}
+			if (ModsConfig.BiotechActive && option.weightIfPlayerHasXenotype.HasValue && option.weightIfPlayerHasXenotypeXenotype != null && PawnsFinder.AllMapsCaravansAndTravellingTransporters_Alive_Colonists_OfXenotype(option.weightIfPlayerHasXenotypeXenotype).Count > 0)
+			{
+				return option.weightIfPlayerHasXenotype.Value * option.thingSetMaker.ExtraSelectionWeightFactor(parms);
+			}
 			return option.weight * option.thingSetMaker.ExtraSelectionWeightFactor(parms);
 		}
 
@@ -74,6 +82,27 @@ namespace RimWorld
 				foreach (ThingDef item in options[i].thingSetMaker.AllGeneratableThingsDebug(parms))
 				{
 					yield return item;
+				}
+			}
+		}
+
+		public override IEnumerable<string> ConfigErrors()
+		{
+			if (options.NullOrEmpty())
+			{
+				yield return "no options.";
+				yield break;
+			}
+			for (int i = 0; i < options.Count; i++)
+			{
+				if (options[i].thingSetMaker == null)
+				{
+					yield return "options[" + i + "]=null.";
+					continue;
+				}
+				foreach (string item in options[i].thingSetMaker.ConfigErrors())
+				{
+					yield return "options[" + i + "]: " + item;
 				}
 			}
 		}

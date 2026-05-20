@@ -5,6 +5,14 @@ namespace RimWorld
 {
 	public static class ForbidUtility
 	{
+		public static void TrySetForbidden(this Thing t, bool value)
+		{
+			if (t is ThingWithComps thing && thing.TryGetComp<CompForbiddable>(out var comp))
+			{
+				comp.Forbidden = value;
+			}
+		}
+
 		public static void SetForbidden(this Thing t, bool value, bool warnOnFail = true)
 		{
 			if (t == null)
@@ -15,8 +23,7 @@ namespace RimWorld
 				}
 				return;
 			}
-			ThingWithComps thingWithComps = t as ThingWithComps;
-			if (thingWithComps == null)
+			if (!(t is ThingWithComps thingWithComps))
 			{
 				if (warnOnFail)
 				{
@@ -50,9 +57,13 @@ namespace RimWorld
 			}
 		}
 
-		public static bool CaresAboutForbidden(Pawn pawn, bool cellTarget)
+		public static bool CaresAboutForbidden(Pawn pawn, bool cellTarget, bool bypassDraftedCheck = false)
 		{
-			if (pawn.HostFaction != null && (pawn.HostFaction != Faction.OfPlayer || !pawn.Spawned || pawn.Map.IsPlayerHome || (pawn.GetRoom() != null && pawn.GetRoom().isPrisonCell) || (pawn.IsPrisoner && !pawn.guest.PrisonerIsSecure)))
+			if (pawn.HostFaction != null && (pawn.HostFaction != Faction.OfPlayer || !pawn.Spawned || pawn.Map.IsPlayerHome || (pawn.GetRoom() != null && pawn.GetRoom().IsPrisonCell) || (pawn.IsPrisoner && !pawn.guest.PrisonerIsSecure)))
+			{
+				return false;
+			}
+			if (!bypassDraftedCheck && pawn.Drafted)
 			{
 				return false;
 			}
@@ -60,7 +71,19 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (SlaveRebellionUtility.IsRebelling(pawn))
+			{
+				return false;
+			}
 			if (cellTarget && ThinkNode_ConditionalShouldFollowMaster.ShouldFollowMaster(pawn))
+			{
+				return false;
+			}
+			if (pawn.IsColonyMechRequiringMechanitor())
+			{
+				return false;
+			}
+			if (ModsConfig.AnomalyActive && pawn.kindDef == PawnKindDefOf.Revenant)
 			{
 				return false;
 			}
@@ -80,13 +103,18 @@ namespace RimWorld
 			return true;
 		}
 
+		public static bool IsForbiddenHeld(this Thing t, Pawn pawn)
+		{
+			return t.SpawnedParentOrMe.IsForbidden(pawn);
+		}
+
 		public static bool IsForbidden(this Thing t, Pawn pawn)
 		{
 			if (!CaresAboutForbidden(pawn, cellTarget: false))
 			{
 				return false;
 			}
-			if (t.Spawned && t.Position.IsForbidden(pawn))
+			if ((t.Spawned || t.SpawnedParentOrMe != pawn) && t.PositionHeld.IsForbidden(pawn))
 			{
 				return true;
 			}
@@ -99,12 +127,23 @@ namespace RimWorld
 			{
 				return true;
 			}
+			foreach (Lord lord2 in pawn.MapHeld.lordManager.lords)
+			{
+				if (lord2.CurLordToil is LordToil_Ritual lordToil_Ritual && lordToil_Ritual.ReservedThings.Contains(t) && lord2 != lord)
+				{
+					return true;
+				}
+				if (lord2.CurLordToil is LordToil_PsychicRitual lordToil_PsychicRitual && lordToil_PsychicRitual.RitualData.psychicRitual.def is PsychicRitualDef_InvocationCircle { TargetRole: not null } psychicRitualDef_InvocationCircle && lordToil_PsychicRitual.RitualData.psychicRitual.assignments.FirstAssignedPawn(psychicRitualDef_InvocationCircle.TargetRole) == t && !(lordToil_PsychicRitual.RitualData.CurPsychicRitualToil is PsychicRitualToil_TargetCleanup) && lord2 != lord)
+				{
+					return true;
+				}
+			}
 			return false;
 		}
 
 		public static bool IsForbiddenToPass(this Building_Door t, Pawn pawn)
 		{
-			if (!CaresAboutForbidden(pawn, cellTarget: false))
+			if (!CaresAboutForbidden(pawn, cellTarget: false, bypassDraftedCheck: true))
 			{
 				return false;
 			}
@@ -140,8 +179,8 @@ namespace RimWorld
 			}
 			if (pawn.playerSettings != null)
 			{
-				Area effectiveAreaRestriction = pawn.playerSettings.EffectiveAreaRestriction;
-				if (effectiveAreaRestriction != null && effectiveAreaRestriction.TrueCount > 0 && effectiveAreaRestriction.Map == r.Map && r.OverlapWith(effectiveAreaRestriction) == AreaOverlap.None)
+				Area effectiveAreaRestrictionInPawnCurrentMap = pawn.playerSettings.EffectiveAreaRestrictionInPawnCurrentMap;
+				if (effectiveAreaRestrictionInPawnCurrentMap != null && effectiveAreaRestrictionInPawnCurrentMap.TrueCount > 0 && effectiveAreaRestrictionInPawnCurrentMap.Map == r.Map && r.OverlapWith(effectiveAreaRestrictionInPawnCurrentMap) == AreaOverlap.None)
 				{
 					return true;
 				}
@@ -159,12 +198,11 @@ namespace RimWorld
 			{
 				return false;
 			}
-			ThingWithComps thingWithComps = t as ThingWithComps;
-			if (thingWithComps == null)
+			if (!(t is ThingWithComps { compForbiddable: var compForbiddable }))
 			{
 				return false;
 			}
-			return thingWithComps.GetComp<CompForbiddable>()?.Forbidden ?? false;
+			return compForbiddable?.Forbidden ?? false;
 		}
 	}
 }

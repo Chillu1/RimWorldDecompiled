@@ -87,7 +87,7 @@ namespace RimWorld
 			int num = 0;
 			if (list.Count == 0)
 			{
-				Log.Error(string.Concat("Name list for gender=", gender, " slot=", slot, " is empty."));
+				Log.Error("Name list for gender=" + gender.ToString() + " slot=" + slot.ToString() + " is empty.");
 				return "Errorname";
 			}
 			string text;

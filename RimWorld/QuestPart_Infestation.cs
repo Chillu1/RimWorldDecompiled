@@ -14,6 +14,8 @@ namespace RimWorld
 
 		public string tag;
 
+		public IntVec3? overrideLoc;
+
 		public string customLetterText;
 
 		public string customLetterLabel;
@@ -60,8 +62,7 @@ namespace RimWorld
 				List<Thing> hives = mapParent.Map.listerThings.ThingsOfDef(ThingDefOf.Hive);
 				for (int i = 0; i < hives.Count; i++)
 				{
-					Hive hive;
-					if ((hive = hives[i] as Hive) != null && !hive.questTags.NullOrEmpty() && hive.questTags.Contains(tag))
+					if (hives[i] is Hive hive && !hive.questTags.NullOrEmpty() && hive.questTags.Contains(tag))
 					{
 						yield return hive;
 					}
@@ -77,14 +78,18 @@ namespace RimWorld
 				return;
 			}
 			loc = IntVec3.Invalid;
+			if (mapParent == null || !mapParent.HasMap || !quest.IsParentSuitableForQuest(mapParent))
+			{
+				mapParent = quest.TryFindNewSuitableMapParentForRetarget() ?? Find.AnyPlayerHomeMap?.Parent;
+			}
 			if (mapParent == null || !mapParent.HasMap)
 			{
 				return;
 			}
-			Thing thing = InfestationUtility.SpawnTunnels(hivesCount, mapParent.Map, spawnAnywhereIfNoGoodCell: true, ignoreRoofedRequirement: true, tag);
+			Thing thing = InfestationUtility.SpawnTunnels(hivesCount, mapParent.Map, spawnAnywhereIfNoGoodCell: true, ignoreRoofedRequirement: true, tag, overrideLoc);
 			if (thing != null)
 			{
-				loc = thing.Position;
+				loc = overrideLoc ?? thing.Position;
 				if (sendStandardLetter)
 				{
 					TaggedString label = (customLetterLabel.NullOrEmpty() ? ((TaggedString)IncidentDefOf.Infestation.letterLabel) : customLetterLabel.Formatted(IncidentDefOf.Infestation.letterLabel.Named("BASELABEL")));
@@ -106,6 +111,12 @@ namespace RimWorld
 			Scribe_Values.Look(ref sendStandardLetter, "sendStandardLetter", defaultValue: true);
 			Scribe_Values.Look(ref loc, "loc");
 			Scribe_Values.Look(ref tag, "tag");
+			Scribe_Values.Look(ref overrideLoc, "overrideLoc");
+			if (Scribe.mode == LoadSaveMode.PostLoadInit && !quest.Historical && (mapParent == null || !mapParent.HasMap))
+			{
+				Log.Warning($"Quest {quest} loaded with quest part {this} with invalid map and no fallback map. Ending quest.");
+				quest.End(QuestEndOutcome.Unknown, sendLetter: false);
+			}
 		}
 
 		public override void AssignDebugData()

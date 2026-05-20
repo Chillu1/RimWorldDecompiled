@@ -14,6 +14,9 @@ namespace RimWorld
 
 		public float lowPowerConsumptionFactor = 0.1f;
 
+		[MustTranslate]
+		public string inspectString;
+
 		public CompProperties_TempControl()
 		{
 			compClass = typeof(CompTempControl);

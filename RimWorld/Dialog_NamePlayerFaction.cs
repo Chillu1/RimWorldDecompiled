@@ -2,6 +2,8 @@ namespace RimWorld
 {
 	public class Dialog_NamePlayerFaction : Dialog_GiveName
 	{
+		protected override int FirstCharLimit => 64;
+
 		public Dialog_NamePlayerFaction()
 		{
 			nameGenerator = () => NameGenerator.GenerateName(Faction.OfPlayer.def.factionNameMaker, IsValidName);

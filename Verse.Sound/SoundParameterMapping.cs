@@ -21,15 +21,6 @@ namespace Verse.Sound
 			curve.Add(new CurvePoint(1f, 1f));
 		}
 
-		public void DoEditWidgets(WidgetRow widgetRow)
-		{
-			string title = ((inParam != null) ? inParam.Label : "null") + " -> " + ((outParam != null) ? outParam.Label : "null");
-			if (widgetRow.ButtonText("Edit curve", "Edit the curve mapping the in parameter to the out parameter."))
-			{
-				Find.WindowStack.Add(new EditWindow_CurveEditor(curve, title));
-			}
-		}
-
 		public void Apply(Sample samp)
 		{
 			if (inParam != null && outParam != null)

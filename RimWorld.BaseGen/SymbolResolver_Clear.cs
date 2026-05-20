@@ -25,7 +25,7 @@ namespace RimWorld.BaseGen
 					tmpThingsToDestroy.AddRange(item.GetThingList(BaseGen.globalSettings.map));
 					for (int i = 0; i < tmpThingsToDestroy.Count; i++)
 					{
-						if (tmpThingsToDestroy[i].def.destroyable && tmpThingsToDestroy[i].def.Fillage != 0)
+						if (tmpThingsToDestroy[i].def.destroyable && tmpThingsToDestroy[i].def.Fillage != FillCategory.None)
 						{
 							tmpThingsToDestroy[i].Destroy();
 						}

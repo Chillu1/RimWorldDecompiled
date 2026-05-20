@@ -13,13 +13,20 @@ namespace RimWorld
 			PawnsArrivalModeWorkerUtility.DropInDropPodsNearSpawnCenter(parms, pawns);
 		}
 
-		public override void TravelingTransportPodsArrived(List<ActiveDropPodInfo> dropPods, Map map)
+		public override void TravellingTransportersArrived(List<ActiveTransporterInfo> transporters, Map map)
 		{
 			if (!DropCellFinder.TryFindRaidDropCenterClose(out var spot, map))
 			{
-				spot = DropCellFinder.FindRaidDropCenterDistant_NewTemp(map);
+				spot = DropCellFinder.FindRaidDropCenterDistant(map);
 			}
-			TransportPodsArrivalActionUtility.DropTravelingTransportPods(dropPods, spot, map);
+			if (transporters.IsShuttle())
+			{
+				TransportersArrivalActionUtility.DropShuttle(transporters[0], map, spot);
+			}
+			else
+			{
+				TransportersArrivalActionUtility.DropTravellingDropPods(transporters, spot, map);
+			}
 		}
 
 		public override bool TryResolveRaidSpawnCenter(IncidentParms parms)
@@ -32,7 +39,7 @@ namespace RimWorld
 			parms.spawnRotation = Rot4.Random;
 			if (!parms.spawnCenter.IsValid)
 			{
-				bool flag = parms.faction == Faction.OfMechanoids;
+				bool flag = parms.faction != null && parms.faction == Faction.OfMechanoids;
 				bool flag2 = parms.faction != null && parms.faction.HostileTo(Faction.OfPlayer);
 				if (Rand.Chance(0.4f) && !flag && map.listerBuildings.ColonistsHaveBuildingWithPowerOn(ThingDefOf.OrbitalTradeBeacon))
 				{

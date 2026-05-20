@@ -36,11 +36,11 @@ namespace Verse.AI
 			pawn.royalty.IssueDecree(causedByMentalBreak: true, reason);
 			if (MentalStateDefOf.Wander_OwnRoom.Worker.StateCanOccur(pawn))
 			{
-				pawn.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Wander_OwnRoom, null, forceWake: false, causedByMood, null, transitionSilently: true);
+				pawn.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Wander_OwnRoom, null, forced: false, forceWake: false, causedByMood, null, transitionSilently: true);
 			}
 			else if (MentalStateDefOf.Wander_Sad.Worker.StateCanOccur(pawn))
 			{
-				pawn.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Wander_Sad, null, forceWake: false, causedByMood, null, transitionSilently: true);
+				pawn.mindState.mentalStateHandler.TryStartMentalState(MentalStateDefOf.Wander_Sad, null, forced: false, forceWake: false, causedByMood, null, transitionSilently: true);
 			}
 			return true;
 		}

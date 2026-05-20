@@ -8,9 +8,11 @@ using Verse.Profile;
 
 namespace Verse
 {
-	public class Game : IExposable
+	public class Game : IExposable, IDisposable
 	{
 		private GameInitData initData;
+
+		private Gravship gravshipInt;
 
 		public sbyte currentMapIndex = -1;
 
@@ -34,6 +36,8 @@ namespace Verse
 
 		public ResearchManager researchManager = new ResearchManager();
 
+		public AnalysisManager analysisManager = new AnalysisManager();
+
 		public GameEnder gameEnder = new GameEnder();
 
 		public Storyteller storyteller = new Storyteller();
@@ -49,6 +53,8 @@ namespace Verse
 		public OutfitDatabase outfitDatabase = new OutfitDatabase();
 
 		public DrugPolicyDatabase drugPolicyDatabase = new DrugPolicyDatabase();
+
+		public ReadingPolicyDatabase readingPolicyDatabase = new ReadingPolicyDatabase();
 
 		public FoodRestrictionDatabase foodRestrictionDatabase = new FoodRestrictionDatabase();
 
@@ -66,7 +72,21 @@ namespace Verse
 
 		public QuestManager questManager = new QuestManager();
 
-		private static List<Map> tmpPlayerHomeMaps = new List<Map>();
+		public TransportShipManager transportShipManager = new TransportShipManager();
+
+		public StudyManager studyManager = new StudyManager();
+
+		public CustomXenogermDatabase customXenogermDatabase = new CustomXenogermDatabase();
+
+		public CustomXenotypeDatabase customXenotypeDatabase = new CustomXenotypeDatabase();
+
+		public RelationshipRecords relationshipRecords = new RelationshipRecords();
+
+		public HiddenItemsManager hiddenItemsManager = new HiddenItemsManager();
+
+		public EntityCodex entityCodex = new EntityCodex();
+
+		private static readonly List<Map> tmpPlayerHomeMaps = new List<Map>();
 
 		public Scenario Scenario
 		{
@@ -140,13 +160,59 @@ namespace Verse
 				}
 				for (int i = 0; i < maps.Count; i++)
 				{
-					Map map = maps[i];
-					if (map.IsPlayerHome)
+					if (maps[i].IsPlayerHome)
 					{
-						return map;
+						return maps[i];
+					}
+				}
+				if (ModsConfig.OdysseyActive)
+				{
+					for (int j = 0; j < maps.Count; j++)
+					{
+						if (GravshipUtility.PlayerHasGravEngine(maps[j]))
+						{
+							return maps[j];
+						}
 					}
 				}
 				return null;
+			}
+		}
+
+		public bool PlayerHasControl
+		{
+			get
+			{
+				if (ScreenFader.IsFading())
+				{
+					return false;
+				}
+				if (WorldComponent_GravshipController.CutsceneInProgress && !Find.CameraDriver.config.gravshipFreeCam)
+				{
+					return false;
+				}
+				return true;
+			}
+		}
+
+		public IReadOnlyList<Map> PlayerHomeMaps
+		{
+			get
+			{
+				if (Faction.OfPlayerSilentFail == null)
+				{
+					return null;
+				}
+				tmpPlayerHomeMaps.Clear();
+				for (int i = 0; i < maps.Count; i++)
+				{
+					Map map = maps[i];
+					if (map.IsPlayerHome)
+					{
+						tmpPlayerHomeMaps.Add(map);
+					}
+				}
+				return tmpPlayerHomeMaps;
 			}
 		}
 
@@ -163,6 +229,60 @@ namespace Verse
 				{
 					Map map = maps[i];
 					if (map.IsPlayerHome)
+					{
+						tmpPlayerHomeMaps.Add(map);
+					}
+				}
+				if (tmpPlayerHomeMaps.Any())
+				{
+					Map result = tmpPlayerHomeMaps.RandomElement();
+					tmpPlayerHomeMaps.Clear();
+					return result;
+				}
+				return null;
+			}
+		}
+
+		public Map RandomRootSurfacePlayerHomeMap
+		{
+			get
+			{
+				if (Faction.OfPlayerSilentFail == null)
+				{
+					return null;
+				}
+				tmpPlayerHomeMaps.Clear();
+				for (int i = 0; i < maps.Count; i++)
+				{
+					Map map = maps[i];
+					if (map.IsPlayerHome && map.Tile.Layer.IsRootSurface)
+					{
+						tmpPlayerHomeMaps.Add(map);
+					}
+				}
+				if (tmpPlayerHomeMaps.Any())
+				{
+					Map result = tmpPlayerHomeMaps.RandomElement();
+					tmpPlayerHomeMaps.Clear();
+					return result;
+				}
+				return null;
+			}
+		}
+
+		public Map RandomSurfacePlayerHomeMap
+		{
+			get
+			{
+				if (Faction.OfPlayerSilentFail == null)
+				{
+					return null;
+				}
+				tmpPlayerHomeMaps.Clear();
+				for (int i = 0; i < maps.Count; i++)
+				{
+					Map map = maps[i];
+					if (map.IsPlayerHome && map.Tile.LayerDef.SurfaceTiles)
 					{
 						tmpPlayerHomeMaps.Add(map);
 					}
@@ -194,6 +314,31 @@ namespace Verse
 		public GameInfo Info => info;
 
 		public GameRules Rules => rules;
+
+		public Gravship Gravship
+		{
+			get
+			{
+				return gravshipInt;
+			}
+			set
+			{
+				gravshipInt = value;
+			}
+		}
+
+		public bool IsPlayerTile(PlanetTile tile)
+		{
+			for (int i = 0; i < maps.Count; i++)
+			{
+				Map map = maps[i];
+				if (map.Tile == tile && map.IsPlayerHome)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
 
 		public Game()
 		{
@@ -233,7 +378,7 @@ namespace Verse
 			return null;
 		}
 
-		public Map FindMap(int tile)
+		public Map FindMap(PlanetTile tile)
 		{
 			for (int i = 0; i < maps.Count; i++)
 			{
@@ -270,6 +415,11 @@ namespace Verse
 			Scribe_Deep.Look(ref gameEnder, "gameEnder");
 			Scribe_Deep.Look(ref letterStack, "letterStack");
 			Scribe_Deep.Look(ref researchManager, "researchManager");
+			Scribe_Deep.Look(ref analysisManager, "analysisManager");
+			if (Scribe.mode == LoadSaveMode.LoadingVars && analysisManager == null)
+			{
+				analysisManager = new AnalysisManager();
+			}
 			Scribe_Deep.Look(ref storyteller, "storyteller");
 			Scribe_Deep.Look(ref history, "history");
 			Scribe_Deep.Look(ref taleManager, "taleManager");
@@ -278,10 +428,18 @@ namespace Verse
 			Scribe_Deep.Look(ref outfitDatabase, "outfitDatabase");
 			Scribe_Deep.Look(ref drugPolicyDatabase, "drugPolicyDatabase");
 			Scribe_Deep.Look(ref foodRestrictionDatabase, "foodRestrictionDatabase");
+			Scribe_Deep.Look(ref readingPolicyDatabase, "readingPolicyDatabase");
 			Scribe_Deep.Look(ref tutor, "tutor");
 			Scribe_Deep.Look(ref dateNotifier, "dateNotifier");
 			Scribe_Deep.Look(ref uniqueIDsManager, "uniqueIDsManager");
 			Scribe_Deep.Look(ref questManager, "questManager");
+			Scribe_Deep.Look(ref transportShipManager, "transportShipManager");
+			Scribe_Deep.Look(ref studyManager, "studyManager");
+			Scribe_Deep.Look(ref customXenogermDatabase, "customXenogermDatabase");
+			Scribe_Deep.Look(ref customXenotypeDatabase, "customXenotypeDatabase");
+			Scribe_Deep.Look(ref relationshipRecords, "relationshipRecords");
+			Scribe_Deep.Look(ref hiddenItemsManager, "hiddenItemsManager");
+			Scribe_Deep.Look(ref entityCodex, "entityCodex");
 			Scribe_Collections.Look(ref components, "components", LookMode.Deep, this);
 			if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
@@ -290,6 +448,22 @@ namespace Verse
 				{
 					Log.Warning("Save game was missing rules. Replacing with a blank GameRules.");
 					rules = new GameRules();
+				}
+				if (relationshipRecords == null)
+				{
+					relationshipRecords = new RelationshipRecords();
+				}
+				if (readingPolicyDatabase == null)
+				{
+					readingPolicyDatabase = new ReadingPolicyDatabase();
+				}
+				if (hiddenItemsManager == null)
+				{
+					hiddenItemsManager = new HiddenItemsManager();
+				}
+				if (entityCodex == null)
+				{
+					entityCodex = new EntityCodex();
 				}
 			}
 			BackCompatibility.PostExposeData(this);
@@ -309,7 +483,7 @@ namespace Verse
 					}
 					catch (Exception ex)
 					{
-						Log.Error(string.Concat("Could not instantiate a GameComponent of type ", item2, ": ", ex));
+						Log.Error("Could not instantiate a GameComponent of type " + item2?.ToString() + ": " + ex);
 					}
 				}
 			}
@@ -317,8 +491,8 @@ namespace Verse
 
 		public void InitNewGame()
 		{
-			string str = LoadedModManager.RunningMods.Select((ModContentPack mod) => mod.PackageIdPlayerFacing).ToLineList("  - ");
-			Log.Message("Initializing new game with mods:\n" + str);
+			string text = LoadedModManager.RunningMods.Select((ModContentPack mod) => mod.PackageIdPlayerFacing + ((!mod.ModMetaData.VersionCompatible) ? " (incompatible version)" : "")).ToLineList("  - ");
+			Log.Message("Initializing new game with mods:\n" + text);
 			if (maps.Any())
 			{
 				Log.Error("Called InitNewGame() but there already is a map. There should be 0 maps...");
@@ -329,19 +503,19 @@ namespace Verse
 				Log.Error("Called InitNewGame() but init data is null. Create it first.");
 				return;
 			}
+			ClearCaches();
 			MemoryUtility.UnloadUnusedUnityAssets();
-			DeepProfiler.Start("InitNewGame");
 			try
 			{
 				Current.ProgramState = ProgramState.MapInitializing;
 				IntVec3 intVec = new IntVec3(initData.mapSize, 1, initData.mapSize);
 				Settlement settlement = null;
 				List<Settlement> settlements = Find.WorldObjects.Settlements;
-				for (int i = 0; i < settlements.Count; i++)
+				for (int num = 0; num < settlements.Count; num++)
 				{
-					if (settlements[i].Faction == Faction.OfPlayer)
+					if (settlements[num].Faction == Faction.OfPlayer)
 					{
-						settlement = settlements[i];
+						settlement = settlements[num];
 						break;
 					}
 				}
@@ -350,7 +524,9 @@ namespace Verse
 					Log.Error("Could not generate starting map because there is no any player faction base.");
 				}
 				tickManager.gameStartAbsTick = GenTicks.ConfiguredTicksAbsAtGameStart;
-				Map currentMap = MapGenerator.GenerateMap(intVec, settlement, settlement.MapGeneratorDef, settlement.ExtraGenStepDefs);
+				info.startingTile = initData.startingTile;
+				info.startingAndOptionalPawns = initData.startingAndOptionalPawns;
+				Map currentMap = MapGenerator.GenerateMap(intVec, settlement, initData.mapGeneratorDef ?? settlement.MapGeneratorDef, settlement.ExtraGenStepDefs);
 				worldInt.info.initialMapSize = intVec;
 				if (initData.permadeath)
 				{
@@ -372,42 +548,12 @@ namespace Verse
 				}
 				Find.Scenario.PostGameStart();
 				history.FinalizeInit();
-				if (Faction.OfPlayer.def.startingResearchTags != null)
-				{
-					foreach (ResearchProjectTagDef startingResearchTag in Faction.OfPlayer.def.startingResearchTags)
-					{
-						foreach (ResearchProjectDef allDef in DefDatabase<ResearchProjectDef>.AllDefs)
-						{
-							if (allDef.HasTag(startingResearchTag))
-							{
-								researchManager.FinishProject(allDef);
-							}
-						}
-					}
-				}
-				if (Faction.OfPlayer.def.startingTechprintsResearchTags != null)
-				{
-					foreach (ResearchProjectTagDef startingTechprintsResearchTag in Faction.OfPlayer.def.startingTechprintsResearchTags)
-					{
-						foreach (ResearchProjectDef allDef2 in DefDatabase<ResearchProjectDef>.AllDefs)
-						{
-							if (allDef2.HasTag(startingTechprintsResearchTag))
-							{
-								int techprints = researchManager.GetTechprints(allDef2);
-								if (techprints < allDef2.TechprintCount)
-								{
-									researchManager.AddTechprints(allDef2, allDef2.TechprintCount - techprints);
-								}
-							}
-						}
-					}
-				}
+				ResearchUtility.ApplyPlayerStartingResearch();
 				GameComponentUtility.StartedNewGame();
 				initData = null;
 			}
 			finally
 			{
-				DeepProfiler.End();
 			}
 		}
 
@@ -418,6 +564,7 @@ namespace Verse
 				Log.Error("Called LoadGame() but there already is a map. There should be 0 maps...");
 				return;
 			}
+			ClearCaches();
 			MemoryUtility.UnloadUnusedUnityAssets();
 			BackCompatibility.PreLoadSavegame(ScribeMetaHeaderUtility.loadedGameVersion);
 			Current.ProgramState = ProgramState.MapInitializing;
@@ -429,12 +576,15 @@ namespace Verse
 				{
 					World = new World();
 					World.ExposeData();
+					Scribe.loader.crossRefs.RegisterForCrossRefResolve(World);
 				}
 				finally
 				{
 					Scribe.ExitNode();
 				}
-				World.FinalizeInit();
+				DeepProfiler.Start("World.FinalizeInit");
+				World.FinalizeInit(fromLoad: true);
+				DeepProfiler.End();
 				LongEventHandler.SetCurrentEventText("LoadingMap".Translate());
 				Scribe_Collections.Look(ref maps, "maps", LookMode.Deep);
 				if (maps.RemoveAll((Map x) => x == null) != 0)
@@ -457,30 +607,34 @@ namespace Verse
 				CurrentMap = ((value >= 0) ? maps[value] : null);
 				LongEventHandler.SetCurrentEventText("InitializingGame".Translate());
 				Find.CameraDriver.Expose();
-				DeepProfiler.Start("FinalizeLoading");
+				DeepProfiler.Start("Scribe.loader.FinalizeLoading");
 				Scribe.loader.FinalizeLoading();
 				DeepProfiler.End();
 				LongEventHandler.SetCurrentEventText("SpawningAllThings".Translate());
-				for (int i = 0; i < maps.Count; i++)
+				DeepProfiler.Start("maps.FinalizeLoading");
+				for (int num = 0; num < maps.Count; num++)
 				{
 					try
 					{
-						maps[i].FinalizeLoading();
+						maps[num].FinalizeLoading();
 					}
-					catch (Exception arg)
+					catch (Exception ex)
 					{
-						Log.Error("Error in Map.FinalizeLoading(): " + arg);
+						Log.Error("Error in Map.FinalizeLoading(): " + ex);
 					}
 					try
 					{
-						maps[i].Parent.FinalizeLoading();
+						maps[num].Parent?.FinalizeLoading();
 					}
-					catch (Exception arg2)
+					catch (Exception ex2)
 					{
-						Log.Error("Error in MapParent.FinalizeLoading(): " + arg2);
+						Log.Error("Error in MapParent.FinalizeLoading(): " + ex2);
 					}
 				}
+				DeepProfiler.End();
+				DeepProfiler.Start("Game.FinalizeInit");
 				FinalizeInit();
+				DeepProfiler.End();
 				if (Prefs.PauseOnLoad)
 				{
 					LongEventHandler.ExecuteWhenFinished(delegate
@@ -505,6 +659,14 @@ namespace Verse
 
 		public void UpdatePlay()
 		{
+			try
+			{
+				Find.LetterStack.OpenAutomaticLetters();
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex.ToString());
+			}
 			tickManager.TickManagerUpdate();
 			letterStack.LetterStackUpdate();
 			World.WorldUpdate();
@@ -515,16 +677,16 @@ namespace Verse
 			Info.GameInfoUpdate();
 			GameComponentUtility.GameComponentUpdate();
 			signalManager.SignalManagerUpdate();
+			GlobalTextureAtlasManager.GlobalTextureAtlasManagerUpdate();
 		}
 
 		public T GetComponent<T>() where T : GameComponent
 		{
 			for (int i = 0; i < components.Count; i++)
 			{
-				T val = components[i] as T;
-				if (val != null)
+				if (components[i] is T result)
 				{
-					return val;
+					return result;
 				}
 			}
 			return null;
@@ -534,7 +696,7 @@ namespace Verse
 		{
 			for (int i = 0; i < components.Count; i++)
 			{
-				if (type.IsAssignableFrom(components[i].GetType()))
+				if (type.IsInstanceOfType(components[i]))
 				{
 					return components[i];
 				}
@@ -549,9 +711,16 @@ namespace Verse
 			MessagesRepeatAvoider.Reset();
 			GameComponentUtility.FinalizeInit();
 			Current.ProgramState = ProgramState.Playing;
+			Current.Game.World.ideoManager.Notify_GameStarted();
+			RecipeDefGenerator.ResetRecipeIngredientsForDifficulty();
+			LongEventHandler.ExecuteWhenFinished(delegate
+			{
+				DebugSettings.devPalette = Prefs.StartDevPaletteOn;
+				Find.UIRoot.debugWindowOpener.TryOpenOrClosePalette();
+			});
 		}
 
-		public void DeinitAndRemoveMap(Map map)
+		public void DeinitAndRemoveMap(Map map, bool notifyPlayer)
 		{
 			if (map == null)
 			{
@@ -560,7 +729,7 @@ namespace Verse
 			}
 			if (!maps.Contains(map))
 			{
-				Log.Error(string.Concat("Tried to remove map ", map, " but it's not here."));
+				Log.Error("Tried to remove map " + map?.ToString() + " but it's not here.");
 				return;
 			}
 			if (map.Parent != null)
@@ -568,7 +737,7 @@ namespace Verse
 				map.Parent.Notify_MyMapAboutToBeRemoved();
 			}
 			Map currentMap = CurrentMap;
-			MapDeiniter.Deinit(map);
+			MapDeiniter.Deinit(map, notifyPlayer);
 			maps.Remove(map);
 			if (currentMap != null)
 			{
@@ -595,10 +764,19 @@ namespace Verse
 				Find.ColonistBar.MarkColonistsDirty();
 			}
 			MapComponentUtility.MapRemoved(map);
+			Find.Scenario.MapRemoved(map);
 			if (map.Parent != null)
 			{
 				map.Parent.Notify_MyMapRemoved(map);
 			}
+			foreach (PocketMapParent item in Find.World.pocketMaps.ToList())
+			{
+				if (item.sourceMap == map && item.Map.generatorDef.pocketMapProperties.destroyOnParentMapAbandoned)
+				{
+					PocketMapUtility.DestroyPocketMap(item.Map);
+				}
+			}
+			map.Dispose();
 		}
 
 		public string DebugString()
@@ -621,7 +799,7 @@ namespace Verse
 			}
 			else
 			{
-				stringBuilder.AppendLine("   " + scenarioInt.ToString());
+				stringBuilder.AppendLine("   " + scenarioInt);
 			}
 			stringBuilder.AppendLine("World:");
 			if (worldInt == null)
@@ -638,7 +816,37 @@ namespace Verse
 				stringBuilder.AppendLine("   Map " + maps[i].Index + ":");
 				stringBuilder.AppendLine("      tile: " + maps[i].TileInfo);
 			}
+			stringBuilder.AppendLine("Game components:");
+			for (int j = 0; j < components.Count; j++)
+			{
+				components[j].AppendDebugString(stringBuilder);
+			}
 			return stringBuilder.ToString();
+		}
+
+		public void Dispose()
+		{
+			for (int i = 0; i < maps.Count; i++)
+			{
+				maps[i].Dispose();
+			}
+			worldInt?.Dispose();
+			SteadyEnvironmentEffects.Reset();
+		}
+
+		public static void ClearCaches()
+		{
+			Find.ClearCache();
+			ChildcareUtility.ClearCache();
+			SlaveRebellionUtility.ClearCache();
+			Alert_NeedMeditationSpot.ClearCache();
+			BuildCopyCommandUtility.ClearCache();
+			MechanitorUtility.ClearCache();
+			SocialCardUtility.ClearCaches();
+			foreach (StatDef item in DefDatabase<StatDef>.AllDefsListForReading)
+			{
+				item.Worker.TryClearCache();
+			}
 		}
 	}
 }

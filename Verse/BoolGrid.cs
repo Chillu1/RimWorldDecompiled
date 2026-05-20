@@ -9,15 +9,19 @@ namespace Verse
 
 		private int trueCountInt;
 
-		private int mapSizeX;
+		private int width;
 
-		private int mapSizeZ;
+		private int height;
 
 		private int minPossibleTrueIndexCached = -1;
 
 		private bool minPossibleTrueIndexDirty;
 
 		public int TrueCount => trueCountInt;
+
+		public int Width => width;
+
+		public int Height => height;
 
 		public IEnumerable<IntVec3> ActiveCells
 		{
@@ -40,7 +44,7 @@ namespace Verse
 							minPossibleTrueIndexDirty = false;
 							minPossibleTrueIndexCached = i;
 						}
-						yield return CellIndicesUtility.IndexToCell(i, mapSizeX);
+						yield return CellIndicesUtility.IndexToCell(i, width);
 						yieldedCount++;
 						if (yieldedCount >= trueCountInt)
 						{
@@ -67,7 +71,7 @@ namespace Verse
 		{
 			get
 			{
-				return arr[CellIndicesUtility.CellToIndex(c, mapSizeX)];
+				return arr[CellIndicesUtility.CellToIndex(c, width)];
 			}
 			set
 			{
@@ -79,11 +83,11 @@ namespace Verse
 		{
 			get
 			{
-				return arr[CellIndicesUtility.CellToIndex(x, z, mapSizeX)];
+				return arr[CellIndicesUtility.CellToIndex(x, z, width)];
 			}
 			set
 			{
-				Set(CellIndicesUtility.CellToIndex(x, z, mapSizeX), value);
+				Set(CellIndicesUtility.CellToIndex(x, z, width), value);
 			}
 		}
 
@@ -96,25 +100,48 @@ namespace Verse
 			ClearAndResizeTo(map);
 		}
 
+		public BoolGrid(int x, int z)
+		{
+			ClearAndResizeTo(x, z);
+		}
+
 		public bool MapSizeMatches(Map map)
 		{
-			if (mapSizeX == map.Size.x)
+			if (width == map.Size.x)
 			{
-				return mapSizeZ == map.Size.z;
+				return height == map.Size.z;
 			}
 			return false;
 		}
 
 		public void ClearAndResizeTo(Map map)
 		{
-			if (MapSizeMatches(map) && arr != null)
+			if (MapSizeMatches(map))
 			{
-				Clear();
+				if (arr != null)
+				{
+					Clear();
+				}
+			}
+			else
+			{
+				ClearAndResizeTo(map.Size.x, map.Size.z);
+			}
+		}
+
+		public void ClearAndResizeTo(int x, int z)
+		{
+			if (width == x && height == z)
+			{
+				if (arr != null)
+				{
+					Clear();
+				}
 				return;
 			}
-			mapSizeX = map.Size.x;
-			mapSizeZ = map.Size.z;
-			arr = new bool[mapSizeX * mapSizeZ];
+			width = x;
+			height = z;
+			arr = new bool[width * height];
 			trueCountInt = 0;
 			minPossibleTrueIndexCached = -1;
 			minPossibleTrueIndexDirty = false;
@@ -123,9 +150,9 @@ namespace Verse
 		public void ExposeData()
 		{
 			Scribe_Values.Look(ref trueCountInt, "trueCount", 0);
-			Scribe_Values.Look(ref mapSizeX, "mapSizeX", 0);
-			Scribe_Values.Look(ref mapSizeZ, "mapSizeZ", 0);
-			DataExposeUtility.BoolArray(ref arr, mapSizeX * mapSizeZ, "arr");
+			Scribe_Values.Look(ref width, "mapSizeX", 0);
+			Scribe_Values.Look(ref height, "mapSizeZ", 0);
+			DataExposeUtility.LookBoolArray(ref arr, width * height, "arr");
 			if (Scribe.mode == LoadSaveMode.LoadingVars)
 			{
 				minPossibleTrueIndexDirty = true;
@@ -142,7 +169,7 @@ namespace Verse
 
 		public virtual void Set(IntVec3 c, bool value)
 		{
-			Set(CellIndicesUtility.CellToIndex(c, mapSizeX), value);
+			Set(CellIndicesUtility.CellToIndex(c, width), value);
 		}
 
 		public virtual void Set(int index, bool value)

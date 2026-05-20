@@ -14,7 +14,7 @@ namespace RimWorld
 
 		private const int UnloadDuration = 10;
 
-		private Pawn OtherPawn => (Pawn)job.GetTarget(TargetIndex.A).Thing;
+		private Pawn OtherPawn => job.GetTarget(TargetIndex.A).Pawn;
 
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
 		{
@@ -26,7 +26,7 @@ namespace RimWorld
 			this.FailOnDespawnedOrNull(TargetIndex.A);
 			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
 			yield return Toils_General.Wait(10);
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
 			toil.initAction = delegate
 			{
 				Pawn otherPawn = OtherPawn;
@@ -50,6 +50,10 @@ namespace RimWorld
 						job.SetTarget(TargetIndex.B, resultingTransferredItem);
 						job.SetTarget(TargetIndex.C, storeCell);
 						firstUnloadableThing.Thing.SetForbidden(value: false, warnOnFail: false);
+					}
+					if (otherPawn.RaceProps.packAnimal && otherPawn.inventory.innerContainer.Count == 0)
+					{
+						otherPawn.Drawer.renderer.SetAllGraphicsDirty();
 					}
 				}
 			};

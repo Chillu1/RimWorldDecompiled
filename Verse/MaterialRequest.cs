@@ -8,7 +8,7 @@ namespace Verse
 	{
 		public Shader shader;
 
-		public Texture2D mainTex;
+		public Texture mainTex;
 
 		public Color color;
 
@@ -16,7 +16,11 @@ namespace Verse
 
 		public Texture2D maskTex;
 
+		public Texture secondaryTex;
+
 		public int renderQueue;
+
+		public bool needsMainTex;
 
 		public List<ShaderParameter> shaderParameters;
 
@@ -28,7 +32,7 @@ namespace Verse
 			}
 		}
 
-		public MaterialRequest(Texture2D tex)
+		public MaterialRequest(Texture tex)
 		{
 			shader = ShaderDatabase.Cutout;
 			mainTex = tex;
@@ -37,9 +41,11 @@ namespace Verse
 			maskTex = null;
 			renderQueue = 0;
 			shaderParameters = null;
+			secondaryTex = null;
+			needsMainTex = true;
 		}
 
-		public MaterialRequest(Texture2D tex, Shader shader)
+		public MaterialRequest(Texture tex, Shader shader)
 		{
 			this.shader = shader;
 			mainTex = tex;
@@ -48,9 +54,11 @@ namespace Verse
 			maskTex = null;
 			renderQueue = 0;
 			shaderParameters = null;
+			secondaryTex = null;
+			needsMainTex = true;
 		}
 
-		public MaterialRequest(Texture2D tex, Shader shader, Color color)
+		public MaterialRequest(Texture tex, Shader shader, Color color)
 		{
 			this.shader = shader;
 			mainTex = tex;
@@ -59,25 +67,40 @@ namespace Verse
 			maskTex = null;
 			renderQueue = 0;
 			shaderParameters = null;
+			secondaryTex = null;
+			needsMainTex = true;
+		}
+
+		public MaterialRequest(Shader shader)
+		{
+			this.shader = shader;
+			mainTex = null;
+			color = Color.white;
+			colorTwo = Color.white;
+			maskTex = null;
+			renderQueue = 0;
+			shaderParameters = null;
+			secondaryTex = null;
+			needsMainTex = false;
 		}
 
 		public override int GetHashCode()
 		{
-			return Gen.HashCombine(Gen.HashCombineInt(Gen.HashCombine(Gen.HashCombine(Gen.HashCombineStruct(Gen.HashCombineStruct(Gen.HashCombine(0, shader), color), colorTwo), mainTex), maskTex), renderQueue), shaderParameters);
+			return Gen.HashCombine(Gen.HashCombine(Gen.HashCombineInt(Gen.HashCombine(Gen.HashCombine(Gen.HashCombineStruct(Gen.HashCombineStruct(Gen.HashCombine(0, shader), color), colorTwo), mainTex), maskTex), renderQueue), shaderParameters), secondaryTex);
 		}
 
 		public override bool Equals(object obj)
 		{
-			if (!(obj is MaterialRequest))
+			if (!(obj is MaterialRequest other))
 			{
 				return false;
 			}
-			return Equals((MaterialRequest)obj);
+			return Equals(other);
 		}
 
 		public bool Equals(MaterialRequest other)
 		{
-			if (other.shader == shader && other.mainTex == mainTex && other.color == color && other.colorTwo == colorTwo && other.maskTex == maskTex && other.renderQueue == renderQueue)
+			if (other.shader == shader && other.mainTex == mainTex && other.color == color && other.colorTwo == colorTwo && other.maskTex == maskTex && other.renderQueue == renderQueue && other.secondaryTex == secondaryTex)
 			{
 				return other.shaderParameters == shaderParameters;
 			}
@@ -96,7 +119,7 @@ namespace Verse
 
 		public override string ToString()
 		{
-			return "MaterialRequest(" + shader.name + ", " + mainTex.name + ", " + color.ToString() + ", " + colorTwo.ToString() + ", " + maskTex.ToString() + ", " + renderQueue + ")";
+			return "MaterialRequest(" + shader.name + ", " + mainTex.name + ", " + color.ToString() + ", " + colorTwo.ToString() + ", " + maskTex?.ToString() + ", " + secondaryTex?.ToString() + ", " + renderQueue + ")";
 		}
 	}
 }

@@ -12,8 +12,7 @@ namespace RimWorld
 			return new TargetingParameters
 			{
 				canTargetPawns = true,
-				canTargetBuildings = false,
-				validator = (TargetInfo x) => BaseTargetValidator(x.Thing)
+				canTargetBuildings = false
 			};
 		}
 

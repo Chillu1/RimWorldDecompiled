@@ -22,9 +22,9 @@ namespace RimWorld
 			Scribe_Values.Look(ref lastNonWaitingTick, "lastNonWaitingTick", 0);
 		}
 
-		public void AutoUndraftTick()
+		public void AutoUndraftTickInterval(int delta)
 		{
-			if (Find.TickManager.TicksGame % 100 == 0 && pawn.Drafted)
+			if (!GenTicks.IsTickIntervalDelta(100, delta) && pawn.Drafted)
 			{
 				if ((pawn.jobs.curJob != null && pawn.jobs.curJob.def != JobDefOf.Wait_Combat) || AnyHostilePreventingAutoUndraft())
 				{
@@ -44,6 +44,10 @@ namespace RimWorld
 
 		private bool ShouldAutoUndraft()
 		{
+			if (pawn.IsColonyMech)
+			{
+				return false;
+			}
 			if (Find.TickManager.TicksGame - lastNonWaitingTick < 10000)
 			{
 				return false;

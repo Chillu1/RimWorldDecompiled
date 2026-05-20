@@ -13,7 +13,7 @@ namespace RimWorld
 
 		public override string ToString()
 		{
-			return "(" + ((kind != null) ? kind.ToString() : "null") + " w=" + selectionWeight.ToString("F2") + " c=" + ((kind != null) ? Cost.ToString("F2") : "null") + ")";
+			return string.Format("({0} w={1:F2} c={2})", (kind != null) ? kind.ToString() : "null", selectionWeight, (kind != null) ? Cost.ToString("F2") : "null");
 		}
 
 		public void LoadDataFromXmlCustom(XmlNode xmlRoot)

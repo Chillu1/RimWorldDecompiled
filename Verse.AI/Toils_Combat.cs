@@ -8,7 +8,7 @@ namespace Verse.AI
 	{
 		public static Toil TrySetJobToUseAttackVerb(TargetIndex targetInd)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("TrySetJobToUseAttackVerb");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;
@@ -27,9 +27,9 @@ namespace Verse.AI
 			return toil;
 		}
 
-		public static Toil GotoCastPosition(TargetIndex targetInd, bool closeIfDowned = false, float maxRangeFactor = 1f)
+		public static Toil GotoCastPosition(TargetIndex targetInd, TargetIndex castPositionInd = TargetIndex.None, bool closeIfDowned = false, float maxRangeFactor = 1f)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("GotoCastPosition");
 			toil.initAction = delegate
 			{
 				Pawn actor = toil.actor;
@@ -48,12 +48,18 @@ namespace Verse.AI
 				}
 				else
 				{
-					CastPositionRequest newReq = default(CastPositionRequest);
-					newReq.caster = toil.actor;
-					newReq.target = thing;
-					newReq.verb = curJob.verbToUse;
-					newReq.maxRangeFromTarget = ((!closeIfDowned || pawn == null || !pawn.Downed) ? Mathf.Max(curJob.verbToUse.verbProps.range * maxRangeFactor, 1.42f) : Mathf.Min(curJob.verbToUse.verbProps.range, pawn.RaceProps.executionRange));
-					newReq.wantCoverFromTarget = false;
+					CastPositionRequest newReq = new CastPositionRequest
+					{
+						caster = toil.actor,
+						target = thing,
+						verb = curJob.verbToUse,
+						maxRangeFromTarget = ((!closeIfDowned || pawn == null || !pawn.Downed) ? Mathf.Max(curJob.verbToUse.verbProps.range * maxRangeFactor, 1.42f) : Mathf.Min(curJob.verbToUse.verbProps.range, pawn.RaceProps.executionRange)),
+						wantCoverFromTarget = false
+					};
+					if (castPositionInd != TargetIndex.None)
+					{
+						newReq.preferredCastPosition = curJob.GetTarget(castPositionInd).Cell;
+					}
 					if (!CastPositionFinder.TryFindCastPosition(newReq, out var dest))
 					{
 						toil.actor.jobs.EndCurrentJob(JobCondition.Incompletable);
@@ -77,12 +83,12 @@ namespace Verse.AI
 
 		public static Toil CastVerb(TargetIndex targetInd, TargetIndex destInd, bool canHitNonTargetPawns = true)
 		{
-			Toil toil = new Toil();
+			Toil toil = ToilMaker.MakeToil("CastVerb");
 			toil.initAction = delegate
 			{
 				LocalTargetInfo target = toil.actor.jobs.curJob.GetTarget(targetInd);
-				LocalTargetInfo destTarg = ((destInd != 0) ? toil.actor.jobs.curJob.GetTarget(destInd) : LocalTargetInfo.Invalid);
-				toil.actor.jobs.curJob.verbToUse.TryStartCastOn(target, destTarg, surpriseAttack: false, canHitNonTargetPawns);
+				LocalTargetInfo destTarg = ((destInd != TargetIndex.None) ? toil.actor.jobs.curJob.GetTarget(destInd) : LocalTargetInfo.Invalid);
+				toil.actor.jobs.curJob.verbToUse.TryStartCastOn(target, destTarg, surpriseAttack: false, canHitNonTargetPawns, toil.actor.jobs.curJob.preventFriendlyFire);
 			};
 			toil.defaultCompleteMode = ToilCompleteMode.FinishedBusy;
 			toil.activeSkill = () => GetActiveSkillForToil(toil);
@@ -108,30 +114,60 @@ namespace Verse.AI
 
 		public static Toil FollowAndMeleeAttack(TargetIndex targetInd, Action hitAction)
 		{
-			Toil followAndAttack = new Toil();
-			followAndAttack.tickAction = delegate
+			return FollowAndMeleeAttack(targetInd, TargetIndex.None, hitAction);
+		}
+
+		public static Toil FollowAndMeleeAttack(TargetIndex targetInd, TargetIndex standPositionInd, Action hitAction)
+		{
+			Toil followAndAttack = ToilMaker.MakeToil("FollowAndMeleeAttack");
+			followAndAttack.tickIntervalAction = delegate(int delta)
 			{
 				Pawn actor = followAndAttack.actor;
 				Job curJob = actor.jobs.curJob;
 				JobDriver curDriver = actor.jobs.curDriver;
-				Thing thing = curJob.GetTarget(targetInd).Thing;
+				LocalTargetInfo target = curJob.GetTarget(targetInd);
+				Thing thing = target.Thing;
 				Pawn pawn = thing as Pawn;
-				if (!thing.Spawned || (pawn != null && pawn.IsInvisible()))
+				bool flag = actor.IsHashIntervalTick(250, delta);
+				if (!thing.Spawned || (pawn != null && pawn.IsPsychologicallyInvisible()) || (flag && !actor.CanReach(thing, PathEndMode.Touch, Danger.Deadly)))
 				{
 					curDriver.ReadyForNextToil();
 				}
-				else if (thing != actor.pather.Destination.Thing || (!actor.pather.Moving && !actor.CanReachImmediate(thing, PathEndMode.Touch)))
+				else
 				{
-					actor.pather.StartPath(thing, PathEndMode.Touch);
-				}
-				else if (actor.CanReachImmediate(thing, PathEndMode.Touch))
-				{
-					if (pawn != null && pawn.Downed && !curJob.killIncappedTarget)
+					LocalTargetInfo localTargetInfo = target;
+					PathEndMode peMode = PathEndMode.Touch;
+					if (standPositionInd != TargetIndex.None)
 					{
-						curDriver.ReadyForNextToil();
+						LocalTargetInfo target2 = curJob.GetTarget(standPositionInd);
+						if (target2.IsValid)
+						{
+							localTargetInfo = target2;
+							peMode = PathEndMode.OnCell;
+						}
 					}
-					else
+					if (localTargetInfo != actor.pather.Destination || (!actor.pather.Moving && !actor.CanReachImmediate(target, PathEndMode.Touch)))
 					{
+						if (actor.CurJob.ensureReachable && !actor.CanReach(target, peMode, Danger.Deadly))
+						{
+							curDriver.ReadyForNextToil();
+						}
+						else
+						{
+							actor.pather.StartPath(localTargetInfo, peMode);
+						}
+					}
+					else if (actor.CanReachImmediate(target, PathEndMode.Touch))
+					{
+						if (pawn != null)
+						{
+							bool flag2 = pawn.IsMutant && pawn.mutant.Def.canAttackWhileCrawling && !pawn.ThreatDisabled(null);
+							if (pawn.Downed && !flag2 && !curJob.killIncappedTarget)
+							{
+								curDriver.ReadyForNextToil();
+								return;
+							}
+						}
 						hitAction();
 					}
 				}

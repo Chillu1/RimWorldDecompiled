@@ -24,6 +24,10 @@ namespace RimWorld
 			{
 				return false;
 			}
+			if (pawn.IsSlave)
+			{
+				return false;
+			}
 			return true;
 		}
 

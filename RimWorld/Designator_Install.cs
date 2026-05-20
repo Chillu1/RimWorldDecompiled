@@ -5,7 +5,7 @@ namespace RimWorld
 {
 	public class Designator_Install : Designator_Place
 	{
-		private Thing MiniToInstallOrBuildingToReinstall
+		protected Thing MiniToInstallOrBuildingToReinstall
 		{
 			get
 			{
@@ -14,8 +14,7 @@ namespace RimWorld
 				{
 					return singleSelectedThing;
 				}
-				Building building = singleSelectedThing as Building;
-				if (building != null && building.def.Minifiable)
+				if (singleSelectedThing is Building building && building.def.Minifiable)
 				{
 					return singleSelectedThing;
 				}
@@ -23,7 +22,7 @@ namespace RimWorld
 			}
 		}
 
-		private Thing ThingToInstall => MiniToInstallOrBuildingToReinstall.GetInnerIfMinified();
+		protected Thing ThingToInstall => MiniToInstallOrBuildingToReinstall.GetInnerIfMinified();
 
 		protected override bool DoTooltip => true;
 
@@ -67,11 +66,15 @@ namespace RimWorld
 			}
 		}
 
+		public override ThingDef StuffDef => null;
+
+		public override ThingStyleDef ThingStyleDefForPreview => ThingToInstall?.StyleDef;
+
 		public Designator_Install()
 		{
 			icon = TexCommand.Install;
 			iconProportions = new Vector2(1f, 1f);
-			order = -10f;
+			Order = -10f;
 		}
 
 		public override bool CanRemainSelected()
@@ -88,6 +91,10 @@ namespace RimWorld
 				if (!((ThingDef)PlacingDef).rotatable)
 				{
 					placingRot = Rot4.North;
+				}
+				if (ModsConfig.AnomalyActive && miniToInstallOrBuildingToReinstall is Building_HoldingPlatform { Occupied: not false } building_HoldingPlatform)
+				{
+					Messages.Message("MessageOccupiedHoldingPlatformReinstalled".Translate(), building_HoldingPlatform, MessageTypeDefOf.CautionInput);
 				}
 			}
 			base.ProcessInput(ev);
@@ -109,28 +116,28 @@ namespace RimWorld
 		public override void DesignateSingleCell(IntVec3 c)
 		{
 			GenSpawn.WipeExistingThings(c, placingRot, PlacingDef.installBlueprintDef, base.Map, DestroyMode.Deconstruct);
-			MinifiedThing minifiedThing = MiniToInstallOrBuildingToReinstall as MinifiedThing;
-			if (minifiedThing != null)
+			if (MiniToInstallOrBuildingToReinstall is MinifiedThing itemToInstall)
 			{
-				GenConstruct.PlaceBlueprintForInstall(minifiedThing, c, base.Map, placingRot, Faction.OfPlayer);
+				GenConstruct.PlaceBlueprintForInstall(itemToInstall, c, base.Map, placingRot, Faction.OfPlayer);
 			}
 			else
 			{
 				GenConstruct.PlaceBlueprintForReinstall((Building)MiniToInstallOrBuildingToReinstall, c, base.Map, placingRot, Faction.OfPlayer);
 			}
-			MoteMaker.ThrowMetaPuffs(GenAdj.OccupiedRect(c, placingRot, PlacingDef.Size), base.Map);
+			FleckMaker.ThrowMetaPuffs(GenAdj.OccupiedRect(c, placingRot, PlacingDef.Size), base.Map);
 			Find.DesignatorManager.Deselect();
 		}
 
 		protected override void DrawGhost(Color ghostCol)
 		{
-			ThingDef def;
-			if ((def = PlacingDef as ThingDef) != null)
+			if (PlacingDef is ThingDef def)
 			{
 				MeditationUtility.DrawMeditationFociAffectedByBuildingOverlay(base.Map, def, Faction.OfPlayer, UI.MouseCell(), placingRot);
+				GauranlenUtility.DrawConnectionsAffectedByBuildingOverlay(base.Map, def, Faction.OfPlayer, UI.MouseCell(), placingRot);
+				PsychicRitualUtility.DrawPsychicRitualSpotsAffectedByThingOverlay(base.Map, def, UI.MouseCell(), placingRot);
 			}
 			Graphic baseGraphic = ThingToInstall.Graphic.ExtractInnerGraphicFor(ThingToInstall);
-			GhostDrawer.DrawGhostThing_NewTmp(UI.MouseCell(), placingRot, (ThingDef)PlacingDef, baseGraphic, ghostCol, AltitudeLayer.Blueprint, ThingToInstall);
+			GhostDrawer.DrawGhostThing(UI.MouseCell(), placingRot, (ThingDef)PlacingDef, baseGraphic, ghostCol, AltitudeLayer.Blueprint, ThingToInstall, drawPlaceWorkers: true, StuffDef);
 		}
 
 		protected override bool CanDrawNumbersBetween(Thing thing, ThingDef def, IntVec3 a, IntVec3 b, Map map)

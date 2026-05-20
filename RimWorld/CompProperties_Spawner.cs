@@ -20,6 +20,7 @@ namespace RimWorld
 
 		public bool showMessageIfOwned;
 
+		[NoTranslate]
 		public string saveKeysPrefix;
 
 		public bool inheritFaction;

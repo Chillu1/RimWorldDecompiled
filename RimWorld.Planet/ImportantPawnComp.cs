@@ -3,16 +3,17 @@ using Verse;
 
 namespace RimWorld.Planet
 {
-	public abstract class ImportantPawnComp : WorldObjectComp, IThingHolder
+	public abstract class ImportantPawnComp : WorldObjectComp, ISuspendableThingHolder, IThingHolder, IThingHolderTickable
 	{
 		public ThingOwner<Pawn> pawn;
 
 		private const float AutoFoodLevel = 0.8f;
 
-		protected abstract string PawnSaveKey
-		{
-			get;
-		}
+		public bool IsContentsSuspended => true;
+
+		protected abstract string PawnSaveKey { get; }
+
+		public bool ShouldTickContents => false;
 
 		public ImportantPawnComp()
 		{
@@ -38,9 +39,8 @@ namespace RimWorld.Planet
 
 		public override void CompTick()
 		{
-			base.CompTick();
 			bool any = this.pawn.Any;
-			this.pawn.ThingOwnerTick();
+			this.pawn.DoTick();
 			if (!any || base.ParentHasMap)
 			{
 				return;

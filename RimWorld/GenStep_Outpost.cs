@@ -9,32 +9,64 @@ namespace RimWorld
 	{
 		public int size = 16;
 
+		public int requiredWorshippedTerminalRooms;
+
+		public int requiredGravcoreRooms;
+
+		public bool allowGeneratingThronerooms = true;
+
+		public bool settlementDontGeneratePawns;
+
+		public bool allowGeneratingFarms = true;
+
+		public bool generateLoot = true;
+
+		public MapGenUtility.PostProcessSettlementParams postProcessSettlementParams;
+
+		public bool unfogged;
+
+		public bool attackWhenPlayerBecameEnemy;
+
 		public FloatRange defaultPawnGroupPointsRange = SymbolResolver_Settlement.DefaultPawnsPoints;
 
-		private static List<CellRect> possibleRects = new List<CellRect>();
+		public PawnGroupKindDef pawnGroupKindDef;
+
+		public CellRect? forcedRect;
+
+		public Faction overrideFaction;
+
+		private const float MaxWaterOverlap = 0.1f;
+
+		private static readonly List<CellRect> possibleRects = new List<CellRect>();
+
+		private bool WillPostProcess => postProcessSettlementParams != null;
 
 		public override int SeedPart => 398638181;
 
 		public override void Generate(Map map, GenStepParams parms)
 		{
-			if (!MapGenerator.TryGetVar<CellRect>("RectOfInterest", out var var))
+			List<CellRect> usedRects = MapGenerator.GetOrGenerateVar<List<CellRect>>("UsedRects");
+			if (!MapGenerator.TryGetVar<CellRect>("RectOfInterest", out var var) && !MapGenUtility.TryGetClosestClearRectTo(out var, new IntVec2(size, size), map.Center, Validator) && !MapGenUtility.TryGetRandomClearRect(size, size, out var, -1, -1, Validator))
 			{
-				var = CellRect.SingleCell(map.Center);
+				Log.Error("Failed to find location for outpost");
+				return;
 			}
-			if (!MapGenerator.TryGetVar<List<CellRect>>("UsedRects", out var var2))
+			Faction faction = ((overrideFaction != null) ? overrideFaction : ((map.ParentFaction != null && map.ParentFaction != Faction.OfPlayer) ? map.ParentFaction : Find.FactionManager.RandomEnemyFaction()));
+			ResolveParams resolveParams = new ResolveParams
 			{
-				var2 = new List<CellRect>();
-				MapGenerator.SetVar("UsedRects", var2);
-			}
-			Faction faction = ((map.ParentFaction != null && map.ParentFaction != Faction.OfPlayer) ? map.ParentFaction : Find.FactionManager.RandomEnemyFaction());
-			ResolveParams resolveParams = default(ResolveParams);
-			resolveParams.rect = GetOutpostRect(var, var2, map);
-			resolveParams.faction = faction;
-			resolveParams.edgeDefenseWidth = 2;
-			resolveParams.edgeDefenseTurretsCount = Rand.RangeInclusive(0, 1);
-			resolveParams.edgeDefenseMortarsCount = 0;
+				rect = (forcedRect ?? GetOutpostRect(var, usedRects, map)),
+				faction = faction,
+				edgeDefenseWidth = 2,
+				edgeDefenseTurretsCount = Rand.RangeInclusive(0, 1),
+				edgeDefenseMortarsCount = 0,
+				settlementDontGeneratePawns = settlementDontGeneratePawns,
+				attackWhenPlayerBecameEnemy = attackWhenPlayerBecameEnemy,
+				pawnGroupKindDef = pawnGroupKindDef
+			};
 			if (parms.sitePart != null)
 			{
+				resolveParams.bedCount = ((parms.sitePart.expectedEnemyCount == -1) ? ((int?)null) : new int?(parms.sitePart.expectedEnemyCount));
+				resolveParams.sitePart = parms.sitePart;
 				resolveParams.settlementPawnGroupPoints = parms.sitePart.parms.threatPoints;
 				resolveParams.settlementPawnGroupSeed = OutpostSitePartUtility.GetPawnGroupMakerSeed(parms.sitePart.parms);
 			}
@@ -42,22 +74,77 @@ namespace RimWorld
 			{
 				resolveParams.settlementPawnGroupPoints = defaultPawnGroupPointsRange.RandomInRange;
 			}
-			RimWorld.BaseGen.BaseGen.globalSettings.map = map;
-			RimWorld.BaseGen.BaseGen.globalSettings.minBuildings = 1;
-			RimWorld.BaseGen.BaseGen.globalSettings.minBarracks = 1;
-			RimWorld.BaseGen.BaseGen.symbolStack.Push("settlement", resolveParams);
-			if (faction != null && faction == Faction.Empire)
+			resolveParams.allowGeneratingThronerooms = allowGeneratingThronerooms;
+			if (generateLoot)
 			{
-				RimWorld.BaseGen.BaseGen.globalSettings.minThroneRooms = 1;
+				if (parms.sitePart != null)
+				{
+					resolveParams.lootMarketValue = parms.sitePart.parms.lootMarketValue;
+				}
+				else
+				{
+					resolveParams.lootMarketValue = null;
+				}
+			}
+			else
+			{
+				resolveParams.lootMarketValue = 0f;
+			}
+			RimWorld.BaseGen.BaseGen.globalSettings.map = map;
+			RimWorld.BaseGen.BaseGen.globalSettings.minBuildings = requiredWorshippedTerminalRooms + requiredGravcoreRooms + 1;
+			RimWorld.BaseGen.BaseGen.globalSettings.minBarracks = 1;
+			RimWorld.BaseGen.BaseGen.globalSettings.requiredWorshippedTerminalRooms = requiredWorshippedTerminalRooms;
+			RimWorld.BaseGen.BaseGen.globalSettings.requiredGravcoreRooms = requiredGravcoreRooms;
+			RimWorld.BaseGen.BaseGen.globalSettings.maxFarms = (allowGeneratingFarms ? (-1) : 0);
+			RimWorld.BaseGen.BaseGen.symbolStack.Push("settlement", resolveParams);
+			if (faction != null && faction == Faction.OfEmpire)
+			{
+				RimWorld.BaseGen.BaseGen.globalSettings.minThroneRooms = (allowGeneratingThronerooms ? 1 : 0);
 				RimWorld.BaseGen.BaseGen.globalSettings.minLandingPads = 1;
 			}
+			List<Building> previous = null;
+			if (WillPostProcess)
+			{
+				previous = new List<Building>(map.listerThings.GetThingsOfType<Building>());
+			}
 			RimWorld.BaseGen.BaseGen.Generate();
-			if (faction != null && faction == Faction.Empire && RimWorld.BaseGen.BaseGen.globalSettings.landingPadsGenerated == 0)
+			if (faction != null && faction == Faction.OfEmpire && RimWorld.BaseGen.BaseGen.globalSettings.landingPadsGenerated == 0)
 			{
 				GenStep_Settlement.GenerateLandingPadNearby(resolveParams.rect, map, faction, out var usedRect);
-				var2.Add(usedRect);
+				usedRects.Add(usedRect);
 			}
-			var2.Add(resolveParams.rect);
+			if (WillPostProcess)
+			{
+				List<Building> placed = (from b in map.listerThings.GetThingsOfType<Building>()
+					where !previous.Contains(b)
+					select b).ToList();
+				previous.Clear();
+				MapGenUtility.PostProcessSettlement(map, placed, postProcessSettlementParams);
+			}
+			if (unfogged)
+			{
+				foreach (IntVec3 item in resolveParams.rect)
+				{
+					MapGenerator.rootsToUnfog.Add(item);
+				}
+			}
+			usedRects.Add(resolveParams.rect);
+			bool Validator(CellRect r)
+			{
+				if ((float)r.Cells.Count((IntVec3 c) => c.GetTerrain(map).IsWater) > (float)(size * size) * 0.1f)
+				{
+					return false;
+				}
+				if (usedRects.Any((CellRect ur) => ur.Overlaps(r)))
+				{
+					return false;
+				}
+				if (!r.CenterCell.InHorDistOf(map.Center, (float)map.Size.x * 0.75f))
+				{
+					return false;
+				}
+				return true;
+			}
 		}
 
 		private CellRect GetOutpostRect(CellRect rectToDefend, List<CellRect> usedRects, Map map)

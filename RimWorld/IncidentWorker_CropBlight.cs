@@ -55,12 +55,12 @@ namespace RimWorld
 
 		private bool TryFindRandomBlightablePlant(Map map, out Plant plant)
 		{
-			Thing result;
-			bool result2 = (from x in map.listerThings.ThingsInGroup(ThingRequestGroup.Plant)
+			Thing result2;
+			bool result = (from x in map.listerThings.ThingsInGroup(ThingRequestGroup.Plant)
 				where ((Plant)x).BlightableNow
-				select x).TryRandomElement(out result);
-			plant = (Plant)result;
-			return result2;
+				select x).TryRandomElement(out result2);
+			plant = (Plant)result2;
+			return result;
 		}
 
 		private float BlightChance(IntVec3 c, IntVec3 root, float radiusFactor)

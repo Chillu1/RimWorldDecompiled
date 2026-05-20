@@ -15,17 +15,19 @@ namespace RimWorld
 
 		public WorldRoutePlanner routePlanner = new WorldRoutePlanner();
 
+		public TilePicker tilePicker = new TilePicker();
+
 		public bool everReset;
 
-		public int SelectedTile
+		public PlanetTile SelectedTile
 		{
 			get
 			{
-				return selector.selectedTile;
+				return selector.SelectedTile;
 			}
 			set
 			{
-				selector.selectedTile = value;
+				selector.SelectedTile = value;
 			}
 		}
 
@@ -35,63 +37,65 @@ namespace RimWorld
 			inspectPane.Reset();
 			if (Current.ProgramState == ProgramState.Playing)
 			{
-				if (Find.CurrentMap != null)
-				{
-					SelectedTile = Find.CurrentMap.Tile;
-				}
-				else
-				{
-					SelectedTile = -1;
-				}
+				SelectedTile = ((Find.CurrentMap != null) ? Find.CurrentMap.Tile : PlanetTile.Invalid);
 			}
 			else if (Find.GameInitData != null)
 			{
-				if (Find.GameInitData.startingTile >= 0 && Find.World != null && !Find.WorldGrid.InBounds(Find.GameInitData.startingTile))
+				if (Find.GameInitData.startingTile.Valid && Find.World != null && !Find.WorldGrid.InBounds(Find.GameInitData.startingTile))
 				{
 					Log.Error("Map world tile was out of bounds.");
-					Find.GameInitData.startingTile = -1;
+					Find.GameInitData.startingTile = PlanetTile.Invalid;
 				}
 				SelectedTile = Find.GameInitData.startingTile;
 				inspectPane.OpenTabType = typeof(WITab_Terrain);
 			}
 			else
 			{
-				SelectedTile = -1;
+				SelectedTile = PlanetTile.Invalid;
 			}
-			if (SelectedTile >= 0)
+			if (SelectedTile.Valid)
 			{
 				Find.WorldCameraDriver.JumpTo(SelectedTile);
 			}
 			else
 			{
-				Find.WorldCameraDriver.JumpTo(Find.WorldGrid.viewCenter);
+				Find.WorldCameraDriver.JumpTo(Find.WorldGrid.SurfaceViewCenter);
 			}
 			Find.WorldCameraDriver.ResetAltitude();
 		}
 
 		public void WorldInterfaceUpdate()
 		{
-			if (WorldRendererUtility.WorldRenderedNow)
+			if (WorldRendererUtility.WorldSelected)
 			{
 				targeter.TargeterUpdate();
 				WorldSelectionDrawer.DrawSelectionOverlays();
+				if (tilePicker.Active)
+				{
+					tilePicker.TileSelectorUpdate();
+				}
 				Find.WorldDebugDrawer.WorldDebugDrawerUpdate();
 			}
 			else
 			{
 				targeter.StopTargeting();
+				tilePicker.StopTargeting();
 			}
 			routePlanner.WorldRoutePlannerUpdate();
+			WorldGizmoUtility.WorldUIUpdate();
 		}
 
 		public void WorldInterfaceOnGUI()
 		{
-			bool worldRenderedNow = WorldRendererUtility.WorldRenderedNow;
 			CheckOpenOrCloseInspectPane();
-			if (worldRenderedNow)
+			if (WorldRendererUtility.WorldSelected && Find.WorldCamera.gameObject.activeInHierarchy)
 			{
 				ScreenshotModeHandler screenshotMode = Find.UIRoot.screenshotMode;
 				ExpandableWorldObjectsUtility.ExpandableWorldObjectsOnGUI();
+				if (ModsConfig.OdysseyActive)
+				{
+					ExpandableLandmarksUtility.ExpandableLandmarksOnGUI();
+				}
 				WorldSelectionDrawer.SelectionOverlaysOnGUI();
 				routePlanner.WorldRoutePlannerOnGUI();
 				if (!screenshotMode.FiltersCurrentEvent && Current.ProgramState == ProgramState.Playing)
@@ -100,17 +104,22 @@ namespace RimWorld
 				}
 				selector.dragBox.DragBoxOnGUI();
 				targeter.TargeterOnGUI();
+				if (tilePicker.Active)
+				{
+					tilePicker.TileSelectorOnGUI();
+				}
 				if (!screenshotMode.FiltersCurrentEvent)
 				{
 					globalControls.WorldGlobalControlsOnGUI();
 				}
+				WorldGizmoUtility.WorldUIOnGUI();
 				Find.WorldDebugDrawer.WorldDebugDrawerOnGUI();
 			}
 		}
 
 		public void HandleLowPriorityInput()
 		{
-			if (WorldRendererUtility.WorldRenderedNow)
+			if (WorldRendererUtility.WorldSelected)
 			{
 				targeter.ProcessInputEvents();
 				selector.WorldSelectorOnGUI();
@@ -119,7 +128,7 @@ namespace RimWorld
 
 		private void CheckOpenOrCloseInspectPane()
 		{
-			if (selector.AnyObjectOrTileSelected && WorldRendererUtility.WorldRenderedNow && (Current.ProgramState != ProgramState.Playing || Find.MainTabsRoot.OpenTab == null))
+			if (selector.AnyObjectOrTileSelected && WorldRendererUtility.WorldSelected && (Current.ProgramState != ProgramState.Playing || Find.MainTabsRoot.OpenTab == null))
 			{
 				if (!Find.WindowStack.IsOpen<WorldInspectPane>())
 				{

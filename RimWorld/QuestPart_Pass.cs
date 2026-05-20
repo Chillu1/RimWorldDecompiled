@@ -2,7 +2,7 @@ using Verse;
 
 namespace RimWorld
 {
-	public class QuestPart_Pass : QuestPart
+	public class QuestPart_Pass : QuestPartCanDisable
 	{
 		public string inSignal;
 
@@ -10,9 +10,8 @@ namespace RimWorld
 
 		public QuestEndOutcome? outSignalOutcomeArg;
 
-		public override void Notify_QuestSignalReceived(Signal signal)
+		protected override void ProcessQuestSignal(Signal signal)
 		{
-			base.Notify_QuestSignalReceived(signal);
 			if (signal.tag == inSignal)
 			{
 				SignalArgs args = new SignalArgs(signal.args);

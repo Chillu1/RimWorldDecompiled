@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
 using UnityEngine;
 using Verse;
 
@@ -9,9 +8,7 @@ namespace RimWorld
 	{
 		private Map map;
 
-		private static Regex validNameRegex = new Regex("^[\\p{L}0-9 '\\-]*$");
-
-		public override Vector2 InitialSize => new Vector2(450f, 400f);
+		public override Vector2 InitialSize => new Vector2(550f, 400f);
 
 		public Dialog_ManageAreas(Map map)
 		{
@@ -34,7 +31,8 @@ namespace RimWorld
 			{
 				if (allAreas[j].Mutable)
 				{
-					DoAreaRow(listing_Standard.GetRect(24f), allAreas[j]);
+					Rect rect = listing_Standard.GetRect(24f);
+					DoAreaRow(rect, allAreas[j], j);
 					listing_Standard.Gap(6f);
 					i++;
 				}
@@ -53,7 +51,7 @@ namespace RimWorld
 			listing_Standard.End();
 		}
 
-		private static void DoAreaRow(Rect rect, Area area)
+		private void DoAreaRow(Rect rect, Area area, int i)
 		{
 			if (Mouse.IsOver(rect))
 			{
@@ -62,34 +60,71 @@ namespace RimWorld
 				Widgets.DrawHighlight(rect);
 				GUI.color = Color.white;
 			}
-			GUI.BeginGroup(rect);
-			WidgetRow widgetRow = new WidgetRow(0f, 0f);
-			widgetRow.Icon(area.ColorTexture);
-			widgetRow.Gap(4f);
-			float width = rect.width - widgetRow.FinalX - 4f - Text.CalcSize("Rename".Translate()).x - 16f - 4f - Text.CalcSize("InvertArea".Translate()).x - 16f - 4f - 24f;
-			widgetRow.Label(area.Label, width);
-			if (widgetRow.ButtonText("Rename".Translate()))
+			if (i % 2 == 1)
 			{
-				Find.WindowStack.Add(new Dialog_RenameArea(area));
+				Widgets.DrawLightHighlight(rect);
 			}
-			if (widgetRow.ButtonText("InvertArea".Translate()))
+			Widgets.BeginGroup(rect);
+			WidgetRow widgetRow = new WidgetRow(0f, 0f);
+			Rect butRect = widgetRow.Icon(area.ColorTexture);
+			if (area is Area_Allowed area2 && Widgets.ButtonInvisible(butRect))
+			{
+				Find.WindowStack.Add(new Dialog_AllowedAreaColorPicker(area2));
+			}
+			widgetRow.Gap(4f);
+			using (new TextBlock(TextAnchor.LowerLeft))
+			{
+				widgetRow.LabelEllipses(area.Label, 160f);
+			}
+			if (widgetRow.ButtonText("ExpandArea".Translate(), null, drawBackground: true, doMouseoverSound: true, active: true, 60f))
+			{
+				SelectDesignator<Designator_AreaAllowedExpand>(area);
+			}
+			if (widgetRow.ButtonText("ShrinkArea".Translate(), null, drawBackground: true, doMouseoverSound: true, active: true, 60f))
+			{
+				SelectDesignator<Designator_AreaAllowedClear>(area);
+			}
+			if (widgetRow.ButtonText("InvertArea".Translate(), null, drawBackground: true, doMouseoverSound: true, active: true, 60f))
 			{
 				area.Invert();
 			}
-			if (widgetRow.ButtonIcon(TexButton.DeleteX, null, GenUI.SubtleMouseoverColor))
+			if (widgetRow.ButtonIcon(TexButton.Rename, null, GenUI.SubtleMouseoverColor))
+			{
+				Find.WindowStack.Add(new Dialog_RenameArea(area));
+			}
+			if (widgetRow.ButtonIcon(TexButton.Copy, null, GenUI.SubtleMouseoverColor))
+			{
+				if (map.areaManager.TryMakeNewAllowed(out var area3))
+				{
+					foreach (IntVec3 activeCell in area.ActiveCells)
+					{
+						area3[activeCell] = true;
+					}
+				}
+				else
+				{
+					Messages.Message("MaxAreasReached".Translate(10), MessageTypeDefOf.RejectInput);
+				}
+			}
+			if (widgetRow.ButtonIcon(TexButton.Delete, null, GenUI.SubtleMouseoverColor))
 			{
 				area.Delete();
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
-		public static void DoNameInputRect(Rect rect, ref string name, int maxLength)
+		private void SelectDesignator<T>(Area area) where T : Designator_AreaAllowed
 		{
-			string text = Widgets.TextField(rect, name);
-			if (text.Length <= maxLength && validNameRegex.IsMatch(text))
+			Find.MainTabsRoot.EscapeCurrentTab();
+			foreach (Designator allResolvedDesignator in DesignationCategoryDefOf.Zone.AllResolvedDesignators)
 			{
-				name = text;
+				if (allResolvedDesignator is T des)
+				{
+					Designator_AreaAllowed.selectedArea = area;
+					Find.DesignatorManager.Select(des);
+				}
 			}
+			Find.WindowStack.TryRemove(this);
 		}
 	}
 }

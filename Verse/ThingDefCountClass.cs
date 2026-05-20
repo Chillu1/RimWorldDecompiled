@@ -1,5 +1,6 @@
 using System.Xml;
 using RimWorld;
+using UnityEngine;
 
 namespace Verse
 {
@@ -7,13 +8,25 @@ namespace Verse
 	{
 		public ThingDef thingDef;
 
-		public int count;
+		public int count = 1;
+
+		public Color? color;
+
+		public float? chance;
+
+		public ThingDef stuff;
+
+		public QualityCategory quality = QualityCategory.Normal;
 
 		public string Label => GenLabel.ThingLabel(thingDef, null, count);
 
 		public string LabelCap => Label.CapitalizeFirst(thingDef);
 
 		public string Summary => count + "x " + ((thingDef != null) ? thingDef.label : "null");
+
+		public float DropChance => chance ?? 1f;
+
+		public bool IsChanceBased => chance.HasValue;
 
 		public ThingDefCountClass()
 		{
@@ -33,28 +46,34 @@ namespace Verse
 		public void ExposeData()
 		{
 			Scribe_Defs.Look(ref thingDef, "thingDef");
+			Scribe_Defs.Look(ref stuff, "stuff");
 			Scribe_Values.Look(ref count, "count", 1);
+			Scribe_Values.Look(ref quality, "quality", QualityCategory.Awful);
+			Scribe_Values.Look(ref color, "color");
+			Scribe_Values.Look(ref chance, "chance");
 		}
 
 		public void LoadDataFromXmlCustom(XmlNode xmlRoot)
 		{
-			if (xmlRoot.ChildNodes.Count != 1)
-			{
-				Log.Error("Misconfigured ThingDefCountClass: " + xmlRoot.OuterXml);
-				return;
-			}
-			DirectXmlCrossRefLoader.RegisterObjectWantsCrossRef(this, "thingDef", xmlRoot.Name);
-			count = ParseHelper.FromString<int>(xmlRoot.FirstChild.Value);
+			XmlHelper.ParseElements(this, xmlRoot, "thingDef", "count");
 		}
 
 		public override string ToString()
 		{
-			return "(" + count + "x " + ((thingDef != null) ? thingDef.defName : "null") + ")";
+			return string.Format("({0}x {1})", count, (thingDef != null) ? thingDef.defName : "null");
 		}
 
 		public override int GetHashCode()
 		{
 			return thingDef.shortHash + count << 16;
+		}
+
+		public IngredientCount ToIngredientCount()
+		{
+			IngredientCount ingredientCount = new IngredientCount();
+			ingredientCount.SetBaseCount(count);
+			ingredientCount.filter.SetAllow(thingDef, allow: true);
+			return ingredientCount;
 		}
 
 		public static implicit operator ThingDefCountClass(ThingDefCount t)

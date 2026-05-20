@@ -5,28 +5,27 @@ namespace RimWorld.SketchGen
 {
 	public class SketchResolver_Symmetry : SketchResolver
 	{
-		protected override void ResolveInt(ResolveParams parms)
+		protected override void ResolveInt(SketchResolveParams parms)
 		{
 			bool num = parms.symmetryClear ?? true;
-			int origin = parms.symmetryOrigin ?? 0;
-			bool flag = parms.symmetryVertical ?? false;
-			bool flag2 = parms.requireFloor ?? false;
-			bool originIncluded = parms.symmetryOriginIncluded ?? false;
+			int valueOrDefault = parms.symmetryOrigin.GetValueOrDefault();
+			bool valueOrDefault2 = parms.symmetryVertical == true;
+			bool valueOrDefault3 = parms.requireFloor == true;
+			bool valueOrDefault4 = parms.symmetryOriginIncluded == true;
 			if (num)
 			{
-				Clear(parms.sketch, origin, flag, originIncluded);
+				Clear(parms.sketch, valueOrDefault, valueOrDefault2, valueOrDefault4);
 			}
 			foreach (SketchBuildable item in parms.sketch.Buildables.ToList())
 			{
-				if (ShouldKeepAlreadySymmetricalInTheMiddle(item, origin, flag, originIncluded))
+				if (ShouldKeepAlreadySymmetricalInTheMiddle(item, valueOrDefault, valueOrDefault2, valueOrDefault4))
 				{
 					continue;
 				}
 				SketchBuildable sketchBuildable = (SketchBuildable)item.DeepCopy();
-				SketchThing sketchThing = sketchBuildable as SketchThing;
-				if (sketchThing != null && sketchThing.def.rotatable)
+				if (sketchBuildable is SketchThing sketchThing && sketchThing.def.rotatable)
 				{
-					if (flag)
+					if (valueOrDefault2)
 					{
 						if (!sketchThing.rot.IsHorizontal)
 						{
@@ -38,19 +37,19 @@ namespace RimWorld.SketchGen
 						sketchThing.rot = sketchThing.rot.Opposite;
 					}
 				}
-				MoveUntilSymmetrical(sketchBuildable, item.OccupiedRect, origin, flag, originIncluded);
-				if (flag2 && sketchBuildable.Buildable != ThingDefOf.Wall && sketchBuildable.Buildable != ThingDefOf.Door)
+				MoveUntilSymmetrical(sketchBuildable, item.OccupiedRect, valueOrDefault, valueOrDefault2, valueOrDefault4);
+				if (valueOrDefault3 && sketchBuildable.Buildable != ThingDefOf.Wall && sketchBuildable.Buildable != ThingDefOf.Door)
 				{
-					bool flag3 = true;
+					bool flag = true;
 					foreach (IntVec3 item2 in sketchBuildable.OccupiedRect)
 					{
 						if (!parms.sketch.AnyTerrainAt(item2))
 						{
-							flag3 = false;
+							flag = false;
 							break;
 						}
 					}
-					if (flag3)
+					if (flag)
 					{
 						parms.sketch.Add(sketchBuildable);
 					}
@@ -62,7 +61,7 @@ namespace RimWorld.SketchGen
 			}
 		}
 
-		protected override bool CanResolveInt(ResolveParams parms)
+		protected override bool CanResolveInt(SketchResolveParams parms)
 		{
 			return true;
 		}

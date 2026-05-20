@@ -56,7 +56,7 @@ namespace RimWorld
 			Widgets.Dropdown(rect, pawn, IconColor, DrawResponseButton_GetResponse, DrawResponseButton_GenerateMenu, null, pawn.playerSettings.hostilityResponse.GetIcon(), null, null, delegate
 			{
 				PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.HostilityResponse, KnowledgeAmount.SpecificInteraction);
-			}, paintable);
+			}, paintable, 4f);
 			UIHighlighter.HighlightOpportunity(rect, "HostilityResponse");
 			if (Mouse.IsOver(rect))
 			{

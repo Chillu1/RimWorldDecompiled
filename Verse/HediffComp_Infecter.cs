@@ -8,6 +8,8 @@ namespace Verse
 
 		private float infectionChanceFactorFromTendRoom = 1f;
 
+		public bool fromScaria;
+
 		private const int UninitializedValue = -1;
 
 		private const int WillNotInfectValue = -2;
@@ -37,15 +39,18 @@ namespace Verse
 				ticksUntilInfect = -2;
 				return;
 			}
-			if (parent.Part.def.IsSolid(parent.Part, base.Pawn.health.hediffSet.hediffs))
+			if (parent.Part != null)
 			{
-				ticksUntilInfect = -2;
-				return;
-			}
-			if (base.Pawn.health.hediffSet.PartOrAnyAncestorHasDirectlyAddedParts(parent.Part))
-			{
-				ticksUntilInfect = -2;
-				return;
+				if (parent.Part.def.IsSolid(parent.Part, base.Pawn.health.hediffSet.hediffs))
+				{
+					ticksUntilInfect = -2;
+					return;
+				}
+				if (base.Pawn.health.hediffSet.PartOrAnyAncestorHasDirectlyAddedParts(parent.Part))
+				{
+					ticksUntilInfect = -2;
+					return;
+				}
 			}
 			float num = Props.infectionChance;
 			if (base.Pawn.RaceProps.Animal)
@@ -66,23 +71,24 @@ namespace Verse
 		{
 			Scribe_Values.Look(ref infectionChanceFactorFromTendRoom, "infectionChanceFactor", 0f);
 			Scribe_Values.Look(ref ticksUntilInfect, "ticksUntilInfect", -2);
+			Scribe_Values.Look(ref fromScaria, "fromScaria", defaultValue: false);
 		}
 
-		public override void CompPostTick(ref float severityAdjustment)
+		public override void CompPostTickInterval(ref float severityAdjustment, int delta)
 		{
 			if (ticksUntilInfect > 0)
 			{
-				ticksUntilInfect--;
-				if (ticksUntilInfect == 0)
+				ticksUntilInfect -= delta;
+				if (ticksUntilInfect <= 0)
 				{
 					CheckMakeInfection();
 				}
 			}
 		}
 
-		public override void CompTended_NewTemp(float quality, float maxQuality, int batchPosition = 0)
+		public override void CompTended(float quality, float maxQuality, int batchPosition = 0)
 		{
-			base.CompTended_NewTemp(quality, maxQuality, batchPosition);
+			base.CompTended(quality, maxQuality, batchPosition);
 			if (base.Pawn.Spawned)
 			{
 				Room room = base.Pawn.GetRoom();
@@ -100,6 +106,11 @@ namespace Verse
 				ticksUntilInfect = -3;
 				return;
 			}
+			if (base.Pawn.health.hediffSet.HasRegeneration)
+			{
+				ticksUntilInfect = -3;
+				return;
+			}
 			float num = 1f;
 			HediffComp_TendDuration hediffComp_TendDuration = parent.TryGetComp<HediffComp_TendDuration>();
 			if (hediffComp_TendDuration != null && hediffComp_TendDuration.IsTended)
@@ -110,12 +121,12 @@ namespace Verse
 			num *= InfectionChanceFactorFromSeverityCurve.Evaluate(parent.Severity);
 			if (base.Pawn.Faction == Faction.OfPlayer)
 			{
-				num *= Find.Storyteller.difficultyValues.playerPawnInfectionChanceFactor;
+				num *= Find.Storyteller.difficulty.playerPawnInfectionChanceFactor;
 			}
 			if (Rand.Value < num)
 			{
 				ticksUntilInfect = -4;
-				base.Pawn.health.AddHediff(HediffDefOf.WoundInfection, parent.Part);
+				base.Pawn.health.AddHediff(fromScaria ? HediffDefOf.ScariaInfection : HediffDefOf.WoundInfection, parent.Part);
 			}
 			else
 			{

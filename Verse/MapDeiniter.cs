@@ -11,88 +11,126 @@ namespace Verse
 	{
 		private static List<Thing> tmpThings = new List<Thing>();
 
-		public static void Deinit(Map map)
+		public static void Deinit(Map map, bool notifyPlayer)
 		{
 			try
 			{
 				DoQueuedPowerTasks(map);
 			}
-			catch (Exception arg)
+			catch (Exception ex)
 			{
-				Log.Error("Error while deiniting map: could not execute power related tasks: " + arg);
+				Log.Error("Error while deiniting map: could not execute power related tasks: " + ex);
 			}
 			try
 			{
-				PassPawnsToWorld(map);
+				PassPawnsToWorld(map, notifyPlayer);
 			}
-			catch (Exception arg2)
+			catch (Exception ex2)
 			{
-				Log.Error("Error while deiniting map: could not pass pawns to world: " + arg2);
+				Log.Error("Error while deiniting map: could not pass pawns to world: " + ex2);
+			}
+			try
+			{
+				foreach (Pawn item in PawnsFinder.All_AliveOrDead)
+				{
+					if (item.playerSettings != null)
+					{
+						item.playerSettings.Notify_MapRemoved(map);
+					}
+				}
+			}
+			catch (Exception ex3)
+			{
+				Log.Error("Error while deiniting map: could not notify pawn player settings: " + ex3);
 			}
 			try
 			{
 				map.weatherManager.EndAllSustainers();
 			}
-			catch (Exception arg3)
+			catch (Exception ex4)
 			{
-				Log.Error("Error while deiniting map: could not end all weather sustainers: " + arg3);
+				Log.Error("Error while deiniting map: could not end all weather sustainers: " + ex4);
 			}
 			try
 			{
 				Find.SoundRoot.sustainerManager.EndAllInMap(map);
 			}
-			catch (Exception arg4)
+			catch (Exception ex5)
 			{
-				Log.Error("Error while deiniting map: could not end all effect sustainers: " + arg4);
+				Log.Error("Error while deiniting map: could not end all effect sustainers: " + ex5);
 			}
 			try
 			{
 				map.areaManager.Notify_MapRemoved();
 			}
-			catch (Exception arg5)
+			catch (Exception ex6)
 			{
-				Log.Error("Error while deiniting map: could not remove areas: " + arg5);
+				Log.Error("Error while deiniting map: could not remove areas: " + ex6);
+			}
+			try
+			{
+				map.lordManager.Notify_MapRemoved();
+			}
+			catch (Exception ex7)
+			{
+				Log.Error("Error while deiniting map and notifying LordManager: " + ex7);
+			}
+			try
+			{
+				map.deferredSpawner.Notify_MapRemoved();
+			}
+			catch (Exception ex8)
+			{
+				Log.Error("Error while deiniting map and notifying DeferredSpawner: " + ex8);
+			}
+			try
+			{
+				Find.Anomaly.Notify_MapRemoved(map);
+			}
+			catch (Exception ex9)
+			{
+				Log.Error("Error while deiniting map and notifying Anomaly component: " + ex9);
 			}
 			try
 			{
 				Find.TickManager.RemoveAllFromMap(map);
 			}
-			catch (Exception arg6)
+			catch (Exception ex10)
 			{
-				Log.Error("Error while deiniting map: could not remove things from the tick manager: " + arg6);
+				Log.Error("Error while deiniting map: could not remove things from the tick manager: " + ex10);
 			}
 			try
 			{
 				NotifyEverythingWhichUsesMapReference(map);
 			}
-			catch (Exception arg7)
+			catch (Exception ex11)
 			{
-				Log.Error("Error while deiniting map: could not notify things/regions/rooms/etc: " + arg7);
+				Log.Error("Error while deiniting map: could not notify things/regions/rooms/etc: " + ex11);
 			}
 			try
 			{
 				map.listerThings.Clear();
 				map.spawnedThings.Clear();
 			}
-			catch (Exception arg8)
+			catch (Exception ex12)
 			{
-				Log.Error("Error while deiniting map: could not remove things from thing listers: " + arg8);
+				Log.Error("Error while deiniting map: could not remove things from thing listers: " + ex12);
 			}
 			try
 			{
 				Find.Archive.Notify_MapRemoved(map);
 			}
-			catch (Exception arg9)
+			catch (Exception ex13)
 			{
-				Log.Error("Error while deiniting map: could not remove look targets: " + arg9);
+				Log.Error("Error while deiniting map: could not remove look targets: " + ex13);
 			}
 			try
 			{
 				Find.Storyteller.incidentQueue.Notify_MapRemoved(map);
 			}
-			catch (Exception arg10)
+			catch (Exception ex14)
 			{
-				Log.Error("Error while deiniting map: could not remove queued incidents: " + arg10);
+				Log.Error("Error while deiniting map: could not remove queued incidents: " + ex14);
 			}
 		}
 
@@ -101,7 +139,7 @@ namespace Verse
 			map.powerNetManager.UpdatePowerNetsAndConnections_First();
 		}
 
-		private static void PassPawnsToWorld(Map map)
+		private static void PassPawnsToWorld(Map map, bool notifyPlayer)
 		{
 			List<Pawn> list = new List<Pawn>();
 			List<Pawn> list2 = new List<Pawn>();
@@ -113,10 +151,7 @@ namespace Verse
 				try
 				{
 					Pawn pawn = list3[i];
-					if (pawn.Spawned)
-					{
-						pawn.DeSpawn();
-					}
+					pawn.DeSpawnOrDeselect();
 					if (pawn.IsColonist && flag)
 					{
 						list.Add(pawn);
@@ -132,7 +167,7 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					Log.Error(string.Concat("Could not despawn and pass to world ", list3[i], ": ", ex));
+					Log.Error("Could not despawn and pass to world " + list3[i]?.ToString() + ": " + ex);
 				}
 			}
 			for (int j = 0; j < list.Count; j++)
@@ -143,7 +178,7 @@ namespace Verse
 			{
 				QuestUtility.SendQuestTargetSignals(list2[k].questTags, "LeftMap", list2[k].Named("SUBJECT"));
 			}
-			if (!list.Any() && !list2.Any())
+			if (!notifyPlayer || (!list.Any() && !list2.Any()))
 			{
 				return;
 			}
@@ -151,33 +186,33 @@ namespace Verse
 			if (list.Any())
 			{
 				list.SortByDescending((Pawn x) => x.RaceProps.Humanlike);
-				for (int l = 0; l < list.Count; l++)
+				for (int num = 0; num < list.Count; num++)
 				{
-					stringBuilder.AppendLineTagged("  - " + list[l].NameShortColored.CapitalizeFirst() + ": " + "capturedBy".Translate(map.ParentFaction.NameColored).CapitalizeFirst());
+					stringBuilder.AppendLineTagged("  - " + list[num].NameShortColored.CapitalizeFirst() + ": " + "capturedBy".Translate(map.ParentFaction.NameColored).CapitalizeFirst());
 				}
 			}
 			if (list2.Any())
 			{
 				list2.SortByDescending((Pawn x) => x.RaceProps.Humanlike);
-				for (int m = 0; m < list2.Count; m++)
+				for (int num2 = 0; num2 < list2.Count; num2++)
 				{
-					stringBuilder.AppendLineTagged("  - " + list2[m].NameShortColored.CapitalizeFirst());
+					stringBuilder.AppendLine("  - " + list2[num2].NameShortColored.Resolve().CapitalizeFirst());
 				}
 			}
-			string str;
-			string str2;
-			if (map.IsPlayerHome)
+			string text;
+			string text2;
+			if (map.IsPlayerHome || map.IsPocketMap)
 			{
-				str = "LetterLabelPawnsLostBecauseMapClosed_Home".Translate();
-				str2 = "LetterPawnsLostBecauseMapClosed_Home".Translate();
+				text = "LetterLabelPawnsLostBecauseMapClosed_Home".Translate();
+				text2 = (ModsConfig.BiotechActive ? "LetterPawnsLostIncMechsBecauseMapClosed_Home".Translate() : "LetterPawnsLostBecauseMapClosed_Home".Translate());
 			}
 			else
 			{
-				str = "LetterLabelPawnsLostBecauseMapClosed_Caravan".Translate();
-				str2 = "LetterPawnsLostBecauseMapClosed_Caravan".Translate();
+				text = "LetterLabelPawnsLostBecauseMapClosed_Caravan".Translate();
+				text2 = (ModsConfig.BiotechActive ? "LetterPawnsLostIncMechsBecauseMapClosed_Caravan".Translate() : "LetterPawnsLostBecauseMapClosed_Caravan".Translate());
 			}
-			str2 = str2 + ":\n\n" + stringBuilder.ToString().TrimEndNewlines();
-			Find.LetterStack.ReceiveLetter(str, str2, LetterDefOf.NegativeEvent, new GlobalTargetInfo(map.Tile));
+			text2 = text2 + ":\n\n" + stringBuilder.ToString().TrimEndNewlines();
+			Find.LetterStack.ReceiveLetter(text, text2, LetterDefOf.NegativeEvent, new GlobalTargetInfo(map.Tile));
 		}
 
 		private static void CleanUpAndPassToWorld(Pawn p)
@@ -191,6 +226,14 @@ namespace Verse
 				p.guest.SetGuestStatus(null);
 			}
 			p.inventory.UnloadEverything = false;
+			if (ModsConfig.BiotechActive && p.IsColonyMech)
+			{
+				Pawn overseer = p.GetOverseer();
+				if (overseer != null)
+				{
+					p.relations.RemoveDirectRelation(PawnRelationDefOf.Overseer, overseer);
+				}
+			}
 			Find.WorldPawns.PassToWorld(p);
 		}
 
@@ -202,8 +245,13 @@ namespace Verse
 			for (int i = 0; i < tmpThings.Count; i++)
 			{
 				tmpThings[i].Notify_MyMapRemoved();
+				if (tmpThings[i].Discarded)
+				{
+					tmpThings[i].Notify_AbandonedAtTile(map.Tile);
+				}
 			}
 			tmpThings.Clear();
+			map.spawnedThings.Clear();
 			for (int j = num; j < maps.Count; j++)
 			{
 				ThingOwner spawnedThings = maps[j].spawnedThings;
@@ -214,16 +262,20 @@ namespace Verse
 						spawnedThings[k].DecrementMapIndex();
 					}
 				}
-				List<Room> allRooms = maps[j].regionGrid.allRooms;
+				IReadOnlyList<Room> allRooms = maps[j].regionGrid.AllRooms;
 				for (int l = 0; l < allRooms.Count; l++)
 				{
-					if (j == num)
+					List<District> districts = allRooms[l].Districts;
+					for (int m = 0; m < districts.Count; m++)
 					{
-						allRooms[l].Notify_MyMapRemoved();
-					}
-					else
-					{
-						allRooms[l].DecrementMapIndex();
+						if (j == num)
+						{
+							districts[m].Notify_MyMapRemoved();
+						}
+						else
+						{
+							districts[m].DecrementMapIndex();
+						}
 					}
 				}
 				foreach (Region item in maps[j].regionGrid.AllRegions_NoRebuild_InvalidAllowed)

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 using Verse;
 
 namespace RimWorld
@@ -11,8 +12,10 @@ namespace RimWorld
 
 		public float maxValue = float.MaxValue;
 
+		public bool useNomadicMineables;
+
 		[Unsaved(false)]
-		protected List<IntVec3> recentLumpCells = new List<IntVec3>();
+		protected readonly List<IntVec3> recentLumpCells = new List<IntVec3>();
 
 		public override int SeedPart => 920906419;
 
@@ -33,7 +36,21 @@ namespace RimWorld
 			usedSpots.Clear();
 		}
 
-		protected ThingDef ChooseThingDef()
+		protected override int CalculateFinalCount(Map map)
+		{
+			if (count >= 0)
+			{
+				return Mathf.RoundToInt((float)count * GetPlacementFactor(map));
+			}
+			float num = countPer10kCellsRange.RandomInRange;
+			if (!map.IsStartingMap && useNomadicMineables)
+			{
+				num *= Current.Game.storyteller.difficulty.nomadicMineableResourcesFactor;
+			}
+			return Mathf.RoundToInt((float)GenStep_Scatterer.CountFromPer10kCells(num, map) * GetPlacementFactor(map));
+		}
+
+		protected virtual ThingDef ChooseThingDef()
 		{
 			if (forcedDefToScatter != null)
 			{
@@ -51,7 +68,7 @@ namespace RimWorld
 
 		protected override bool CanScatterAt(IntVec3 c, Map map)
 		{
-			if (NearUsedSpot(c, minSpacing))
+			if (NearUsedSpot(c, CalculateFinalMinSpacing(map)))
 			{
 				return false;
 			}
@@ -65,6 +82,10 @@ namespace RimWorld
 
 		protected override void ScatterAt(IntVec3 c, Map map, GenStepParams parms, int stackCount = 1)
 		{
+			if (Current.ProgramState == ProgramState.MapInitializing && Find.Storyteller.def.tutorialMode)
+			{
+				return;
+			}
 			ThingDef thingDef = ChooseThingDef();
 			if (thingDef == null)
 			{
@@ -72,10 +93,23 @@ namespace RimWorld
 			}
 			int numCells = ((forcedLumpSize > 0) ? forcedLumpSize : thingDef.building.mineableScatterLumpSizeRange.RandomInRange);
 			recentLumpCells.Clear();
-			foreach (IntVec3 item in GridShapeMaker.IrregularLump(c, map, numCells))
+			List<CellRect> usedRects = MapGenerator.GetOrGenerateVar<List<CellRect>>("UsedRects");
+			foreach (IntVec3 item in GridShapeMaker.IrregularLump(c, map, numCells, Validator))
 			{
 				GenSpawn.Spawn(thingDef, item, map);
 				recentLumpCells.Add(item);
+			}
+			bool Validator(IntVec3 cell)
+			{
+				if (!usedRects.Any((CellRect x) => x.Contains(cell)))
+				{
+					if (Current.ProgramState == ProgramState.MapInitializing)
+					{
+						return MapGenerator.Caves[cell] == 0f;
+					}
+					return true;
+				}
+				return false;
 			}
 		}
 	}

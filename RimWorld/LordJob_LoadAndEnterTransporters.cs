@@ -9,6 +9,8 @@ namespace RimWorld
 
 		public override bool AllowStartNewGatherings => false;
 
+		public override bool AllowStartNewRituals => true;
+
 		public override bool AddFleeToil => false;
 
 		public LordJob_LoadAndEnterTransporters()
@@ -28,7 +30,8 @@ namespace RimWorld
 		public override StateGraph CreateGraph()
 		{
 			StateGraph stateGraph = new StateGraph();
-			LordToil_LoadAndEnterTransporters lordToil_LoadAndEnterTransporters = (LordToil_LoadAndEnterTransporters)(stateGraph.StartingToil = new LordToil_LoadAndEnterTransporters(transportersGroup));
+			LordToil_LoadAndEnterTransporters startingToil = new LordToil_LoadAndEnterTransporters(transportersGroup);
+			stateGraph.StartingToil = startingToil;
 			LordToil_End toil = new LordToil_End();
 			stateGraph.AddToil(toil);
 			return stateGraph;

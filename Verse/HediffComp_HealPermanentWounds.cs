@@ -20,24 +20,24 @@ namespace Verse
 			ticksToHeal = Rand.Range(15, 30) * 60000;
 		}
 
-		public override void CompPostTick(ref float severityAdjustment)
+		public override void CompPostTickInterval(ref float severityAdjustment, int delta)
 		{
-			ticksToHeal--;
+			ticksToHeal -= delta;
 			if (ticksToHeal <= 0)
 			{
-				TryHealRandomPermanentWound();
+				TryHealRandomPermanentWound(base.Pawn, parent.LabelCap);
 				ResetTicksToHeal();
 			}
 		}
 
-		private void TryHealRandomPermanentWound()
+		public static void TryHealRandomPermanentWound(Pawn pawn, string cause)
 		{
-			if (base.Pawn.health.hediffSet.hediffs.Where((Hediff hd) => hd.IsPermanent() || hd.def.chronic).TryRandomElement(out var result))
+			if (pawn.health.hediffSet.hediffs.Where((Hediff hd) => hd.IsPermanent() || hd.def.chronic).TryRandomElement(out var result))
 			{
-				HealthUtility.CureHediff(result);
-				if (PawnUtility.ShouldSendNotificationAbout(base.Pawn))
+				HealthUtility.Cure(result);
+				if (PawnUtility.ShouldSendNotificationAbout(pawn))
 				{
-					Messages.Message("MessagePermanentWoundHealed".Translate(parent.LabelCap, base.Pawn.LabelShort, result.Label, base.Pawn.Named("PAWN")), base.Pawn, MessageTypeDefOf.PositiveEvent);
+					Messages.Message("MessagePermanentWoundHealed".Translate(cause, pawn.LabelShort, result.Label, pawn.Named("PAWN")), pawn, MessageTypeDefOf.PositiveEvent);
 				}
 			}
 		}

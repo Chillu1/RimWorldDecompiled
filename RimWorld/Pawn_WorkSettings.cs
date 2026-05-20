@@ -51,6 +51,10 @@ namespace RimWorld
 			}
 		}
 
+		public bool LimitInitialActiveWorks => !pawn.RaceProps.IsMechanoid;
+
+		public bool Initialized => priorities != null;
+
 		public Pawn_WorkSettings()
 		{
 		}
@@ -65,6 +69,7 @@ namespace RimWorld
 			Scribe_Deep.Look(ref priorities, "priorities");
 			if (Scribe.mode == LoadSaveMode.PostLoadInit && priorities != null)
 			{
+				pawn.Notify_DisabledWorkTypesChanged();
 				List<WorkTypeDef> disabledWorkTypes = pawn.GetDisabledWorkTypes();
 				for (int i = 0; i < disabledWorkTypes.Count; i++)
 				{
@@ -91,12 +96,12 @@ namespace RimWorld
 			int num = 0;
 			foreach (WorkTypeDef item in from w in DefDatabase<WorkTypeDef>.AllDefs
 				where !w.alwaysStartActive && !pawn.WorkTypeIsDisabled(w)
-				orderby pawn.skills.AverageOfRelevantSkillsFor(w) descending
+				orderby pawn.skills?.AverageOfRelevantSkillsFor(w) ?? 1f descending
 				select w)
 			{
 				SetPriority(item, 3);
 				num++;
-				if (num >= 6)
+				if (LimitInitialActiveWorks && num >= 6)
 				{
 					break;
 				}
@@ -108,10 +113,18 @@ namespace RimWorld
 					SetPriority(item2, 3);
 				}
 			}
-			List<WorkTypeDef> disabledWorkTypes = pawn.GetDisabledWorkTypes();
-			for (int i = 0; i < disabledWorkTypes.Count; i++)
+			if (ModsConfig.BiotechActive && pawn.RaceProps.IsMechanoid && !pawn.RaceProps.mechWorkTypePriorities.NullOrEmpty())
 			{
-				Disable(disabledWorkTypes[i]);
+				for (int num2 = 0; num2 < pawn.RaceProps.mechWorkTypePriorities.Count; num2++)
+				{
+					MechWorkTypePriority mechWorkTypePriority = pawn.RaceProps.mechWorkTypePriorities[num2];
+					SetPriority(mechWorkTypePriority.def, mechWorkTypePriority.priority);
+				}
+			}
+			List<WorkTypeDef> disabledWorkTypes = pawn.GetDisabledWorkTypes();
+			for (int num3 = 0; num3 < disabledWorkTypes.Count; num3++)
+			{
+				Disable(disabledWorkTypes[num3]);
 			}
 		}
 
@@ -119,7 +132,7 @@ namespace RimWorld
 		{
 			if (priorities == null)
 			{
-				Log.Error(string.Concat(pawn, " did not have work settings initialized."));
+				Log.Error(pawn?.ToString() + " did not have work settings initialized.");
 				EnableAndInitialize();
 			}
 		}
@@ -129,7 +142,7 @@ namespace RimWorld
 			ConfirmInitializedDebug();
 			if (priority != 0 && pawn.WorkTypeIsDisabled(w))
 			{
-				Log.Error(string.Concat("Tried to change priority on disabled worktype ", w, " for pawn ", pawn));
+				Log.Error("Tried to change priority on disabled worktype " + w?.ToString() + " for pawn " + pawn);
 				return;
 			}
 			if (priority < 0 || priority > 4)
@@ -137,18 +150,18 @@ namespace RimWorld
 				Log.Message("Trying to set work to invalid priority " + priority);
 			}
 			priorities[w] = priority;
+			workGiversDirty = true;
 			if (priority == 0 && pawn.jobs != null)
 			{
 				pawn.jobs.Notify_WorkTypeDisabled(w);
 			}
-			workGiversDirty = true;
 		}
 
 		public int GetPriority(WorkTypeDef w)
 		{
 			ConfirmInitializedDebug();
 			int num = priorities[w];
-			if (num > 0 && !Find.PlaySettings.useWorkPriorities)
+			if (pawn.RaceProps.Humanlike && num > 0 && !Find.PlaySettings.useWorkPriorities)
 			{
 				return 3;
 			}
@@ -215,12 +228,12 @@ namespace RimWorld
 				return ((float)(b.naturalPriority + (4 - GetPriority(b)) * 100000)).CompareTo(value);
 			});
 			workGiversInOrderEmerg.Clear();
-			for (int j = 0; j < wtsByPrio.Count; j++)
+			for (int num2 = 0; num2 < wtsByPrio.Count; num2++)
 			{
-				WorkTypeDef workTypeDef2 = wtsByPrio[j];
-				for (int k = 0; k < workTypeDef2.workGiversByPriority.Count; k++)
+				WorkTypeDef workTypeDef2 = wtsByPrio[num2];
+				for (int num3 = 0; num3 < workTypeDef2.workGiversByPriority.Count; num3++)
 				{
-					WorkGiver worker = workTypeDef2.workGiversByPriority[k].Worker;
+					WorkGiver worker = workTypeDef2.workGiversByPriority[num3].Worker;
 					if (worker.def.emergency && GetPriority(worker.def.workType) <= num)
 					{
 						workGiversInOrderEmerg.Add(worker);
@@ -228,12 +241,12 @@ namespace RimWorld
 				}
 			}
 			workGiversInOrderNormal.Clear();
-			for (int l = 0; l < wtsByPrio.Count; l++)
+			for (int num4 = 0; num4 < wtsByPrio.Count; num4++)
 			{
-				WorkTypeDef workTypeDef3 = wtsByPrio[l];
-				for (int m = 0; m < workTypeDef3.workGiversByPriority.Count; m++)
+				WorkTypeDef workTypeDef3 = wtsByPrio[num4];
+				for (int num5 = 0; num5 < workTypeDef3.workGiversByPriority.Count; num5++)
 				{
-					WorkGiver worker2 = workTypeDef3.workGiversByPriority[m].Worker;
+					WorkGiver worker2 = workTypeDef3.workGiversByPriority[num5].Worker;
 					if (!worker2.def.emergency || GetPriority(worker2.def.workType) > num)
 					{
 						workGiversInOrderNormal.Add(worker2);

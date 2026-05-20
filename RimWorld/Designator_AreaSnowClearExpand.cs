@@ -8,12 +8,19 @@ namespace RimWorld
 		public Designator_AreaSnowClearExpand()
 			: base(DesignateMode.Add)
 		{
-			defaultLabel = "DesignatorAreaSnowClearExpand".Translate();
-			defaultDesc = "DesignatorAreaSnowClearExpandDesc".Translate();
+			string key = "DesignatorAreaSnowClearExpand";
+			string key2 = "DesignatorAreaSnowClearExpandDesc";
+			if (ModsConfig.OdysseyActive)
+			{
+				key = "DesignatorAreaSnowOrSandClearExpand";
+				key2 = "DesignatorAreaSnowOrSandClearExpandDesc";
+			}
+			defaultLabel = key.Translate();
+			defaultDesc = key2.Translate();
 			icon = ContentFinder<Texture2D>.Get("UI/Designators/SnowClearAreaOn");
 			soundDragSustain = SoundDefOf.Designate_DragAreaAdd;
-			soundDragChanged = null;
-			soundSucceeded = SoundDefOf.Designate_ZoneAdd;
+			soundDragChanged = SoundDefOf.Designate_DragZone_Changed;
+			soundSucceeded = SoundDefOf.Designate_ZoneAdd_RemoveSnow;
 		}
 	}
 }

@@ -15,7 +15,7 @@ namespace Verse
 		public Gizmo_RoomStats(Building building)
 		{
 			this.building = building;
-			order = -100f;
+			Order = -100f;
 		}
 
 		public override float GetWidth(float maxWidth)
@@ -23,7 +23,7 @@ namespace Verse
 			return Mathf.Min(300f, maxWidth);
 		}
 
-		public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth)
+		public override GizmoResult GizmoOnGUI(Vector2 topLeft, float maxWidth, GizmoRenderParms parms)
 		{
 			Room room = Room;
 			if (room == null)
@@ -33,13 +33,13 @@ namespace Verse
 			Rect rect = new Rect(topLeft.x, topLeft.y, GetWidth(maxWidth), 75f);
 			Widgets.DrawWindowBackground(rect);
 			Text.WordWrap = false;
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			Rect rect2 = rect.AtZero().ContractedBy(10f);
 			Text.Font = GameFont.Small;
 			Rect rect3 = new Rect(rect2.x, rect2.y - 2f, rect2.width, 100f);
 			float stat = room.GetStat(RoomStatDefOf.Impressiveness);
 			RoomStatScoreStage scoreStage = RoomStatDefOf.Impressiveness.GetScoreStage(stat);
-			TaggedString str = room.Role.LabelCap + ", " + scoreStage.label + " (" + RoomStatDefOf.Impressiveness.ScoreToString(stat) + ")";
+			string str = room.Role.PostProcessedLabelCap(room) + ", " + scoreStage.label + " (" + RoomStatDefOf.Impressiveness.ScoreToString(stat) + ")";
 			Widgets.Label(rect3, str.Truncate(rect3.width));
 			float num = rect2.y + Text.LineHeight + Text.SpaceBetweenLines + 7f;
 			GUI.color = RoomStatsColor;
@@ -52,7 +52,7 @@ namespace Verse
 				{
 					float stat2 = room.GetStat(allDefsListForReading[i]);
 					RoomStatScoreStage scoreStage2 = allDefsListForReading[i].GetScoreStage(stat2);
-					Rect rect4 = ((num2 % 2 == 0) ? new Rect(rect2.x, num, rect2.width / 2f, 100f) : new Rect(rect2.x + rect2.width / 2f, num, rect2.width / 2f, 100f));
+					Rect rect4 = ((num2 % 2 != 0) ? new Rect(rect2.x + rect2.width / 2f, num, rect2.width / 2f, 100f) : new Rect(rect2.x, num, rect2.width / 2f, 100f));
 					string str2 = scoreStage2.label.CapitalizeFirst() + " (" + allDefsListForReading[i].ScoreToString(stat2) + ")";
 					Widgets.Label(rect4, str2.Truncate(rect4.width));
 					if (num2 % 2 == 1)
@@ -64,7 +64,7 @@ namespace Verse
 			}
 			GUI.color = Color.white;
 			Text.Font = GameFont.Small;
-			GUI.EndGroup();
+			Widgets.EndGroup();
 			Text.WordWrap = true;
 			GenUI.AbsorbClicksInRect(rect);
 			if (Mouse.IsOver(rect))
@@ -83,7 +83,6 @@ namespace Verse
 		public override void GizmoUpdateOnMouseover()
 		{
 			base.GizmoUpdateOnMouseover();
-			PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.InspectRoomStats, KnowledgeAmount.FrameInteraction);
 			Room?.DrawFieldEdges();
 		}
 

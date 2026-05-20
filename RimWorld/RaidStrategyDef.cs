@@ -12,6 +12,12 @@ namespace RimWorld
 
 		public float minPawns = 1f;
 
+		public List<FactionCurve> selectionWeightCurvesPerFaction;
+
+		public List<PlanetLayerDef> layerWhitelist;
+
+		public List<PlanetLayerDef> layerBlacklist;
+
 		[MustTranslate]
 		public string arrivalTextFriendly;
 

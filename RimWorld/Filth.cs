@@ -1,10 +1,24 @@
 using System.Collections.Generic;
+using UnityEngine;
 using Verse;
 
 namespace RimWorld
 {
 	public class Filth : Thing
 	{
+		public struct FilthInstance : IExposable
+		{
+			public float rotation;
+
+			public Vector3 drawPos;
+
+			public void ExposeData()
+			{
+				Scribe_Values.Look(ref rotation, "rotation", 0f);
+				Scribe_Values.Look(ref drawPos, "drawPos");
+			}
+		}
+
 		public int thickness = 1;
 
 		public List<string> sources;
@@ -12,6 +26,8 @@ namespace RimWorld
 		private int growTick;
 
 		private int disappearAfterTicks;
+
+		public List<FilthInstance> drawInstances;
 
 		private const int MaxThickness = 5;
 
@@ -52,9 +68,13 @@ namespace RimWorld
 		public override void ExposeData()
 		{
 			base.ExposeData();
-			Scribe_Values.Look(ref thickness, "thickness", 1);
 			Scribe_Values.Look(ref growTick, "growTick", 0);
+			Scribe_Values.Look(ref thickness, "thickness", 1);
 			Scribe_Values.Look(ref disappearAfterTicks, "disappearAfterTicks", 0);
+			if (Scribe.mode != LoadSaveMode.Saving || drawInstances != null)
+			{
+				Scribe_Collections.Look(ref drawInstances, "drawInstances", LookMode.Deep);
+			}
 			if (Scribe.mode != LoadSaveMode.Saving || sources != null)
 			{
 				Scribe_Collections.Look(ref sources, "sources", LookMode.Value);
@@ -68,14 +88,10 @@ namespace RimWorld
 			{
 				base.Map.listerFilthInHomeArea.Notify_FilthSpawned(this);
 			}
-			if (!respawningAfterLoad)
+			if (!respawningAfterLoad && !base.BeingTransportedOnGravship)
 			{
 				growTick = Find.TickManager.TicksGame;
 				disappearAfterTicks = (int)(def.filth.disappearsInDays.RandomInRange * 60000f);
-			}
-			if (!FilthMaker.TerrainAcceptsFilth(base.Map.terrainGrid.TerrainAt(base.Position), def))
-			{
-				Destroy();
 			}
 		}
 
@@ -151,8 +167,22 @@ namespace RimWorld
 		{
 			if (base.Spawned)
 			{
-				base.Map.mapDrawer.MapMeshDirty(base.Position, MapMeshFlag.Things);
+				base.Map.mapDrawer.MapMeshDirty(base.Position, MapMeshFlagDefOf.Things);
 			}
+		}
+
+		public void SetOverrideDrawPositionAndRotation(Vector3 drawPos, float rotation)
+		{
+			if (drawInstances == null)
+			{
+				drawInstances = new List<FilthInstance>();
+			}
+			drawInstances.Add(new FilthInstance
+			{
+				drawPos = drawPos,
+				rotation = rotation
+			});
+			UpdateMesh();
 		}
 
 		public bool CanDropAt(IntVec3 c, Map map, FilthSourceFlags additionalFlags = FilthSourceFlags.None)

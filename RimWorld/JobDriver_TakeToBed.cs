@@ -15,8 +15,34 @@ namespace RimWorld
 
 		protected Building_Bed DropBed => (Building_Bed)job.GetTarget(TargetIndex.B).Thing;
 
+		private bool TakeeRescued
+		{
+			get
+			{
+				if (Takee.RaceProps.Humanlike && job.def != JobDefOf.Arrest && !Takee.IsPrisonerOfColony)
+				{
+					if (Takee.ageTracker.CurLifeStage.alwaysDowned)
+					{
+						return HealthAIUtility.ShouldSeekMedicalRest(Takee);
+					}
+					return true;
+				}
+				return false;
+			}
+		}
+
+		public override string GetReport()
+		{
+			if (job.def == JobDefOf.Rescue && !TakeeRescued)
+			{
+				return "TakingToBed".Translate(Takee);
+			}
+			return base.GetReport();
+		}
+
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
 		{
+			Takee.ClearAllReservations();
 			if (pawn.Reserve(Takee, job, 1, -1, null, errorOnFailed))
 			{
 				return pawn.Reserve(DropBed, job, DropBed.SleepingSlotsCount, 0, null, errorOnFailed);
@@ -45,29 +71,37 @@ namespace RimWorld
 				return false;
 			});
 			yield return Toils_Bed.ClaimBedIfNonMedical(TargetIndex.B, TargetIndex.A);
-			AddFinishAction(delegate
+			AddFinishAction(delegate(JobCondition jobCondition)
 			{
 				if (job.def.makeTargetPrisoner && Takee.ownership.OwnedBed == DropBed && Takee.Position != RestUtility.GetBedSleepingSlotPosFor(Takee, DropBed))
 				{
 					Takee.ownership.UnclaimBed();
 				}
+				if (jobCondition != JobCondition.Ongoing && pawn.carryTracker.CarriedThing != null)
+				{
+					pawn.carryTracker.TryDropCarriedThing(pawn.Position, ThingPlaceMode.Direct, out var _);
+				}
 			});
-			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.ClosestTouch).FailOnDespawnedNullOrForbidden(TargetIndex.A).FailOnDespawnedNullOrForbidden(TargetIndex.B)
+			Toil goToTakee = Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.ClosestTouch).FailOnDespawnedNullOrForbidden(TargetIndex.A).FailOnDespawnedNullOrForbidden(TargetIndex.B)
 				.FailOn(() => job.def == JobDefOf.Arrest && !Takee.CanBeArrestedBy(pawn))
 				.FailOn(() => !pawn.CanReach(DropBed, PathEndMode.OnCell, Danger.Deadly))
 				.FailOn(() => (job.def == JobDefOf.Rescue || job.def == JobDefOf.Capture) && !Takee.Downed)
 				.FailOnSomeonePhysicallyInteracting(TargetIndex.A);
-			Toil toil = new Toil();
-			toil.initAction = delegate
+			Toil checkArrestResistance = ToilMaker.MakeToil("MakeNewToils");
+			checkArrestResistance.initAction = delegate
 			{
 				if (job.def.makeTargetPrisoner)
 				{
 					Pawn pawn = (Pawn)job.targetA.Thing;
 					pawn.GetLord()?.Notify_PawnAttemptArrested(pawn);
 					GenClamor.DoClamor(pawn, 10f, ClamorDefOf.Harm);
-					if (!pawn.IsPrisoner)
+					if (!pawn.IsPrisoner && !pawn.IsSlave)
 					{
 						QuestUtility.SendQuestTargetSignals(pawn.questTags, "Arrested", pawn.Named("SUBJECT"));
+						if (pawn.Faction != null)
+						{
+							QuestUtility.SendQuestTargetSignals(pawn.Faction.questTags, "FactionMemberArrested", pawn.Faction.Named("FACTION"));
+						}
 					}
 					if (job.def == JobDefOf.Arrest && !pawn.CheckAcceptArrest(base.pawn))
 					{
@@ -75,13 +109,26 @@ namespace RimWorld
 					}
 				}
 			};
-			yield return toil;
-			Toil toil2 = Toils_Haul.StartCarryThing(TargetIndex.A).FailOnNonMedicalBedNotOwned(TargetIndex.B, TargetIndex.A);
-			toil2.AddPreInitAction(CheckMakeTakeeGuest);
-			yield return toil2;
-			yield return Toils_Goto.GotoThing(TargetIndex.B, PathEndMode.Touch);
-			Toil toil3 = new Toil();
-			toil3.initAction = delegate
+			yield return Toils_Jump.JumpIf(checkArrestResistance, () => pawn.IsCarryingPawn(Takee));
+			yield return goToTakee;
+			yield return checkArrestResistance;
+			Toil startCarrying = Toils_Haul.StartCarryThing(TargetIndex.A);
+			startCarrying.FailOnBedNoLongerUsable(TargetIndex.B, TargetIndex.A);
+			startCarrying.AddPreInitAction(CheckMakeTakeeGuest);
+			startCarrying.AddFinishAction(delegate
+			{
+				if (pawn.Faction == Takee.Faction)
+				{
+					CheckMakeTakeePrisoner();
+				}
+			});
+			Toil goToBed = Toils_Goto.GotoThing(TargetIndex.B, PathEndMode.Touch).FailOn(() => !pawn.IsCarryingPawn(Takee));
+			goToBed.FailOnBedNoLongerUsable(TargetIndex.B, TargetIndex.A);
+			yield return Toils_Jump.JumpIf(goToBed, () => pawn.IsCarryingPawn(Takee));
+			yield return startCarrying;
+			yield return goToBed;
+			Toil toil = ToilMaker.MakeToil("MakeNewToils");
+			toil.initAction = delegate
 			{
 				CheckMakeTakeePrisoner();
 				if (Takee.playerSettings == null)
@@ -89,29 +136,23 @@ namespace RimWorld
 					Takee.playerSettings = new Pawn_PlayerSettings(Takee);
 				}
 			};
-			yield return toil3;
+			yield return toil;
 			yield return Toils_Reserve.Release(TargetIndex.B);
-			Toil toil4 = new Toil();
-			toil4.initAction = delegate
+			yield return Toils_Bed.TuckIntoBed(DropBed, pawn, Takee, TakeeRescued);
+			yield return Toils_General.Do(delegate
 			{
-				IntVec3 position = DropBed.Position;
-				pawn.carryTracker.TryDropCarriedThing(position, ThingPlaceMode.Direct, out var _);
-				if (!DropBed.Destroyed && (DropBed.OwnersForReading.Contains(Takee) || (DropBed.Medical && DropBed.AnyUnoccupiedSleepingSlot) || Takee.ownership == null))
+				if (!job.ritualTag.NullOrEmpty())
 				{
-					Takee.jobs.Notify_TuckedIntoBed(DropBed);
-					if (Takee.RaceProps.Humanlike && job.def != JobDefOf.Arrest && !Takee.IsPrisonerOfColony)
+					if (Takee.GetLord()?.LordJob is LordJob_Ritual lordJob_Ritual)
 					{
-						Takee.relations.Notify_RescuedBy(pawn);
+						lordJob_Ritual.AddTagForPawn(Takee, job.ritualTag);
 					}
-					Takee.mindState.Notify_TuckedIntoBed();
+					if (pawn.GetLord()?.LordJob is LordJob_Ritual lordJob_Ritual2)
+					{
+						lordJob_Ritual2.AddTagForPawn(pawn, job.ritualTag);
+					}
 				}
-				if (Takee.IsPrisonerOfColony)
-				{
-					LessonAutoActivator.TeachOpportunity(ConceptDefOf.PrisonerTab, Takee, OpportunityType.GoodToKnow);
-				}
-			};
-			toil4.defaultCompleteMode = ToilCompleteMode.Instant;
-			yield return toil4;
+			});
 		}
 
 		private void CheckMakeTakeePrisoner()
@@ -121,7 +162,7 @@ namespace RimWorld
 				if (Takee.guest.Released)
 				{
 					Takee.guest.Released = false;
-					Takee.guest.interactionMode = PrisonerInteractionModeDefOf.NoInteraction;
+					Takee.guest.SetExclusiveInteraction(PrisonerInteractionModeDefOf.MaintainOnly);
 					GenGuest.RemoveHealthyPrisonerReleasedThoughts(Takee);
 				}
 				if (!Takee.IsPrisonerOfColony)
@@ -133,9 +174,10 @@ namespace RimWorld
 
 		private void CheckMakeTakeeGuest()
 		{
-			if (!job.def.makeTargetPrisoner && Takee.Faction != Faction.OfPlayer && Takee.HostFaction != Faction.OfPlayer && Takee.guest != null && !Takee.IsWildMan())
+			if (!job.def.makeTargetPrisoner && Takee.Faction != Faction.OfPlayer && Takee.HostFaction != Faction.OfPlayer && Takee.guest != null && !Takee.IsWildMan() && Takee.DevelopmentalStage != DevelopmentalStage.Baby)
 			{
 				Takee.guest.SetGuestStatus(Faction.OfPlayer);
+				QuestUtility.SendQuestTargetSignals(Takee.questTags, "Rescued", Takee.Named("SUBJECT"));
 			}
 		}
 	}

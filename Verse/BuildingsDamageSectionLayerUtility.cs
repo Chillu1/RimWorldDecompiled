@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
 
 namespace Verse
@@ -20,11 +21,19 @@ namespace Verse
 
 		private static List<DamageOverlay> overlays = new List<DamageOverlay>();
 
+		public static void TryInsertIntoAtlas()
+		{
+			for (int i = 0; i < DefaultScratchMats.Length; i++)
+			{
+				GlobalTextureAtlasManager.TryInsertStatic(TextureAtlasGroup.Building, (Texture2D)DefaultScratchMats[i].mainTexture);
+			}
+		}
+
 		public static void Notify_BuildingHitPointsChanged(Building b, int oldHitPoints)
 		{
 			if (b.Spawned && b.def.useHitPoints && b.HitPoints != oldHitPoints && b.def.drawDamagedOverlay && GetDamageOverlaysCount(b, b.HitPoints) != GetDamageOverlaysCount(b, oldHitPoints))
 			{
-				b.Map.mapDrawer.MapMeshDirty(b.Position, MapMeshFlag.BuildingsDamage);
+				b.Map.mapDrawer.MapMeshDirty(b.Position, MapMeshFlagDefOf.BuildingsDamage);
 			}
 		}
 
@@ -306,18 +315,14 @@ namespace Verse
 
 		public static void DebugDraw()
 		{
-			if (Prefs.DevMode && DebugViewSettings.drawDamageRects && Find.CurrentMap != null)
+			if (Prefs.DevMode && DebugViewSettings.drawDamageRects && Find.CurrentMap != null && Find.Selector.FirstSelectedObject is Building b)
 			{
-				Building building = Find.Selector.FirstSelectedObject as Building;
-				if (building != null)
-				{
-					Material material = DebugSolidColorMats.MaterialOf(Color.red);
-					Rect damageRect = GetDamageRect(building);
-					float y = 14.99f;
-					Vector3 pos = new Vector3(damageRect.x + damageRect.width / 2f, y, damageRect.y + damageRect.height / 2f);
-					Vector3 s = new Vector3(damageRect.width, 1f, damageRect.height);
-					Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.identity, s), material, 0);
-				}
+				Material material = DebugSolidColorMats.MaterialOf(Color.red);
+				Rect damageRect = GetDamageRect(b);
+				float y = 14.99f;
+				Vector3 pos = new Vector3(damageRect.x + damageRect.width / 2f, y, damageRect.y + damageRect.height / 2f);
+				Vector3 s = new Vector3(damageRect.width, 1f, damageRect.height);
+				Graphics.DrawMesh(MeshPool.plane10, Matrix4x4.TRS(pos, Quaternion.identity, s), material, 0);
 			}
 		}
 	}

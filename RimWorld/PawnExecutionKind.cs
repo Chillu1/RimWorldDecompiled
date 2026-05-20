@@ -4,6 +4,7 @@ namespace RimWorld
 	{
 		GenericBrutal,
 		GenericHumane,
-		OrganHarvesting
+		OrganHarvesting,
+		Ripscanned
 	}
 }

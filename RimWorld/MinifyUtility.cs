@@ -5,17 +5,14 @@ namespace RimWorld
 {
 	public static class MinifyUtility
 	{
-		public static MinifiedThing MakeMinified(this Thing thing)
+		public static MinifiedThing MakeMinified(this Thing thing, DestroyMode destroyMode = DestroyMode.Vanish)
 		{
 			if (!thing.def.Minifiable)
 			{
-				Log.Warning(string.Concat("Tried to minify ", thing, " which is not minifiable."));
+				Log.Warning("Tried to minify " + thing?.ToString() + " which is not minifiable.");
 				return null;
 			}
-			if (thing.Spawned)
-			{
-				thing.DeSpawn();
-			}
+			thing.DeSpawnOrDeselect(destroyMode);
 			if (thing.holdingOwner != null)
 			{
 				Log.Warning("Can't minify thing which is in a ThingOwner because we don't know how to handle it. Remove it from the container first. holder=" + thing.ParentHolder);
@@ -44,8 +41,7 @@ namespace RimWorld
 
 		public static Thing GetInnerIfMinified(this Thing outerThing)
 		{
-			MinifiedThing minifiedThing = outerThing as MinifiedThing;
-			if (minifiedThing != null)
+			if (outerThing is MinifiedThing minifiedThing)
 			{
 				return minifiedThing.InnerThing;
 			}
@@ -59,10 +55,15 @@ namespace RimWorld
 				Log.Warning("Can't uninstall unspawned thing " + th);
 				return null;
 			}
+			bool num = Find.Selector.IsSelected(th);
 			Map map = th.Map;
 			MinifiedThing minifiedThing = th.MakeMinified();
 			GenPlace.TryPlaceThing(minifiedThing, th.Position, map, ThingPlaceMode.Near);
 			SoundDefOf.ThingUninstalled.PlayOneShot(new TargetInfo(th.Position, map));
+			if (num)
+			{
+				Find.Selector.Select(minifiedThing, playSound: false, forceDesignatorDeselect: false);
+			}
 			return minifiedThing;
 		}
 	}

@@ -16,15 +16,10 @@ namespace Verse.Sound
 
 			public bool IsValid => rect.x >= 0f;
 
-			public static MouseoverRegionCall Invalid
+			public static MouseoverRegionCall Invalid => new MouseoverRegionCall
 			{
-				get
-				{
-					MouseoverRegionCall result = default(MouseoverRegionCall);
-					result.rect = new Rect(-1000f, -1000f, 0f, 0f);
-					return result;
-				}
-			}
+				rect = new Rect(-1000f, -1000f, 0f, 0f)
+			};
 
 			public bool Matches(MouseoverRegionCall other)
 			{
@@ -37,7 +32,8 @@ namespace Verse.Sound
 				{
 					return "(Invalid)";
 				}
-				return string.Concat("(rect=", rect, mouseIsOver ? "mouseIsOver" : "", ")");
+				Rect rect = this.rect;
+				return "(rect=" + rect.ToString() + (mouseIsOver ? "mouseIsOver" : "") + ")";
 			}
 		}
 
@@ -64,10 +60,12 @@ namespace Verse.Sound
 			if (sound != null && Event.current.type == EventType.Repaint)
 			{
 				Rect rect2 = new Rect(GUIUtility.GUIToScreenPoint(rect.position), rect.size);
-				MouseoverRegionCall item = default(MouseoverRegionCall);
-				item.rect = rect2;
-				item.sound = sound;
-				item.mouseIsOver = Mouse.IsOver(rect);
+				MouseoverRegionCall item = new MouseoverRegionCall
+				{
+					rect = rect2,
+					sound = sound,
+					mouseIsOver = Mouse.IsOver(rect)
+				};
 				frameCalls.Add(item);
 			}
 		}

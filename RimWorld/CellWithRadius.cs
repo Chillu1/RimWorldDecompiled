@@ -19,17 +19,16 @@ namespace RimWorld
 		{
 			if (cell.Equals(other.cell))
 			{
-				return radius.Equals(other.radius);
+				float num = radius;
+				return num.Equals(other.radius);
 			}
 			return false;
 		}
 
 		public override bool Equals(object obj)
 		{
-			object obj2;
-			if ((obj2 = obj) is CellWithRadius)
+			if (obj is CellWithRadius other)
 			{
-				CellWithRadius other = (CellWithRadius)obj2;
 				return Equals(other);
 			}
 			return false;
@@ -37,8 +36,9 @@ namespace RimWorld
 
 		public override int GetHashCode()
 		{
-			IntVec3 intVec = cell;
-			return (intVec.GetHashCode() * 397) ^ radius.GetHashCode();
+			int num = cell.GetHashCode() * 397;
+			float num2 = radius;
+			return num ^ num2.GetHashCode();
 		}
 	}
 }

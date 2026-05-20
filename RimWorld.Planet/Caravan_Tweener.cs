@@ -23,11 +23,11 @@ namespace RimWorld.Planet
 			this.caravan = caravan;
 		}
 
-		public void TweenerTick()
+		public void TweenerTickInterval(int delta)
 		{
 			lastTickSpringPos = tweenedPos;
-			Vector3 a = TweenedPosRoot - tweenedPos;
-			tweenedPos += a * 0.09f;
+			Vector3 vector = TweenedPosRoot - tweenedPos;
+			tweenedPos += vector * 0.09f;
 		}
 
 		public void ResetTweenedPosToRoot()

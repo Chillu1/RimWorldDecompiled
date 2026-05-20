@@ -40,7 +40,22 @@ namespace Verse.AI
 			return toil.JumpIf(delegate
 			{
 				Thing thing = toil.actor.jobs.curJob.GetTarget(ind).Thing;
-				return (!toil.actor.Map.areaManager.Home[thing.Position]) ? true : false;
+				return !toil.actor.Map.areaManager.Home[thing.Position];
+			}, jumpToil);
+		}
+
+		public static Toil JumpIfThingMissingDesignation(this Toil toil, TargetIndex ind, DesignationDef desDef, Toil jumpToil)
+		{
+			return toil.JumpIf(delegate
+			{
+				Pawn actor = toil.GetActor();
+				Job curJob = actor.jobs.curJob;
+				if (curJob.ignoreDesignations)
+				{
+					return false;
+				}
+				Thing thing = curJob.GetTarget(ind).Thing;
+				return (thing == null || actor.Map.designationManager.DesignationOn(thing, desDef) == null) ? true : false;
 			}, jumpToil);
 		}
 	}

@@ -37,9 +37,9 @@ namespace Verse.Steam
 					return;
 				}
 			}
-			catch (DllNotFoundException arg)
+			catch (DllNotFoundException ex)
 			{
-				Log.Error("[Steamworks.NET] Could not load [lib]steam_api.dll/so/dylib. It's likely not in the correct location. Refer to the README for more details.\n" + arg);
+				Log.Error("[Steamworks.NET] Could not load [lib]steam_api.dll/so/dylib. It's likely not in the correct location. Refer to the README for more details.\n" + ex);
 				Application.Quit();
 				return;
 			}
@@ -55,6 +55,7 @@ namespace Verse.Steam
 				SteamClient.SetWarningMessageHook(steamAPIWarningMessageHook);
 			}
 			Workshop.Init();
+			SteamDeck.Init();
 		}
 
 		public static void Update()
@@ -62,6 +63,7 @@ namespace Verse.Steam
 			if (initializedInt)
 			{
 				SteamAPI.RunCallbacks();
+				SteamDeck.Update();
 			}
 		}
 
@@ -69,7 +71,9 @@ namespace Verse.Steam
 		{
 			if (initializedInt)
 			{
+				SteamDeck.Shutdown();
 				SteamAPI.Shutdown();
+				initializedInt = false;
 			}
 		}
 

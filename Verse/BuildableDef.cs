@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Verse
 {
-	public abstract class BuildableDef : Def
+	public abstract class BuildableDef : Def, IEquatable<BuildableDef>
 	{
 		public List<StatModifier> statBases;
 
@@ -24,13 +24,28 @@ namespace Verse
 
 		public List<StuffCategoryDef> stuffCategories;
 
-		public int placingDraggableDimensions;
+		[MustTranslate]
+		public string stuffCategorySummary;
+
+		public CostListForDifficulty costListForDifficulty;
+
+		public DrawStyleCategoryDef drawStyleCategory;
 
 		public bool clearBuildingArea = true;
 
 		public Rot4 defaultPlacingRot = Rot4.North;
 
-		public float resourcesFractionWhenDeconstructed = 0.75f;
+		public float resourcesFractionWhenDeconstructed = 0.5f;
+
+		public List<AltitudeLayer> blocksAltitudes;
+
+		public StyleCategoryDef dominantStyleCategory;
+
+		public bool forcePassableByFlyingPawns;
+
+		public bool forceMoveItemsBeforeConstruction;
+
+		public bool isAltar;
 
 		public bool useStuffTerrainAffordance;
 
@@ -38,7 +53,11 @@ namespace Verse
 
 		public List<ThingDef> buildingPrerequisites;
 
+		public List<ThingDef> discoveryPrerequisites;
+
 		public List<ResearchProjectDef> researchPrerequisites;
+
+		public int minMonolithLevel;
 
 		public int constructionSkillPrerequisite;
 
@@ -48,6 +67,8 @@ namespace Verse
 
 		public TechLevel maxTechLevelToBuild;
 
+		public bool requireInspectedGravEngine;
+
 		public AltitudeLayer altitudeLayer = AltitudeLayer.Item;
 
 		public EffecterDef repairEffect;
@@ -56,7 +77,9 @@ namespace Verse
 
 		public List<ColorForStuff> colorPerStuff;
 
-		public bool menuHidden;
+		public bool canGenerateDefaultDesignator = true;
+
+		public bool ideoBuilding;
 
 		public float specialDisplayRadius;
 
@@ -68,12 +91,18 @@ namespace Verse
 
 		public KeyBindingDef designationHotKey;
 
+		public float uiOrder = 2999f;
+
 		[NoTranslate]
 		public string uiIconPath;
+
+		public List<IconForStuffAppearance> uiIconPathsStuff;
 
 		public Vector2 uiIconOffset;
 
 		public Color uiIconColor = Color.white;
+
+		public Color uiIconColorTwo = Color.white;
 
 		public int uiIconForStackCount = -1;
 
@@ -96,25 +125,25 @@ namespace Verse
 		public Texture2D uiIcon = BaseContent.BadTex;
 
 		[Unsaved(false)]
+		public Material uiIconMaterial;
+
+		[Unsaved(false)]
+		public Dictionary<StuffAppearanceDef, Texture2D> stuffUiIcons;
+
+		[Unsaved(false)]
 		public float uiIconAngle;
 
-		public virtual IntVec2 Size => new IntVec2(1, 1);
+		protected static List<string> tmpCostList = new List<string>();
+
+		protected static List<Dialog_InfoCard.Hyperlink> tmpHyperlinks = new List<Dialog_InfoCard.Hyperlink>();
+
+		public virtual IntVec2 Size => IntVec2.One;
 
 		public bool MadeFromStuff => !stuffCategories.NullOrEmpty();
 
 		public bool BuildableByPlayer => designationCategory != null;
 
-		public Material DrawMatSingle
-		{
-			get
-			{
-				if (graphic == null)
-				{
-					return null;
-				}
-				return graphic.MatSingle;
-			}
-		}
+		public Material DrawMatSingle => graphic?.MatSingle;
 
 		public float Altitude => altitudeLayer.AltitudeFor();
 
@@ -128,10 +157,13 @@ namespace Verse
 				{
 					return null;
 				}
-				placeWorkersInstantiatedInt = new List<PlaceWorker>();
-				foreach (Type placeWorker in placeWorkers)
+				if (placeWorkersInstantiatedInt == null)
 				{
-					placeWorkersInstantiatedInt.Add((PlaceWorker)Activator.CreateInstance(placeWorker));
+					placeWorkersInstantiatedInt = new List<PlaceWorker>();
+					foreach (Type placeWorker in placeWorkers)
+					{
+						placeWorkersInstantiatedInt.Add((PlaceWorker)Activator.CreateInstance(placeWorker));
+					}
 				}
 				return placeWorkersInstantiatedInt;
 			}
@@ -152,6 +184,30 @@ namespace Verse
 					}
 				}
 				return true;
+			}
+		}
+
+		public List<ThingDefCountClass> CostList
+		{
+			get
+			{
+				if (costListForDifficulty != null && costListForDifficulty.Applies)
+				{
+					return costListForDifficulty.costList;
+				}
+				return costList;
+			}
+		}
+
+		public int CostStuffCount
+		{
+			get
+			{
+				if (costListForDifficulty != null && costListForDifficulty.Applies)
+				{
+					return costListForDifficulty.costStuffCount;
+				}
+				return costStuffCount;
 			}
 		}
 
@@ -184,27 +240,49 @@ namespace Verse
 				{
 					ResolveIcon();
 				}
+				if (uiIconPathsStuff != null)
+				{
+					stuffUiIcons = new Dictionary<StuffAppearanceDef, Texture2D>();
+					foreach (IconForStuffAppearance item in uiIconPathsStuff)
+					{
+						stuffUiIcons.Add(item.Appearance, ContentFinder<Texture2D>.Get(item.IconPath));
+					}
+				}
 			});
 		}
 
 		protected virtual void ResolveIcon()
 		{
-			if (graphic == null || graphic == BaseContent.BadGraphic)
+			if (graphic == null || graphic == BaseContent.BadGraphic || this is ThingDef { mote: not null })
 			{
 				return;
 			}
 			Graphic outerGraphic = graphic;
-			if (uiIconForStackCount >= 1 && this is ThingDef)
+			if (uiIconForStackCount >= 1 && this is ThingDef && graphic is Graphic_StackCount graphic_StackCount)
 			{
-				Graphic_StackCount graphic_StackCount = graphic as Graphic_StackCount;
-				if (graphic_StackCount != null)
-				{
-					outerGraphic = graphic_StackCount.SubGraphicForStackCount(uiIconForStackCount, (ThingDef)this);
-				}
+				outerGraphic = graphic_StackCount.SubGraphicForStackCount(uiIconForStackCount, (ThingDef)this);
 			}
 			Material material = outerGraphic.ExtractInnerGraphicFor(null).MatAt(defaultPlacingRot);
+			if (ShaderDatabase.TryGetUIShader(material.shader, out var uiShader) && MaterialPool.TryGetRequestForMat(material, out var request))
+			{
+				request.shader = uiShader;
+				if (request.colorTwo == Color.white)
+				{
+					request.colorTwo = uiIconColorTwo;
+				}
+				uiIconMaterial = MaterialPool.MatFrom(request);
+			}
 			uiIcon = (Texture2D)material.mainTexture;
 			uiIconColor = material.color;
+		}
+
+		public Texture2D GetUIIconForStuff(ThingDef stuff)
+		{
+			if (stuffUiIcons == null || stuff?.stuffProps.appearance == null || !stuffUiIcons.TryGetValue(stuff.stuffProps.appearance, out var value))
+			{
+				return uiIcon;
+			}
+			return value;
 		}
 
 		public Color GetColorForStuff(ThingDef stuff)
@@ -224,11 +302,6 @@ namespace Verse
 			return stuff.stuffProps.color;
 		}
 
-		public override void ResolveReferences()
-		{
-			base.ResolveReferences();
-		}
-
 		public override IEnumerable<string> ConfigErrors()
 		{
 			foreach (string item in base.ConfigErrors())
@@ -238,6 +311,10 @@ namespace Verse
 			if (useStuffTerrainAffordance && !MadeFromStuff)
 			{
 				yield return "useStuffTerrainAffordance is true but it's not made from stuff";
+			}
+			if (costListForDifficulty != null && costListForDifficulty.difficultyVar.NullOrEmpty())
+			{
+				yield return "costListForDifficulty is not referencing a difficulty.";
 			}
 		}
 
@@ -268,6 +345,35 @@ namespace Verse
 			{
 				yield return new StatDrawEntry(StatCategoryDefOf.Basics, "TerrainRequirement".Translate(), array.ToCommaList().CapitalizeFirst(), "Stat_Thing_TerrainRequirement_Desc".Translate(), 1101);
 			}
+			tmpCostList.Clear();
+			tmpHyperlinks.Clear();
+			if (MadeFromStuff && costStuffCount > 0)
+			{
+				tmpCostList.Add(costStuffCount + "x " + stuffCategories.Select((StuffCategoryDef x) => x.label).ToCommaListOr());
+				foreach (ThingDef allDef in DefDatabase<ThingDef>.AllDefs)
+				{
+					if (allDef.IsStuff && !allDef.stuffProps.categories.NullOrEmpty() && allDef.stuffProps.categories.Any((StuffCategoryDef x) => stuffCategories.Contains(x)))
+					{
+						tmpHyperlinks.Add(new Dialog_InfoCard.Hyperlink(allDef));
+					}
+				}
+			}
+			List<ThingDefCountClass> list = CostList;
+			if (!list.NullOrEmpty())
+			{
+				foreach (ThingDefCountClass c in list)
+				{
+					tmpCostList.Add(c.Summary);
+					if (!tmpHyperlinks.Any((Dialog_InfoCard.Hyperlink x) => x.def == c.thingDef))
+					{
+						tmpHyperlinks.Add(new Dialog_InfoCard.Hyperlink(c.thingDef));
+					}
+				}
+			}
+			if (tmpCostList.Any())
+			{
+				yield return new StatDrawEntry(StatCategoryDefOf.Building, "Stat_Building_ResourcesToMake".Translate(), tmpCostList.ToCommaList().CapitalizeFirst(), "Stat_Building_ResourcesToMakeDesc".Translate(), 4405, null, tmpHyperlinks);
+			}
 		}
 
 		public override string ToString()
@@ -275,9 +381,9 @@ namespace Verse
 			return defName;
 		}
 
-		public override int GetHashCode()
+		public bool Equals(BuildableDef other)
 		{
-			return defName.GetHashCode();
+			return defName == other.defName;
 		}
 	}
 }

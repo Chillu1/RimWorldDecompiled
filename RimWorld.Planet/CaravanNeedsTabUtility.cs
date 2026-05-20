@@ -7,7 +7,9 @@ namespace RimWorld.Planet
 {
 	public static class CaravanNeedsTabUtility
 	{
-		private const float RowHeight = 50f;
+		private const float RowHeight = 40f;
+
+		private const float NeedExtraSize = 5f;
 
 		private const float LabelHeight = 18f;
 
@@ -56,7 +58,7 @@ namespace RimWorld.Planet
 				{
 					if (!flag2)
 					{
-						Widgets.ListSeparator(ref curY, viewRect.width, "CaravanPrisonersAndAnimals".Translate());
+						Widgets.ListSeparator(ref curY, viewRect.width, ModsConfig.BiotechActive ? "CaravanPrisonersAnimalsAndMechs".Translate() : "CaravanPrisonersAndAnimals".Translate());
 						flag2 = true;
 					}
 					DoRow(ref curY, viewRect, rect, scrollPosition, pawn2, caravan, ref specificNeedsTabForPawn, doNeeds);
@@ -96,18 +98,18 @@ namespace RimWorld.Planet
 
 		private static void DoRow(ref float curY, Rect viewRect, Rect scrollOutRect, Vector2 scrollPosition, Pawn pawn, Caravan caravan, ref Pawn specificNeedsTabForPawn, bool doNeeds)
 		{
-			float num = scrollPosition.y - 50f;
+			float num = scrollPosition.y - 40f;
 			float num2 = scrollPosition.y + scrollOutRect.height;
 			if (curY > num && curY < num2)
 			{
-				DoRow(new Rect(0f, curY, viewRect.width, 50f), pawn, caravan, ref specificNeedsTabForPawn, doNeeds);
+				DoRow(new Rect(0f, curY, viewRect.width, 40f), pawn, caravan, ref specificNeedsTabForPawn, doNeeds);
 			}
-			curY += 50f;
+			curY += 40f;
 		}
 
 		private static void DoRow(Rect rect, Pawn pawn, Caravan caravan, ref Pawn specificNeedsTabForPawn, bool doNeeds)
 		{
-			GUI.BeginGroup(rect);
+			Widgets.BeginGroup(rect);
 			Rect rect2 = rect.AtZero();
 			CaravanThingsTabUtility.DoAbandonButton(rect2, pawn, caravan);
 			rect2.width -= 24f;
@@ -117,11 +119,12 @@ namespace RimWorld.Planet
 			{
 				CaravanThingsTabUtility.DoOpenSpecificTabButton(rect2, pawn, ref specificNeedsTabForPawn);
 				rect2.width -= 24f;
+				CaravanThingsTabUtility.DoOpenSpecificTabButtonInvisible(rect2, pawn, ref specificNeedsTabForPawn);
 			}
 			Widgets.DrawHighlightIfMouseover(rect2);
 			Rect rect3 = new Rect(4f, (rect.height - 27f) / 2f, 27f, 27f);
 			Widgets.ThingIcon(rect3, pawn);
-			Rect bgRect = new Rect(rect3.xMax + 4f, 16f, 100f, 18f);
+			Rect bgRect = new Rect(rect3.xMax + 4f, 11f, 100f, 18f);
 			GenMapUI.DrawPawnLabel(pawn, bgRect, 1f, 100f, null, GameFont.Small, alwaysDrawBg: false, alignCenter: false);
 			if (doNeeds)
 			{
@@ -132,7 +135,7 @@ namespace RimWorld.Planet
 					Need need = tmpNeeds[i];
 					int maxThresholdMarkers = 0;
 					bool doTooltip = true;
-					Rect rect4 = new Rect(xMax, 0f, 100f, 50f);
+					Rect rect4 = new Rect(xMax, 0f, 100f, 40f);
 					Need_Mood mood = need as Need_Mood;
 					if (mood != null)
 					{
@@ -143,17 +146,20 @@ namespace RimWorld.Planet
 							TooltipHandler.TipRegion(rect4, new TipSignal(() => CustomMoodNeedTooltip(mood), rect4.GetHashCode()));
 						}
 					}
-					need.DrawOnGUI(rect4, maxThresholdMarkers, 10f, drawArrows: false, doTooltip);
+					Rect rect5 = rect4;
+					rect5.yMin -= 5f;
+					rect5.yMax += 5f;
+					need.DrawOnGUI(rect5, maxThresholdMarkers, 10f, drawArrows: false, doTooltip, rect4);
 					xMax = rect4.xMax;
 				}
 			}
-			if (pawn.Downed)
+			if (pawn.Downed && !pawn.ageTracker.CurLifeStage.alwaysDowned)
 			{
 				GUI.color = new Color(1f, 0f, 0f, 0.5f);
 				Widgets.DrawLineHorizontal(0f, rect.height / 2f, rect.width);
 				GUI.color = Color.white;
 			}
-			GUI.EndGroup();
+			Widgets.EndGroup();
 		}
 
 		private static void GetNeedsToDisplay(Pawn p, List<Need> outNeeds)
@@ -179,8 +185,8 @@ namespace RimWorld.Planet
 			bool flag = false;
 			for (int i = 0; i < thoughtGroupsPresent.Count; i++)
 			{
-				Thought group = thoughtGroupsPresent[i];
-				mood.thoughts.GetMoodThoughts(group, thoughtGroup);
+				Thought thought = thoughtGroupsPresent[i];
+				mood.thoughts.GetMoodThoughts(thought, thoughtGroup);
 				Thought leadingThoughtInGroup = PawnNeedsUIUtility.GetLeadingThoughtInGroup(thoughtGroup);
 				if (leadingThoughtInGroup.VisibleInNeedsTab)
 				{
@@ -196,7 +202,7 @@ namespace RimWorld.Planet
 						stringBuilder.Append(thoughtGroup.Count);
 					}
 					stringBuilder.Append(": ");
-					stringBuilder.AppendLine(mood.thoughts.MoodOffsetOfGroup(group).ToString("##0"));
+					stringBuilder.AppendLine(mood.thoughts.MoodOffsetOfGroup(thought).ToString("##0"));
 				}
 			}
 			return stringBuilder.ToString();

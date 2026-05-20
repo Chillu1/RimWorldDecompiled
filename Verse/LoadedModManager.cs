@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Xml;
 
 namespace Verse
@@ -22,7 +23,7 @@ namespace Verse
 
 		public static IEnumerable<Mod> ModHandles => runningModClasses.Values;
 
-		public static void LoadAllActiveMods()
+		public static void LoadAllActiveMods(bool hotReload = false)
 		{
 			DeepProfiler.Start("XmlInheritance.Clear()");
 			try
@@ -33,19 +34,22 @@ namespace Verse
 			{
 				DeepProfiler.End();
 			}
-			DeepProfiler.Start("InitializeMods()");
-			try
+			if (!hotReload)
 			{
-				InitializeMods();
-			}
-			finally
-			{
-				DeepProfiler.End();
+				DeepProfiler.Start("InitializeMods()");
+				try
+				{
+					InitializeMods();
+				}
+				finally
+				{
+					DeepProfiler.End();
+				}
 			}
 			DeepProfiler.Start("LoadModContent()");
 			try
 			{
-				LoadModContent();
+				LoadModContent(hotReload);
 			}
 			finally
 			{
@@ -64,7 +68,7 @@ namespace Verse
 			DeepProfiler.Start("LoadModXML()");
 			try
 			{
-				xmls = LoadModXML();
+				xmls = LoadModXML(hotReload);
 			}
 			finally
 			{
@@ -81,15 +85,30 @@ namespace Verse
 			{
 				DeepProfiler.End();
 			}
-			TKeySystem.Clear();
-			DeepProfiler.Start("TKeySystem.Parse()");
-			try
+			if (!hotReload)
 			{
-				TKeySystem.Parse(xmlDocument);
+				TKeySystem.Clear();
+				DeepProfiler.Start("TKeySystem.Parse()");
+				try
+				{
+					TKeySystem.Parse(xmlDocument);
+				}
+				finally
+				{
+					DeepProfiler.End();
+				}
 			}
-			finally
+			if (!hotReload)
 			{
-				DeepProfiler.End();
+				DeepProfiler.Start("ErrorCheckPatches()");
+				try
+				{
+					ErrorCheckPatches();
+				}
+				finally
+				{
+					DeepProfiler.End();
+				}
 			}
 			DeepProfiler.Start("ApplyPatches()");
 			try
@@ -103,7 +122,7 @@ namespace Verse
 			DeepProfiler.Start("ParseAndProcessXML()");
 			try
 			{
-				ParseAndProcessXML(xmlDocument, assetlookup);
+				ParseAndProcessXML(xmlDocument, assetlookup, hotReload);
 			}
 			finally
 			{
@@ -144,14 +163,15 @@ namespace Verse
 					}
 					else
 					{
-						ModContentPack item = new ModContentPack(item2.RootDir, item2.PackageId, item2.PackageIdPlayerFacing, num, item2.Name);
+						ModContentPack item = new ModContentPack(item2.RootDir, item2.PackageId, item2.PackageIdPlayerFacing, num, item2.Name, item2.Official);
 						num++;
 						runningMods.Add(item);
+						GenTypes.ClearCache();
 					}
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Error("Error initializing mod: " + arg);
+					Log.Error("Error initializing mod: " + ex);
 					ModsConfig.SetActive(item2.PackageId, active: false);
 				}
 				finally
@@ -161,19 +181,19 @@ namespace Verse
 			}
 		}
 
-		public static void LoadModContent()
+		public static void LoadModContent(bool hotReload = false)
 		{
 			LongEventHandler.ExecuteWhenFinished(delegate
 			{
 				DeepProfiler.Start("LoadModContent");
 			});
-			for (int i = 0; i < runningMods.Count; i++)
+			for (int num = 0; num < runningMods.Count; num++)
 			{
-				ModContentPack modContentPack = runningMods[i];
-				DeepProfiler.Start(string.Concat("Loading ", modContentPack, " content"));
+				ModContentPack modContentPack = runningMods[num];
+				DeepProfiler.Start("Loading " + modContentPack?.ToString() + " content");
 				try
 				{
-					modContentPack.ReloadContent();
+					modContentPack.ReloadContent(hotReload);
 				}
 				catch (Exception ex)
 				{
@@ -187,9 +207,9 @@ namespace Verse
 			LongEventHandler.ExecuteWhenFinished(delegate
 			{
 				DeepProfiler.End();
-				for (int j = 0; j < runningMods.Count; j++)
+				for (int i = 0; i < runningMods.Count; i++)
 				{
-					ModContentPack modContentPack2 = runningMods[j];
+					ModContentPack modContentPack2 = runningMods[i];
 					if (!modContentPack2.AnyContentLoaded())
 					{
 						Log.Error("Mod " + modContentPack2.Name + " did not load any content. Following load folders were used:\n" + modContentPack2.foldersToLoadDescendingOrder.ToLineList("  - "));
@@ -202,7 +222,7 @@ namespace Verse
 		{
 			foreach (Type type in typeof(Mod).InstantiableDescendantsAndSelf())
 			{
-				DeepProfiler.Start(string.Concat("Loading ", type, " mod class"));
+				DeepProfiler.Start("Loading " + type?.ToString() + " mod class");
 				try
 				{
 					if (!runningModClasses.ContainsKey(type))
@@ -213,7 +233,7 @@ namespace Verse
 				}
 				catch (Exception ex)
 				{
-					Log.Error(string.Concat("Error while instantiating a mod of type ", type, ": ", ex));
+					Log.Error("Error while instantiating a mod of type " + type?.ToString() + ": " + ex);
 				}
 				finally
 				{
@@ -222,7 +242,7 @@ namespace Verse
 			}
 		}
 
-		public static List<LoadableXmlAsset> LoadModXML()
+		public static List<LoadableXmlAsset> LoadModXML(bool hotReload = false)
 		{
 			List<LoadableXmlAsset> list = new List<LoadableXmlAsset>();
 			for (int i = 0; i < runningMods.Count; i++)
@@ -231,7 +251,7 @@ namespace Verse
 				DeepProfiler.Start("Loading " + modContentPack);
 				try
 				{
-					list.AddRange(modContentPack.LoadDefs());
+					list.AddRange(modContentPack.LoadDefs(hotReload));
 				}
 				catch (Exception ex)
 				{
@@ -245,6 +265,27 @@ namespace Verse
 			return list;
 		}
 
+		public static void ErrorCheckPatches()
+		{
+			foreach (ModContentPack runningMod in runningMods)
+			{
+				foreach (PatchOperation patch in runningMod.Patches)
+				{
+					try
+					{
+						foreach (string item in patch.ConfigErrors())
+						{
+							Log.Error("Config error in " + runningMod.Name + " patch " + patch?.ToString() + ": " + item);
+						}
+					}
+					catch (Exception ex)
+					{
+						Log.Error("Exception in ConfigErrors() of " + runningMod.Name + " patch " + patch?.ToString() + ": " + ex);
+					}
+				}
+			}
+		}
+
 		public static void ApplyPatches(XmlDocument xmlDoc, Dictionary<XmlNode, LoadableXmlAsset> assetlookup)
 		{
 			foreach (PatchOperation item in runningMods.SelectMany((ModContentPack rm) => rm.Patches))
@@ -253,9 +294,9 @@ namespace Verse
 				{
 					item.Apply(xmlDoc);
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Error("Error in patch.Apply(): " + arg);
+					Log.Error("Error in patch.Apply(): " + ex);
 				}
 			}
 		}
@@ -285,13 +326,13 @@ namespace Verse
 			return xmlDocument;
 		}
 
-		public static void ParseAndProcessXML(XmlDocument xmlDoc, Dictionary<XmlNode, LoadableXmlAsset> assetlookup)
+		public static void ParseAndProcessXML(XmlDocument xmlDoc, Dictionary<XmlNode, LoadableXmlAsset> assetlookup, bool hotReload = false)
 		{
 			XmlNodeList childNodes = xmlDoc.DocumentElement.ChildNodes;
 			List<XmlNode> list = new List<XmlNode>();
-			foreach (object item in childNodes)
+			foreach (object item3 in childNodes)
 			{
-				list.Add(item as XmlNode);
+				list.Add(item3 as XmlNode);
 			}
 			DeepProfiler.Start("Loading asset nodes " + list.Count);
 			try
@@ -336,24 +377,54 @@ namespace Verse
 				DeepProfiler.End();
 			}
 			runningMods.FirstOrDefault();
+			if (hotReload)
+			{
+				foreach (ModContentPack runningMod in runningMods)
+				{
+					runningMod.ClearDefs();
+				}
+			}
+			patchedDefs.Clear();
+			List<(Def, Def)> toHotReloadCopy = new List<(Def, Def)>();
+			bool flag = !GenCommandLine.CommandLineArgPassed("legacy-xml-deserializer");
 			DeepProfiler.Start("Loading defs for " + list.Count + " nodes");
 			try
 			{
-				foreach (XmlNode item2 in list)
+				foreach (XmlNode item4 in list)
 				{
-					LoadableXmlAsset loadableXmlAsset = assetlookup.TryGetValue(item2);
-					Def def = DirectXmlLoader.DefFromNode(item2, loadableXmlAsset);
-					if (def != null)
+					string text = item4.Attributes?["MayRequire"]?.Value.ToLower();
+					if (text != null && !ModLister.AllModsActiveNoSuffix(text.Split(',')))
 					{
-						ModContentPack modContentPack = loadableXmlAsset?.mod;
-						if (modContentPack != null)
+						continue;
+					}
+					string[] array = item4.Attributes?["MayRequireAnyOf"]?.Value.ToLower().Split(',');
+					if (!array.NullOrEmpty() && !ModLister.AnyModActiveNoSuffix(array))
+					{
+						continue;
+					}
+					LoadableXmlAsset loadableXmlAsset = assetlookup.TryGetValue(item4);
+					Def def = (flag ? DirectXmlToObjectNew.DefFromNodeNew(item4, loadableXmlAsset) : DirectXmlLoader.DefFromNode(item4, loadableXmlAsset));
+					if (def == null)
+					{
+						continue;
+					}
+					if (hotReload)
+					{
+						Def defSilentFail = GenDefDatabase.GetDefSilentFail(def.GetType(), def.defName);
+						if (defSilentFail != null)
 						{
-							modContentPack.AddDef(def, loadableXmlAsset.name);
+							toHotReloadCopy.Add((def, defSilentFail));
+							def = defSilentFail;
 						}
-						else
-						{
-							patchedDefs.Add(def);
-						}
+					}
+					ModContentPack modContentPack = loadableXmlAsset?.mod;
+					if (modContentPack != null)
+					{
+						modContentPack.AddDef(def, loadableXmlAsset.name);
+					}
+					else
+					{
+						patchedDefs.Add(def);
 					}
 				}
 			}
@@ -361,6 +432,35 @@ namespace Verse
 			{
 				DeepProfiler.End();
 			}
+			if (toHotReloadCopy.Count == 0)
+			{
+				return;
+			}
+			LongEventHandler.ExecuteWhenFinished(delegate
+			{
+				Parallel.ForEach(toHotReloadCopy, delegate((Def, Def) toCopy)
+				{
+					Def item = toCopy.Item1;
+					Def item2 = toCopy.Item2;
+					ushort shortHash = item2.shortHash;
+					ushort index = item2.index;
+					ushort debugRandomId = item2.debugRandomId;
+					ModContentPack modContentPack2 = item2.modContentPack;
+					TreeNode_ThingCategory treeNode_ThingCategory = (item2 as ThingCategoryDef)?.treeNode;
+					Gen.MemberwiseShallowCopy(item, item2);
+					item2.shortHash = shortHash;
+					item2.index = index;
+					item2.debugRandomId = debugRandomId;
+					item2.modContentPack = modContentPack2;
+					if (treeNode_ThingCategory != null)
+					{
+						((ThingCategoryDef)item2).treeNode = treeNode_ThingCategory;
+					}
+					item.defName += "_HotReloadedThrowaway";
+					item.ResolveDefNameHash();
+					item.ClearCachedData();
+				});
+			});
 		}
 
 		public static void ClearCachedPatches()
@@ -373,9 +473,9 @@ namespace Verse
 					{
 						patch.Complete(runningMod.Name);
 					}
-					catch (Exception arg)
+					catch (Exception ex)
 					{
-						Log.Error("Error in patch.Complete(): " + arg);
+						Log.Error("Error in patch.Complete(): " + ex);
 					}
 				}
 				runningMod.ClearPatchesCache();
@@ -390,12 +490,13 @@ namespace Verse
 				{
 					runningMod.ClearDestroy();
 				}
-				catch (Exception arg)
+				catch (Exception ex)
 				{
-					Log.Error("Error in mod.ClearDestroy(): " + arg);
+					Log.Error("Error in mod.ClearDestroy(): " + ex);
 				}
 			}
 			runningMods.Clear();
+			GenTypes.ClearCache();
 		}
 
 		public static T GetMod<T>() where T : Mod

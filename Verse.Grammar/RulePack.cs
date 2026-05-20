@@ -105,10 +105,7 @@ namespace Verse.Grammar
 			{
 				try
 				{
-					string[] array = rulesFiles[j].Split(new string[1]
-					{
-						"->"
-					}, StringSplitOptions.None);
+					string[] array = rulesFiles[j].Split(new string[1] { "->" }, StringSplitOptions.None);
 					Rule_File rule_File = new Rule_File();
 					rule_File.keyword = array[0].Trim();
 					rule_File.path = array[1].Trim();

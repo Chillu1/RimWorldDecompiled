@@ -3,7 +3,7 @@ using Verse;
 
 namespace RimWorld.Planet
 {
-	public class SitePart : IExposable, IThingHolder
+	public class SitePart : IExposable, IThingHolderTickable, IThingHolder
 	{
 		public Site site;
 
@@ -21,9 +21,29 @@ namespace RimWorld.Planet
 
 		public bool conditionCauserWasSpawned;
 
+		public List<ThingDefCount> lootThings;
+
+		public int expectedEnemyCount = -1;
+
+		public Thing relicThing;
+
+		public bool relicWasSpawned;
+
 		private const float AutoFoodLevel = 0.8f;
 
 		public IThingHolder ParentHolder => site;
+
+		public bool ShouldTickContents
+		{
+			get
+			{
+				if (things != null && things.contentsLookMode == LookMode.Deep)
+				{
+					return !things.dontTickContents;
+				}
+				return false;
+			}
+		}
 
 		public SitePart()
 		{
@@ -37,20 +57,15 @@ namespace RimWorld.Planet
 			hidden = def.defaultHidden;
 		}
 
-		public void SitePartTick()
+		public void SitePartTickInterval(int delta)
 		{
 			if (things == null)
 			{
 				return;
 			}
-			if (things.contentsLookMode == LookMode.Deep)
-			{
-				things.ThingOwnerTick();
-			}
 			for (int i = 0; i < things.Count; i++)
 			{
-				Pawn pawn = things[i] as Pawn;
-				if (pawn != null && !pawn.Destroyed && pawn.needs.food != null)
+				if (things[i] is Pawn { Destroyed: false } pawn && pawn.needs.food != null)
 				{
 					pawn.needs.food.CurLevelPercentage = 0.8f;
 				}
@@ -62,6 +77,11 @@ namespace RimWorld.Planet
 			if (things != null)
 			{
 				things.ClearAndDestroyContentsOrPassToWorld();
+			}
+			if (!relicWasSpawned)
+			{
+				relicThing?.Destroy();
+				relicThing = null;
 			}
 		}
 
@@ -79,10 +99,12 @@ namespace RimWorld.Planet
 		{
 			Scribe_Deep.Look(ref parms, "parms");
 			Scribe_Deep.Look(ref things, "things", this);
+			Scribe_Collections.Look(ref lootThings, "lootThings", LookMode.Deep);
 			Scribe_Defs.Look(ref def, "def");
 			Scribe_Values.Look(ref lastRaidTick, "lastRaidTick", -1);
 			Scribe_Values.Look(ref conditionCauserWasSpawned, "conditionCauserWasSpawned", defaultValue: false);
 			Scribe_Values.Look(ref hidden, "hidden", defaultValue: false);
+			Scribe_Values.Look(ref expectedEnemyCount, "expectedEnemyCount", -1);
 			if (conditionCauserWasSpawned)
 			{
 				Scribe_References.Look(ref conditionCauser, "conditionCauser");
@@ -90,6 +112,15 @@ namespace RimWorld.Planet
 			else
 			{
 				Scribe_Deep.Look(ref conditionCauser, "conditionCauser");
+			}
+			Scribe_Values.Look(ref relicWasSpawned, "relicWasSpawned", defaultValue: false);
+			if (relicWasSpawned)
+			{
+				Scribe_References.Look(ref relicThing, "relicThing");
+			}
+			else
+			{
+				Scribe_Deep.Look(ref relicThing, "relicThing");
 			}
 		}
 	}

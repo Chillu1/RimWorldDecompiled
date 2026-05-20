@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using RimWorld;
 using UnityEngine;
 
@@ -7,6 +8,8 @@ namespace Verse
 	public abstract class ModRequirement
 	{
 		public string packageId;
+
+		public List<string> alternativePackageIds;
 
 		public string displayName;
 
@@ -18,15 +21,9 @@ namespace Verse
 
 		public static Texture2D Resolved = ContentFinder<Texture2D>.Get("UI/Widgets/CheckOn");
 
-		public abstract bool IsSatisfied
-		{
-			get;
-		}
+		public abstract bool IsSatisfied { get; }
 
-		public abstract string RequirementTypeLabel
-		{
-			get;
-		}
+		public abstract string RequirementTypeLabel { get; }
 
 		public virtual string Tooltip => "ModPackageId".Translate() + ": " + packageId;
 

@@ -13,6 +13,21 @@ namespace RimWorld
 
 		private const float TicksBetweenRepairs = 20f;
 
+		private Building Building => (Building)job.GetTarget(TargetIndex.A).Thing;
+
+		private bool IsBuildingAttachment
+		{
+			get
+			{
+				ThingDef thingDef = GenConstruct.BuiltDefOf(Building.def) as ThingDef;
+				if (thingDef?.building != null)
+				{
+					return thingDef.building.isAttachment;
+				}
+				return false;
+			}
+		}
+
 		public override bool TryMakePreToilReservations(bool errorOnFailed)
 		{
 			return pawn.Reserve(job.targetA, job, 1, -1, null, errorOnFailed);
@@ -21,8 +36,9 @@ namespace RimWorld
 		protected override IEnumerable<Toil> MakeNewToils()
 		{
 			this.FailOnDespawnedNullOrForbidden(TargetIndex.A);
-			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.Touch);
-			Toil repair = new Toil();
+			PathEndMode pathEndMode = (IsBuildingAttachment ? PathEndMode.OnCell : PathEndMode.Touch);
+			yield return Toils_Goto.GotoThing(TargetIndex.A, pathEndMode);
+			Toil repair = ToilMaker.MakeToil("MakeNewToils");
 			repair.initAction = delegate
 			{
 				ticksToNextRepair = 80f;
@@ -30,7 +46,15 @@ namespace RimWorld
 			repair.tickAction = delegate
 			{
 				Pawn actor = repair.actor;
-				actor.skills.Learn(SkillDefOf.Construction, 0.05f);
+				actor.skills?.Learn(SkillDefOf.Construction, 0.05f);
+				if (IsBuildingAttachment)
+				{
+					actor.rotationTracker.FaceTarget(GenConstruct.GetWallAttachedTo(Building));
+				}
+				else
+				{
+					actor.rotationTracker.FaceTarget(actor.CurJob.GetTarget(TargetIndex.A));
+				}
 				float num = actor.GetStatValue(StatDefOf.ConstructionSpeed) * 1.7f;
 				ticksToNextRepair -= num;
 				if (ticksToNextRepair <= 0f)
@@ -46,10 +70,11 @@ namespace RimWorld
 					}
 				}
 			};
-			repair.FailOnCannotTouch(TargetIndex.A, PathEndMode.Touch);
+			repair.FailOnCannotTouch(TargetIndex.A, pathEndMode);
 			repair.WithEffect(base.TargetThingA.def.repairEffect, TargetIndex.A);
 			repair.defaultCompleteMode = ToilCompleteMode.Never;
 			repair.activeSkill = () => SkillDefOf.Construction;
+			repair.handlingFacing = true;
 			yield return repair;
 		}
 	}

@@ -8,7 +8,7 @@ namespace RimWorld
 	{
 		public override void DoCell(Rect rect, Pawn pawn, PawnTable table)
 		{
-			if (pawn.timetable != null)
+			if (pawn.timetable != null && !pawn.IsSubhuman)
 			{
 				float num = rect.x;
 				float num2 = rect.width / 24f;
@@ -92,7 +92,7 @@ namespace RimWorld
 			Widgets.DrawBox(rect, 2);
 			if (mouseButton && assignment != TimeAssignmentSelector.selectedAssignment && TimeAssignmentSelector.selectedAssignment != null)
 			{
-				SoundDefOf.Designate_DragStandard_Changed.PlayOneShotOnCamera();
+				SoundDefOf.Designate_DragStandard_Changed_NoCam.PlayOneShotOnCamera();
 				p.timetable.SetAssignment(hour, TimeAssignmentSelector.selectedAssignment);
 				PlayerKnowledgeDatabase.KnowledgeDemonstrated(ConceptDefOf.TimeAssignments, KnowledgeAmount.SmallInteraction);
 				if (TimeAssignmentSelector.selectedAssignment == TimeAssignmentDefOf.Meditate)

@@ -29,18 +29,21 @@ namespace RimWorld
 			this.FailOnDestroyedOrNull(TargetIndex.B);
 			this.FailOnAggroMentalState(TargetIndex.A);
 			this.FailOn(() => !DropPod.Accepts(Takee));
-			yield return Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.OnCell).FailOnDestroyedNullOrForbidden(TargetIndex.A).FailOnDespawnedNullOrForbidden(TargetIndex.B)
+			Toil goToTakee = Toils_Goto.GotoThing(TargetIndex.A, PathEndMode.OnCell).FailOnDestroyedNullOrForbidden(TargetIndex.A).FailOnDespawnedNullOrForbidden(TargetIndex.B)
 				.FailOn(() => DropPod.GetDirectlyHeldThings().Count > 0)
-				.FailOn(() => !Takee.Downed)
 				.FailOn(() => !pawn.CanReach(Takee, PathEndMode.OnCell, Danger.Deadly))
 				.FailOnSomeonePhysicallyInteracting(TargetIndex.A);
-			yield return Toils_Haul.StartCarryThing(TargetIndex.A);
-			yield return Toils_Goto.GotoThing(TargetIndex.B, PathEndMode.InteractionCell);
+			Toil startCarryingTakee = Toils_Haul.StartCarryThing(TargetIndex.A);
+			Toil goToThing = Toils_Goto.GotoThing(TargetIndex.B, PathEndMode.InteractionCell);
+			yield return Toils_Jump.JumpIf(goToThing, () => pawn.IsCarryingPawn(Takee));
+			yield return goToTakee;
+			yield return startCarryingTakee;
+			yield return goToThing;
 			Toil toil = Toils_General.Wait(500, TargetIndex.B);
 			toil.FailOnCannotTouch(TargetIndex.B, PathEndMode.InteractionCell);
 			toil.WithProgressBarToilDelay(TargetIndex.B);
 			yield return toil;
-			Toil toil2 = new Toil();
+			Toil toil2 = ToilMaker.MakeToil("MakeNewToils");
 			toil2.initAction = delegate
 			{
 				DropPod.TryAcceptThing(Takee);
@@ -51,11 +54,7 @@ namespace RimWorld
 
 		public override object[] TaleParameters()
 		{
-			return new object[2]
-			{
-				pawn,
-				Takee
-			};
+			return new object[2] { pawn, Takee };
 		}
 	}
 }

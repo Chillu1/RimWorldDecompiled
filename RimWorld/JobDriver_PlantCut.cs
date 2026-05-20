@@ -4,9 +4,11 @@ namespace RimWorld
 {
 	public class JobDriver_PlantCut : JobDriver_PlantWork
 	{
+		protected override PlantDestructionMode PlantDestructionMode => PlantDestructionMode.Cut;
+
 		protected override void Init()
 		{
-			if (base.Plant.def.plant.harvestedThingDef != null && base.Plant.CanYieldNow())
+			if (base.Plant?.def.plant.harvestedThingDef != null && base.Plant.CanYieldNow())
 			{
 				xpPerTick = 0.085f;
 			}

@@ -20,18 +20,18 @@ namespace Verse
 		{
 			Nodes.Clear();
 			Object[] array = Resources.LoadAll("Dialog", typeof(TextAsset));
-			foreach (Object @object in array)
+			foreach (Object obj in array)
 			{
-				TextAsset ass = @object as TextAsset;
-				if (@object.name == "BaseEncounters" || @object.name == "GeneratedDialogs")
+				TextAsset ass = obj as TextAsset;
+				if (obj.name == "BaseEncounters" || obj.name == "GeneratedDialogs")
 				{
 					LayerLoader.LoadFileIntoList(ass, Nodes, NodeLists, DiaNodeType.BaseEncounters);
 				}
-				if (@object.name == "InsanityBattles")
+				if (obj.name == "InsanityBattles")
 				{
 					LayerLoader.LoadFileIntoList(ass, Nodes, NodeLists, DiaNodeType.InsanityBattles);
 				}
-				if (@object.name == "SpecialEncounters")
+				if (obj.name == "SpecialEncounters")
 				{
 					LayerLoader.LoadFileIntoList(ass, Nodes, NodeLists, DiaNodeType.Special);
 				}

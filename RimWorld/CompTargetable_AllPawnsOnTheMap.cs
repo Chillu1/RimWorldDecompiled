@@ -12,8 +12,7 @@ namespace RimWorld
 			return new TargetingParameters
 			{
 				canTargetPawns = true,
-				canTargetBuildings = false,
-				validator = (TargetInfo x) => BaseTargetValidator(x.Thing)
+				canTargetBuildings = false
 			};
 		}
 
@@ -26,7 +25,7 @@ namespace RimWorld
 			TargetingParameters tp = GetTargetingParameters();
 			foreach (Pawn item in parent.MapHeld.mapPawns.AllPawnsSpawned)
 			{
-				if (tp.CanTarget(item))
+				if (tp.CanTarget(item) && ValidateTarget(item))
 				{
 					yield return item;
 				}

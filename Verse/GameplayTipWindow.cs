@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Linq;
+using RimWorld;
 using UnityEngine;
+using Verse.Steam;
 
 namespace Verse
 {
@@ -18,11 +20,13 @@ namespace Verse
 
 		private static readonly Vector2 TextMargin = new Vector2(15f, 8f);
 
+		private const int InterfaceTipsCount = 11;
+
 		public static void DrawWindow(Vector2 offset, bool useWindowStack)
 		{
 			if (allTipsCached == null)
 			{
-				allTipsCached = DefDatabase<TipSetDef>.AllDefsListForReading.SelectMany((TipSetDef set) => set.tips).InRandomOrder().ToList();
+				allTipsCached = DefDatabase<TipSetDef>.AllDefsListForReading.SelectMany((TipSetDef set) => (SteamDeck.IsSteamDeck && set == TipSetDefOf.GameplayTips) ? set.tips.Skip(11) : set.tips).InRandomOrder().ToList();
 			}
 			Rect rect = new Rect(offset.x, offset.y, WindowSize.x, WindowSize.y);
 			if (useWindowStack)

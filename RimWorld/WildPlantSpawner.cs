@@ -8,7 +8,7 @@ namespace RimWorld
 {
 	public class WildPlantSpawner : IExposable
 	{
-		private Map map;
+		private readonly Map map;
 
 		private int cycleIndex;
 
@@ -22,21 +22,44 @@ namespace RimWorld
 
 		private bool hasWholeMapNumDesiredPlantsCalculated;
 
+		[Unsaved(false)]
+		private List<ThingDef> cachedWildPlants;
+
+		[Unsaved(false)]
+		private List<ThingDef> cachedMutatorWildPlants;
+
+		[Unsaved(false)]
+		private Dictionary<ThingDef, float> cachedPlantCommonalities;
+
+		[Unsaved(false)]
+		private float? cachedPlantsCommonalitiesSum;
+
+		[Unsaved(false)]
 		private float? cachedCavePlantsCommonalitiesSum;
 
-		private static List<ThingDef> allCavePlants = new List<ThingDef>();
+		[Unsaved(false)]
+		private bool? cachedHaveAnyPlantsWhichIgnoreFertility;
 
-		private static List<ThingDef> tmpPossiblePlants = new List<ThingDef>();
+		[Unsaved(false)]
+		private SimpleCurve cachedOverrideDensityForFertilityCurve;
 
-		private static List<KeyValuePair<ThingDef, float>> tmpPossiblePlantsWithWeight = new List<KeyValuePair<ThingDef, float>>();
+		private static readonly List<ThingDef> allCavePlants = new List<ThingDef>();
 
-		private static Dictionary<ThingDef, float> distanceSqToNearbyClusters = new Dictionary<ThingDef, float>();
+		private static readonly List<ThingDef> tmpPossiblePlants = new List<ThingDef>();
 
-		private static Dictionary<ThingDef, List<float>> nearbyClusters = new Dictionary<ThingDef, List<float>>();
+		private static readonly List<KeyValuePair<ThingDef, float>> tmpPossiblePlantsWithWeight = new List<KeyValuePair<ThingDef, float>>();
 
-		private static List<KeyValuePair<ThingDef, List<float>>> nearbyClustersList = new List<KeyValuePair<ThingDef, List<float>>>();
+		private static readonly Dictionary<ThingDef, float> distanceSqToNearbyClusters = new Dictionary<ThingDef, float>();
+
+		private static readonly Dictionary<ThingDef, List<float>> nearbyClusters = new Dictionary<ThingDef, List<float>>();
+
+		private static readonly List<KeyValuePair<ThingDef, List<float>>> nearbyClustersList = new List<KeyValuePair<ThingDef, List<float>>>();
+
+		public static readonly FloatRange InitialGrowthRandomRange = new FloatRange(0.15f, 1.5f);
 
 		private const float CavePlantsDensityFactor = 0.5f;
+
+		private const float WaterPlantsDensityFactor = 0.1f;
 
 		private const int PlantSaturationScanRadius = 20;
 
@@ -68,20 +91,22 @@ namespace RimWorld
 			new CurvePoint(3f, 0.02f)
 		};
 
-		private static List<ThingDef> tmpPlantDefsLowerOrder = new List<ThingDef>();
+		private static readonly List<ThingDef> tmpWildPlants = new List<ThingDef>();
 
-		public float CurrentPlantDensity => map.Biome.plantDensity * map.gameConditionManager.AggregatePlantDensityFactor(map);
+		private static readonly List<ThingDef> tmpPlantDefsLowerOrder = new List<ThingDef>();
+
+		public float CurrentPlantDensityFactor => map.TileInfo.PlantDensityFactor * map.gameConditionManager.AggregatePlantDensityFactor(map);
 
 		public float CurrentWholeMapNumDesiredPlants
 		{
 			get
 			{
 				CellRect cellRect = CellRect.WholeMap(map);
-				float currentPlantDensity = CurrentPlantDensity;
+				float currentPlantDensityFactor = CurrentPlantDensityFactor;
 				float num = 0f;
 				foreach (IntVec3 item in cellRect)
 				{
-					num += GetDesiredPlantsCountAt(item, item, currentPlantDensity);
+					num += GetDesiredPlantsCountAt(item, currentPlantDensityFactor);
 				}
 				return num;
 			}
@@ -95,12 +120,114 @@ namespace RimWorld
 				int num = 0;
 				foreach (IntVec3 item in cellRect)
 				{
-					if (item.GetTerrain(map).fertility > 0f)
+					if (item.GetFertility(map) > 0f)
 					{
 						num++;
 					}
 				}
 				return num;
+			}
+		}
+
+		public float CachedChanceFromDensity
+		{
+			get
+			{
+				CacheWholeMapNumDesiredPlants();
+				return calculatedWholeMapNumDesiredPlants / (float)calculatedWholeMapNumNonZeroFertilityCells;
+			}
+		}
+
+		public SimpleCurve OverrideDensityForFertilityCurve
+		{
+			get
+			{
+				if (cachedOverrideDensityForFertilityCurve != null)
+				{
+					return cachedOverrideDensityForFertilityCurve;
+				}
+				cachedOverrideDensityForFertilityCurve = new SimpleCurve { new CurvePoint(0f, -1f) };
+				foreach (TileMutatorDef mutator in map.TileInfo.Mutators)
+				{
+					if (mutator.overrideDensityForFertilityCurve != null)
+					{
+						cachedOverrideDensityForFertilityCurve = mutator.overrideDensityForFertilityCurve;
+					}
+				}
+				return cachedOverrideDensityForFertilityCurve;
+			}
+		}
+
+		public List<ThingDef> AllWildPlants
+		{
+			get
+			{
+				if (cachedWildPlants != null)
+				{
+					return cachedWildPlants;
+				}
+				cachedWildPlants = new List<ThingDef>();
+				foreach (ThingDef item in DefDatabase<ThingDef>.AllDefsListForReading)
+				{
+					if (item.category == ThingCategory.Plant && GetCommonalityOfPlant(item) > 0f)
+					{
+						cachedWildPlants.Add(item);
+					}
+				}
+				return cachedWildPlants;
+			}
+		}
+
+		public List<ThingDef> MutatorWildPlants
+		{
+			get
+			{
+				if (cachedMutatorWildPlants != null)
+				{
+					return cachedMutatorWildPlants;
+				}
+				cachedMutatorWildPlants = new List<ThingDef>();
+				foreach (TileMutatorDef mutator in map.TileInfo.Mutators)
+				{
+					foreach (BiomePlantRecord item in mutator.Worker?.AdditionalWildPlants(map.Tile) ?? Enumerable.Empty<BiomePlantRecord>())
+					{
+						if (!cachedMutatorWildPlants.Contains(item.plant))
+						{
+							cachedMutatorWildPlants.Add(item.plant);
+						}
+					}
+				}
+				return cachedMutatorWildPlants;
+			}
+		}
+
+		private bool HaveAnyPlantsWhichIgnoreFertility
+		{
+			get
+			{
+				if (!cachedHaveAnyPlantsWhichIgnoreFertility.HasValue)
+				{
+					cachedHaveAnyPlantsWhichIgnoreFertility = false;
+					bool? flag = cachedHaveAnyPlantsWhichIgnoreFertility;
+					cachedHaveAnyPlantsWhichIgnoreFertility = AllWildPlants.Any((ThingDef p) => p.plant.completelyIgnoreFertility) | flag;
+				}
+				return cachedHaveAnyPlantsWhichIgnoreFertility.Value;
+			}
+		}
+
+		public float PlantsCommonalitiesSum
+		{
+			get
+			{
+				if (!cachedPlantsCommonalitiesSum.HasValue)
+				{
+					cachedPlantsCommonalitiesSum = 0f;
+					for (int i = 0; i < AllWildPlants.Count; i++)
+					{
+						cachedPlantsCommonalitiesSum += GetCommonalityOfPlant(AllWildPlants[i]);
+					}
+				}
+				return cachedPlantsCommonalitiesSum.Value;
 			}
 		}
 
@@ -128,7 +255,7 @@ namespace RimWorld
 		public static void ResetStaticData()
 		{
 			allCavePlants.Clear();
-			allCavePlants.AddRange(DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef x) => x.category == ThingCategory.Plant && x.plant.cavePlant));
+			allCavePlants.AddRange(DefDatabase<ThingDef>.AllDefsListForReading.Where((ThingDef x) => x.category == ThingCategory.Plant && x.plant.cavePlant && x.plant.cavePlantWeight > 0f));
 		}
 
 		public void ExposeData()
@@ -160,15 +287,10 @@ namespace RimWorld
 		{
 			int area = map.Area;
 			int num = Mathf.CeilToInt((float)area * 0.0001f);
-			float currentPlantDensity = CurrentPlantDensity;
-			if (!hasWholeMapNumDesiredPlantsCalculated)
-			{
-				calculatedWholeMapNumDesiredPlants = CurrentWholeMapNumDesiredPlants;
-				calculatedWholeMapNumNonZeroFertilityCells = CurrentWholeMapNumNonZeroFertilityCells;
-				hasWholeMapNumDesiredPlantsCalculated = true;
-			}
+			float currentPlantDensityFactor = CurrentPlantDensityFactor;
+			CacheWholeMapNumDesiredPlants();
 			int num2 = Mathf.CeilToInt(10000f);
-			float chance = calculatedWholeMapNumDesiredPlants / (float)calculatedWholeMapNumNonZeroFertilityCells;
+			float cachedChanceFromDensity = CachedChanceFromDensity;
 			for (int i = 0; i < num; i++)
 			{
 				if (cycleIndex >= area)
@@ -180,94 +302,205 @@ namespace RimWorld
 					cycleIndex = 0;
 				}
 				IntVec3 intVec = map.cellsInRandomOrder.Get(cycleIndex);
-				calculatedWholeMapNumDesiredPlantsTmp += GetDesiredPlantsCountAt(intVec, intVec, currentPlantDensity);
-				if (intVec.GetTerrain(map).fertility > 0f)
+				calculatedWholeMapNumDesiredPlantsTmp += GetDesiredPlantsCountAt(intVec, currentPlantDensityFactor);
+				if (map.fertilityGrid.FertilityAt(intVec) > 0f)
 				{
 					calculatedWholeMapNumNonZeroFertilityCellsTmp++;
 				}
-				float mtb = (GoodRoofForCavePlant(intVec) ? 130f : map.Biome.wildPlantRegrowDays);
-				if (Rand.Chance(chance) && Rand.MTBEventOccurs(mtb, 60000f, num2) && CanRegrowAt(intVec))
+				float mtb = (GoodRoofForCavePlant(intVec) ? 130f : map.BiomeAt(intVec).wildPlantRegrowDays);
+				float num3 = OverrideDensityForFertilityCurve.Evaluate(map.fertilityGrid.FertilityAt(intVec));
+				if (Rand.Chance((num3 > 0f) ? num3 : cachedChanceFromDensity) && Rand.MTBEventOccurs(mtb, 60000f, num2) && CanRegrowAt(intVec))
 				{
-					CheckSpawnWildPlantAt(intVec, currentPlantDensity, calculatedWholeMapNumDesiredPlants);
+					CheckSpawnWildPlantAt(intVec, currentPlantDensityFactor, calculatedWholeMapNumDesiredPlants);
 				}
 				cycleIndex++;
 			}
 		}
 
-		public bool CheckSpawnWildPlantAt(IntVec3 c, float plantDensity, float wholeMapNumDesiredPlants, bool setRandomGrowth = false)
+		private void CachePlantCommonalitiesIfShould()
 		{
-			if (plantDensity <= 0f || c.GetPlant(map) != null || c.GetCover(map) != null || c.GetEdifice(map) != null || map.fertilityGrid.FertilityAt(c) <= 0f || !PlantUtility.SnowAllowsPlanting(c, map))
+			if (cachedPlantCommonalities != null)
+			{
+				return;
+			}
+			cachedPlantCommonalities = new Dictionary<ThingDef, float>();
+			foreach (BiomeDef biome in map.Biomes)
+			{
+				foreach (BiomePlantRecord wildPlant in biome.wildPlants)
+				{
+					if (wildPlant.plant != null)
+					{
+						if (cachedPlantCommonalities.ContainsKey(wildPlant.plant))
+						{
+							cachedPlantCommonalities[wildPlant.plant] = (cachedPlantCommonalities[wildPlant.plant] + wildPlant.commonality) / 2f;
+						}
+						else
+						{
+							cachedPlantCommonalities.Add(wildPlant.plant, wildPlant.commonality);
+						}
+					}
+				}
+			}
+			foreach (ThingDef allDef in DefDatabase<ThingDef>.AllDefs)
+			{
+				if (allDef.plant == null || allDef.plant.wildBiomes == null)
+				{
+					continue;
+				}
+				for (int i = 0; i < allDef.plant.wildBiomes.Count; i++)
+				{
+					if (map.Biomes.Contains(allDef.plant.wildBiomes[i].biome))
+					{
+						if (cachedPlantCommonalities.ContainsKey(allDef))
+						{
+							cachedPlantCommonalities[allDef] = (cachedPlantCommonalities[allDef] + allDef.plant.wildBiomes[i].commonality) / 2f;
+						}
+						else
+						{
+							cachedPlantCommonalities.Add(allDef, allDef.plant.wildBiomes[i].commonality);
+						}
+					}
+				}
+			}
+			foreach (TileMutatorDef mutator in map.TileInfo.Mutators)
+			{
+				foreach (BiomePlantRecord item in mutator.Worker?.AdditionalWildPlants(map.Tile) ?? Enumerable.Empty<BiomePlantRecord>())
+				{
+					if (item.plant != null)
+					{
+						if (cachedPlantCommonalities.ContainsKey(item.plant))
+						{
+							cachedPlantCommonalities[item.plant] = Mathf.Max(cachedPlantCommonalities[item.plant], item.commonality);
+						}
+						else
+						{
+							cachedPlantCommonalities.Add(item.plant, item.commonality);
+						}
+					}
+				}
+			}
+			foreach (ThingDef item2 in cachedPlantCommonalities.Keys.ToList())
+			{
+				float num = cachedPlantCommonalities[item2];
+				int num2 = map.Biomes.Count();
+				foreach (BiomeDef biome2 in map.Biomes)
+				{
+					num = ((!item2.plant.cavePlant || biome2.wildPlantsAreCavePlants) ? (num + cachedPlantCommonalities.GetWithFallback(item2, 0f) / (float)num2) : (num + item2.plant.cavePlantWeight / (float)num2));
+					foreach (TileMutatorDef mutator2 in map.TileInfo.Mutators)
+					{
+						if (mutator2.Worker != null)
+						{
+							num *= mutator2.Worker.PlantCommonalityFactorFor(item2, map.Tile);
+						}
+					}
+				}
+				cachedPlantCommonalities[item2] = num;
+			}
+		}
+
+		private void CacheWholeMapNumDesiredPlants()
+		{
+			if (!hasWholeMapNumDesiredPlantsCalculated)
+			{
+				calculatedWholeMapNumDesiredPlants = CurrentWholeMapNumDesiredPlants;
+				calculatedWholeMapNumNonZeroFertilityCells = CurrentWholeMapNumNonZeroFertilityCells;
+				hasWholeMapNumDesiredPlantsCalculated = true;
+			}
+		}
+
+		public bool CheckSpawnWildPlantAt(IntVec3 c, float plantDensityFactor, float wholeMapNumDesiredPlants, bool setRandomGrowth = false)
+		{
+			if (plantDensityFactor <= 0f || c.GetPlant(map) != null || c.GetCover(map) != null || c.GetEdifice(map) != null || (!HaveAnyPlantsWhichIgnoreFertility && map.fertilityGrid.FertilityAt(c) <= 0f) || !PlantUtility.SnowAllowsPlanting(c, map) || !PlantUtility.SandAllowsPlanting(c, map))
 			{
 				return false;
 			}
 			bool cavePlants = GoodRoofForCavePlant(c);
-			if (SaturatedAt(c, plantDensity, cavePlants, wholeMapNumDesiredPlants))
+			float num = OverrideDensityForFertilityCurve.Evaluate(map.fertilityGrid.FertilityAt(c));
+			if (num > 0f)
+			{
+				if (!Rand.Chance(num))
+				{
+					return false;
+				}
+			}
+			else if (SaturatedAt(c, plantDensityFactor, cavePlants, wholeMapNumDesiredPlants))
 			{
 				return false;
 			}
-			CalculatePlantsWhichCanGrowAt(c, tmpPossiblePlants, cavePlants, plantDensity);
+			CalculatePlantsWhichCanGrowAt(c, tmpPossiblePlants, cavePlants, plantDensityFactor);
 			if (!tmpPossiblePlants.Any())
 			{
 				return false;
 			}
 			CalculateDistancesToNearbyClusters(c);
 			tmpPossiblePlantsWithWeight.Clear();
-			for (int i = 0; i < tmpPossiblePlants.Count; i++)
+			foreach (ThingDef tmpPossiblePlant in tmpPossiblePlants)
 			{
-				float value = PlantChoiceWeight(tmpPossiblePlants[i], c, distanceSqToNearbyClusters, wholeMapNumDesiredPlants, plantDensity);
-				tmpPossiblePlantsWithWeight.Add(new KeyValuePair<ThingDef, float>(tmpPossiblePlants[i], value));
+				float value = PlantChoiceWeight(tmpPossiblePlant, c, distanceSqToNearbyClusters, wholeMapNumDesiredPlants, plantDensityFactor);
+				tmpPossiblePlantsWithWeight.Add(new KeyValuePair<ThingDef, float>(tmpPossiblePlant, value));
 			}
 			if (!tmpPossiblePlantsWithWeight.TryRandomElementByWeight((KeyValuePair<ThingDef, float> x) => x.Value, out var result))
 			{
 				return false;
 			}
-			Plant plant = (Plant)ThingMaker.MakeThing(result.Key);
-			if (setRandomGrowth)
+			if (result.Key.plant.wildPlantUseDistanceToShore && !Rand.Chance(GetWaterPlantDistanceToShoreWeight(c)))
 			{
-				plant.Growth = Rand.Range(0.07f, 1f);
-				if (plant.def.plant.LimitedLifespan)
-				{
-					plant.Age = Rand.Range(0, Mathf.Max(plant.def.plant.LifespanTicks - 50, 0));
-				}
+				return false;
 			}
-			GenSpawn.Spawn(plant, c, map);
+			SpawnPlant(result.Key, map, c, setRandomGrowth);
 			return true;
 		}
 
-		private float PlantChoiceWeight(ThingDef plantDef, IntVec3 c, Dictionary<ThingDef, float> distanceSqToNearbyClusters, float wholeMapNumDesiredPlants, float plantDensity)
+		public static Plant SpawnPlant(ThingDef plant, Map map, IntVec3 cell, bool setRandomGrowth)
+		{
+			Plant plant2 = (Plant)ThingMaker.MakeThing(plant);
+			if (setRandomGrowth)
+			{
+				plant2.Growth = Mathf.Clamp01(InitialGrowthRandomRange.RandomInRange);
+				if (plant2.def.plant.LimitedLifespan)
+				{
+					plant2.Age = Rand.Range(0, Mathf.Max(plant2.def.plant.LifespanTicks - 50, 0));
+				}
+			}
+			GenSpawn.Spawn(plant2, cell, map);
+			return plant2;
+		}
+
+		private float PlantChoiceWeight(ThingDef plantDef, IntVec3 c, Dictionary<ThingDef, float> distanceSqToNearbyClusters, float wholeMapNumDesiredPlants, float plantDensityFactor)
 		{
 			float commonalityOfPlant = GetCommonalityOfPlant(plantDef);
-			float commonalityPctOfPlant = GetCommonalityPctOfPlant(plantDef);
-			float num = commonalityOfPlant;
-			if (num <= 0f)
+			float num = GetCommonalityPctOfPlant(plantDef);
+			if (Current.ProgramState == ProgramState.Playing)
 			{
-				return num;
+				num *= plantDef.plant.plantRespawningCommonalityFactor;
 			}
-			float num2 = 0.5f;
-			if ((float)map.listerThings.ThingsInGroup(ThingRequestGroup.Plant).Count > wholeMapNumDesiredPlants / 2f && !plantDef.plant.cavePlant)
+			float num2 = commonalityOfPlant;
+			if (num2 <= 0f)
 			{
-				num2 = (float)map.listerThings.ThingsOfDef(plantDef).Count / (float)map.listerThings.ThingsInGroup(ThingRequestGroup.Plant).Count / commonalityPctOfPlant;
-				num *= GlobalPctSelectionWeightBias.Evaluate(num2);
+				return num2;
 			}
-			if (plantDef.plant.GrowsInClusters && num2 < 1.1f)
+			float num3 = 0.5f;
+			num3 = (float)map.listerThings.ThingsOfDef(plantDef).Count / (float)map.listerThings.ThingsInGroup(ThingRequestGroup.NonStumpPlant).Count / num;
+			num2 *= GlobalPctSelectionWeightBias.Evaluate(num3);
+			if (plantDef.plant.GrowsInClusters && num3 < 1.1f)
 			{
-				float num3 = (plantDef.plant.cavePlant ? CavePlantsCommonalitiesSum : map.Biome.PlantCommonalitiesSum);
-				float x = commonalityOfPlant * plantDef.plant.wildClusterWeight / (num3 - commonalityOfPlant + commonalityOfPlant * plantDef.plant.wildClusterWeight);
-				float outTo = 1f / ((float)Math.PI * (float)plantDef.plant.wildClusterRadius * (float)plantDef.plant.wildClusterRadius);
-				outTo = GenMath.LerpDoubleClamped(commonalityPctOfPlant, 1f, 1f, outTo, x);
+				float num4 = ((plantDef.plant.cavePlant && !map.BiomeAt(c).wildPlantsAreCavePlants) ? CavePlantsCommonalitiesSum : PlantsCommonalitiesSum);
+				float x = commonalityOfPlant * plantDef.plant.wildClusterWeight / (num4 - commonalityOfPlant + commonalityOfPlant * plantDef.plant.wildClusterWeight);
+				float outTo = 1f / (MathF.PI * (float)plantDef.plant.wildClusterRadius * (float)plantDef.plant.wildClusterRadius);
+				outTo = GenMath.LerpDoubleClamped(num, 1f, 1f, outTo, x);
 				if (distanceSqToNearbyClusters.TryGetValue(plantDef, out var value))
 				{
 					float x2 = Mathf.Sqrt(value);
-					num *= GenMath.LerpDoubleClamped((float)plantDef.plant.wildClusterRadius * 0.9f, (float)plantDef.plant.wildClusterRadius * 1.1f, plantDef.plant.wildClusterWeight, outTo, x2);
+					num2 *= GenMath.LerpDoubleClamped((float)plantDef.plant.wildClusterRadius * 0.9f, (float)plantDef.plant.wildClusterRadius * 1.1f, plantDef.plant.wildClusterWeight, outTo, x2);
 				}
 				else
 				{
-					num *= outTo;
+					num2 *= outTo;
 				}
 			}
 			if (plantDef.plant.wildEqualLocalDistribution)
 			{
-				float f = wholeMapNumDesiredPlants * commonalityPctOfPlant;
+				float f = wholeMapNumDesiredPlants * num;
 				float a = (float)Mathf.Max(map.Size.x, map.Size.z) / Mathf.Sqrt(f) * 2f;
 				if (plantDef.plant.GrowsInClusters)
 				{
@@ -276,21 +509,21 @@ namespace RimWorld
 				a = Mathf.Max(a, 7f);
 				if (a <= 25f)
 				{
-					num *= LocalPlantProportionsWeightFactor(c, commonalityPctOfPlant, plantDensity, a, plantDef);
+					num2 *= LocalPlantProportionsWeightFactor(c, num, plantDensityFactor, a, plantDef);
 				}
 			}
-			return num;
+			return num2;
 		}
 
-		private float LocalPlantProportionsWeightFactor(IntVec3 c, float commonalityPct, float plantDensity, float radiusToScan, ThingDef plantDef)
+		private float LocalPlantProportionsWeightFactor(IntVec3 c, float commonalityPct, float plantDensityFactor, float radiusToScan, ThingDef plantDef)
 		{
 			float numDesiredPlantsLocally = 0f;
 			int numPlants = 0;
 			int numPlantsThisDef = 0;
 			RegionTraverser.BreadthFirstTraverse(c, map, (Region from, Region to) => c.InHorDistOf(to.extentsClose.ClosestCellTo(c), radiusToScan), delegate(Region reg)
 			{
-				numDesiredPlantsLocally += GetDesiredPlantsCountIn(reg, c, plantDensity);
-				numPlants += reg.ListerThings.ThingsInGroup(ThingRequestGroup.Plant).Count;
+				numDesiredPlantsLocally += GetDesiredPlantsCountIn(reg, c, plantDensityFactor);
+				numPlants += reg.ListerThings.ThingsInGroup(ThingRequestGroup.NonStumpPlant).Count;
 				numPlantsThisDef += reg.ListerThings.ThingsOfDef(plantDef).Count;
 				return false;
 			});
@@ -306,62 +539,63 @@ namespace RimWorld
 			return Mathf.Lerp(7f, 1f, t);
 		}
 
-		private void CalculatePlantsWhichCanGrowAt(IntVec3 c, List<ThingDef> outPlants, bool cavePlants, float plantDensity)
+		private void CalculatePlantsWhichCanGrowAt(IntVec3 c, List<ThingDef> outPlants, bool cavePlants, float plantDensityFactor)
 		{
 			outPlants.Clear();
 			if (cavePlants)
 			{
 				for (int i = 0; i < allCavePlants.Count; i++)
 				{
-					if (allCavePlants[i].CanEverPlantAt_NewTemp(c, map))
+					if (allCavePlants[i].CanEverPlantAt(c, map))
 					{
 						outPlants.Add(allCavePlants[i]);
 					}
 				}
 				return;
 			}
-			List<ThingDef> allWildPlants = map.Biome.AllWildPlants;
-			for (int j = 0; j < allWildPlants.Count; j++)
+			tmpWildPlants.Clear();
+			tmpWildPlants.AddRange(map.BiomeAt(c).AllWildPlants);
+			tmpWildPlants.AddRange(MutatorWildPlants);
+			foreach (ThingDef tmpWildPlant in tmpWildPlants)
 			{
-				ThingDef thingDef = allWildPlants[j];
-				if (!thingDef.CanEverPlantAt_NewTemp(c, map))
+				if (tmpWildPlant.IsDeadPlant || !tmpWildPlant.CanEverPlantAt(c, map))
 				{
 					continue;
 				}
-				if (thingDef.plant.wildOrder != map.Biome.LowestWildAndCavePlantOrder)
+				if (!Mathf.Approximately(tmpWildPlant.plant.wildOrder, map.BiomeAt(c).LowestWildAndCavePlantOrder))
 				{
 					float num = 7f;
-					if (thingDef.plant.GrowsInClusters)
+					if (tmpWildPlant.plant.GrowsInClusters)
 					{
-						num = Math.Max(num, (float)thingDef.plant.wildClusterRadius * 1.5f);
+						num = Math.Max(num, (float)tmpWildPlant.plant.wildClusterRadius * 1.5f);
 					}
-					if (!EnoughLowerOrderPlantsNearby(c, plantDensity, num, thingDef))
+					if (!EnoughLowerOrderPlantsNearby(c, plantDensityFactor, num, tmpWildPlant))
 					{
 						continue;
 					}
 				}
-				outPlants.Add(thingDef);
+				outPlants.Add(tmpWildPlant);
 			}
 		}
 
-		private bool EnoughLowerOrderPlantsNearby(IntVec3 c, float plantDensity, float radiusToScan, ThingDef plantDef)
+		private bool EnoughLowerOrderPlantsNearby(IntVec3 c, float plantDensityFactor, float radiusToScan, ThingDef plantDef)
 		{
 			float num = 0f;
 			tmpPlantDefsLowerOrder.Clear();
-			List<ThingDef> allWildPlants = map.Biome.AllWildPlants;
-			for (int i = 0; i < allWildPlants.Count; i++)
+			List<BiomePlantRecord> wildPlants = map.BiomeAt(c).wildPlants;
+			for (int i = 0; i < wildPlants.Count; i++)
 			{
-				if (allWildPlants[i].plant.wildOrder < plantDef.plant.wildOrder)
+				if (wildPlants[i].plant.plant.wildOrder < plantDef.plant.wildOrder)
 				{
-					num += GetCommonalityPctOfPlant(allWildPlants[i]);
-					tmpPlantDefsLowerOrder.Add(allWildPlants[i]);
+					num += GetCommonalityPctOfPlant(wildPlants[i].plant);
+					tmpPlantDefsLowerOrder.Add(wildPlants[i].plant);
 				}
 			}
 			float numDesiredPlantsLocally = 0f;
 			int numPlantsLowerOrder = 0;
 			RegionTraverser.BreadthFirstTraverse(c, map, (Region from, Region to) => c.InHorDistOf(to.extentsClose.ClosestCellTo(c), radiusToScan), delegate(Region reg)
 			{
-				numDesiredPlantsLocally += GetDesiredPlantsCountIn(reg, c, plantDensity);
+				numDesiredPlantsLocally += GetDesiredPlantsCountIn(reg, c, plantDensityFactor);
 				for (int j = 0; j < tmpPlantDefsLowerOrder.Count; j++)
 				{
 					numPlantsLowerOrder += reg.ListerThings.ThingsOfDef(tmpPlantDefsLowerOrder[j]).Count;
@@ -376,19 +610,19 @@ namespace RimWorld
 			return (float)numPlantsLowerOrder / num2 >= 0.57f;
 		}
 
-		private bool SaturatedAt(IntVec3 c, float plantDensity, bool cavePlants, float wholeMapNumDesiredPlants)
+		private bool SaturatedAt(IntVec3 c, float plantDensityFactor, bool cavePlants, float wholeMapNumDesiredPlants)
 		{
 			int num = GenRadial.NumCellsInRadius(20f);
-			if (wholeMapNumDesiredPlants * ((float)num / (float)map.Area) <= 4f || !map.Biome.wildPlantsCareAboutLocalFertility)
+			if (wholeMapNumDesiredPlants * ((float)num / (float)map.Area) <= 4f || (!MapGenUtility.IsMixedBiome(map) && !map.BiomeAt(c).wildPlantsCareAboutLocalFertility))
 			{
-				return (float)map.listerThings.ThingsInGroup(ThingRequestGroup.Plant).Count >= wholeMapNumDesiredPlants;
+				return (float)map.listerThings.ThingsInGroup(ThingRequestGroup.NonStumpPlant).Count >= wholeMapNumDesiredPlants;
 			}
 			float numDesiredPlantsLocally = 0f;
 			int numPlants = 0;
 			RegionTraverser.BreadthFirstTraverse(c, map, (Region from, Region to) => c.InHorDistOf(to.extentsClose.ClosestCellTo(c), 20f), delegate(Region reg)
 			{
-				numDesiredPlantsLocally += GetDesiredPlantsCountIn(reg, c, plantDensity);
-				numPlants += reg.ListerThings.ThingsInGroup(ThingRequestGroup.Plant).Count;
+				numDesiredPlantsLocally += GetDesiredPlantsCountIn(reg, c, plantDensityFactor);
+				numPlants += reg.ListerThings.ThingsInGroup(ThingRequestGroup.NonStumpPlant).Count;
 				return false;
 			});
 			return (float)numPlants >= numDesiredPlantsLocally;
@@ -398,7 +632,7 @@ namespace RimWorld
 		{
 			nearbyClusters.Clear();
 			nearbyClustersList.Clear();
-			int num = GenRadial.NumCellsInRadius(map.Biome.MaxWildAndCavePlantsClusterRadius * 2);
+			int num = GenRadial.NumCellsInRadius(map.BiomeAt(c).MaxWildAndCavePlantsClusterRadius * 2);
 			for (int i = 0; i < num; i++)
 			{
 				IntVec3 intVec = c + GenRadial.RadialPattern[i];
@@ -436,15 +670,11 @@ namespace RimWorld
 
 		private bool CanRegrowAt(IntVec3 c)
 		{
-			if (c.GetTemperature(map) > 0f)
+			if (c.Roofed(map))
 			{
-				if (c.Roofed(map))
-				{
-					return GoodRoofForCavePlant(c);
-				}
-				return true;
+				return GoodRoofForCavePlant(c);
 			}
-			return false;
+			return true;
 		}
 
 		private bool GoodRoofForCavePlant(IntVec3 c)
@@ -454,40 +684,76 @@ namespace RimWorld
 
 		private float GetCommonalityOfPlant(ThingDef plant)
 		{
-			if (!plant.plant.cavePlant)
+			CachePlantCommonalitiesIfShould();
+			if (plant.plant.cavePlant && !map.Biome.wildPlantsAreCavePlants)
 			{
-				return map.Biome.CommonalityOfPlant(plant);
+				return plant.plant.cavePlantWeight;
 			}
-			return plant.plant.cavePlantWeight;
+			return cachedPlantCommonalities.GetValueOrDefault(plant, 0f);
 		}
 
-		private float GetCommonalityPctOfPlant(ThingDef plant)
+		public float GetCommonalityPctOfPlant(ThingDef plant)
 		{
-			if (!plant.plant.cavePlant)
+			if (!plant.plant.cavePlant || map.Biome.wildPlantsAreCavePlants)
 			{
-				return map.Biome.CommonalityPctOfPlant(plant);
+				return GetCommonalityOfPlant(plant) / PlantsCommonalitiesSum;
 			}
 			return GetCommonalityOfPlant(plant) / CavePlantsCommonalitiesSum;
 		}
 
 		public float GetBaseDesiredPlantsCountAt(IntVec3 c)
 		{
-			float num = c.GetTerrain(map).fertility;
+			float num = map.fertilityGrid.FertilityAt(c);
 			if (GoodRoofForCavePlant(c))
 			{
 				num *= 0.5f;
 			}
+			if (HaveAnyPlantsWhichIgnoreFertility && c.GetTerrain(map).IsWater && num <= 0f)
+			{
+				num = 0.1f;
+			}
 			return num;
 		}
 
-		public float GetDesiredPlantsCountAt(IntVec3 c, IntVec3 forCell, float plantDensity)
+		public float GetDesiredPlantsCountAt(IntVec3 forCell, float plantDensityFactor)
 		{
-			return Mathf.Min(GetBaseDesiredPlantsCountAt(c) * plantDensity * forCell.GetTerrain(map).fertility, 1f);
+			float num = map.fertilityGrid.FertilityAt(forCell);
+			if (num <= 0f && HaveAnyPlantsWhichIgnoreFertility)
+			{
+				num = 1f;
+			}
+			float num2 = map.BiomeAt(forCell).plantDensity * plantDensityFactor * num;
+			return Mathf.Min(GetBaseDesiredPlantsCountAt(forCell) * num2, 1f);
 		}
 
-		public float GetDesiredPlantsCountIn(Region reg, IntVec3 forCell, float plantDensity)
+		public float GetDesiredPlantsCountIn(Region reg, IntVec3 forCell, float plantDensityFactor)
 		{
-			return Mathf.Min(reg.GetBaseDesiredPlantsCount() * plantDensity * forCell.GetTerrain(map).fertility, reg.CellCount);
+			float num = map.fertilityGrid.FertilityAt(forCell);
+			if (num <= 0f && HaveAnyPlantsWhichIgnoreFertility)
+			{
+				num = 1f;
+			}
+			float num2 = map.BiomeAt(forCell).plantDensity * plantDensityFactor * num;
+			return Mathf.Min(reg.GetBaseDesiredPlantsCount() * num2, reg.CellCount);
+		}
+
+		public float GetWaterPlantDistanceToShoreWeight(IntVec3 rootCell)
+		{
+			if (!rootCell.GetTerrain(map).IsWater)
+			{
+				return 1f;
+			}
+			float distance = float.MaxValue;
+			map.floodFiller.FloodFill(rootCell, (IntVec3 c) => true, delegate(IntVec3 c)
+			{
+				if (map.terrainGrid.BaseTerrainAt(c).IsWater)
+				{
+					return false;
+				}
+				distance = c.DistanceTo(rootCell);
+				return true;
+			});
+			return Mathf.Clamp01(1f - distance / 4f);
 		}
 	}
 }

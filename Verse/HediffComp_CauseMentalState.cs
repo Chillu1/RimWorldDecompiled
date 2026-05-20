@@ -6,22 +6,22 @@ namespace Verse
 	{
 		public HediffCompProperties_CauseMentalState Props => (HediffCompProperties_CauseMentalState)props;
 
-		public override void CompPostTick(ref float severityAdjustment)
+		public override void CompPostTickInterval(ref float severityAdjustment, int delta)
 		{
-			if (!base.Pawn.IsHashIntervalTick(60))
+			if (parent.Severity < Props.minSeverity || !base.Pawn.IsHashIntervalTick(60, delta))
 			{
 				return;
 			}
 			if (base.Pawn.RaceProps.Humanlike)
 			{
-				if (base.Pawn.mindState.mentalStateHandler.CurStateDef != Props.humanMentalState && Rand.MTBEventOccurs(Props.mtbDaysToCauseMentalState, 60000f, 60f) && base.Pawn.Awake() && base.Pawn.mindState.mentalStateHandler.TryStartMentalState(Props.humanMentalState, parent.def.LabelCap, forceWake: false, causedByMood: false, null, transitionSilently: true) && base.Pawn.Spawned)
+				if (base.Pawn.mindState.mentalStateHandler.CurStateDef != Props.humanMentalState && Rand.MTBEventOccurs(Props.mtbDaysToCauseMentalState, 60000f, 60f) && base.Pawn.Awake() && base.Pawn.Spawned && base.Pawn.mindState.mentalStateHandler.TryStartMentalState(Props.humanMentalState, parent.def.LabelCap, Props.forced, forceWake: false, causedByMood: false, null, transitionSilently: true))
 				{
-					SendLetter(Props.humanMentalState);
+					TriggeredMentalBreak(Props.humanMentalState);
 				}
 			}
-			else if (base.Pawn.RaceProps.Animal && base.Pawn.mindState.mentalStateHandler.CurStateDef != Props.animalMentalState && (Props.animalMentalStateAlias == null || base.Pawn.mindState.mentalStateHandler.CurStateDef != Props.animalMentalStateAlias) && Rand.MTBEventOccurs(Props.mtbDaysToCauseMentalState, 60000f, 60f) && base.Pawn.Awake() && base.Pawn.mindState.mentalStateHandler.TryStartMentalState(Props.animalMentalState, parent.def.LabelCap, forceWake: false, causedByMood: false, null, transitionSilently: true) && base.Pawn.Spawned)
+			else if (base.Pawn.RaceProps.Animal && base.Pawn.mindState.mentalStateHandler.CurStateDef != Props.animalMentalState && (Props.animalMentalStateAlias == null || base.Pawn.mindState.mentalStateHandler.CurStateDef != Props.animalMentalStateAlias) && Rand.MTBEventOccurs(Props.mtbDaysToCauseMentalState, 60000f, 60f) && base.Pawn.Awake() && base.Pawn.Spawned && base.Pawn.mindState.mentalStateHandler.TryStartMentalState(Props.animalMentalState, parent.def.LabelCap, forced: false, forceWake: false, causedByMood: false, null, transitionSilently: true))
 			{
-				SendLetter(Props.animalMentalState);
+				TriggeredMentalBreak(Props.animalMentalState);
 			}
 		}
 
@@ -33,9 +33,20 @@ namespace Verse
 			}
 		}
 
+		private void TriggeredMentalBreak(MentalStateDef mentalStateDef)
+		{
+			SendLetter(mentalStateDef);
+			if (Props.removeOnTriggered)
+			{
+				base.Pawn.health.RemoveHediff(parent);
+			}
+		}
+
 		private void SendLetter(MentalStateDef mentalStateDef)
 		{
-			Find.LetterStack.ReceiveLetter((mentalStateDef.beginLetterLabel ?? ((string)mentalStateDef.LabelCap)).CapitalizeFirst() + ": " + base.Pawn.LabelShortCap, base.Pawn.mindState.mentalStateHandler.CurState.GetBeginLetterText() + "\n\n" + "CausedByHediff".Translate(parent.LabelCap), Props.letterDef, base.Pawn);
+			string text = (string.IsNullOrEmpty(Props.overrideLetterLabel) ? ((mentalStateDef.beginLetterLabel ?? ((string)mentalStateDef.LabelCap)).CapitalizeFirst() + ": " + base.Pawn.LabelShortCap) : Props.overrideLetterLabel.Formatted(base.Pawn.Named("PAWN")).Resolve());
+			string text2 = (string.IsNullOrEmpty(Props.overrideLetterDesc) ? string.Format("{0}\n\n{1}", base.Pawn.mindState.mentalStateHandler.CurState.GetBeginLetterText(), "CausedByHediff".Translate(parent.LabelCap)) : Props.overrideLetterDesc.Formatted(base.Pawn.Named("PAWN")).Resolve());
+			Find.LetterStack.ReceiveLetter(text, text2, Props.letterDef ?? mentalStateDef.beginLetterDef, base.Pawn);
 		}
 	}
 }

@@ -49,6 +49,32 @@ namespace RimWorld
 				{
 					Hatch();
 				}
+				return;
+			}
+			CompProperties_EggLayer compProperties_EggLayer = Props.hatcherPawn?.race?.GetCompProperties<CompProperties_EggLayer>();
+			if (compProperties_EggLayer != null)
+			{
+				if (parent.ParentHolder is Pawn_CarryTracker pawn_CarryTracker)
+				{
+					pawn_CarryTracker.TryDropCarriedThing(parent.Position, ThingPlaceMode.Near, out var _);
+				}
+				if (parent.ParentHolder is CompEggContainer compEggContainer)
+				{
+					int stackCount = parent.stackCount;
+					compEggContainer.innerContainer.Remove(parent);
+					parent.Destroy();
+					Thing thing = ThingMaker.MakeThing(compProperties_EggLayer.eggUnfertilizedDef);
+					thing.stackCount = stackCount;
+					compEggContainer.innerContainer.TryAdd(thing);
+				}
+				else
+				{
+					Map mapHeld = parent.MapHeld;
+					IntVec3 positionHeld = parent.PositionHeld;
+					int stackCount2 = parent.stackCount;
+					parent.Destroy();
+					GenSpawn.Spawn(compProperties_EggLayer.eggUnfertilizedDef, positionHeld, mapHeld).stackCount = stackCount2;
+				}
 			}
 		}
 
@@ -56,7 +82,11 @@ namespace RimWorld
 		{
 			try
 			{
-				PawnGenerationRequest request = new PawnGenerationRequest(Props.hatcherPawn, hatcheeFaction, PawnGenerationContext.NonPlayer, -1, forceGenerateNewPawn: false, newborn: true);
+				PawnGenerationRequest request = new PawnGenerationRequest(Props.hatcherPawn, hatcheeFaction, PawnGenerationContext.NonPlayer, null, forceGenerateNewPawn: false, allowDead: false, allowDowned: false, canGeneratePawnRelations: true, mustBeCapableOfViolence: false, 1f, forceAddFreeWarmLayerIfNeeded: false, allowGay: true, allowPregnant: false, allowFood: true, allowAddictions: true, inhabitant: false, certainlyBeenInCryptosleep: false, forceRedressWorldPawnIfFormerColonist: false, worldPawnFactionDoesntMatter: false, 0f, 0f, null, 1f, null, null, null, null, null, null, null, null, null, null, null, null, forceNoIdeo: false, forceNoBackstory: false, forbidAnyTitle: false, forceDead: false, null, null, null, null, null, 0f, DevelopmentalStage.Newborn);
+				if (parent.ParentHolder is Pawn_CarryTracker pawn_CarryTracker)
+				{
+					pawn_CarryTracker.TryDropCarriedThing(parent.PositionHeld, ThingPlaceMode.Near, out var _);
+				}
 				for (int i = 0; i < parent.stackCount; i++)
 				{
 					Pawn pawn = PawnGenerator.GeneratePawn(request);
@@ -68,7 +98,7 @@ namespace RimWorld
 							{
 								if (pawn.playerSettings != null && hatcheeParent.playerSettings != null && hatcheeParent.Faction == hatcheeFaction)
 								{
-									pawn.playerSettings.AreaRestriction = hatcheeParent.playerSettings.AreaRestriction;
+									pawn.playerSettings.AreaRestrictionInPawnCurrentMap = hatcheeParent.playerSettings.AreaRestrictionInPawnCurrentMap;
 								}
 								if (pawn.RaceProps.IsFlesh)
 								{
@@ -95,6 +125,16 @@ namespace RimWorld
 			{
 				parent.Destroy();
 			}
+		}
+
+		public override bool AllowStackWith(Thing other)
+		{
+			CompHatcher comp = ((ThingWithComps)other).GetComp<CompHatcher>();
+			if (TemperatureDamaged != comp.TemperatureDamaged)
+			{
+				return false;
+			}
+			return base.AllowStackWith(other);
 		}
 
 		public override void PreAbsorbStack(Thing otherStack, int count)
@@ -127,7 +167,7 @@ namespace RimWorld
 			}
 		}
 
-		public override void PostPostGeneratedForTrader(TraderKindDef trader, int forTile, Faction forFaction)
+		public override void PostPostGeneratedForTrader(TraderKindDef trader, PlanetTile forTile, Faction forFaction)
 		{
 			base.PostPostGeneratedForTrader(trader, forTile, forFaction);
 			hatcheeFaction = forFaction;
@@ -137,7 +177,7 @@ namespace RimWorld
 		{
 			if (!TemperatureDamaged)
 			{
-				return "EggProgress".Translate() + ": " + gestateProgress.ToStringPercent();
+				return "EggProgress".Translate() + ": " + gestateProgress.ToStringPercent() + "\n" + "HatchesIn".Translate() + ": " + "PeriodDays".Translate((Props.hatcherDaystoHatch * (1f - gestateProgress)).ToString("F1"));
 			}
 			return null;
 		}

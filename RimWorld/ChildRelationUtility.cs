@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Verse;
 
@@ -21,14 +22,18 @@ namespace RimWorld
 
 		public static float ChanceOfBecomingChildOf(Pawn child, Pawn father, Pawn mother, PawnGenerationRequest? childGenerationRequest, PawnGenerationRequest? fatherGenerationRequest, PawnGenerationRequest? motherGenerationRequest)
 		{
+			if (child.IsDuplicate)
+			{
+				return 0f;
+			}
 			if (father != null && father.gender != Gender.Male)
 			{
-				Log.Warning(string.Concat("Tried to calculate chance for father with gender \"", father.gender, "\"."));
+				Log.Warning("Tried to calculate chance for father with gender \"" + father.gender.ToString() + "\".");
 				return 0f;
 			}
 			if (mother != null && mother.gender != Gender.Female)
 			{
-				Log.Warning(string.Concat("Tried to calculate chance for mother with gender \"", mother.gender, "\"."));
+				Log.Warning("Tried to calculate chance for mother with gender \"" + mother.gender.ToString() + "\".");
 				return 0f;
 			}
 			if (father != null && child.GetFather() != null && child.GetFather() != father)
@@ -43,15 +48,24 @@ namespace RimWorld
 			{
 				return 0f;
 			}
-			float? melanin = GetMelanin(child, childGenerationRequest);
-			float? melanin2 = GetMelanin(father, fatherGenerationRequest);
-			float? melanin3 = GetMelanin(mother, motherGenerationRequest);
-			bool fatherIsNew = father != null && child.GetFather() != father;
-			bool motherIsNew = mother != null && child.GetMother() != mother;
-			float skinColorFactor = GetSkinColorFactor(melanin, melanin2, melanin3, fatherIsNew, motherIsNew);
-			if (skinColorFactor <= 0f)
+			if (mother != null && !XenotypesCompatible(child, mother))
 			{
 				return 0f;
+			}
+			if (father != null && !XenotypesCompatible(child, father))
+			{
+				return 0f;
+			}
+			if (ModsConfig.BiotechActive)
+			{
+				if (father?.records != null && father.records.GetValue(RecordDefOf.TimeAsChildInColony) > 0f)
+				{
+					return 0f;
+				}
+				if (mother?.records != null && mother.records.GetValue(RecordDefOf.TimeAsChildInColony) > 0f)
+				{
+					return 0f;
+				}
 			}
 			float num = 1f;
 			float num2 = 1f;
@@ -104,7 +118,7 @@ namespace RimWorld
 					num6 *= 0.15f;
 				}
 			}
-			return skinColorFactor * num * num2 * num3 * num6 * num4;
+			return num * num2 * num3 * num6 * num4;
 		}
 
 		private static float GetParentAgeFactor(Pawn parent, Pawn child, float minAgeToHaveChildren, float usualAgeToHaveChildren, float maxAgeToHaveChildren)
@@ -117,10 +131,6 @@ namespace RimWorld
 			}
 			if (num2 > num)
 			{
-				if (num2 > num + 0.1f)
-				{
-					Log.Warning("Min possible bio age (" + num2 + ") is greater than max possible bio age (" + num + ").");
-				}
 				return 0f;
 			}
 			if (num2 <= usualAgeToHaveChildren && num >= usualAgeToHaveChildren)
@@ -146,117 +156,56 @@ namespace RimWorld
 			return result;
 		}
 
-		private static float? GetMelanin(Pawn pawn, PawnGenerationRequest? request)
-		{
-			if (request.HasValue)
-			{
-				return request.Value.FixedMelanin;
-			}
-			return pawn?.story.melanin;
-		}
-
 		private static float GetAgeFactor(float ageAtBirth, float min, float max, float mid)
 		{
 			return GenMath.GetFactorInInterval(min, mid, max, 1.6f, ageAtBirth);
 		}
 
-		private static float GetSkinColorFactor(float? childMelanin, float? fatherMelanin, float? motherMelanin, bool fatherIsNew, bool motherIsNew)
-		{
-			if (childMelanin.HasValue && fatherMelanin.HasValue && motherMelanin.HasValue)
-			{
-				float num = Mathf.Min(fatherMelanin.Value, motherMelanin.Value);
-				float num2 = Mathf.Max(fatherMelanin.Value, motherMelanin.Value);
-				if (childMelanin < num - 0.05f)
-				{
-					return 0f;
-				}
-				if (childMelanin > num2 + 0.05f)
-				{
-					return 0f;
-				}
-			}
-			float num3 = 1f;
-			if (fatherIsNew)
-			{
-				num3 *= GetNewParentSkinColorFactor(fatherMelanin, motherMelanin, childMelanin);
-			}
-			if (motherIsNew)
-			{
-				num3 *= GetNewParentSkinColorFactor(motherMelanin, fatherMelanin, childMelanin);
-			}
-			return num3;
-		}
-
-		private static float GetNewParentSkinColorFactor(float? newParentMelanin, float? otherParentMelanin, float? childMelanin)
-		{
-			if (newParentMelanin.HasValue)
-			{
-				if (!otherParentMelanin.HasValue)
-				{
-					if (childMelanin.HasValue)
-					{
-						return GetMelaninSimilarityFactor(newParentMelanin.Value, childMelanin.Value);
-					}
-					return PawnSkinColors.GetMelaninCommonalityFactor(newParentMelanin.Value);
-				}
-				if (childMelanin.HasValue)
-				{
-					float reflectedSkin = GetReflectedSkin(otherParentMelanin.Value, childMelanin.Value);
-					return GetMelaninSimilarityFactor(newParentMelanin.Value, reflectedSkin);
-				}
-				return PawnSkinColors.GetMelaninCommonalityFactor((newParentMelanin.Value + otherParentMelanin.Value) / 2f);
-			}
-			if (!otherParentMelanin.HasValue)
-			{
-				if (childMelanin.HasValue)
-				{
-					return PawnSkinColors.GetMelaninCommonalityFactor(childMelanin.Value);
-				}
-				return 1f;
-			}
-			if (childMelanin.HasValue)
-			{
-				return PawnSkinColors.GetMelaninCommonalityFactor(GetReflectedSkin(otherParentMelanin.Value, childMelanin.Value));
-			}
-			return PawnSkinColors.GetMelaninCommonalityFactor(otherParentMelanin.Value);
-		}
-
-		public static float GetReflectedSkin(float value, float mirror)
-		{
-			return Mathf.Clamp01(GenMath.Reflection(value, mirror));
-		}
-
-		public static float GetMelaninSimilarityFactor(float melanin1, float melanin2)
-		{
-			float min = Mathf.Clamp01(melanin1 - 0.15f);
-			float max = Mathf.Clamp01(melanin1 + 0.15f);
-			return GenMath.GetFactorInInterval(min, melanin1, max, 2.5f, melanin2);
-		}
-
-		public static float GetRandomChildSkinColor(float fatherMelanin, float motherMelanin)
-		{
-			float clampMin = Mathf.Min(fatherMelanin, motherMelanin);
-			float clampMax = Mathf.Max(fatherMelanin, motherMelanin);
-			return PawnSkinColors.GetRandomMelaninSimilarTo((fatherMelanin + motherMelanin) / 2f, clampMin, clampMax);
-		}
-
 		public static bool DefinitelyHasNotBirthName(Pawn pawn)
 		{
-			Pawn spouse = pawn.GetSpouse();
-			if (spouse == null)
-			{
-				return false;
-			}
-			string last = ((NameTriple)spouse.Name).Last;
-			if (((NameTriple)pawn.Name).Last != last)
-			{
-				return false;
-			}
-			if ((spouse.GetMother() != null && ((NameTriple)spouse.GetMother().Name).Last == last) || (spouse.GetFather() != null && ((NameTriple)spouse.GetFather().Name).Last == last))
+			if (!(pawn.Name is NameTriple nameTriple))
 			{
 				return true;
 			}
+			List<Pawn> spouses = pawn.GetSpouses(includeDead: true);
+			if (!spouses.Any())
+			{
+				return false;
+			}
+			for (int i = 0; i < spouses.Count; i++)
+			{
+				Pawn pawn2 = spouses[i];
+				if (pawn2.Name is NameTriple { Last: var last } && !(nameTriple.Last != last) && ((pawn2.GetMother() != null && pawn2.GetMother().Name is NameTriple nameTriple3 && nameTriple3.Last == last) || (pawn2.GetFather() != null && pawn2.GetFather().Name is NameTriple nameTriple4 && nameTriple4.Last == last)))
+				{
+					return true;
+				}
+			}
 			return false;
+		}
+
+		public static bool XenotypesCompatible(Pawn first, Pawn second)
+		{
+			if (!ModsConfig.BiotechActive)
+			{
+				return true;
+			}
+			if (first.genes == null || second.genes == null)
+			{
+				return false;
+			}
+			if ((first.genes.UniqueXenotype || second.genes.UniqueXenotype) && !GeneUtility.SameHeritableXenotype(first, second))
+			{
+				return false;
+			}
+			if (first.genes.Xenotype.inheritable && first.genes.Xenotype != second.genes.Xenotype)
+			{
+				return false;
+			}
+			if (second.genes.Xenotype.inheritable && second.genes.Xenotype != first.genes.Xenotype)
+			{
+				return false;
+			}
+			return true;
 		}
 	}
 }

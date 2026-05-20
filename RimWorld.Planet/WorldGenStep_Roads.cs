@@ -44,85 +44,87 @@ namespace RimWorld.Planet
 
 		public override int SeedPart => 1538475135;
 
-		public override void GenerateFresh(string seed)
+		public override void GenerateFresh(string seed, PlanetLayer layer)
 		{
-			GenerateRoadEndpoints();
+			GenerateRoadEndpoints(layer);
 			Rand.PushState();
 			Rand.Seed = GenText.StableStringHash(seed);
-			GenerateRoadNetwork();
+			GenerateRoadNetwork(layer);
 			Rand.PopState();
 		}
 
-		public override void GenerateWithoutWorldData(string seed)
+		public override void GenerateWithoutWorldData(string seed, PlanetLayer layer)
 		{
 			Rand.PushState();
 			Rand.Seed = GenText.StableStringHash(seed);
-			GenerateRoadNetwork();
+			GenerateRoadNetwork(layer);
 			Rand.PopState();
 		}
 
-		private void GenerateRoadEndpoints()
+		private void GenerateRoadEndpoints(PlanetLayer layer)
 		{
-			List<int> list = (from wo in Find.WorldObjects.AllWorldObjects
-				where Rand.Value > 0.05f
+			List<PlanetTile> list = (from wo in Find.WorldObjects.AllWorldObjects
+				where Rand.Value > 0.05f && wo.Tile.Layer == layer
 				select wo.Tile).ToList();
 			int num = GenMath.RoundRandom((float)Find.WorldGrid.TilesCount / 100000f * ExtraRoadNodesPer100kTiles.RandomInRange);
-			for (int i = 0; i < num; i++)
+			for (int num2 = 0; num2 < num; num2++)
 			{
-				list.Add(TileFinder.RandomSettlementTileFor(null));
+				list.Add(TileFinder.RandomSettlementTileFor(layer, null));
 			}
-			List<int> list2 = new List<int>();
-			for (int j = 0; j < list.Count; j++)
+			List<PlanetTile> list2 = new List<PlanetTile>();
+			for (int num3 = 0; num3 < list.Count; num3++)
 			{
-				int num2 = Mathf.Max(0, RoadDistanceFromSettlement.RandomInRange);
-				int num3 = list[j];
-				for (int k = 0; k < num2; k++)
+				int num4 = Mathf.Max(0, RoadDistanceFromSettlement.RandomInRange);
+				PlanetTile planetTile = list[num3];
+				for (int num5 = 0; num5 < num4; num5++)
 				{
-					Find.WorldGrid.GetTileNeighbors(num3, list2);
-					num3 = list2.RandomElement();
+					Find.WorldGrid.GetTileNeighbors(planetTile, list2);
+					planetTile = list2.RandomElement();
 				}
-				if (Find.WorldReachability.CanReach(list[j], num3))
+				if (Find.WorldReachability.CanReach(list[num3], planetTile))
 				{
-					list[j] = num3;
+					list[num3] = planetTile;
 				}
 			}
 			list = list.Distinct().ToList();
-			Find.World.genData.roadNodes = list;
+			Find.World.genData.roadNodes[layer] = list;
 		}
 
-		private void GenerateRoadNetwork()
+		private void GenerateRoadNetwork(PlanetLayer layer)
 		{
-			Find.WorldPathGrid.RecalculateAllPerceivedPathCosts(0);
-			List<Link> linkProspective = GenerateProspectiveLinks(Find.World.genData.roadNodes);
-			List<Link> linkFinal = GenerateFinalLinks(linkProspective, Find.World.genData.roadNodes.Count);
-			DrawLinksOnWorld(linkFinal, Find.World.genData.roadNodes);
+			Find.WorldPathGrid.RecalculateLayerPerceivedPathCosts(layer, 0);
+			List<Link> linkProspective = GenerateProspectiveLinks(Find.World.genData.roadNodes[layer], layer);
+			List<Link> linkFinal = GenerateFinalLinks(linkProspective, Find.World.genData.roadNodes[layer].Count);
+			DrawLinksOnWorld(layer, linkFinal, Find.World.genData.roadNodes[layer]);
 		}
 
-		private List<Link> GenerateProspectiveLinks(List<int> indexToTile)
+		private List<Link> GenerateProspectiveLinks(List<PlanetTile> indexToTile, PlanetLayer layer)
 		{
-			Dictionary<int, int> tileToIndexLookup = new Dictionary<int, int>();
+			Dictionary<PlanetTile, PlanetTile> tileToIndexLookup = new Dictionary<PlanetTile, PlanetTile>();
 			for (int i = 0; i < indexToTile.Count; i++)
 			{
-				tileToIndexLookup[indexToTile[i]] = i;
+				tileToIndexLookup[indexToTile[i]] = new PlanetTile(i, layer);
 			}
 			List<Link> linkProspective = new List<Link>();
-			List<int> list = new List<int>();
-			for (int srcIndex = 0; srcIndex < indexToTile.Count; srcIndex++)
+			List<PlanetTile> list = new List<PlanetTile>();
+			for (int j = 0; j < indexToTile.Count; j++)
 			{
-				int srcTile = indexToTile[srcIndex];
+				int srcLocal = j;
+				PlanetTile srcTile = indexToTile[j];
 				list.Clear();
 				list.Add(srcTile);
 				int found = 0;
-				Find.WorldPathFinder.FloodPathsWithCost(list, (int src, int dst) => Caravan_PathFollower.CostToMove(3300, src, dst, null, perceivedStatic: true), null, delegate(int tile, float distance)
+				layer.Pather.FloodPathsWithCost(list, (PlanetTile src, PlanetTile dst) => Caravan_PathFollower.CostToMove(3300, src, dst, null, perceivedStatic: true), null, delegate(PlanetTile tile, float distance)
 				{
-					if (tile != srcTile && tileToIndexLookup.ContainsKey(tile))
+					if (tile != srcTile && tileToIndexLookup.TryGetValue(tile, out var value))
 					{
-						found++;
+						int num = found + 1;
+						found = num;
 						linkProspective.Add(new Link
 						{
 							distance = distance,
-							indexA = srcIndex,
-							indexB = tileToIndexLookup[tile]
+							indexA = srcLocal,
+							indexB = value.tileId
 						});
 					}
 					return found >= 8;
@@ -160,16 +162,16 @@ namespace RimWorld.Planet
 			return list2;
 		}
 
-		private void DrawLinksOnWorld(List<Link> linkFinal, List<int> indexToTile)
+		private void DrawLinksOnWorld(PlanetLayer layer, List<Link> linkFinal, List<PlanetTile> indexToTile)
 		{
 			foreach (Link item in linkFinal)
 			{
-				WorldPath worldPath = Find.WorldPathFinder.FindPath(indexToTile[item.indexA], indexToTile[item.indexB], null);
-				List<int> nodesReversed = worldPath.NodesReversed;
+				WorldPath worldPath = layer.Pather.FindPath(indexToTile[item.indexA], indexToTile[item.indexB], null);
+				List<PlanetTile> nodesReversed = worldPath.NodesReversed;
 				RoadDef roadDef = DefDatabase<RoadDef>.AllDefsListForReading.Where((RoadDef rd) => !rd.ancientOnly).RandomElementWithFallback();
-				for (int i = 0; i < nodesReversed.Count - 1; i++)
+				for (int num = 0; num < nodesReversed.Count - 1; num++)
 				{
-					Find.WorldGrid.OverlayRoad(nodesReversed[i], nodesReversed[i + 1], roadDef);
+					Find.WorldGrid.OverlayRoad(nodesReversed[num], nodesReversed[num + 1], roadDef);
 				}
 				worldPath.ReleaseToPool();
 			}

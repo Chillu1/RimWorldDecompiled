@@ -7,11 +7,11 @@ namespace RimWorld
 {
 	public class Designator_Tame : Designator
 	{
-		private List<Pawn> justDesignated = new List<Pawn>();
-
-		public override int DraggableDimensions => 2;
+		private readonly List<Pawn> justDesignated = new List<Pawn>();
 
 		protected override DesignationDef Designation => DesignationDefOf.Tame;
+
+		public override DrawStyleCategoryDef DrawStyleCategory => DrawStyleCategoryDefOf.FilledRectangle;
 
 		public Designator_Tame()
 		{
@@ -21,9 +21,10 @@ namespace RimWorld
 			soundDragSustain = SoundDefOf.Designate_DragStandard;
 			soundDragChanged = SoundDefOf.Designate_DragStandard_Changed;
 			useMouseIcon = true;
-			soundSucceeded = SoundDefOf.Designate_Claim;
+			soundSucceeded = SoundDefOf.Designate_Tame;
 			hotKey = KeyBindingDefOf.Misc4;
 			tutorTag = "Tame";
+			showReverseDesignatorDisabledReason = true;
 		}
 
 		public override AcceptanceReport CanDesignateCell(IntVec3 c)
@@ -49,8 +50,19 @@ namespace RimWorld
 
 		public override AcceptanceReport CanDesignateThing(Thing t)
 		{
-			Pawn pawn = t as Pawn;
-			return pawn != null && TameUtility.CanTame(pawn) && base.Map.designationManager.DesignationOn(pawn, Designation) == null;
+			if (!(t is Pawn pawn))
+			{
+				return false;
+			}
+			if (!TameUtility.CanTame(pawn))
+			{
+				return false;
+			}
+			if (pawn.health.hediffSet.HasHediff(HediffDefOf.Scaria))
+			{
+				return "CantTameScaria".Translate();
+			}
+			return base.Map.designationManager.DesignationOn(pawn, Designation) == null;
 		}
 
 		protected override void FinalizeDesignationSucceeded()

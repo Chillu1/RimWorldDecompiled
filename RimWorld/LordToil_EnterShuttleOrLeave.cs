@@ -30,7 +30,7 @@ namespace RimWorld
 			{
 				return DutyDefOf.ExitMapBestAndDefendSelf;
 			}
-			return DutyDefOf.EnterTransporter;
+			return DutyDefOf.EnterTransporterAndDefendSelf;
 		}
 
 		private void EnsureCorrectDuties()

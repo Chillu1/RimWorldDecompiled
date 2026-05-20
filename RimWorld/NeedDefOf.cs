@@ -7,7 +7,10 @@ namespace RimWorld
 
 		public static NeedDef Rest;
 
-		public static NeedDef Joy;
+		public static NeedDef Indoors;
+
+		[MayRequireBiotech]
+		public static NeedDef Learning;
 
 		static NeedDefOf()
 		{

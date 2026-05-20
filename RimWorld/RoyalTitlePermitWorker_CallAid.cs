@@ -13,7 +13,7 @@ namespace RimWorld
 
 		public override IEnumerable<FloatMenuOption> GetRoyalAidOptions(Map map, Pawn pawn, Faction faction)
 		{
-			if (AidDisabled(map, pawn, faction, out var reason))
+			if (AidDisabled_NewTemp(map, pawn, faction, out var reason))
 			{
 				yield return new FloatMenuOption(def.LabelCap + ": " + reason, null);
 				yield break;
@@ -38,7 +38,7 @@ namespace RimWorld
 		private void BeginCallAid(Pawn caller, Map map, Faction faction, bool free, float biocodeChance = 1f)
 		{
 			IEnumerable<Faction> source = from f in (from p in map.mapPawns.AllPawnsSpawned
-					where p.Faction != null && !p.Faction.IsPlayer && p.Faction != faction
+					where p.Faction != null && !p.Faction.IsPlayer && p.Faction != faction && !p.IsPrisonerOfColony
 					select p.Faction).Distinct()
 				where f.HostileTo(Faction.OfPlayer) && !faction.HostileTo(f)
 				select f;
@@ -59,9 +59,15 @@ namespace RimWorld
 				targetingParameters.canTargetFires = false;
 				targetingParameters.canTargetBuildings = false;
 				targetingParameters.canTargetItems = false;
+				base.caller = caller;
+				base.map = map;
+				calledFaction = faction;
+				base.free = free;
+				this.biocodeChance = biocodeChance;
+				float rangeActual = base.RangeClamped;
 				targetingParameters.validator = delegate(TargetInfo target)
 				{
-					if (def.royalAid.targetingRange > 0f && target.Cell.DistanceTo(caller.Position) > def.royalAid.targetingRange)
+					if (rangeActual > 0f && target.Cell.DistanceTo(caller.Position) > rangeActual)
 					{
 						return false;
 					}
@@ -71,27 +77,16 @@ namespace RimWorld
 					}
 					return target.Cell.GetEdifice(map) == null && !target.Cell.Impassable(map);
 				};
-				base.caller = caller;
-				base.map = map;
-				calledFaction = faction;
-				base.free = free;
-				this.biocodeChance = biocodeChance;
 				Find.Targeter.BeginTargeting(this);
 			}
 		}
 
 		public override void OrderForceTarget(LocalTargetInfo target)
 		{
-			CallAid_NewTemp(caller, map, target.Cell, calledFaction, free, biocodeChance);
+			CallAid(caller, map, target.Cell, calledFaction, free, biocodeChance);
 		}
 
-		[Obsolete]
-		private void CallAid(Pawn caller, Map map, Faction faction, bool free, float biocodeChance = 1f)
-		{
-			CallAid_NewTemp(caller, map, caller.Position, faction, free, biocodeChance);
-		}
-
-		private void CallAid_NewTemp(Pawn caller, Map map, IntVec3 spawnPos, Faction faction, bool free, float biocodeChance = 1f)
+		private void CallAid(Pawn caller, Map map, IntVec3 spawnPos, Faction faction, bool free, float biocodeChance = 1f)
 		{
 			IncidentParms incidentParms = new IncidentParms();
 			incidentParms.target = map;
@@ -120,8 +115,21 @@ namespace RimWorld
 			}
 			else
 			{
-				Log.Error(string.Concat("Could not send aid to map ", map, " from faction ", faction));
+				Log.Error("Could not send aid to map " + map?.ToString() + " from faction " + faction);
 			}
+		}
+
+		protected override bool TemperatureIsAcceptable(Map map, Faction faction)
+		{
+			if (def.royalAid.pawnKindDef == null)
+			{
+				return base.TemperatureIsAcceptable(map, faction);
+			}
+			if (!def.royalAid.overrideAcceptableTemperatureRange.HasValue)
+			{
+				return base.TemperatureIsAcceptable(map, faction);
+			}
+			return def.royalAid.overrideAcceptableTemperatureRange.Value.Includes(map.mapTemperature.SeasonalTemp);
 		}
 	}
 }

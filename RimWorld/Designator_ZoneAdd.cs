@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 using Verse;
 
@@ -9,6 +8,8 @@ namespace RimWorld
 	public abstract class Designator_ZoneAdd : Designator_Zone
 	{
 		protected Type zoneTypeToPlace;
+
+		private List<IntVec3> unsetCells = new List<IntVec3>();
 
 		private Zone SelectedZone
 		{
@@ -26,17 +27,14 @@ namespace RimWorld
 			}
 		}
 
-		protected abstract string NewZoneLabel
-		{
-			get;
-		}
+		protected abstract string NewZoneLabel { get; }
 
 		protected abstract Zone MakeNewZone();
 
 		public Designator_ZoneAdd()
 		{
 			soundDragSustain = SoundDefOf.Designate_DragAreaAdd;
-			soundDragChanged = null;
+			soundDragChanged = SoundDefOf.Designate_DragZone_Changed;
 			soundSucceeded = SoundDefOf.Designate_ZoneAdd;
 			useMouseIcon = true;
 			hotKey = KeyBindingDefOf.Misc6;
@@ -71,20 +69,29 @@ namespace RimWorld
 			{
 				return false;
 			}
-			if (c.Fogged(base.Map))
-			{
-				return false;
-			}
-			if (c.InNoZoneEdgeArea(base.Map))
-			{
-				return "TooCloseToMapEdge".Translate();
-			}
 			Zone zone = base.Map.zoneManager.ZoneAt(c);
 			if (zone != null && zone.GetType() != zoneTypeToPlace)
 			{
 				return false;
 			}
-			foreach (Thing item in base.Map.thingGrid.ThingsAt(c))
+			return IsZoneableCell(c, base.Map);
+		}
+
+		public static AcceptanceReport IsZoneableCell(IntVec3 c, Map map)
+		{
+			if (!c.InBounds(map))
+			{
+				return false;
+			}
+			if (c.Fogged(map))
+			{
+				return false;
+			}
+			if (c.InNoZoneEdgeArea(map))
+			{
+				return "TooCloseToMapEdge".Translate();
+			}
+			foreach (Thing item in map.thingGrid.ThingsAt(c))
 			{
 				if (!item.def.CanOverlapZones)
 				{
@@ -96,11 +103,12 @@ namespace RimWorld
 
 		public override void DesignateMultiCell(IEnumerable<IntVec3> cells)
 		{
-			List<IntVec3> list = cells.ToList();
+			unsetCells.Clear();
+			unsetCells.AddRange(cells);
 			bool flag = false;
-			if (list.Count == 1)
+			if (unsetCells.Count == 1)
 			{
-				Zone zone = base.Map.zoneManager.ZoneAt(list[0]);
+				Zone zone = base.Map.zoneManager.ZoneAt(unsetCells[0]);
 				if (zone != null)
 				{
 					if (zone.GetType() == zoneTypeToPlace)
@@ -131,8 +139,8 @@ namespace RimWorld
 				}
 				SelectedZone = zone2;
 			}
-			list.RemoveAll((IntVec3 c) => base.Map.zoneManager.ZoneAt(c) != null);
-			if (list.Count == 0 || (TutorSystem.TutorialMode && !TutorSystem.AllowAction(new EventPack(base.TutorTagDesignate, list))))
+			unsetCells.RemoveAll((IntVec3 c2) => base.Map.zoneManager.ZoneAt(c2) != null);
+			if (unsetCells.Count == 0 || (TutorSystem.TutorialMode && !TutorSystem.AllowAction(new EventPack(base.TutorTagDesignate, unsetCells))))
 			{
 				return;
 			}
@@ -140,20 +148,20 @@ namespace RimWorld
 			{
 				SelectedZone = MakeNewZone();
 				base.Map.zoneManager.RegisterZone(SelectedZone);
-				SelectedZone.AddCell(list[0]);
-				list.RemoveAt(0);
+				SelectedZone.AddCell(unsetCells[0]);
+				unsetCells.RemoveAt(0);
 			}
 			while (true)
 			{
 				flag = true;
-				int count = list.Count;
-				for (int num = list.Count - 1; num >= 0; num--)
+				int count = unsetCells.Count;
+				for (int num = unsetCells.Count - 1; num >= 0; num--)
 				{
 					bool flag2 = false;
-					for (int i = 0; i < 4; i++)
+					for (int num2 = 0; num2 < 4; num2++)
 					{
-						IntVec3 c2 = list[num] + GenAdj.CardinalDirections[i];
-						if (c2.InBounds(base.Map) && base.Map.zoneManager.ZoneAt(c2) == SelectedZone)
+						IntVec3 c = unsetCells[num] + GenAdj.CardinalDirections[num2];
+						if (c.InBounds(base.Map) && base.Map.zoneManager.ZoneAt(c) == SelectedZone)
 						{
 							flag2 = true;
 							break;
@@ -161,25 +169,29 @@ namespace RimWorld
 					}
 					if (flag2)
 					{
-						SelectedZone.AddCell(list[num]);
-						list.RemoveAt(num);
+						SelectedZone.AddCell(unsetCells[num]);
+						unsetCells.RemoveAt(num);
 					}
 				}
-				if (list.Count == 0)
+				if (unsetCells.Count == 0)
 				{
 					break;
 				}
-				if (list.Count == count)
+				if (unsetCells.Count == count)
 				{
 					SelectedZone = MakeNewZone();
 					base.Map.zoneManager.RegisterZone(SelectedZone);
-					SelectedZone.AddCell(list[0]);
-					list.RemoveAt(0);
+					SelectedZone.AddCell(unsetCells[0]);
+					unsetCells.RemoveAt(0);
 				}
 			}
 			SelectedZone.CheckContiguous();
 			Finalize(flag);
-			TutorSystem.Notify_Event(new EventPack(base.TutorTagDesignate, list));
+			if (SelectedZone is Zone_Stockpile zone_Stockpile)
+			{
+				zone_Stockpile.slotGroup.RemoveHaulDesignationOnStoredThings();
+			}
+			TutorSystem.Notify_Event(new EventPack(base.TutorTagDesignate, unsetCells));
 		}
 	}
 }

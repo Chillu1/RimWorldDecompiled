@@ -1,7 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using LudeonTK;
 using RimWorld.Planet;
 using UnityEngine;
 using Verse;
@@ -14,12 +14,18 @@ namespace RimWorld
 
 		private static List<Thing> emptyIngredientsList = new List<Thing>();
 
-		public static IEnumerable<HediffGiver_Birthday> RandomHediffsToGainOnBirthday(Pawn pawn, int age)
+		private static readonly SimpleCurve AmputationChanceFromAgeCurve = new SimpleCurve
 		{
-			return RandomHediffsToGainOnBirthday(pawn.def, age);
+			new CurvePoint(13f, 0f),
+			new CurvePoint(25f, 1f)
+		};
+
+		public static IEnumerable<HediffGiver_Birthday> RandomHediffsToGainOnBirthday(Pawn pawn, float age)
+		{
+			return RandomHediffsToGainOnBirthday(pawn.def, ModsConfig.BiotechActive ? pawn.GetStatValue(StatDefOf.CancerRate) : 1f, age);
 		}
 
-		private static IEnumerable<HediffGiver_Birthday> RandomHediffsToGainOnBirthday(ThingDef raceDef, int age)
+		private static IEnumerable<HediffGiver_Birthday> RandomHediffsToGainOnBirthday(ThingDef raceDef, float cancerFactor, float age)
 		{
 			List<HediffGiverSetDef> sets = raceDef.race.hediffGiverSets;
 			if (sets == null)
@@ -29,13 +35,20 @@ namespace RimWorld
 			for (int i = 0; i < sets.Count; i++)
 			{
 				List<HediffGiver> givers = sets[i].hediffGivers;
+				if (givers == null)
+				{
+					continue;
+				}
 				for (int j = 0; j < givers.Count; j++)
 				{
-					HediffGiver_Birthday hediffGiver_Birthday = givers[j] as HediffGiver_Birthday;
-					if (hediffGiver_Birthday != null)
+					if (givers[j] is HediffGiver_Birthday hediffGiver_Birthday)
 					{
-						float x = (float)age / raceDef.race.lifeExpectancy;
-						if (Rand.Value < hediffGiver_Birthday.ageFractionChanceCurve.Evaluate(x))
+						float num = age / raceDef.race.lifeExpectancy;
+						if (hediffGiver_Birthday.hediff == HediffDefOf.Carcinoma)
+						{
+							num *= cancerFactor;
+						}
+						if (Rand.Value < hediffGiver_Birthday.ageFractionChanceCurve.Evaluate(num))
 						{
 							yield return hediffGiver_Birthday;
 						}
@@ -46,6 +59,10 @@ namespace RimWorld
 
 		public static void GenerateRandomOldAgeInjuries(Pawn pawn, bool tryNotToKillPawn)
 		{
+			if (!pawn.kindDef.allowOldAgeInjuries)
+			{
+				return;
+			}
 			float num = (pawn.RaceProps.IsMechanoid ? 2500f : pawn.RaceProps.lifeExpectancy);
 			float num2 = num / 8f;
 			float b = num * 1.5f;
@@ -58,6 +75,7 @@ namespace RimWorld
 					num3++;
 				}
 			}
+			bool flag = !pawn.RaceProps.Humanlike || Rand.Chance(AmputationChanceFromAgeCurve.Evaluate(pawn.ageTracker.AgeBiologicalYearsFloat));
 			for (int i = 0; i < num3; i++)
 			{
 				IEnumerable<BodyPartRecord> source = from x in pawn.health.hediffSet.GetNotMissingParts()
@@ -68,8 +86,8 @@ namespace RimWorld
 					continue;
 				}
 				BodyPartRecord bodyPartRecord = source.RandomElementByWeight((BodyPartRecord x) => x.coverageAbs);
-				HediffDef hediffDefFromDamage = HealthUtility.GetHediffDefFromDamage(RandomPermanentInjuryDamageType(bodyPartRecord.def.frostbiteVulnerability > 0f && pawn.RaceProps.ToolUser), pawn, bodyPartRecord);
-				if (bodyPartRecord.def.pawnGeneratorCanAmputate && Rand.Chance(0.3f))
+				HediffDef hediffDefFromDamage = HealthUtility.GetHediffDefFromDamage(HealthUtility.RandomPermanentInjuryDamageType(bodyPartRecord.def.frostbiteVulnerability > 0f && pawn.RaceProps.ToolUser), pawn, bodyPartRecord);
+				if (bodyPartRecord.def.pawnGeneratorCanAmputate && flag && Rand.Chance(0.3f))
 				{
 					Hediff_MissingPart hediff_MissingPart = (Hediff_MissingPart)HediffMaker.MakeHediff(HediffDefOf.MissingBodyPart, pawn);
 					hediff_MissingPart.lastInjury = hediffDefFromDamage;
@@ -96,11 +114,11 @@ namespace RimWorld
 					}
 				}
 			}
-			for (int j = 1; j < pawn.ageTracker.AgeBiologicalYears; j++)
+			for (int num5 = 1; num5 < pawn.ageTracker.AgeBiologicalYears; num5++)
 			{
-				foreach (HediffGiver_Birthday item in RandomHediffsToGainOnBirthday(pawn, j))
+				foreach (HediffGiver_Birthday item in RandomHediffsToGainOnBirthday(pawn, num5))
 				{
-					item.TryApplyAndSimulateSeverityChange(pawn, j, tryNotToKillPawn);
+					item.TryApplyAndSimulateSeverityChange(pawn, num5, tryNotToKillPawn);
 					if (pawn.Dead)
 					{
 						break;
@@ -111,19 +129,6 @@ namespace RimWorld
 					break;
 				}
 			}
-		}
-
-		private static DamageDef RandomPermanentInjuryDamageType(bool allowFrostbite)
-		{
-			return Rand.RangeInclusive(0, 3 + (allowFrostbite ? 1 : 0)) switch
-			{
-				0 => DamageDefOf.Bullet, 
-				1 => DamageDefOf.Scratch, 
-				2 => DamageDefOf.Bite, 
-				3 => DamageDefOf.Stab, 
-				4 => DamageDefOf.Frostbite, 
-				_ => throw new Exception(), 
-			};
 		}
 
 		[DebugOutput]
@@ -137,7 +142,7 @@ namespace RimWorld
 				List<HediffDef> list = new List<HediffDef>();
 				for (int j = 0; j < 100; j++)
 				{
-					foreach (HediffGiver_Birthday item in RandomHediffsToGainOnBirthday(ThingDefOf.Human, j))
+					foreach (HediffGiver_Birthday item in RandomHediffsToGainOnBirthday(ThingDefOf.Human, 1f, j))
 					{
 						if (!list.Contains(item.hediff))
 						{
@@ -155,7 +160,7 @@ namespace RimWorld
 				Pawn pawn = PawnGenerator.GeneratePawn(Faction.OfPlayer.def.basicMemberKind, Faction.OfPlayer);
 				if (pawn.ageTracker.AgeBiologicalYears >= 40)
 				{
-					stringBuilder.AppendLine(string.Concat(pawn.Name, " age ", pawn.ageTracker.AgeBiologicalYears));
+					stringBuilder.AppendLine(pawn.Name?.ToString() + " age " + pawn.ageTracker.AgeBiologicalYears);
 					foreach (Hediff hediff in pawn.health.hediffSet.hediffs)
 					{
 						stringBuilder.AppendLine(" - " + hediff);

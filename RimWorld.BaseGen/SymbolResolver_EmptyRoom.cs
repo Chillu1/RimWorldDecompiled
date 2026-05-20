@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Verse;
 
 namespace RimWorld.BaseGen
@@ -7,7 +8,8 @@ namespace RimWorld.BaseGen
 		public override void Resolve(ResolveParams rp)
 		{
 			ThingDef thingDef = rp.wallStuff ?? BaseGenUtility.RandomCheapWallStuff(rp.faction);
-			TerrainDef floorDef = rp.floorDef ?? BaseGenUtility.CorrespondingTerrainDef(thingDef, beautiful: false);
+			TerrainDef floorDef = rp.floorDef ?? BaseGenUtility.CorrespondingTerrainDef(thingDef, beautiful: false, rp.faction);
+			MapGenerator.GetOrGenerateVar<List<CellRect>>("UsedRects").Add(rp.rect);
 			if (!rp.noRoof.HasValue || !rp.noRoof.Value)
 			{
 				BaseGen.symbolStack.Push("roof", rp);

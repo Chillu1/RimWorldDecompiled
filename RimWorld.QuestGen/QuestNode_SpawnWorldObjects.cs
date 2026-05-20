@@ -11,7 +11,7 @@ namespace RimWorld.QuestGen
 
 		public SlateRef<IEnumerable<WorldObject>> worldObjects;
 
-		public SlateRef<int?> tile;
+		public SlateRef<PlanetTile?> tile;
 
 		public SlateRef<List<ThingDef>> defsToExcludeFromHyperlinks;
 
@@ -36,7 +36,7 @@ namespace RimWorld.QuestGen
 				questPart_SpawnWorldObject.defsToExcludeFromHyperlinks = defsToExcludeFromHyperlinks.GetValue(slate);
 				if (tile.GetValue(slate).HasValue)
 				{
-					item.Tile = tile.GetValue(slate).Value;
+					item.Tile = tile.GetValue(slate) ?? PlanetTile.Invalid;
 				}
 				QuestGen.quest.AddPart(questPart_SpawnWorldObject);
 			}

@@ -78,7 +78,7 @@ namespace Verse
 						for (int j = 0; j < 2; j++)
 						{
 							Region region2 = regionLink.regions[j];
-							if (region2 != null && region2.closedIndex[closedArrayPos] != closedIndex && (region2.type & traversableRegionTypes) != 0 && (entryCondition == null || entryCondition(region, region2)))
+							if (region2 != null && region2.closedIndex[closedArrayPos] != closedIndex && (region2.type & traversableRegionTypes) != RegionType.None && (entryCondition == null || entryCondition(region, region2)))
 							{
 								QueueNewOpenRegion(region2);
 							}
@@ -95,36 +95,36 @@ namespace Verse
 
 		public static readonly RegionEntryPredicate PassAll;
 
-		public static Room FloodAndSetRooms(Region root, Map map, Room existingRoom)
+		public static District FloodAndSetDistricts(Region root, Map map, District existingRoom)
 		{
-			Room floodingRoom;
+			District floodingDistrict;
 			if (existingRoom == null)
 			{
-				floodingRoom = Room.MakeNew(map);
+				floodingDistrict = District.MakeNew(map);
 			}
 			else
 			{
-				floodingRoom = existingRoom;
+				floodingDistrict = existingRoom;
 			}
-			root.Room = floodingRoom;
-			if (!root.type.AllowsMultipleRegionsPerRoom())
+			root.District = floodingDistrict;
+			if (!root.type.AllowsMultipleRegionsPerDistrict())
 			{
-				return floodingRoom;
+				return floodingDistrict;
 			}
-			RegionEntryPredicate entryCondition = (Region from, Region r) => r.type == root.type && r.Room != floodingRoom;
+			RegionEntryPredicate entryCondition = (Region from, Region r) => r.type == root.type && r.District != floodingDistrict;
 			RegionProcessor regionProcessor = delegate(Region r)
 			{
-				r.Room = floodingRoom;
+				r.District = floodingDistrict;
 				return false;
 			};
 			BreadthFirstTraverse(root, entryCondition, regionProcessor, 999999, RegionType.Set_All);
-			return floodingRoom;
+			return floodingDistrict;
 		}
 
 		public static void FloodAndSetNewRegionIndex(Region root, int newRegionGroupIndex)
 		{
 			root.newRegionGroupIndex = newRegionGroupIndex;
-			if (root.type.AllowsMultipleRegionsPerRoom())
+			if (root.type.AllowsMultipleRegionsPerDistrict())
 			{
 				RegionEntryPredicate entryCondition = (Region from, Region r) => r.type == root.type && r.newRegionGroupIndex < 0;
 				RegionProcessor regionProcessor = delegate(Region r)
@@ -205,6 +205,11 @@ namespace Verse
 			{
 				BreadthFirstTraverse(region, entryCondition, regionProcessor, maxRegions, traversableRegionTypes);
 			}
+		}
+
+		public static void BreadthFirstTraverse(Region root, RegionProcessorDelegateCache processor, int maxRegions = 999999, RegionType traversableRegionTypes = RegionType.Set_Passable)
+		{
+			BreadthFirstTraverse(root, processor.RegionEntryPredicateDelegate, processor.RegionProcessorDelegate, maxRegions, traversableRegionTypes);
 		}
 
 		public static void BreadthFirstTraverse(Region root, RegionEntryPredicate entryCondition, RegionProcessor regionProcessor, int maxRegions = 999999, RegionType traversableRegionTypes = RegionType.Set_Passable)

@@ -76,12 +76,7 @@ namespace Verse
 				LookMode.Reference => "LookInternalReference", 
 				_ => "LookInternalMisc", 
 			};
-			object[] array = new object[3]
-			{
-				obj,
-				label,
-				lookMode
-			};
+			object[] array = new object[3] { obj, label, lookMode };
 			typeof(Scribe_Universal).GetMethod(name, BindingFlags.Static | BindingFlags.NonPublic).MakeGenericMethod(type).Invoke(null, array);
 			obj = array[0];
 		}
@@ -177,7 +172,7 @@ namespace Verse
 				lookMode = LookMode.GlobalTargetInfo;
 				return true;
 			}
-			if (typeof(Def).IsAssignableFrom(type))
+			if (GenTypes.IsDef(type))
 			{
 				lookMode = LookMode.Def;
 				return true;

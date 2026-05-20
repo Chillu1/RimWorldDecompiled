@@ -3,15 +3,14 @@ using Verse;
 
 namespace RimWorld
 {
-	public class QuestPart_PassOutMany : QuestPart
+	public class QuestPart_PassOutMany : QuestPartCanDisable
 	{
 		public string inSignal;
 
 		public List<string> outSignals = new List<string>();
 
-		public override void Notify_QuestSignalReceived(Signal signal)
+		protected override void ProcessQuestSignal(Signal signal)
 		{
-			base.Notify_QuestSignalReceived(signal);
 			if (signal.tag == inSignal)
 			{
 				for (int i = 0; i < outSignals.Count; i++)

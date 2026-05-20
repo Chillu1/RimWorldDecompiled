@@ -14,8 +14,14 @@ namespace Verse.AI
 		[Unsaved(false)]
 		private int uniqueSaveKeyInt = -2;
 
+		[NoTranslate]
+		public string tag;
+
 		[Unsaved(false)]
 		public ThinkNode parent;
+
+		[Unsaved(false)]
+		private bool hasPriority;
 
 		public const int InvalidSaveKey = -1;
 
@@ -39,14 +45,58 @@ namespace Verse.AI
 		{
 			get
 			{
-				for (int i = 0; i < subNodes.Count; i++)
+				if (subNodes.Count == 0)
 				{
-					foreach (ThinkNode item in subNodes[i].ThisAndChildrenRecursive)
+					yield break;
+				}
+				Stack<ThinkNode> stack = new Stack<ThinkNode>();
+				for (int num = subNodes.Count - 1; num >= 0; num--)
+				{
+					stack.Push(subNodes[num]);
+				}
+				while (stack.Count != 0)
+				{
+					ThinkNode elem = stack.Pop();
+					yield return elem;
+					for (int num2 = elem.subNodes.Count - 1; num2 >= 0; num2--)
 					{
-						yield return item;
+						stack.Push(elem.subNodes[num2]);
 					}
 				}
 			}
+		}
+
+		protected ThinkNode()
+		{
+			hasPriority = priority >= 0f || GetType().IsMethodOverriden("GetPriority");
+		}
+
+		public T FirstNodeOfType<T>(bool includeThis = false) where T : ThinkNode
+		{
+			if (includeThis && this is T result)
+			{
+				return result;
+			}
+			foreach (ThinkNode subNode in subNodes)
+			{
+				T val = subNode.FirstNodeOfType<T>(includeThis: true);
+				if (val != null)
+				{
+					return val;
+				}
+			}
+			return null;
+		}
+
+		public bool TryGetPriority(Pawn pawn, out float value)
+		{
+			if (!hasPriority)
+			{
+				value = 0f;
+				return false;
+			}
+			value = GetPriority(pawn);
+			return true;
 		}
 
 		public virtual float GetPriority(Pawn pawn)
@@ -91,6 +141,7 @@ namespace Verse.AI
 			thinkNode.priority = priority;
 			thinkNode.leaveJoinableLordIfIssuesJob = leaveJoinableLordIfIssuesJob;
 			thinkNode.uniqueSaveKeyInt = uniqueSaveKeyInt;
+			thinkNode.tag = tag;
 			if (resolve)
 			{
 				thinkNode.ResolveSubnodesAndRecur();
